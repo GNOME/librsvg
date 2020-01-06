@@ -111,9 +111,7 @@ fn untransformed_element() {
 
     /* Measuring */
 
-    let (ink_r, logical_r) = renderer
-        .geometry_for_element(Some("#foo"))
-        .unwrap();
+    let (ink_r, logical_r) = renderer.geometry_for_element(Some("#foo")).unwrap();
 
     assert_eq!(
         ink_r,
@@ -151,8 +149,9 @@ fn untransformed_element() {
         renderer.render_element(&cr, Some("#foo"), &viewport)
     };
 
-    let output_surf =
-        res.and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb).unwrap())).unwrap();
+    let output_surf = res
+        .and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb).unwrap()))
+        .unwrap();
 
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 300, 300).unwrap();
 
@@ -172,9 +171,5 @@ fn untransformed_element() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "untransformed_element",
-    );
+    compare_to_surface(&output_surf, &reference_surf, "untransformed_element");
 }

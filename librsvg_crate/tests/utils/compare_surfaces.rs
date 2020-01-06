@@ -6,8 +6,7 @@ use cairo::ImageSurface;
 use self::rsvg_internals::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 use self::rsvg_internals::{IRect, RenderingError};
 

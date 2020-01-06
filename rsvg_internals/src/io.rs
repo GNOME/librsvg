@@ -3,16 +3,8 @@
 use data_url;
 
 use gio::{
-    BufferedInputStream,
-    BufferedInputStreamExt,
-    Cancellable,
-    ConverterInputStream,
-    File as GFile,
-    FileExt,
-    InputStream,
-    MemoryInputStream,
-    ZlibCompressorFormat,
-    ZlibDecompressor,
+    BufferedInputStream, BufferedInputStreamExt, Cancellable, ConverterInputStream, File as GFile,
+    FileExt, InputStream, MemoryInputStream, ZlibCompressorFormat, ZlibDecompressor,
 };
 use glib::{Bytes as GBytes, Cast};
 

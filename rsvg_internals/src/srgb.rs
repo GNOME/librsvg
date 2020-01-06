@@ -6,8 +6,7 @@ use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 
 // Include the linearization and unlinearization tables.

@@ -17,16 +17,8 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::{
-    Direction,
-    FontStretch,
-    FontStyle,
-    FontVariant,
-    TextAnchor,
-    TextRendering,
-    UnicodeBidi,
-    WritingMode,
-    XmlLang,
-    XmlSpace,
+    Direction, FontStretch, FontStyle, FontVariant, TextAnchor, TextRendering, UnicodeBidi,
+    WritingMode, XmlLang, XmlSpace,
 };
 use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};

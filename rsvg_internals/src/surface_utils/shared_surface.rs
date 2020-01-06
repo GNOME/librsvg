@@ -938,7 +938,7 @@ impl SharedImageSurface {
         &self,
         bounds: IRect,
         dx: f64,
-        dy: f64
+        dy: f64,
     ) -> Result<SharedImageSurface, cairo::Status> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;

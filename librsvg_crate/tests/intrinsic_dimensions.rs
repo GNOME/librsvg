@@ -1,12 +1,7 @@
 use cairo;
 
 use librsvg::{
-    CairoRenderer,
-    DefsLookupErrorKind,
-    HrefError,
-    IntrinsicDimensions,
-    Length,
-    LengthUnit,
+    CairoRenderer, DefsLookupErrorKind, HrefError, IntrinsicDimensions, Length, LengthUnit,
     RenderingError,
 };
 

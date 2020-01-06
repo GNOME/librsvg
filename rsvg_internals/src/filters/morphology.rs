@@ -12,9 +12,7 @@ use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::SharedImageSurface,
-    EdgeMode,
-    ImageSurfaceDataExt,
-    Pixel,
+    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 use super::context::{FilterContext, FilterOutput, FilterResult};

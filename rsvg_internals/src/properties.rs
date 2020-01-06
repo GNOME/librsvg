@@ -1,13 +1,7 @@
 //! CSS properties, specified values, computed values.
 
 use cssparser::{
-    self,
-    BasicParseErrorKind,
-    DeclarationListParser,
-    ParseErrorKind,
-    Parser,
-    ParserInput,
-    ToCss,
+    self, BasicParseErrorKind, DeclarationListParser, ParseErrorKind, Parser, ParserInput, ToCss,
 };
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashSet;

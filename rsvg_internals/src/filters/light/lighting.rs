@@ -10,32 +10,19 @@ use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     light::{
-        bottom_left_normal,
-        bottom_right_normal,
-        bottom_row_normal,
-        interior_normal,
-        left_column_normal,
-        light_source::FeDistantLight,
-        light_source::FePointLight,
-        light_source::FeSpotLight,
-        light_source::LightSource,
-        right_column_normal,
-        top_left_normal,
-        top_right_normal,
-        top_row_normal,
-        Normal,
+        bottom_left_normal, bottom_right_normal, bottom_row_normal, interior_normal,
+        left_column_normal, light_source::FeDistantLight, light_source::FePointLight,
+        light_source::FeSpotLight, light_source::LightSource, right_column_normal, top_left_normal,
+        top_right_normal, top_row_normal, Normal,
     },
-    FilterEffect,
-    FilterError,
-    PrimitiveWithInput,
+    FilterEffect, FilterError, PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 

@@ -4,12 +4,7 @@ use criterion::Criterion;
 
 use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::shared_surface::{
-    AlphaOnly,
-    Horizontal,
-    NotAlphaOnly,
-    SharedImageSurface,
-    SurfaceType,
-    Vertical,
+    AlphaOnly, Horizontal, NotAlphaOnly, SharedImageSurface, SurfaceType, Vertical,
 };
 
 const SURFACE_SIDE: i32 = 512;

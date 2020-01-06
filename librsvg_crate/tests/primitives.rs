@@ -139,11 +139,7 @@ fn simple_opacity_with_scale() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "simple_opacity_with_scale",
-    );
+    compare_to_surface(&output_surf, &reference_surf, "simple_opacity_with_scale");
 }
 
 #[test]
@@ -201,11 +197,7 @@ fn markers_with_scale() {
 
     let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "markers_with_scale",
-    );
+    compare_to_surface(&output_surf, &reference_surf, "markers_with_scale");
 }
 
 #[test]

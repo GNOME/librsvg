@@ -6,8 +6,7 @@ use rsvg_internals::rect::IRect;
 use rsvg_internals::srgb::{linearize, map_unpremultiplied_components_loop};
 use rsvg_internals::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 
 const SURFACE_SIDE: i32 = 512;

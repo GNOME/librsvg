@@ -21,11 +21,8 @@ use crate::filters::{
     gaussian_blur::FeGaussianBlur,
     image::FeImage,
     light::{
-        light_source::FeDistantLight,
-        light_source::FePointLight,
-        light_source::FeSpotLight,
-        lighting::FeDiffuseLighting,
-        lighting::FeSpecularLighting,
+        light_source::FeDistantLight, light_source::FePointLight, light_source::FeSpotLight,
+        lighting::FeDiffuseLighting, lighting::FeSpecularLighting,
     },
     merge::{FeMerge, FeMergeNode},
     morphology::FeMorphology,

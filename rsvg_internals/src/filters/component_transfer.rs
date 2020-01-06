@@ -10,10 +10,7 @@ use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    iterators::Pixels,
-    shared_surface::SharedImageSurface,
-    ImageSurfaceDataExt,
-    Pixel,
+    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 

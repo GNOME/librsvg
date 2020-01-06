@@ -8,8 +8,7 @@ use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt,
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 

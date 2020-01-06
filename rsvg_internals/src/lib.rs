@@ -47,12 +47,7 @@ pub use crate::dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
 pub use crate::error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError};
 
 pub use crate::handle::{
-    Handle,
-    LoadOptions,
-    RsvgDimensionData,
-    RsvgPositionData,
-    RsvgSizeFunc,
-    SizeCallback,
+    Handle, LoadOptions, RsvgDimensionData, RsvgPositionData, RsvgSizeFunc, SizeCallback,
 };
 
 pub use crate::length::{Length, LengthUnit, RsvgLength};
