@@ -10,6 +10,7 @@ use nalgebra::{storage::Storage, Dim, Matrix};
 
 use crate::rect::IRect;
 use crate::srgb;
+use crate::unit_interval::UnitInterval;
 use crate::util::clamp;
 
 use super::{
@@ -413,7 +414,7 @@ impl SharedImageSurface {
     /// useful luminance data.
     ///
     /// This is to get a mask suitable for use with cairo_mask_surface().
-    pub fn to_mask(&self, opacity: u8) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn to_mask(&self, opacity: UnitInterval) -> Result<SharedImageSurface, cairo::Status> {
         let bounds = IRect::from_size(self.width, self.height);
 
         let mut output_surface =
@@ -422,6 +423,7 @@ impl SharedImageSurface {
         let stride = output_surface.get_stride() as usize;
         {
             let mut data = output_surface.get_data().unwrap();
+            let opacity = u8::from(opacity);
 
             for (x, y, pixel) in Pixels::new(self, bounds) {
                 data.set_pixel(stride, pixel.to_mask(opacity), x, y);

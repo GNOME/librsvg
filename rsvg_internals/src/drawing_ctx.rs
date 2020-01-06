@@ -478,7 +478,7 @@ impl DrawingCtx {
         let Opacity(opacity) = values.opacity;
 
         let mask = SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?
-            .to_mask(u8::from(opacity))?
+            .to_mask(opacity)?
             .into_image_surface()?;
 
         Ok(Some(mask))
