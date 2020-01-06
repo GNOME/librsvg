@@ -77,7 +77,7 @@ impl<'a> BoundsBuilder<'a> {
         let effects_region = self.ctx.effects_region();
         bbox.clip(&effects_region);
 
-        bbox.rect.unwrap().into()
+        bbox.rect.unwrap()
     }
 
     /// Returns the final pixel bounds.
@@ -89,7 +89,7 @@ impl<'a> BoundsBuilder<'a> {
     ///
     /// Used by feImage.
     pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> Rect {
-        self.apply_properties(draw_ctx).rect.unwrap().into()
+        self.apply_properties(draw_ctx).rect.unwrap()
     }
 
     /// Applies the filter primitive properties.
