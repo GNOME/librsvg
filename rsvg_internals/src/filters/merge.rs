@@ -1,4 +1,3 @@
-use cairo::{self, ImageSurface};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
@@ -119,7 +118,7 @@ impl FilterEffect for FeMerge {
         let output_surface = match output_surface {
             Some(surface) => surface,
             None => SharedImageSurface::new(
-                ImageSurface::create(
+                cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     ctx.source_graphic().width(),
                     ctx.source_graphic().height(),

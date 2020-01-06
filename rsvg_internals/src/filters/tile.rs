@@ -1,5 +1,3 @@
-use cairo::{self, ImageSurface, Matrix};
-
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
@@ -50,7 +48,7 @@ impl FilterEffect for FeTile {
                 bounds: input_bounds,
             }) => {
                 // Create a surface containing just the region to tile.
-                let bounded_input_surface = ImageSurface::create(
+                let bounded_input_surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     input_bounds.width(),
                     input_bounds.height(),
@@ -69,11 +67,11 @@ impl FilterEffect for FeTile {
                 // Make a pattern out of the tile region.
                 let ptn = cairo::SurfacePattern::create(&bounded_input_surface);
                 ptn.set_extend(cairo::Extend::Repeat);
-                let mut mat = Matrix::identity();
+                let mut mat = cairo::Matrix::identity();
                 mat.translate(f64::from(-input_bounds.x0), f64::from(-input_bounds.y0));
                 ptn.set_matrix(mat);
 
-                let output_surface = ImageSurface::create(
+                let output_surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     ctx.source_graphic().width(),
                     ctx.source_graphic().height(),

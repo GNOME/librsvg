@@ -12,7 +12,6 @@
 //! [`NodeData`]: struct.NodeData.html
 //! [`create_node`]: ../create_node/index.html
 
-use cairo::Matrix;
 use downcast_rs::*;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::cell::Ref;
@@ -51,7 +50,7 @@ pub struct NodeData {
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
     result: NodeResult,
-    transform: Matrix,
+    transform: cairo::Matrix,
     values: ComputedValues,
     cond: bool,
     style_attr: String,
@@ -73,7 +72,7 @@ impl NodeData {
             class: class.map(str::to_string),
             specified_values: Default::default(),
             important_styles: Default::default(),
-            transform: Matrix::identity(),
+            transform: cairo::Matrix::identity(),
             result: Ok(()),
             values: ComputedValues::default(),
             cond: true,
@@ -114,7 +113,7 @@ impl NodeData {
         self.cond
     }
 
-    pub fn get_transform(&self) -> Matrix {
+    pub fn get_transform(&self) -> cairo::Matrix {
         self.transform
     }
 
@@ -155,10 +154,12 @@ impl NodeData {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(svg "transform") => {
-                    return Matrix::parse_str(value).attribute(attr).and_then(|affine| {
-                        self.transform = affine;
-                        Ok(())
-                    });
+                    return cairo::Matrix::parse_str(value)
+                        .attribute(attr)
+                        .and_then(|affine| {
+                            self.transform = affine;
+                            Ok(())
+                        });
                 }
                 _ => (),
             }

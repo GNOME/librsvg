@@ -1,4 +1,3 @@
-use cairo::{self, ImageSurface};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
@@ -232,7 +231,7 @@ impl FilterEffect for FeConvolveMatrix {
 
         let matrix = self.kernel_matrix.as_ref().unwrap();
 
-        let mut output_surface = ImageSurface::create(
+        let mut output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             input_surface.width(),
             input_surface.height(),

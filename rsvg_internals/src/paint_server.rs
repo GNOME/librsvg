@@ -1,6 +1,6 @@
 //! SVG paint servers.
 
-use cssparser::{self, Parser};
+use cssparser::Parser;
 
 use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;

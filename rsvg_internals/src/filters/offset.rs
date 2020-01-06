@@ -1,4 +1,3 @@
-use cairo::{self, ImageSurface};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::drawing_ctx::DrawingCtx;
@@ -63,7 +62,7 @@ impl FilterEffect for FeOffset {
 
         let (ox, oy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
-        let output_surface = ImageSurface::create(
+        let output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

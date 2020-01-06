@@ -1,6 +1,5 @@
 //! The main context structure which drives the drawing process.
 
-use cairo;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use std::borrow::Cow;

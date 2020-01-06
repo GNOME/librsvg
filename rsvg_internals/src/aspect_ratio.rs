@@ -22,8 +22,6 @@
 
 use std::ops::Deref;
 
-use cairo;
-
 use crate::error::*;
 use crate::parsers::Parse;
 use crate::rect::Rect;

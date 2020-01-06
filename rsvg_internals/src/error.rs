@@ -3,9 +3,7 @@
 use std::error::{self, Error};
 use std::fmt;
 
-use cairo;
-use cssparser::{self, BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
-use glib;
+use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
 use crate::allowed_url::Fragment;

@@ -1,8 +1,6 @@
 use std::error::Error;
 use std::fmt;
 
-use cairo;
-
 /// An enumeration of errors that can occur during filter primitive rendering.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum FilterError {

@@ -3,7 +3,6 @@
 use data_url;
 
 use gio::{
-    self,
     BufferedInputStream,
     BufferedInputStreamExt,
     Cancellable,
@@ -15,7 +14,7 @@ use gio::{
     ZlibCompressorFormat,
     ZlibDecompressor,
 };
-use glib::{self, Bytes as GBytes, Cast};
+use glib::{Bytes as GBytes, Cast};
 
 use crate::allowed_url::AllowedUrl;
 use crate::error::LoadingError;

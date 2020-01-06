@@ -1,4 +1,3 @@
-use cairo::{self, ImageSurface};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
@@ -170,7 +169,7 @@ impl FilterEffect for FeColorMatrix {
             .add_input(&input)
             .into_irect(draw_ctx);
 
-        let mut output_surface = ImageSurface::create(
+        let mut output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

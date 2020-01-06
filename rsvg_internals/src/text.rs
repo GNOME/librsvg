@@ -2,9 +2,7 @@
 
 use glib::translate::*;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use pango::{self, FontMapExt};
-use pango_sys;
-use pangocairo;
+use pango::FontMapExt;
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;

@@ -1,7 +1,5 @@
 //! Types for rectangles.
 
-use cairo;
-
 mod rect {
     use crate::float_eq_cairo::ApproxEqCairo;
     use core::ops::{Add, Range, Sub};

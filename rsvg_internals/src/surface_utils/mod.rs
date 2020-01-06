@@ -1,7 +1,6 @@
 //! Various utilities for working with Cairo image surfaces.
-use std::ops::DerefMut;
 
-use cairo;
+use std::ops::DerefMut;
 
 pub mod iterators;
 pub mod shared_surface;

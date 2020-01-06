@@ -3,12 +3,10 @@ use std::cmp::min;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-use cairo::{self, ImageSurface};
-use cairo_sys;
+use cairo::ImageSurface;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
-use rayon;
 
 use crate::rect::IRect;
 use crate::srgb;

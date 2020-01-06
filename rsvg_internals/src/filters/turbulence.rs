@@ -1,4 +1,3 @@
-use cairo::{self, ImageSurface};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
@@ -354,7 +353,7 @@ impl FilterEffect for FeTurbulence {
             f64::from(bounds.height()),
         );
 
-        let mut output_surface = ImageSurface::create(
+        let mut output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

@@ -1,11 +1,12 @@
 //! Parser for SVG path data.
 
-use crate::path_builder::*;
 use std::error::Error;
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 use std::iter::Enumerate;
 use std::str;
 use std::str::Chars;
+
+use crate::path_builder::*;
 
 struct PathParser<'b> {
     chars_enumerator: Enumerate<Chars<'b>>,
@@ -920,8 +921,8 @@ impl Error for ParseError {
     }
 }
 
-impl Display for ParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "error at position {}: {}",

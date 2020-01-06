@@ -1,10 +1,8 @@
 //! CSS transform values.
 
-use cairo;
-
 use std::f64::consts::*;
 
-use cssparser::{self, Parser, Token};
+use cssparser::{Parser, Token};
 
 use crate::error::*;
 use crate::parsers::{optional_comma, Parse};

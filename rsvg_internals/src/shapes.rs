@@ -1,7 +1,6 @@
 //! Basic SVG shapes: the `path`, `polygon`, `polyline`, `line`,
 //! `rect`, `circle`, `ellipse` elements.
 
-use cairo;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::rc::Rc;

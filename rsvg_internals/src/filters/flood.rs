@@ -1,6 +1,3 @@
-use cairo::{self, ImageSurface};
-use cssparser;
-
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
@@ -42,7 +39,7 @@ impl FilterEffect for FeFlood {
     ) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
 
-        let output_surface = ImageSurface::create(
+        let output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

@@ -1,7 +1,5 @@
 use std::cmp::max;
 
-use cairo::{self, ImageSurface};
-use cssparser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::Vector3;
 use num_traits::identities::Zero;
@@ -309,7 +307,7 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let mut output_surface = ImageSurface::create(
+                let mut output_surface = cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     input_surface.width(),
                     input_surface.height(),

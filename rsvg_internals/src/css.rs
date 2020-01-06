@@ -76,7 +76,7 @@
 use cssparser::*;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
-use selectors::{self, OpaqueElement, SelectorImpl, SelectorList};
+use selectors::{OpaqueElement, SelectorImpl, SelectorList};
 
 use std::cmp::Ordering;
 use std::fmt;

@@ -1,4 +1,3 @@
-use cairo::{self, ImageSurface};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
@@ -91,7 +90,7 @@ impl FilterEffect for FeDisplacementMap {
 
         let (sx, sy) = ctx.paffine().transform_distance(self.scale, self.scale);
 
-        let output_surface = ImageSurface::create(
+        let output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

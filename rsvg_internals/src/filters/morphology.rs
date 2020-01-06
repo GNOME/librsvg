@@ -1,6 +1,5 @@
 use std::cmp::{max, min};
 
-use cairo::{self, ImageSurface};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
@@ -96,7 +95,7 @@ impl FilterEffect for FeMorphology {
         let rx = rx.abs();
         let ry = ry.abs();
 
-        let mut output_surface = ImageSurface::create(
+        let mut output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

@@ -1,7 +1,6 @@
 //! Utility functions for dealing with sRGB colors.
 //!
 //! The constant values in this module are taken from http://www.color.org/chardata/rgb/srgb.xalter
-use cairo;
 
 use crate::rect::IRect;
 use crate::surface_utils::{

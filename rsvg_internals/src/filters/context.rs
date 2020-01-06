@@ -2,8 +2,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::f64;
 
-use cairo;
-
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::{DrawingCtx, ViewParams};

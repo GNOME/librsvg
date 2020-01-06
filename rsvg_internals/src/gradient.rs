@@ -1,7 +1,6 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
-use cairo;
-use cssparser::{self, Parser};
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 

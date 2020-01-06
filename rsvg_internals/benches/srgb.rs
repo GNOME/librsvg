@@ -2,9 +2,6 @@
 extern crate criterion;
 use criterion::{black_box, Criterion};
 
-use cairo;
-use rsvg_internals;
-
 use rsvg_internals::rect::IRect;
 use rsvg_internals::srgb::{linearize, map_unpremultiplied_components_loop};
 use rsvg_internals::surface_utils::{

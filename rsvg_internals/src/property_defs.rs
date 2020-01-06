@@ -1,6 +1,6 @@
 //! Definitions for CSS property types.
 
-use cssparser::{self, Parser, Token};
+use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;

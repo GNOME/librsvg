@@ -1,6 +1,6 @@
 //! CSS color values.
 
-use cssparser::{self, Parser};
+use cssparser::Parser;
 use libc;
 
 use crate::error::*;

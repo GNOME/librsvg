@@ -6,10 +6,6 @@ use std::cell::Cell;
 use std::ptr;
 use std::rc::Rc;
 
-use cairo::{self, ImageSurface, Status};
-use gio;
-use glib;
-use libc;
 use locale_config::{LanguageRange, Locale};
 
 use crate::allowed_url::{AllowedUrl, Href};
@@ -304,7 +300,7 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = DrawingCtx::new(
             self.document.clone(),
@@ -489,7 +485,7 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let target = ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
 
         let mut draw_ctx = DrawingCtx::new(
@@ -590,7 +586,7 @@ impl Handle {
 
 fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     let status = cr.status();
-    if status == Status::Success {
+    if status == cairo::Status::Success {
         Ok(())
     } else {
         Err(RenderingError::Cairo(status))

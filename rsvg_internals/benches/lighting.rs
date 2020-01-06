@@ -1,11 +1,6 @@
 #[macro_use]
 extern crate criterion;
 use criterion::Criterion;
-
-use cairo;
-use nalgebra;
-use rsvg_internals;
-
 use nalgebra::{Matrix3, Vector2};
 
 use rsvg_internals::filters::light::{

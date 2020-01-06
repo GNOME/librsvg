@@ -29,9 +29,6 @@
 //! # Example
 //!
 //! ```
-//! use cairo;
-//! use gio;
-//! use glib;
 //!
 //! const WIDTH: i32 = 640;
 //! const HEIGHT: i32 = 480;
@@ -145,10 +142,8 @@
 //! [SVG 2]: https://www.w3.org/TR/SVG2/
 
 #![warn(unused)]
-use cairo;
-use gio;
-use glib::{self, prelude::*};
-use rsvg_internals;
+
+use glib::prelude::*;
 use url::Url;
 
 use std::path::Path;
@@ -158,13 +153,8 @@ use gio::{Cancellable, FileExt};
 use rsvg_internals::{Dpi, Handle, LoadOptions};
 
 pub use rsvg_internals::{
-    DefsLookupErrorKind,
-    HrefError,
-    Length as InternalLength,
-    LengthUnit,
-    LoadingError,
-    RenderingError,
-    RsvgLength as Length,
+    DefsLookupErrorKind, HrefError, Length as InternalLength, LengthUnit, LoadingError,
+    RenderingError, RsvgLength as Length,
 };
 
 /// Builder for loading an [`SvgHandle`][SvgHandle].
@@ -249,8 +239,6 @@ impl Loader {
     /// ```ignore
     /// # // Test is ignored because "make distcheck" breaks, as the output file
     /// # // can't be written to the read-only srcdir.
-    /// use cairo;
-    /// use librsvg;
     ///
     /// let svg_handle = librsvg::Loader::new()
     ///     .keep_image_data()
@@ -276,8 +264,6 @@ impl Loader {
     /// # Example:
     ///
     /// ```
-    /// use librsvg;
-    ///
     /// let svg_handle = librsvg::Loader::new()
     ///     .read_path("example.svg")
     ///     .unwrap();
@@ -293,9 +279,6 @@ impl Loader {
     ///
     /// # Example:
     /// ```
-    /// use gio;
-    /// use librsvg;
-    ///
     /// let svg_handle = librsvg::Loader::new()
     ///     .read_file(&gio::File::new_for_path("example.svg"), None::<&gio::Cancellable>)
     ///     .unwrap();
@@ -326,8 +309,6 @@ impl Loader {
     ///
     /// ```
     /// use gio::prelude::*;
-    /// use gio;
-    /// use librsvg;
     ///
     /// let file = gio::File::new_for_path("example.svg");
     ///

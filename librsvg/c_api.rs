@@ -7,18 +7,13 @@ use std::slice;
 use std::sync::Once;
 use std::{f64, i32};
 
-use cairo::{self, ImageSurface};
-use cairo_sys;
 use gdk_pixbuf::Pixbuf;
-use gdk_pixbuf_sys;
 use glib::error::ErrorDomain;
-use libc;
 use url::Url;
 
 use bitflags::bitflags;
 
 use gio::prelude::*;
-use gio_sys;
 
 use glib::object::ObjectClass;
 use glib::subclass;
@@ -31,13 +26,12 @@ use glib::{
     ToValue, Type, Value,
 };
 
-use glib_sys;
-use gobject_sys::{self, GEnumValue, GFlagsValue};
+use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions,
-    LoadOptions, LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData,
-    RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType, ViewBox,
+    rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
+    RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgSizeFunc,
+    SharedImageSurface, SizeCallback, SurfaceType, ViewBox,
 };
 
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
@@ -723,8 +717,11 @@ impl CHandle {
             return empty_pixbuf();
         }
 
-        let surface =
-            ImageSurface::create(cairo::Format::ARgb32, dimensions.width, dimensions.height)?;
+        let surface = cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            dimensions.width,
+            dimensions.height,
+        )?;
 
         {
             let cr = cairo::Context::new(&surface);

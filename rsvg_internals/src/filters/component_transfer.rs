@@ -1,6 +1,5 @@
 use std::cmp::min;
 
-use cairo::{self, ImageSurface};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
@@ -285,7 +284,7 @@ impl FilterEffect for FeComponentTransfer {
             .into_irect(draw_ctx);
 
         // Create the output surface.
-        let mut output_surface = ImageSurface::create(
+        let mut output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

@@ -1,4 +1,3 @@
-use cairo::{self, ImageSurface};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::{Fragment, Href};
@@ -42,13 +41,13 @@ impl FeImage {
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
         fragment: &Fragment,
-    ) -> Result<ImageSurface, FilterError> {
+    ) -> Result<cairo::ImageSurface, FilterError> {
         let acquired_drawable = draw_ctx
             .acquire_node(fragment, &[])
             .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
-        let surface = ImageSurface::create(
+        let surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
@@ -78,7 +77,7 @@ impl FeImage {
             })?;
 
         // Clip the output to bounds.
-        let output_surface = ImageSurface::create(
+        let output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
@@ -102,7 +101,7 @@ impl FeImage {
         bounds: &Rect,
         unclipped_bounds: &Rect,
         href: &Href,
-    ) -> Result<ImageSurface, FilterError> {
+    ) -> Result<cairo::ImageSurface, FilterError> {
         let surface = if let Href::PlainUrl(ref url) = *href {
             // FIXME: translate the error better here
             draw_ctx
@@ -112,7 +111,7 @@ impl FeImage {
             unreachable!();
         };
 
-        let output_surface = ImageSurface::create(
+        let output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),

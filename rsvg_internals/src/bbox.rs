@@ -1,7 +1,5 @@
 //! Bounding boxes that know their coordinate space.
 
-use cairo;
-
 use crate::rect::{Rect, TransformRect};
 
 #[derive(Debug, Copy, Clone)]

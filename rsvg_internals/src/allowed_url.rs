@@ -5,7 +5,7 @@ use std::fmt;
 use std::io;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use url::{self, Url};
+use url::Url;
 
 use crate::error::HrefError;
 

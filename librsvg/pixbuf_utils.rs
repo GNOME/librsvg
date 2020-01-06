@@ -1,19 +1,14 @@
 use std::path::PathBuf;
 use std::ptr;
 
-use cairo::{self, ImageSurface};
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use gdk_pixbuf_sys;
-use gio;
 use gio::prelude::*;
 use glib::translate::*;
-use glib_sys;
-use libc;
 use url::Url;
 
 use rsvg_internals::{
-    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError,
-    RsvgDimensionData, SharedImageSurface, SizeCallback, SurfaceType,
+    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, RsvgDimensionData,
+    SharedImageSurface, SizeCallback, SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -136,7 +131,7 @@ fn render_to_pixbuf_at_size(
         return empty_pixbuf();
     }
 
-    let surface = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+    let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
     {
         let cr = cairo::Context::new(&surface);

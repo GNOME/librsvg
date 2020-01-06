@@ -1,18 +1,10 @@
 //! The main XML parser.
 
-use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
 use markup5ever::{
-    expanded_name,
-    local_name,
-    namespace_url,
-    ns,
-    ExpandedName,
-    LocalName,
-    Namespace,
-    QualName,
+    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -29,6 +21,7 @@ use crate::property_bag::PropertyBag;
 use crate::style::{Style, StyleType};
 use crate::text::NodeChars;
 use crate::xml2_load::Xml2Parser;
+use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 
 #[derive(Clone)]
 enum Context {
