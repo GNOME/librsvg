@@ -312,31 +312,12 @@ impl DrawingCtx {
             })
     }
 
-    // Use this function when looking up urls to other nodes, and when you expect
-    // the node to be of a particular type. This function does proper recursion
-    // checking and thereby avoids infinite loops.
-    //
-    // Nodes acquired by this function must be released in reverse
-    // acquiring order.
-    //
-    // Specify an empty slice for `node_types` if you want a node of any type.
-    //
-    // Malformed SVGs, for example, may reference a marker by its IRI, but
-    // the object referenced by the IRI is not a marker.
-    //
-    // Note that if you acquire a node, you have to release it before trying to
-    // acquire it again.  If you acquire a node "#foo" and don't release it before
-    // trying to acquire "foo" again, you will obtain a None the second time.
     pub fn acquire_node(
         &mut self,
         fragment: &Fragment,
         node_types: &[NodeType],
     ) -> Result<AcquiredNode, AcquireError> {
         self.acquired_nodes.acquire(fragment, node_types)
-    }
-
-    fn acquire_node_ref(&mut self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
-        self.acquired_nodes.push_node_ref(node)
     }
 
     fn clip_to_node(
@@ -1024,7 +1005,7 @@ impl DrawingCtx {
         // another <use> which references the first one, etc.).  So,
         // we acquire the <use> element itself so that circular
         // references can be caught.
-        let _self_acquired = self.acquire_node_ref(node).map_err(|e| {
+        let _self_acquired = self.acquired_nodes.acquire_ref(node).map_err(|e| {
             if let AcquireError::CircularReference(_) = e {
                 rsvg_log!("circular reference in element {}", node);
                 RenderingError::CircularReference
@@ -1331,6 +1312,15 @@ impl AcquiredNode {
     }
 }
 
+/// This helper struct is used when looking up urls to other nodes.
+/// Its methods do recursion checking and thereby avoid infinite loops.
+///
+/// Malformed SVGs, for example, may reference a marker by its IRI, but
+/// the object referenced by the IRI is not a marker.
+///
+/// Note that if you acquire a node, you have to release it before trying to
+/// acquire it again.  If you acquire a node "#foo" and don't release it before
+/// trying to acquire "foo" again, you will obtain a None the second time.
 struct AcquiredNodes {
     document: Rc<Document>,
     num_elements_acquired: usize,
@@ -1375,6 +1365,10 @@ impl AcquiredNodes {
         }
     }
 
+    /// Acquires a node.
+    /// Specify `node_types` when expecting the node to be of a particular type,
+    /// or use an empty slice for `node_types` if you want a node of any type.
+    /// Nodes acquired by this function must be released in reverse acquiring order.
     fn acquire(
         &mut self,
         fragment: &Fragment,
@@ -1391,7 +1385,7 @@ impl AcquiredNodes {
         let node = self.lookup_node(fragment, node_types)?;
 
         if node_is_accessed_by_reference(&node) {
-            self.push_node_ref(&node)
+            self.acquire_ref(&node)
         } else {
             Ok(AcquiredNode {
                 stack: None,
@@ -1400,7 +1394,7 @@ impl AcquiredNodes {
         }
     }
 
-    fn push_node_ref(&self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
+    fn acquire_ref(&self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
         if self.node_stack.borrow().contains(&node) {
             Err(AcquireError::CircularReference(node.clone()))
         } else {
