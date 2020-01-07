@@ -3,7 +3,6 @@ name = "librsvg"
 version = "2.47.2"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 workspace = "../"
-build = "build.rs"
 edition = "2018"
 
 [lib]
@@ -19,6 +18,3 @@ url = "2"
 [dev-dependencies]
 cairo-rs = { version = "0.7.0", features = ["png", "pdf", "svg"] }
 rsvg_internals = { path = "../rsvg_internals" }
-
-[build-dependencies]
-pkg-config = "0.3.14"

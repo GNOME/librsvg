@@ -42,6 +42,9 @@ xml-rs = "0.8.0"
 [dev-dependencies]
 criterion = "0.2"
 
+[build-dependencies]
+pkg-config = "0.3.14"
+
 [lib]
 name = "rsvg_internals"
 

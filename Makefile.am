@@ -160,6 +160,7 @@ endif
 check-local:
 	cd $(srcdir) && \
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)	\
+	OUT_DIR=$(LIBRSVG_BUILD_DIR)		\
 	$(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
 
 clean-local:
