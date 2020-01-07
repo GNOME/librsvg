@@ -935,30 +935,34 @@ impl DrawingCtx {
             .map_err(|_| RenderingError::InvalidHref)
     }
 
-    pub fn draw_node_on_surface(
+    pub fn draw_node_to_surface(
         &mut self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        surface: &cairo::ImageSurface,
         affine: cairo::Matrix,
-        width: f64,
-        height: f64,
-    ) -> Result<BoundingBox, RenderingError> {
+        width: i32,
+        height: i32,
+    ) -> Result<SharedImageSurface, RenderingError> {
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+
         let save_cr = self.cr.clone();
         let save_rect = self.rect;
 
-        let cr = cairo::Context::new(surface);
-        cr.set_matrix(affine);
+        {
+            let cr = cairo::Context::new(&surface);
+            cr.set_matrix(affine);
 
-        self.cr = cr;
-        self.rect = Rect::from_size(width, height);
+            self.cr = cr;
 
-        let res = self.draw_node_from_stack(cascaded, node, false);
+            self.rect = Rect::from_size(f64::from(width), f64::from(height));
+
+            let _ = self.draw_node_from_stack(cascaded, node, false)?;
+        }
 
         self.cr = save_cr;
         self.rect = save_rect;
 
-        res
+        Ok(SharedImageSurface::new(surface, SurfaceType::SRgb)?)
     }
 
     pub fn draw_node_from_stack(
