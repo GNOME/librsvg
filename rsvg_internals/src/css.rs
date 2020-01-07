@@ -415,7 +415,7 @@ impl selectors::Element for RsvgElement {
                 return sibling.map(|n| n.into());
             }
 
-            sibling = self.0.previous_sibling();
+            sibling = sib.previous_sibling();
         }
 
         None
@@ -430,7 +430,7 @@ impl selectors::Element for RsvgElement {
                 return sibling.map(|n| n.into());
             }
 
-            sibling = self.0.next_sibling();
+            sibling = sib.next_sibling();
         }
 
         None
