@@ -1001,6 +1001,54 @@ impl SharedImageSurface {
         SharedImageSurface::new(output_surface, image.surface_type)
     }
 
+    /// Creates a new surface with the size and content specified in `bounds`
+    #[inline]
+    pub fn tile(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+        let output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, bounds.width(), bounds.height())?;
+
+        {
+            let cr = cairo::Context::new(&output_surface);
+            self.set_as_source_surface(&cr, f64::from(-bounds.x0), f64::from(-bounds.y0));
+            cr.paint();
+        }
+
+        SharedImageSurface::new(output_surface, self.surface_type)
+    }
+
+    /// Returns a new surface of the same size, with the contents of the specified
+    /// image repeated to fill the bounds and starting from the given position.
+    #[inline]
+    pub fn paint_image_tiled(
+        &self,
+        bounds: IRect,
+        image: &SharedImageSurface,
+        x: i32,
+        y: i32,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        {
+            let cr = cairo::Context::new(&output_surface);
+
+            let ptn = image.to_cairo_pattern();
+            ptn.set_extend(cairo::Extend::Repeat);
+            let mut mat = cairo::Matrix::identity();
+            mat.translate(f64::from(-x), f64::from(-y));
+            ptn.set_matrix(mat);
+
+            let r = cairo::Rectangle::from(bounds);
+            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.clip();
+
+            cr.set_source(&ptn);
+            cr.paint();
+        }
+
+        SharedImageSurface::new(output_surface, image.surface_type)
+    }
+
     /// Performs the combination of two input surfaces using Porter-Duff
     /// compositing operators
     ///
