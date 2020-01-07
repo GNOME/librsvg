@@ -1,6 +1,8 @@
 use std::error::Error;
 use std::fmt;
 
+use crate::error::RenderingError;
+
 /// An enumeration of errors that can occur during filter primitive rendering.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum FilterError {
@@ -58,5 +60,18 @@ impl From<cairo::Status> for FilterError {
     #[inline]
     fn from(x: cairo::Status) -> Self {
         FilterError::CairoError(x)
+    }
+}
+
+impl From<RenderingError> for FilterError {
+    #[inline]
+    fn from(e: RenderingError) -> Self {
+        if let RenderingError::Cairo(status) = e {
+            FilterError::CairoError(status)
+        } else {
+            // FIXME: this is just a dummy value; we should probably have a way to indicate
+            // an error in the underlying drawing process.
+            FilterError::CairoError(cairo::Status::InvalidStatus)
+        }
     }
 }

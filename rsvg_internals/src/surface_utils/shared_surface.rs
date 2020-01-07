@@ -8,7 +8,7 @@ use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 
-use crate::rect::IRect;
+use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
 use crate::unit_interval::UnitInterval;
 use crate::util::clamp;
@@ -959,6 +959,46 @@ impl SharedImageSurface {
         }
 
         SharedImageSurface::new(output_surface, self.surface_type)
+    }
+
+    /// Returns a new surface of the same size, with the contents of the
+    /// specified image, optionally transformed to match a given box
+    #[inline]
+    pub fn paint_image(
+        &self,
+        bounds: Rect,
+        image: &SharedImageSurface,
+        rect: Option<Rect>,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+
+        if rect.is_none() || !rect.unwrap().is_empty() {
+            let cr = cairo::Context::new(&output_surface);
+            let r = cairo::Rectangle::from(bounds);
+            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.clip();
+
+            image.set_as_source_surface(&cr, 0f64, 0f64);
+
+            if let Some(rect) = rect {
+                let mut matrix = cairo::Matrix::new(
+                    rect.width() / f64::from(image.width()),
+                    0.0,
+                    0.0,
+                    rect.height() / f64::from(image.height()),
+                    rect.x0,
+                    rect.y0,
+                );
+                matrix.invert();
+
+                cr.get_source().set_matrix(matrix);
+            }
+
+            cr.paint();
+        }
+
+        SharedImageSurface::new(output_surface, SurfaceType::SRgb)
     }
 
     /// Performs the combination of two input surfaces using Porter-Duff
