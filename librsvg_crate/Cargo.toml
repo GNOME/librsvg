@@ -10,14 +10,14 @@ edition = "2018"
 name = "librsvg"
 
 [dependencies]
-cairo-rs = "0.7.0"
-glib = "0.8.0"
-gio = { version="0.7.0", features=["v2_48"] } # per configure.ac
+cairo-rs = "0.8.0"
+glib = "0.9.0"
+gio = { version="0.8.0", features=["v2_48"] } # per configure.ac
 rsvg_internals = { path = "../rsvg_internals" }
 url = "2"
 
 [dev-dependencies]
-cairo-rs = { version = "0.7.0", features = ["png", "pdf", "svg"] }
+cairo-rs = { version = "0.8.0", features = ["png", "pdf", "svg"] }
 rsvg_internals = { path = "../rsvg_internals" }
 
 [build-dependencies]
