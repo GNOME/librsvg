@@ -103,7 +103,6 @@ LIBRSVG_INTERNALS_SRC =						\
 
 LIBRSVG_CRATE_SRC = 						\
 	librsvg_crate/Cargo.toml				\
-	librsvg_crate/build.rs					\
 	librsvg_crate/example.svg				\
 	librsvg_crate/examples/proportional.rs			\
 	librsvg_crate/src/lib.rs				\
