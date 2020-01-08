@@ -360,7 +360,7 @@ impl SelectorImpl for Selector {
 /// RsvgNode is an alias for rctree::Node, so we can't implement
 /// `selectors::Element` directly on it.  We implement it on the
 /// `RsvgElement` wrapper instead.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct RsvgElement(RsvgNode);
 
 impl From<RsvgNode> for RsvgElement {
@@ -748,4 +748,92 @@ pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
 
     let values = ComputedValues::default();
     root.cascade(&values);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use glib::{self, prelude::*};
+    use gio;
+    use selectors::Element;
+
+    use crate::allowed_url::Fragment;
+    use crate::document::Document;
+    use crate::handle::LoadOptions;
+
+    fn load_document(input: &'static [u8]) -> Document {
+        let bytes = glib::Bytes::from_static(input);
+        let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+
+        Document::load_from_stream(
+            &LoadOptions::new(None),
+            &stream.upcast(),
+            None::<&gio::Cancellable>
+        ).unwrap()
+    }
+
+    #[test]
+    fn impl_element() {
+        let document = load_document(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" id="a">
+  <rect id="b" x="10" y="10" width="30" height="30"/>
+  <circle id="c" cx="10" cy="10" r="10"/>
+  <rect id="d" class="foo bar"/>
+</svg>
+"#,
+        );
+
+        let a = document.lookup(&Fragment::new(None, "a".to_string())).unwrap();
+        let b = document.lookup(&Fragment::new(None, "b".to_string())).unwrap();
+        let c = document.lookup(&Fragment::new(None, "c".to_string())).unwrap();
+        let d = document.lookup(&Fragment::new(None, "d".to_string())).unwrap();
+
+        // Node types
+
+        assert!(a.borrow().get_type() == NodeType::Svg);
+        assert!(b.borrow().get_type() == NodeType::Rect);
+        assert!(c.borrow().get_type() == NodeType::Circle);
+        assert!(d.borrow().get_type() == NodeType::Rect);
+
+        let a = RsvgElement(a);
+        let b = RsvgElement(b);
+        let c = RsvgElement(c);
+        let d = RsvgElement(d);
+
+        // Tree navigation
+
+        assert_eq!(a.parent_element(), None);
+        assert_eq!(b.parent_element(), Some(a.clone()));
+        assert_eq!(c.parent_element(), Some(a.clone()));
+        assert_eq!(d.parent_element(), Some(a.clone()));
+
+        assert_eq!(b.next_sibling_element(), Some(c.clone()));
+        assert_eq!(c.next_sibling_element(), Some(d.clone()));
+        assert_eq!(d.next_sibling_element(), None);
+
+        assert_eq!(b.prev_sibling_element(), None);
+        assert_eq!(c.prev_sibling_element(), Some(b.clone()));
+        assert_eq!(d.prev_sibling_element(), Some(c.clone()));
+
+        // Other operations
+
+        assert!(a.has_local_name(&LocalName::from("svg")));
+
+        assert!(a.has_namespace(&ns!(svg)));
+
+        assert!(!a.is_same_type(&b));
+        assert!(b.is_same_type(&d));
+
+        assert!(a.has_id(&LocalName::from("a"), CaseSensitivity::AsciiCaseInsensitive));
+        assert!(!b.has_id(&LocalName::from("foo"), CaseSensitivity::AsciiCaseInsensitive));
+
+        assert!(d.has_class(&LocalName::from("foo"), CaseSensitivity::AsciiCaseInsensitive));
+        assert!(d.has_class(&LocalName::from("bar"), CaseSensitivity::AsciiCaseInsensitive));
+
+        assert!(!a.has_class(&LocalName::from("foo"), CaseSensitivity::AsciiCaseInsensitive));
+
+        assert!(d.is_empty());
+        assert!(!a.is_empty());
+    }
 }
