@@ -239,7 +239,7 @@ impl FilterEffect for FeConvolveMatrix {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, pixel) in Pixels::new(&input_surface, bounds) {
+            for (x, y, pixel) in Pixels::within(&input_surface, bounds) {
                 // Compute the convolution rectangle bounds.
                 let kernel_bounds = IRect::new(
                     x as i32 - self.target_x.unwrap() as i32,
@@ -255,7 +255,7 @@ impl FilterEffect for FeConvolveMatrix {
                 let mut a = 0.0;
 
                 for (x, y, pixel) in
-                    PixelRectangle::new(&input_surface, bounds, kernel_bounds, self.edge_mode)
+                    PixelRectangle::within(&input_surface, bounds, kernel_bounds, self.edge_mode)
                 {
                     let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                     let kernel_y = (kernel_bounds.y1 - y - 1) as usize;

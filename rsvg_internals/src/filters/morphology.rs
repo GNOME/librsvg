@@ -103,7 +103,7 @@ impl FilterEffect for FeMorphology {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, _pixel) in Pixels::new(input.surface(), bounds) {
+            for (x, y, _pixel) in Pixels::within(input.surface(), bounds) {
                 // Compute the kernel rectangle bounds.
                 let kernel_bounds = IRect::new(
                     (f64::from(x) - rx).floor() as i32,
@@ -126,7 +126,7 @@ impl FilterEffect for FeMorphology {
                 };
 
                 for (_x, _y, pixel) in
-                    PixelRectangle::new(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
+                    PixelRectangle::within(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
                 {
                     let op = match self.operator {
                         Operator::Erode => min,

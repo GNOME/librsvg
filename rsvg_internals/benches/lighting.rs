@@ -158,7 +158,7 @@ fn normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal
 
     let mut nx = 0;
     let mut ny = 0;
-    for (x, y, pixel) in PixelRectangle::new(surface, bounds, kernel_bounds, EdgeMode::None) {
+    for (x, y, pixel) in PixelRectangle::within(surface, bounds, kernel_bounds, EdgeMode::None) {
         let kernel_x = (x - kernel_bounds.x0) as usize;
         let kernel_y = (y - kernel_bounds.y0) as usize;
 
@@ -189,7 +189,7 @@ fn bench_normal(c: &mut Criterion) {
 
         b.iter(|| {
             let mut z = 0;
-            for (x, y, _pixel) in Pixels::new(&input_surface, BOUNDS) {
+            for (x, y, _pixel) in Pixels::within(&input_surface, BOUNDS) {
                 let n = normal(&input_surface, BOUNDS, x, y);
                 z += n.normal.x;
             }
