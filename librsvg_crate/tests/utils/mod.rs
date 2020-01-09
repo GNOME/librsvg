@@ -10,7 +10,7 @@ use rsvg_internals;
 use self::rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use std::env;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::PathBuf;
 
@@ -57,6 +57,8 @@ pub fn output_dir() -> PathBuf {
         env::var_os("OUT_DIR")
             .expect(r#"OUT_DIR is not set, please set it or run under "cargo test""#),
     );
+
+    fs::create_dir_all(&path).expect("could not create output directory for tests");
 
     println!("outputting to {}", path.to_string_lossy());
 
