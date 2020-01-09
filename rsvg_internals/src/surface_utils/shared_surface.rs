@@ -394,7 +394,7 @@ impl SharedImageSurface {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, Pixel { a, .. }) in Pixels::new(self, bounds) {
+            for (x, y, Pixel { a, .. }) in Pixels::within(self, bounds) {
                 let output_pixel = Pixel {
                     r: 0,
                     g: 0,
@@ -425,7 +425,7 @@ impl SharedImageSurface {
             let mut data = output_surface.get_data().unwrap();
             let opacity = u8::from(opacity);
 
-            for (x, y, pixel) in Pixels::new(self, bounds) {
+            for (x, y, pixel) in Pixels::within(self, bounds) {
                 data.set_pixel(stride, pixel.to_mask(opacity), x, y);
             }
         }
@@ -450,7 +450,7 @@ impl SharedImageSurface {
         {
             let mut data = output_surface.get_data().unwrap();
 
-            for (x, y, pixel) in Pixels::new(self, bounds) {
+            for (x, y, pixel) in Pixels::within(self, bounds) {
                 data.set_pixel(stride, pixel.unpremultiply(), x, y);
             }
         }
@@ -508,7 +508,7 @@ impl SharedImageSurface {
             let mut output_data = output_surface.get_data().unwrap();
 
             if self.is_alpha_only() {
-                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                for (x, y, _pixel) in Pixels::within(self, bounds) {
                     let kernel_bounds = IRect::new(
                         x as i32 - target.0,
                         y as i32 - target.1,
@@ -518,7 +518,8 @@ impl SharedImageSurface {
 
                     let mut a = 0.0;
 
-                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    for (x, y, pixel) in
+                        PixelRectangle::within(self, bounds, kernel_bounds, edge_mode)
                     {
                         let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                         let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
@@ -539,7 +540,7 @@ impl SharedImageSurface {
                     output_data.set_pixel(output_stride, output_pixel, x, y);
                 }
             } else {
-                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                for (x, y, _pixel) in Pixels::within(self, bounds) {
                     let kernel_bounds = IRect::new(
                         x as i32 - target.0,
                         y as i32 - target.1,
@@ -552,7 +553,8 @@ impl SharedImageSurface {
                     let mut b = 0.0;
                     let mut a = 0.0;
 
-                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    for (x, y, pixel) in
+                        PixelRectangle::within(self, bounds, kernel_bounds, edge_mode)
                     {
                         let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                         let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
@@ -1135,7 +1137,7 @@ pub fn composite_arithmetic(
         let mut output_data = output_surface.get_data().unwrap();
 
         for (x, y, pixel, pixel_2) in
-            Pixels::new(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
+            Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
         {
             let i1a = f64::from(pixel.a) / 255f64;
             let i2a = f64::from(pixel_2.a) / 255f64;
@@ -1198,7 +1200,7 @@ mod tests {
         let alpha = surface.extract_alpha(bounds).unwrap();
 
         for (x, y, p, pa) in
-            Pixels::new(&surface, full_bounds).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))
+            Pixels::within(&surface, full_bounds).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))
         {
             assert_eq!(pa.r, 0);
             assert_eq!(pa.g, 0);

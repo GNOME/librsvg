@@ -363,7 +363,7 @@ impl FilterEffect for FeComponentTransfer {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, pixel) in Pixels::new(input.surface(), bounds) {
+            for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
                 let alpha = f64::from(pixel.a) / 255f64;
                 let new_alpha = compute_a(alpha);
 

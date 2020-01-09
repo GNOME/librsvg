@@ -81,22 +81,13 @@ pub fn compare_surfaces(
     let mut surf_diff = ImageSurface::create(cairo::Format::ARgb32, a_width, a_height)?;
     let diff_stride = surf_diff.get_stride() as usize;
 
-    let bounds = IRect {
-        x0: 0,
-        y0: 0,
-        x1: a_width,
-        y1: a_height,
-    };
-
     let mut num_pixels_changed = 0;
     let mut max_diff = 0;
 
     {
         let mut diff_data = surf_diff.get_data().unwrap();
 
-        for ((xa, ya, pixel_a), (_, _, pixel_b)) in
-            Pixels::new(surf_a, bounds).zip(Pixels::new(surf_b, bounds))
-        {
+        for ((xa, ya, pixel_a), (_, _, pixel_b)) in Pixels::new(surf_a).zip(Pixels::new(surf_b)) {
             if pixel_a != pixel_b {
                 num_pixels_changed += 1;
 

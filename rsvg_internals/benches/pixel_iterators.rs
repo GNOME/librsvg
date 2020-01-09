@@ -87,7 +87,7 @@ fn bench_pixel_iterators(c: &mut Criterion) {
             let mut b = 0usize;
             let mut a = 0usize;
 
-            for (_x, _y, pixel) in Pixels::new(&data, bounds) {
+            for (_x, _y, pixel) in Pixels::within(&data, bounds) {
                 r += pixel.r as usize;
                 g += pixel.g as usize;
                 b += pixel.b as usize;

@@ -99,7 +99,7 @@ impl FilterEffect for FeDisplacementMap {
         {
             let cr = cairo::Context::new(&output_surface);
 
-            for (x, y, displacement_pixel) in Pixels::new(&displacement_surface, bounds) {
+            for (x, y, displacement_pixel) in Pixels::within(&displacement_surface, bounds) {
                 let get_value = |channel| match channel {
                     ColorChannel::R => displacement_pixel.r,
                     ColorChannel::G => displacement_pixel.g,

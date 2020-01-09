@@ -36,7 +36,7 @@ pub fn map_unpremultiplied_components_loop<F: Fn(u8) -> u8>(
     {
         let mut output_data = output_surface.get_data().unwrap();
 
-        for (x, y, pixel) in Pixels::new(surface, bounds) {
+        for (x, y, pixel) in Pixels::within(surface, bounds) {
             if pixel.a > 0 {
                 let alpha = f64::from(pixel.a) / 255f64;
 
