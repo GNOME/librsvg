@@ -8,7 +8,6 @@ use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
-use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::viewbox::ViewBox;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -41,56 +40,32 @@ impl FeImage {
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
         fragment: &Fragment,
-    ) -> Result<cairo::ImageSurface, FilterError> {
+    ) -> Result<FilterResult, FilterError> {
         let acquired_drawable = draw_ctx
             .acquire_node(fragment, &[])
             .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
-        let surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
-
         let node_being_filtered_values = ctx.get_computed_values_from_node_being_filtered();
-
         let cascaded = CascadedValues::new_from_values(&drawable, node_being_filtered_values);
 
-        draw_ctx
-            .draw_node_on_surface(
-                &drawable,
-                &cascaded,
-                &surface,
-                ctx.paffine(),
-                f64::from(ctx.source_graphic().width()),
-                f64::from(ctx.source_graphic().height()),
-            )
-            .map_err(|e| {
-                if let RenderingError::Cairo(status) = e {
-                    FilterError::CairoError(status)
-                } else {
-                    // FIXME: this is just a dummy value; we should probably have a way to indicate
-                    // an error in the underlying drawing process.
-                    FilterError::CairoError(cairo::Status::InvalidStatus)
-                }
-            })?;
-
-        // Clip the output to bounds.
-        let output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
+        let image = draw_ctx.draw_node_to_surface(
+            &drawable,
+            &cascaded,
+            ctx.paffine(),
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
         )?;
 
-        let cr = cairo::Context::new(&output_surface);
-        let r = cairo::Rectangle::from(bounds);
-        cr.rectangle(r.x, r.y, r.width, r.height);
-        cr.clip();
-        cr.set_source_surface(&surface, 0f64, 0f64);
-        cr.paint();
+        let surface = ctx.source_graphic().paint_image(bounds, &image, None)?;
 
-        Ok(output_surface)
+        Ok(FilterResult {
+            name: self.base.result.clone(),
+            output: FilterOutput {
+                surface,
+                bounds: bounds.into(),
+            },
+        })
     }
 
     /// Renders the filter if the source is an external image.
@@ -98,58 +73,35 @@ impl FeImage {
         &self,
         ctx: &FilterContext,
         draw_ctx: &DrawingCtx,
-        bounds: &Rect,
+        bounds: Rect,
         unclipped_bounds: &Rect,
-        href: &Href,
-    ) -> Result<cairo::ImageSurface, FilterError> {
-        let surface = if let Href::PlainUrl(ref url) = *href {
-            // FIXME: translate the error better here
-            draw_ctx
-                .lookup_image(&url)
-                .map_err(|_| FilterError::InvalidInput)?
-        } else {
-            unreachable!();
-        };
-
-        let output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
+        url: &str,
+    ) -> Result<FilterResult, FilterError> {
+        // FIXME: translate the error better here
+        let image = draw_ctx
+            .lookup_image(url)
+            .map_err(|_| FilterError::InvalidInput)?;
 
         // TODO: this goes through a f64->i32->f64 conversion.
-        let r = self.aspect.compute(
+        let rect = self.aspect.compute(
             &ViewBox(Rect::from_size(
-                f64::from(surface.width()),
-                f64::from(surface.height()),
+                f64::from(image.width()),
+                f64::from(image.height()),
             )),
             &unclipped_bounds,
         );
 
-        if r.is_empty() {
-            return Ok(output_surface);
-        }
+        let surface = ctx
+            .source_graphic()
+            .paint_image(bounds, &image, Some(rect))?;
 
-        let ptn = surface.to_cairo_pattern();
-        let mut matrix = cairo::Matrix::new(
-            r.width() / f64::from(surface.width()),
-            0.0,
-            0.0,
-            r.height() / f64::from(surface.height()),
-            r.x0,
-            r.y0,
-        );
-        matrix.invert();
-        ptn.set_matrix(matrix);
-
-        let cr = cairo::Context::new(&output_surface);
-        let r = cairo::Rectangle::from(*bounds);
-        cr.rectangle(r.x, r.y, r.width, r.height);
-        cr.clip();
-        cr.set_source(&ptn);
-        cr.paint();
-
-        Ok(output_surface)
+        Ok(FilterResult {
+            name: self.base.result.clone(),
+            output: FilterOutput {
+                surface,
+                bounds: bounds.into(),
+            },
+        })
     }
 }
 
@@ -190,24 +142,13 @@ impl FilterEffect for FeImage {
         let bounds_builder = self.base.get_bounds(ctx);
         let bounds = bounds_builder.into_rect(draw_ctx);
 
-        if let Some(href) = self.href.as_ref() {
-            let output_surface = match href {
-                Href::PlainUrl(_) => {
-                    let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
-                    self.render_external_image(ctx, draw_ctx, &bounds, &unclipped_bounds, href)?
-                }
-                Href::WithFragment(ref frag) => self.render_node(ctx, draw_ctx, bounds, frag)?,
-            };
-
-            Ok(FilterResult {
-                name: self.base.result.clone(),
-                output: FilterOutput {
-                    surface: SharedImageSurface::new(output_surface, SurfaceType::SRgb)?,
-                    bounds: bounds.into(),
-                },
-            })
-        } else {
-            Err(FilterError::InvalidInput)
+        match self.href.as_ref() {
+            Some(Href::PlainUrl(url)) => {
+                let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
+                self.render_external_image(ctx, draw_ctx, bounds, &unclipped_bounds, url)
+            }
+            Some(Href::WithFragment(ref frag)) => self.render_node(ctx, draw_ctx, bounds, frag),
+            _ => Err(FilterError::InvalidInput),
         }
     }
 
