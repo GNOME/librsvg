@@ -348,6 +348,18 @@ impl SharedImageSurface {
         Pixel::from_u32(value)
     }
 
+    /// Sets the pixel value at the given coordinates.
+    #[inline]
+    pub fn set_pixel(&mut self, pixel: Pixel, x: u32, y: u32) {
+        assert!(x < self.width as u32);
+        assert!(y < self.height as u32);
+
+        self.surface
+            .get_data()
+            .unwrap()
+            .set_pixel(self.stride as usize, pixel, x, y);
+    }
+
     /// Calls `set_source_surface()` on the given Cairo context.
     #[inline]
     pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) {
