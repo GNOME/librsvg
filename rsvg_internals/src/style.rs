@@ -44,7 +44,7 @@ impl Style {
 impl NodeTrait for Style {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
-            if attr.expanded() == expanded_name!(svg "type") {
+            if attr.expanded() == expanded_name!("", "type") {
                 self.type_ = Some(attr.parse(value)?);
             }
         }

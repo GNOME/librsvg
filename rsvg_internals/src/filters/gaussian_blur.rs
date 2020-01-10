@@ -48,7 +48,7 @@ impl NodeTrait for FeGaussianBlur {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "stdDeviation") => {
+                expanded_name!("", "stdDeviation") => {
                     let NumberOptionalNumber(x, y) =
                         attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 >= 0.0 && v.1 >= 0.0 {

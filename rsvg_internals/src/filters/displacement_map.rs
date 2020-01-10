@@ -51,14 +51,14 @@ impl NodeTrait for FeDisplacementMap {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in2") => self.in2 = Some(attr.parse(value)?),
-                expanded_name!(svg "scale") => self.scale = attr.parse(value)?,
+                expanded_name!("", "in2") => self.in2 = Some(attr.parse(value)?),
+                expanded_name!("", "scale") => self.scale = attr.parse(value)?,
 
-                expanded_name!(svg "xChannelSelector") => {
+                expanded_name!("", "xChannelSelector") => {
                     self.x_channel_selector = attr.parse(value)?
                 }
 
-                expanded_name!(svg "yChannelSelector") => {
+                expanded_name!("", "yChannelSelector") => {
                     self.y_channel_selector = attr.parse(value)?
                 }
                 _ => (),

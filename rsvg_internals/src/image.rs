@@ -29,18 +29,18 @@ impl NodeTrait for Image {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "width") => {
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => {
                     self.width = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
-                expanded_name!(svg "height") => {
+                expanded_name!("", "height") => {
                     self.height = attr.parse_and_validate(value, Length::check_nonnegative)?
                 }
-                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
-                expanded_name!(xlink "href") | expanded_name!(svg "path") => {
+                expanded_name!(xlink "href") | expanded_name!("", "path") => {
                     let href = Href::parse(value)
                         .map_err(|_| ValueErrorKind::parse_error("could not parse href"))
                         .attribute(attr)?;

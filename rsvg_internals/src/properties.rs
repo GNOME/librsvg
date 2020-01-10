@@ -230,73 +230,73 @@ pub struct ComputedValues {
 pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
     // please keep these sorted
     match prop_name.expanded() {
-        expanded_name!(svg "baseline-shift") =>
+        expanded_name!("", "baseline-shift") =>
             Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
 
-        expanded_name!(svg "clip-path") =>
+        expanded_name!("", "clip-path") =>
             Ok(ParsedProperty::ClipPath(parse_input(input)?)),
 
-        expanded_name!(svg "clip-rule") =>
+        expanded_name!("", "clip-rule") =>
             Ok(ParsedProperty::ClipRule(parse_input(input)?)),
 
-        expanded_name!(svg "color") =>
+        expanded_name!("", "color") =>
             Ok(ParsedProperty::Color(parse_input(input)?)),
 
-        expanded_name!(svg "color-interpolation-filters") =>
+        expanded_name!("", "color-interpolation-filters") =>
             Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
 
-        expanded_name!(svg "direction") =>
+        expanded_name!("", "direction") =>
             Ok(ParsedProperty::Direction(parse_input(input)?)),
 
-        expanded_name!(svg "display") =>
+        expanded_name!("", "display") =>
             Ok(ParsedProperty::Display(parse_input(input)?)),
 
-        expanded_name!(svg "enable-background") =>
+        expanded_name!("", "enable-background") =>
             Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
 
-        expanded_name!(svg "fill") =>
+        expanded_name!("", "fill") =>
             Ok(ParsedProperty::Fill(parse_input(input)?)),
 
-        expanded_name!(svg "fill-opacity") =>
+        expanded_name!("", "fill-opacity") =>
             Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
 
-        expanded_name!(svg "fill-rule") =>
+        expanded_name!("", "fill-rule") =>
             Ok(ParsedProperty::FillRule(parse_input(input)?)),
 
-        expanded_name!(svg "filter") =>
+        expanded_name!("", "filter") =>
             Ok(ParsedProperty::Filter(parse_input(input)?)),
 
-        expanded_name!(svg "flood-color") =>
+        expanded_name!("", "flood-color") =>
             Ok(ParsedProperty::FloodColor(parse_input(input)?)),
 
-        expanded_name!(svg "flood-opacity") =>
+        expanded_name!("", "flood-opacity") =>
             Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
 
-        expanded_name!(svg "font-family") =>
+        expanded_name!("", "font-family") =>
             Ok(ParsedProperty::FontFamily(parse_input(input)?)),
 
-        expanded_name!(svg "font-size") =>
+        expanded_name!("", "font-size") =>
             Ok(ParsedProperty::FontSize(parse_input(input)?)),
 
-        expanded_name!(svg "font-stretch") =>
+        expanded_name!("", "font-stretch") =>
             Ok(ParsedProperty::FontStretch(parse_input(input)?)),
 
-        expanded_name!(svg "font-style") =>
+        expanded_name!("", "font-style") =>
             Ok(ParsedProperty::FontStyle(parse_input(input)?)),
 
-        expanded_name!(svg "font-variant") =>
+        expanded_name!("", "font-variant") =>
             Ok(ParsedProperty::FontVariant(parse_input(input)?)),
 
-        expanded_name!(svg "font-weight") =>
+        expanded_name!("", "font-weight") =>
             Ok(ParsedProperty::FontWeight(parse_input(input)?)),
 
-        expanded_name!(svg "letter-spacing") =>
+        expanded_name!("", "letter-spacing") =>
             Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
 
-        expanded_name!(svg "lighting-color") =>
+        expanded_name!("", "lighting-color") =>
             Ok(ParsedProperty::LightingColor(parse_input(input)?)),
 
-        expanded_name!(svg "marker") => {
+        expanded_name!("", "marker") => {
             if accept_shorthands {
                 Ok(ParsedProperty::Marker(parse_input(input)?))
             } else {
@@ -304,73 +304,73 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             }
         }
 
-        expanded_name!(svg "marker-end") =>
+        expanded_name!("", "marker-end") =>
             Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
 
-        expanded_name!(svg "marker-mid") =>
+        expanded_name!("", "marker-mid") =>
             Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
 
-        expanded_name!(svg "marker-start") =>
+        expanded_name!("", "marker-start") =>
             Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
 
-        expanded_name!(svg "mask") =>
+        expanded_name!("", "mask") =>
             Ok(ParsedProperty::Mask(parse_input(input)?)),
 
-        expanded_name!(svg "opacity") =>
+        expanded_name!("", "opacity") =>
             Ok(ParsedProperty::Opacity(parse_input(input)?)),
 
-        expanded_name!(svg "overflow") =>
+        expanded_name!("", "overflow") =>
             Ok(ParsedProperty::Overflow(parse_input(input)?)),
 
-        expanded_name!(svg "shape-rendering") =>
+        expanded_name!("", "shape-rendering") =>
             Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
 
-        expanded_name!(svg "stop-color") =>
+        expanded_name!("", "stop-color") =>
             Ok(ParsedProperty::StopColor(parse_input(input)?)),
 
-        expanded_name!(svg "stop-opacity") =>
+        expanded_name!("", "stop-opacity") =>
             Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
 
-        expanded_name!(svg "stroke") =>
+        expanded_name!("", "stroke") =>
             Ok(ParsedProperty::Stroke(parse_input(input)?)),
 
-        expanded_name!(svg "stroke-dasharray") =>
+        expanded_name!("", "stroke-dasharray") =>
             Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
 
-        expanded_name!(svg "stroke-dashoffset") =>
+        expanded_name!("", "stroke-dashoffset") =>
             Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
 
-        expanded_name!(svg "stroke-linecap") =>
+        expanded_name!("", "stroke-linecap") =>
             Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
 
-        expanded_name!(svg "stroke-linejoin") =>
+        expanded_name!("", "stroke-linejoin") =>
             Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
 
-        expanded_name!(svg "stroke-miterlimit") =>
+        expanded_name!("", "stroke-miterlimit") =>
             Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
 
-        expanded_name!(svg "stroke-opacity") =>
+        expanded_name!("", "stroke-opacity") =>
             Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
 
-        expanded_name!(svg "stroke-width") =>
+        expanded_name!("", "stroke-width") =>
             Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
 
-        expanded_name!(svg "text-anchor") =>
+        expanded_name!("", "text-anchor") =>
             Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
 
-        expanded_name!(svg "text-decoration") =>
+        expanded_name!("", "text-decoration") =>
             Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
 
-        expanded_name!(svg "text-rendering") =>
+        expanded_name!("", "text-rendering") =>
             Ok(ParsedProperty::TextRendering(parse_input(input)?)),
 
-        expanded_name!(svg "unicode-bidi") =>
+        expanded_name!("", "unicode-bidi") =>
             Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
 
-        expanded_name!(svg "visibility") =>
+        expanded_name!("", "visibility") =>
             Ok(ParsedProperty::Visibility(parse_input(input)?)),
 
-        expanded_name!(svg "writing-mode") =>
+        expanded_name!("", "writing-mode") =>
             Ok(ParsedProperty::WritingMode(parse_input(input)?)),
 
         _ => Err(ValueErrorKind::UnknownProperty)?

@@ -35,8 +35,8 @@ impl NodeTrait for FeOffset {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "dx") => self.dx = attr.parse(value)?,
-                expanded_name!(svg "dy") => self.dy = attr.parse(value)?,
+                expanded_name!("", "dx") => self.dx = attr.parse(value)?,
+                expanded_name!("", "dy") => self.dy = attr.parse(value)?,
                 _ => (),
             }
         }

@@ -6,7 +6,7 @@ use std::mem;
 use std::slice;
 use std::str;
 
-use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
+use markup5ever::{namespace_url, LocalName, Namespace, Prefix, QualName};
 
 use crate::util::{opt_utf8_cstr, utf8_cstr};
 
@@ -40,7 +40,6 @@ impl<'a> PropertyBag<'a> {
     /// `attrs` array, as the property bag does not copy the strings - it directly stores pointers
     /// into that array's strings.
     pub unsafe fn new_from_xml2_attributes(
-        element_ns: &Namespace,
         n_attributes: usize,
         attrs: *const *const libc::c_char,
     ) -> PropertyBag<'a> {
@@ -58,28 +57,14 @@ impl<'a> PropertyBag<'a> {
 
                 let localname = utf8_cstr(localname);
 
-                let qual_name = if localname == "id" {
-                    // https://www.w3.org/TR/xml-names11/ section "7 Conformance of Documents"
-                    // "No attributes with a declared type of ID [...] contain any colons."
-                    //
-                    // I'm interpreting this to mean that the id attribute has no
-                    // namespace.
-
-                    QualName::new(None, ns!(), LocalName::from(localname))
-                } else {
-                    let prefix = opt_utf8_cstr(prefix);
-                    let uri = opt_utf8_cstr(uri);
-
-                    // Use the namespace URI from the attribute, or if it is missing,
-                    // use the element's namespace, per section "6.2 Namespace Defaulting"
-                    // of https://www.w3.org/TR/xml-names11/
-                    QualName::new(
-                        prefix.map(Prefix::from),
-                        uri.map(Namespace::from)
-                            .unwrap_or_else(|| element_ns.clone()),
-                        LocalName::from(localname),
-                    )
-                };
+                let prefix = opt_utf8_cstr(prefix);
+                let uri = opt_utf8_cstr(uri);
+                let qual_name = QualName::new(
+                    prefix.map(Prefix::from),
+                    uri.map(Namespace::from)
+                        .unwrap_or_else(|| namespace_url!("")),
+                    LocalName::from(localname),
+                );
 
                 if !value_start.is_null() && !value_end.is_null() {
                     assert!(value_end >= value_start);
@@ -123,13 +108,13 @@ impl<'a> Iterator for PropertyBagIter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use markup5ever::{local_name, namespace_url, ns, LocalName};
+    use markup5ever::{expanded_name, local_name, namespace_url, ns};
     use std::ffi::CString;
     use std::ptr;
 
     #[test]
     fn empty_property_bag() {
-        let map = unsafe { PropertyBag::new_from_xml2_attributes(&ns!(svg), 0, ptr::null()) };
+        let map = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
         assert_eq!(map.len(), 0);
     }
 
@@ -137,21 +122,21 @@ mod tests {
     fn property_bag_with_namespaces() {
         let attrs = [
             (
-                CString::new("rx").unwrap(),
-                CString::new("svg").unwrap(),
-                CString::new("http://www.w3.org/2000/svg").unwrap(),
+                CString::new("href").unwrap(),
+                Some(CString::new("xlink").unwrap()),
+                Some(CString::new("http://www.w3.org/1999/xlink").unwrap()),
                 CString::new("1").unwrap(),
             ),
             (
                 CString::new("ry").unwrap(),
-                CString::new("svg").unwrap(),
-                CString::new("http://www.w3.org/2000/svg").unwrap(),
+                None,
+                None,
                 CString::new("2").unwrap(),
             ),
             (
-                CString::new("empty").unwrap(),
-                CString::new("svg").unwrap(),
-                CString::new("http://www.w3.org/2000/svg").unwrap(),
+                CString::new("d").unwrap(),
+                None,
+                None,
                 CString::new("").unwrap(),
             ),
         ];
@@ -160,8 +145,17 @@ mod tests {
 
         for (localname, prefix, uri, val) in &attrs {
             v.push(localname.as_ptr() as *const libc::c_char);
-            v.push(prefix.as_ptr() as *const libc::c_char);
-            v.push(uri.as_ptr() as *const libc::c_char);
+            v.push(
+                prefix
+                    .as_ref()
+                    .map(|p: &CString| p.as_ptr())
+                    .unwrap_or_else(|| ptr::null()) as *const libc::c_char,
+            );
+            v.push(
+                uri.as_ref()
+                    .map(|p: &CString| p.as_ptr())
+                    .unwrap_or_else(|| ptr::null()) as *const libc::c_char,
+            );
 
             let val_start = val.as_ptr() as *const libc::c_char;
             let val_end = unsafe { val_start.offset(val.as_bytes().len() as isize) };
@@ -169,35 +163,35 @@ mod tests {
             v.push(val_end); // value_end
         }
 
-        let pbag = unsafe { PropertyBag::new_from_xml2_attributes(&ns!(svg), 3, v.as_ptr()) };
+        let pbag = unsafe { PropertyBag::new_from_xml2_attributes(3, v.as_ptr()) };
 
-        let mut had_rx: bool = false;
+        let mut had_href: bool = false;
         let mut had_ry: bool = false;
-        let mut had_empty: bool = false;
+        let mut had_d: bool = false;
 
         for (a, v) in pbag.iter() {
-            assert_eq!(a.prefix.as_ref().unwrap(), "svg");
-            assert_eq!(a.ns, ns!(svg));
-
-            match a.local {
-                local_name!("rx") => {
+            match a.expanded() {
+                expanded_name!(xlink "href") => {
                     assert!(v == "1");
-                    had_rx = true;
+                    had_href = true;
                 }
-                local_name!("ry") => {
+
+                expanded_name!("", "ry") => {
                     assert!(v == "2");
                     had_ry = true;
                 }
-                ref n if *n == LocalName::from("empty") => {
+
+                expanded_name!("", "d") => {
                     assert!(v == "");
-                    had_empty = true;
+                    had_d = true;
                 }
+
                 _ => unreachable!(),
             }
         }
 
-        assert!(had_rx);
+        assert!(had_href);
         assert!(had_ry);
-        assert!(had_empty);
+        assert!(had_d);
     }
 }
