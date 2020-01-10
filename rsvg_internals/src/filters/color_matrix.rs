@@ -8,9 +8,7 @@ use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
-use crate::surface_utils::{
-    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
-};
+use crate::surface_utils::{iterators::Pixels, Pixel};
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -166,54 +164,44 @@ impl FilterEffect for FeColorMatrix {
             .add_input(&input)
             .into_irect(draw_ctx);
 
-        let mut output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
+        let mut surface = input
+            .surface()
+            .create_similar(ctx.source_graphic().width(), ctx.source_graphic().height())?;
 
-        let output_stride = output_surface.get_stride() as usize;
-        {
-            let mut output_data = output_surface.get_data().unwrap();
+        for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
+            let alpha = f64::from(pixel.a) / 255f64;
 
-            for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
-                let alpha = f64::from(pixel.a) / 255f64;
+            let pixel_vec = if alpha == 0.0 {
+                Vector5::new(0.0, 0.0, 0.0, 0.0, 1.0)
+            } else {
+                Vector5::new(
+                    f64::from(pixel.r) / 255f64 / alpha,
+                    f64::from(pixel.g) / 255f64 / alpha,
+                    f64::from(pixel.b) / 255f64 / alpha,
+                    alpha,
+                    1.0,
+                )
+            };
+            let mut new_pixel_vec = Vector5::zeros();
+            self.matrix.mul_to(&pixel_vec, &mut new_pixel_vec);
 
-                let pixel_vec = if alpha == 0.0 {
-                    Vector5::new(0.0, 0.0, 0.0, 0.0, 1.0)
-                } else {
-                    Vector5::new(
-                        f64::from(pixel.r) / 255f64 / alpha,
-                        f64::from(pixel.g) / 255f64 / alpha,
-                        f64::from(pixel.b) / 255f64 / alpha,
-                        alpha,
-                        1.0,
-                    )
-                };
-                let mut new_pixel_vec = Vector5::zeros();
-                self.matrix.mul_to(&pixel_vec, &mut new_pixel_vec);
+            let new_alpha = clamp(new_pixel_vec[3], 0.0, 1.0);
 
-                let new_alpha = clamp(new_pixel_vec[3], 0.0, 1.0);
+            let premultiply = |x: f64| ((clamp(x, 0.0, 1.0) * new_alpha * 255f64) + 0.5) as u8;
 
-                let premultiply = |x: f64| ((clamp(x, 0.0, 1.0) * new_alpha * 255f64) + 0.5) as u8;
+            let output_pixel = Pixel {
+                r: premultiply(new_pixel_vec[0]),
+                g: premultiply(new_pixel_vec[1]),
+                b: premultiply(new_pixel_vec[2]),
+                a: ((new_alpha * 255f64) + 0.5) as u8,
+            };
 
-                let output_pixel = Pixel {
-                    r: premultiply(new_pixel_vec[0]),
-                    g: premultiply(new_pixel_vec[1]),
-                    b: premultiply(new_pixel_vec[2]),
-                    a: ((new_alpha * 255f64) + 0.5) as u8,
-                };
-
-                output_data.set_pixel(output_stride, output_pixel, x, y);
-            }
+            surface.set_pixel(output_pixel, x, y);
         }
 
         Ok(FilterResult {
             name: self.base.result.clone(),
-            output: FilterOutput {
-                surface: SharedImageSurface::wrap(output_surface, input.surface().surface_type())?,
-                bounds,
-            },
+            output: FilterOutput { surface, bounds },
         })
     }
 

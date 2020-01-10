@@ -9,9 +9,7 @@ use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
-use crate::surface_utils::{
-    iterators::Pixels, shared_surface::SharedImageSurface, ImageSurfaceDataExt, Pixel,
-};
+use crate::surface_utils::{iterators::Pixels, Pixel};
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -280,12 +278,9 @@ impl FilterEffect for FeComponentTransfer {
             .add_input(&input)
             .into_irect(draw_ctx);
 
-        // Create the output surface.
-        let mut output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
+        let mut surface = input
+            .surface()
+            .create_similar(ctx.source_graphic().width(), ctx.source_graphic().height())?;
 
         // Get a node for every pixel component.
         fn get_node<F>(node: &RsvgNode, node_type: NodeType, channel: Channel) -> Option<RsvgNode>
@@ -358,32 +353,23 @@ impl FilterEffect for FeComponentTransfer {
         let params_a = func_a.function_parameters();
         let compute_a = |alpha| compute_a(&params_a, alpha);
 
-        // Do the actual processing.
-        let output_stride = output_surface.get_stride() as usize;
-        {
-            let mut output_data = output_surface.get_data().unwrap();
+        for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
+            let alpha = f64::from(pixel.a) / 255f64;
+            let new_alpha = compute_a(alpha);
 
-            for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
-                let alpha = f64::from(pixel.a) / 255f64;
-                let new_alpha = compute_a(alpha);
+            let output_pixel = Pixel {
+                r: compute_r(pixel.r, alpha, new_alpha),
+                g: compute_g(pixel.g, alpha, new_alpha),
+                b: compute_b(pixel.b, alpha, new_alpha),
+                a: ((new_alpha * 255f64) + 0.5) as u8,
+            };
 
-                let output_pixel = Pixel {
-                    r: compute_r(pixel.r, alpha, new_alpha),
-                    g: compute_g(pixel.g, alpha, new_alpha),
-                    b: compute_b(pixel.b, alpha, new_alpha),
-                    a: ((new_alpha * 255f64) + 0.5) as u8,
-                };
-
-                output_data.set_pixel(output_stride, output_pixel, x, y);
-            }
+            surface.set_pixel(output_pixel, x, y);
         }
 
         Ok(FilterResult {
             name: self.base.result.clone(),
-            output: FilterOutput {
-                surface: SharedImageSurface::wrap(output_surface, input.surface().surface_type())?,
-                bounds,
-            },
+            output: FilterOutput { surface, bounds },
         })
     }
 
