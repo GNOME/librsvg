@@ -211,7 +211,7 @@ impl FilterEffect for FeColorMatrix {
         Ok(FilterResult {
             name: self.base.result.clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface, input.surface().surface_type())?,
+                surface: SharedImageSurface::wrap(output_surface, input.surface().surface_type())?,
                 bounds,
             },
         })

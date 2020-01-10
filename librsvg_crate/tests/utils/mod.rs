@@ -49,7 +49,7 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
         Ok(renderer.render_document(&cr, &viewport)?)
     };
 
-    res.and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb)?))
+    res.and_then(|_| Ok(SharedImageSurface::wrap(output, SurfaceType::SRgb)?))
 }
 
 pub fn output_dir() -> PathBuf {
@@ -100,7 +100,7 @@ pub fn compare_to_file(
     let mut fixture_file = BufReader::new(file);
 
     let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
-    let expected_surf = SharedImageSurface::new(expected, SurfaceType::SRgb).unwrap();
+    let expected_surf = SharedImageSurface::wrap(expected, SurfaceType::SRgb).unwrap();
 
     let diff = compare_surfaces(output_surf, &expected_surf).unwrap();
 

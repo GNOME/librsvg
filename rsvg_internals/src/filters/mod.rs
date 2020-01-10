@@ -235,24 +235,6 @@ impl Deref for PrimitiveWithInput {
     }
 }
 
-/// Creates a `SharedImageSurface` from an `ImageSurface`, even if the former
-/// does not have a reference count of 1.
-fn copy_to_shared_surface(
-    surface: &cairo::ImageSurface,
-) -> Result<SharedImageSurface, cairo::Status> {
-    let copy = cairo::ImageSurface::create(
-        cairo::Format::ARgb32,
-        surface.get_width(),
-        surface.get_height(),
-    )?;
-    {
-        let cr = cairo::Context::new(&copy);
-        cr.set_source_surface(surface, 0f64, 0f64);
-        cr.paint();
-    }
-    SharedImageSurface::new(copy, SurfaceType::SRgb)
-}
-
 /// Applies a filter and returns the resulting surface.
 pub fn render(
     filter_node: &RsvgNode,
@@ -267,7 +249,7 @@ pub fn render(
 
     // The source surface has multiple references. We need to copy it to a new surface to have a
     // unique reference to be able to safely access the pixel data.
-    let source_surface = copy_to_shared_surface(source)?;
+    let source_surface = SharedImageSurface::copy_from_surface(source)?;
 
     let mut filter_ctx = FilterContext::new(
         filter_node,

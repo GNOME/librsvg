@@ -27,7 +27,7 @@ fn bench_box_blur(c: &mut Criterion) {
             } else {
                 SurfaceType::SRgb
             };
-            let input_surface = SharedImageSurface::new(input_surface, surface_type).unwrap();
+            let input_surface = SharedImageSurface::wrap(input_surface, surface_type).unwrap();
 
             let mut output_surface =
                 cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE)

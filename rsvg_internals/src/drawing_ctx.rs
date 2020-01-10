@@ -441,7 +441,7 @@ impl DrawingCtx {
 
         let Opacity(opacity) = values.opacity;
 
-        let mask = SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?
+        let mask = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?
             .to_mask(opacity)?
             .into_image_surface()?;
 
@@ -962,7 +962,7 @@ impl DrawingCtx {
         self.cr = save_cr;
         self.rect = save_rect;
 
-        Ok(SharedImageSurface::new(surface, SurfaceType::SRgb)?)
+        Ok(SharedImageSurface::wrap(surface, SurfaceType::SRgb)?)
     }
 
     pub fn draw_node_from_stack(

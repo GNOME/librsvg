@@ -42,7 +42,7 @@ fn simple_opacity_with_transform() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(
         &output_surf,
@@ -87,7 +87,7 @@ fn simple_opacity_with_offset_viewport() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(
         &output_surf,
@@ -137,7 +137,7 @@ fn simple_opacity_with_scale() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "simple_opacity_with_scale");
 }
@@ -195,7 +195,7 @@ fn markers_with_scale() {
         }
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "markers_with_scale");
 }
@@ -236,7 +236,7 @@ fn opacity_inside_transformed_group() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(
         &output_surf,
@@ -296,7 +296,7 @@ fn compound_opacity() {
         cr.paint_with_alpha(0.5);
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "compound_opacity");
 }
@@ -363,7 +363,7 @@ fn nested_masks() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "nested_masks");
 }

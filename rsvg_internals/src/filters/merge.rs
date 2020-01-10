@@ -117,7 +117,7 @@ impl FilterEffect for FeMerge {
 
         let output_surface = match output_surface {
             Some(surface) => surface,
-            None => SharedImageSurface::new(
+            None => SharedImageSurface::wrap(
                 cairo::ImageSurface::create(
                     cairo::Format::ARgb32,
                     ctx.source_graphic().width(),

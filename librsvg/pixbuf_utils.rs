@@ -142,7 +142,7 @@ fn render_to_pixbuf_at_size(
         handle.render_cairo_sub(&cr, None, dpi, &SizeCallback::default(), false)?;
     }
 
-    let shared_surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
+    let shared_surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
 
     pixbuf_from_surface(&shared_surface)
 }
