@@ -63,7 +63,7 @@ impl NodeTrait for FeTurbulence {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "baseFrequency") => {
+                expanded_name!("", "baseFrequency") => {
                     let NumberOptionalNumber(x, y) =
                         attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 >= 0.0 && v.1 >= 0.0 {
@@ -75,11 +75,11 @@ impl NodeTrait for FeTurbulence {
 
                     self.base_frequency = (x, y);
                 }
-                expanded_name!(svg "numOctaves") => {
+                expanded_name!("", "numOctaves") => {
                     self.num_octaves = attr.parse(value)?;
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
-                expanded_name!(svg "seed") => {
+                expanded_name!("", "seed") => {
                     let v: f64 = attr.parse(value)?;
                     self.seed = clamp(
                         v.trunc(),
@@ -87,8 +87,8 @@ impl NodeTrait for FeTurbulence {
                         f64::from(i32::max_value()),
                     ) as i32;
                 }
-                expanded_name!(svg "stitchTiles") => self.stitch_tiles = attr.parse(value)?,
-                expanded_name!(svg "type") => self.type_ = attr.parse(value)?,
+                expanded_name!("", "stitchTiles") => self.stitch_tiles = attr.parse(value)?,
+                expanded_name!("", "type") => self.type_ = attr.parse(value)?,
                 _ => (),
             }
         }

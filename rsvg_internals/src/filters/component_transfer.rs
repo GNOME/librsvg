@@ -206,20 +206,20 @@ macro_rules! func_x {
             ) -> NodeResult {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
-                        expanded_name!(svg "type") => {
+                        expanded_name!("", "type") => {
                             self.function_type = attr.parse(value)?
                         }
-                        expanded_name!(svg "tableValues") => {
+                        expanded_name!("", "tableValues") => {
                             let NumberList(v) =
                                 NumberList::parse_str(value, NumberListLength::Unbounded)
                                 .attribute(attr)?;
                             self.table_values = v;
                         }
-                        expanded_name!(svg "slope") => self.slope = attr.parse(value)?,
-                        expanded_name!(svg "intercept") => self.intercept = attr.parse(value)?,
-                        expanded_name!(svg "amplitude") => self.amplitude = attr.parse(value)?,
-                        expanded_name!(svg "exponent") => self.exponent = attr.parse(value)?,
-                        expanded_name!(svg "offset") => self.offset = attr.parse(value)?,
+                        expanded_name!("", "slope") => self.slope = attr.parse(value)?,
+                        expanded_name!("", "intercept") => self.intercept = attr.parse(value)?,
+                        expanded_name!("", "amplitude") => self.amplitude = attr.parse(value)?,
+                        expanded_name!("", "exponent") => self.exponent = attr.parse(value)?,
+                        expanded_name!("", "offset") => self.offset = attr.parse(value)?,
 
                         _ => (),
                     }

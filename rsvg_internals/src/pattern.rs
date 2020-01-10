@@ -119,28 +119,28 @@ impl NodeTrait for Pattern {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "patternUnits") => self.common.units = Some(attr.parse(value)?),
-                expanded_name!(svg "patternContentUnits") => {
+                expanded_name!("", "patternUnits") => self.common.units = Some(attr.parse(value)?),
+                expanded_name!("", "patternContentUnits") => {
                     self.common.content_units = Some(attr.parse(value)?)
                 }
-                expanded_name!(svg "viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
-                expanded_name!(svg "preserveAspectRatio") => {
+                expanded_name!("", "viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
+                expanded_name!("", "preserveAspectRatio") => {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
-                expanded_name!(svg "patternTransform") => {
+                expanded_name!("", "patternTransform") => {
                     self.common.affine = Some(attr.parse(value)?)
                 }
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?);
                 }
-                expanded_name!(svg "x") => self.common.x = Some(attr.parse(value)?),
-                expanded_name!(svg "y") => self.common.y = Some(attr.parse(value)?),
-                expanded_name!(svg "width") => {
+                expanded_name!("", "x") => self.common.x = Some(attr.parse(value)?),
+                expanded_name!("", "y") => self.common.y = Some(attr.parse(value)?),
+                expanded_name!("", "width") => {
                     self.common.width = Some(
                         attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
                     )
                 }
-                expanded_name!(svg "height") => {
+                expanded_name!("", "height") => {
                     self.common.height =
                         Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }

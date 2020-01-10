@@ -143,7 +143,7 @@ impl NodeData {
     fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "style") => self.style_attr.push_str(value),
+                expanded_name!("", "style") => self.style_attr.push_str(value),
                 _ => (),
             }
         }
@@ -152,7 +152,7 @@ impl NodeData {
     fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "transform") => {
+                expanded_name!("", "transform") => {
                     return cairo::Matrix::parse_str(value)
                         .attribute(attr)
                         .and_then(|affine| {
@@ -177,17 +177,17 @@ impl NodeData {
         for (attr, value) in pbag.iter() {
             let mut parse = || -> Result<_, ValueErrorKind> {
                 match attr.expanded() {
-                    expanded_name!(svg "requiredExtensions") if cond => {
+                    expanded_name!("", "requiredExtensions") if cond => {
                         cond = RequiredExtensions::from_attribute(value)
                             .map(|RequiredExtensions(res)| res)?;
                     }
 
-                    expanded_name!(svg "requiredFeatures") if cond => {
+                    expanded_name!("", "requiredFeatures") if cond => {
                         cond = RequiredFeatures::from_attribute(value)
                             .map(|RequiredFeatures(res)| res)?;
                     }
 
-                    expanded_name!(svg "systemLanguage") if cond => {
+                    expanded_name!("", "systemLanguage") if cond => {
                         cond = SystemLanguage::from_attribute(value, locale)
                             .map(|SystemLanguage(res)| res)?;
                     }

@@ -176,20 +176,20 @@ impl NodeTrait for Marker {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "markerUnits") => self.units = attr.parse(value)?,
-                expanded_name!(svg "refX") => self.ref_x = attr.parse(value)?,
-                expanded_name!(svg "refY") => self.ref_y = attr.parse(value)?,
-                expanded_name!(svg "markerWidth") => {
+                expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,
+                expanded_name!("", "refX") => self.ref_x = attr.parse(value)?,
+                expanded_name!("", "refY") => self.ref_y = attr.parse(value)?,
+                expanded_name!("", "markerWidth") => {
                     self.width =
                         attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
-                expanded_name!(svg "markerHeight") => {
+                expanded_name!("", "markerHeight") => {
                     self.height =
                         attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
-                expanded_name!(svg "orient") => self.orient = attr.parse(value)?,
-                expanded_name!(svg "preserveAspectRatio") => self.aspect = attr.parse(value)?,
-                expanded_name!(svg "viewBox") => self.vbox = Some(attr.parse(value)?),
+                expanded_name!("", "orient") => self.orient = attr.parse(value)?,
+                expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                expanded_name!("", "viewBox") => self.vbox = Some(attr.parse(value)?),
                 _ => (),
             }
         }

@@ -161,27 +161,27 @@ impl NodeTrait for Primitive {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => {
+                expanded_name!("", "x") => {
                     self.x = Some(attr.parse_and_validate(value, check_units_horizontal)?)
                 }
-                expanded_name!(svg "y") => {
+                expanded_name!("", "y") => {
                     self.y = Some(attr.parse_and_validate(value, check_units_vertical)?)
                 }
-                expanded_name!(svg "width") => {
+                expanded_name!("", "width") => {
                     self.width =
                         Some(attr.parse_and_validate(
                             value,
                             check_units_horizontal_and_ensure_nonnegative,
                         )?)
                 }
-                expanded_name!(svg "height") => {
+                expanded_name!("", "height") => {
                     self.height =
                         Some(attr.parse_and_validate(
                             value,
                             check_units_vertical_and_ensure_nonnegative,
                         )?)
                 }
-                expanded_name!(svg "result") => self.result = Some(attr.parse(value)?),
+                expanded_name!("", "result") => self.result = Some(attr.parse(value)?),
                 _ => (),
             }
         }
@@ -217,7 +217,7 @@ impl NodeTrait for PrimitiveWithInput {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in") => self.in_ = Some(attr.parse(value)?),
+                expanded_name!("", "in") => self.in_ = Some(attr.parse(value)?),
                 _ => (),
             }
         }

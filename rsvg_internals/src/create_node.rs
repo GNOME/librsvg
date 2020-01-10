@@ -239,7 +239,7 @@ pub fn create_node(name: &QualName, pbag: &PropertyBag) -> RsvgNode {
     for (attr, value) in pbag.iter() {
         match attr.expanded() {
             expanded_name!("", "id") => id = Some(value),
-            expanded_name!(svg "class") => class = Some(value),
+            expanded_name!("", "class") => class = Some(value),
             _ => (),
         }
     }
