@@ -41,7 +41,7 @@ fn render_to_viewport_with_different_size() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(
         &output_surf,
@@ -85,7 +85,7 @@ fn render_to_offsetted_viewport() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "render_to_offseted_viewport");
 }
@@ -128,7 +128,7 @@ fn render_to_viewport_with_transform() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(
         &output_surf,
@@ -197,7 +197,7 @@ fn clip_on_transformed_viewport() {
         cr.paint();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(
         &output_surf,
@@ -266,7 +266,7 @@ fn mask_on_transformed_viewport() {
         cr.paint();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(
         &output_surf,

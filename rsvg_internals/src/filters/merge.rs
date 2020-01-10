@@ -115,24 +115,18 @@ impl FilterEffect for FeMerge {
             )?);
         }
 
-        let output_surface = match output_surface {
+        let surface = match output_surface {
             Some(surface) => surface,
             None => SharedImageSurface::new(
-                cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    ctx.source_graphic().width(),
-                    ctx.source_graphic().height(),
-                )?,
+                ctx.source_graphic().width(),
+                ctx.source_graphic().height(),
                 SurfaceType::AlphaOnly,
             )?,
         };
 
         Ok(FilterResult {
             name: self.base.result.clone(),
-            output: FilterOutput {
-                surface: output_surface,
-                bounds,
-            },
+            output: FilterOutput { surface, bounds },
         })
     }
 

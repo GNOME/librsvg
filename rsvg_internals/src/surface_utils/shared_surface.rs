@@ -130,7 +130,7 @@ impl SharedImageSurface {
     /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
     /// reference count isn't 1.
     #[inline]
-    pub fn new(surface: ImageSurface, surface_type: SurfaceType) -> Result<Self, cairo::Status> {
+    pub fn wrap(surface: ImageSurface, surface_type: SurfaceType) -> Result<Self, cairo::Status> {
         // get_pixel() assumes ARgb32.
         assert_eq!(surface.get_format(), cairo::Format::ARgb32);
 
@@ -164,6 +164,40 @@ impl SharedImageSurface {
             stride,
             surface_type,
         })
+    }
+
+    /// Creates a `SharedImageSurface` copying from an `ImageSurface`, even if it
+    /// does not have a reference count of 1.
+    #[inline]
+    pub fn copy_from_surface(surface: &ImageSurface) -> Result<Self, cairo::Status> {
+        let copy = cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            surface.get_width(),
+            surface.get_height(),
+        )?;
+
+        {
+            let cr = cairo::Context::new(&copy);
+            cr.set_source_surface(surface, 0f64, 0f64);
+            cr.paint();
+        }
+
+        SharedImageSurface::wrap(copy, SurfaceType::SRgb)
+    }
+
+    /// Creates a `SharedImageSurface` of the given size and `type`.
+    #[inline]
+    pub fn new(width: i32, height: i32, surface_type: SurfaceType) -> Result<Self, cairo::Status> {
+        let s = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+
+        SharedImageSurface::wrap(s, surface_type)
+    }
+
+    /// Creates a `SharedImageSurface` with the same size and type.
+    pub fn create_similar(&self, width: i32, height: i32) -> Result<Self, cairo::Status> {
+        let s = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+
+        SharedImageSurface::wrap(s, self.surface_type)
     }
 
     /// Converts this `SharedImageSurface` back into a Cairo image surface.
@@ -256,7 +290,7 @@ impl SharedImageSurface {
             (_, _) => (),
         }
 
-        Self::new(surf, SurfaceType::SRgb)
+        Self::wrap(surf, SurfaceType::SRgb)
     }
 
     /// Returns the surface width.
@@ -314,6 +348,18 @@ impl SharedImageSurface {
         Pixel::from_u32(value)
     }
 
+    /// Sets the pixel value at the given coordinates.
+    #[inline]
+    pub fn set_pixel(&mut self, pixel: Pixel, x: u32, y: u32) {
+        assert!(x < self.width as u32);
+        assert!(y < self.height as u32);
+
+        self.surface
+            .get_data()
+            .unwrap()
+            .set_pixel(self.stride as usize, pixel, x, y);
+    }
+
     /// Calls `set_source_surface()` on the given Cairo context.
     #[inline]
     pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) {
@@ -364,7 +410,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Returns a scaled version of a surface and bounds.
@@ -394,7 +440,7 @@ impl SharedImageSurface {
         {
             let mut output_data = output_surface.get_data().unwrap();
 
-            for (x, y, Pixel { a, .. }) in Pixels::new(self, bounds) {
+            for (x, y, Pixel { a, .. }) in Pixels::within(self, bounds) {
                 let output_pixel = Pixel {
                     r: 0,
                     g: 0,
@@ -405,7 +451,7 @@ impl SharedImageSurface {
             }
         }
 
-        SharedImageSurface::new(output_surface, SurfaceType::AlphaOnly)
+        SharedImageSurface::wrap(output_surface, SurfaceType::AlphaOnly)
     }
 
     /// Returns a surface whose alpha channel for each pixel is equal to the
@@ -425,12 +471,12 @@ impl SharedImageSurface {
             let mut data = output_surface.get_data().unwrap();
             let opacity = u8::from(opacity);
 
-            for (x, y, pixel) in Pixels::new(self, bounds) {
+            for (x, y, pixel) in Pixels::within(self, bounds) {
                 data.set_pixel(stride, pixel.to_mask(opacity), x, y);
             }
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Returns a surface with pre-multiplication of color values undone.
@@ -450,12 +496,12 @@ impl SharedImageSurface {
         {
             let mut data = output_surface.get_data().unwrap();
 
-            for (x, y, pixel) in Pixels::new(self, bounds) {
+            for (x, y, pixel) in Pixels::within(self, bounds) {
                 data.set_pixel(stride, pixel.unpremultiply(), x, y);
             }
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Converts the surface to the linear sRGB color space.
@@ -508,7 +554,7 @@ impl SharedImageSurface {
             let mut output_data = output_surface.get_data().unwrap();
 
             if self.is_alpha_only() {
-                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                for (x, y, _pixel) in Pixels::within(self, bounds) {
                     let kernel_bounds = IRect::new(
                         x as i32 - target.0,
                         y as i32 - target.1,
@@ -518,7 +564,8 @@ impl SharedImageSurface {
 
                     let mut a = 0.0;
 
-                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    for (x, y, pixel) in
+                        PixelRectangle::within(self, bounds, kernel_bounds, edge_mode)
                     {
                         let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                         let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
@@ -539,7 +586,7 @@ impl SharedImageSurface {
                     output_data.set_pixel(output_stride, output_pixel, x, y);
                 }
             } else {
-                for (x, y, _pixel) in Pixels::new(self, bounds) {
+                for (x, y, _pixel) in Pixels::within(self, bounds) {
                     let kernel_bounds = IRect::new(
                         x as i32 - target.0,
                         y as i32 - target.1,
@@ -552,7 +599,8 @@ impl SharedImageSurface {
                     let mut b = 0.0;
                     let mut a = 0.0;
 
-                    for (x, y, pixel) in PixelRectangle::new(self, bounds, kernel_bounds, edge_mode)
+                    for (x, y, pixel) in
+                        PixelRectangle::within(self, bounds, kernel_bounds, edge_mode)
                     {
                         let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
                         let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
@@ -578,7 +626,7 @@ impl SharedImageSurface {
             }
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Performs a horizontal or vertical box blur.
@@ -900,7 +948,7 @@ impl SharedImageSurface {
             self.box_blur_loop::<B, NotAlphaOnly>(&mut output_surface, bounds, kernel_size, target);
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Fills the with a specified color.
@@ -929,7 +977,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Offsets the image of the specified amount.
@@ -958,7 +1006,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Returns a new surface of the same size, with the contents of the
@@ -998,7 +1046,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(output_surface, image.surface_type)
+        SharedImageSurface::wrap(output_surface, image.surface_type)
     }
 
     /// Creates a new surface with the size and content specified in `bounds`
@@ -1013,7 +1061,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(output_surface, self.surface_type)
+        SharedImageSurface::wrap(output_surface, self.surface_type)
     }
 
     /// Returns a new surface of the same size, with the contents of the specified
@@ -1046,7 +1094,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(output_surface, image.surface_type)
+        SharedImageSurface::wrap(output_surface, image.surface_type)
     }
 
     /// Performs the combination of two input surfaces using Porter-Duff
@@ -1074,7 +1122,7 @@ impl SharedImageSurface {
             cr.paint();
         }
 
-        SharedImageSurface::new(
+        SharedImageSurface::wrap(
             output_surface,
             self.surface_type.combine(other.surface_type),
         )
@@ -1102,7 +1150,7 @@ impl SharedImageSurface {
 
         composite_arithmetic(self, other, &mut output_surface, bounds, k1, k2, k3, k4);
 
-        SharedImageSurface::new(
+        SharedImageSurface::wrap(
             output_surface,
             self.surface_type.combine(other.surface_type),
         )
@@ -1135,7 +1183,7 @@ pub fn composite_arithmetic(
         let mut output_data = output_surface.get_data().unwrap();
 
         for (x, y, pixel, pixel_2) in
-            Pixels::new(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
+            Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
         {
             let i1a = f64::from(pixel.a) / 255f64;
             let i2a = f64::from(pixel_2.a) / 255f64;
@@ -1194,11 +1242,11 @@ mod tests {
             }
         }
 
-        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
+        let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
         let alpha = surface.extract_alpha(bounds).unwrap();
 
         for (x, y, p, pa) in
-            Pixels::new(&surface, full_bounds).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))
+            Pixels::within(&surface, full_bounds).map(|(x, y, p)| (x, y, p, alpha.get_pixel(x, y)))
         {
             assert_eq!(pa.r, 0);
             assert_eq!(pa.g, 0);

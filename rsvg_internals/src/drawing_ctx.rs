@@ -441,7 +441,7 @@ impl DrawingCtx {
 
         let Opacity(opacity) = values.opacity;
 
-        let mask = SharedImageSurface::new(mask_content_surface, SurfaceType::SRgb)?
+        let mask = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?
             .to_mask(opacity)?
             .into_image_surface()?;
 
@@ -899,7 +899,11 @@ impl DrawingCtx {
         cr.clip();
     }
 
-    pub fn get_snapshot(&self, surface: &cairo::ImageSurface) {
+    pub fn get_snapshot(
+        &self,
+        width: i32,
+        height: i32,
+    ) -> Result<SharedImageSurface, cairo::Status> {
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
@@ -915,18 +919,25 @@ impl DrawingCtx {
         //
         // CSS Compositing and Blending, "isolation" property:
         //   https://www.w3.org/TR/compositing-1/#isolation
-        let cr = cairo::Context::new(&surface);
-        for (depth, draw) in self.cr_stack.iter().enumerate() {
-            let affines = CompositingAffines::new(
-                draw.get_matrix(),
-                self.initial_affine_with_offset(),
-                depth,
-            );
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
-            cr.set_matrix(affines.for_snapshot);
-            cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
-            cr.paint();
+        {
+            let cr = cairo::Context::new(&surface);
+
+            for (depth, draw) in self.cr_stack.iter().enumerate() {
+                let affines = CompositingAffines::new(
+                    draw.get_matrix(),
+                    self.initial_affine_with_offset(),
+                    depth,
+                );
+
+                cr.set_matrix(affines.for_snapshot);
+                cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
+                cr.paint();
+            }
         }
+
+        SharedImageSurface::wrap(surface, SurfaceType::SRgb)
     }
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, RenderingError> {
@@ -962,7 +973,7 @@ impl DrawingCtx {
         self.cr = save_cr;
         self.rect = save_rect;
 
-        Ok(SharedImageSurface::new(surface, SurfaceType::SRgb)?)
+        Ok(SharedImageSurface::wrap(surface, SurfaceType::SRgb)?)
     }
 
     pub fn draw_node_from_stack(

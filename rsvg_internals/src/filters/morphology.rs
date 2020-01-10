@@ -11,8 +11,7 @@ use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
-    shared_surface::SharedImageSurface,
-    EdgeMode, ImageSurfaceDataExt, Pixel,
+    EdgeMode, Pixel,
 };
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -90,65 +89,54 @@ impl FilterEffect for FeMorphology {
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         // The radii can become negative here due to the transform.
-        let rx = rx.abs();
-        let ry = ry.abs();
+        let (rx, ry) = (rx.abs(), ry.abs());
 
-        let mut output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
+        let mut surface = input
+            .surface()
+            .create_similar(ctx.source_graphic().width(), ctx.source_graphic().height())?;
 
-        let output_stride = output_surface.get_stride() as usize;
-        {
-            let mut output_data = output_surface.get_data().unwrap();
+        for (x, y, _pixel) in Pixels::within(input.surface(), bounds) {
+            // Compute the kernel rectangle bounds.
+            let kernel_bounds = IRect::new(
+                (f64::from(x) - rx).floor() as i32,
+                (f64::from(y) - ry).floor() as i32,
+                (f64::from(x) + rx).ceil() as i32 + 1,
+                (f64::from(y) + ry).ceil() as i32 + 1,
+            );
 
-            for (x, y, _pixel) in Pixels::new(input.surface(), bounds) {
-                // Compute the kernel rectangle bounds.
-                let kernel_bounds = IRect::new(
-                    (f64::from(x) - rx).floor() as i32,
-                    (f64::from(y) - ry).floor() as i32,
-                    (f64::from(x) + rx).ceil() as i32 + 1,
-                    (f64::from(y) + ry).ceil() as i32 + 1,
-                );
+            // Compute the new pixel values.
+            let initial = match self.operator {
+                Operator::Erode => u8::max_value(),
+                Operator::Dilate => u8::min_value(),
+            };
 
-                // Compute the new pixel values.
-                let initial = match self.operator {
-                    Operator::Erode => u8::max_value(),
-                    Operator::Dilate => u8::min_value(),
+            let mut output_pixel = Pixel {
+                r: initial,
+                g: initial,
+                b: initial,
+                a: initial,
+            };
+
+            for (_x, _y, pixel) in
+                PixelRectangle::within(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
+            {
+                let op = match self.operator {
+                    Operator::Erode => min,
+                    Operator::Dilate => max,
                 };
 
-                let mut output_pixel = Pixel {
-                    r: initial,
-                    g: initial,
-                    b: initial,
-                    a: initial,
-                };
-
-                for (_x, _y, pixel) in
-                    PixelRectangle::new(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
-                {
-                    let op = match self.operator {
-                        Operator::Erode => min,
-                        Operator::Dilate => max,
-                    };
-
-                    output_pixel.r = op(output_pixel.r, pixel.r);
-                    output_pixel.g = op(output_pixel.g, pixel.g);
-                    output_pixel.b = op(output_pixel.b, pixel.b);
-                    output_pixel.a = op(output_pixel.a, pixel.a);
-                }
-
-                output_data.set_pixel(output_stride, output_pixel, x, y);
+                output_pixel.r = op(output_pixel.r, pixel.r);
+                output_pixel.g = op(output_pixel.g, pixel.g);
+                output_pixel.b = op(output_pixel.b, pixel.b);
+                output_pixel.a = op(output_pixel.a, pixel.a);
             }
+
+            surface.set_pixel(output_pixel, x, y);
         }
 
         Ok(FilterResult {
             name: self.base.result.clone(),
-            output: FilterOutput {
-                surface: SharedImageSurface::new(output_surface, input.surface().surface_type())?,
-                bounds,
-            },
+            output: FilterOutput { surface, bounds },
         })
     }
 

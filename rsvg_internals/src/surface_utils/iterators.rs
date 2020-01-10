@@ -27,9 +27,17 @@ pub struct PixelRectangle<'a> {
 }
 
 impl<'a> Pixels<'a> {
+    /// Creates an iterator over the image surface pixels
+    #[inline]
+    pub fn new(surface: &'a SharedImageSurface) -> Self {
+        let bounds = IRect::from_size(surface.width(), surface.height());
+
+        Self::within(surface, bounds)
+    }
+
     /// Creates an iterator over the image surface pixels, constrained within the given bounds.
     #[inline]
-    pub fn new(surface: &'a SharedImageSurface, bounds: IRect) -> Self {
+    pub fn within(surface: &'a SharedImageSurface, bounds: IRect) -> Self {
         // Sanity checks.
         assert!(bounds.x0 >= 0);
         assert!(bounds.x0 <= surface.width());
@@ -51,9 +59,17 @@ impl<'a> Pixels<'a> {
 }
 
 impl<'a> PixelRectangle<'a> {
+    /// Creates an iterator over the image surface pixels
+    #[inline]
+    pub fn new(surface: &'a SharedImageSurface, rectangle: IRect, edge_mode: EdgeMode) -> Self {
+        let bounds = IRect::from_size(surface.width(), surface.height());
+
+        Self::within(surface, bounds, rectangle, edge_mode)
+    }
+
     /// Creates an iterator over the image surface pixels, constrained within the given bounds.
     #[inline]
-    pub fn new(
+    pub fn within(
         surface: &'a SharedImageSurface,
         bounds: IRect,
         rectangle: IRect,
@@ -185,42 +201,38 @@ mod tests {
         const WIDTH: i32 = 32;
         const HEIGHT: i32 = 64;
 
-        let surface = SharedImageSurface::new(
+        let surface = SharedImageSurface::wrap(
             cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
             SurfaceType::SRgb,
         )
         .unwrap();
 
         // Full image.
-        let bounds = IRect::from_size(WIDTH, HEIGHT);
-        assert_eq!(
-            Pixels::new(&surface, bounds).count(),
-            (WIDTH * HEIGHT) as usize
-        );
+        assert_eq!(Pixels::new(&surface).count(), (WIDTH * HEIGHT) as usize);
 
         // 1-wide column.
         let bounds = IRect::from_size(1, HEIGHT);
-        assert_eq!(Pixels::new(&surface, bounds).count(), HEIGHT as usize);
+        assert_eq!(Pixels::within(&surface, bounds).count(), HEIGHT as usize);
 
         // 1-tall row.
         let bounds = IRect::from_size(WIDTH, 1);
-        assert_eq!(Pixels::new(&surface, bounds).count(), WIDTH as usize);
+        assert_eq!(Pixels::within(&surface, bounds).count(), WIDTH as usize);
 
         // 1×1.
         let bounds = IRect::from_size(1, 1);
-        assert_eq!(Pixels::new(&surface, bounds).count(), 1);
+        assert_eq!(Pixels::within(&surface, bounds).count(), 1);
 
         // Nothing (x0 == x1).
         let bounds = IRect::from_size(0, HEIGHT);
-        assert_eq!(Pixels::new(&surface, bounds).count(), 0);
+        assert_eq!(Pixels::within(&surface, bounds).count(), 0);
 
         // Nothing (y0 == y1).
         let bounds = IRect::from_size(WIDTH, 0);
-        assert_eq!(Pixels::new(&surface, bounds).count(), 0);
+        assert_eq!(Pixels::within(&surface, bounds).count(), 0);
 
         // Nothing (x0 == x1, y0 == y1).
         let bounds = IRect::new(0, 0, 0, 0);
-        assert_eq!(Pixels::new(&surface, bounds).count(), 0);
+        assert_eq!(Pixels::within(&surface, bounds).count(), 0);
     }
 
     #[test]
@@ -228,16 +240,15 @@ mod tests {
         const WIDTH: i32 = 32;
         const HEIGHT: i32 = 64;
 
-        let surface = SharedImageSurface::new(
+        let surface = SharedImageSurface::wrap(
             cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
             SurfaceType::SRgb,
         )
         .unwrap();
 
-        let bounds = IRect::from_size(WIDTH, HEIGHT);
         let rect_bounds = IRect::new(-8, -8, 8, 8);
         assert_eq!(
-            PixelRectangle::new(&surface, bounds, rect_bounds, EdgeMode::None).count(),
+            PixelRectangle::new(&surface, rect_bounds, EdgeMode::None).count(),
             (16 * 16) as usize
         );
     }

@@ -49,7 +49,7 @@ fn bench_pixel_iterators(c: &mut Criterion) {
     c.bench_function("pixel_iterators get_pixel", |b| {
         let surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
+        let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
 
         let bounds = black_box(BOUNDS);
 
@@ -77,7 +77,7 @@ fn bench_pixel_iterators(c: &mut Criterion) {
     c.bench_function("pixel_iterators pixels", |b| {
         let surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let data = SharedImageSurface::new(surface, SurfaceType::SRgb).unwrap();
+        let data = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
 
         let bounds = black_box(BOUNDS);
 
@@ -87,7 +87,7 @@ fn bench_pixel_iterators(c: &mut Criterion) {
             let mut b = 0usize;
             let mut a = 0usize;
 
-            for (_x, _y, pixel) in Pixels::new(&data, bounds) {
+            for (_x, _y, pixel) in Pixels::within(&data, bounds) {
                 r += pixel.r as usize;
                 g += pixel.g as usize;
                 b += pixel.b as usize;

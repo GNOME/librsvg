@@ -69,7 +69,7 @@ fn render_layer() {
     };
 
     let output_surf = res
-        .and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb).unwrap()))
+        .and_then(|_| Ok(SharedImageSurface::wrap(output, SurfaceType::SRgb).unwrap()))
         .unwrap();
 
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 300, 300).unwrap();
@@ -84,7 +84,7 @@ fn render_layer() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "render_layer");
 }
@@ -150,7 +150,7 @@ fn untransformed_element() {
     };
 
     let output_surf = res
-        .and_then(|_| Ok(SharedImageSurface::new(output, SurfaceType::SRgb).unwrap()))
+        .and_then(|_| Ok(SharedImageSurface::wrap(output, SurfaceType::SRgb).unwrap()))
         .unwrap();
 
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 300, 300).unwrap();
@@ -169,7 +169,7 @@ fn untransformed_element() {
         cr.stroke();
     }
 
-    let reference_surf = SharedImageSurface::new(reference_surf, SurfaceType::SRgb).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
     compare_to_surface(&output_surf, &reference_surf, "untransformed_element");
 }

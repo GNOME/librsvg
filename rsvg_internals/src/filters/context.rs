@@ -198,16 +198,9 @@ impl FilterContext {
         let mut bg = self.background_surface.borrow_mut();
 
         *bg = Some(
-            cairo::ImageSurface::create(
-                cairo::Format::ARgb32,
-                self.source_surface.width(),
-                self.source_surface.height(),
-            )
-            .map_err(FilterError::CairoError)
-            .and_then(|s| {
-                draw_ctx.get_snapshot(&s);
-                SharedImageSurface::new(s, SurfaceType::SRgb).map_err(FilterError::CairoError)
-            }),
+            draw_ctx
+                .get_snapshot(self.source_surface.width(), self.source_surface.height())
+                .map_err(FilterError::CairoError),
         );
 
         // Return the only existing reference as immutable.
@@ -234,7 +227,7 @@ impl FilterContext {
                     self.source_surface.height(),
                 )?;
 
-                Ok(SharedImageSurface::new(
+                Ok(SharedImageSurface::wrap(
                     empty_surface,
                     SurfaceType::AlphaOnly,
                 )?)
@@ -365,7 +358,7 @@ impl FilterContext {
                 .get_paint_server_surface(draw_ctx, &values.fill.0, values.fill_opacity.0)
                 .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface, SurfaceType::SRgb)
+                    SharedImageSurface::wrap(surface, SurfaceType::SRgb)
                         .map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
@@ -374,7 +367,7 @@ impl FilterContext {
                 .get_paint_server_surface(draw_ctx, &values.stroke.0, values.stroke_opacity.0)
                 .map_err(FilterError::CairoError)
                 .and_then(|surface| {
-                    SharedImageSurface::new(surface, SurfaceType::SRgb)
+                    SharedImageSurface::wrap(surface, SurfaceType::SRgb)
                         .map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
