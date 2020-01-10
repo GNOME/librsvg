@@ -150,6 +150,7 @@ impl<'i> AtRuleParser<'i> for DeclParser {
 pub struct RuleParser;
 
 /// Errors from the CSS parsing process
+#[derive(Debug)]
 pub enum CssParseErrorKind<'i> {
     Selector(selectors::parser::SelectorParseErrorKind<'i>),
 }
@@ -241,7 +242,13 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::QualifiedRule, cssparser::ParseError<'i, Self::Error>> {
         let declarations = DeclarationListParser::new(input, DeclParser)
-            .filter_map(Result::ok) // ignore invalid property name or value
+            .filter_map(|r| match r {
+                Ok(decl) => Some(decl),
+                Err(e) => {
+                    rsvg_log!("Invalid declaration; ignoring: {:?}", e);
+                    None
+                }
+            })
             .collect();
 
         Ok(Rule::QualifiedRule(QualifiedRule {
@@ -646,7 +653,13 @@ impl Stylesheet {
         let mut parser = Parser::new(&mut input);
 
         RuleListParser::new_for_stylesheet(&mut parser, RuleParser)
-            .filter_map(Result::ok) // ignore invalid rules
+            .filter_map(|r| match r {
+                Ok(rule) => Some(rule),
+                Err(e) => {
+                    rsvg_log!("Invalid rule; ignoring: {:?}", e);
+                    None
+                }
+            })
             .for_each(|rule| match rule {
                 Rule::AtRule(AtRule::Import(url)) => {
                     // ignore invalid imports
