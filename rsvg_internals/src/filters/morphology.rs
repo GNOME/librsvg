@@ -51,8 +51,8 @@ impl NodeTrait for FeMorphology {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "operator") => self.operator = attr.parse(value)?,
-                expanded_name!(svg "radius") => {
+                expanded_name!("", "operator") => self.operator = attr.parse(value)?,
+                expanded_name!("", "radius") => {
                     let NumberOptionalNumber(x, y) =
                         attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 >= 0.0 && v.1 >= 0.0 {

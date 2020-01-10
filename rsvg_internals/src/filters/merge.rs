@@ -46,7 +46,7 @@ impl NodeTrait for FeMergeNode {
     fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "in") => self.in_ = Some(attr.parse(value)?),
+                expanded_name!("", "in") => self.in_ = Some(attr.parse(value)?),
                 _ => (),
             }
         }

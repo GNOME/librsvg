@@ -106,8 +106,8 @@ impl NodeTrait for FeDistantLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "azimuth") => self.azimuth = attr.parse(value)?,
-                expanded_name!(svg "elevation") => self.elevation = attr.parse(value)?,
+                expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
+                expanded_name!("", "elevation") => self.elevation = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -138,9 +138,9 @@ impl NodeTrait for FePointLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "z") => self.z = attr.parse(value)?,
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "z") => self.z = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -187,18 +187,18 @@ impl NodeTrait for FeSpotLight {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "z") => self.z = attr.parse(value)?,
-                expanded_name!(svg "pointsAtX") => self.points_at_x = attr.parse(value)?,
-                expanded_name!(svg "pointsAtY") => self.points_at_y = attr.parse(value)?,
-                expanded_name!(svg "pointsAtZ") => self.points_at_z = attr.parse(value)?,
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "z") => self.z = attr.parse(value)?,
+                expanded_name!("", "pointsAtX") => self.points_at_x = attr.parse(value)?,
+                expanded_name!("", "pointsAtY") => self.points_at_y = attr.parse(value)?,
+                expanded_name!("", "pointsAtZ") => self.points_at_z = attr.parse(value)?,
 
-                expanded_name!(svg "specularExponent") => {
+                expanded_name!("", "specularExponent") => {
                     self.specular_exponent = attr.parse(value)?
                 }
 
-                expanded_name!(svg "limitingConeAngle") => {
+                expanded_name!("", "limitingConeAngle") => {
                     self.limiting_cone_angle = Some(attr.parse(value)?)
                 }
 

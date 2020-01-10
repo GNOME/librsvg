@@ -130,7 +130,7 @@ impl NodeTrait for Stop {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "offset") => {
+                expanded_name!("", "offset") => {
                     self.offset = attr
                         .parse_and_validate(value, validate_offset)
                         .map(|l| UnitInterval::clamp(l.length))?
@@ -573,9 +573,9 @@ impl Common {
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "gradientUnits") => self.units = Some(attr.parse(value)?),
-                expanded_name!(svg "gradientTransform") => self.affine = Some(attr.parse(value)?),
-                expanded_name!(svg "spreadMethod") => self.spread = Some(attr.parse(value)?),
+                expanded_name!("", "gradientUnits") => self.units = Some(attr.parse(value)?),
+                expanded_name!("", "gradientTransform") => self.affine = Some(attr.parse(value)?),
+                expanded_name!("", "spreadMethod") => self.spread = Some(attr.parse(value)?),
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?)
                 }
@@ -593,10 +593,10 @@ impl NodeTrait for LinearGradient {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x1") => self.x1 = Some(attr.parse(value)?),
-                expanded_name!(svg "y1") => self.y1 = Some(attr.parse(value)?),
-                expanded_name!(svg "x2") => self.x2 = Some(attr.parse(value)?),
-                expanded_name!(svg "y2") => self.y2 = Some(attr.parse(value)?),
+                expanded_name!("", "x1") => self.x1 = Some(attr.parse(value)?),
+                expanded_name!("", "y1") => self.y1 = Some(attr.parse(value)?),
+                expanded_name!("", "x2") => self.x2 = Some(attr.parse(value)?),
+                expanded_name!("", "y2") => self.y2 = Some(attr.parse(value)?),
 
                 _ => (),
             }
@@ -612,11 +612,11 @@ impl NodeTrait for RadialGradient {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "cx") => self.cx = Some(attr.parse(value)?),
-                expanded_name!(svg "cy") => self.cy = Some(attr.parse(value)?),
-                expanded_name!(svg "r") => self.r = Some(attr.parse(value)?),
-                expanded_name!(svg "fx") => self.fx = Some(attr.parse(value)?),
-                expanded_name!(svg "fy") => self.fy = Some(attr.parse(value)?),
+                expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
+                expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
+                expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
+                expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
+                expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
 
                 _ => (),
             }

@@ -60,7 +60,7 @@ impl NodeTrait for FeConvolveMatrix {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "order") => {
+                expanded_name!("", "order") => {
                     let NumberOptionalNumber(x, y) =
                         attr.parse_and_validate(value, |v: NumberOptionalNumber<i32>| {
                             if v.0 > 0 && v.1 > 0 {
@@ -71,7 +71,7 @@ impl NodeTrait for FeConvolveMatrix {
                         })?;
                     self.order = (x as u32, y as u32);
                 }
-                expanded_name!(svg "divisor") => {
+                expanded_name!("", "divisor") => {
                     self.divisor = Some(attr.parse_and_validate(value, |x| {
                         if x != 0.0 {
                             Ok(x)
@@ -80,9 +80,9 @@ impl NodeTrait for FeConvolveMatrix {
                         }
                     })?)
                 }
-                expanded_name!(svg "bias") => self.bias = attr.parse(value)?,
-                expanded_name!(svg "edgeMode") => self.edge_mode = attr.parse(value)?,
-                expanded_name!(svg "kernelUnitLength") => {
+                expanded_name!("", "bias") => self.bias = attr.parse(value)?,
+                expanded_name!("", "edgeMode") => self.edge_mode = attr.parse(value)?,
+                expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(x, y) =
                         attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 > 0.0 && v.1 > 0.0 {
@@ -96,7 +96,7 @@ impl NodeTrait for FeConvolveMatrix {
 
                     self.kernel_unit_length = Some((x, y))
                 }
-                expanded_name!(svg "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
+                expanded_name!("", "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
 
                 _ => (),
             }
@@ -105,7 +105,7 @@ impl NodeTrait for FeConvolveMatrix {
         // target_x and target_y depend on order.
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "targetX") => {
+                expanded_name!("", "targetX") => {
                     self.target_x = {
                         let v = attr.parse_and_validate(value, |v: i32| {
                             if v >= 0 && v < self.order.0 as i32 {
@@ -119,7 +119,7 @@ impl NodeTrait for FeConvolveMatrix {
                         Some(v as u32)
                     }
                 }
-                expanded_name!(svg "targetY") => {
+                expanded_name!("", "targetY") => {
                     self.target_y = {
                         let v = attr.parse_and_validate(value, |v: i32| {
                             if v >= 0 && v < self.order.1 as i32 {
@@ -148,7 +148,7 @@ impl NodeTrait for FeConvolveMatrix {
         // Finally, parse the kernel matrix.
         for (attr, value) in pbag
             .iter()
-            .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "kernelMatrix"))
+            .filter(|(attr, _)| attr.expanded() == expanded_name!("", "kernelMatrix"))
         {
             self.kernel_matrix = Some({
                 let number_of_elements = self.order.0 as usize * self.order.1 as usize;

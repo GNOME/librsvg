@@ -396,11 +396,13 @@ impl XmlState {
         let mut parse = None;
         let mut encoding = None;
 
+        let ln_parse = LocalName::from("parse");
+
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                ref n if *n == xinclude_name!("href") => href = Some(value),
-                ref n if *n == xinclude_name!("parse") => parse = Some(value),
-                ref n if *n == xinclude_name!("encoding") => encoding = Some(value),
+                expanded_name!("", "href") => href = Some(value),
+                ref v if *v == ExpandedName { ns: &ns!(), local: &ln_parse } => parse = Some(value),
+                expanded_name!("", "encoding") => encoding = Some(value),
                 _ => (),
             }
         }

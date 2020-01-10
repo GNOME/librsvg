@@ -595,10 +595,10 @@ impl NodeTrait for Text {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "dx") => self.dx = attr.parse(value).map(Some)?,
-                expanded_name!(svg "dy") => self.dy = attr.parse(value).map(Some)?,
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "dx") => self.dx = attr.parse(value).map(Some)?,
+                expanded_name!("", "dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -755,10 +755,10 @@ impl NodeTrait for TSpan {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value).map(Some)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value).map(Some)?,
-                expanded_name!(svg "dx") => self.dx = attr.parse(value).map(Some)?,
-                expanded_name!(svg "dy") => self.dy = attr.parse(value).map(Some)?,
+                expanded_name!("", "x") => self.x = attr.parse(value).map(Some)?,
+                expanded_name!("", "y") => self.y = attr.parse(value).map(Some)?,
+                expanded_name!("", "dx") => self.dx = attr.parse(value).map(Some)?,
+                expanded_name!("", "dy") => self.dy = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }

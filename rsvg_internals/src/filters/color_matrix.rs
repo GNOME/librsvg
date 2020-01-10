@@ -58,7 +58,7 @@ impl NodeTrait for FeColorMatrix {
         let mut operation_type = Default::default();
         for (attr, value) in pbag
             .iter()
-            .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "type"))
+            .filter(|(attr, _)| attr.expanded() == expanded_name!("", "type"))
         {
             operation_type = attr.parse(value)?;
         }
@@ -79,7 +79,7 @@ impl NodeTrait for FeColorMatrix {
         } else {
             for (attr, value) in pbag
                 .iter()
-                .filter(|(attr, _)| attr.expanded() == expanded_name!(svg "values"))
+                .filter(|(attr, _)| attr.expanded() == expanded_name!("", "values"))
             {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),

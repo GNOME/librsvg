@@ -52,9 +52,9 @@ impl Common {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "surfaceScale") => self.surface_scale = attr.parse(value)?,
+                expanded_name!("", "surfaceScale") => self.surface_scale = attr.parse(value)?,
 
-                expanded_name!(svg "kernelUnitLength") => {
+                expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(x, y) =
                         attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
                             if v.0 > 0.0 && v.1 > 0.0 {
@@ -99,7 +99,7 @@ impl NodeTrait for FeDiffuseLighting {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "diffuseConstant") => {
+                expanded_name!("", "diffuseConstant") => {
                     self.diffuse_constant = attr.parse_and_validate(value, |x| {
                         if x >= 0.0 {
                             Ok(x)
@@ -168,7 +168,7 @@ impl NodeTrait for FeSpecularLighting {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "specularConstant") => {
+                expanded_name!("", "specularConstant") => {
                     self.specular_constant = attr.parse_and_validate(value, |x| {
                         if x >= 0.0 {
                             Ok(x)
@@ -179,7 +179,7 @@ impl NodeTrait for FeSpecularLighting {
                         }
                     })?;
                 }
-                expanded_name!(svg "specularExponent") => {
+                expanded_name!("", "specularExponent") => {
                     self.specular_exponent = attr.parse_and_validate(value, |x| {
                         if x >= 1.0 && x <= 128.0 {
                             Ok(x)

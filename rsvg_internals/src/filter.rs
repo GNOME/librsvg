@@ -114,7 +114,7 @@ impl NodeTrait for Filter {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "filterUnits") => self.filterunits = attr.parse(value)?,
+                expanded_name!("", "filterUnits") => self.filterunits = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -159,21 +159,21 @@ impl NodeTrait for Filter {
         // Parse the rest of the attributes.
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => {
+                expanded_name!("", "x") => {
                     self.x = attr.parse_and_validate(value, check_units_horizontal)?
                 }
-                expanded_name!(svg "y") => {
+                expanded_name!("", "y") => {
                     self.y = attr.parse_and_validate(value, check_units_vertical)?
                 }
-                expanded_name!(svg "width") => {
+                expanded_name!("", "width") => {
                     self.width = attr
                         .parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?
                 }
-                expanded_name!(svg "height") => {
+                expanded_name!("", "height") => {
                     self.height =
                         attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?
                 }
-                expanded_name!(svg "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
+                expanded_name!("", "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
                 _ => (),
             }
         }

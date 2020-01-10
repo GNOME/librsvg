@@ -182,21 +182,21 @@ impl NodeTrait for Svg {
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "preserveAspectRatio") => {
+                expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!(svg "x") if is_inner_svg => self.x = Some(attr.parse(value)?),
-                expanded_name!(svg "y") if is_inner_svg => self.y = Some(attr.parse(value)?),
-                expanded_name!(svg "width") => {
+                expanded_name!("", "x") if is_inner_svg => self.x = Some(attr.parse(value)?),
+                expanded_name!("", "y") if is_inner_svg => self.y = Some(attr.parse(value)?),
+                expanded_name!("", "width") => {
                     self.w = Some(
                         attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
                     )
                 }
-                expanded_name!(svg "height") => {
+                expanded_name!("", "height") => {
                     self.h =
                         Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
-                expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -305,14 +305,14 @@ impl NodeTrait for Use {
                 expanded_name!(xlink "href") => {
                     self.link = Some(Fragment::parse(value).attribute(attr)?)
                 }
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "width") => {
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => {
                     self.w = attr
                         .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
                         .map(Some)?
                 }
-                expanded_name!(svg "height") => {
+                expanded_name!("", "height") => {
                     self.h = attr
                         .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
                         .map(Some)?
@@ -355,10 +355,10 @@ impl NodeTrait for Symbol {
     fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "preserveAspectRatio") => {
+                expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!(svg "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -388,7 +388,7 @@ impl NodeTrait for ClipPath {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "clipPathUnits") => self.units = attr.parse(value)?,
+                expanded_name!("", "clipPathUnits") => self.units = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -448,18 +448,18 @@ impl NodeTrait for Mask {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(svg "x") => self.x = attr.parse(value)?,
-                expanded_name!(svg "y") => self.y = attr.parse(value)?,
-                expanded_name!(svg "width") => {
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => {
                     self.width =
                         attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
                 }
-                expanded_name!(svg "height") => {
+                expanded_name!("", "height") => {
                     self.height =
                         attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
-                expanded_name!(svg "maskUnits") => self.units = attr.parse(value)?,
-                expanded_name!(svg "maskContentUnits") => self.content_units = attr.parse(value)?,
+                expanded_name!("", "maskUnits") => self.units = attr.parse(value)?,
+                expanded_name!("", "maskContentUnits") => self.content_units = attr.parse(value)?,
                 _ => (),
             }
         }
