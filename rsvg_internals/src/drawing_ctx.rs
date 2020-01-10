@@ -520,11 +520,18 @@ impl DrawingCtx {
                     // Filter
 
                     let source_surface = if let Some(filter_uri) = filter {
-                        let child_surface =
-                            cairo::ImageSurface::try_from(dc.cr.get_target()).unwrap();
-                        let img_surface =
-                            dc.run_filter(filter_uri, node, values, &child_surface, bbox)?;
-                        // turn into a Surface
+                        // The target surface has multiple references.
+                        // We need to copy it to a new surface to have a unique
+                        // reference to be able to safely access the pixel data.
+                        let child_surface = SharedImageSurface::copy_from_surface(
+                            &cairo::ImageSurface::try_from(dc.cr.get_target()).unwrap(),
+                        )?;
+
+                        let img_surface = dc
+                            .run_filter(filter_uri, node, values, child_surface, bbox)?
+                            .into_image_surface()?;
+
+                        // turn ImageSurface into a Surface
                         (*img_surface).clone()
                     } else {
                         dc.cr.get_target()
@@ -666,9 +673,9 @@ impl DrawingCtx {
         filter_uri: &Fragment,
         node: &RsvgNode,
         values: &ComputedValues,
-        child_surface: &cairo::ImageSurface,
+        child_surface: SharedImageSurface,
         node_bbox: BoundingBox,
-    ) -> Result<cairo::ImageSurface, RenderingError> {
+    ) -> Result<SharedImageSurface, RenderingError> {
         match self.acquire_node(filter_uri, &[NodeType::Filter]) {
             Ok(acquired) => {
                 let filter_node = acquired.get();
@@ -690,10 +697,10 @@ impl DrawingCtx {
 
                 // Non-existing filters must act as null filters (that is, an
                 // empty surface is returned).
-                Ok(cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    child_surface.get_width(),
-                    child_surface.get_height(),
+                Ok(SharedImageSurface::empty(
+                    child_surface.width(),
+                    child_surface.height(),
+                    child_surface.surface_type(),
                 )?)
             }
         }

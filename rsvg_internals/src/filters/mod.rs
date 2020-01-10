@@ -239,17 +239,13 @@ impl Deref for PrimitiveWithInput {
 pub fn render(
     filter_node: &RsvgNode,
     computed_from_node_being_filtered: &ComputedValues,
-    source: &cairo::ImageSurface,
+    source_surface: SharedImageSurface,
     draw_ctx: &mut DrawingCtx,
     node_bbox: BoundingBox,
-) -> Result<cairo::ImageSurface, RenderingError> {
+) -> Result<SharedImageSurface, RenderingError> {
     let filter_node = &*filter_node;
     assert_eq!(filter_node.borrow().get_type(), NodeType::Filter);
     assert!(!filter_node.borrow().is_in_error());
-
-    // The source surface has multiple references. We need to copy it to a new surface to have a
-    // unique reference to be able to safely access the pixel data.
-    let source_surface = SharedImageSurface::copy_from_surface(source)?;
 
     let mut filter_ctx = FilterContext::new(
         filter_node,
@@ -262,7 +258,7 @@ pub fn render(
     // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds
     // computations will panic due to non-invertible martrix.
     if filter_ctx.paffine().try_invert().is_err() {
-        return Ok(filter_ctx.into_output()?.into_image_surface()?);
+        return Ok(filter_ctx.into_output()?);
     }
 
     let primitives = filter_node
@@ -327,7 +323,7 @@ pub fn render(
         );
     }
 
-    Ok(filter_ctx.into_output()?.into_image_surface()?)
+    Ok(filter_ctx.into_output()?)
 }
 
 impl From<ColorInterpolationFilters> for SurfaceType {
