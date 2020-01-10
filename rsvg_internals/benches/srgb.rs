@@ -45,7 +45,7 @@ fn bench_srgb_linearization(c: &mut Criterion) {
             }
         }
 
-        let surface = SharedImageSurface::new(surface, SurfaceType::LinearRgb).unwrap();
+        let surface = SharedImageSurface::wrap(surface, SurfaceType::LinearRgb).unwrap();
 
         let bounds = black_box(BOUNDS);
 

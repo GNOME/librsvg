@@ -443,7 +443,7 @@ macro_rules! impl_lighting_filter {
                 // The generated color values are in the color space determined by
                 // color-interpolation-filters.
                 let surface_type = SurfaceType::from(values.color_interpolation_filters);
-                let mut output_surface = SharedImageSurface::new(output_surface, surface_type)?;
+                let mut output_surface = SharedImageSurface::wrap(output_surface, surface_type)?;
 
                 if let Some((ox, oy)) = scale {
                     // Scale the output surface back.

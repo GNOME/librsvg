@@ -19,10 +19,10 @@ fn bench_composite(c: &mut Criterion) {
     c.bench_function("composite arithmetic", |b| {
         let input_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let input_surface = SharedImageSurface::new(input_surface, SurfaceType::SRgb).unwrap();
+        let input_surface = SharedImageSurface::wrap(input_surface, SurfaceType::SRgb).unwrap();
         let input_2_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let input_2_surface = SharedImageSurface::new(input_2_surface, SurfaceType::SRgb).unwrap();
+        let input_2_surface = SharedImageSurface::wrap(input_2_surface, SurfaceType::SRgb).unwrap();
 
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();

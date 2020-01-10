@@ -303,7 +303,7 @@ impl FilterEffect for FeConvolveMatrix {
         }
 
         let mut output_surface =
-            SharedImageSurface::new(output_surface, input.surface().surface_type())?;
+            SharedImageSurface::wrap(output_surface, input.surface().surface_type())?;
 
         if let Some((ox, oy)) = scale {
             // Scale the output surface back.

@@ -730,7 +730,7 @@ impl CHandle {
                 .map_err(warn_on_invalid_id)?;
         }
 
-        let surface = SharedImageSurface::new(surface, SurfaceType::SRgb)?;
+        let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
 
         pixbuf_from_surface(&surface)
     }

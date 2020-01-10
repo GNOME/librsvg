@@ -185,7 +185,7 @@ fn bench_normal(c: &mut Criterion) {
     c.bench_function("normal", |b| {
         let input_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let input_surface = SharedImageSurface::new(input_surface, SurfaceType::SRgb).unwrap();
+        let input_surface = SharedImageSurface::wrap(input_surface, SurfaceType::SRgb).unwrap();
 
         b.iter(|| {
             let mut z = 0;
@@ -200,7 +200,7 @@ fn bench_normal(c: &mut Criterion) {
     c.bench_function("normal unrolled", |b| {
         let input_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let input_surface = SharedImageSurface::new(input_surface, SurfaceType::SRgb).unwrap();
+        let input_surface = SharedImageSurface::wrap(input_surface, SurfaceType::SRgb).unwrap();
 
         b.iter(|| {
             let mut z = 0;

@@ -120,7 +120,7 @@ pub fn compare_surfaces(
         }
     }
 
-    let surface = SharedImageSurface::new(surf_diff, SurfaceType::SRgb)?;
+    let surface = SharedImageSurface::wrap(surf_diff, SurfaceType::SRgb)?;
 
     Ok(BufferDiff::Diff(Diff {
         num_pixels_changed,

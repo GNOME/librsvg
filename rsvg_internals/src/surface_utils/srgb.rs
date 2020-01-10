@@ -78,7 +78,7 @@ fn map_unpremultiplied_components<F: Fn(u8) -> u8>(
     let mut output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
     map_unpremultiplied_components_loop(surface, &mut output_surface, bounds, f);
 
-    SharedImageSurface::new(output_surface, new_type)
+    SharedImageSurface::wrap(output_surface, new_type)
 }
 
 /// Converts an sRGB surface to a linear sRGB surface (undoes the gamma correction).
