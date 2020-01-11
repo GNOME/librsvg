@@ -90,8 +90,7 @@ impl FilterEffect for FeMorphology {
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         // The radii can become negative here due to the transform.
-        let rx = rx.abs();
-        let ry = ry.abs();
+        let (rx, ry) = (rx.abs(), ry.abs());
 
         let mut output_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
