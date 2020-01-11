@@ -766,8 +766,8 @@ pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use glib::{self, prelude::*};
     use gio;
+    use glib::{self, prelude::*};
     use selectors::Element;
 
     use crate::allowed_url::Fragment;
@@ -781,8 +781,9 @@ mod tests {
         Document::load_from_stream(
             &LoadOptions::new(None),
             &stream.upcast(),
-            None::<&gio::Cancellable>
-        ).unwrap()
+            None::<&gio::Cancellable>,
+        )
+        .unwrap()
     }
 
     #[test]
@@ -797,10 +798,18 @@ mod tests {
 "#,
         );
 
-        let a = document.lookup(&Fragment::new(None, "a".to_string())).unwrap();
-        let b = document.lookup(&Fragment::new(None, "b".to_string())).unwrap();
-        let c = document.lookup(&Fragment::new(None, "c".to_string())).unwrap();
-        let d = document.lookup(&Fragment::new(None, "d".to_string())).unwrap();
+        let a = document
+            .lookup(&Fragment::new(None, "a".to_string()))
+            .unwrap();
+        let b = document
+            .lookup(&Fragment::new(None, "b".to_string()))
+            .unwrap();
+        let c = document
+            .lookup(&Fragment::new(None, "c".to_string()))
+            .unwrap();
+        let d = document
+            .lookup(&Fragment::new(None, "d".to_string()))
+            .unwrap();
 
         // Node types
 
@@ -839,12 +848,24 @@ mod tests {
         assert!(b.is_same_type(&d));
 
         assert!(a.has_id(&LocalName::from("a"), CaseSensitivity::AsciiCaseInsensitive));
-        assert!(!b.has_id(&LocalName::from("foo"), CaseSensitivity::AsciiCaseInsensitive));
+        assert!(!b.has_id(
+            &LocalName::from("foo"),
+            CaseSensitivity::AsciiCaseInsensitive
+        ));
 
-        assert!(d.has_class(&LocalName::from("foo"), CaseSensitivity::AsciiCaseInsensitive));
-        assert!(d.has_class(&LocalName::from("bar"), CaseSensitivity::AsciiCaseInsensitive));
+        assert!(d.has_class(
+            &LocalName::from("foo"),
+            CaseSensitivity::AsciiCaseInsensitive
+        ));
+        assert!(d.has_class(
+            &LocalName::from("bar"),
+            CaseSensitivity::AsciiCaseInsensitive
+        ));
 
-        assert!(!a.has_class(&LocalName::from("foo"), CaseSensitivity::AsciiCaseInsensitive));
+        assert!(!a.has_class(
+            &LocalName::from("foo"),
+            CaseSensitivity::AsciiCaseInsensitive
+        ));
 
         assert!(d.is_empty());
         assert!(!a.is_empty());
