@@ -1,8 +1,4 @@
-use cairo;
 use rsvg_internals;
-
-use cairo::ImageSurface;
-
 use self::rsvg_internals::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -78,7 +74,7 @@ pub fn compare_surfaces(
         return Ok(BufferDiff::DifferentSizes);
     }
 
-    let mut surf_diff = ImageSurface::create(cairo::Format::ARgb32, a_width, a_height)?;
+    let mut surf_diff = cairo::ImageSurface::create(cairo::Format::ARgb32, a_width, a_height)?;
     let diff_stride = surf_diff.get_stride() as usize;
 
     let mut num_pixels_changed = 0;

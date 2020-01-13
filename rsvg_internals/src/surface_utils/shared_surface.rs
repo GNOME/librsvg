@@ -3,7 +3,6 @@ use std::cmp::min;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-use cairo::ImageSurface;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
@@ -53,28 +52,28 @@ impl SurfaceType {
 
 /// Wrapper for a Cairo image surface that allows shared access.
 ///
-/// There doesn't seem to be any good way of making safe shared access to `ImageSurface` pixel
+/// There doesn't seem to be any good way of making safe shared access to `cairo::ImageSurface`
 /// data, since a read-only borrowed reference can still be cloned and then modified (for example,
-/// via a `Context`). We can't simply use `ImageSurface::get_data()` because in the filter code we
-/// have surfaces referenced from multiple places and it would probably add more complexity to
-/// remove that and start passing around references.
+/// via a `Context`). We can't simply use `cairo::ImageSurface::get_data()` because in the filter
+/// code we have surfaces referenced from multiple places and it would probably add more complexity
+/// to remove that and start passing around references.
 ///
 /// This wrapper asserts the uniqueness of its image surface and doesn't permit modifying it.
 ///
-/// Note: originally I had an idea of using `Rc<RefCell<ImageSurface>>` here which allows to create
-/// both read-only and unique read-write accessors safely, however then I realized a read-write
-/// accessor isn't of much use if it can't expose a Cairo context interface. Cairo contexts have
-/// the very same issue that they can be cloned from a read-only reference and break all safety
-/// constraints in this way. Thus the only safe way of exposing a Cairo context seemed to be to
-/// manually add all Cairo context methods on the accessor forwarding to the underlying Cairo
-/// context (without exposing the context itself to prevent cloning), which would result in too
-/// much code. Unless it's absolutely required, I'd like to avoid that.
+/// Note: originally I had an idea of using `Rc<RefCell<cairo::ImageSurface>>` here which allows
+/// to create both read-only and unique read-write accessors safely, however then I realized a
+/// read-write accessor isn't of much use if it can't expose a Cairo context interface.
+/// Cairo contexts have the very same issue that they can be cloned from a read-only reference
+/// and break all safety constraints in this way. Thus the only safe way of exposing a Cairo
+/// context seemed to be to manually add all Cairo context methods on the accessor forwarding to
+/// the underlying Cairo context (without exposing the context itself to prevent cloning), which
+/// would result in too much code. Unless it's absolutely required, I'd like to avoid that.
 ///
 /// Having just read-only access simplifies things further dropping the need for `Rc<RefCell<>>`
 /// altogether.
 #[derive(Debug, Clone)]
 pub struct SharedImageSurface {
-    surface: ImageSurface,
+    surface: cairo::ImageSurface,
 
     data_ptr: NonNull<u8>, // *const.
     width: i32,
@@ -84,7 +83,7 @@ pub struct SharedImageSurface {
     surface_type: SurfaceType,
 }
 
-// The access is read-only, the ref-counting on an `ImageSurface` is atomic.
+// The access is read-only, the ref-counting on an `cairo::ImageSurface` is atomic.
 unsafe impl Sync for SharedImageSurface {}
 
 /// A compile-time blur direction variable.
@@ -124,13 +123,16 @@ impl IsAlphaOnly for NotAlphaOnly {
 }
 
 impl SharedImageSurface {
-    /// Creates a `SharedImageSurface` from a unique `ImageSurface`.
+    /// Creates a `SharedImageSurface` from a unique `cairo::ImageSurface`.
     ///
     /// # Panics
     /// Panics if the surface format isn't `ARgb32` and if the surface is not unique, that is, its
     /// reference count isn't 1.
     #[inline]
-    pub fn wrap(surface: ImageSurface, surface_type: SurfaceType) -> Result<Self, cairo::Status> {
+    pub fn wrap(
+        surface: cairo::ImageSurface,
+        surface_type: SurfaceType,
+    ) -> Result<Self, cairo::Status> {
         // get_pixel() assumes ARgb32.
         assert_eq!(surface.get_format(), cairo::Format::ARgb32);
 
@@ -138,8 +140,8 @@ impl SharedImageSurface {
             unsafe { cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) };
         assert_eq!(reference_count, 1);
 
-        let width = surface.get_width();
-        let height = surface.get_height();
+        let (width, height) = (surface.get_width(), surface.get_height());
+
         // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
         // is implementation-defined.  So, we can't assume NonNull below.  This is
         // why we disallow zero-sized surfaces here.
@@ -166,10 +168,10 @@ impl SharedImageSurface {
         })
     }
 
-    /// Creates a `SharedImageSurface` copying from an `ImageSurface`, even if it
+    /// Creates a `SharedImageSurface` copying from a `cairo::ImageSurface`, even if it
     /// does not have a reference count of 1.
     #[inline]
-    pub fn copy_from_surface(surface: &ImageSurface) -> Result<Self, cairo::Status> {
+    pub fn copy_from_surface(surface: &cairo::ImageSurface) -> Result<Self, cairo::Status> {
         let copy = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             surface.get_width(),
@@ -199,7 +201,7 @@ impl SharedImageSurface {
 
     /// Converts this `SharedImageSurface` back into a Cairo image surface.
     #[inline]
-    pub fn into_image_surface(self) -> Result<ImageSurface, cairo::Status> {
+    pub fn into_image_surface(self) -> Result<cairo::ImageSurface, cairo::Status> {
         let reference_count =
             unsafe { cairo_sys::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
 
@@ -222,22 +224,18 @@ impl SharedImageSurface {
         assert!(n_channels == 3 || n_channels == 4);
         let has_alpha = n_channels == 4;
 
-        let width = pixbuf.get_width();
-        assert!(width > 0);
-
-        let height = pixbuf.get_height();
-        assert!(height > 0);
+        let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
+        assert!(width > 0 && height > 0);
 
         let pixbuf_stride = pixbuf.get_rowstride();
         assert!(pixbuf_stride > 0);
-        let pixbuf_stride = pixbuf_stride as usize;
 
         let pixbuf_data = unsafe { pixbuf.get_pixels() };
 
-        let mut surf = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let mut surf = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
-        let width = width as usize;
-        let height = height as usize;
+        let (width, height) = (width as usize, height as usize);
+        let pixbuf_stride = pixbuf_stride as usize;
 
         {
             let surf_stride = surf.get_stride() as usize;
@@ -356,10 +354,11 @@ impl SharedImageSurface {
         cairo::SurfacePattern::create(&self.surface)
     }
 
-    /// Returns a new `ImageSurface` with the same contents as the one stored in this
+    /// Returns a new `cairo::ImageSurface` with the same contents as the one stored in this
     /// `SharedImageSurface` within the given bounds.
-    pub fn copy_surface(&self, bounds: IRect) -> Result<ImageSurface, cairo::Status> {
-        let output_surface = ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+    fn copy_surface(&self, bounds: IRect) -> Result<cairo::ImageSurface, cairo::Status> {
+        let output_surface =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         let cr = cairo::Context::new(&output_surface);
         let r = cairo::Rectangle::from(bounds);
@@ -382,7 +381,7 @@ impl SharedImageSurface {
         x: f64,
         y: f64,
     ) -> Result<SharedImageSurface, cairo::Status> {
-        let output_surface = ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         {
             let cr = cairo::Context::new(&output_surface);
@@ -419,7 +418,7 @@ impl SharedImageSurface {
     /// Returns a surface with black background and alpha channel matching this surface.
     pub fn extract_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
         let mut output_surface =
-            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         let output_stride = output_surface.get_stride() as usize;
         {
@@ -449,7 +448,7 @@ impl SharedImageSurface {
         let bounds = IRect::from_size(self.width, self.height);
 
         let mut output_surface =
-            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         let stride = output_surface.get_stride() as usize;
         {
@@ -475,7 +474,7 @@ impl SharedImageSurface {
         }
 
         let mut output_surface =
-            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         let stride = output_surface.get_stride() as usize;
         {
@@ -532,7 +531,7 @@ impl SharedImageSurface {
         assert!(kernel.ncols() >= 1);
 
         let mut output_surface =
-            ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         let output_stride = output_surface.get_stride() as usize;
         {
@@ -1146,7 +1145,9 @@ impl SharedImageSurface {
     /// # Safety
     /// The returned pointer must not be used to modify the surface.
     #[inline]
-    pub unsafe fn to_glib_none(&self) -> Stash<'_, *mut cairo_sys::cairo_surface_t, ImageSurface> {
+    pub unsafe fn to_glib_none(
+        &self,
+    ) -> Stash<'_, *mut cairo_sys::cairo_surface_t, cairo::ImageSurface> {
         self.surface.to_glib_none()
     }
 }

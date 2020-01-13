@@ -206,13 +206,11 @@ macro_rules! func_x {
             ) -> NodeResult {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
-                        expanded_name!("", "type") => {
-                            self.function_type = attr.parse(value)?
-                        }
+                        expanded_name!("", "type") => self.function_type = attr.parse(value)?,
                         expanded_name!("", "tableValues") => {
                             let NumberList(v) =
                                 NumberList::parse_str(value, NumberListLength::Unbounded)
-                                .attribute(attr)?;
+                                    .attribute(attr)?;
                             self.table_values = v;
                         }
                         expanded_name!("", "slope") => self.slope = attr.parse(value)?,
