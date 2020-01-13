@@ -43,7 +43,7 @@ enum SpreadMethod {
 }
 
 impl Parse for SpreadMethod {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "pad" => SpreadMethod::Pad,

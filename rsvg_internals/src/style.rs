@@ -20,7 +20,7 @@ pub enum StyleType {
 }
 
 impl Parse for StyleType {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<StyleType, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<StyleType, ParseError<'i>> {
         parser.expect_ident_matching("text/css")?;
         Ok(StyleType::TextCss)
     }

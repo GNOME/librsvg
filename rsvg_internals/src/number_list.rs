@@ -18,7 +18,7 @@ impl NumberList {
     pub fn parse<'i>(
         parser: &mut Parser<'i, '_>,
         length: NumberListLength,
-    ) -> Result<Self, CssParseError<'i>> {
+    ) -> Result<Self, ParseError<'i>> {
         let mut v = match length {
             NumberListLength::Exact(l) if l > 0 => Vec::<f64>::with_capacity(l),
             NumberListLength::Exact(_) => unreachable!("NumberListLength::Exact cannot be 0"),
@@ -62,7 +62,7 @@ impl NumberList {
     pub fn parse_str<'i>(
         s: &'i str,
         length: NumberListLength,
-    ) -> Result<NumberList, CssParseError<'i>> {
+    ) -> Result<NumberList, ParseError<'i>> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 

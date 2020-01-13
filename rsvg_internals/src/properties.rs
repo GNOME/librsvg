@@ -227,7 +227,7 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, CssParseError<'i>> {
+pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
     // please keep these sorted
     match prop_name.expanded() {
         expanded_name!("", "baseline-shift") =>
@@ -541,7 +541,7 @@ impl SpecifiedValues {
             Ok(prop) => self.set_parsed_property(&prop),
 
             // not a presentation attribute; just ignore it
-            Err(CssParseError {
+            Err(ParseError {
                 kind: ParseErrorKind::Custom(ValueErrorKind::UnknownProperty),
                 ..
             }) => (),
@@ -549,7 +549,7 @@ impl SpecifiedValues {
             // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
             // For all the following cases, ignore illegal values; don't set the whole node to
             // be in error in that case.
-            Err(CssParseError {
+            Err(ParseError {
                 kind: ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(ref t)),
                 ..
             }) => {
@@ -565,7 +565,7 @@ impl SpecifiedValues {
                 );
             }
 
-            Err(CssParseError {
+            Err(ParseError {
                 kind: ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput),
                 ..
             }) => {
@@ -577,7 +577,7 @@ impl SpecifiedValues {
                 );
             }
 
-            Err(CssParseError {
+            Err(ParseError {
                 kind: ParseErrorKind::Basic(_),
                 ..
             }) => {
@@ -589,7 +589,7 @@ impl SpecifiedValues {
                 );
             }
 
-            Err(CssParseError {
+            Err(ParseError {
                 kind: ParseErrorKind::Custom(ref v),
                 ..
             }) => {
@@ -665,7 +665,7 @@ impl SpecifiedValues {
 }
 
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
-fn parse_input<'i, T>(input: &mut Parser<'i, '_>) -> Result<SpecifiedValue<T>, CssParseError<'i>>
+fn parse_input<'i, T>(input: &mut Parser<'i, '_>) -> Result<SpecifiedValue<T>, ParseError<'i>>
 where
     T: Property<ComputedValues> + Clone + Default + Parse,
 {

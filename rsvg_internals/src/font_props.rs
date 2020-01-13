@@ -61,7 +61,7 @@ impl FontSizeSpec {
 }
 
 impl Parse for FontSizeSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSizeSpec, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSizeSpec, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Both>::parse(p))
             .and_then(|l| Ok(FontSizeSpec::Value(l)))
@@ -101,7 +101,7 @@ pub enum FontWeightSpec {
 }
 
 impl Parse for FontWeightSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontWeightSpec, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontWeightSpec, ParseError<'i>> {
         parser
             .try_parse(|p| {
                 Ok(parse_identifiers!(
@@ -112,7 +112,7 @@ impl Parse for FontWeightSpec {
                     "lighter" => FontWeightSpec::Lighter,
                 )?)
             })
-            .or_else(|_: CssParseError| {
+            .or_else(|_: ParseError| {
                 let loc = parser.current_source_location();
                 parser
                     .expect_integer()
@@ -163,7 +163,7 @@ impl LetterSpacingSpec {
 }
 
 impl Parse for LetterSpacingSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacingSpec, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacingSpec, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Horizontal>::parse(p))
             .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
@@ -181,7 +181,7 @@ impl Parse for LetterSpacingSpec {
 pub struct SingleFontFamily(pub String);
 
 impl Parse for SingleFontFamily {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SingleFontFamily, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SingleFontFamily, ParseError<'i>> {
         let loc = parser.current_source_location();
 
         if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {

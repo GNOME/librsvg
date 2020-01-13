@@ -22,7 +22,7 @@ pub enum PaintServer {
 }
 
 impl Parse for PaintServer {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<PaintServer, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<PaintServer, ParseError<'i>> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))
             .is_ok()

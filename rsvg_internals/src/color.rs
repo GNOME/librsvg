@@ -10,13 +10,13 @@ use crate::util::utf8_cstr;
 pub use cssparser::Color;
 
 impl Parse for cssparser::Color {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
         Ok(cssparser::Color::parse(parser)?)
     }
 }
 
 impl Parse for cssparser::RGBA {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::RGBA, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::RGBA, ParseError<'i>> {
         let loc = parser.current_source_location();
 
         match cssparser::Color::parse(parser)? {
@@ -66,8 +66,8 @@ pub fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
         | u32::from(rgba.blue)
 }
 
-impl<'i> From<Result<Option<cssparser::Color>, CssParseError<'i>>> for ColorSpec {
-    fn from(result: Result<Option<cssparser::Color>, CssParseError<'i>>) -> ColorSpec {
+impl<'i> From<Result<Option<cssparser::Color>, ParseError<'i>>> for ColorSpec {
+    fn from(result: Result<Option<cssparser::Color>, ParseError<'i>>) -> ColorSpec {
         match result {
             Ok(None) => ColorSpec {
                 kind: ColorKind::Inherit,

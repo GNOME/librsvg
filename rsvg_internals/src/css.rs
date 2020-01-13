@@ -73,7 +73,11 @@
 //! the rules in the stylesheets and gather the matches; then sort the
 //! matches by specificity and apply the result to each element.
 
-use cssparser::*;
+use cssparser::{
+    self, match_ignore_ascii_case, parse_important, AtRuleParser, AtRuleType, BasicParseErrorKind,
+    CowRcStr, DeclarationListParser, DeclarationParser, Parser, ParserInput, QualifiedRuleParser,
+    RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
+};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{OpaqueElement, SelectorImpl, SelectorList};
@@ -119,10 +123,10 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         &mut self,
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
-    ) -> Result<Declaration, CssParseError<'i>> {
+    ) -> Result<Declaration, ParseError<'i>> {
         let prop_name = QualName::new(None, ns!(), LocalName::from(name.as_ref()));
         let property = parse_property(&prop_name, input, true)
-            .map_err(|_|  input.new_custom_error(ValueErrorKind::parse_error("parse error")))?;
+            .map_err(|_| input.new_custom_error(ValueErrorKind::parse_error("parse error")))?;
 
         let important = input.try_parse(parse_important).is_ok();
 
@@ -151,13 +155,13 @@ pub struct RuleParser;
 
 /// Errors from the CSS parsing process
 #[derive(Debug)]
-pub enum CssParseErrorKind<'i> {
+pub enum ParseErrorKind<'i> {
     Selector(selectors::parser::SelectorParseErrorKind<'i>),
 }
 
-impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for CssParseErrorKind<'i> {
-    fn from(e: selectors::parser::SelectorParseErrorKind) -> CssParseErrorKind {
-        CssParseErrorKind::Selector(e)
+impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for ParseErrorKind<'i> {
+    fn from(e: selectors::parser::SelectorParseErrorKind) -> ParseErrorKind {
+        ParseErrorKind::Selector(e)
     }
 }
 
@@ -186,7 +190,7 @@ pub enum Rule {
 // Required to implement the `Prelude` associated type in `cssparser::QualifiedRuleParser`
 impl<'i> selectors::Parser<'i> for RuleParser {
     type Impl = Selector;
-    type Error = CssParseErrorKind<'i>;
+    type Error = ParseErrorKind<'i>;
 
     fn default_namespace(&self) -> Option<<Self::Impl as SelectorImpl>::NamespaceUrl> {
         Some(ns!(svg))
@@ -226,7 +230,7 @@ impl<'i> selectors::Parser<'i> for RuleParser {
 impl<'i> QualifiedRuleParser<'i> for RuleParser {
     type Prelude = SelectorList<Selector>;
     type QualifiedRule = Rule;
-    type Error = CssParseErrorKind<'i>;
+    type Error = ParseErrorKind<'i>;
 
     fn parse_prelude<'t>(
         &mut self,
@@ -265,7 +269,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
     type PreludeBlock = ();
     type PreludeNoBlock = AtRulePrelude;
     type AtRule = Rule;
-    type Error = CssParseErrorKind<'i>;
+    type Error = ParseErrorKind<'i>;
 
     fn parse_prelude<'t>(
         &mut self,

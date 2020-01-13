@@ -418,7 +418,7 @@ impl FilterEffect for FeTurbulence {
 }
 
 impl Parse for StitchTiles {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "stitch" => StitchTiles::Stitch,
@@ -428,7 +428,7 @@ impl Parse for StitchTiles {
 }
 
 impl Parse for NoiseType {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "fractalNoise" => NoiseType::FractalNoise,

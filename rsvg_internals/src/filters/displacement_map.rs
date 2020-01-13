@@ -146,7 +146,7 @@ impl FilterEffect for FeDisplacementMap {
 }
 
 impl Parse for ColorChannel {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "R" => ColorChannel::R,
