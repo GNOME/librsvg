@@ -20,23 +20,6 @@ use crate::node::RsvgNode;
 /// purpose.
 pub type CssParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
 
-pub enum ParseError<'i> {
-    P(CssParseError<'i>),
-    V(ValueErrorKind),
-}
-
-impl<'i> From<CssParseError<'i>> for ParseError<'i> {
-    fn from(p: CssParseError<'i>) -> ParseError {
-        ParseError::P(p)
-    }
-}
-
-impl<'i> From<ValueErrorKind> for ParseError<'i> {
-    fn from(v: ValueErrorKind) -> ParseError<'i> {
-        ParseError::V(v)
-    }
-}
-
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
 pub enum ValueErrorKind {

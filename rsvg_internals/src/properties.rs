@@ -227,7 +227,7 @@ pub struct ComputedValues {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
+pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, CssParseError<'i>> {
     // please keep these sorted
     match prop_name.expanded() {
         expanded_name!("", "baseline-shift") =>
@@ -300,7 +300,8 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
             if accept_shorthands {
                 Ok(ParsedProperty::Marker(parse_input(input)?))
             } else {
-                Err(ValueErrorKind::UnknownProperty)?
+                let loc = input.current_source_location();
+                Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
             }
         }
 
@@ -373,7 +374,10 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
         expanded_name!("", "writing-mode") =>
             Ok(ParsedProperty::WritingMode(parse_input(input)?)),
 
-        _ => Err(ValueErrorKind::UnknownProperty)?
+        _ => {
+            let loc = input.current_source_location();
+            Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
+        }
     }
 }
 
@@ -536,25 +540,19 @@ impl SpecifiedValues {
         match parse_property(&attr, &mut parser, false) {
             Ok(prop) => self.set_parsed_property(&prop),
 
-            // not a presentation attribute
-            Err(ParseError::V(ValueErrorKind::UnknownProperty)) => (),
+            // not a presentation attribute; just ignore it
+            Err(CssParseError {
+                kind: ParseErrorKind::Custom(ValueErrorKind::UnknownProperty),
+                ..
+            }) => (),
 
             // https://www.w3.org/TR/CSS2/syndata.html#unsupported-values
             // For all the following cases, ignore illegal values; don't set the whole node to
             // be in error in that case.
-            Err(ParseError::V(v)) => {
-                rsvg_log!(
-                    "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
-                    attr.expanded(),
-                    value,
-                    v
-                );
-            }
-
-            Err(ParseError::P(CssParseError {
+            Err(CssParseError {
                 kind: ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(ref t)),
                 ..
-            })) => {
+            }) => {
                 let mut tok = String::new();
 
                 t.to_css(&mut tok).unwrap(); // FIXME: what do we do with a fmt::Error?
@@ -567,10 +565,10 @@ impl SpecifiedValues {
                 );
             }
 
-            Err(ParseError::P(CssParseError {
+            Err(CssParseError {
                 kind: ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput),
                 ..
-            })) => {
+            }) => {
                 rsvg_log!(
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected end of input)",
@@ -579,10 +577,10 @@ impl SpecifiedValues {
                 );
             }
 
-            Err(ParseError::P(CssParseError {
+            Err(CssParseError {
                 kind: ParseErrorKind::Basic(_),
                 ..
-            })) => {
+            }) => {
                 rsvg_log!(
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected error)",
@@ -591,10 +589,10 @@ impl SpecifiedValues {
                 );
             }
 
-            Err(ParseError::P(CssParseError {
+            Err(CssParseError {
                 kind: ParseErrorKind::Custom(ref v),
                 ..
-            })) => {
+            }) => {
                 rsvg_log!(
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
                     attr.expanded(),
