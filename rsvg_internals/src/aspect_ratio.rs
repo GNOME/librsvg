@@ -220,7 +220,7 @@ fn parse_fit_mode<'i>(parser: &mut Parser<'i, '_>) -> Result<FitMode, BasicParse
 }
 
 impl Parse for AspectRatio {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<AspectRatio, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<AspectRatio, ParseError<'i>> {
         let defer = parser
             .try_parse(|p| p.expect_ident_matching("defer"))
             .is_ok();

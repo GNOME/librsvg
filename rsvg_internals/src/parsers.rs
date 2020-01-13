@@ -12,13 +12,13 @@ pub trait Parse: Sized {
     /// Parses a value out of the `parser`.
     ///
     /// All value types should implement this for composability.
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>>;
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>>;
 
     /// Convenience function to parse a value out of a `&str`.
     ///
     /// This is useful mostly for tests which want to avoid creating a
     /// `cssparser::Parser` by hand.
-    fn parse_str<'i>(s: &'i str) -> Result<Self, CssParseError<'i>> {
+    fn parse_str<'i>(s: &'i str) -> Result<Self, ParseError<'i>> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
@@ -79,7 +79,7 @@ impl<T: Parse> ParseValue<T> for QualName {
 }
 
 impl Parse for f64 {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let loc = parser.current_source_location();
         parser.expect_number().map_err(|e| e.into()).and_then(|n| {
             if n.is_finite() {
@@ -98,7 +98,7 @@ impl Parse for f64 {
 pub struct NumberOptionalNumber<T: Parse>(pub T, pub T);
 
 impl<T: Parse + Copy> Parse for NumberOptionalNumber<T> {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let x = Parse::parse(parser)?;
 
         if !parser.is_exhausted() {
@@ -116,7 +116,7 @@ impl Parse for i32 {
     /// CSS integer
     ///
     /// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parser.expect_integer()?)
     }
 }

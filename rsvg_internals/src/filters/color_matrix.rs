@@ -224,7 +224,7 @@ impl FilterEffect for FeColorMatrix {
 }
 
 impl Parse for OperationType {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "matrix" => OperationType::Matrix,
