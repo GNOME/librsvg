@@ -4,7 +4,6 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use glib::translate::{Stash, ToGlibPtr};
 use nalgebra::{storage::Storage, Dim, Matrix};
 
 use crate::rect::{IRect, Rect};
@@ -1138,17 +1137,6 @@ impl SharedImageSurface {
             output_surface,
             self.surface_type.combine(other.surface_type),
         )
-    }
-
-    /// Returns a raw pointer to the underlying surface.
-    ///
-    /// # Safety
-    /// The returned pointer must not be used to modify the surface.
-    #[inline]
-    pub unsafe fn to_glib_none(
-        &self,
-    ) -> Stash<'_, *mut cairo_sys::cairo_surface_t, cairo::ImageSurface> {
-        self.surface.to_glib_none()
     }
 }
 
