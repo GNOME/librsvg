@@ -118,7 +118,7 @@ impl NodeTrait for FeImage {
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!("", "path") => {
                     let href = Href::parse(value)
-                        .map_err(|_| ValueErrorKind::parse_error("could not parse href"))
+                        .map_err(|e| ValueErrorKind::from(e))
                         .attribute(attr)?;
 
                     self.href = Some(href);
