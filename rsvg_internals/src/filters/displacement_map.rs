@@ -6,7 +6,7 @@ use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
-use crate::surface_utils::{iterators::Pixels, shared_surface::SharedImageSurface};
+use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
@@ -90,15 +90,13 @@ impl FilterEffect for FeDisplacementMap {
 
         let (sx, sy) = ctx.paffine().transform_distance(self.scale, self.scale);
 
-        let output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
+        let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
+            input.surface().surface_type(),
         )?;
 
-        {
-            let cr = cairo::Context::new(&output_surface);
-
+        surface.draw(&mut |cr| {
             for (x, y, displacement_pixel) in Pixels::within(&displacement_surface, bounds) {
                 let get_value = |channel| match channel {
                     ColorChannel::R => displacement_pixel.r,
@@ -126,12 +124,14 @@ impl FilterEffect for FeDisplacementMap {
                 input.surface().set_as_source_surface(&cr, -ox, -oy);
                 cr.paint();
             }
-        }
+
+            Ok(())
+        })?;
 
         Ok(FilterResult {
             name: self.base.result.clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::wrap(output_surface, input.surface().surface_type())?,
+                surface: surface.share()?,
                 bounds,
             },
         })
