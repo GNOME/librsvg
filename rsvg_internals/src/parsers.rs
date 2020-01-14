@@ -81,13 +81,12 @@ impl<T: Parse> ParseValue<T> for QualName {
 impl Parse for f64 {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let loc = parser.current_source_location();
-        parser.expect_number().map_err(|e| e.into()).and_then(|n| {
-            if n.is_finite() {
-                Ok(f64::from(n))
-            } else {
-                Err(loc.new_custom_error(ValueErrorKind::value_error("expected finite number")))
-            }
-        })
+        let n = parser.expect_number()?;
+        if n.is_finite() {
+            Ok(f64::from(n))
+        } else {
+            Err(loc.new_custom_error(ValueErrorKind::value_error("expected finite number")))
+        }
     }
 }
 
