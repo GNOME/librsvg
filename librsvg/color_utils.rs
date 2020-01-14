@@ -2,7 +2,7 @@ use libc;
 
 use std::ffi::CStr;
 
-use rsvg_internals::{Color, Parse, ParseError};
+use rsvg_internals::{Color, Parse};
 
 // There are two quirks here:
 //
@@ -37,27 +37,22 @@ fn rgba_to_argb(r: u8, g: u8, b: u8, a: u8) -> u32 {
     u32::from(a) << 24 | u32::from(r) << 16 | u32::from(g) << 8 | u32::from(b)
 }
 
-impl<'i> From<Result<Color, ParseError<'i>>> for ColorSpec {
-    fn from(result: Result<Color, ParseError<'i>>) -> ColorSpec {
-        match result {
-            Ok(Color::RGBA(rgba)) => ColorSpec {
-                kind: ColorKind::ARGB,
-                argb: rgba_to_argb(rgba.red, rgba.green, rgba.blue, rgba.alpha),
-            },
-
-            _ => ColorSpec {
-                kind: ColorKind::ParseError,
-                argb: 0,
-            },
-        }
-    }
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_css_parse_color(string: *const libc::c_char) -> ColorSpec {
     let s = CStr::from_ptr(string).to_string_lossy();
+    let r = <Color as Parse>::parse_str(&s);
 
-    ColorSpec::from(<Color as Parse>::parse_str(&s))
+    match r {
+        Ok(Color::RGBA(rgba)) => ColorSpec {
+            kind: ColorKind::ARGB,
+            argb: rgba_to_argb(rgba.red, rgba.green, rgba.blue, rgba.alpha),
+        },
+
+        _ => ColorSpec {
+            kind: ColorKind::ParseError,
+            argb: 0,
+        },
+    }
 }
 
 #[cfg(test)]
