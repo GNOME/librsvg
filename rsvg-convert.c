@@ -535,7 +535,7 @@ main (int argc, char **argv)
 #endif
 #endif
             else {
-                g_printerr (_("Unknown output format."));
+                g_printerr (_("Unknown output format.\n"));
                 exit (1);
             }
 
@@ -550,7 +550,7 @@ main (int argc, char **argv)
             if (spec.kind == RSVG_CSS_COLOR_SPEC_ARGB) {
                 background_color = spec.argb;
             } else {
-                g_printerr (_("Invalid color specification."));
+                g_printerr (_("Invalid color specification.\n"));
                 exit (1);
             }
 
