@@ -38,6 +38,7 @@ macro_rules! make_property {
      $($str_prop: expr => $variant: ident,)+
     ) => {
         #[derive(Debug, Copy, Clone, PartialEq)]
+        #[repr(C)]
         pub enum $name {
             $($variant),+
         }
