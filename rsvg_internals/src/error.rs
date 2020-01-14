@@ -55,6 +55,22 @@ impl fmt::Display for ValueErrorKind {
     }
 }
 
+impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
+    fn from(e: BasicParseError<'_>) -> ValueErrorKind {
+        let BasicParseError { kind, location: _ } = e;
+
+        let msg = match kind {
+            BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",
+            BasicParseErrorKind::EndOfInput => "unexpected end of input",
+            BasicParseErrorKind::AtRuleInvalid(_) => "invalid @-rule",
+            BasicParseErrorKind::AtRuleBodyInvalid => "invalid @-rule body",
+            BasicParseErrorKind::QualifiedRuleInvalid => "invalid qualified rule",
+        };
+
+        ValueErrorKind::parse_error(msg)
+    }
+}
+
 /// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
 pub struct NodeError {
@@ -75,22 +91,6 @@ impl error::Error for NodeError {
 impl fmt::Display for NodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}: {}", self.attr.expanded(), self.err)
-    }
-}
-
-impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
-    fn from(e: BasicParseError<'_>) -> ValueErrorKind {
-        let BasicParseError { kind, location: _ } = e;
-
-        let msg = match kind {
-            BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",
-            BasicParseErrorKind::EndOfInput => "unexpected end of input",
-            BasicParseErrorKind::AtRuleInvalid(_) => "invalid @-rule",
-            BasicParseErrorKind::AtRuleBodyInvalid => "invalid @-rule body",
-            BasicParseErrorKind::QualifiedRuleInvalid => "invalid qualified rule",
-        };
-
-        ValueErrorKind::parse_error(msg)
     }
 }
 
