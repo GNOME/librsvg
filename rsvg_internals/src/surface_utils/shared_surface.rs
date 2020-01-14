@@ -1135,15 +1135,15 @@ impl ImageSurface<Shared> {
         k3: f64,
         k4: f64,
     ) -> Result<SharedImageSurface, cairo::Status> {
-        let mut output_surface =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+        let mut output_surface = ExclusiveImageSurface::new(
+            self.width,
+            self.height,
+            self.surface_type.combine(other.surface_type),
+        )?;
 
         composite_arithmetic(self, other, &mut output_surface, bounds, k1, k2, k3, k4);
 
-        SharedImageSurface::wrap(
-            output_surface,
-            self.surface_type.combine(other.surface_type),
-        )
+        output_surface.share()
     }
 }
 
@@ -1152,46 +1152,42 @@ impl ImageSurface<Shared> {
 pub fn composite_arithmetic(
     surface1: &SharedImageSurface,
     surface2: &SharedImageSurface,
-    output_surface: &mut cairo::ImageSurface,
+    output_surface: &mut ExclusiveImageSurface,
     bounds: IRect,
     k1: f64,
     k2: f64,
     k3: f64,
     k4: f64,
 ) {
-    let output_stride = output_surface.get_stride() as usize;
+    for (x, y, pixel, pixel_2) in
+        Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
     {
-        let mut output_data = output_surface.get_data().unwrap();
+        let i1a = f64::from(pixel.a) / 255f64;
+        let i2a = f64::from(pixel_2.a) / 255f64;
+        let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
+        let oa = clamp(oa, 0f64, 1f64);
 
-        for (x, y, pixel, pixel_2) in
-            Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
-        {
-            let i1a = f64::from(pixel.a) / 255f64;
-            let i2a = f64::from(pixel_2.a) / 255f64;
-            let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
-            let oa = clamp(oa, 0f64, 1f64);
+        // Contents of image surfaces are transparent by default, so if the resulting pixel is
+        // transparent there's no need to do anything.
+        if oa > 0f64 {
+            let compute = |i1, i2| {
+                let i1 = f64::from(i1) / 255f64;
+                let i2 = f64::from(i2) / 255f64;
 
-            // Contents of image surfaces are transparent by default, so if the resulting pixel is
-            // transparent there's no need to do anything.
-            if oa > 0f64 {
-                let compute = |i1, i2| {
-                    let i1 = f64::from(i1) / 255f64;
-                    let i2 = f64::from(i2) / 255f64;
+                let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
+                let o = clamp(o, 0f64, oa);
 
-                    let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
-                    let o = clamp(o, 0f64, oa);
+                ((o * 255f64) + 0.5) as u8
+            };
 
-                    ((o * 255f64) + 0.5) as u8
-                };
+            let output_pixel = Pixel {
+                r: compute(pixel.r, pixel_2.r),
+                g: compute(pixel.g, pixel_2.g),
+                b: compute(pixel.b, pixel_2.b),
+                a: ((oa * 255f64) + 0.5) as u8,
+            };
 
-                let output_pixel = Pixel {
-                    r: compute(pixel.r, pixel_2.r),
-                    g: compute(pixel.g, pixel_2.g),
-                    b: compute(pixel.b, pixel_2.b),
-                    a: ((oa * 255f64) + 0.5) as u8,
-                };
-                output_data.set_pixel(output_stride, output_pixel, x, y);
-            }
+            output_surface.set_pixel(output_pixel, x, y);
         }
     }
 }
