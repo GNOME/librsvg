@@ -657,7 +657,13 @@ impl SpecifiedValues {
         let mut parser = Parser::new(&mut input);
 
         DeclarationListParser::new(&mut parser, DeclParser)
-            .filter_map(Result::ok) // ignore invalid property name or value
+            .filter_map(|r| match r {
+                Ok(decl) => Some(decl),
+                Err(e) => {
+                    rsvg_log!("Invalid declaration; ignoring: {:?}", e);
+                    None
+                }
+            })
             .for_each(|decl| self.set_property_from_declaration(&decl, important_styles));
 
         Ok(())
