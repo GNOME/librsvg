@@ -117,6 +117,7 @@ LIBRSVG_CRATE_SRC = 						\
 LIBRSVG_C_API_SRC =						\
 	librsvg/Cargo.toml					\
 	librsvg/c_api.rs					\
+	librsvg/color_utils.rs					\
 	librsvg/lib.rs						\
 	librsvg/pixbuf_utils.rs					\
 	$(NULL)
