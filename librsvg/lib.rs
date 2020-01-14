@@ -38,6 +38,8 @@ pub use crate::c_api::{
     rsvg_rust_handle_write,
 };
 
+pub use crate::color_utils::rsvg_css_parse_color;
+
 pub use crate::pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_max_size,
     rsvg_rust_pixbuf_from_file_at_size,
@@ -46,4 +48,5 @@ pub use crate::pixbuf_utils::{
 };
 
 mod c_api;
+mod color_utils;
 mod pixbuf_utils;
