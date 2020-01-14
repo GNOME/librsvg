@@ -1,6 +1,6 @@
 //! CSS font properties.
 
-use cssparser::{BasicParseError, Parser};
+use cssparser::Parser;
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
@@ -114,21 +114,19 @@ impl Parse for FontWeightSpec {
             })
             .or_else(|_: ParseError| {
                 let loc = parser.current_source_location();
-                parser
-                    .expect_integer()
-                    .map_err(|e: BasicParseError| e.into())
-                    .and_then(|i| match i {
-                        100 => Ok(FontWeightSpec::W100),
-                        200 => Ok(FontWeightSpec::W200),
-                        300 => Ok(FontWeightSpec::W300),
-                        400 => Ok(FontWeightSpec::W400),
-                        500 => Ok(FontWeightSpec::W500),
-                        600 => Ok(FontWeightSpec::W600),
-                        700 => Ok(FontWeightSpec::W700),
-                        800 => Ok(FontWeightSpec::W800),
-                        900 => Ok(FontWeightSpec::W900),
-                        _ => Err(loc.new_custom_error(ValueErrorKind::parse_error("parse error"))),
-                    })
+                let i = parser.expect_integer()?;
+                match i {
+                    100 => Ok(FontWeightSpec::W100),
+                    200 => Ok(FontWeightSpec::W200),
+                    300 => Ok(FontWeightSpec::W300),
+                    400 => Ok(FontWeightSpec::W400),
+                    500 => Ok(FontWeightSpec::W500),
+                    600 => Ok(FontWeightSpec::W600),
+                    700 => Ok(FontWeightSpec::W700),
+                    800 => Ok(FontWeightSpec::W800),
+                    900 => Ok(FontWeightSpec::W900),
+                    _ => Err(loc.new_custom_error(ValueErrorKind::parse_error("parse error"))),
+                }
             })
     }
 }
