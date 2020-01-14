@@ -40,17 +40,19 @@
 #![warn(unused)]
 use ::xml as xml_rs;
 
-pub use crate::color::{rsvg_css_parse_color, ColorKind, ColorSpec};
+pub use crate::color::Color;
 
 pub use crate::dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
 
-pub use crate::error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError};
+pub use crate::error::{DefsLookupErrorKind, HrefError, LoadingError, ParseError, RenderingError};
 
 pub use crate::handle::{
     Handle, LoadOptions, RsvgDimensionData, RsvgPositionData, RsvgSizeFunc, SizeCallback,
 };
 
 pub use crate::length::{Length, LengthUnit, RsvgLength};
+
+pub use crate::parsers::Parse;
 
 pub use crate::rect::IRect;
 
