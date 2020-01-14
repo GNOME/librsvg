@@ -58,7 +58,7 @@ pub struct ColorSpec {
     argb: u32,
 }
 
-pub fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
+fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
     u32::from(rgba.alpha) << 24
         | u32::from(rgba.red) << 16
         | u32::from(rgba.green) << 8
