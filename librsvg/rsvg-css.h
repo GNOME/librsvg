@@ -36,7 +36,6 @@ G_BEGIN_DECLS
 
 /* Keep this in sync with rust/src/color.rs:ColorKind */
 typedef enum {
-    RSVG_CSS_COLOR_SPEC_INHERIT,
     RSVG_CSS_COLOR_SPEC_CURRENT_COLOR,
     RSVG_CSS_COLOR_SPEC_ARGB,
     RSVG_CSS_COLOR_PARSE_ERROR

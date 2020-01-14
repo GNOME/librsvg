@@ -45,7 +45,6 @@ impl Parse for cssparser::RGBA {
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ColorKind {
-    Inherit,
     CurrentColor,
     ARGB,
     ParseError,
@@ -66,20 +65,15 @@ pub fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
         | u32::from(rgba.blue)
 }
 
-impl<'i> From<Result<Option<cssparser::Color>, ParseError<'i>>> for ColorSpec {
-    fn from(result: Result<Option<cssparser::Color>, ParseError<'i>>) -> ColorSpec {
+impl<'i> From<Result<cssparser::Color, ParseError<'i>>> for ColorSpec {
+    fn from(result: Result<cssparser::Color, ParseError<'i>>) -> ColorSpec {
         match result {
-            Ok(None) => ColorSpec {
-                kind: ColorKind::Inherit,
-                argb: 0,
-            },
-
-            Ok(Some(cssparser::Color::CurrentColor)) => ColorSpec {
+            Ok(cssparser::Color::CurrentColor) => ColorSpec {
                 kind: ColorKind::CurrentColor,
                 argb: 0,
             },
 
-            Ok(Some(cssparser::Color::RGBA(rgba))) => ColorSpec {
+            Ok(cssparser::Color::RGBA(rgba)) => ColorSpec {
                 kind: ColorKind::ARGB,
                 argb: rgba_to_argb(rgba),
             },
@@ -96,14 +90,7 @@ impl<'i> From<Result<Option<cssparser::Color>, ParseError<'i>>> for ColorSpec {
 pub extern "C" fn rsvg_css_parse_color(string: *const libc::c_char) -> ColorSpec {
     let s = unsafe { utf8_cstr(string) };
 
-    if s == "inherit" {
-        ColorSpec {
-            kind: ColorKind::Inherit,
-            argb: 0,
-        }
-    } else {
-        ColorSpec::from(<Color as Parse>::parse_str(s).map(Some))
-    }
+    ColorSpec::from(<Color as Parse>::parse_str(s))
 }
 
 #[cfg(test)]
