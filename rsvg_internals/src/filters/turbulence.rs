@@ -7,8 +7,8 @@ use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt, Pixel,
+    shared_surface::{ExclusiveImageSurface, SurfaceType},
+    Pixel,
 };
 use crate::util::clamp;
 
@@ -352,60 +352,55 @@ impl FilterEffect for FeTurbulence {
             f64::from(bounds.height()),
         );
 
-        let mut output_surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            ctx.source_graphic().width(),
-            ctx.source_graphic().height(),
-        )?;
-
-        let output_stride = output_surface.get_stride() as usize;
-        {
-            let mut output_data = output_surface.get_data().unwrap();
-
-            for y in bounds.y_range() {
-                for x in bounds.x_range() {
-                    let point = affine.transform_point(f64::from(x), f64::from(y));
-                    let point = [point.0, point.1];
-
-                    let generate = |color_channel| {
-                        let v = noise_generator.turbulence(
-                            color_channel,
-                            point,
-                            f64::from(x - bounds.x0),
-                            f64::from(y - bounds.y0),
-                        );
-
-                        let v = match self.type_ {
-                            NoiseType::FractalNoise => (v * 255.0 + 255.0) / 2.0,
-                            NoiseType::Turbulence => v * 255.0,
-                        };
-
-                        (clamp(v, 0.0, 255.0) + 0.5) as u8
-                    };
-
-                    let pixel = Pixel {
-                        r: generate(0),
-                        g: generate(1),
-                        b: generate(2),
-                        a: generate(3),
-                    }
-                    .premultiply();
-
-                    output_data.set_pixel(output_stride, pixel, x as u32, y as u32);
-                }
-            }
-        }
-
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
         // The generated color values are in the color space determined by
         // color-interpolation-filters.
         let surface_type = SurfaceType::from(values.color_interpolation_filters);
 
+        let mut surface = ExclusiveImageSurface::new(
+            ctx.source_graphic().width(),
+            ctx.source_graphic().height(),
+            surface_type,
+        )?;
+
+        for y in bounds.y_range() {
+            for x in bounds.x_range() {
+                let point = affine.transform_point(f64::from(x), f64::from(y));
+                let point = [point.0, point.1];
+
+                let generate = |color_channel| {
+                    let v = noise_generator.turbulence(
+                        color_channel,
+                        point,
+                        f64::from(x - bounds.x0),
+                        f64::from(y - bounds.y0),
+                    );
+
+                    let v = match self.type_ {
+                        NoiseType::FractalNoise => (v * 255.0 + 255.0) / 2.0,
+                        NoiseType::Turbulence => v * 255.0,
+                    };
+
+                    (clamp(v, 0.0, 255.0) + 0.5) as u8
+                };
+
+                let pixel = Pixel {
+                    r: generate(0),
+                    g: generate(1),
+                    b: generate(2),
+                    a: generate(3),
+                }
+                .premultiply();
+
+                surface.set_pixel(pixel, x as u32, y as u32);
+            }
+        }
+
         Ok(FilterResult {
             name: self.base.result.clone(),
             output: FilterOutput {
-                surface: SharedImageSurface::wrap(output_surface, surface_type)?,
+                surface: surface.share()?,
                 bounds,
             },
         })
