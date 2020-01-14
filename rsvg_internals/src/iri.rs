@@ -47,9 +47,8 @@ impl Parse for IRI {
             let url = parser.expect_url()?;
             parser.expect_exhausted()?;
 
-            let href = Href::parse(&url).map_err(|_| {
-                loc.new_custom_error(ValueErrorKind::parse_error("could not parse href"))
-            })?;
+            let href =
+                Href::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
 
             match href {
                 Href::PlainUrl(_) => Err(loc.new_custom_error(ValueErrorKind::parse_error(
