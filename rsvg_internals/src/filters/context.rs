@@ -10,7 +10,9 @@ use crate::node::RsvgNode;
 use crate::paint_server::PaintServer;
 use crate::properties::ComputedValues;
 use crate::rect::IRect;
-use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::surface_utils::shared_surface::{
+    ExclusiveImageSurface, SharedImageSurface, SurfaceType,
+};
 use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
@@ -220,18 +222,11 @@ impl FilterContext {
     pub fn into_output(self) -> Result<SharedImageSurface, cairo::Status> {
         match self.last_result {
             Some(FilterOutput { surface, bounds }) => surface.to_srgb(bounds),
-            None => {
-                let empty_surface = cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    self.source_surface.width(),
-                    self.source_surface.height(),
-                )?;
-
-                Ok(SharedImageSurface::wrap(
-                    empty_surface,
-                    SurfaceType::AlphaOnly,
-                )?)
-            }
+            None => SharedImageSurface::empty(
+                self.source_surface.width(),
+                self.source_surface.height(),
+                SurfaceType::AlphaOnly,
+            ),
         }
     }
 
@@ -281,34 +276,38 @@ impl FilterContext {
         draw_ctx: &mut DrawingCtx,
         paint_server: &PaintServer,
         opacity: UnitInterval,
-    ) -> Result<cairo::ImageSurface, cairo::Status> {
-        let surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let mut surface = ExclusiveImageSurface::new(
             self.source_surface.width(),
             self.source_surface.height(),
+            SurfaceType::SRgb,
         )?;
 
-        let cr_save = draw_ctx.get_cairo_context();
-        let cr = cairo::Context::new(&surface);
-        draw_ctx.set_cairo_context(&cr);
+        surface.draw(&mut |cr| {
+            let cr_save = draw_ctx.get_cairo_context();
+            draw_ctx.set_cairo_context(&cr);
 
-        // FIXME: we are ignoring the following error; propagate it upstream
-        let _ = draw_ctx
-            .set_source_paint_server(
-                paint_server,
-                opacity,
-                &self.node_bbox,
-                self.computed_from_node_being_filtered.color.0,
-            )
-            .and_then(|had_paint_server| {
-                if had_paint_server {
-                    cr.paint();
-                }
-                Ok(())
-            });
+            // FIXME: we are ignoring the following error; propagate it upstream
+            let _ = draw_ctx
+                .set_source_paint_server(
+                    paint_server,
+                    opacity,
+                    &self.node_bbox,
+                    self.computed_from_node_being_filtered.color.0,
+                )
+                .and_then(|had_paint_server| {
+                    if had_paint_server {
+                        cr.paint();
+                    }
+                    Ok(())
+                });
 
-        draw_ctx.set_cairo_context(&cr_save);
-        Ok(surface)
+            draw_ctx.set_cairo_context(&cr_save);
+
+            Ok(())
+        })?;
+
+        surface.share()
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
@@ -357,19 +356,11 @@ impl FilterContext {
             Input::FillPaint => self
                 .get_paint_server_surface(draw_ctx, &values.fill.0, values.fill_opacity.0)
                 .map_err(FilterError::CairoError)
-                .and_then(|surface| {
-                    SharedImageSurface::wrap(surface, SurfaceType::SRgb)
-                        .map_err(FilterError::CairoError)
-                })
                 .map(FilterInput::StandardInput),
 
             Input::StrokePaint => self
                 .get_paint_server_surface(draw_ctx, &values.stroke.0, values.stroke_opacity.0)
                 .map_err(FilterError::CairoError)
-                .and_then(|surface| {
-                    SharedImageSurface::wrap(surface, SurfaceType::SRgb)
-                        .map_err(FilterError::CairoError)
-                })
                 .map(FilterInput::StandardInput),
 
             Input::FilterOutput(ref name) => self

@@ -31,7 +31,10 @@ use crate::property_defs::{
 use crate::rect::{Rect, TransformRect};
 use crate::shapes::Markers;
 use crate::structure::{ClipPath, Mask, Symbol, Use};
-use crate::surface_utils::{shared_surface::SharedImageSurface, shared_surface::SurfaceType};
+use crate::surface_utils::{
+    shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
+    shared_surface::SurfaceType,
+};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
@@ -926,11 +929,9 @@ impl DrawingCtx {
         //
         // CSS Compositing and Blending, "isolation" property:
         //   https://www.w3.org/TR/compositing-1/#isolation
-        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        {
-            let cr = cairo::Context::new(&surface);
-
+        surface.draw(&mut |cr| {
             for (depth, draw) in self.cr_stack.iter().enumerate() {
                 let affines = CompositingAffines::new(
                     draw.get_matrix(),
@@ -942,9 +943,11 @@ impl DrawingCtx {
                 cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
                 cr.paint();
             }
-        }
 
-        SharedImageSurface::wrap(surface, SurfaceType::SRgb)
+            Ok(())
+        })?;
+
+        surface.share()
     }
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, RenderingError> {
