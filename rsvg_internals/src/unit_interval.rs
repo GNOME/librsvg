@@ -16,7 +16,7 @@ impl UnitInterval {
 }
 
 impl Parse for UnitInterval {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<UnitInterval, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<UnitInterval, ParseError<'i>> {
         let x = f64::parse(parser)?;
         Ok(UnitInterval::clamp(x))
     }

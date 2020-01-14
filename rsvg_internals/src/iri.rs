@@ -35,7 +35,7 @@ impl IRI {
 }
 
 impl Parse for IRI {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<IRI, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<IRI, ParseError<'i>> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))
             .is_ok()

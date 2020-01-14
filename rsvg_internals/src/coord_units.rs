@@ -15,7 +15,7 @@ pub enum CoordUnits {
 }
 
 impl Parse for CoordUnits {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "userSpaceOnUse" => CoordUnits::UserSpaceOnUse,
@@ -53,7 +53,7 @@ macro_rules! coord_units {
         impl $crate::parsers::Parse for $name {
             fn parse<'i>(
                 parser: &mut ::cssparser::Parser<'i, '_>,
-            ) -> Result<Self, $crate::error::CssParseError<'i>> {
+            ) -> Result<Self, $crate::error::ParseError<'i>> {
                 Ok($name($crate::coord_units::CoordUnits::parse(parser)?))
             }
         }

@@ -20,7 +20,7 @@ pub enum Input {
 pub struct CustomIdent(String);
 
 impl Parse for Input {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         parser
             .try_parse(|p| {
                 Ok(parse_identifiers!(
@@ -41,7 +41,7 @@ impl Parse for Input {
 }
 
 impl Parse for CustomIdent {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let loc = parser.current_source_location();
         let token = parser.next()?;
 

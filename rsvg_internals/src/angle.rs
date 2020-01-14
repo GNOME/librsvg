@@ -62,7 +62,7 @@ impl Angle {
 // angle ::= number ("deg" | "grad" | "rad")?
 //
 impl Parse for Angle {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Angle, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Angle, ParseError<'i>> {
         let angle = {
             let loc = parser.current_source_location();
 

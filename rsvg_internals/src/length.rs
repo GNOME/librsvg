@@ -227,7 +227,7 @@ const MM_PER_INCH: f64 = 25.4;
 const PICA_PER_INCH: f64 = 6.0;
 
 impl<N: Normalize> Parse for Length<N> {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Length<N>, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Length<N>, ParseError<'i>> {
         let length = {
             let token = parser.next()?.clone();
 

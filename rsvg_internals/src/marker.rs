@@ -37,7 +37,7 @@ impl Default for MarkerUnits {
 }
 
 impl Parse for MarkerUnits {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerUnits, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerUnits, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "userSpaceOnUse" => MarkerUnits::UserSpaceOnUse,
@@ -60,7 +60,7 @@ impl Default for MarkerOrient {
 }
 
 impl Parse for MarkerOrient {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, ParseError<'i>> {
         parser
             .try_parse(|p| p.expect_ident_matching("auto").map(|_| MarkerOrient::Auto))
             .or_else(|_| Angle::parse(parser).map(MarkerOrient::Angle))

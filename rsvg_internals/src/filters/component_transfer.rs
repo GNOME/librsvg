@@ -60,7 +60,7 @@ enum FunctionType {
 }
 
 impl Parse for FunctionType {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parse_identifiers!(
             parser,
             "identity" => FunctionType::Identity,

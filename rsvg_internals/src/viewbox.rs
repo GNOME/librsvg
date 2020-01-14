@@ -19,7 +19,7 @@ impl Parse for ViewBox {
     // x, y, w, h
     //
     // Where w and h must be nonnegative.
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<ViewBox, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<ViewBox, ParseError<'i>> {
         let loc = parser.current_source_location();
 
         let NumberList(v) = NumberList::parse(parser, NumberListLength::Exact(4))?;

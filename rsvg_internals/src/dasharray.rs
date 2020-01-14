@@ -19,7 +19,7 @@ impl Default for Dasharray {
 }
 
 impl Parse for Dasharray {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Dasharray, CssParseError<'i>> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Dasharray, ParseError<'i>> {
         if parser
             .try_parse(|p| p.expect_ident_matching("none"))
             .is_ok()

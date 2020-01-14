@@ -18,24 +18,7 @@ use crate::node::RsvgNode;
 /// The code flow will sometimes require preserving this error as a long-lived struct;
 /// see the `impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>>` for that
 /// purpose.
-pub type CssParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
-
-pub enum ParseError<'i> {
-    P(CssParseError<'i>),
-    V(ValueErrorKind),
-}
-
-impl<'i> From<CssParseError<'i>> for ParseError<'i> {
-    fn from(p: CssParseError<'i>) -> ParseError {
-        ParseError::P(p)
-    }
-}
-
-impl<'i> From<ValueErrorKind> for ParseError<'i> {
-    fn from(v: ValueErrorKind) -> ParseError<'i> {
-        ParseError::V(v)
-    }
-}
+pub type ParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
 
 /// A simple error which refers to an attribute's value
 #[derive(Debug, Clone, PartialEq)]
@@ -197,12 +180,12 @@ impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O> for Result<O, E> {
 }
 
 /// Turns a short-lived `ParseError` into a long-lived `NodeError`
-impl<'i, O> AttributeResultExt<O> for Result<O, CssParseError<'i>> {
+impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
     fn attribute(self, attr: QualName) -> Result<O, NodeError> {
         self.map_err(|e| {
             // FIXME: eventually, here we'll want to preserve the location information
 
-            let CssParseError {
+            let ParseError {
                 kind,
                 location: _location,
             } = e;

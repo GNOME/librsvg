@@ -44,9 +44,9 @@ make_property!(
         impl Parse for BaselineShift {
             // These values come from Inkscape's SP_CSS_BASELINE_SHIFT_(SUB/SUPER/BASELINE);
             // see sp_style_merge_baseline_shift_from_parent()
-            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<BaselineShift, crate::error::CssParseError<'i>> {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<BaselineShift, crate::error::ParseError<'i>> {
                 parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse(p)?)))
-                    .or_else(|_: CssParseError| {
+                    .or_else(|_: ParseError| {
                         Ok(parse_identifiers!(
                             parser,
                             "baseline" => BaselineShift(Length::<Both>::new(0.0, LengthUnit::Percent)),
@@ -534,7 +534,7 @@ make_property!(
 
     parse_impl: {
         impl Parse for TextDecoration {
-            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TextDecoration, CssParseError<'i>> {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TextDecoration, ParseError<'i>> {
                 let mut overline = false;
                 let mut underline = false;
                 let mut strike = false;
@@ -691,7 +691,7 @@ make_property!(
         impl Parse for XmlLang {
             fn parse<'i>(
                 parser: &mut Parser<'i, '_>,
-            ) -> Result<XmlLang, CssParseError<'i>> {
+            ) -> Result<XmlLang, ParseError<'i>> {
                 Ok(XmlLang(parser.expect_ident()?.to_string()))
             }
         }
