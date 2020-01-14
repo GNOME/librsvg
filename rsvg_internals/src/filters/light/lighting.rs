@@ -21,7 +21,7 @@ use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
-    shared_surface::{SharedImageSurface, SurfaceType},
+    shared_surface::{ExclusiveImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
@@ -294,15 +294,21 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let mut output_surface = cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
+                let cascaded = CascadedValues::new_from_node(node);
+                let values = cascaded.get();
+                // The generated color values are in the color space determined by
+                // color-interpolation-filters.
+                let surface_type = SurfaceType::from(values.color_interpolation_filters);
+
+                let mut surface = ExclusiveImageSurface::new(
                     input_surface.width(),
                     input_surface.height(),
+                    surface_type,
                 )?;
 
-                let output_stride = output_surface.get_stride() as usize;
                 {
-                    let mut output_data = output_surface.get_data().unwrap();
+                    let output_stride = surface.stride() as usize;
+                    let mut output_data = surface.get_data();
                     let output_slice = &mut *output_data;
 
                     let compute_output_pixel =
@@ -438,16 +444,11 @@ macro_rules! impl_lighting_filter {
                     }
                 }
 
-                let cascaded = CascadedValues::new_from_node(node);
-                let values = cascaded.get();
-                // The generated color values are in the color space determined by
-                // color-interpolation-filters.
-                let surface_type = SurfaceType::from(values.color_interpolation_filters);
-                let mut output_surface = SharedImageSurface::wrap(output_surface, surface_type)?;
+                let mut surface = surface.share()?;
 
                 if let Some((ox, oy)) = scale {
                     // Scale the output surface back.
-                    output_surface = output_surface.scale_to(
+                    surface = surface.scale_to(
                         ctx.source_graphic().width(),
                         ctx.source_graphic().height(),
                         original_bounds,
@@ -460,10 +461,7 @@ macro_rules! impl_lighting_filter {
 
                 Ok(FilterResult {
                     name: self.common().base.result.clone(),
-                    output: FilterOutput {
-                        surface: output_surface,
-                        bounds,
-                    },
+                    output: FilterOutput { surface, bounds },
                 })
             }
 
