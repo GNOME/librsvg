@@ -45,7 +45,6 @@ impl Parse for cssparser::RGBA {
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ColorKind {
-    CurrentColor,
     ARGB,
     ParseError,
 }
@@ -68,11 +67,6 @@ fn rgba_to_argb(rgba: cssparser::RGBA) -> u32 {
 impl<'i> From<Result<cssparser::Color, ParseError<'i>>> for ColorSpec {
     fn from(result: Result<cssparser::Color, ParseError<'i>>) -> ColorSpec {
         match result {
-            Ok(cssparser::Color::CurrentColor) => ColorSpec {
-                kind: ColorKind::CurrentColor,
-                argb: 0,
-            },
-
             Ok(cssparser::Color::RGBA(rgba)) => ColorSpec {
                 kind: ColorKind::ARGB,
                 argb: rgba_to_argb(rgba),
@@ -185,11 +179,11 @@ mod tests {
     }
 
     #[test]
-    fn parses_current_color() {
+    fn current_color_is_error() {
         assert_eq!(
             parse("currentColor"),
             ColorSpec {
-                kind: ColorKind::CurrentColor,
+                kind: ColorKind::ParseError,
                 argb: 0,
             }
         );
