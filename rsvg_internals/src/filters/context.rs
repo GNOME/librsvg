@@ -220,18 +220,11 @@ impl FilterContext {
     pub fn into_output(self) -> Result<SharedImageSurface, cairo::Status> {
         match self.last_result {
             Some(FilterOutput { surface, bounds }) => surface.to_srgb(bounds),
-            None => {
-                let empty_surface = cairo::ImageSurface::create(
-                    cairo::Format::ARgb32,
-                    self.source_surface.width(),
-                    self.source_surface.height(),
-                )?;
-
-                Ok(SharedImageSurface::wrap(
-                    empty_surface,
-                    SurfaceType::AlphaOnly,
-                )?)
-            }
+            None => SharedImageSurface::empty(
+                self.source_surface.width(),
+                self.source_surface.height(),
+                SurfaceType::AlphaOnly,
+            ),
         }
     }
 
