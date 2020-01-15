@@ -1159,37 +1159,39 @@ pub fn composite_arithmetic(
     k3: f64,
     k4: f64,
 ) {
-    for (x, y, pixel, pixel_2) in
-        Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
-    {
-        let i1a = f64::from(pixel.a) / 255f64;
-        let i2a = f64::from(pixel_2.a) / 255f64;
-        let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
-        let oa = clamp(oa, 0f64, 1f64);
+    output_surface.modify(&mut |data, stride| {
+        for (x, y, pixel, pixel_2) in
+            Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
+        {
+            let i1a = f64::from(pixel.a) / 255f64;
+            let i2a = f64::from(pixel_2.a) / 255f64;
+            let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
+            let oa = clamp(oa, 0f64, 1f64);
 
-        // Contents of image surfaces are transparent by default, so if the resulting pixel is
-        // transparent there's no need to do anything.
-        if oa > 0f64 {
-            let compute = |i1, i2| {
-                let i1 = f64::from(i1) / 255f64;
-                let i2 = f64::from(i2) / 255f64;
+            // Contents of image surfaces are transparent by default, so if the resulting pixel is
+            // transparent there's no need to do anything.
+            if oa > 0f64 {
+                let compute = |i1, i2| {
+                    let i1 = f64::from(i1) / 255f64;
+                    let i2 = f64::from(i2) / 255f64;
 
-                let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
-                let o = clamp(o, 0f64, oa);
+                    let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
+                    let o = clamp(o, 0f64, oa);
 
-                ((o * 255f64) + 0.5) as u8
-            };
+                    ((o * 255f64) + 0.5) as u8
+                };
 
-            let output_pixel = Pixel {
-                r: compute(pixel.r, pixel_2.r),
-                g: compute(pixel.g, pixel_2.g),
-                b: compute(pixel.b, pixel_2.b),
-                a: ((oa * 255f64) + 0.5) as u8,
-            };
+                let output_pixel = Pixel {
+                    r: compute(pixel.r, pixel_2.r),
+                    g: compute(pixel.g, pixel_2.g),
+                    b: compute(pixel.b, pixel_2.b),
+                    a: ((oa * 255f64) + 0.5) as u8,
+                };
 
-            output_surface.set_pixel(output_pixel, x, y);
+                data.set_pixel(stride, output_pixel, x, y);
+            }
         }
-    }
+    });
 }
 
 impl ImageSurface<Exclusive> {
@@ -1236,11 +1238,16 @@ impl ImageSurface<Exclusive> {
         self.surface.get_data().unwrap()
     }
 
-    /// Sets the pixel at the given coordinates. Assumes the `ARgb32` format.
+    /// Modify the image data
     #[inline]
-    pub fn set_pixel(&mut self, pixel: Pixel, x: u32, y: u32) {
-        let stride = self.stride as usize;
-        self.get_data().set_pixel(stride, pixel, x, y);
+    pub fn modify(
+        &mut self,
+        draw_fn: &mut dyn FnMut(&mut cairo::ImageSurfaceData, usize),
+    ) {
+        let stride = self.stride() as usize;
+        let mut data = self.get_data();
+
+        draw_fn(&mut data, stride)
     }
 
     /// Draw on the surface using cairo

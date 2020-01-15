@@ -6,7 +6,7 @@ use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 
 // Include the linearization and unlinearization tables.
@@ -32,28 +32,30 @@ pub fn map_unpremultiplied_components_loop<F: Fn(u8) -> u8>(
     bounds: IRect,
     f: F,
 ) {
-    for (x, y, pixel) in Pixels::within(surface, bounds) {
-        if pixel.a > 0 {
-            let alpha = f64::from(pixel.a) / 255f64;
+    output_surface.modify(&mut |data, stride| {
+        for (x, y, pixel) in Pixels::within(surface, bounds) {
+            if pixel.a > 0 {
+                let alpha = f64::from(pixel.a) / 255f64;
 
-            let compute = |x| {
-                let x = f64::from(x) / alpha; // Unpremultiply alpha.
-                let x = (x + 0.5) as u8; // Round to nearest u8.
-                let x = f(x);
-                let x = f64::from(x) * alpha; // Premultiply alpha again.
-                (x + 0.5) as u8
-            };
+                let compute = |x| {
+                    let x = f64::from(x) / alpha; // Unpremultiply alpha.
+                    let x = (x + 0.5) as u8; // Round to nearest u8.
+                    let x = f(x);
+                    let x = f64::from(x) * alpha; // Premultiply alpha again.
+                    (x + 0.5) as u8
+                };
 
-            let output_pixel = Pixel {
-                r: compute(pixel.r),
-                g: compute(pixel.g),
-                b: compute(pixel.b),
-                a: pixel.a,
-            };
+                let output_pixel = Pixel {
+                    r: compute(pixel.r),
+                    g: compute(pixel.g),
+                    b: compute(pixel.b),
+                    a: pixel.a,
+                };
 
-            output_surface.set_pixel(output_pixel, x, y);
+                data.set_pixel(stride, output_pixel, x, y);
+            }
         }
-    }
+    });
 }
 
 /// Applies the function to each pixel component after unpremultiplying.
