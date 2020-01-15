@@ -201,11 +201,7 @@ mod tests {
         const WIDTH: i32 = 32;
         const HEIGHT: i32 = 64;
 
-        let surface = SharedImageSurface::wrap(
-            cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
-            SurfaceType::SRgb,
-        )
-        .unwrap();
+        let surface = SharedImageSurface::empty(WIDTH, HEIGHT, SurfaceType::SRgb).unwrap();
 
         // Full image.
         assert_eq!(Pixels::new(&surface).count(), (WIDTH * HEIGHT) as usize);
@@ -240,11 +236,7 @@ mod tests {
         const WIDTH: i32 = 32;
         const HEIGHT: i32 = 64;
 
-        let surface = SharedImageSurface::wrap(
-            cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap(),
-            SurfaceType::SRgb,
-        )
-        .unwrap();
+        let surface = SharedImageSurface::empty(WIDTH, HEIGHT, SurfaceType::SRgb).unwrap();
 
         let rect_bounds = IRect::new(-8, -8, 8, 8);
         assert_eq!(
