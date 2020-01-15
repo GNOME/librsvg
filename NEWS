@@ -6,6 +6,27 @@ Version 2.47.2
   "initial", and "unset" are disallowed.  Most SVGs should still work
   fine.
 
+- #542 - Fix infinite loop when processing CSS sibling combinators.
+
+- #408 - feImage filters no longer clip their output to integer
+  coordinates.
+
+- #504 - Documentation for the Rust crate (available at
+  https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/) now has
+  API usage examples.
+
+- Debug logs from RSVG_LOG=1 should now be more legible and contain
+  better information on invalid CSS.
+
+- Remove link-time workarounds for Rust pre-1.35 (Kleis Auke Wolthuizen).
+
+- Unify internal error types to share the CSS code with gnome-shell.
+
+- Made handling of XML namespaces more spec-compliant.
+
+- Lots of refactoring to start moving away from Cairo internals
+  (Paolo Borelli).
+
 Version 2.47.1
 
 - Librsvg no longer depends on libcroco!  It now does all CSS
