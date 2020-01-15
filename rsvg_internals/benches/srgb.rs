@@ -4,7 +4,7 @@ use criterion::{black_box, Criterion};
 
 use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::{
-    shared_surface::{SharedImageSurface, SurfaceType},
+    shared_surface::{ExclusiveImageSurface, SurfaceType},
     srgb::{linearize, map_unpremultiplied_components_loop},
     ImageSurfaceDataExt, Pixel,
 };
@@ -20,33 +20,31 @@ const BOUNDS: IRect = IRect {
 fn bench_srgb_linearization(c: &mut Criterion) {
     c.bench_function("srgb map_unpremultiplied_components", |b| {
         let mut surface =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
-        let mut output_surface =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE).unwrap();
+            ExclusiveImageSurface::new(SURFACE_SIDE, SURFACE_SIDE, SurfaceType::LinearRgb).unwrap();
 
-        // Fill the surface with non-zero alpha (otherwise linearization is a no-op).
-        let stride = surface.get_stride() as usize;
+        let surface_stride = surface.stride() as usize;
+
         {
-            let mut data = surface.get_data().unwrap();
+            let mut surface_data = surface.get_data();
+
+            // Fill the surface with non-zero alpha (otherwise linearization is a no-op).
             for y in BOUNDS.y_range() {
                 for x in BOUNDS.x_range() {
-                    data.set_pixel(
-                        stride,
-                        Pixel {
-                            r: 0,
-                            g: 0,
-                            b: 0,
-                            a: 127,
-                        },
-                        x as u32,
-                        y as u32,
-                    );
+                    let pixel = Pixel {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 127,
+                    };
+
+                    surface_data.set_pixel(surface_stride, pixel, x as u32, y as u32);
                 }
             }
         }
 
-        let surface = SharedImageSurface::wrap(surface, SurfaceType::LinearRgb).unwrap();
-
+        let surface = surface.share().unwrap();
+        let mut output_surface =
+            ExclusiveImageSurface::new(SURFACE_SIDE, SURFACE_SIDE, SurfaceType::SRgb).unwrap();
         let bounds = black_box(BOUNDS);
 
         b.iter(|| {

@@ -12,7 +12,7 @@ use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::ExclusiveImageSurface,
-    EdgeMode, Pixel,
+    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -98,43 +98,49 @@ impl FilterEffect for FeMorphology {
             input.surface().surface_type(),
         )?;
 
-        for (x, y, _pixel) in Pixels::within(input.surface(), bounds) {
-            // Compute the kernel rectangle bounds.
-            let kernel_bounds = IRect::new(
-                (f64::from(x) - rx).floor() as i32,
-                (f64::from(y) - ry).floor() as i32,
-                (f64::from(x) + rx).ceil() as i32 + 1,
-                (f64::from(y) + ry).ceil() as i32 + 1,
-            );
+        let surface_stride = surface.stride() as usize;
 
-            // Compute the new pixel values.
-            let initial = match self.operator {
-                Operator::Erode => u8::max_value(),
-                Operator::Dilate => u8::min_value(),
-            };
+        {
+            let mut surface_data = surface.get_data();
 
-            let mut output_pixel = Pixel {
-                r: initial,
-                g: initial,
-                b: initial,
-                a: initial,
-            };
+            for (x, y, _pixel) in Pixels::within(input.surface(), bounds) {
+                // Compute the kernel rectangle bounds.
+                let kernel_bounds = IRect::new(
+                    (f64::from(x) - rx).floor() as i32,
+                    (f64::from(y) - ry).floor() as i32,
+                    (f64::from(x) + rx).ceil() as i32 + 1,
+                    (f64::from(y) + ry).ceil() as i32 + 1,
+                );
 
-            for (_x, _y, pixel) in
-                PixelRectangle::within(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
-            {
-                let op = match self.operator {
-                    Operator::Erode => min,
-                    Operator::Dilate => max,
+                // Compute the new pixel values.
+                let initial = match self.operator {
+                    Operator::Erode => u8::max_value(),
+                    Operator::Dilate => u8::min_value(),
                 };
 
-                output_pixel.r = op(output_pixel.r, pixel.r);
-                output_pixel.g = op(output_pixel.g, pixel.g);
-                output_pixel.b = op(output_pixel.b, pixel.b);
-                output_pixel.a = op(output_pixel.a, pixel.a);
-            }
+                let mut output_pixel = Pixel {
+                    r: initial,
+                    g: initial,
+                    b: initial,
+                    a: initial,
+                };
 
-            surface.set_pixel(output_pixel, x, y);
+                for (_x, _y, pixel) in
+                    PixelRectangle::within(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
+                {
+                    let op = match self.operator {
+                        Operator::Erode => min,
+                        Operator::Dilate => max,
+                    };
+
+                    output_pixel.r = op(output_pixel.r, pixel.r);
+                    output_pixel.g = op(output_pixel.g, pixel.g);
+                    output_pixel.b = op(output_pixel.b, pixel.b);
+                    output_pixel.a = op(output_pixel.a, pixel.a);
+                }
+
+                surface_data.set_pixel(surface_stride, output_pixel, x, y);
+            }
         }
 
         Ok(FilterResult {

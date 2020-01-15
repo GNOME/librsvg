@@ -5,7 +5,7 @@
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels,
-    shared_surface::{SharedImageSurface, SurfaceType},
+    shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
 };
 
@@ -28,34 +28,33 @@ pub fn unlinearize(c: u8) -> u8 {
 #[inline]
 pub fn map_unpremultiplied_components_loop<F: Fn(u8) -> u8>(
     surface: &SharedImageSurface,
-    output_surface: &mut cairo::ImageSurface,
+    output_surface: &mut ExclusiveImageSurface,
     bounds: IRect,
     f: F,
 ) {
-    let output_stride = output_surface.get_stride() as usize;
-    {
-        let mut output_data = output_surface.get_data().unwrap();
+    let output_stride = output_surface.stride() as usize;
+    let mut output_data = output_surface.get_data();
 
-        for (x, y, pixel) in Pixels::within(surface, bounds) {
-            if pixel.a > 0 {
-                let alpha = f64::from(pixel.a) / 255f64;
+    for (x, y, pixel) in Pixels::within(surface, bounds) {
+        if pixel.a > 0 {
+            let alpha = f64::from(pixel.a) / 255f64;
 
-                let compute = |x| {
-                    let x = f64::from(x) / alpha; // Unpremultiply alpha.
-                    let x = (x + 0.5) as u8; // Round to nearest u8.
-                    let x = f(x);
-                    let x = f64::from(x) * alpha; // Premultiply alpha again.
-                    (x + 0.5) as u8
-                };
+            let compute = |x| {
+                let x = f64::from(x) / alpha; // Unpremultiply alpha.
+                let x = (x + 0.5) as u8; // Round to nearest u8.
+                let x = f(x);
+                let x = f64::from(x) * alpha; // Premultiply alpha again.
+                (x + 0.5) as u8
+            };
 
-                let output_pixel = Pixel {
-                    r: compute(pixel.r),
-                    g: compute(pixel.g),
-                    b: compute(pixel.b),
-                    a: pixel.a,
-                };
-                output_data.set_pixel(output_stride, output_pixel, x, y);
-            }
+            let output_pixel = Pixel {
+                r: compute(pixel.r),
+                g: compute(pixel.g),
+                b: compute(pixel.b),
+                a: pixel.a,
+            };
+
+            output_data.set_pixel(output_stride, output_pixel, x, y);
         }
     }
 }
@@ -72,13 +71,11 @@ fn map_unpremultiplied_components<F: Fn(u8) -> u8>(
         return Ok(surface.clone());
     }
 
-    let width = surface.width();
-    let height = surface.height();
-
-    let mut output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+    let (width, height) = (surface.width(), surface.height());
+    let mut output_surface = ExclusiveImageSurface::new(width, height, new_type)?;
     map_unpremultiplied_components_loop(surface, &mut output_surface, bounds, f);
 
-    SharedImageSurface::wrap(output_surface, new_type)
+    output_surface.share()
 }
 
 /// Converts an sRGB surface to a linear sRGB surface (undoes the gamma correction).

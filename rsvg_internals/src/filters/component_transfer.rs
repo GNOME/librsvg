@@ -9,7 +9,9 @@ use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
-use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface, Pixel};
+use crate::surface_utils::{
+    iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
+};
 use crate::util::clamp;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -355,18 +357,24 @@ impl FilterEffect for FeComponentTransfer {
         let compute_a = |alpha| compute_a(&params_a, alpha);
 
         // Do the actual processing.
-        for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
-            let alpha = f64::from(pixel.a) / 255f64;
-            let new_alpha = compute_a(alpha);
+        let surface_stride = surface.stride() as usize;
 
-            let output_pixel = Pixel {
-                r: compute_r(pixel.r, alpha, new_alpha),
-                g: compute_g(pixel.g, alpha, new_alpha),
-                b: compute_b(pixel.b, alpha, new_alpha),
-                a: ((new_alpha * 255f64) + 0.5) as u8,
-            };
+        {
+            let mut surface_data = surface.get_data();
 
-            surface.set_pixel(output_pixel, x, y);
+            for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
+                let alpha = f64::from(pixel.a) / 255f64;
+                let new_alpha = compute_a(alpha);
+
+                let output_pixel = Pixel {
+                    r: compute_r(pixel.r, alpha, new_alpha),
+                    g: compute_g(pixel.g, alpha, new_alpha),
+                    b: compute_b(pixel.b, alpha, new_alpha),
+                    a: ((new_alpha * 255f64) + 0.5) as u8,
+                };
+
+                surface_data.set_pixel(surface_stride, output_pixel, x, y);
+            }
         }
 
         Ok(FilterResult {
