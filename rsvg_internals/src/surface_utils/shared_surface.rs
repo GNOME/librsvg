@@ -16,7 +16,7 @@ use super::{
     EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
-/// Types of pixel data in a `SharedImageSurface`.
+/// Types of pixel data in a `ImageSurface`.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum SurfaceType {
     /// The pixel data is in the sRGB color space.
@@ -49,29 +49,21 @@ impl SurfaceType {
     }
 }
 
-/// Wrapper for a Cairo image surface that allows shared access.
+/// Wrapper for a Cairo image surface that enforces exclusive access when modifying it.
 ///
-/// There doesn't seem to be any good way of making safe shared access to `cairo::ImageSurface`
-/// data, since a read-only borrowed reference can still be cloned and then modified (for example,
-/// via a `Context`). We can't simply use `cairo::ImageSurface::get_data()` because in the filter
-/// code we have surfaces referenced from multiple places and it would probably add more complexity
-/// to remove that and start passing around references.
+/// Shared access to `cairo::ImageSurface` is tricky since a read-only borrowed reference
+/// can still be cloned and then modified. We can't simply use `cairo::ImageSurface::get_data()`
+/// because in the filter code we have surfaces referenced from multiple places and it would
+/// probably add more complexity to remove that and start passing around references.
 ///
-/// This wrapper asserts the uniqueness of its image surface and doesn't permit modifying it.
+/// This wrapper asserts the uniqueness of its image surface.
 ///
-/// Note: originally I had an idea of using `Rc<RefCell<cairo::ImageSurface>>` here which allows
-/// to create both read-only and unique read-write accessors safely, however then I realized a
-/// read-write accessor isn't of much use if it can't expose a Cairo context interface.
-/// Cairo contexts have the very same issue that they can be cloned from a read-only reference
-/// and break all safety constraints in this way. Thus the only safe way of exposing a Cairo
-/// context seemed to be to manually add all Cairo context methods on the accessor forwarding to
-/// the underlying Cairo context (without exposing the context itself to prevent cloning), which
-/// would result in too much code. Unless it's absolutely required, I'd like to avoid that.
-///
-/// Having just read-only access simplifies things further dropping the need for `Rc<RefCell<>>`
-/// altogether.
+/// It uses the typestate pattern to ensure that the surface can be modified only when
+/// it is in the `Exclusive` state, while in the `Shared` state it only allows read-only access.
 #[derive(Debug, Clone)]
-pub struct SharedImageSurface {
+pub struct ImageSurface<T> {
+    state: T,
+
     surface: cairo::ImageSurface,
 
     data_ptr: NonNull<u8>, // *const.
@@ -81,6 +73,18 @@ pub struct SharedImageSurface {
 
     surface_type: SurfaceType,
 }
+
+#[derive(Debug, Clone)]
+pub struct Shared;
+
+/// Shared state of `ImageSurface`
+pub type SharedImageSurface = ImageSurface<Shared>;
+
+#[derive(Debug, Clone)]
+pub struct Exclusive;
+
+/// Exclusive state of `ImageSurface`
+pub type ExclusiveImageSurface = ImageSurface<Exclusive>;
 
 // The access is read-only, the ref-counting on an `cairo::ImageSurface` is atomic.
 unsafe impl Sync for SharedImageSurface {}
@@ -121,7 +125,27 @@ impl IsAlphaOnly for NotAlphaOnly {
     const IS_ALPHA_ONLY: bool = false;
 }
 
-impl SharedImageSurface {
+impl<T> ImageSurface<T> {
+    /// Returns the surface width.
+    #[inline]
+    pub fn width(&self) -> i32 {
+        self.width
+    }
+
+    /// Returns the surface height.
+    #[inline]
+    pub fn height(&self) -> i32 {
+        self.height
+    }
+
+    /// Returns the surface stride.
+    #[inline]
+    pub fn stride(&self) -> isize {
+        self.stride
+    }
+}
+
+impl ImageSurface<Shared> {
     /// Creates a `SharedImageSurface` from a unique `cairo::ImageSurface`.
     ///
     /// # Panics
@@ -131,7 +155,7 @@ impl SharedImageSurface {
     pub fn wrap(
         surface: cairo::ImageSurface,
         surface_type: SurfaceType,
-    ) -> Result<Self, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Status> {
         // get_pixel() assumes ARgb32.
         assert_eq!(surface.get_format(), cairo::Format::ARgb32);
 
@@ -157,7 +181,8 @@ impl SharedImageSurface {
 
         let stride = surface.get_stride() as isize;
 
-        Ok(Self {
+        Ok(SharedImageSurface {
+            state: Shared,
             surface,
             data_ptr,
             width,
@@ -285,24 +310,6 @@ impl SharedImageSurface {
         }
 
         Self::wrap(surf, SurfaceType::SRgb)
-    }
-
-    /// Returns the surface width.
-    #[inline]
-    pub fn width(&self) -> i32 {
-        self.width
-    }
-
-    /// Returns the surface height.
-    #[inline]
-    pub fn height(&self) -> i32 {
-        self.height
-    }
-
-    /// Returns the surface stride.
-    #[inline]
-    pub fn stride(&self) -> isize {
-        self.stride
     }
 
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.
@@ -1128,15 +1135,15 @@ impl SharedImageSurface {
         k3: f64,
         k4: f64,
     ) -> Result<SharedImageSurface, cairo::Status> {
-        let mut output_surface =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
+        let mut output_surface = ExclusiveImageSurface::new(
+            self.width,
+            self.height,
+            self.surface_type.combine(other.surface_type),
+        )?;
 
         composite_arithmetic(self, other, &mut output_surface, bounds, k1, k2, k3, k4);
 
-        SharedImageSurface::wrap(
-            output_surface,
-            self.surface_type.combine(other.surface_type),
-        )
+        output_surface.share()
     }
 }
 
@@ -1145,47 +1152,105 @@ impl SharedImageSurface {
 pub fn composite_arithmetic(
     surface1: &SharedImageSurface,
     surface2: &SharedImageSurface,
-    output_surface: &mut cairo::ImageSurface,
+    output_surface: &mut ExclusiveImageSurface,
     bounds: IRect,
     k1: f64,
     k2: f64,
     k3: f64,
     k4: f64,
 ) {
-    let output_stride = output_surface.get_stride() as usize;
+    for (x, y, pixel, pixel_2) in
+        Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
     {
-        let mut output_data = output_surface.get_data().unwrap();
+        let i1a = f64::from(pixel.a) / 255f64;
+        let i2a = f64::from(pixel_2.a) / 255f64;
+        let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
+        let oa = clamp(oa, 0f64, 1f64);
 
-        for (x, y, pixel, pixel_2) in
-            Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
-        {
-            let i1a = f64::from(pixel.a) / 255f64;
-            let i2a = f64::from(pixel_2.a) / 255f64;
-            let oa = k1 * i1a * i2a + k2 * i1a + k3 * i2a + k4;
-            let oa = clamp(oa, 0f64, 1f64);
+        // Contents of image surfaces are transparent by default, so if the resulting pixel is
+        // transparent there's no need to do anything.
+        if oa > 0f64 {
+            let compute = |i1, i2| {
+                let i1 = f64::from(i1) / 255f64;
+                let i2 = f64::from(i2) / 255f64;
 
-            // Contents of image surfaces are transparent by default, so if the resulting pixel is
-            // transparent there's no need to do anything.
-            if oa > 0f64 {
-                let compute = |i1, i2| {
-                    let i1 = f64::from(i1) / 255f64;
-                    let i2 = f64::from(i2) / 255f64;
+                let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
+                let o = clamp(o, 0f64, oa);
 
-                    let o = k1 * i1 * i2 + k2 * i1 + k3 * i2 + k4;
-                    let o = clamp(o, 0f64, oa);
+                ((o * 255f64) + 0.5) as u8
+            };
 
-                    ((o * 255f64) + 0.5) as u8
-                };
+            let output_pixel = Pixel {
+                r: compute(pixel.r, pixel_2.r),
+                g: compute(pixel.g, pixel_2.g),
+                b: compute(pixel.b, pixel_2.b),
+                a: ((oa * 255f64) + 0.5) as u8,
+            };
 
-                let output_pixel = Pixel {
-                    r: compute(pixel.r, pixel_2.r),
-                    g: compute(pixel.g, pixel_2.g),
-                    b: compute(pixel.b, pixel_2.b),
-                    a: ((oa * 255f64) + 0.5) as u8,
-                };
-                output_data.set_pixel(output_stride, output_pixel, x, y);
-            }
+            output_surface.set_pixel(output_pixel, x, y);
         }
+    }
+}
+
+impl ImageSurface<Exclusive> {
+    #[inline]
+    pub fn new(
+        width: i32,
+        height: i32,
+        surface_type: SurfaceType,
+    ) -> Result<ExclusiveImageSurface, cairo::Status> {
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+
+        let (width, height) = (surface.get_width(), surface.get_height());
+
+        // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
+        // is implementation-defined.  So, we can't assume NonNull below.  This is
+        // why we disallow zero-sized surfaces here.
+        assert!(width > 0 && height > 0);
+
+        let data_ptr =
+            NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
+                .unwrap();
+
+        let stride = surface.get_stride() as isize;
+
+        Ok(ExclusiveImageSurface {
+            state: Exclusive,
+            surface,
+            data_ptr,
+            width,
+            height,
+            stride,
+            surface_type,
+        })
+    }
+
+    #[inline]
+    pub fn share(self) -> Result<SharedImageSurface, cairo::Status> {
+        SharedImageSurface::wrap(self.surface, self.surface_type)
+    }
+
+    /// Raw access to the image data as a slice
+    #[inline]
+    pub fn get_data(&mut self) -> cairo::ImageSurfaceData {
+        self.surface.get_data().unwrap()
+    }
+
+    /// Sets the pixel at the given coordinates. Assumes the `ARgb32` format.
+    #[inline]
+    pub fn set_pixel(&mut self, pixel: Pixel, x: u32, y: u32) {
+        let stride = self.stride as usize;
+        self.get_data().set_pixel(stride, pixel, x, y);
+    }
+
+    /// Draw on the surface using cairo
+    #[inline]
+    pub fn draw(
+        &mut self,
+        draw_fn: &mut dyn FnMut(&cairo::Context) -> Result<(), cairo::Status>,
+    ) -> Result<(), cairo::Status> {
+        let cr = cairo::Context::new(&self.surface);
+        draw_fn(&cr)
     }
 }
 
@@ -1202,12 +1267,11 @@ mod tests {
         let bounds = IRect::new(8, 24, 16, 48);
         let full_bounds = IRect::from_size(WIDTH, HEIGHT);
 
-        let mut surface =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap();
+        let mut surface = ExclusiveImageSurface::new(WIDTH, HEIGHT, SurfaceType::SRgb).unwrap();
 
         // Fill the surface with some data.
         {
-            let mut data = surface.get_data().unwrap();
+            let mut data = surface.get_data();
 
             let mut counter = 0u16;
             for x in data.iter_mut() {
@@ -1216,7 +1280,7 @@ mod tests {
             }
         }
 
-        let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
+        let surface = surface.share().unwrap();
         let alpha = surface.extract_alpha(bounds).unwrap();
 
         for (x, y, p, pa) in
