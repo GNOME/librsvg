@@ -6,7 +6,7 @@ use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 
 // Include the linearization and unlinearization tables.
@@ -32,6 +32,9 @@ pub fn map_unpremultiplied_components_loop<F: Fn(u8) -> u8>(
     bounds: IRect,
     f: F,
 ) {
+    let output_stride = output_surface.stride() as usize;
+    let mut output_data = output_surface.get_data();
+
     for (x, y, pixel) in Pixels::within(surface, bounds) {
         if pixel.a > 0 {
             let alpha = f64::from(pixel.a) / 255f64;
@@ -51,7 +54,7 @@ pub fn map_unpremultiplied_components_loop<F: Fn(u8) -> u8>(
                 a: pixel.a,
             };
 
-            output_surface.set_pixel(output_pixel, x, y);
+            output_data.set_pixel(output_stride, output_pixel, x, y);
         }
     }
 }

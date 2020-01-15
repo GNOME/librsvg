@@ -1159,6 +1159,9 @@ pub fn composite_arithmetic(
     k3: f64,
     k4: f64,
 ) {
+    let output_stride = output_surface.stride() as usize;
+    let mut output_data = output_surface.get_data();
+
     for (x, y, pixel, pixel_2) in
         Pixels::within(surface1, bounds).map(|(x, y, p)| (x, y, p, surface2.get_pixel(x, y)))
     {
@@ -1187,7 +1190,7 @@ pub fn composite_arithmetic(
                 a: ((oa * 255f64) + 0.5) as u8,
             };
 
-            output_surface.set_pixel(output_pixel, x, y);
+            output_data.set_pixel(output_stride, output_pixel, x, y);
         }
     }
 }
@@ -1234,13 +1237,6 @@ impl ImageSurface<Exclusive> {
     #[inline]
     pub fn get_data(&mut self) -> cairo::ImageSurfaceData {
         self.surface.get_data().unwrap()
-    }
-
-    /// Sets the pixel at the given coordinates. Assumes the `ARgb32` format.
-    #[inline]
-    pub fn set_pixel(&mut self, pixel: Pixel, x: u32, y: u32) {
-        let stride = self.stride as usize;
-        self.get_data().set_pixel(stride, pixel, x, y);
     }
 
     /// Draw on the surface using cairo

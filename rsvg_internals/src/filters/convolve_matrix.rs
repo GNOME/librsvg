@@ -12,7 +12,7 @@ use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::ExclusiveImageSurface,
-    EdgeMode, Pixel,
+    EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -235,66 +235,72 @@ impl FilterEffect for FeConvolveMatrix {
             input.surface().surface_type(),
         )?;
 
-        for (x, y, pixel) in Pixels::within(&input_surface, bounds) {
-            // Compute the convolution rectangle bounds.
-            let kernel_bounds = IRect::new(
-                x as i32 - self.target_x.unwrap() as i32,
-                y as i32 - self.target_y.unwrap() as i32,
-                x as i32 - self.target_x.unwrap() as i32 + self.order.0 as i32,
-                y as i32 - self.target_y.unwrap() as i32 + self.order.1 as i32,
-            );
+        let surface_stride = surface.stride() as usize;
 
-            // Do the convolution.
-            let mut r = 0.0;
-            let mut g = 0.0;
-            let mut b = 0.0;
-            let mut a = 0.0;
+        {
+            let mut surface_data = surface.get_data();
 
-            for (x, y, pixel) in
-                PixelRectangle::within(&input_surface, bounds, kernel_bounds, self.edge_mode)
-            {
-                let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
-                let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
+            for (x, y, pixel) in Pixels::within(&input_surface, bounds) {
+                // Compute the convolution rectangle bounds.
+                let kernel_bounds = IRect::new(
+                    x as i32 - self.target_x.unwrap() as i32,
+                    y as i32 - self.target_y.unwrap() as i32,
+                    x as i32 - self.target_x.unwrap() as i32 + self.order.0 as i32,
+                    y as i32 - self.target_y.unwrap() as i32 + self.order.1 as i32,
+                );
 
-                r += f64::from(pixel.r) / 255.0 * matrix[(kernel_y, kernel_x)];
-                g += f64::from(pixel.g) / 255.0 * matrix[(kernel_y, kernel_x)];
-                b += f64::from(pixel.b) / 255.0 * matrix[(kernel_y, kernel_x)];
+                // Do the convolution.
+                let mut r = 0.0;
+                let mut g = 0.0;
+                let mut b = 0.0;
+                let mut a = 0.0;
 
-                if !self.preserve_alpha {
-                    a += f64::from(pixel.a) / 255.0 * matrix[(kernel_y, kernel_x)];
+                for (x, y, pixel) in
+                    PixelRectangle::within(&input_surface, bounds, kernel_bounds, self.edge_mode)
+                {
+                    let kernel_x = (kernel_bounds.x1 - x - 1) as usize;
+                    let kernel_y = (kernel_bounds.y1 - y - 1) as usize;
+
+                    r += f64::from(pixel.r) / 255.0 * matrix[(kernel_y, kernel_x)];
+                    g += f64::from(pixel.g) / 255.0 * matrix[(kernel_y, kernel_x)];
+                    b += f64::from(pixel.b) / 255.0 * matrix[(kernel_y, kernel_x)];
+
+                    if !self.preserve_alpha {
+                        a += f64::from(pixel.a) / 255.0 * matrix[(kernel_y, kernel_x)];
+                    }
                 }
-            }
 
-            // If preserve_alpha is true, set a to the source alpha value.
-            if self.preserve_alpha {
-                a = f64::from(pixel.a) / 255.0;
-            } else {
-                a = a / self.divisor.unwrap() + self.bias;
-            }
-
-            let clamped_a = clamp(a, 0.0, 1.0);
-
-            let compute = |x| {
-                let x = x / self.divisor.unwrap() + self.bias * a;
-
-                let x = if self.preserve_alpha {
-                    // Premultiply the output value.
-                    clamp(x, 0.0, 1.0) * clamped_a
+                // If preserve_alpha is true, set a to the source alpha value.
+                if self.preserve_alpha {
+                    a = f64::from(pixel.a) / 255.0;
                 } else {
-                    clamp(x, 0.0, clamped_a)
+                    a = a / self.divisor.unwrap() + self.bias;
+                }
+
+                let clamped_a = clamp(a, 0.0, 1.0);
+
+                let compute = |x| {
+                    let x = x / self.divisor.unwrap() + self.bias * a;
+
+                    let x = if self.preserve_alpha {
+                        // Premultiply the output value.
+                        clamp(x, 0.0, 1.0) * clamped_a
+                    } else {
+                        clamp(x, 0.0, clamped_a)
+                    };
+
+                    ((x * 255.0) + 0.5) as u8
                 };
 
-                ((x * 255.0) + 0.5) as u8
-            };
+                let output_pixel = Pixel {
+                    r: compute(r),
+                    g: compute(g),
+                    b: compute(b),
+                    a: ((clamped_a * 255.0) + 0.5) as u8,
+                };
 
-            let output_pixel = Pixel {
-                r: compute(r),
-                g: compute(g),
-                b: compute(b),
-                a: ((clamped_a * 255.0) + 0.5) as u8,
-            };
-
-            surface.set_pixel(output_pixel, x, y);
+                surface_data.set_pixel(surface_stride, output_pixel, x, y);
+            }
         }
 
         let mut surface = surface.share()?;

@@ -6,7 +6,7 @@ use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
     srgb::{linearize, map_unpremultiplied_components_loop},
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 
 const SURFACE_SIDE: i32 = 512;
@@ -22,17 +22,23 @@ fn bench_srgb_linearization(c: &mut Criterion) {
         let mut surface =
             ExclusiveImageSurface::new(SURFACE_SIDE, SURFACE_SIDE, SurfaceType::LinearRgb).unwrap();
 
-        // Fill the surface with non-zero alpha (otherwise linearization is a no-op).
-        for y in BOUNDS.y_range() {
-            for x in BOUNDS.x_range() {
-               let pixel = Pixel {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 127,
-                };
+        let surface_stride = surface.stride() as usize;
 
-                surface.set_pixel(pixel, x as u32, y as u32);
+        {
+            let mut surface_data = surface.get_data();
+
+            // Fill the surface with non-zero alpha (otherwise linearization is a no-op).
+            for y in BOUNDS.y_range() {
+                for x in BOUNDS.x_range() {
+                    let pixel = Pixel {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 127,
+                    };
+
+                    surface_data.set_pixel(surface_stride, pixel, x as u32, y as u32);
+                }
             }
         }
 

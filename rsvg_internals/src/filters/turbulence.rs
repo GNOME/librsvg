@@ -8,7 +8,7 @@ use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
-    Pixel,
+    ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 
@@ -364,36 +364,42 @@ impl FilterEffect for FeTurbulence {
             surface_type,
         )?;
 
-        for y in bounds.y_range() {
-            for x in bounds.x_range() {
-                let point = affine.transform_point(f64::from(x), f64::from(y));
-                let point = [point.0, point.1];
+        let surface_stride = surface.stride() as usize;
 
-                let generate = |color_channel| {
-                    let v = noise_generator.turbulence(
-                        color_channel,
-                        point,
-                        f64::from(x - bounds.x0),
-                        f64::from(y - bounds.y0),
-                    );
+        {
+            let mut surface_data = surface.get_data();
 
-                    let v = match self.type_ {
-                        NoiseType::FractalNoise => (v * 255.0 + 255.0) / 2.0,
-                        NoiseType::Turbulence => v * 255.0,
+            for y in bounds.y_range() {
+                for x in bounds.x_range() {
+                    let point = affine.transform_point(f64::from(x), f64::from(y));
+                    let point = [point.0, point.1];
+
+                    let generate = |color_channel| {
+                        let v = noise_generator.turbulence(
+                            color_channel,
+                            point,
+                            f64::from(x - bounds.x0),
+                            f64::from(y - bounds.y0),
+                        );
+
+                        let v = match self.type_ {
+                            NoiseType::FractalNoise => (v * 255.0 + 255.0) / 2.0,
+                            NoiseType::Turbulence => v * 255.0,
+                        };
+
+                        (clamp(v, 0.0, 255.0) + 0.5) as u8
                     };
 
-                    (clamp(v, 0.0, 255.0) + 0.5) as u8
-                };
+                    let pixel = Pixel {
+                        r: generate(0),
+                        g: generate(1),
+                        b: generate(2),
+                        a: generate(3),
+                    }
+                    .premultiply();
 
-                let pixel = Pixel {
-                    r: generate(0),
-                    g: generate(1),
-                    b: generate(2),
-                    a: generate(3),
+                    surface_data.set_pixel(surface_stride, pixel, x as u32, y as u32);
                 }
-                .premultiply();
-
-                surface.set_pixel(pixel, x as u32, y as u32);
             }
         }
 
