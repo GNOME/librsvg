@@ -19,15 +19,13 @@ fn bench_box_blur(c: &mut Criterion) {
     c.bench_function_over_inputs(
         "box_blur 9",
         |b, &(vertical, alpha_only)| {
-            let input_surface =
-                cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE)
-                    .unwrap();
             let surface_type = if alpha_only {
                 SurfaceType::AlphaOnly
             } else {
                 SurfaceType::SRgb
             };
-            let input_surface = SharedImageSurface::wrap(input_surface, surface_type).unwrap();
+            let input_surface =
+                SharedImageSurface::empty(SURFACE_SIDE, SURFACE_SIDE, surface_type).unwrap();
 
             let mut output_surface =
                 cairo::ImageSurface::create(cairo::Format::ARgb32, SURFACE_SIDE, SURFACE_SIDE)
