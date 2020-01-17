@@ -301,8 +301,8 @@ impl DrawingCtx {
 
         preserve_aspect_ratio
             .viewport_to_viewbox_transform(vbox, &viewport)
-            .and_then(|matrix| {
-                self.cr.transform(matrix);
+            .and_then(|t| {
+                self.cr.transform(t);
 
                 if let Some(vbox) = vbox {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
@@ -355,7 +355,7 @@ impl DrawingCtx {
                 None
             };
 
-            self.with_saved_matrix(matrix, &mut |dc| {
+            self.with_saved_transform(matrix, &mut |dc| {
                 let cr = dc.get_cairo_context();
 
                 // here we don't push a layer because we are clipping
@@ -610,14 +610,14 @@ impl DrawingCtx {
         initial_with_offset
     }
 
-    /// Saves the current Cairo matrix, applies a transform if specified,
-    /// runs the draw_fn, and restores the original matrix
+    /// Saves the current transform, applies a new transform if specified,
+    /// runs the draw_fn, and restores the original transform
     ///
     /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
     /// pair, but more importantly, it does not reset the whole
     /// graphics state, i.e. it leaves a clipping path in place if it
     /// was set by the `draw_fn`.
-    pub fn with_saved_matrix(
+    pub fn with_saved_transform(
         &mut self,
         transform: Option<cairo::Matrix>,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
