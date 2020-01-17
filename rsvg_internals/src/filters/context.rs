@@ -103,7 +103,7 @@ impl FilterContext {
         draw_ctx: &mut DrawingCtx,
         node_bbox: BoundingBox,
     ) -> Self {
-        let cr_affine = draw_ctx.get_cairo_context().get_matrix();
+        let draw_transform = draw_ctx.get_transform();
 
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
@@ -113,7 +113,7 @@ impl FilterContext {
         let filter = node_data.get_impl::<Filter>();
 
         let affine = match filter.get_filter_units() {
-            CoordUnits::UserSpaceOnUse => cr_affine,
+            CoordUnits::UserSpaceOnUse => draw_transform,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
                     bbox_rect.width(),
@@ -123,12 +123,12 @@ impl FilterContext {
                     bbox_rect.x0,
                     bbox_rect.y0,
                 );
-                cairo::Matrix::multiply(&affine, &cr_affine)
+                cairo::Matrix::multiply(&affine, &draw_transform)
             }
         };
 
         let paffine = match filter.get_primitive_units() {
-            CoordUnits::UserSpaceOnUse => cr_affine,
+            CoordUnits::UserSpaceOnUse => draw_transform,
             CoordUnits::ObjectBoundingBox => {
                 let affine = cairo::Matrix::new(
                     bbox_rect.width(),
@@ -138,7 +138,7 @@ impl FilterContext {
                     bbox_rect.x0,
                     bbox_rect.y0,
                 );
-                cairo::Matrix::multiply(&affine, &cr_affine)
+                cairo::Matrix::multiply(&affine, &draw_transform)
             }
         };
 

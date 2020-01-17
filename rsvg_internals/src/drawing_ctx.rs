@@ -185,8 +185,12 @@ impl DrawingCtx {
         self.cr.clone()
     }
 
+    pub fn get_transform(&self) -> cairo::Matrix {
+        self.cr.get_matrix()
+    }
+
     pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new().with_affine(self.cr.get_matrix())
+        BoundingBox::new().with_affine(self.get_transform())
     }
 
     // FIXME: Usage of this function is more less a hack... The caller
@@ -471,7 +475,7 @@ impl DrawingCtx {
 
                 let UnitInterval(opacity) = values.opacity.0;
 
-                let affine_at_start = dc.cr.get_matrix();
+                let affine_at_start = dc.get_transform();
 
                 let (clip_in_user_space, clip_in_object_space) =
                     get_clip_in_user_and_object_space(&mut dc.acquired_nodes, clip_uri);
@@ -618,7 +622,7 @@ impl DrawingCtx {
         transform: Option<cairo::Matrix>,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
-        let matrix = self.cr.get_matrix();
+        let orig_transform = self.get_transform();
 
         if let Some(t) = transform {
             self.cr.transform(t);
@@ -626,12 +630,12 @@ impl DrawingCtx {
 
         let res = draw_fn(self);
 
-        self.cr.set_matrix(matrix);
+        self.cr.set_matrix(orig_transform);
 
         if let Ok(bbox) = res {
-            let mut orig_matrix_bbox = BoundingBox::new().with_affine(matrix);
-            orig_matrix_bbox.insert(&bbox);
-            Ok(orig_matrix_bbox)
+            let mut res_bbox = BoundingBox::new().with_affine(orig_transform);
+            res_bbox.insert(&bbox);
+            Ok(res_bbox)
         } else {
             res
         }
