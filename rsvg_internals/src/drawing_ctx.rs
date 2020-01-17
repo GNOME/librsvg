@@ -28,13 +28,14 @@ use crate::property_defs::{
     ClipRule, FillRule, Opacity, Overflow, ShapeRendering, StrokeDasharray, StrokeLinecap,
     StrokeLinejoin,
 };
-use crate::rect::{Rect, TransformRect};
+use crate::rect::Rect;
 use crate::shapes::Markers;
 use crate::structure::{ClipPath, Mask, Symbol, Use};
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
 };
+use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
@@ -87,7 +88,7 @@ pub enum ClipMode {
 pub struct DrawingCtx {
     document: Rc<Document>,
 
-    initial_affine: cairo::Matrix,
+    initial_transform: Transform,
 
     rect: Rect,
     dpi: Dpi,
@@ -115,7 +116,7 @@ impl DrawingCtx {
         measuring: bool,
         testing: bool,
     ) -> DrawingCtx {
-        let initial_affine = cr.get_matrix();
+        let initial_transform = Transform::from(cr.get_matrix());
 
         // This is more or less a hack to make measuring geometries possible,
         // while the code gets refactored not to need special cases for that.
@@ -148,7 +149,7 @@ impl DrawingCtx {
 
         let mut draw_ctx = DrawingCtx {
             document,
-            initial_affine,
+            initial_transform,
             rect,
             dpi,
             cr_stack: Vec::new(),
@@ -185,8 +186,8 @@ impl DrawingCtx {
         self.cr.clone()
     }
 
-    pub fn get_transform(&self) -> cairo::Matrix {
-        self.cr.get_matrix()
+    pub fn get_transform(&self) -> Transform {
+        Transform::from(self.cr.get_matrix())
     }
 
     pub fn empty_bbox(&self) -> BoundingBox {
@@ -217,7 +218,7 @@ impl DrawingCtx {
         let (viewport_width, viewport_height) = (self.rect.width(), self.rect.height());
 
         let (width, height) = self
-            .initial_affine
+            .initial_transform
             .transform_distance(viewport_width, viewport_height);
 
         // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
@@ -302,7 +303,7 @@ impl DrawingCtx {
         preserve_aspect_ratio
             .viewport_to_viewbox_transform(vbox, &viewport)
             .and_then(|t| {
-                self.cr.transform(t);
+                self.cr.transform(t.into());
 
                 if let Some(vbox) = vbox {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
@@ -340,10 +341,10 @@ impl DrawingCtx {
 
             let cascaded = CascadedValues::new_from_node(node);
 
-            let matrix = if units == CoordUnits::ObjectBoundingBox {
+            let transform = if units == CoordUnits::ObjectBoundingBox {
                 let bbox_rect = bbox.rect.as_ref().unwrap();
 
-                Some(cairo::Matrix::new(
+                Some(Transform::new(
                     bbox_rect.width(),
                     0.0,
                     0.0,
@@ -355,7 +356,7 @@ impl DrawingCtx {
                 None
             };
 
-            self.with_saved_transform(matrix, &mut |dc| {
+            self.with_saved_transform(transform, &mut |dc| {
                 let cr = dc.get_cairo_context();
 
                 // here we don't push a layer because we are clipping
@@ -379,7 +380,7 @@ impl DrawingCtx {
         &mut self,
         mask: &Mask,
         mask_node: &RsvgNode,
-        affine: cairo::Matrix,
+        transform: Transform,
         bbox: &BoundingBox,
     ) -> Result<Option<cairo::ImageSurface>, RenderingError> {
         if bbox.rect.is_none() {
@@ -407,7 +408,10 @@ impl DrawingCtx {
             mask.get_rect(&values, &params)
         };
 
-        let mask_affine = cairo::Matrix::multiply(&mask_node.borrow().get_transform(), &affine);
+        let mask_transform = mask_node
+            .borrow()
+            .get_transform()
+            .post_transform(&transform);
 
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
@@ -415,9 +419,9 @@ impl DrawingCtx {
         // reference to the surface before we access the pixels
         {
             let mask_cr = cairo::Context::new(&mask_content_surface);
-            mask_cr.set_matrix(mask_affine);
+            mask_cr.set_matrix(mask_transform.into());
 
-            let bbtransform = cairo::Matrix::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
+            let bbtransform = Transform::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
 
             self.push_cairo_context(mask_cr);
 
@@ -428,7 +432,7 @@ impl DrawingCtx {
             }
 
             let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                self.get_cairo_context().transform(bbtransform);
+                self.get_cairo_context().transform(bbtransform.into());
                 self.push_view_box(1.0, 1.0)
             } else {
                 self.get_view_params()
@@ -493,7 +497,7 @@ impl DrawingCtx {
 
                     let affines = CompositingAffines::new(
                         affine_at_start,
-                        dc.initial_affine_with_offset(),
+                        dc.initial_transform_with_offset(),
                         dc.cr_stack.len(),
                     );
 
@@ -507,7 +511,7 @@ impl DrawingCtx {
                         )
                     };
 
-                    cr.set_matrix(affines.for_temporary_surface);
+                    cr.set_matrix(affines.for_temporary_surface.into());
 
                     dc.push_cairo_context(cr);
 
@@ -545,12 +549,12 @@ impl DrawingCtx {
 
                     // Set temporary surface as source
 
-                    dc.cr.set_matrix(affines.compositing);
+                    dc.cr.set_matrix(affines.compositing.into());
                     dc.cr.set_source_surface(&source_surface, 0.0, 0.0);
 
                     // Clip
 
-                    dc.cr.set_matrix(affines.outside_temporary_surface);
+                    dc.cr.set_matrix(affines.outside_temporary_surface.into());
                     let _: () = dc.clip_to_node(&clip_in_object_space, &bbox)?;
 
                     // Mask
@@ -568,7 +572,7 @@ impl DrawingCtx {
                                 )
                                 .and_then(|mask_surf| {
                                     if let Some(surf) = mask_surf {
-                                        dc.cr.set_matrix(affines.compositing);
+                                        dc.cr.set_matrix(affines.compositing.into());
                                         dc.cr.mask_surface(&surf, 0.0, 0.0);
                                     }
                                     Ok(())
@@ -585,7 +589,7 @@ impl DrawingCtx {
                     } else {
                         // No mask, so composite the temporary surface
 
-                        dc.cr.set_matrix(affines.compositing);
+                        dc.cr.set_matrix(affines.compositing.into());
 
                         if opacity < 1.0 {
                             dc.cr.paint_with_alpha(opacity);
@@ -594,7 +598,7 @@ impl DrawingCtx {
                         }
                     }
 
-                    dc.cr.set_matrix(affine_at_start);
+                    dc.cr.set_matrix(affine_at_start.into());
 
                     res
                 } else {
@@ -604,10 +608,9 @@ impl DrawingCtx {
         }
     }
 
-    fn initial_affine_with_offset(&self) -> cairo::Matrix {
-        let mut initial_with_offset = self.initial_affine;
-        initial_with_offset.translate(self.rect.x0, self.rect.y0);
-        initial_with_offset
+    fn initial_transform_with_offset(&self) -> Transform {
+        self.initial_transform
+            .pre_translate(self.rect.x0, self.rect.y0)
     }
 
     /// Saves the current transform, applies a new transform if specified,
@@ -619,18 +622,18 @@ impl DrawingCtx {
     /// was set by the `draw_fn`.
     pub fn with_saved_transform(
         &mut self,
-        transform: Option<cairo::Matrix>,
+        transform: Option<Transform>,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         let orig_transform = self.get_transform();
 
         if let Some(t) = transform {
-            self.cr.transform(t);
+            self.cr.transform(t.into());
         }
 
         let res = draw_fn(self);
 
-        self.cr.set_matrix(orig_transform);
+        self.cr.set_matrix(orig_transform.into());
 
         if let Ok(bbox) = res {
             let mut res_bbox = BoundingBox::new().with_transform(orig_transform);
@@ -935,12 +938,12 @@ impl DrawingCtx {
         surface.draw(&mut |cr| {
             for (depth, draw) in self.cr_stack.iter().enumerate() {
                 let affines = CompositingAffines::new(
-                    draw.get_matrix(),
-                    self.initial_affine_with_offset(),
+                    Transform::from(draw.get_matrix()),
+                    self.initial_transform_with_offset(),
                     depth,
                 );
 
-                cr.set_matrix(affines.for_snapshot);
+                cr.set_matrix(affines.for_snapshot.into());
                 cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
                 cr.paint();
             }
@@ -961,7 +964,7 @@ impl DrawingCtx {
         &mut self,
         node: &RsvgNode,
         cascaded: &CascadedValues<'_>,
-        affine: cairo::Matrix,
+        affine: Transform,
         width: i32,
         height: i32,
     ) -> Result<SharedImageSurface, RenderingError> {
@@ -972,7 +975,7 @@ impl DrawingCtx {
 
         {
             let cr = cairo::Context::new(&surface);
-            cr.set_matrix(affine);
+            cr.set_matrix(affine.into());
 
             self.cr = cr;
 
@@ -1120,48 +1123,42 @@ impl DrawingCtx {
 
 #[derive(Debug)]
 struct CompositingAffines {
-    pub outside_temporary_surface: cairo::Matrix,
-    pub initial: cairo::Matrix,
-    pub for_temporary_surface: cairo::Matrix,
-    pub compositing: cairo::Matrix,
-    pub for_snapshot: cairo::Matrix,
+    pub outside_temporary_surface: Transform,
+    pub initial: Transform,
+    pub for_temporary_surface: Transform,
+    pub compositing: Transform,
+    pub for_snapshot: Transform,
 }
 
 impl CompositingAffines {
-    fn new(
-        current: cairo::Matrix,
-        initial: cairo::Matrix,
-        cr_stack_depth: usize,
-    ) -> CompositingAffines {
+    fn new(current: Transform, initial: Transform, cr_stack_depth: usize) -> CompositingAffines {
         let is_topmost_temporary_surface = cr_stack_depth == 0;
 
-        let initial_inverse = initial.try_invert().unwrap();
+        let initial_inverse = initial.invert().unwrap();
 
         let outside_temporary_surface = if is_topmost_temporary_surface {
             current
         } else {
-            cairo::Matrix::multiply(&current, &initial_inverse)
+            current.post_transform(&initial_inverse)
         };
 
         let (scale_x, scale_y) = initial.transform_distance(1.0, 1.0);
 
         let for_temporary_surface = if is_topmost_temporary_surface {
-            let untransformed = cairo::Matrix::multiply(&current, &initial_inverse);
-            let scale = cairo::Matrix::new(scale_x, 0.0, 0.0, scale_y, 0.0, 0.0);
-            cairo::Matrix::multiply(&untransformed, &scale)
+            current
+                .post_transform(&initial_inverse)
+                .post_scale(scale_x, scale_y)
         } else {
             current
         };
 
         let compositing = if is_topmost_temporary_surface {
-            let mut scaled = initial;
-            scaled.scale(1.0 / scale_x, 1.0 / scale_y);
-            scaled
+            initial.pre_scale(1.0 / scale_x, 1.0 / scale_y)
         } else {
-            cairo::Matrix::identity()
+            Transform::identity()
         };
 
-        let for_snapshot = compositing.try_invert().unwrap();
+        let for_snapshot = compositing.invert().unwrap();
 
         CompositingAffines {
             outside_temporary_surface,
@@ -1208,7 +1205,7 @@ fn acquire_paint_server(
 }
 
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
-    let affine = cr.get_matrix();
+    let affine = Transform::from(cr.get_matrix());
 
     let mut bbox = BoundingBox::new().with_transform(affine);
 
