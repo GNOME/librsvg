@@ -212,16 +212,13 @@ impl DrawingCtx {
     fn size_for_temporary_surface(&self) -> (i32, i32) {
         let (viewport_width, viewport_height) = (self.rect.width(), self.rect.height());
 
-        let (scaled_width, scaled_height) = self
-            .initial_affine_with_offset()
+        let (width, height) = self
+            .initial_affine
             .transform_distance(viewport_width, viewport_height);
 
         // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
         // into the temporary surface.
-        let width = scaled_width.ceil() as i32;
-        let height = scaled_height.ceil() as i32;
-
-        (width, height)
+        (width.ceil() as i32, height.ceil() as i32)
     }
 
     pub fn create_surface_for_toplevel_viewport(
