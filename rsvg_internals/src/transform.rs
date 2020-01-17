@@ -25,9 +25,7 @@ impl Parse for cairo::Matrix {
 // Its operataion and grammar are described here:
 // https://www.w3.org/TR/SVG/coords.html#TransformAttribute
 
-fn parse_transform_list<'i>(
-    parser: &mut Parser<'i, '_>,
-) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
     let mut matrix = cairo::Matrix::identity();
 
     loop {
@@ -103,9 +101,7 @@ fn parse_matrix_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, P
     })
 }
 
-fn parse_translate_args<'i>(
-    parser: &mut Parser<'i, '_>,
-) -> Result<cairo::Matrix, ParseError<'i>> {
+fn parse_translate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<cairo::Matrix, ParseError<'i>> {
     parser.parse_nested_block(|p| {
         let tx = f64::parse(p)?;
 
