@@ -51,7 +51,7 @@ impl Filter {
         &self,
         computed_from_target_node: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        affine: cairo::Matrix,
+        transform: cairo::Matrix,
         width: f64,
         height: f64,
     ) -> BoundingBox {
@@ -60,10 +60,10 @@ impl Filter {
 
         let mut bbox = BoundingBox::new();
 
-        // affine is set up in FilterContext::new() in such a way that for
-        // filterunits == ObjectBoundingBox affine includes scaling to correct width, height and
+        // transform is set up in FilterContext::new() in such a way that for
+        // filterunits == ObjectBoundingBox it includes scaling to correct width, height and
         // this is why width and height are set to 1, 1 (and for filterunits ==
-        // UserSpaceOnUse affine doesn't include scaling because in this case the correct
+        // UserSpaceOnUse, transform doesn't include scaling because in this case the correct
         // width, height already happens to be the viewbox width, height).
         //
         // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
@@ -94,10 +94,10 @@ impl Filter {
         };
 
         let rect = Rect::new(x, y, x + w, y + h);
-        let other_bbox = BoundingBox::new().with_transform(affine).with_rect(rect);
+        let other_bbox = BoundingBox::new().with_transform(transform).with_rect(rect);
 
         // At this point all of the previous viewbox and matrix business gets converted to pixel
-        // coordinates in the final surface, because bbox is created with an identity affine.
+        // coordinates in the final surface, because bbox is created with an identity transform.
         bbox.insert(&other_bbox);
 
         // Finally, clip to the width and height of our surface.
