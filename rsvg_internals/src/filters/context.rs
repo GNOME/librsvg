@@ -13,6 +13,7 @@ use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{
     ExclusiveImageSurface, SharedImageSurface, SurfaceType,
 };
+use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
@@ -86,12 +87,12 @@ pub struct FilterContext {
     /// This is to be used in conjunction with setting the viewbox size to account for the scaling.
     /// For `filterUnits == userSpaceOnUse`, the viewbox will have the actual resolution size, and
     /// for `filterUnits == objectBoundingBox`, the viewbox will have the size of 1, 1.
-    _affine: cairo::Matrix,
+    _affine: Transform,
 
     /// The filter primitive affine matrix.
     ///
     /// See the comments for `_affine`, they largely apply here.
-    paffine: cairo::Matrix,
+    paffine: Transform,
 }
 
 impl FilterContext {
@@ -114,36 +115,31 @@ impl FilterContext {
 
         let affine = match filter.get_filter_units() {
             CoordUnits::UserSpaceOnUse => draw_transform,
-            CoordUnits::ObjectBoundingBox => {
-                let affine = cairo::Matrix::new(
-                    bbox_rect.width(),
-                    0.0,
-                    0.0,
-                    bbox_rect.height(),
-                    bbox_rect.x0,
-                    bbox_rect.y0,
-                );
-                cairo::Matrix::multiply(&affine, &draw_transform)
-            }
+            CoordUnits::ObjectBoundingBox => Transform::new(
+                bbox_rect.width(),
+                0.0,
+                0.0,
+                bbox_rect.height(),
+                bbox_rect.x0,
+                bbox_rect.y0,
+            )
+            .post_transform(&draw_transform),
         };
 
         let paffine = match filter.get_primitive_units() {
             CoordUnits::UserSpaceOnUse => draw_transform,
-            CoordUnits::ObjectBoundingBox => {
-                let affine = cairo::Matrix::new(
-                    bbox_rect.width(),
-                    0.0,
-                    0.0,
-                    bbox_rect.height(),
-                    bbox_rect.x0,
-                    bbox_rect.y0,
-                );
-                cairo::Matrix::multiply(&affine, &draw_transform)
-            }
+            CoordUnits::ObjectBoundingBox => Transform::new(
+                bbox_rect.width(),
+                0.0,
+                0.0,
+                bbox_rect.height(),
+                bbox_rect.x0,
+                bbox_rect.y0,
+            )
+            .post_transform(&draw_transform),
         };
 
-        let width = source_surface.width();
-        let height = source_surface.height();
+        let (width, height) = (source_surface.width(), source_surface.height());
 
         Self {
             node: filter_node.clone(),
@@ -243,7 +239,7 @@ impl FilterContext {
 
     /// Returns the paffine matrix.
     #[inline]
-    pub fn paffine(&self) -> cairo::Matrix {
+    pub fn paffine(&self) -> Transform {
         self.paffine
     }
 

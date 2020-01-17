@@ -1,10 +1,11 @@
 //! Bounding boxes that know their coordinate space.
 
-use crate::rect::{Rect, TransformRect};
+use crate::rect::Rect;
+use crate::transform::Transform;
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoundingBox {
-    pub transform: cairo::Matrix,
+    pub transform: Transform,
     pub rect: Option<Rect>,     // without stroke
     pub ink_rect: Option<Rect>, // with stroke
 }
@@ -12,13 +13,13 @@ pub struct BoundingBox {
 impl BoundingBox {
     pub fn new() -> BoundingBox {
         BoundingBox {
-            transform: cairo::Matrix::identity(),
+            transform: Default::default(),
             rect: None,
             ink_rect: None,
         }
     }
 
-    pub fn with_transform(self, transform: cairo::Matrix) -> BoundingBox {
+    pub fn with_transform(self, transform: Transform) -> BoundingBox {
         BoundingBox { transform, ..self }
     }
 
@@ -46,11 +47,12 @@ impl BoundingBox {
             return;
         }
 
-        let mut transform = self.transform;
-
         // this will panic!() if it's not invertible... should we check on our own?
-        transform.invert();
-        transform = cairo::Matrix::multiply(&src.transform, &transform);
+        let transform = self
+            .transform
+            .invert()
+            .unwrap()
+            .pre_transform(&src.transform);
 
         self.rect = combine_rects(self.rect, src.rect, &transform, clip);
         self.ink_rect = combine_rects(self.ink_rect, src.ink_rect, &transform, clip);
@@ -68,7 +70,7 @@ impl BoundingBox {
 fn combine_rects(
     r1: Option<Rect>,
     r2: Option<Rect>,
-    transform: &cairo::Matrix,
+    transform: &Transform,
     clip: bool,
 ) -> Option<Rect> {
     match (r1, r2, clip) {
@@ -91,7 +93,7 @@ mod tests {
         let r1 = Rect::new(1.0, 2.0, 3.0, 4.0);
         let r2 = Rect::new(1.5, 2.5, 3.5, 4.5);
         let r3 = Rect::new(10.0, 11.0, 12.0, 13.0);
-        let t = cairo::Matrix::new(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
+        let t = Transform::new(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
 
         let res = combine_rects(None, None, &t, true);
         assert_eq!(res, None);
