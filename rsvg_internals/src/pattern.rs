@@ -257,12 +257,10 @@ impl AsPaintSource for ResolvedPattern {
             PatternUnits(CoordUnits::UserSpaceOnUse) => (1.0, 1.0),
         };
 
-        let cr = draw_ctx.get_cairo_context();
-        let affine = cr.get_matrix();
-        let taffine = cairo::Matrix::multiply(&pattern_affine, &affine);
+        let taffine = cairo::Matrix::multiply(&pattern_affine, &draw_ctx.get_transform());
 
-        let mut scwscale = (taffine.xx * taffine.xx + taffine.xy * taffine.xy).sqrt();
-        let mut schscale = (taffine.yx * taffine.yx + taffine.yy * taffine.yy).sqrt();
+        let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
+        let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
 
         let scaled_width = pattern_rect.width() * bbwscale;
         let scaled_height = pattern_rect.height() * bbhscale;
