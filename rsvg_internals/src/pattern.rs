@@ -18,6 +18,7 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
+use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 
@@ -34,7 +35,7 @@ struct Common {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<Option<ViewBox>>,
     preserve_aspect_ratio: Option<AspectRatio>,
-    affine: Option<cairo::Matrix>,
+    affine: Option<Transform>,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<Length<Horizontal>>,
@@ -98,7 +99,7 @@ pub struct ResolvedPattern {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
-    affine: cairo::Matrix,
+    affine: Transform,
     x: Length<Horizontal>,
     y: Length<Vertical>,
     width: Length<Horizontal>,
@@ -257,7 +258,7 @@ impl AsPaintSource for ResolvedPattern {
             PatternUnits(CoordUnits::UserSpaceOnUse) => (1.0, 1.0),
         };
 
-        let taffine = cairo::Matrix::multiply(&pattern_affine, &draw_ctx.get_transform());
+        let taffine = draw_ctx.get_transform().pre_transform(&pattern_affine);
 
         let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
         let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
@@ -279,27 +280,25 @@ impl AsPaintSource for ResolvedPattern {
         scwscale = f64::from(pw) / scaled_width;
         schscale = f64::from(ph) / scaled_height;
 
-        let mut affine = cairo::Matrix::identity();
-
         // Create the pattern coordinate system
-        match units {
+        let mut affine = match units {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
                 let bbrect = bbox.rect.unwrap();
-                affine.translate(
+                Transform::new_translate(
                     bbrect.x0 + pattern_rect.x0 * bbrect.width(),
                     bbrect.y0 + pattern_rect.y0 * bbrect.height(),
-                );
+                )
             }
 
             PatternUnits(CoordUnits::UserSpaceOnUse) => {
-                affine.translate(pattern_rect.x0, pattern_rect.y0);
+                Transform::new_translate(pattern_rect.x0, pattern_rect.y0)
             }
-        }
+        };
 
         // Apply the pattern transform
-        affine = cairo::Matrix::multiply(&affine, &pattern_affine);
+        affine = affine.post_transform(&pattern_affine);
 
-        let mut caffine: cairo::Matrix;
+        let mut caffine: Transform;
 
         // Create the pattern contents coordinate system
         let _params = if let Some(vbox) = vbox {
@@ -312,31 +311,24 @@ impl AsPaintSource for ResolvedPattern {
             let x = r.x0 - vbox.0.x0 * sw;
             let y = r.y0 - vbox.0.y0 * sh;
 
-            caffine = cairo::Matrix::new(sw, 0.0, 0.0, sh, x, y);
+            caffine = Transform::new(sw, 0.0, 0.0, sh, x, y);
 
             draw_ctx.push_view_box(vbox.0.width(), vbox.0.height())
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
             // If coords are in terms of the bounding box, use them
             let (bbw, bbh) = bbox.rect.unwrap().size();
 
-            caffine = cairo::Matrix::identity();
-            caffine.scale(bbw, bbh);
+            caffine = Transform::new_scale(bbw, bbh);
 
             draw_ctx.push_view_box(1.0, 1.0)
         } else {
-            caffine = cairo::Matrix::identity();
+            caffine = Transform::identity();
             draw_ctx.get_view_params()
         };
 
         if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {
-            let mut scalematrix = cairo::Matrix::identity();
-            scalematrix.scale(scwscale, schscale);
-            caffine = cairo::Matrix::multiply(&caffine, &scalematrix);
-
-            scalematrix = cairo::Matrix::identity();
-            scalematrix.scale(1.0 / scwscale, 1.0 / schscale);
-
-            affine = cairo::Matrix::multiply(&scalematrix, &affine);
+            caffine = caffine.post_transform(&Transform::new_scale(scwscale, schscale));
+            affine = affine.pre_transform(&Transform::new_scale(1.0 / scwscale, 1.0 / schscale));
         }
 
         // Draw to another surface
@@ -363,7 +355,7 @@ impl AsPaintSource for ResolvedPattern {
         let pattern_cascaded = CascadedValues::new_from_node(&node_with_children);
         let pattern_values = pattern_cascaded.get();
 
-        cr_pattern.set_matrix(caffine);
+        cr_pattern.set_matrix(caffine.into());
 
         let res =
             draw_ctx.with_discrete_layer(&node_with_children, pattern_values, false, &mut |dc| {
@@ -371,21 +363,15 @@ impl AsPaintSource for ResolvedPattern {
             });
 
         // Return to the original coordinate system and rendering context
-
         draw_ctx.set_cairo_context(&cr_save);
 
         // Set the final surface as a Cairo pattern into the Cairo context
+        let pattern = cairo::SurfacePattern::create(&surface);
 
-        let surface_pattern = cairo::SurfacePattern::create(&surface);
-        surface_pattern.set_extend(cairo::Extend::Repeat);
-
-        let mut matrix = affine;
-        matrix.invert();
-
-        surface_pattern.set_matrix(matrix);
-        surface_pattern.set_filter(cairo::Filter::Best);
-
-        cr_save.set_source(&surface_pattern);
+        affine.invert().map(|m| pattern.set_matrix(m.into()));
+        pattern.set_extend(cairo::Extend::Repeat);
+        pattern.set_filter(cairo::Filter::Best);
+        cr_save.set_source(&pattern);
 
         res.and_then(|_| Ok(true))
     }
@@ -465,10 +451,7 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or_else(|| Some(AspectRatio::default()));
-        let affine = self
-            .common
-            .affine
-            .or_else(|| Some(cairo::Matrix::identity()));
+        let affine = self.common.affine.or_else(|| Some(Transform::default()));
         let x = self.common.x.or_else(|| Some(Default::default()));
         let y = self.common.y.or_else(|| Some(Default::default()));
         let width = self.common.width.or_else(|| Some(Default::default()));

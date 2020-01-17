@@ -29,6 +29,7 @@ use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
+use crate::transform::Transform;
 
 /// Strong reference to an element in the SVG tree.
 ///
@@ -49,7 +50,7 @@ pub struct NodeData {
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
     result: NodeResult,
-    transform: cairo::Matrix,
+    transform: Transform,
     values: ComputedValues,
     cond: bool,
     style_attr: String,
@@ -71,7 +72,7 @@ impl NodeData {
             class: class.map(str::to_string),
             specified_values: Default::default(),
             important_styles: Default::default(),
-            transform: cairo::Matrix::identity(),
+            transform: Default::default(),
             result: Ok(()),
             values: ComputedValues::default(),
             cond: true,
@@ -112,7 +113,7 @@ impl NodeData {
         self.cond
     }
 
-    pub fn get_transform(&self) -> cairo::Matrix {
+    pub fn get_transform(&self) -> Transform {
         self.transform
     }
 
@@ -153,7 +154,7 @@ impl NodeData {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "transform") => {
-                    return cairo::Matrix::parse_str(value)
+                    return Transform::parse_str(value)
                         .attribute(attr)
                         .and_then(|affine| {
                             self.transform = affine;
