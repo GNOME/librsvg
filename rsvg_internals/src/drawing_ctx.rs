@@ -190,7 +190,7 @@ impl DrawingCtx {
     }
 
     pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new().with_affine(self.get_transform())
+        BoundingBox::new().with_transform(self.get_transform())
     }
 
     // FIXME: Usage of this function is more less a hack... The caller
@@ -518,7 +518,7 @@ impl DrawingCtx {
                     let bbox = if let Ok(ref bbox) = res {
                         *bbox
                     } else {
-                        BoundingBox::new().with_affine(affines.for_temporary_surface)
+                        BoundingBox::new().with_transform(affines.for_temporary_surface)
                     };
 
                     // Filter
@@ -633,7 +633,7 @@ impl DrawingCtx {
         self.cr.set_matrix(orig_transform);
 
         if let Ok(bbox) = res {
-            let mut res_bbox = BoundingBox::new().with_affine(orig_transform);
+            let mut res_bbox = BoundingBox::new().with_transform(orig_transform);
             res_bbox.insert(&bbox);
             Ok(res_bbox)
         } else {
@@ -1210,7 +1210,7 @@ fn acquire_paint_server(
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {
     let affine = cr.get_matrix();
 
-    let mut bbox = BoundingBox::new().with_affine(affine);
+    let mut bbox = BoundingBox::new().with_transform(affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
@@ -1228,7 +1228,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
 
     let (x0, y0, x1, y1) = cr.fill_extents();
     let fb = BoundingBox::new()
-        .with_affine(affine)
+        .with_transform(affine)
         .with_ink_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&fb);
 
@@ -1237,7 +1237,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     if values.stroke.0 != PaintServer::None {
         let (x0, y0, x1, y1) = cr.stroke_extents();
         let sb = BoundingBox::new()
-            .with_affine(affine)
+            .with_transform(affine)
             .with_ink_rect(Rect::new(x0, y0, x1, y1));
         bbox.insert(&sb);
     }
@@ -1246,7 +1246,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
 
     let (x0, y0, x1, y1) = cr.path_extents();
     let ob = BoundingBox::new()
-        .with_affine(affine)
+        .with_transform(affine)
         .with_rect(Rect::new(x0, y0, x1, y1));
     bbox.insert(&ob);
 

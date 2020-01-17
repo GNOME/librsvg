@@ -94,7 +94,7 @@ impl Filter {
         };
 
         let rect = Rect::new(x, y, x + w, y + h);
-        let other_bbox = BoundingBox::new().with_affine(affine).with_rect(rect);
+        let other_bbox = BoundingBox::new().with_transform(affine).with_rect(rect);
 
         // At this point all of the previous viewbox and matrix business gets converted to pixel
         // coordinates in the final surface, because bbox is created with an identity affine.
