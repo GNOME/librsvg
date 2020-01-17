@@ -39,6 +39,9 @@ pub struct Document {
 
     /// Used to load referenced resources.
     load_options: LoadOptions,
+
+    /// Stylesheets defined in the document
+    stylesheets: Vec<Stylesheet>,
 }
 
 impl Document {
@@ -355,6 +358,7 @@ impl DocumentBuilder {
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
                         load_options: load_options.clone(),
+                        stylesheets,
                     })
                 } else {
                     Err(LoadingError::RootElementIsNotSvg)
