@@ -4,7 +4,6 @@
 
 use std::cell::Cell;
 use std::ptr;
-use std::rc::Rc;
 
 use locale_config::{LanguageRange, Locale};
 
@@ -193,7 +192,7 @@ impl Drop for SizeCallback {
 }
 
 pub struct Handle {
-    document: Rc<Document>,
+    document: Document,
 }
 
 impl Handle {
@@ -203,11 +202,11 @@ impl Handle {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
-            document: Rc::new(Document::load_from_stream(
+            document: Document::load_from_stream(
                 load_options,
                 stream,
                 cancellable,
-            )?),
+            )?,
         })
     }
 
@@ -303,7 +302,7 @@ impl Handle {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
         let mut draw_ctx = DrawingCtx::new(
-            self.document.clone(),
+            &self.document,
             Some(node),
             &cr,
             viewport,
@@ -462,7 +461,7 @@ impl Handle {
 
         cr.save();
         let mut draw_ctx = DrawingCtx::new(
-            self.document.clone(),
+            &self.document,
             node.as_ref(),
             cr,
             Rect::from(*viewport),
@@ -489,7 +488,7 @@ impl Handle {
         let cr = cairo::Context::new(&target);
 
         let mut draw_ctx = DrawingCtx::new(
-            self.document.clone(),
+            &self.document,
             None,
             &cr,
             unit_rectangle(),
@@ -561,7 +560,7 @@ impl Handle {
         cr.translate(-ink_r.x0, -ink_r.y0);
 
         let mut draw_ctx = DrawingCtx::new(
-            self.document.clone(),
+            &self.document,
             None,
             &cr,
             unit_rectangle(),
