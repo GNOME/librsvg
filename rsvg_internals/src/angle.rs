@@ -33,7 +33,7 @@ impl Angle {
         self.0
     }
 
-    pub fn bisect(&self, other: Angle) -> Angle {
+    pub fn bisect(self, other: Angle) -> Angle {
         let half_delta = (other.0 - self.0) * 0.5;
 
         if FRAC_PI_2 < half_delta.abs() {
