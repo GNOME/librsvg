@@ -59,10 +59,7 @@ impl NumberList {
         Ok(NumberList(v))
     }
 
-    pub fn parse_str<'i>(
-        s: &'i str,
-        length: NumberListLength,
-    ) -> Result<NumberList, ParseError<'i>> {
+    pub fn parse_str(s: &str, length: NumberListLength) -> Result<NumberList, ParseError> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
