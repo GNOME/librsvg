@@ -339,8 +339,7 @@ impl FilterEffect for FeTurbulence {
     ) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
 
-        let mut affine = ctx.paffine();
-        affine.invert();
+        let affine = ctx.paffine().invert().unwrap();
 
         let noise_generator = NoiseGenerator::new(
             self.seed,

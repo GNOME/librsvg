@@ -37,8 +37,8 @@ impl<'a> BoundsBuilder<'a> {
     ) -> Self {
         Self {
             ctx,
-            // The matrix is paffine because we're using that fact in apply_properties().
-            bbox: BoundingBox::new().with_affine(ctx.paffine()),
+            // The transform is paffine because we're using that fact in apply_properties().
+            bbox: BoundingBox::new().with_transform(ctx.paffine()),
             standard_input_was_referenced: false,
             x,
             y,
@@ -110,8 +110,8 @@ impl<'a> BoundsBuilder<'a> {
             let params = self.ctx.get_view_params(draw_ctx);
             let values = self.ctx.get_computed_values_from_node_being_filtered();
 
-            // These replacements are correct only because self.bbox is used with the paffine
-            // matrix.
+            // These replacements are correct only because self.bbox is used with the
+            // paffine transform.
             let rect = self.bbox.rect.as_mut().unwrap();
 
             if let Some(x) = self.x {

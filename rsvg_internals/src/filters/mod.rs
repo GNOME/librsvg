@@ -257,7 +257,7 @@ pub fn render(
 
     // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds
     // computations will panic due to non-invertible martrix.
-    if filter_ctx.paffine().try_invert().is_err() {
+    if !filter_ctx.paffine().is_invertible() {
         return Ok(filter_ctx.into_output()?);
     }
 
