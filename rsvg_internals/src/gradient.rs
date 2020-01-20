@@ -16,6 +16,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
+use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
 /// Contents of a <stop> element for gradient color stops
@@ -317,7 +318,7 @@ impl Variant {
 #[derive(Default)]
 struct Common {
     units: Option<GradientUnits>,
-    affine: Option<cairo::Matrix>,
+    transform: Option<Transform>,
     spread: Option<SpreadMethod>,
 
     fallback: Option<Fragment>,
@@ -354,7 +355,7 @@ pub struct RadialGradient {
 /// field was specified.
 struct UnresolvedGradient {
     units: Option<GradientUnits>,
-    affine: Option<cairo::Matrix>,
+    transform: Option<Transform>,
     spread: Option<SpreadMethod>,
     stops: Option<Vec<ColorStop>>,
 
@@ -365,7 +366,7 @@ struct UnresolvedGradient {
 #[derive(Clone)]
 pub struct Gradient {
     units: GradientUnits,
-    affine: cairo::Matrix,
+    transform: Transform,
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 
@@ -378,7 +379,7 @@ impl UnresolvedGradient {
 
         let UnresolvedGradient {
             units,
-            affine,
+            transform,
             spread,
             stops,
             variant,
@@ -387,7 +388,7 @@ impl UnresolvedGradient {
         match variant {
             UnresolvedVariant::Linear { .. } => Gradient {
                 units: units.unwrap(),
-                affine: affine.unwrap(),
+                transform: transform.unwrap(),
                 spread: spread.unwrap(),
                 stops: stops.unwrap(),
 
@@ -396,7 +397,7 @@ impl UnresolvedGradient {
 
             UnresolvedVariant::Radial { .. } => Gradient {
                 units: units.unwrap(),
-                affine: affine.unwrap(),
+                transform: transform.unwrap(),
                 spread: spread.unwrap(),
                 stops: stops.unwrap(),
 
@@ -472,7 +473,7 @@ impl UnresolvedGradient {
 
     fn is_resolved(&self) -> bool {
         self.units.is_some()
-            && self.affine.is_some()
+            && self.transform.is_some()
             && self.spread.is_some()
             && self.stops.is_some()
             && self.variant.is_resolved()
@@ -480,14 +481,14 @@ impl UnresolvedGradient {
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedGradient) -> UnresolvedGradient {
         let units = self.units.or(fallback.units);
-        let affine = self.affine.or(fallback.affine);
+        let transform = self.transform.or(fallback.transform);
         let spread = self.spread.or(fallback.spread);
         let stops = self.stops.clone().or_else(|| fallback.stops.clone());
         let variant = self.variant.resolve_from_fallback(&fallback.variant);
 
         UnresolvedGradient {
             units,
-            affine,
+            transform,
             spread,
             stops,
             variant,
@@ -496,14 +497,14 @@ impl UnresolvedGradient {
 
     fn resolve_from_defaults(&self) -> UnresolvedGradient {
         let units = self.units.or_else(|| Some(GradientUnits::default()));
-        let affine = self.affine.or_else(|| Some(cairo::Matrix::identity()));
+        let transform = self.transform.or_else(|| Some(Transform::default()));
         let spread = self.spread.or_else(|| Some(SpreadMethod::default()));
         let stops = self.stops.clone().or_else(|| Some(Vec::<ColorStop>::new()));
         let variant = self.variant.resolve_from_defaults();
 
         UnresolvedGradient {
             units,
-            affine,
+            transform,
             spread,
             stops,
             variant,
@@ -550,7 +551,7 @@ macro_rules! impl_get_unresolved {
             fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
                 let mut gradient = UnresolvedGradient {
                     units: self.common.units,
-                    affine: self.common.affine,
+                    transform: self.common.transform,
                     spread: self.common.spread,
                     stops: None,
                     variant: self.get_unresolved_variant(),
@@ -574,7 +575,9 @@ impl Common {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => self.units = Some(attr.parse(value)?),
-                expanded_name!("", "gradientTransform") => self.affine = Some(attr.parse(value)?),
+                expanded_name!("", "gradientTransform") => {
+                    self.transform = Some(attr.parse(value)?)
+                }
                 expanded_name!("", "spreadMethod") => self.spread = Some(attr.parse(value)?),
                 expanded_name!(xlink "href") => {
                     self.fallback = Some(Fragment::parse(value).attribute(attr)?)
@@ -753,25 +756,23 @@ impl Gradient {
         bbox: &BoundingBox,
         opacity: UnitInterval,
     ) {
-        let mut affine = self.affine;
-
-        if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+        let transform = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             let bbox_rect = bbox.rect.unwrap();
-            let bbox_matrix = cairo::Matrix::new(
+            Transform::new(
                 bbox_rect.width(),
                 0.0,
                 0.0,
                 bbox_rect.height(),
                 bbox_rect.x0,
                 bbox_rect.y0,
-            );
-            affine = cairo::Matrix::multiply(&affine, &bbox_matrix);
-        }
+            )
+            .pre_transform(&self.transform)
+        } else {
+            self.transform
+        };
 
-        affine.invert();
-        pattern.set_matrix(affine);
+        transform.invert().map(|m| pattern.set_matrix(m.into()));
         pattern.set_extend(cairo::Extend::from(self.spread));
-
         self.add_color_stops_to_pattern(pattern, opacity);
     }
 

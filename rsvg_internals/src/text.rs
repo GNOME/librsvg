@@ -22,6 +22,7 @@ use crate::property_defs::{
 };
 use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
+use crate::transform::Transform;
 
 /// An absolutely-positioned array of `Span`s
 ///
@@ -271,12 +272,10 @@ impl PositionedSpan {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         draw_ctx.with_saved_cr(&mut |dc| {
-            let cr = dc.get_cairo_context();
-
-            let affine = cr.get_matrix();
+            let transform = dc.get_transform();
 
             let gravity = self.layout.get_context().unwrap().get_gravity();
-            let bbox = self.compute_text_bbox(affine, gravity);
+            let bbox = self.compute_text_bbox(transform, gravity);
             if bbox.is_none() {
                 return Ok(dc.empty_bbox());
             }
@@ -287,10 +286,9 @@ impl PositionedSpan {
                 bbox.unwrap()
             };
 
+            let cr = dc.get_cairo_context();
             cr.set_antialias(cairo::Antialias::from(self.values.text_rendering));
-
             dc.setup_cr_for_stroke(&cr, &self.values);
-
             cr.move_to(self.rendered_position.0, self.rendered_position.1);
 
             let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
@@ -345,7 +343,9 @@ impl PositionedSpan {
                     if !clipping {
                         let (x0, y0, x1, y1) = cr.stroke_extents();
                         let r = Rect::new(x0, y0, x1, y1);
-                        let ib = BoundingBox::new().with_affine(affine).with_ink_rect(r);
+                        let ib = BoundingBox::new()
+                            .with_transform(transform)
+                            .with_ink_rect(r);
                         cr.stroke();
                         bbox.insert(&ib);
                     }
@@ -358,7 +358,7 @@ impl PositionedSpan {
 
     fn compute_text_bbox(
         &self,
-        affine: cairo::Matrix,
+        transform: Transform,
         gravity: pango::Gravity,
     ) -> Option<BoundingBox> {
         let (ink, _) = self.layout.get_extents();
@@ -391,7 +391,7 @@ impl PositionedSpan {
 
         let r = Rect::new(x, y, x + w, y + h);
         let bbox = BoundingBox::new()
-            .with_affine(affine)
+            .with_transform(transform)
             .with_rect(r)
             .with_ink_rect(r);
 
