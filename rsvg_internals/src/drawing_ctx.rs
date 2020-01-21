@@ -296,8 +296,16 @@ impl DrawingCtx {
         preserve_aspect_ratio: AspectRatio,
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
+        let cr = self.get_cairo_context();
+
         if let Some(ClipMode::ClipToViewport) = clip_mode {
-            self.clip(viewport);
+            cr.rectangle(
+                viewport.x0,
+                viewport.y0,
+                viewport.width(),
+                viewport.height(),
+            );
+            cr.clip();
         }
 
         preserve_aspect_ratio
@@ -307,7 +315,8 @@ impl DrawingCtx {
 
                 if let Some(vbox) = vbox {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
-                        self.clip(vbox.0);
+                        cr.rectangle(vbox.0.x0, vbox.0.y0, vbox.0.width(), vbox.0.height());
+                        cr.clip();
                     }
 
                     Some(self.push_view_box(vbox.0.width(), vbox.0.height()))
@@ -423,13 +432,21 @@ impl DrawingCtx {
 
             let bbtransform = Transform::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
 
-            self.push_cairo_context(mask_cr);
-
-            if mask_units == CoordUnits::ObjectBoundingBox {
-                self.clip(bbtransform.transform_rect(&mask_rect));
+            let clip_rect = if mask_units == CoordUnits::ObjectBoundingBox {
+                bbtransform.transform_rect(&mask_rect)
             } else {
-                self.clip(mask_rect);
-            }
+                mask_rect
+            };
+
+            mask_cr.rectangle(
+                clip_rect.x0,
+                clip_rect.y0,
+                clip_rect.width(),
+                clip_rect.height(),
+            );
+            mask_cr.clip();
+
+            self.push_cairo_context(mask_cr);
 
             let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 self.get_cairo_context().transform(bbtransform.into());
@@ -642,6 +659,27 @@ impl DrawingCtx {
         } else {
             res
         }
+    }
+
+    /// if a rectangle is specified, clips and runs the draw_fn, otherwise simply run the draw_fn
+    pub fn with_clip_rect(
+        &mut self,
+        clip: Option<Rect>,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+    ) -> Result<BoundingBox, RenderingError> {
+        if let Some(rect) = clip {
+            self.cr.save();
+            self.cr.rectangle(rect.x0, rect.y0, rect.width(), rect.height());
+            self.cr.clip();
+        }
+
+        let res = draw_fn(self);
+
+        if clip.is_some() {
+            self.cr.restore();
+        }
+
+        res
     }
 
     /// Saves the current Cairo context, runs the draw_fn, and restores the context
@@ -905,12 +943,6 @@ impl DrawingCtx {
         } else {
             Ok(self.empty_bbox())
         }
-    }
-
-    pub fn clip(&self, rect: Rect) {
-        let cr = self.get_cairo_context();
-        cr.rectangle(rect.x0, rect.y0, rect.width(), rect.height());
-        cr.clip();
     }
 
     pub fn get_snapshot(
