@@ -153,23 +153,21 @@ impl Marker {
             -self.ref_y.normalize(&values, &params),
         );
 
-        draw_ctx.with_saved_cr(&mut |dc| {
-            let cr = dc.get_cairo_context();
+        let clip = if values.is_overflow() {
+            None
+        } else {
+            Some(self
+                .vbox
+                .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| vb.0))
+        };
 
-            cr.transform(transform.into());
-
-            if !values.is_overflow() {
-                let clip_rect = self
-                    .vbox
-                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| vb.0);
-
-                dc.clip(clip_rect);
-            }
-
-            dc.with_discrete_layer(node, values, clipping, &mut |dc| {
-                node.draw_children(&cascaded, dc, clipping)
-            })
-        })
+        draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
+            dc.with_clip_rect(clip, &mut |dc| {
+                dc.with_discrete_layer(node, values, clipping, &mut |dc| {
+                    node.draw_children(&cascaded, dc, clipping)
+                })
+             })
+         })
     }
 }
 
