@@ -21,6 +21,7 @@ use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
+use crate::transform::Transform;
 use crate::viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -119,43 +120,43 @@ impl Marker {
             return Ok(draw_ctx.empty_bbox());
         }
 
+        let rotation = match self.orient {
+            MarkerOrient::Auto => computed_angle,
+            MarkerOrient::Angle(a) => a,
+        };
+
+        let mut transform = Transform::new_translate(xpos, ypos).pre_rotate(rotation);
+
+        if self.units == MarkerUnits::StrokeWidth {
+            transform = transform.pre_scale(line_width, line_width);
+        }
+
+        let params = if let Some(vbox) = self.vbox {
+            if vbox.0.is_empty() {
+                return Ok(draw_ctx.empty_bbox());
+            }
+
+            let r = self
+                .aspect
+                .compute(&vbox, &Rect::from_size(marker_width, marker_height));
+
+            let (vb_width, vb_height) = vbox.0.size();
+            transform = transform.pre_scale(r.width() / vb_width, r.height() / vb_height);
+
+            draw_ctx.push_view_box(vb_width, vb_height)
+        } else {
+            draw_ctx.push_view_box(marker_width, marker_height)
+        };
+
+        transform = transform.pre_translate(
+            -self.ref_x.normalize(&values, &params),
+            -self.ref_y.normalize(&values, &params),
+        );
+
         draw_ctx.with_saved_cr(&mut |dc| {
             let cr = dc.get_cairo_context();
 
-            cr.translate(xpos, ypos);
-
-            let rotation = match self.orient {
-                MarkerOrient::Auto => computed_angle,
-                MarkerOrient::Angle(a) => a,
-            };
-
-            cr.rotate(rotation.radians());
-
-            if self.units == MarkerUnits::StrokeWidth {
-                cr.scale(line_width, line_width);
-            }
-
-            let params = if let Some(vbox) = self.vbox {
-                if vbox.0.is_empty() {
-                    return Ok(dc.empty_bbox());
-                }
-
-                let r = self
-                    .aspect
-                    .compute(&vbox, &Rect::from_size(marker_width, marker_height));
-
-                let (vb_width, vb_height) = vbox.0.size();
-                cr.scale(r.width() / vb_width, r.height() / vb_height);
-
-                dc.push_view_box(vb_width, vb_height)
-            } else {
-                dc.push_view_box(marker_width, marker_height)
-            };
-
-            cr.translate(
-                -self.ref_x.normalize(&values, &params),
-                -self.ref_y.normalize(&values, &params),
-            );
+            cr.transform(transform.into());
 
             if !values.is_overflow() {
                 let clip_rect = self
