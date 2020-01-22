@@ -21,6 +21,7 @@ use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
+use crate::transform::Transform;
 use crate::viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
@@ -119,54 +120,53 @@ impl Marker {
             return Ok(draw_ctx.empty_bbox());
         }
 
-        draw_ctx.with_saved_cr(&mut |dc| {
-            let cr = dc.get_cairo_context();
+        let rotation = match self.orient {
+            MarkerOrient::Auto => computed_angle,
+            MarkerOrient::Angle(a) => a,
+        };
 
-            cr.translate(xpos, ypos);
+        let mut transform = Transform::new_translate(xpos, ypos).pre_rotate(rotation);
 
-            let rotation = match self.orient {
-                MarkerOrient::Auto => computed_angle,
-                MarkerOrient::Angle(a) => a,
-            };
+        if self.units == MarkerUnits::StrokeWidth {
+            transform = transform.pre_scale(line_width, line_width);
+        }
 
-            cr.rotate(rotation.radians());
-
-            if self.units == MarkerUnits::StrokeWidth {
-                cr.scale(line_width, line_width);
+        let params = if let Some(vbox) = self.vbox {
+            if vbox.0.is_empty() {
+                return Ok(draw_ctx.empty_bbox());
             }
 
-            let params = if let Some(vbox) = self.vbox {
-                if vbox.0.is_empty() {
-                    return Ok(dc.empty_bbox());
-                }
+            let r = self
+                .aspect
+                .compute(&vbox, &Rect::from_size(marker_width, marker_height));
 
-                let r = self
-                    .aspect
-                    .compute(&vbox, &Rect::from_size(marker_width, marker_height));
+            let (vb_width, vb_height) = vbox.0.size();
+            transform = transform.pre_scale(r.width() / vb_width, r.height() / vb_height);
 
-                let (vb_width, vb_height) = vbox.0.size();
-                cr.scale(r.width() / vb_width, r.height() / vb_height);
+            draw_ctx.push_view_box(vb_width, vb_height)
+        } else {
+            draw_ctx.push_view_box(marker_width, marker_height)
+        };
 
-                dc.push_view_box(vb_width, vb_height)
-            } else {
-                dc.push_view_box(marker_width, marker_height)
-            };
+        transform = transform.pre_translate(
+            -self.ref_x.normalize(&values, &params),
+            -self.ref_y.normalize(&values, &params),
+        );
 
-            cr.translate(
-                -self.ref_x.normalize(&values, &params),
-                -self.ref_y.normalize(&values, &params),
-            );
+        let clip = if values.is_overflow() {
+            None
+        } else {
+            Some(
+                self.vbox
+                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| vb.0),
+            )
+        };
 
-            if !values.is_overflow() {
-                let clip_rect = self
-                    .vbox
-                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| vb.0);
-
-                dc.clip(clip_rect);
-            }
-
-            dc.with_discrete_layer(node, values, clipping, &mut |dc| {
-                node.draw_children(&cascaded, dc, clipping)
+        draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
+            dc.with_clip_rect(clip, &mut |dc| {
+                dc.with_discrete_layer(node, values, clipping, &mut |dc| {
+                    node.draw_children(&cascaded, dc, clipping)
+                })
             })
         })
     }
