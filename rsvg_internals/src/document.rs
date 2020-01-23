@@ -101,6 +101,10 @@ impl Document {
         node_data.get_impl::<Svg>().get_intrinsic_dimensions()
     }
 
+    /// Runs the CSS cascade on the document tree
+    ///
+    /// This uses the document's internal stylesheets, plus an extra set of stylesheets
+    /// supplied by the caller.
     pub fn cascade(&mut self, extra: &[Stylesheet]) {
         css::cascade(&mut self.tree, &self.stylesheets, extra);
     }
