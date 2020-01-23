@@ -101,8 +101,8 @@ impl Document {
         node_data.get_impl::<Svg>().get_intrinsic_dimensions()
     }
 
-    pub fn cascade(&mut self) {
-        css::cascade(&mut self.tree, &self.stylesheets);
+    pub fn cascade(&mut self, extra: &[Stylesheet]) {
+        css::cascade(&mut self.tree, &self.stylesheets, extra);
     }
 }
 
@@ -363,7 +363,7 @@ impl DocumentBuilder {
                         stylesheets,
                     };
 
-                    document.cascade();
+                    document.cascade(&[]);
 
                     Ok(document)
                 } else {

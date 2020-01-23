@@ -736,7 +736,7 @@ impl Stylesheet {
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
-pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
+pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet], extra: &[Stylesheet]) {
     for mut node in root.descendants() {
         let mut matches = Vec::new();
 
@@ -749,7 +749,7 @@ pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
             QuirksMode::NoQuirks,
         );
 
-        for stylesheet in stylesheets {
+        for stylesheet in stylesheets.iter().chain(extra.iter()) {
             stylesheet.get_matches(&node, &mut match_ctx, &mut matches);
         }
 
