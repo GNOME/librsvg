@@ -173,3 +173,51 @@ fn untransformed_element() {
 
     compare_to_surface(&output_surf, &reference_surf, "untransformed_element");
 }
+
+#[test]
+fn set_stylesheet() {
+    // This has a rectangle which we style from a user-supplied stylesheet.
+    let mut svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <rect id="foo" x="10" y="20" width="30" height="40" fill="black"/>
+</svg>
+"##,
+    );
+
+    svg.set_stylesheet("rect { fill: #00ff00; }").expect("should be a valid stylesheet");
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+
+    let res = {
+        let cr = cairo::Context::new(&output);
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 100.0,
+        };
+
+        renderer.render_document(&cr, &viewport)
+    };
+
+    let output_surf = res
+        .and_then(|_| Ok(SharedImageSurface::wrap(output, SurfaceType::SRgb).unwrap()))
+        .unwrap();
+
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.rectangle(10.0, 20.0, 30.0, 40.0);
+        cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
+        cr.fill();
+    }
+
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(&output_surf, &reference_surf, "set_stylesheet");
+}

@@ -9,6 +9,7 @@ use locale_config::{LanguageRange, Locale};
 
 use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
+use crate::css::{Origin, Stylesheet};
 use crate::document::Document;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::DrawingCtx;
@@ -580,6 +581,13 @@ impl Handle {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         self.document.get_intrinsic_dimensions()
+    }
+
+    pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
+        let mut stylesheet = Stylesheet::new(Origin::User);
+        stylesheet.parse(css, None)?;
+        self.document.cascade(&[stylesheet]);
+        Ok(())
     }
 }
 

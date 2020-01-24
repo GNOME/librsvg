@@ -365,6 +365,10 @@ impl SvgHandle {
     pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
         self.0.has_sub(id)
     }
+
+    pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
+        self.0.set_stylesheet(css)
+    }
 }
 
 /// Can render an `SvgHandle` to a Cairo context.
