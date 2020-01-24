@@ -366,6 +366,14 @@ impl SvgHandle {
         self.0.has_sub(id)
     }
 
+    /// Sets a CSS stylesheet to use for an SVG document.
+    ///
+    /// During the CSS cascade, the specified stylesheet will be used
+    /// with a "User" [origin].
+    ///
+    /// Note that `@import` rules will not be resolved, except for `data:` URLs.
+    ///
+    /// [origin]: https://drafts.csswg.org/css-cascade-3/#cascading-origins
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
         self.0.set_stylesheet(css)
     }
