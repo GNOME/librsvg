@@ -218,6 +218,7 @@ main (int argc, char **argv)
     int bVersion = 0;
     char *format = NULL;
     char *output = NULL;
+    char *stylesheet = NULL;
     char *export_id = NULL;
     int keep_aspect_ratio = FALSE;
     guint32 background_color = 0;
@@ -242,6 +243,9 @@ main (int argc, char **argv)
     char *export_lookup_id;
     double unscaled_width, unscaled_height;
     int scaled_width, scaled_height;
+
+    char *stylesheet_data = NULL;
+    gsize stylesheet_data_len = 0;
 
     char buffer[25];
     char *endptr;
@@ -279,6 +283,7 @@ main (int argc, char **argv)
          N_("whether to preserve the aspect ratio [optional; defaults to FALSE]"), NULL},
         {"background-color", 'b', 0, G_OPTION_ARG_STRING, &background_color_str,
          N_("set the background color [optional; defaults to None]"), N_("[black, white, #abccee, #aaa...]")},
+        {"stylesheet", 's', 0, G_OPTION_ARG_FILENAME, &stylesheet, N_("Filename of CSS stylesheet"), NULL},
         {"unlimited", 'u', 0, G_OPTION_ARG_NONE, &unlimited, N_("Allow huge SVG files"), NULL},
         {"keep-image-data", 0, 0, G_OPTION_ARG_NONE, &keep_image_data, N_("Keep image data"), NULL},
         {"no-keep-image-data", 0, 0, G_OPTION_ARG_NONE, &no_keep_image_data, N_("Don't keep image data"), NULL},
@@ -304,6 +309,14 @@ main (int argc, char **argv)
     if (bVersion != 0) {
         printf (_("rsvg-convert version %s\n"), VERSION);
         return 0;
+    }
+
+    if (stylesheet != NULL) {
+        error = NULL;
+        if (!g_file_get_contents (stylesheet, &stylesheet_data, &stylesheet_data_len, &error)) {
+            g_printerr (_("Error reading stylesheet: %s\n"), error->message);
+            exit (1);
+        }
     }
 
     if (output != NULL) {
@@ -400,6 +413,13 @@ main (int argc, char **argv)
         }
 
         g_assert (rsvg != NULL);
+
+        if (stylesheet_data != NULL) {
+            if (!rsvg_handle_set_stylesheet (rsvg, stylesheet_data, stylesheet_data_len, &error)) {
+                g_printerr (_("Error in stylesheet: %s\n"), error->message);
+                exit (1);
+            }
+        }
 
         rsvg_handle_set_dpi_x_y (rsvg, dpi_x, dpi_y);
 
