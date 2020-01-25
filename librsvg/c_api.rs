@@ -4,6 +4,7 @@ use std::ops;
 use std::path::PathBuf;
 use std::ptr;
 use std::slice;
+use std::str;
 use std::sync::Once;
 use std::{f64, i32};
 
@@ -690,6 +691,20 @@ impl CHandle {
             .map_err(warn_on_invalid_id)
     }
 
+    fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
+        match *self.load_state.borrow_mut() {
+            LoadState::ClosedOk { ref mut handle } => handle.set_stylesheet(css),
+
+            _ => {
+                rsvg_g_critical(
+                    "handle must already be loaded in order to call \
+                     rsvg_handle_set_stylesheet()",
+                );
+                Err(LoadingError::Unknown)
+            },
+        }
+    }
+
     fn render_cairo_sub(
         &self,
         cr: &cairo::Context,
@@ -1293,6 +1308,38 @@ unsafe fn set_out_param<T: Copy>(
 
     if !out_has_param.is_null() {
         *out_has_param = has_value.to_glib();
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_set_stylesheet(
+    handle: *const RsvgHandle,
+    css: *const libc::c_char,
+    css_len: usize,
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    let rhandle = get_rust_handle(handle);
+
+    let css = match (css, css_len) {
+        (p, 0) if p.is_null() => "",
+        (_, _) => {
+            let s = slice::from_raw_parts(css as *const u8, css_len);
+            match str::from_utf8(s) {
+                Ok(s) => s,
+                Err(e) => {
+                    set_gerror(error, 0, &format!("CSS is not valid UTF-8: {}", e));
+                    return false.to_glib();
+                }
+            }
+        }
+    };
+
+    match rhandle.set_stylesheet(css) {
+        Ok(()) => true.to_glib(),
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            false.to_glib()
+        }
     }
 }
 
