@@ -24,7 +24,7 @@ fn normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal
 
     // Get the correct sobel kernel and factor for the pixel position.
     // Performance note: it's possible to replace the matrices with normal arrays.
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     let (factor_x, kx, factor_y, ky) = match (x as i32, y as i32) {
         (x, y) if (x, y) == (bounds.x0, bounds.y0) => (
             2. / 3.,

@@ -2,8 +2,8 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::too_many_arguments)]
 #![warn(unused)]
-#![cfg_attr(rustfmt, rustfmt_skip)]
 
+#[rustfmt::skip]
 pub use crate::c_api::{
     rsvg_rust_error_get_type,
     rsvg_rust_handle_close,
@@ -40,6 +40,7 @@ pub use crate::c_api::{
 
 pub use crate::color_utils::rsvg_css_parse_color;
 
+#[rustfmt::skip]
 pub use crate::pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_max_size,
     rsvg_rust_pixbuf_from_file_at_size,

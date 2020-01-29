@@ -48,6 +48,7 @@ impl Default for FeColorMatrix {
     }
 }
 
+#[rustfmt::skip]
 impl NodeTrait for FeColorMatrix {
     impl_node_as_filter_effect!();
 
@@ -67,7 +68,6 @@ impl NodeTrait for FeColorMatrix {
         // LuminanceToAlpha doesn't accept any matrix.
         if operation_type == OperationType::LuminanceToAlpha {
             self.matrix = {
-                #[cfg_attr(rustfmt, rustfmt_skip)]
                 Matrix5::new(
                     0.0,    0.0,    0.0,    0.0, 0.0,
                     0.0,    0.0,    0.0,    0.0, 0.0,
@@ -101,7 +101,6 @@ impl NodeTrait for FeColorMatrix {
                             }
                         })?;
 
-                        #[cfg_attr(rustfmt, rustfmt_skip)]
                         Matrix5::new(
                             0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0.0, 0.0,
                             0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0.0, 0.0,
@@ -114,21 +113,18 @@ impl NodeTrait for FeColorMatrix {
                         let degrees: f64 = attr.parse(value)?;
                         let (sin, cos) = degrees.to_radians().sin_cos();
 
-                        #[cfg_attr(rustfmt, rustfmt_skip)]
                         let a = Matrix3::new(
                             0.213, 0.715, 0.072,
                             0.213, 0.715, 0.072,
                             0.213, 0.715, 0.072,
                         );
 
-                        #[cfg_attr(rustfmt, rustfmt_skip)]
                         let b = Matrix3::new(
                              0.787, -0.715, -0.072,
                             -0.213,  0.285, -0.072,
                             -0.213, -0.715,  0.928,
                         );
 
-                        #[cfg_attr(rustfmt, rustfmt_skip)]
                         let c = Matrix3::new(
                             -0.213, -0.715,  0.928,
                              0.143,  0.140, -0.283,
