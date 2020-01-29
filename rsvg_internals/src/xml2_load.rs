@@ -22,7 +22,7 @@ use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
 use crate::xml::XmlState;
 use crate::xml2::*;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn get_xml2_sax_handler() -> xmlSAXHandler {
     xmlSAXHandler {
         // first the unused callbacks

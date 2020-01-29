@@ -226,7 +226,7 @@ pub struct ComputedValues {
     pub xml_space: XmlSpace, // not a property, but a non-presentation attribute
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
     // please keep these sorted
     match prop_name.expanded() {
@@ -405,7 +405,7 @@ macro_rules! compute_value {
 }
 
 impl SpecifiedValues {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
         use crate::properties::ParsedProperty::*;
 
