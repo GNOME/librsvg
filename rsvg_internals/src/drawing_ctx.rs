@@ -729,7 +729,7 @@ impl DrawingCtx {
                     // FIXME: deal with out of memory here
                     filters::render(&filter_node, values, child_surface, self, node_bbox)
                 } else {
-                    Ok(child_surface.clone())
+                    Ok(child_surface)
                 }
             }
 
@@ -1442,10 +1442,7 @@ impl AcquiredNodes {
         if node_is_accessed_by_reference(&node) {
             self.acquire_ref(&node)
         } else {
-            Ok(AcquiredNode {
-                stack: None,
-                node: node.clone(),
-            })
+            Ok(AcquiredNode { stack: None, node })
         }
     }
 
