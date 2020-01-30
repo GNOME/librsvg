@@ -43,7 +43,8 @@
 static char *_output_dir;
 
 static char *
-get_output_dir (void) {
+get_output_dir (void)
+{
     if (_output_dir == NULL) {
 	char *cwd = g_get_current_dir ();
         _output_dir = g_strconcat (cwd, G_DIR_SEPARATOR_S, "output", NULL);
@@ -57,18 +58,18 @@ static char *
 get_output_file (const char *test_file,
                  const char *extension)
 {
-  const char *output_dir = get_output_dir ();
-  char *result, *base;
+    const char *output_dir = get_output_dir ();
+    char *result, *base;
 
-  base = g_path_get_basename (test_file);
+    base = g_path_get_basename (test_file);
 
-  if (g_str_has_suffix (base, ".svg"))
-    base[strlen (base) - strlen (".svg")] = '\0';
+    if (g_str_has_suffix (base, ".svg"))
+	base[strlen (base) - strlen (".svg")] = '\0';
 
-  result = g_strconcat (output_dir, G_DIR_SEPARATOR_S, base, extension, NULL);
-  g_free (base);
+    result = g_strconcat (output_dir, G_DIR_SEPARATOR_S, base, extension, NULL);
+    g_free (base);
 
-  return result;
+    return result;
 }
 
 static void
@@ -76,12 +77,12 @@ save_image (cairo_surface_t *surface,
             const char      *test_name,
             const char      *extension)
 {
-  char *filename = get_output_file (test_name, extension);
+    char *filename = get_output_file (test_name, extension);
 
-  g_test_message ("Storing test result image at %s", filename);
-  g_assert (cairo_surface_write_to_png (surface, filename) == CAIRO_STATUS_SUCCESS);
+    g_test_message ("Storing test result image at %s", filename);
+    g_assert (cairo_surface_write_to_png (surface, filename) == CAIRO_STATUS_SUCCESS);
 
-  g_free (filename);
+    g_free (filename);
 }
 
 static gboolean
@@ -97,11 +98,11 @@ is_svg_or_subdir (GFile *file)
     ignore = g_str_has_prefix (basename, "ignore") || strcmp (basename, "resources") == 0;
 
     if (ignore)
-	goto out;
+       goto out;
 
     if (g_file_query_file_type (file, 0, NULL) == G_FILE_TYPE_DIRECTORY) {
-	result = TRUE;
-	goto out;
+       result = TRUE;
+       goto out;
     }
 
     result = g_str_has_suffix (basename, ".svg");
@@ -118,39 +119,39 @@ read_from_stream (void          *stream,
                   unsigned int   length)
 
 {
-  gssize result;
-  GError *error = NULL;
+    gssize result;
+    GError *error = NULL;
 
-  result = g_input_stream_read (stream, data, length, NULL, &error);
-  g_assert_no_error (error);
-  g_assert (result == length);
+    result = g_input_stream_read (stream, data, length, NULL, &error);
+    g_assert_no_error (error);
+    g_assert_cmpint (result, ==, length);
 
-  return CAIRO_STATUS_SUCCESS;
+    return CAIRO_STATUS_SUCCESS;
 }
 
 static cairo_surface_t *
 read_png (const char *test_name)
 {
-  char *reference_uri;
-  GFileInputStream *stream;
-  GFile *file;
-  GError *error = NULL;
-  cairo_surface_t *surface;
+    char *reference_uri = NULL;
+    GFileInputStream *stream;
+    GFile *file;
+    GError *error = NULL;
+    cairo_surface_t *surface;
 
-  reference_uri = g_strconcat (test_name, "-ref.png", NULL);
-  file = g_file_new_for_uri (reference_uri);
-  g_free (reference_uri);
+    reference_uri = g_strconcat (test_name, "-ref.png", NULL);
+    file = g_file_new_for_uri (reference_uri);
+    g_free (reference_uri);
 
-  stream = g_file_read (file, NULL, &error);
-  g_assert_no_error (error);
-  g_assert (stream);
+    stream = g_file_read (file, NULL, &error);
+    g_assert_no_error (error);
+    g_assert_nonnull (stream);
 
-  surface = cairo_image_surface_create_from_png_stream (read_from_stream, stream);
+    surface = cairo_image_surface_create_from_png_stream (read_from_stream, stream);
 
-  g_object_unref (stream);
-  g_object_unref (file);
+    g_object_unref (stream);
+    g_object_unref (file);
 
-  return surface;
+    return surface;
 }
 
 static cairo_surface_t *
@@ -221,7 +222,7 @@ rsvg_cairo_check (gconstpointer data)
     cairo_surface_t *render_surface;
     cairo_surface_t *surface_a, *surface_b, *surface_diff;
     TestUtilsBufferDiffResult result;
-    char *test_file_base;
+    char *test_file_base = NULL;
     unsigned int width_a, height_a, stride_a;
     unsigned int width_b, height_b, stride_b;
     GError *error = NULL;
@@ -232,7 +233,7 @@ rsvg_cairo_check (gconstpointer data)
 
     rsvg = rsvg_handle_new_from_gfile_sync (test_file, 0, NULL, &error);
     g_assert_no_error (error);
-    g_assert (rsvg != NULL);
+    g_assert_nonnull (rsvg);
 
     rsvg_handle_internal_set_testing (rsvg, TRUE);
 
@@ -241,8 +242,8 @@ rsvg_cairo_check (gconstpointer data)
     else
       rsvg_handle_set_dpi_x_y (rsvg, 72.0, 72.0);
     rsvg_handle_get_dimensions (rsvg, &dimensions);
-    g_assert (dimensions.width > 0);
-    g_assert (dimensions.height > 0);
+    g_assert_cmpint (dimensions.width, >, 0);
+    g_assert_cmpint (dimensions.height, >, 0);
 
     render_surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
 						 dimensions.width + 2 * FRAME_SIZE,
@@ -273,7 +274,7 @@ rsvg_cairo_check (gconstpointer data)
 	stride_a != stride_b) {
         g_test_fail ();
         g_test_message ("Image size mismatch (%dx%d != %dx%d)\n",
-                        width_a, height_a, width_b, height_b); 
+                        width_a, height_a, width_b, height_b);
     }
     else {
 #ifdef __x86_64__
@@ -351,4 +352,3 @@ main (int argc, char **argv)
 
     return result;
 }
-

@@ -34,8 +34,8 @@ test_loading_error (gconstpointer data)
     handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle == NULL);
-    g_assert (g_error_matches (error, RSVG_ERROR, RSVG_ERROR_FAILED));
+    g_assert_null (handle);
+    g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
 
     g_error_free (error);
 }
@@ -52,13 +52,14 @@ test_instancing_limit (gconstpointer data)
 
     handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 1, 11);
     cr = cairo_create (surf);
 
-    g_assert (!rsvg_handle_render_cairo (handle, cr));
+    g_assert_false (rsvg_handle_render_cairo (handle, cr));
 
     g_object_unref (handle);
 }
