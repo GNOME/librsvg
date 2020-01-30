@@ -258,11 +258,11 @@ impl<N: Normalize> Parse for Length<N> {
                         "pt" => Length::new(value, LengthUnit::Pt),
                         "pc" => Length::new(value, LengthUnit::Pc),
 
-                        _ => return Err(parser.new_unexpected_token_error(token.clone()))?,
+                        _ => return Err(parser.new_unexpected_token_error(token.clone())),
                     }
                 }
 
-                _ => return Err(parser.new_unexpected_token_error(token.clone()))?,
+                _ => return Err(parser.new_unexpected_token_error(token.clone())),
             }
         };
 
