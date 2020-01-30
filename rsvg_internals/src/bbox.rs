@@ -10,13 +10,19 @@ pub struct BoundingBox {
     pub ink_rect: Option<Rect>, // with stroke
 }
 
-impl BoundingBox {
-    pub fn new() -> BoundingBox {
+impl Default for BoundingBox {
+    fn default() -> Self {
         BoundingBox {
             transform: Default::default(),
             rect: None,
             ink_rect: None,
         }
+    }
+}
+
+impl BoundingBox {
+    pub fn new() -> BoundingBox {
+        Default::default()
     }
 
     pub fn with_transform(self, transform: Transform) -> BoundingBox {
