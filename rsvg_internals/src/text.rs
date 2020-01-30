@@ -1,6 +1,5 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
-use glib::translate::*;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use pango::FontMapExt;
 use std::cell::RefCell;
@@ -291,7 +290,7 @@ impl PositionedSpan {
             dc.setup_cr_for_stroke(&cr, &self.values);
             cr.move_to(self.rendered_position.0, self.rendered_position.1);
 
-            let rotation = unsafe { pango_sys::pango_gravity_to_rotation(gravity.to_glib()) };
+            let rotation = gravity.to_rotation();
             if !rotation.approx_eq_cairo(0.0) {
                 cr.rotate(-rotation);
             }

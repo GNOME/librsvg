@@ -240,17 +240,12 @@ impl DrawingCtx {
     ) -> Result<cairo::Surface, RenderingError> {
         let (w, h) = self.size_for_temporary_surface();
 
-        let surface = cairo::Surface::create_similar(surface, cairo::Content::ColorAlpha, w, h);
-
-        // FIXME: cairo-rs should return a Result from create_similar()!
-        // Since it doesn't, we need to check its status by hand...
-
-        let status = surface.status();
-        if status == cairo::Status::Success {
-            Ok(surface)
-        } else {
-            Err(RenderingError::Cairo(status))
-        }
+        Ok(cairo::Surface::create_similar(
+            surface,
+            cairo::Content::ColorAlpha,
+            w,
+            h,
+        )?)
     }
 
     /// Gets the viewport that was last pushed with `push_view_box()`.
