@@ -226,7 +226,7 @@ impl AsPaintSource for ResolvedPattern {
         self,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
-        _opacity: UnitInterval,
+        opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
         let node_with_children = if let Some(n) = self.children.node_with_children() {
@@ -351,10 +351,20 @@ impl AsPaintSource for ResolvedPattern {
 
         cr_pattern.set_matrix(caffine.into());
 
+        let UnitInterval(o) = opacity;
+        if o < 1.0 {
+            cr_pattern.push_group();
+        }
+
         let res =
             draw_ctx.with_discrete_layer(&node_with_children, pattern_values, false, &mut |dc| {
                 node_with_children.draw_children(&pattern_cascaded, dc, false)
             });
+
+        if o < 1.0 {
+            cr_pattern.pop_group_to_source();
+            cr_pattern.paint_with_alpha(o);
+        }
 
         // Return to the original coordinate system and rendering context
         draw_ctx.set_cairo_context(&cr_save);
