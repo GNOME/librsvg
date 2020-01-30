@@ -572,7 +572,7 @@ impl DrawingCtx {
                     // Clip
 
                     dc.cr.set_matrix(affines.outside_temporary_surface.into());
-                    let _: () = dc.clip_to_node(&clip_in_object_space, &bbox)?;
+                    dc.clip_to_node(&clip_in_object_space, &bbox)?;
 
                     // Mask
 
