@@ -44,13 +44,12 @@ test_dimensions (FixtureData *fixture)
     RsvgHandle *handle;
     RsvgPositionData position;
     RsvgDimensionData dimension;
-    gchar *target_file;
+    g_autofree gchar *target_file;
     GError *error = NULL;
 
     target_file = g_build_filename (test_utils_get_test_data_path (),
                                     fixture->file_path, NULL);
     handle = rsvg_handle_new_from_file (target_file, &error);
-    g_free (target_file);
     g_assert_no_error (error);
 
     if (fixture->id) {

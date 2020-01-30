@@ -20,15 +20,16 @@ static void
 load_n_bytes_at_a_time (gconstpointer data)
 {
     const TestData *fixture_data = data;
-    char *filename = g_build_filename (test_utils_get_test_data_path (), fixture_data->fixture, NULL);
-    guchar *buf = g_new (guchar, fixture_data->buf_size);
+    g_autofree char *filename = g_build_filename (test_utils_get_test_data_path (),
+                                                  fixture_data->fixture, NULL);
+    g_autofree guchar *buf = g_new (guchar, fixture_data->buf_size);
     gboolean done;
 
     RsvgHandle *handle;
     FILE *file;
 
     file = fopen (filename, "rb");
-    g_assert (file != NULL);
+    g_assert_nonnull (file);
 
     handle = rsvg_handle_new_with_flags (RSVG_HANDLE_FLAGS_NONE);
 
@@ -40,9 +41,9 @@ load_n_bytes_at_a_time (gconstpointer data)
         num_read = fread (buf, 1, fixture_data->buf_size, file);
 
         if (num_read > 0) {
-            g_assert (rsvg_handle_write (handle, buf, num_read, NULL) != FALSE);
+            g_assert_true (rsvg_handle_write (handle, buf, num_read, NULL));
         } else {
-            g_assert (ferror (file) == 0);
+            g_assert_cmpint (ferror (file), ==, 0);
 
             if (feof (file)) {
                 done = TRUE;
@@ -51,13 +52,10 @@ load_n_bytes_at_a_time (gconstpointer data)
     } while (!done);
 
     fclose (file);
-    g_free (filename);
 
-    g_assert (rsvg_handle_close (handle, NULL) != FALSE);
+    g_assert_true (rsvg_handle_close (handle, NULL));
 
     g_object_unref (handle);
-
-    g_free (buf);
 }
 
 static TestData tests[] = {
