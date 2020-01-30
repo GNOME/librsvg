@@ -350,11 +350,11 @@ impl DocumentBuilder {
                     cascade(&mut root, &stylesheets);
 
                     Ok(Document {
-                        tree: root.clone(),
+                        tree: root,
                         ids,
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
-                        load_options: load_options.clone(),
+                        load_options,
                     })
                 } else {
                     Err(LoadingError::RootElementIsNotSvg)
