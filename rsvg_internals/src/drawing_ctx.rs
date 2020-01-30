@@ -1407,7 +1407,7 @@ impl AcquiredNodes {
             Ok(node)
         } else {
             let node_type = node.borrow().get_type();
-            if node_types.iter().find(|&&t| t == node_type).is_some() {
+            if node_types.iter().any(|&t| t == node_type) {
                 Ok(node)
             } else {
                 Err(AcquireError::InvalidLinkType(fragment.clone()))
@@ -1488,6 +1488,6 @@ impl NodeStack {
     }
 
     pub fn contains(&self, node: &RsvgNode) -> bool {
-        self.0.iter().find(|n| **n == *node).is_some()
+        self.0.iter().any(|n| *n == *node)
     }
 }
