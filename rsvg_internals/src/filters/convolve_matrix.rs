@@ -66,7 +66,7 @@ impl NodeTrait for FeConvolveMatrix {
                             if v.0 > 0 && v.1 > 0 {
                                 Ok(v)
                             } else {
-                                Err(ValueErrorKind::value_error("values must be greater than 0"))?
+                                Err(ValueErrorKind::value_error("values must be greater than 0"))
                             }
                         })?;
                     self.order = (x as u32, y as u32);
