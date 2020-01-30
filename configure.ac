@@ -18,9 +18,9 @@ m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_versi
 #     rsvg_lt_current += 1
 #     rsvg_lt_revision = 0
 #     rsvg_lt_age = 0
-m4_define([rsvg_lt_current],[48])
+m4_define([rsvg_lt_current],[49])
 m4_define([rsvg_lt_revision],[0])
-m4_define([rsvg_lt_age],[46])
+m4_define([rsvg_lt_age],[47])
 m4_define([rsvg_lt_version_info],rsvg_lt_current:rsvg_lt_revision:rsvg_lt_age)
 
 AC_INIT([RSVG],[rsvg_version],[https://gitlab.gnome.org/GNOME/librsvg/issues],[librsvg])
