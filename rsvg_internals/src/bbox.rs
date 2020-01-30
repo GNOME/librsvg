@@ -3,21 +3,11 @@
 use crate::rect::Rect;
 use crate::transform::Transform;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct BoundingBox {
     pub transform: Transform,
     pub rect: Option<Rect>,     // without stroke
     pub ink_rect: Option<Rect>, // with stroke
-}
-
-impl Default for BoundingBox {
-    fn default() -> Self {
-        BoundingBox {
-            transform: Default::default(),
-            rect: None,
-            ink_rect: None,
-        }
-    }
 }
 
 impl BoundingBox {
