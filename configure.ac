@@ -170,6 +170,11 @@ PKG_CHECK_MODULES(LIBRSVG,                     \
 	pangoft2 >= $PANGO_REQUIRED	       \
 )
 
+CAIRO_VERSION=`$PKG_CONFIG --modversion cairo`
+PANGO_VERSION=`$PKG_CONFIG --modversion pangocairo`
+FREETYPE_VERSION=`$PKG_CONFIG --modversion freetype2`
+HARFBUZZ_VERSION=`$PKG_CONFIG --modversion harfbuzz`
+
 PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
 
 PKG_CHECK_MODULES([GMODULE],[gmodule-2.0])
@@ -397,6 +402,11 @@ librsvg-$VERSION
 	prefix:                         ${prefix}
 	C compiler:                     ${CC}
 	rustc:                          ${rust_version}
+
+	Cairo version:                  ${CAIRO_VERSION}
+	Pango version:                  ${PANGO_VERSION}
+	Freetype version:               ${FREETYPE_VERSION}
+	Harfbuzz version:               ${HARFBUZZ_VERSION}
 
         Debugging information for Rust: ${debug_release}
 
