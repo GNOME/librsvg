@@ -311,7 +311,7 @@ impl AsPaintSource for ResolvedPattern {
             let x = r.x0 - vbox.0.x0 * sw;
             let y = r.y0 - vbox.0.y0 * sh;
 
-            caffine = Transform::new(sw, 0.0, 0.0, sh, x, y);
+            caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
 
             draw_ctx.push_view_box(vbox.0.width(), vbox.0.height())
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
