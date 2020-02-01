@@ -44,7 +44,7 @@ mod handle_flags {
     use super::*;
 
     // Keep these in sync with rsvg.h:RsvgHandleFlags
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     bitflags! {
         pub struct HandleFlags: u32 {
             const NONE            = 0;
@@ -420,7 +420,7 @@ impl ObjectImpl for CHandle {
         }
     }
 
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
         let prop = &PROPERTIES[id];
 

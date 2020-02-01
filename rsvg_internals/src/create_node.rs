@@ -57,7 +57,7 @@ macro_rules! n {
     };
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 mod creators {
     use super::*;
 
@@ -133,7 +133,7 @@ use creators::*;
 type NodeCreateFn = fn(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode;
 
 // Lines in comments are elements that we don't support.
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static NODE_CREATORS: Lazy<HashMap<&'static str, (bool, NodeCreateFn)>> = Lazy::new(|| {
     let creators_table: Vec<(&str, bool, NodeCreateFn)> = vec![
         // name, supports_class, create_fn

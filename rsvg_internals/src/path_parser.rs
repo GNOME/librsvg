@@ -942,7 +942,7 @@ pub fn parse_path_into_builder(
 }
 
 #[cfg(test)]
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 mod tests {
     use super::*;
 

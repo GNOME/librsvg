@@ -53,7 +53,7 @@ impl Parse for IRI {
             match href {
                 Href::PlainUrl(_) => Err(loc.new_custom_error(ValueErrorKind::parse_error(
                     "href requires a fragment identifier",
-                )))?,
+                ))),
                 Href::WithFragment(f) => Ok(IRI::Resource(f)),
             }
         }

@@ -1,7 +1,6 @@
 //! Hand-written binding to the very minimal part of libxml2 that we need.
 
 #![allow(non_snake_case, non_camel_case_types)]
-#![cfg_attr(rustfmt, rustfmt_skip)]
 
 use glib_sys::gpointer;
 use libc;
@@ -10,8 +9,8 @@ pub const XML_CHAR_ENCODING_NONE: libc::c_int = 0;
 
 pub const XML_INTERNAL_GENERAL_ENTITY: libc::c_int = 1;
 
-pub const XML_PARSE_NONET:     libc::c_int = 1 << 11;
-pub const XML_PARSE_HUGE:      libc::c_int = 1 << 19;
+pub const XML_PARSE_NONET: libc::c_int = 1 << 11;
+pub const XML_PARSE_HUGE: libc::c_int = 1 << 19;
 pub const XML_PARSE_BIG_LINES: libc::c_int = 1 << 22;
 
 pub const XML_SAX2_MAGIC: libc::c_uint = 0xDEEDBEAF;
@@ -22,7 +21,7 @@ pub type xmlEntityPtr = gpointer;
 
 pub type UnusedFn = Option<unsafe extern "C" fn()>;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[repr(C)]
 pub struct xmlSAXHandler {
     pub internalSubset:    UnusedFn,
@@ -165,15 +164,16 @@ pub struct xmlError {
 
 pub type xmlErrorPtr = *mut xmlError;
 
-pub type xmlInputReadCallback = Option<unsafe extern "C" fn(
-    context: *mut libc::c_void,
-    buffer: *mut libc::c_char,
-    len: libc::c_int,
-) -> libc::c_int>;
+pub type xmlInputReadCallback = Option<
+    unsafe extern "C" fn(
+        context: *mut libc::c_void,
+        buffer: *mut libc::c_char,
+        len: libc::c_int,
+    ) -> libc::c_int,
+>;
 
-pub type xmlInputCloseCallback = Option<unsafe extern "C" fn(
-    context: *mut libc::c_void,
-) -> libc::c_int>;
+pub type xmlInputCloseCallback =
+    Option<unsafe extern "C" fn(context: *mut libc::c_void) -> libc::c_int>;
 
 pub type xmlCharEncoding = libc::c_int;
 
@@ -199,10 +199,7 @@ extern "C" {
 
     pub fn xmlCtxtGetLastError(ctxt: *mut libc::c_void) -> xmlErrorPtr;
 
-    pub fn xmlCtxtUseOptions(
-        ctxt: xmlParserCtxtPtr,
-        options: libc::c_int,
-    ) -> libc::c_int;
+    pub fn xmlCtxtUseOptions(ctxt: xmlParserCtxtPtr, options: libc::c_int) -> libc::c_int;
 
     pub fn xmlNewEntity(
         doc: xmlDocPtr,
