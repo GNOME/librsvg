@@ -357,3 +357,13 @@ test_utils_setup_font_map (void)
     g_object_unref (font_map);
 #endif
 }
+
+void
+test_utils_print_dependency_versions (void)
+{
+    g_test_message ("Cairo version:    %s", cairo_version_string ());
+    g_test_message ("Pango version:    %s", pango_version_string ());
+    g_test_message ("Freetype version: %d.%d.%d", FREETYPE_MAJOR, FREETYPE_MINOR, FREETYPE_PATCH);
+    g_test_message ("Harfbuzz version: %s", hb_version_string ());
+}
+

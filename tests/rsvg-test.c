@@ -323,6 +323,8 @@ main (int argc, char **argv)
 
     g_test_init (&argc, &argv, NULL);
 
+    test_utils_print_dependency_versions ();
+
     test_utils_setup_font_map ();
 
     if (argc < 2) {
