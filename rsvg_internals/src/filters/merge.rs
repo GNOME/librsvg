@@ -1,5 +1,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::ParseValue;
@@ -59,11 +60,12 @@ impl FeMergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
-        let input = ctx.get_input(draw_ctx, self.in_.as_ref())?;
+        let input = ctx.get_input(acquired_nodes, draw_ctx, self.in_.as_ref())?;
 
         if output_surface.is_none() {
             return Ok(input.surface().clone());
@@ -81,6 +83,7 @@ impl FilterEffect for FeMerge {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.
@@ -94,6 +97,7 @@ impl FilterEffect for FeMerge {
             }
 
             let input = ctx.get_input(
+                acquired_nodes,
                 draw_ctx,
                 child.borrow().get_impl::<FeMergeNode>().in_.as_ref(),
             )?;
@@ -109,6 +113,7 @@ impl FilterEffect for FeMerge {
         {
             output_surface = Some(child.borrow().get_impl::<FeMergeNode>().render(
                 ctx,
+                acquired_nodes,
                 draw_ctx,
                 bounds,
                 output_surface,

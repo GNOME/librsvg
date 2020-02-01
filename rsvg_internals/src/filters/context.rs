@@ -4,6 +4,7 @@ use std::f64;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::filter::Filter;
 use crate::node::RsvgNode;
@@ -270,6 +271,7 @@ impl FilterContext {
     fn get_paint_server_surface(
         &self,
         draw_ctx: &mut DrawingCtx,
+        acquired_nodes: &mut AcquiredNodes,
         paint_server: &PaintServer,
         opacity: UnitInterval,
     ) -> Result<SharedImageSurface, cairo::Status> {
@@ -286,6 +288,7 @@ impl FilterContext {
             // FIXME: we are ignoring the following error; propagate it upstream
             let _ = draw_ctx
                 .set_source_paint_server(
+                    acquired_nodes,
                     paint_server,
                     opacity,
                     &self.node_bbox,
@@ -311,6 +314,7 @@ impl FilterContext {
     /// Does not take `processing_linear_rgb` into account.
     fn get_input_raw(
         &self,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         in_: Option<&Input>,
     ) -> Result<FilterInput, FilterError> {
@@ -350,12 +354,22 @@ impl FilterContext {
                 .map(FilterInput::StandardInput),
 
             Input::FillPaint => self
-                .get_paint_server_surface(draw_ctx, &values.fill.0, values.fill_opacity.0)
+                .get_paint_server_surface(
+                    draw_ctx,
+                    acquired_nodes,
+                    &values.fill.0,
+                    values.fill_opacity.0,
+                )
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
             Input::StrokePaint => self
-                .get_paint_server_surface(draw_ctx, &values.stroke.0, values.stroke_opacity.0)
+                .get_paint_server_surface(
+                    draw_ctx,
+                    acquired_nodes,
+                    &values.stroke.0,
+                    values.stroke_opacity.0,
+                )
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
@@ -371,10 +385,11 @@ impl FilterContext {
     /// Retrieves the filter input surface according to the SVG rules.
     pub fn get_input(
         &self,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         in_: Option<&Input>,
     ) -> Result<FilterInput, FilterError> {
-        let raw = self.get_input_raw(draw_ctx, in_)?;
+        let raw = self.get_input_raw(acquired_nodes, draw_ctx, in_)?;
 
         // Convert the input surface to the desired format.
         let (surface, bounds) = match raw {

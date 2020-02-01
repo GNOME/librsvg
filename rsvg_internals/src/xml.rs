@@ -401,7 +401,15 @@ impl XmlState {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "href") => href = Some(value),
-                ref v if *v == ExpandedName { ns: &ns!(), local: &ln_parse } => parse = Some(value),
+                ref v
+                    if *v
+                        == ExpandedName {
+                            ns: &ns!(),
+                            local: &ln_parse,
+                        } =>
+                {
+                    parse = Some(value)
+                }
                 expanded_name!("", "encoding") => encoding = Some(value),
                 _ => (),
             }

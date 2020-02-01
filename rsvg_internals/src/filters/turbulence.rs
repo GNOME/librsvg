@@ -1,6 +1,7 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
@@ -335,6 +336,7 @@ impl FilterEffect for FeTurbulence {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
+        _acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);

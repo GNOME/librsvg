@@ -5,6 +5,7 @@ use nalgebra::Vector3;
 use num_traits::identities::Zero;
 use rayon::prelude::*;
 
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filters::{
@@ -249,9 +250,13 @@ macro_rules! impl_lighting_filter {
                 &self,
                 node: &RsvgNode,
                 ctx: &FilterContext,
+                acquired_nodes: &mut AcquiredNodes,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterResult, FilterError> {
-                let input = self.common().base.get_input(ctx, draw_ctx)?;
+                let input = self
+                    .common()
+                    .base
+                    .get_input(ctx, acquired_nodes, draw_ctx)?;
                 let mut bounds = self
                     .common()
                     .base

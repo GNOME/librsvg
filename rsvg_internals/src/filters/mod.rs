@@ -7,6 +7,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
@@ -40,6 +41,7 @@ pub trait FilterEffect: NodeTrait {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError>;
 
@@ -205,9 +207,10 @@ impl PrimitiveWithInput {
     fn get_input(
         &self,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterInput, FilterError> {
-        ctx.get_input(draw_ctx, self.in_.as_ref())
+        ctx.get_input(acquired_nodes, draw_ctx, self.in_.as_ref())
     }
 }
 
@@ -240,6 +243,7 @@ pub fn render(
     filter_node: &RsvgNode,
     computed_from_node_being_filtered: &ComputedValues,
     source_surface: SharedImageSurface,
+    acquired_nodes: &mut AcquiredNodes,
     draw_ctx: &mut DrawingCtx,
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
@@ -293,7 +297,7 @@ pub fn render(
 
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = filter
-                .render(&c, filter_ctx, draw_ctx)
+                .render(&c, filter_ctx, acquired_nodes, draw_ctx)
                 .and_then(|result| filter_ctx.store_result(result))
             {
                 rsvg_log!("(filter primitive {} returned an error: {})", c, err);

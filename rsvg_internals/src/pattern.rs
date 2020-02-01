@@ -8,7 +8,8 @@ use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::{DrawingCtx, NodeStack, ViewParams};
+use crate::document::{AcquiredNodes, NodeStack};
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
@@ -163,7 +164,7 @@ impl PaintSource for Pattern {
     fn resolve(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx,
+        acquired_nodes: &mut AcquiredNodes,
     ) -> Result<Self::Resolved, AcquireError> {
         let mut resolved = self.resolved.borrow_mut();
         if let Some(ref pattern) = *resolved {
@@ -179,7 +180,7 @@ impl PaintSource for Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                match draw_ctx.acquire_node(&fragment, &[NodeType::Pattern]) {
+                match acquired_nodes.acquire(&fragment, &[NodeType::Pattern]) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -224,6 +225,7 @@ impl PaintSource for Pattern {
 impl AsPaintSource for ResolvedPattern {
     fn set_as_paint_source(
         self,
+        acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         opacity: UnitInterval,
@@ -356,10 +358,13 @@ impl AsPaintSource for ResolvedPattern {
             cr_pattern.push_group();
         }
 
-        let res =
-            draw_ctx.with_discrete_layer(&node_with_children, pattern_values, false, &mut |dc| {
-                node_with_children.draw_children(&pattern_cascaded, dc, false)
-            });
+        let res = draw_ctx.with_discrete_layer(
+            &node_with_children,
+            acquired_nodes,
+            pattern_values,
+            false,
+            &mut |an, dc| node_with_children.draw_children(an, &pattern_cascaded, dc, false),
+        );
 
         if o < 1.0 {
             cr_pattern.pop_group_to_source();

@@ -10,6 +10,7 @@ use crate::allowed_url::Fragment;
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -99,6 +100,7 @@ impl Marker {
     fn render(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         xpos: f64,
         ypos: f64,
@@ -164,8 +166,8 @@ impl Marker {
 
         draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
             dc.with_clip_rect(clip, &mut |dc| {
-                dc.with_discrete_layer(node, values, clipping, &mut |dc| {
-                    node.draw_children(&cascaded, dc, clipping)
+                dc.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                    node.draw_children(an, &cascaded, dc, clipping)
                 })
             })
         })
@@ -560,6 +562,7 @@ enum MarkerType {
 
 fn emit_marker_by_name(
     draw_ctx: &mut DrawingCtx,
+    acquired_nodes: &mut AcquiredNodes,
     name: &Fragment,
     xpos: f64,
     ypos: f64,
@@ -567,11 +570,12 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Ok(acquired) = draw_ctx.acquire_node(name, &[NodeType::Marker]) {
+    if let Ok(acquired) = acquired_nodes.acquire(name, &[NodeType::Marker]) {
         let node = acquired.get();
 
         node.borrow().get_impl::<Marker>().render(
             &node,
+            acquired_nodes,
             draw_ctx,
             xpos,
             ypos,
@@ -616,6 +620,7 @@ where
 pub fn render_markers_for_path_builder(
     builder: &PathBuilder,
     draw_ctx: &mut DrawingCtx,
+    acquired_nodes: &mut AcquiredNodes,
     values: &ComputedValues,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
@@ -645,7 +650,16 @@ pub fn render_markers_for_path_builder(
                 MarkerType::Middle => &values.marker_mid.0,
                 MarkerType::End => &values.marker_end.0,
             } {
-                emit_marker_by_name(draw_ctx, marker, x, y, computed_angle, line_width, clipping)
+                emit_marker_by_name(
+                    draw_ctx,
+                    acquired_nodes,
+                    marker,
+                    x,
+                    y,
+                    computed_angle,
+                    line_width,
+                    clipping,
+                )
             } else {
                 Ok(draw_ctx.empty_bbox())
             }

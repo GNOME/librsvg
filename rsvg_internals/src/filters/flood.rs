@@ -1,3 +1,4 @@
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
@@ -34,6 +35,7 @@ impl FilterEffect for FeFlood {
         &self,
         node: &RsvgNode,
         ctx: &FilterContext,
+        _acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);

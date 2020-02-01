@@ -1240,10 +1240,7 @@ impl ImageSurface<Exclusive> {
 
     /// Modify the image data
     #[inline]
-    pub fn modify(
-        &mut self,
-        draw_fn: &mut dyn FnMut(&mut cairo::ImageSurfaceData, usize),
-    ) {
+    pub fn modify(&mut self, draw_fn: &mut dyn FnMut(&mut cairo::ImageSurfaceData, usize)) {
         let stride = self.stride() as usize;
         let mut data = self.get_data();
 
