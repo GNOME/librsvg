@@ -1,3 +1,14 @@
+Version 2.47.3
+
+- #379 - New API, rsvg_handle_set_stylesheet(), to set a CSS
+  stylesheet independent of the SVG document.
+
+- #510 - support opacity in patterns (Sven Neumann).
+
+- Move away from the Cairo transform type to our own (Paolo Borelli).
+
+- Update the gtk-rs version.
+
 Version 2.47.2
 
 - Handling of the "result", "in", "in2" attributes in filter
