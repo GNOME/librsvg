@@ -344,26 +344,30 @@ impl AsPaintSource for ResolvedPattern {
         draw_ctx.set_cairo_context(&cr_pattern);
 
         // Set up transformations to be determined by the contents units
-
-        // Draw everything
-        let pattern_cascaded = CascadedValues::new_from_node(&node_with_children);
-        let pattern_values = pattern_cascaded.get();
-
         cr_pattern.set_matrix(caffine.into());
 
+        // Declare a drawing function
+        fn draw_children(
+            ctx: &mut DrawingCtx,
+            node: &RsvgNode,
+        ) -> Result<BoundingBox, RenderingError> {
+            let pattern_cascaded = CascadedValues::new_from_node(&node);
+            let pattern_values = pattern_cascaded.get();
+            ctx.with_discrete_layer(&node, pattern_values, false, &mut |dc| {
+                node.draw_children(&pattern_cascaded, dc, false)
+            })
+        }
+
+        // Draw everything
+        let res;
         let UnitInterval(o) = opacity;
         if o < 1.0 {
             cr_pattern.push_group();
-        }
-
-        let res =
-            draw_ctx.with_discrete_layer(&node_with_children, pattern_values, false, &mut |dc| {
-                node_with_children.draw_children(&pattern_cascaded, dc, false)
-            });
-
-        if o < 1.0 {
+            res = draw_children(draw_ctx, &node_with_children);
             cr_pattern.pop_group_to_source();
             cr_pattern.paint_with_alpha(o);
+        } else {
+            res = draw_children(draw_ctx, &node_with_children);
         }
 
         // Return to the original coordinate system and rendering context
