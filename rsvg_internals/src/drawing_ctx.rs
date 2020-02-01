@@ -115,7 +115,7 @@ impl<'i> DrawingCtx<'i> {
         dpi: Dpi,
         measuring: bool,
         testing: bool,
-    ) -> DrawingCtx {
+    ) -> DrawingCtx<'i> {
         let initial_transform = Transform::from(cr.get_matrix());
 
         // This is more or less a hack to make measuring geometries possible,
