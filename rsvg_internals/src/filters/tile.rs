@@ -1,3 +1,4 @@
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::property_bag::PropertyBag;
@@ -33,9 +34,10 @@ impl FilterEffect for FeTile {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, draw_ctx)?;
+        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
         let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);

@@ -6,6 +6,7 @@ use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -267,6 +268,7 @@ impl PositionedSpan {
 
     fn draw(
         &self,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -299,6 +301,7 @@ impl PositionedSpan {
 
             let res = if !clipping {
                 dc.set_source_paint_server(
+                    acquired_nodes,
                     &self.values.fill.0,
                     self.values.fill_opacity.0,
                     &bbox,
@@ -320,6 +323,7 @@ impl PositionedSpan {
 
                 let res = if !clipping {
                     dc.set_source_paint_server(
+                        acquired_nodes,
                         &self.values.stroke.0,
                         self.values.stroke_opacity.0,
                         &bbox,
@@ -416,6 +420,7 @@ fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
 fn children_to_chunks(
     chunks: &mut Vec<Chunk>,
     node: &RsvgNode,
+    acquired_nodes: &mut AcquiredNodes,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
     dx: Option<Length<Horizontal>>,
@@ -436,6 +441,7 @@ fn children_to_chunks(
                 let cascaded = CascadedValues::new(cascaded, &child);
                 child.borrow().get_impl::<TSpan>().to_chunks(
                     &child,
+                    acquired_nodes,
                     &cascaded,
                     draw_ctx,
                     chunks,
@@ -447,8 +453,8 @@ fn children_to_chunks(
                 let cascaded = CascadedValues::new(cascaded, &child);
                 child.borrow().get_impl::<TRef>().to_chunks(
                     &child,
+                    acquired_nodes,
                     &cascaded,
-                    draw_ctx,
                     chunks,
                     depth + 1,
                 );
@@ -580,12 +586,22 @@ impl Text {
     fn make_chunks(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Vec<Chunk> {
         let mut chunks = Vec::new();
         chunks.push(Chunk::new(cascaded.get(), Some(self.x), Some(self.y)));
-        children_to_chunks(&mut chunks, node, cascaded, draw_ctx, self.dx, self.dy, 0);
+        children_to_chunks(
+            &mut chunks,
+            node,
+            acquired_nodes,
+            cascaded,
+            draw_ctx,
+            self.dx,
+            self.dy,
+            0,
+        );
         chunks
     }
 }
@@ -608,6 +624,7 @@ impl NodeTrait for Text {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -618,7 +635,7 @@ impl NodeTrait for Text {
         let mut x = self.x.normalize(values, &params);
         let mut y = self.y.normalize(values, &params);
 
-        let chunks = self.make_chunks(node, cascaded, draw_ctx);
+        let chunks = self.make_chunks(node, acquired_nodes, cascaded, draw_ctx);
 
         let mut measured_chunks = Vec::new();
         for chunk in &chunks {
@@ -642,12 +659,12 @@ impl NodeTrait for Text {
             positioned_chunks.push(positioned);
         }
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let mut bbox = dc.empty_bbox();
 
             for chunk in &positioned_chunks {
                 for span in &chunk.spans {
-                    let span_bbox = span.draw(dc, clipping)?;
+                    let span_bbox = span.draw(an, dc, clipping)?;
                     bbox.insert(&span_bbox);
                 }
             }
@@ -666,8 +683,8 @@ impl TRef {
     fn to_chunks(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
         chunks: &mut Vec<Chunk>,
         depth: usize,
     ) {
@@ -678,7 +695,7 @@ impl TRef {
         let link = self.link.as_ref().unwrap();
         let values = cascaded.get();
 
-        if let Ok(acquired) = draw_ctx.acquire_node(link, &[]) {
+        if let Ok(acquired) = acquired_nodes.acquire(link, &[]) {
             let c = acquired.get();
             extract_chars_children_to_chunks_recursively(chunks, &c, values, depth);
         } else {
@@ -735,6 +752,7 @@ impl TSpan {
     fn to_chunks(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         chunks: &mut Vec<Chunk>,
@@ -746,7 +764,16 @@ impl TSpan {
             chunks.push(Chunk::new(values, self.x, self.y));
         }
 
-        children_to_chunks(chunks, node, cascaded, draw_ctx, self.dx, self.dy, depth);
+        children_to_chunks(
+            chunks,
+            node,
+            acquired_nodes,
+            cascaded,
+            draw_ctx,
+            self.dx,
+            self.dy,
+            depth,
+        );
     }
 }
 

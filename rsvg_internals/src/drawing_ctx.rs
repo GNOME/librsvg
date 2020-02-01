@@ -12,12 +12,11 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
-use crate::document::Document;
+use crate::document::{AcquiredNode, AcquiredNodes};
 use crate::dpi::Dpi;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
-use crate::limits;
 use crate::marker;
 use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -85,9 +84,7 @@ pub enum ClipMode {
     ClipToVbox,
 }
 
-pub struct DrawingCtx<'i> {
-    document: &'i Document,
-
+pub struct DrawingCtx {
     initial_transform: Transform,
 
     rect: Rect,
@@ -100,22 +97,19 @@ pub struct DrawingCtx<'i> {
 
     drawsub_stack: Vec<RsvgNode>,
 
-    acquired_nodes: AcquiredNodes<'i>,
-
     measuring: bool,
     testing: bool,
 }
 
-impl<'i> DrawingCtx<'i> {
+impl DrawingCtx {
     pub fn new(
-        document: &'i Document,
         node: Option<&RsvgNode>,
         cr: &cairo::Context,
         viewport: Rect,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
-    ) -> DrawingCtx<'i> {
+    ) -> DrawingCtx {
         let initial_transform = Transform::from(cr.get_matrix());
 
         // This is more or less a hack to make measuring geometries possible,
@@ -145,10 +139,7 @@ impl<'i> DrawingCtx<'i> {
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
 
-        let acquired_nodes = AcquiredNodes::new(document);
-
         let mut draw_ctx = DrawingCtx {
-            document,
             initial_transform,
             rect,
             dpi,
@@ -156,7 +147,6 @@ impl<'i> DrawingCtx<'i> {
             cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
             drawsub_stack: Vec::new(),
-            acquired_nodes,
             measuring,
             testing,
         };
@@ -321,17 +311,10 @@ impl<'i> DrawingCtx<'i> {
             })
     }
 
-    pub fn acquire_node(
-        &mut self,
-        fragment: &Fragment,
-        node_types: &[NodeType],
-    ) -> Result<AcquiredNode, AcquireError> {
-        self.acquired_nodes.acquire(fragment, node_types)
-    }
-
     fn clip_to_node(
         &mut self,
         clip_node: &Option<RsvgNode>,
+        acquired_nodes: &mut AcquiredNodes,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         if let Some(node) = clip_node {
@@ -364,7 +347,7 @@ impl<'i> DrawingCtx<'i> {
                 let cr = dc.get_cairo_context();
 
                 // here we don't push a layer because we are clipping
-                let res = node.draw_children(&cascaded, dc, true);
+                let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
 
                 cr.clip();
 
@@ -386,6 +369,7 @@ impl<'i> DrawingCtx<'i> {
         mask_node: &RsvgNode,
         transform: Transform,
         bbox: &BoundingBox,
+        acquired_nodes: &mut AcquiredNodes,
     ) -> Result<Option<cairo::ImageSurface>, RenderingError> {
         if bbox.rect.is_none() {
             // The node being masked is empty / doesn't have a
@@ -450,9 +434,13 @@ impl<'i> DrawingCtx<'i> {
                 self.get_view_params()
             };
 
-            let res = self.with_discrete_layer(mask_node, values, false, &mut |dc| {
-                mask_node.draw_children(&cascaded, dc, false)
-            });
+            let res = self.with_discrete_layer(
+                mask_node,
+                acquired_nodes,
+                values,
+                false,
+                &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
+            );
 
             self.pop_cairo_context();
 
@@ -471,12 +459,16 @@ impl<'i> DrawingCtx<'i> {
     pub fn with_discrete_layer(
         &mut self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         clipping: bool,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+        draw_fn: &mut dyn FnMut(
+            &mut AcquiredNodes,
+            &mut DrawingCtx,
+        ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         if clipping {
-            draw_fn(self)
+            draw_fn(acquired_nodes, self)
         } else {
             self.with_saved_cr(&mut |dc| {
                 let clip_uri = values.clip_path.0.get();
@@ -494,10 +486,10 @@ impl<'i> DrawingCtx<'i> {
                 let affine_at_start = dc.get_transform();
 
                 let (clip_in_user_space, clip_in_object_space) =
-                    get_clip_in_user_and_object_space(&mut dc.acquired_nodes, clip_uri);
+                    get_clip_in_user_and_object_space(acquired_nodes, clip_uri);
 
                 // Here we are clipping in user space, so the bbox doesn't matter
-                dc.clip_to_node(&clip_in_user_space, &dc.empty_bbox())?;
+                dc.clip_to_node(&clip_in_user_space, acquired_nodes, &dc.empty_bbox())?;
 
                 let needs_temporary_surface = !(opacity == 1.0
                     && filter.is_none()
@@ -529,7 +521,7 @@ impl<'i> DrawingCtx<'i> {
 
                     // Draw!
 
-                    let mut res = draw_fn(dc);
+                    let mut res = draw_fn(acquired_nodes, dc);
 
                     let bbox = if let Ok(ref bbox) = res {
                         *bbox
@@ -548,7 +540,14 @@ impl<'i> DrawingCtx<'i> {
                         )?;
 
                         let img_surface = dc
-                            .run_filter(filter_uri, node, values, child_surface, bbox)?
+                            .run_filter(
+                                acquired_nodes,
+                                filter_uri,
+                                node,
+                                values,
+                                child_surface,
+                                bbox,
+                            )?
                             .into_image_surface()?;
 
                         // turn ImageSurface into a Surface
@@ -567,12 +566,12 @@ impl<'i> DrawingCtx<'i> {
                     // Clip
 
                     dc.cr.set_matrix(affines.outside_temporary_surface.into());
-                    dc.clip_to_node(&clip_in_object_space, &bbox)?;
+                    dc.clip_to_node(&clip_in_object_space, acquired_nodes, &bbox)?;
 
                     // Mask
 
                     if let Some(fragment) = mask {
-                        if let Ok(acquired) = dc.acquire_node(fragment, &[NodeType::Mask]) {
+                        if let Ok(acquired) = acquired_nodes.acquire(fragment, &[NodeType::Mask]) {
                             let mask_node = acquired.get();
 
                             res = res.and_then(|bbox| {
@@ -581,6 +580,7 @@ impl<'i> DrawingCtx<'i> {
                                     &mask_node,
                                     affines.for_temporary_surface,
                                     &bbox,
+                                    acquired_nodes,
                                 )
                                 .and_then(|mask_surf| {
                                     if let Some(surf) = mask_surf {
@@ -614,7 +614,7 @@ impl<'i> DrawingCtx<'i> {
 
                     res
                 } else {
-                    draw_fn(dc)
+                    draw_fn(acquired_nodes, dc)
                 }
             })
         }
@@ -664,7 +664,8 @@ impl<'i> DrawingCtx<'i> {
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(rect) = clip {
             self.cr.save();
-            self.cr.rectangle(rect.x0, rect.y0, rect.width(), rect.height());
+            self.cr
+                .rectangle(rect.x0, rect.y0, rect.width(), rect.height());
             self.cr.clip();
         }
 
@@ -710,19 +711,27 @@ impl<'i> DrawingCtx<'i> {
 
     fn run_filter(
         &mut self,
+        acquired_nodes: &mut AcquiredNodes,
         filter_uri: &Fragment,
         node: &RsvgNode,
         values: &ComputedValues,
         child_surface: SharedImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
-        match self.acquire_node(filter_uri, &[NodeType::Filter]) {
+        match acquired_nodes.acquire(filter_uri, &[NodeType::Filter]) {
             Ok(acquired) => {
                 let filter_node = acquired.get();
 
                 if !filter_node.borrow().is_in_error() {
                     // FIXME: deal with out of memory here
-                    filters::render(&filter_node, values, child_surface, self, node_bbox)
+                    filters::render(
+                        &filter_node,
+                        values,
+                        child_surface,
+                        acquired_nodes,
+                        self,
+                        node_bbox,
+                    )
                 } else {
                     Ok(child_surface)
                 }
@@ -768,6 +777,7 @@ impl<'i> DrawingCtx<'i> {
 
     pub fn set_source_paint_server(
         &mut self,
+        acquired_nodes: &mut AcquiredNodes,
         ps: &PaintServer,
         opacity: UnitInterval,
         bbox: &BoundingBox,
@@ -780,7 +790,7 @@ impl<'i> DrawingCtx<'i> {
             } => {
                 let mut had_paint_server = false;
 
-                match acquire_paint_server(&mut self.acquired_nodes, iri) {
+                match acquire_paint_server(acquired_nodes, iri) {
                     Ok(acquired) => {
                         let node = acquired.get();
 
@@ -788,15 +798,33 @@ impl<'i> DrawingCtx<'i> {
                             NodeType::LinearGradient => node
                                 .borrow()
                                 .get_impl::<LinearGradient>()
-                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                                .resolve_fallbacks_and_set_pattern(
+                                    &node,
+                                    acquired_nodes,
+                                    self,
+                                    opacity,
+                                    bbox,
+                                )?,
                             NodeType::RadialGradient => node
                                 .borrow()
                                 .get_impl::<RadialGradient>()
-                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                                .resolve_fallbacks_and_set_pattern(
+                                    &node,
+                                    acquired_nodes,
+                                    self,
+                                    opacity,
+                                    bbox,
+                                )?,
                             NodeType::Pattern => node
                                 .borrow()
                                 .get_impl::<Pattern>()
-                                .resolve_fallbacks_and_set_pattern(&node, self, opacity, bbox)?,
+                                .resolve_fallbacks_and_set_pattern(
+                                    &node,
+                                    acquired_nodes,
+                                    self,
+                                    opacity,
+                                    bbox,
+                                )?,
                             _ => unreachable!(),
                         }
                     }
@@ -858,6 +886,7 @@ impl<'i> DrawingCtx<'i> {
     pub fn stroke_and_fill(
         &mut self,
         cr: &cairo::Context,
+        acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
     ) -> Result<BoundingBox, RenderingError> {
         cr.set_antialias(cairo::Antialias::from(values.shape_rendering));
@@ -873,7 +902,13 @@ impl<'i> DrawingCtx<'i> {
         let current_color = values.color.0;
 
         let res = self
-            .set_source_paint_server(&values.fill.0, values.fill_opacity.0, &bbox, current_color)
+            .set_source_paint_server(
+                acquired_nodes,
+                &values.fill.0,
+                values.fill_opacity.0,
+                &bbox,
+                current_color,
+            )
             .and_then(|had_paint_server| {
                 if had_paint_server {
                     if values.stroke.0 == PaintServer::None {
@@ -887,6 +922,7 @@ impl<'i> DrawingCtx<'i> {
             })
             .and_then(|_| {
                 self.set_source_paint_server(
+                    acquired_nodes,
                     &values.stroke.0,
                     values.stroke_opacity.0,
                     &bbox,
@@ -911,27 +947,35 @@ impl<'i> DrawingCtx<'i> {
         &mut self,
         builder: &PathBuilder,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         markers: Markers,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if !builder.is_empty() {
-            let bbox = self.with_discrete_layer(node, values, clipping, &mut |dc| {
-                let cr = dc.get_cairo_context();
+            let bbox =
+                self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                    let cr = dc.get_cairo_context();
 
-                builder.to_cairo(&cr)?;
+                    builder.to_cairo(&cr)?;
 
-                if clipping {
-                    cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
-                    Ok(dc.empty_bbox())
-                } else {
-                    cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
-                    dc.stroke_and_fill(&cr, values)
-                }
-            })?;
+                    if clipping {
+                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
+                        Ok(dc.empty_bbox())
+                    } else {
+                        cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
+                        dc.stroke_and_fill(&cr, an, values)
+                    }
+                })?;
 
             if markers == Markers::Yes {
-                marker::render_markers_for_path_builder(builder, self, values, clipping)?;
+                marker::render_markers_for_path_builder(
+                    builder,
+                    self,
+                    acquired_nodes,
+                    values,
+                    clipping,
+                )?;
             }
 
             Ok(bbox)
@@ -981,15 +1025,10 @@ impl<'i> DrawingCtx<'i> {
         surface.share()
     }
 
-    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, RenderingError> {
-        self.document
-            .lookup_image(href)
-            .map_err(|_| RenderingError::InvalidHref)
-    }
-
     pub fn draw_node_to_surface(
         &mut self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         affine: Transform,
         width: i32,
@@ -1008,7 +1047,7 @@ impl<'i> DrawingCtx<'i> {
 
             self.rect = Rect::from_size(f64::from(width), f64::from(height));
 
-            let _ = self.draw_node_from_stack(cascaded, node, false)?;
+            let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, false)?;
         }
 
         self.cr = save_cr;
@@ -1019,8 +1058,9 @@ impl<'i> DrawingCtx<'i> {
 
     pub fn draw_node_from_stack(
         &mut self,
-        cascaded: &CascadedValues<'_>,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
+        cascaded: &CascadedValues<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let stack_top = self.drawsub_stack.pop();
@@ -1033,7 +1073,7 @@ impl<'i> DrawingCtx<'i> {
 
         let values = cascaded.get();
         let res = if draw && values.is_visible() {
-            node.draw(cascaded, self, clipping)
+            node.draw(acquired_nodes, cascaded, self, clipping)
         } else {
             Ok(self.empty_bbox())
         };
@@ -1048,6 +1088,7 @@ impl<'i> DrawingCtx<'i> {
     pub fn draw_from_use_node(
         &mut self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1061,7 +1102,7 @@ impl<'i> DrawingCtx<'i> {
         // another <use> which references the first one, etc.).  So,
         // we acquire the <use> element itself so that circular
         // references can be caught.
-        let _self_acquired = self.acquired_nodes.acquire_ref(node).map_err(|e| {
+        let _self_acquired = acquired_nodes.acquire_ref(node).map_err(|e| {
             if let AcquireError::CircularReference(_) = e {
                 rsvg_log!("circular reference in element {}", node);
                 RenderingError::CircularReference
@@ -1075,7 +1116,7 @@ impl<'i> DrawingCtx<'i> {
             return Ok(self.empty_bbox());
         }
 
-        let acquired = match self.acquire_node(link.unwrap(), &[]) {
+        let acquired = match acquired_nodes.acquire(link.unwrap(), &[]) {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(node)) => {
@@ -1111,10 +1152,11 @@ impl<'i> DrawingCtx<'i> {
             let cr = self.get_cairo_context();
             cr.translate(use_rect.x0, use_rect.y0);
 
-            self.with_discrete_layer(node, values, clipping, &mut |dc| {
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
                 dc.draw_node_from_stack(
-                    &CascadedValues::new_from_values(&child, values),
                     &child,
+                    an,
+                    &CascadedValues::new_from_values(&child, values),
                     clipping,
                 )
             })
@@ -1130,7 +1172,7 @@ impl<'i> DrawingCtx<'i> {
                 None
             };
 
-            self.with_discrete_layer(node, values, clipping, &mut |dc| {
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
                 let _params = dc.push_new_viewport(
                     symbol.get_viewbox(),
                     use_rect,
@@ -1139,6 +1181,7 @@ impl<'i> DrawingCtx<'i> {
                 );
 
                 child.draw_children(
+                    an,
                     &CascadedValues::new_from_values(&child, values),
                     dc,
                     clipping,
@@ -1338,156 +1381,5 @@ impl From<ShapeRendering> for cairo::Antialias {
             ShapeRendering::Auto | ShapeRendering::GeometricPrecision => cairo::Antialias::Default,
             ShapeRendering::OptimizeSpeed | ShapeRendering::CrispEdges => cairo::Antialias::None,
         }
-    }
-}
-
-pub struct AcquiredNode {
-    stack: Option<Rc<RefCell<NodeStack>>>,
-    node: RsvgNode,
-}
-
-impl Drop for AcquiredNode {
-    fn drop(&mut self) {
-        if let Some(ref stack) = self.stack {
-            let mut stack = stack.borrow_mut();
-            let last = stack.pop().unwrap();
-            assert!(last == self.node);
-        }
-    }
-}
-
-impl AcquiredNode {
-    pub fn get(&self) -> &RsvgNode {
-        &self.node
-    }
-}
-
-/// This helper struct is used when looking up urls to other nodes.
-/// Its methods do recursion checking and thereby avoid infinite loops.
-///
-/// Malformed SVGs, for example, may reference a marker by its IRI, but
-/// the object referenced by the IRI is not a marker.
-///
-/// Note that if you acquire a node, you have to release it before trying to
-/// acquire it again.  If you acquire a node "#foo" and don't release it before
-/// trying to acquire "foo" again, you will obtain a None the second time.
-struct AcquiredNodes<'i> {
-    document: &'i Document,
-    num_elements_acquired: usize,
-    node_stack: Rc<RefCell<NodeStack>>,
-}
-
-impl<'i> AcquiredNodes<'i> {
-    fn new(document: &Document) -> AcquiredNodes {
-        AcquiredNodes {
-            document,
-            num_elements_acquired: 0,
-            node_stack: Rc::new(RefCell::new(NodeStack::new())),
-        }
-    }
-
-    fn lookup_node(
-        &self,
-        fragment: &Fragment,
-        node_types: &[NodeType],
-    ) -> Result<RsvgNode, AcquireError> {
-        let node = self.document.lookup(fragment).map_err(|_| {
-            // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
-            // Maybe we should have the following stages:
-            //   - load main SVG XML
-            //
-            //   - load secondary SVG XML and other files like images; all document::Resources and
-            //     document::Images loaded
-            //
-            //   - Now that all files are loaded, resolve URL references
-            AcquireError::LinkNotFound(fragment.clone())
-        })?;
-
-        if node_types.is_empty() {
-            Ok(node)
-        } else {
-            let node_type = node.borrow().get_type();
-            if node_types.iter().any(|&t| t == node_type) {
-                Ok(node)
-            } else {
-                Err(AcquireError::InvalidLinkType(fragment.clone()))
-            }
-        }
-    }
-
-    /// Acquires a node.
-    /// Specify `node_types` when expecting the node to be of a particular type,
-    /// or use an empty slice for `node_types` if you want a node of any type.
-    /// Nodes acquired by this function must be released in reverse acquiring order.
-    fn acquire(
-        &mut self,
-        fragment: &Fragment,
-        node_types: &[NodeType],
-    ) -> Result<AcquiredNode, AcquireError> {
-        self.num_elements_acquired += 1;
-
-        // This is a mitigation for SVG files that try to instance a huge number of
-        // elements via <use>, recursive patterns, etc.  See limits.rs for details.
-        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
-            return Err(AcquireError::MaxReferencesExceeded);
-        }
-
-        let node = self.lookup_node(fragment, node_types)?;
-
-        if node_is_accessed_by_reference(&node) {
-            self.acquire_ref(&node)
-        } else {
-            Ok(AcquiredNode { stack: None, node })
-        }
-    }
-
-    fn acquire_ref(&self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
-        if self.node_stack.borrow().contains(&node) {
-            Err(AcquireError::CircularReference(node.clone()))
-        } else {
-            self.node_stack.borrow_mut().push(&node);
-            Ok(AcquiredNode {
-                stack: Some(self.node_stack.clone()),
-                node: node.clone(),
-            })
-        }
-    }
-}
-
-// Returns whether a node of a particular type is only accessed by reference
-// from other nodes' atributes.  The node could in turn cause other nodes
-// to get referenced, potentially causing reference cycles.
-fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
-    use NodeType::*;
-
-    match node.borrow().get_type() {
-        ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
-
-        _ => false,
-    }
-}
-
-/// Keeps a stack of nodes and can check if a certain node is contained in the stack
-///
-/// Sometimes parts of the code cannot plainly use the implicit stack of acquired
-/// nodes as maintained by DrawingCtx::acquire_node(), and they must keep their
-/// own stack of nodes to test for reference cycles.  NodeStack can be used to do that.
-pub struct NodeStack(Vec<RsvgNode>);
-
-impl NodeStack {
-    pub fn new() -> NodeStack {
-        NodeStack(Vec::new())
-    }
-
-    pub fn push(&mut self, node: &RsvgNode) {
-        self.0.push(node.clone());
-    }
-
-    pub fn pop(&mut self) -> Option<RsvgNode> {
-        self.0.pop()
-    }
-
-    pub fn contains(&self, node: &RsvgNode) -> bool {
-        self.0.iter().any(|n| *n == *node)
     }
 }

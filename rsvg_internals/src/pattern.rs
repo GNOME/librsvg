@@ -8,7 +8,8 @@ use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::{DrawingCtx, NodeStack, ViewParams};
+use crate::document::{AcquiredNodes, NodeStack};
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
@@ -163,7 +164,7 @@ impl PaintSource for Pattern {
     fn resolve(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx,
+        acquired_nodes: &mut AcquiredNodes,
     ) -> Result<Self::Resolved, AcquireError> {
         let mut resolved = self.resolved.borrow_mut();
         if let Some(ref pattern) = *resolved {
@@ -179,7 +180,7 @@ impl PaintSource for Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                match draw_ctx.acquire_node(&fragment, &[NodeType::Pattern]) {
+                match acquired_nodes.acquire(&fragment, &[NodeType::Pattern]) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -224,6 +225,7 @@ impl PaintSource for Pattern {
 impl AsPaintSource for ResolvedPattern {
     fn set_as_paint_source(
         self,
+        acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         opacity: UnitInterval,
@@ -311,7 +313,7 @@ impl AsPaintSource for ResolvedPattern {
             let x = r.x0 - vbox.0.x0 * sw;
             let y = r.y0 - vbox.0.y0 * sh;
 
-            caffine = Transform::new(sw, 0.0, 0.0, sh, x, y);
+            caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
 
             draw_ctx.push_view_box(vbox.0.width(), vbox.0.height())
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
@@ -348,13 +350,14 @@ impl AsPaintSource for ResolvedPattern {
 
         // Declare a drawing function
         fn draw_children(
+            acquired_nodes: &mut AcquiredNodes,
             ctx: &mut DrawingCtx,
             node: &RsvgNode,
         ) -> Result<BoundingBox, RenderingError> {
             let pattern_cascaded = CascadedValues::new_from_node(&node);
             let pattern_values = pattern_cascaded.get();
-            ctx.with_discrete_layer(&node, pattern_values, false, &mut |dc| {
-                node.draw_children(&pattern_cascaded, dc, false)
+            ctx.with_discrete_layer(&node, acquired_nodes, pattern_values, false, &mut |an, dc| {
+                node.draw_children(an, &pattern_cascaded, dc, false)
             })
         }
 
@@ -363,11 +366,11 @@ impl AsPaintSource for ResolvedPattern {
         let UnitInterval(o) = opacity;
         if o < 1.0 {
             cr_pattern.push_group();
-            res = draw_children(draw_ctx, &node_with_children);
+            res = draw_children(acquired_nodes, draw_ctx, &node_with_children);
             cr_pattern.pop_group_to_source();
             cr_pattern.paint_with_alpha(o);
         } else {
-            res = draw_children(draw_ctx, &node_with_children);
+            res = draw_children(acquired_nodes, draw_ctx, &node_with_children);
         }
 
         // Return to the original coordinate system and rendering context
