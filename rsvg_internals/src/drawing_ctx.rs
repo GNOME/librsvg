@@ -85,8 +85,8 @@ pub enum ClipMode {
     ClipToVbox,
 }
 
-pub struct DrawingCtx {
-    document: Rc<Document>,
+pub struct DrawingCtx<'i> {
+    document: &'i Document,
 
     initial_transform: Transform,
 
@@ -100,15 +100,15 @@ pub struct DrawingCtx {
 
     drawsub_stack: Vec<RsvgNode>,
 
-    acquired_nodes: AcquiredNodes,
+    acquired_nodes: AcquiredNodes<'i>,
 
     measuring: bool,
     testing: bool,
 }
 
-impl DrawingCtx {
+impl<'i> DrawingCtx<'i> {
     pub fn new(
-        document: Rc<Document>,
+        document: &'i Document,
         node: Option<&RsvgNode>,
         cr: &cairo::Context,
         viewport: Rect,
@@ -145,7 +145,7 @@ impl DrawingCtx {
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
 
-        let acquired_nodes = AcquiredNodes::new(document.clone());
+        let acquired_nodes = AcquiredNodes::new(document);
 
         let mut draw_ctx = DrawingCtx {
             document,
@@ -1371,14 +1371,14 @@ impl AcquiredNode {
 /// Note that if you acquire a node, you have to release it before trying to
 /// acquire it again.  If you acquire a node "#foo" and don't release it before
 /// trying to acquire "foo" again, you will obtain a None the second time.
-struct AcquiredNodes {
-    document: Rc<Document>,
+struct AcquiredNodes<'i> {
+    document: &'i Document,
     num_elements_acquired: usize,
     node_stack: Rc<RefCell<NodeStack>>,
 }
 
-impl AcquiredNodes {
-    fn new(document: Rc<Document>) -> AcquiredNodes {
+impl<'i> AcquiredNodes<'i> {
+    fn new(document: &Document) -> AcquiredNodes {
         AcquiredNodes {
             document,
             num_elements_acquired: 0,

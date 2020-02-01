@@ -372,6 +372,11 @@ extern RsvgHandle *rsvg_rust_handle_new_from_stream_sync (GInputStream *input_st
 extern RsvgHandle *rsvg_rust_handle_new_from_data (const guint8 *data,
                                                    gsize data_len,
                                                    GError **error);
+extern gboolean rsvg_rust_handle_set_stylesheet (RsvgHandle  *handle,
+                                                 const char  *css,
+                                                 gsize        css_len,
+                                                 GError     **error);
+
 extern void rsvg_rust_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                                        gboolean   *out_has_width,
                                                        RsvgLength *out_width,
@@ -766,6 +771,40 @@ rsvg_handle_get_base_uri (RsvgHandle *handle)
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), NULL);
 
     return rsvg_rust_handle_get_base_url (handle);
+}
+
+/**
+ * rsvg_handle_set_stylesheet:
+ * @handle: A #RsvgHandle.
+ * @css: (array length=css_len): String with CSS data; must be valid UTF-8.
+ * @css_len: Length of the @css string in bytes.
+ * @error: (optional): return location for errors.
+ *
+ * Sets a CSS stylesheet to use for an SVG document.
+ *
+ * The @css_len argument is mandatory; this function will not compute the length
+ * of the @css string.  This is because a provided stylesheet, which the calling
+ * program could read from a file, can have nul characters in it.
+ *
+ * During the CSS cascade, the specified stylesheet will be used with a "User"
+ * <ulink
+ * url="https://drafts.csswg.org/css-cascade-3/#cascading-origins">origin</ulink>.
+ *
+ * Note that `@import` rules will not be resolved, except for `data:` URLs.
+ *
+ * Since: 2.48
+ */
+gboolean
+rsvg_handle_set_stylesheet (RsvgHandle  *handle,
+                            const char  *css,
+                            gsize        css_len,
+                            GError     **error)
+{
+    g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
+    g_return_val_if_fail ((css != NULL && css_len >= 0) || (css == NULL && css_len == 0), FALSE);
+    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
+
+    return rsvg_rust_handle_set_stylesheet (handle, css, css_len, error);
 }
 
 /**

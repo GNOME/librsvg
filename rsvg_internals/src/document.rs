@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::create_node::create_node;
-use crate::css::{cascade, Origin, Stylesheet};
+use crate::css::{self, Origin, Stylesheet};
 use crate::error::LoadingError;
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
@@ -39,6 +39,9 @@ pub struct Document {
 
     /// Used to load referenced resources.
     load_options: LoadOptions,
+
+    /// Stylesheets defined in the document
+    stylesheets: Vec<Stylesheet>,
 }
 
 impl Document {
@@ -96,6 +99,14 @@ impl Document {
 
         assert!(node_data.get_type() == NodeType::Svg);
         node_data.get_impl::<Svg>().get_intrinsic_dimensions()
+    }
+
+    /// Runs the CSS cascade on the document tree
+    ///
+    /// This uses the document's internal stylesheets, plus an extra set of stylesheets
+    /// supplied by the caller.
+    pub fn cascade(&mut self, extra: &[Stylesheet]) {
+        css::cascade(&mut self.tree, &self.stylesheets, extra);
     }
 }
 
@@ -345,17 +356,20 @@ impl DocumentBuilder {
 
         match tree {
             None => Err(LoadingError::SvgHasNoElements),
-            Some(mut root) => {
+            Some(root) => {
                 if root.borrow().get_type() == NodeType::Svg {
-                    cascade(&mut root, &stylesheets);
-
-                    Ok(Document {
+                    let mut document = Document {
                         tree: root.clone(),
                         ids,
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
                         load_options: load_options.clone(),
-                    })
+                        stylesheets,
+                    };
+
+                    document.cascade(&[]);
+
+                    Ok(document)
                 } else {
                     Err(LoadingError::RootElementIsNotSvg)
                 }

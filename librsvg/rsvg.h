@@ -343,6 +343,12 @@ RsvgHandle *rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GErro
 RSVG_API
 RsvgHandle *rsvg_handle_new_from_file (const gchar *filename, GError **error);
 
+RSVG_API
+gboolean rsvg_handle_set_stylesheet (RsvgHandle  *handle,
+                                     const char  *css,
+                                     gsize        css_len,
+                                     GError     **error);
+
 #ifndef __GTK_DOC_IGNORE__
 RSVG_API
 void rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing);

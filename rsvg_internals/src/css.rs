@@ -651,7 +651,7 @@ impl Stylesheet {
     ///
     /// The `base_url` is required for `@import` rules, so that librsvg
     /// can determine if the requested path is allowed.
-    fn parse(&mut self, buf: &str, base_url: Option<&Url>) -> Result<(), LoadingError> {
+    pub fn parse(&mut self, buf: &str, base_url: Option<&Url>) -> Result<(), LoadingError> {
         let mut input = ParserInput::new(buf);
         let mut parser = Parser::new(&mut input);
 
@@ -736,7 +736,7 @@ impl Stylesheet {
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
-pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
+pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet], extra: &[Stylesheet]) {
     for mut node in root.descendants() {
         let mut matches = Vec::new();
 
@@ -749,7 +749,7 @@ pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet]) {
             QuirksMode::NoQuirks,
         );
 
-        for stylesheet in stylesheets {
+        for stylesheet in stylesheets.iter().chain(extra.iter()) {
             stylesheet.get_matches(&node, &mut match_ctx, &mut matches);
         }
 
