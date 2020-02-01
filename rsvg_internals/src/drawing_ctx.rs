@@ -567,7 +567,7 @@ impl<'i> DrawingCtx<'i> {
                     // Clip
 
                     dc.cr.set_matrix(affines.outside_temporary_surface.into());
-                    let _: () = dc.clip_to_node(&clip_in_object_space, &bbox)?;
+                    dc.clip_to_node(&clip_in_object_space, &bbox)?;
 
                     // Mask
 
@@ -724,7 +724,7 @@ impl<'i> DrawingCtx<'i> {
                     // FIXME: deal with out of memory here
                     filters::render(&filter_node, values, child_surface, self, node_bbox)
                 } else {
-                    Ok(child_surface.clone())
+                    Ok(child_surface)
                 }
             }
 
@@ -1407,7 +1407,7 @@ impl<'i> AcquiredNodes<'i> {
             Ok(node)
         } else {
             let node_type = node.borrow().get_type();
-            if node_types.iter().find(|&&t| t == node_type).is_some() {
+            if node_types.iter().any(|&t| t == node_type) {
                 Ok(node)
             } else {
                 Err(AcquireError::InvalidLinkType(fragment.clone()))
@@ -1437,10 +1437,7 @@ impl<'i> AcquiredNodes<'i> {
         if node_is_accessed_by_reference(&node) {
             self.acquire_ref(&node)
         } else {
-            Ok(AcquiredNode {
-                stack: None,
-                node: node.clone(),
-            })
+            Ok(AcquiredNode { stack: None, node })
         }
     }
 
@@ -1491,6 +1488,6 @@ impl NodeStack {
     }
 
     pub fn contains(&self, node: &RsvgNode) -> bool {
-        self.0.iter().find(|n| **n == *node).is_some()
+        self.0.iter().any(|n| *n == *node)
     }
 }

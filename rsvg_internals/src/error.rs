@@ -57,7 +57,7 @@ impl fmt::Display for ValueErrorKind {
 
 impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
     fn from(e: BasicParseError<'_>) -> ValueErrorKind {
-        let BasicParseError { kind, location: _ } = e;
+        let BasicParseError { kind, .. } = e;
 
         let msg = match kind {
             BasicParseErrorKind::UnexpectedToken(_) => "unexpected token",

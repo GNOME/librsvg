@@ -359,11 +359,11 @@ impl DocumentBuilder {
             Some(root) => {
                 if root.borrow().get_type() == NodeType::Svg {
                     let mut document = Document {
-                        tree: root.clone(),
+                        tree: root,
                         ids,
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
-                        load_options: load_options.clone(),
+                        load_options: load_options,
                         stylesheets,
                     };
 
