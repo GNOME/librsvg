@@ -7,7 +7,8 @@ use std::cell::RefCell;
 use crate::allowed_url::Fragment;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::{AcquiredNode, DrawingCtx, NodeStack, ViewParams};
+use crate::document::{AcquiredNode, AcquiredNodes, NodeStack};
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
@@ -637,7 +638,7 @@ macro_rules! impl_paint_source {
             fn resolve(
                 &self,
                 node: &RsvgNode,
-                draw_ctx: &mut DrawingCtx,
+                acquired_nodes: &mut AcquiredNodes,
             ) -> Result<Self::Resolved, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {
@@ -653,7 +654,7 @@ macro_rules! impl_paint_source {
 
                 while !gradient.is_resolved() {
                     if let Some(fragment) = fallback {
-                        let acquired = acquire_gradient(draw_ctx, &fragment)?;
+                        let acquired = acquire_gradient(acquired_nodes, &fragment)?;
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
@@ -712,6 +713,7 @@ impl_paint_source!(
 impl AsPaintSource for Gradient {
     fn set_as_paint_source(
         self,
+        _acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         opacity: UnitInterval,
@@ -794,11 +796,11 @@ impl Gradient {
 }
 
 /// Acquires a node of linearGradient or radialGradient type
-fn acquire_gradient<'a>(
-    draw_ctx: &'a mut DrawingCtx,
+fn acquire_gradient(
+    acquired_nodes: &mut AcquiredNodes,
     fragment: &Fragment,
 ) -> Result<AcquiredNode, AcquireError> {
-    draw_ctx.acquire_node(
+    acquired_nodes.acquire(
         fragment,
         &[NodeType::LinearGradient, NodeType::RadialGradient],
     )

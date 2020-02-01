@@ -1,5 +1,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
@@ -50,9 +51,10 @@ impl FilterEffect for FeOffset {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, draw_ctx)?;
+        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
             .get_bounds(ctx)

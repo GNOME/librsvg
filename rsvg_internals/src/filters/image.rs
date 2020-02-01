@@ -2,6 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
@@ -37,12 +38,13 @@ impl FeImage {
     fn render_node(
         &self,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
         fragment: &Fragment,
     ) -> Result<FilterResult, FilterError> {
-        let acquired_drawable = draw_ctx
-            .acquire_node(fragment, &[])
+        let acquired_drawable = acquired_nodes
+            .acquire(fragment, &[])
             .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
@@ -51,6 +53,7 @@ impl FeImage {
 
         let image = draw_ctx.draw_node_to_surface(
             &drawable,
+            acquired_nodes,
             &cascaded,
             ctx.paffine(),
             ctx.source_graphic().width(),
@@ -72,13 +75,14 @@ impl FeImage {
     fn render_external_image(
         &self,
         ctx: &FilterContext,
-        draw_ctx: &DrawingCtx,
+        acquired_nodes: &mut AcquiredNodes,
+        _draw_ctx: &DrawingCtx,
         bounds: Rect,
         unclipped_bounds: &Rect,
         url: &str,
     ) -> Result<FilterResult, FilterError> {
         // FIXME: translate the error better here
-        let image = draw_ctx
+        let image = acquired_nodes
             .lookup_image(url)
             .map_err(|_| FilterError::InvalidInput)?;
 
@@ -137,6 +141,7 @@ impl FilterEffect for FeImage {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds_builder = self.base.get_bounds(ctx);
@@ -145,9 +150,18 @@ impl FilterEffect for FeImage {
         match self.href.as_ref() {
             Some(Href::PlainUrl(url)) => {
                 let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
-                self.render_external_image(ctx, draw_ctx, bounds, &unclipped_bounds, url)
+                self.render_external_image(
+                    ctx,
+                    acquired_nodes,
+                    draw_ctx,
+                    bounds,
+                    &unclipped_bounds,
+                    url,
+                )
             }
-            Some(Href::WithFragment(ref frag)) => self.render_node(ctx, draw_ctx, bounds, frag),
+            Some(Href::WithFragment(ref frag)) => {
+                self.render_node(ctx, acquired_nodes, draw_ctx, bounds, frag)
+            }
             _ => Err(FilterError::InvalidInput),
         }
     }

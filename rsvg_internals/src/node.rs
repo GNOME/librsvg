@@ -22,6 +22,7 @@ use std::fmt;
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::Declaration;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filters::FilterEffect;
@@ -360,6 +361,7 @@ pub trait NodeTrait: Downcast {
     fn draw(
         &self,
         _node: &RsvgNode,
+        _acquired_nodes: &mut AcquiredNodes,
         _cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
@@ -482,6 +484,7 @@ impl NodeCascade for RsvgNode {
 pub trait NodeDraw {
     fn draw(
         &self,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -489,6 +492,7 @@ pub trait NodeDraw {
 
     fn draw_children(
         &self,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -498,6 +502,7 @@ pub trait NodeDraw {
 impl NodeDraw for RsvgNode {
     fn draw(
         &self,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -507,7 +512,7 @@ impl NodeDraw for RsvgNode {
             draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
                 self.borrow()
                     .get_node_trait()
-                    .draw(self, cascaded, dc, clipping)
+                    .draw(self, acquired_nodes, cascaded, dc, clipping)
             })
         } else {
             rsvg_log!("(not rendering element {} because it is in error)", self);
@@ -519,6 +524,7 @@ impl NodeDraw for RsvgNode {
 
     fn draw_children(
         &self,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -527,8 +533,9 @@ impl NodeDraw for RsvgNode {
 
         for child in self.children() {
             let child_bbox = draw_ctx.draw_node_from_stack(
-                &CascadedValues::new(cascaded, &child),
                 &child,
+                acquired_nodes,
+                &CascadedValues::new(cascaded, &child),
                 clipping,
             )?;
             bbox.insert(&child_bbox);

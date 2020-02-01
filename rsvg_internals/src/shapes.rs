@@ -6,6 +6,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::length::*;
@@ -36,11 +37,19 @@ impl Shape {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_path(&self.builder, node, values, self.markers, clipping)
+        draw_ctx.draw_path(
+            &self.builder,
+            node,
+            acquired_nodes,
+            values,
+            self.markers,
+            clipping,
+        )
     }
 }
 
@@ -126,13 +135,20 @@ impl NodeTrait for Path {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(builder) = self.builder.as_ref() {
             let values = cascaded.get();
-            Shape::new(builder.clone(), Markers::Yes).draw(node, values, draw_ctx, clipping)
+            Shape::new(builder.clone(), Markers::Yes).draw(
+                node,
+                acquired_nodes,
+                values,
+                draw_ctx,
+                clipping,
+            )
         } else {
             Ok(draw_ctx.empty_bbox())
         }
@@ -216,13 +232,19 @@ impl NodeTrait for Polygon {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(make_poly(self.points.as_ref(), true)), Markers::Yes)
-            .draw(node, values, draw_ctx, clipping)
+        Shape::new(Rc::new(make_poly(self.points.as_ref(), true)), Markers::Yes).draw(
+            node,
+            acquired_nodes,
+            values,
+            draw_ctx,
+            clipping,
+        )
     }
 }
 
@@ -245,6 +267,7 @@ impl NodeTrait for Polyline {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -254,7 +277,7 @@ impl NodeTrait for Polyline {
             Rc::new(make_poly(self.points.as_ref(), false)),
             Markers::Yes,
         )
-        .draw(node, values, draw_ctx, clipping)
+        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -284,6 +307,7 @@ impl NodeTrait for Line {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -293,7 +317,7 @@ impl NodeTrait for Line {
             Rc::new(self.make_path_builder(values, draw_ctx)),
             Markers::Yes,
         )
-        .draw(node, values, draw_ctx, clipping)
+        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -361,6 +385,7 @@ impl NodeTrait for Rect {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -370,7 +395,7 @@ impl NodeTrait for Rect {
             Rc::new(self.make_path_builder(values, draw_ctx)),
             Markers::No,
         )
-        .draw(node, values, draw_ctx, clipping)
+        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -573,6 +598,7 @@ impl NodeTrait for Circle {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -582,7 +608,7 @@ impl NodeTrait for Circle {
             Rc::new(self.make_path_builder(values, draw_ctx)),
             Markers::No,
         )
-        .draw(node, values, draw_ctx, clipping)
+        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -630,6 +656,7 @@ impl NodeTrait for Ellipse {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -639,7 +666,7 @@ impl NodeTrait for Ellipse {
             Rc::new(self.make_path_builder(values, draw_ctx)),
             Markers::No,
         )
-        .draw(node, values, draw_ctx, clipping)
+        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 

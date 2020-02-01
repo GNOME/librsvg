@@ -4,6 +4,7 @@ use cssparser::Parser;
 
 use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{CascadedValues, RsvgNode};
@@ -62,21 +63,22 @@ pub trait PaintSource {
     fn resolve(
         &self,
         node: &RsvgNode,
-        draw_ctx: &mut DrawingCtx,
+        acquired_nodes: &mut AcquiredNodes,
     ) -> Result<Self::Resolved, AcquireError>;
 
     fn resolve_fallbacks_and_set_pattern(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        match self.resolve(&node, draw_ctx) {
+        match self.resolve(&node, acquired_nodes) {
             Ok(resolved) => {
                 let cascaded = CascadedValues::new_from_node(node);
                 let values = cascaded.get();
-                resolved.set_as_paint_source(values, draw_ctx, opacity, bbox)
+                resolved.set_as_paint_source(acquired_nodes, values, draw_ctx, opacity, bbox)
             }
 
             Err(AcquireError::CircularReference(node)) => {
@@ -102,6 +104,7 @@ pub trait PaintSource {
 pub trait AsPaintSource {
     fn set_as_paint_source(
         self,
+        acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         draw_ctx: &mut DrawingCtx,
         opacity: UnitInterval,

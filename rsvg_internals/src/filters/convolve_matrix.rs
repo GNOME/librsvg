@@ -2,6 +2,7 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
@@ -198,9 +199,10 @@ impl FilterEffect for FeConvolveMatrix {
         &self,
         _node: &RsvgNode,
         ctx: &FilterContext,
+        acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, draw_ctx)?;
+        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let mut bounds = self
             .base
             .get_bounds(ctx)

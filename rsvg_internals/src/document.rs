@@ -10,9 +10,10 @@ use std::rc::Rc;
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::create_node::create_node;
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::LoadingError;
+use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
+use crate::limits;
 use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
@@ -227,6 +228,164 @@ fn load_image(
         SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_ref().map(String::as_str))?;
 
     Ok(surface)
+}
+
+pub struct AcquiredNode {
+    stack: Option<Rc<RefCell<NodeStack>>>,
+    node: RsvgNode,
+}
+
+impl Drop for AcquiredNode {
+    fn drop(&mut self) {
+        if let Some(ref stack) = self.stack {
+            let mut stack = stack.borrow_mut();
+            let last = stack.pop().unwrap();
+            assert!(last == self.node);
+        }
+    }
+}
+
+impl AcquiredNode {
+    pub fn get(&self) -> &RsvgNode {
+        &self.node
+    }
+}
+
+/// This helper struct is used when looking up urls to other nodes.
+/// Its methods do recursion checking and thereby avoid infinite loops.
+///
+/// Malformed SVGs, for example, may reference a marker by its IRI, but
+/// the object referenced by the IRI is not a marker.
+///
+/// Note that if you acquire a node, you have to release it before trying to
+/// acquire it again.  If you acquire a node "#foo" and don't release it before
+/// trying to acquire "foo" again, you will obtain a None the second time.
+pub struct AcquiredNodes<'i> {
+    document: &'i Document,
+    num_elements_acquired: usize,
+    node_stack: Rc<RefCell<NodeStack>>,
+}
+
+impl<'i> AcquiredNodes<'i> {
+    pub fn new(document: &Document) -> AcquiredNodes {
+        AcquiredNodes {
+            document,
+            num_elements_acquired: 0,
+            node_stack: Rc::new(RefCell::new(NodeStack::new())),
+        }
+    }
+
+    pub fn lookup_node(
+        &self,
+        fragment: &Fragment,
+        node_types: &[NodeType],
+    ) -> Result<RsvgNode, AcquireError> {
+        let node = self.document.lookup(fragment).map_err(|_| {
+            // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
+            // Maybe we should have the following stages:
+            //   - load main SVG XML
+            //
+            //   - load secondary SVG XML and other files like images; all document::Resources and
+            //     document::Images loaded
+            //
+            //   - Now that all files are loaded, resolve URL references
+            AcquireError::LinkNotFound(fragment.clone())
+        })?;
+
+        if node_types.is_empty() {
+            Ok(node)
+        } else {
+            let node_type = node.borrow().get_type();
+            if node_types.iter().find(|&&t| t == node_type).is_some() {
+                Ok(node)
+            } else {
+                Err(AcquireError::InvalidLinkType(fragment.clone()))
+            }
+        }
+    }
+
+    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
+        self.document.lookup_image(href)
+    }
+
+    /// Acquires a node.
+    /// Specify `node_types` when expecting the node to be of a particular type,
+    /// or use an empty slice for `node_types` if you want a node of any type.
+    /// Nodes acquired by this function must be released in reverse acquiring order.
+    pub fn acquire(
+        &mut self,
+        fragment: &Fragment,
+        node_types: &[NodeType],
+    ) -> Result<AcquiredNode, AcquireError> {
+        self.num_elements_acquired += 1;
+
+        // This is a mitigation for SVG files that try to instance a huge number of
+        // elements via <use>, recursive patterns, etc.  See limits.rs for details.
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            return Err(AcquireError::MaxReferencesExceeded);
+        }
+
+        let node = self.lookup_node(fragment, node_types)?;
+
+        if node_is_accessed_by_reference(&node) {
+            self.acquire_ref(&node)
+        } else {
+            Ok(AcquiredNode {
+                stack: None,
+                node: node.clone(),
+            })
+        }
+    }
+
+    pub fn acquire_ref(&self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
+        if self.node_stack.borrow().contains(&node) {
+            Err(AcquireError::CircularReference(node.clone()))
+        } else {
+            self.node_stack.borrow_mut().push(&node);
+            Ok(AcquiredNode {
+                stack: Some(self.node_stack.clone()),
+                node: node.clone(),
+            })
+        }
+    }
+}
+
+// Returns whether a node of a particular type is only accessed by reference
+// from other nodes' atributes.  The node could in turn cause other nodes
+// to get referenced, potentially causing reference cycles.
+fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
+    use NodeType::*;
+
+    match node.borrow().get_type() {
+        ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
+
+        _ => false,
+    }
+}
+
+/// Keeps a stack of nodes and can check if a certain node is contained in the stack
+///
+/// Sometimes parts of the code cannot plainly use the implicit stack of acquired
+/// nodes as maintained by DrawingCtx::acquire_node(), and they must keep their
+/// own stack of nodes to test for reference cycles.  NodeStack can be used to do that.
+pub struct NodeStack(Vec<RsvgNode>);
+
+impl NodeStack {
+    pub fn new() -> NodeStack {
+        NodeStack(Vec::new())
+    }
+
+    pub fn push(&mut self, node: &RsvgNode) {
+        self.0.push(node.clone());
+    }
+
+    pub fn pop(&mut self) -> Option<RsvgNode> {
+        self.0.pop()
+    }
+
+    pub fn contains(&self, node: &RsvgNode) -> bool {
+        self.0.iter().find(|n| **n == *node).is_some()
+    }
 }
 
 pub struct DocumentBuilder {

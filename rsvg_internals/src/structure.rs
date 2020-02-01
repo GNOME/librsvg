@@ -6,6 +6,7 @@ use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
+use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::*;
@@ -28,14 +29,15 @@ impl NodeTrait for Group {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
-            node.draw_children(cascaded, dc, clipping)
+        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+            node.draw_children(an, cascaded, dc, clipping)
         })
     }
 }
@@ -64,19 +66,25 @@ impl NodeTrait for Switch {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             if let Some(child) = node
                 .children()
                 .filter(|c| c.borrow().get_type() != NodeType::Chars)
                 .find(|c| c.borrow().get_cond())
             {
-                dc.draw_node_from_stack(&CascadedValues::new(cascaded, &child), &child, clipping)
+                dc.draw_node_from_stack(
+                    &child,
+                    an,
+                    &CascadedValues::new(cascaded, &child),
+                    clipping,
+                )
             } else {
                 Ok(dc.empty_bbox())
             }
@@ -211,6 +219,7 @@ impl NodeTrait for Svg {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -253,11 +262,11 @@ impl NodeTrait for Svg {
             )
         };
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let _params =
                 dc.push_new_viewport(vbox, viewport, self.preserve_aspect_ratio, clip_mode);
 
-            node.draw_children(cascaded, dc, clipping)
+            node.draw_children(an, cascaded, dc, clipping)
         })
     }
 }
@@ -327,11 +336,12 @@ impl NodeTrait for Use {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_from_use_node(node, cascaded, clipping)
+        draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, clipping)
     }
 }
 
@@ -488,6 +498,7 @@ impl NodeTrait for Link {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -495,11 +506,13 @@ impl NodeTrait for Link {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| match self.link.as_ref() {
-            Some(l) if !l.is_empty() => {
-                dc.with_link_tag(l, &mut |dc| node.draw_children(&cascaded, dc, clipping))
+        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+            match self.link.as_ref() {
+                Some(l) if !l.is_empty() => {
+                    dc.with_link_tag(l, &mut |dc| node.draw_children(an, &cascaded, dc, clipping))
+                }
+                _ => node.draw_children(an, &cascaded, dc, clipping),
             }
-            _ => node.draw_children(&cascaded, dc, clipping),
         })
     }
 }

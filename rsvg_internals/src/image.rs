@@ -5,6 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::error::*;
 use crate::length::*;
@@ -62,6 +63,7 @@ impl NodeTrait for Image {
     fn draw(
         &self,
         node: &RsvgNode,
+        acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -75,9 +77,10 @@ impl NodeTrait for Image {
             return Ok(draw_ctx.empty_bbox());
         }
 
-        draw_ctx.with_discrete_layer(node, values, clipping, &mut |dc| {
+        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let surface = if let Some(Href::PlainUrl(ref url)) = self.href {
-                dc.lookup_image(&url)?
+                an.lookup_image(&url)
+                    .map_err(|_| RenderingError::InvalidHref)?
             } else {
                 return Ok(dc.empty_bbox());
             };

@@ -10,7 +10,7 @@ use locale_config::{LanguageRange, Locale};
 use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
-use crate::document::Document;
+use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
@@ -203,11 +203,7 @@ impl Handle {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
-            document: Document::load_from_stream(
-                load_options,
-                stream,
-                cancellable,
-            )?,
+            document: Document::load_from_stream(load_options, stream, cancellable)?,
         })
     }
 
@@ -300,21 +296,18 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
-        let mut draw_ctx = DrawingCtx::new(
-            &self.document,
-            Some(node),
-            &cr,
-            viewport,
-            dpi,
-            true,
-            is_testing,
-        );
         let root = self.document.root();
 
-        let bbox =
-            draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(&root), &root, false)?;
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target);
+        let mut draw_ctx = DrawingCtx::new(Some(node), &cr, viewport, dpi, true, is_testing);
+
+        let bbox = draw_ctx.draw_node_from_stack(
+            &root,
+            &mut AcquiredNodes::new(&self.document),
+            &CascadedValues::new_from_node(&root),
+            false,
+        )?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
         let logical_rect = bbox.rect.unwrap_or_default();
@@ -462,7 +455,6 @@ impl Handle {
 
         cr.save();
         let mut draw_ctx = DrawingCtx::new(
-            &self.document,
             node.as_ref(),
             cr,
             Rect::from(*viewport),
@@ -470,10 +462,16 @@ impl Handle {
             false,
             is_testing,
         );
-        let cascaded = CascadedValues::new_from_node(&root);
+
         let res = draw_ctx
-            .draw_node_from_stack(&cascaded, &root, false)
+            .draw_node_from_stack(
+                &root,
+                &mut AcquiredNodes::new(&self.document),
+                &CascadedValues::new_from_node(&root),
+                false,
+            )
             .map(|_bbox| ());
+
         cr.restore();
 
         res
@@ -487,18 +485,14 @@ impl Handle {
     ) -> Result<BoundingBox, RenderingError> {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
+        let mut draw_ctx = DrawingCtx::new(None, &cr, unit_rectangle(), dpi, true, is_testing);
 
-        let mut draw_ctx = DrawingCtx::new(
-            &self.document,
-            None,
-            &cr,
-            unit_rectangle(),
-            dpi,
-            true,
-            is_testing,
-        );
-
-        draw_ctx.draw_node_from_stack(&CascadedValues::new_from_node(node), node, false)
+        draw_ctx.draw_node_from_stack(
+            node,
+            &mut AcquiredNodes::new(&self.document),
+            &CascadedValues::new_from_node(node),
+            false,
+        )
     }
 
     /// Returns (ink_rect, logical_rect)
@@ -560,18 +554,15 @@ impl Handle {
         cr.scale(factor, factor);
         cr.translate(-ink_r.x0, -ink_r.y0);
 
-        let mut draw_ctx = DrawingCtx::new(
-            &self.document,
-            None,
-            &cr,
-            unit_rectangle(),
-            dpi,
-            false,
-            is_testing,
-        );
+        let mut draw_ctx = DrawingCtx::new(None, &cr, unit_rectangle(), dpi, false, is_testing);
 
         let res = draw_ctx
-            .draw_node_from_stack(&CascadedValues::new_from_node(&node), &node, false)
+            .draw_node_from_stack(
+                &node,
+                &mut AcquiredNodes::new(&self.document),
+                &CascadedValues::new_from_node(&node),
+                false,
+            )
             .map(|_bbox| ());
 
         cr.restore();
