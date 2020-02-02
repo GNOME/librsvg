@@ -678,6 +678,26 @@ impl DrawingCtx {
         res
     }
 
+    /// Run the drawing function with the specified opacity
+    pub fn with_alpha(
+        &mut self,
+        opacity: UnitInterval,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
+    ) -> Result<BoundingBox, RenderingError> {
+        let res;
+        let UnitInterval(o) = opacity;
+        if o < 1.0 {
+            self.cr.push_group();
+            res = draw_fn(self);
+            self.cr.pop_group_to_source();
+            self.cr.paint_with_alpha(o);
+        } else {
+            res = draw_fn(self);
+        }
+
+        res
+    }
+
     /// Saves the current Cairo context, runs the draw_fn, and restores the context
     pub fn with_saved_cr(
         &mut self,
