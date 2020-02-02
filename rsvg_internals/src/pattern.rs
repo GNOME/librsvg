@@ -231,7 +231,7 @@ impl AsPaintSource for ResolvedPattern {
         opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let node_with_children = if let Some(n) = self.children.node_with_children() {
+        let node = if let Some(n) = self.children.node_with_children() {
             n
         } else {
             // This means we didn't find any children among the fallbacks,
@@ -348,30 +348,14 @@ impl AsPaintSource for ResolvedPattern {
         // Set up transformations to be determined by the contents units
         cr_pattern.set_matrix(caffine.into());
 
-        // Declare a drawing function
-        fn draw_children(
-            acquired_nodes: &mut AcquiredNodes,
-            ctx: &mut DrawingCtx,
-            node: &RsvgNode,
-        ) -> Result<BoundingBox, RenderingError> {
+        // Draw everything
+        let res = draw_ctx.with_alpha(opacity, &mut |dc| {
             let pattern_cascaded = CascadedValues::new_from_node(&node);
             let pattern_values = pattern_cascaded.get();
-            ctx.with_discrete_layer(&node, acquired_nodes, pattern_values, false, &mut |an, dc| {
+            dc.with_discrete_layer(&node, acquired_nodes, pattern_values, false, &mut |an, dc| {
                 node.draw_children(an, &pattern_cascaded, dc, false)
             })
-        }
-
-        // Draw everything
-        let res;
-        let UnitInterval(o) = opacity;
-        if o < 1.0 {
-            cr_pattern.push_group();
-            res = draw_children(acquired_nodes, draw_ctx, &node_with_children);
-            cr_pattern.pop_group_to_source();
-            cr_pattern.paint_with_alpha(o);
-        } else {
-            res = draw_children(acquired_nodes, draw_ctx, &node_with_children);
-        }
+        });
 
         // Return to the original coordinate system and rendering context
         draw_ctx.set_cairo_context(&cr_save);
