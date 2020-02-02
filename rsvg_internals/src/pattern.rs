@@ -356,9 +356,13 @@ impl AsPaintSource for ResolvedPattern {
         ) -> Result<BoundingBox, RenderingError> {
             let pattern_cascaded = CascadedValues::new_from_node(&node);
             let pattern_values = pattern_cascaded.get();
-            ctx.with_discrete_layer(&node, acquired_nodes, pattern_values, false, &mut |an, dc| {
-                node.draw_children(an, &pattern_cascaded, dc, false)
-            })
+            ctx.with_discrete_layer(
+                &node,
+                acquired_nodes,
+                pattern_values,
+                false,
+                &mut |an, dc| node.draw_children(an, &pattern_cascaded, dc, false),
+            )
         }
 
         // Draw everything
