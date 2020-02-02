@@ -185,7 +185,8 @@ fn set_stylesheet() {
 "##,
     );
 
-    svg.set_stylesheet("rect { fill: #00ff00; }").expect("should be a valid stylesheet");
+    svg.set_stylesheet("rect { fill: #00ff00; }")
+        .expect("should be a valid stylesheet");
 
     let renderer = CairoRenderer::new(&svg);
 
