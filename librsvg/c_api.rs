@@ -701,7 +701,7 @@ impl CHandle {
                      rsvg_handle_set_stylesheet()",
                 );
                 Err(LoadingError::Unknown)
-            },
+            }
         }
     }
 

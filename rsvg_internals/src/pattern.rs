@@ -352,9 +352,13 @@ impl AsPaintSource for ResolvedPattern {
         let res = draw_ctx.with_alpha(opacity, &mut |dc| {
             let pattern_cascaded = CascadedValues::new_from_node(&node);
             let pattern_values = pattern_cascaded.get();
-            dc.with_discrete_layer(&node, acquired_nodes, pattern_values, false, &mut |an, dc| {
-                node.draw_children(an, &pattern_cascaded, dc, false)
-            })
+            dc.with_discrete_layer(
+                &node,
+                acquired_nodes,
+                pattern_values,
+                false,
+                &mut |an, dc| node.draw_children(an, &pattern_cascaded, dc, false),
+            )
         });
 
         // Return to the original coordinate system and rendering context
