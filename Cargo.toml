@@ -3,6 +3,7 @@ members = [
     "librsvg",
     "librsvg_crate",
     "rsvg_internals",
+    "tests",
 ]
 
 [profile.release]
