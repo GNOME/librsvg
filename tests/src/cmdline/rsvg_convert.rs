@@ -8,10 +8,17 @@ struct RsvgConvert {
     cmd: assert_cmd::Command,
 }
 
+fn location() -> &'static Path {
+    match option_env!("LIBRSVG_BUILD_DIR") {
+        Some(dir) => Path::new(dir),
+        None => Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap()
+    }
+}
+
 impl RsvgConvert {
     fn new() -> Self {
-        let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let path = dir.parent().unwrap().join("rsvg-convert");
+        let path = location().join("rsvg-convert");
+        println!("{:?}", path);
         RsvgConvert { cmd: assert_cmd::Command::new(path) }
     }
 }
