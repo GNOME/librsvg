@@ -1,10 +1,11 @@
 include $(top_srcdir)/glib-tap.mk
 
-test_sources = 			\
-	Cargo.toml		\
-	src/main.rs		\
-	src/cmdline/mod.rs	\
-	src/cmdline/rsvg_convert.rs
+test_sources =				\
+	Cargo.toml			\
+	src/main.rs			\
+	src/cmdline/mod.rs		\
+	src/cmdline/rsvg_convert.rs	\
+	src/cmdline/png_predicate.rs
 
 EXTRA_DIST +=		\
 	$(test_sources)	\
