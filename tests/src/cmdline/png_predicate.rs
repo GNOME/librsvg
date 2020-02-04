@@ -60,6 +60,10 @@ impl PredicateReflection for PngSizePredicate {}
 
 impl fmt::Display for PngSizePredicate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "check that it's a PNG with size {} x {}", self.width, self.height)
+        write!(
+            f,
+            "check that it's a PNG with size {} x {}",
+            self.width, self.height
+        )
     }
 }
