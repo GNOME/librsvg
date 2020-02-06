@@ -13,8 +13,11 @@ use std::path::Path;
 //  - all command-line options are accepted
 //  - size and resolution of the output (should be sufficient to do that for PNG)
 //  - limit on output size (32767 pixels)
+//  - output formats (PNG, PDF, PS, EPS, SVG), okay to ignore XML and recording
+//  - multi-page output (for PDF)
 //  - handling of SOURCE_DATA_EPOCH environment variable for PDF output
 //  - handling of background color option
+//  - support for optional CSS stylesheet
 //  - error handling for export lookup ID
 //  - error handling for invalid input
 
