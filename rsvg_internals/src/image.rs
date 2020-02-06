@@ -73,16 +73,30 @@ impl NodeTrait for Image {
 
         let rect = self.get_rect(values, &params);
 
-        if rect.is_empty() {
+        if rect.is_empty() || self.href.is_none() {
             return Ok(draw_ctx.empty_bbox());
         }
 
+        let href = self.href.as_ref().unwrap();
+        let url = match *href {
+            Href::PlainUrl(ref url) => url,
+            Href::WithFragment(_) => {
+                rsvg_log!(
+                    "not rendering {} because its xlink:href cannot contain a fragment identifier",
+                    node
+                );
+
+                return Ok(draw_ctx.empty_bbox());
+            }
+        };
+
         draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            let surface = if let Some(Href::PlainUrl(ref url)) = self.href {
-                an.lookup_image(&url)
-                    .map_err(|_| RenderingError::InvalidHref)?
-            } else {
-                return Ok(dc.empty_bbox());
+            let surface = match an.lookup_image(url) {
+                Ok(surf) => surf,
+                Err(e) => {
+                    rsvg_log!("could not load image \"{}\": {}", url, e);
+                    return Ok(dc.empty_bbox());
+                }
             };
 
             let clip_mode = if !values.is_overflow() && self.aspect.is_slice() {
