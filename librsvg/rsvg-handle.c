@@ -322,9 +322,6 @@
 
 #include "rsvg.h"
 
-/* Implemented in rsvg_internals/src/xml.rs */
-typedef struct RsvgXmlState RsvgXmlState;
-
 /* Implemented in rsvg_internals/src/handle.rs */
 extern double rsvg_rust_handle_get_dpi_x (RsvgHandle *raw_handle);
 extern double rsvg_rust_handle_get_dpi_y (RsvgHandle *raw_handle);
