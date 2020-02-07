@@ -1,10 +1,10 @@
-use rsvg_internals;
 use self::rsvg_internals::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
 };
 use self::rsvg_internals::{IRect, RenderingError};
+use rsvg_internals;
 
 pub enum BufferDiff {
     DifferentSizes,

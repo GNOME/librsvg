@@ -16,7 +16,6 @@ variables:
   RUSTC_1_27:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.27"
   RUSTC_1_28:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.28"
 
-  RUSTFMT_NIGHTLY:           "registry.gitlab.com/alatiera/rustfmt-oci-image/rustfmt:nightly"
   CLIPPY_NIGHTLY:            "registry.gitlab.gnome.org/gnome/librsvg-oci-images/clippy:nightly"
 
 stages:
@@ -157,13 +156,12 @@ debian_i386:testing:
 # Configure and run rustfmt on nightly
 # Exits and builds fails on bad format
 rustfmt:
-  image: $RUSTFMT_NIGHTLY
+  image: $AMD64_OPENSUSE_TUMBLEWEED
   stage: lint
   script:
     - rustc --version && cargo --version
     - cargo fmt --version
     - cargo fmt --all -- --check
-  when: manual
 
 # Configure and run clippy on nightly
 # Only fails on errors atm.

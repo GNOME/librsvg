@@ -522,7 +522,7 @@ impl DocumentBuilder {
                         ids,
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
-                        load_options: load_options,
+                        load_options,
                         stylesheets,
                     };
 
