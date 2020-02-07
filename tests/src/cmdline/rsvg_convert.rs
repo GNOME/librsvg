@@ -11,13 +11,15 @@ use std::path::Path;
 // The goal is to test the code in rsvg-convert, not the entire library.
 //
 //  - all command-line options are accepted
-//  - size and resolution of the output (should be sufficient to do that for PNG)
+//  - size of the output (should be sufficient to do that for PNG)
+//  - command-line options that affect size (width, height, zoom, resolution)
 //  - limit on output size (32767 pixels)
 //  - output formats (PNG, PDF, PS, EPS, SVG), okay to ignore XML and recording
 //  - multi-page output (for PDF)
 //  - handling of SOURCE_DATA_EPOCH environment variable for PDF output
 //  - handling of background color option
 //  - support for optional CSS stylesheet
+//  - error handling for missing SVG dimensions
 //  - error handling for export lookup ID
 //  - error handling for invalid input
 
@@ -33,7 +35,9 @@ impl RsvgConvert {
 
     fn new() -> Command {
         let path = Self::binary_location().join("rsvg-convert");
-        Command::new(path)
+        let mut command = Command::new(path);
+        command.env_clear();
+        command
     }
 
     fn new_with_input(input: &Path) -> Command {
@@ -43,6 +47,98 @@ impl RsvgConvert {
             Err(e) => panic!("Error opening file '{}': {}", input.display(), e),
         }
     }
+}
+
+#[test]
+fn converts_svg_from_stdin_to_png() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(200, 100));
+}
+
+#[test]
+fn argument_is_input_filename() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new()
+        .arg(input)
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(200, 100));
+}
+
+#[test]
+fn multiple_input_files_not_allowed_for_png_output() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new()
+        .arg(input)
+        .arg("foo.svg")
+        .assert()
+        .failure()
+        .stderr("Multiple SVG files are only allowed for PDF and (E)PS output.\n");
+}
+
+#[test]
+fn output_format_png() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--format=png")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(200, 100));
+}
+
+#[test]
+fn output_format_ps() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--format=ps")
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with("%!PS-Adobe-3.0\n"));
+}
+
+#[test]
+fn output_format_eps() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--format=eps")
+        .assert()
+        .success()
+        .stdout(predicate::str::starts_with("%!PS-Adobe-3.0 EPSF-3.0\n"));
+}
+
+#[test]
+fn output_format_pdf() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--format=pdf")
+        .assert()
+        .success();
+    // TODO: add a check for PDF output
+}
+
+#[test]
+fn output_format_svg_short_option() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    let svg_output = predicate::str::starts_with("<?xml ").and(predicate::str::contains("<svg "));
+    RsvgConvert::new_with_input(input)
+        .arg("-f")
+        .arg("svg")
+        .assert()
+        .success()
+        .stdout(svg_output);
+}
+
+#[test]
+fn output_format_unknown_yields_error() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--format=foo")
+        .assert()
+        .failure()
+        .stderr("Unknown output format.\n");
 }
 
 #[test]
@@ -56,12 +152,12 @@ fn empty_input_yields_error() {
 }
 
 #[test]
-fn reads_from_stdin() {
-    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+fn empty_svg_yields_error() {
+    let input = Path::new("fixtures/dimensions/empty.svg");
     RsvgConvert::new_with_input(input)
         .assert()
-        .success()
-        .stdout(png_predicate::has_size(200, 100));
+        .failure()
+        .stderr("The SVG stdin has no dimensions\n");
 }
 
 #[test]
@@ -184,7 +280,7 @@ fn y_short_option() {
 }
 
 #[test]
-fn huge_zoom_yields_error() {
+fn huge_zoom_factor_yields_error() {
     let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
     let starts_with =
         predicate::str::starts_with("The resulting image would be larger than 32767 pixels");
@@ -194,6 +290,90 @@ fn huge_zoom_yields_error() {
         .assert()
         .failure()
         .stderr(starts_with.and(ends_with).trim());
+}
+
+#[test]
+fn default_resolution_is_90dpi() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(262, 184));
+}
+
+#[test]
+fn x_resolution() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--dpi-x=300")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(874, 184));
+}
+
+#[test]
+fn x_resolution_short_option() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("-d")
+        .arg("45")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(131, 184));
+}
+
+#[test]
+fn y_resolution() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--dpi-y=300")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(262, 614));
+}
+
+#[test]
+fn y_resolution_short_option() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("-p")
+        .arg("45")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(262, 92));
+}
+
+#[test]
+fn x_and_y_resolution() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--dpi-x=300")
+        .arg("--dpi-y=150")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(874, 307));
+}
+
+#[test]
+fn default_is_used_for_zero_resolution() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--dpi-x=0")
+        .arg("--dpi-y=0")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(262, 184));
+}
+
+#[test]
+fn default_is_used_for_negative_resolution() {
+    let input = Path::new("fixtures/dimensions/units.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--dpi-x=-100")
+        .arg("--dpi-y=-100")
+        .assert()
+        .success()
+        .stdout(png_predicate::has_size(262, 184));
 }
 
 #[test]
