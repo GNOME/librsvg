@@ -112,108 +112,108 @@ static void
 test_utils_cairo_surface_paint_pixbuf (cairo_surface_t *surface,
                                        const GdkPixbuf *pixbuf)
 {
-  gint width, height;
-  guchar *gdk_pixels, *cairo_pixels;
-  int gdk_rowstride, cairo_stride;
-  int n_channels;
-  int j;
+    gint width, height;
+    guchar *gdk_pixels, *cairo_pixels;
+    int gdk_rowstride, cairo_stride;
+    int n_channels;
+    int j;
 
-  if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS)
-    return;
+    if (cairo_surface_status (surface) != CAIRO_STATUS_SUCCESS)
+        return;
 
-  /* This function can't just copy any pixbuf to any surface, be
-   * sure to read the invariants here before calling it */
+    /* This function can't just copy any pixbuf to any surface, be
+     * sure to read the invariants here before calling it */
 
-  g_assert (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
-  g_assert (cairo_image_surface_get_format (surface) == CAIRO_FORMAT_RGB24 ||
-            cairo_image_surface_get_format (surface) == CAIRO_FORMAT_ARGB32);
-  g_assert (cairo_image_surface_get_width (surface) == gdk_pixbuf_get_width (pixbuf));
-  g_assert (cairo_image_surface_get_height (surface) == gdk_pixbuf_get_height (pixbuf));
+    g_assert (cairo_surface_get_type (surface) == CAIRO_SURFACE_TYPE_IMAGE);
+    g_assert (cairo_image_surface_get_format (surface) == CAIRO_FORMAT_RGB24 ||
+              cairo_image_surface_get_format (surface) == CAIRO_FORMAT_ARGB32);
+    g_assert (cairo_image_surface_get_width (surface) == gdk_pixbuf_get_width (pixbuf));
+    g_assert (cairo_image_surface_get_height (surface) == gdk_pixbuf_get_height (pixbuf));
 
-  cairo_surface_flush (surface);
+    cairo_surface_flush (surface);
 
-  width = gdk_pixbuf_get_width (pixbuf);
-  height = gdk_pixbuf_get_height (pixbuf);
-  gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
-  gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
-  n_channels = gdk_pixbuf_get_n_channels (pixbuf);
-  cairo_stride = cairo_image_surface_get_stride (surface);
-  cairo_pixels = cairo_image_surface_get_data (surface);
+    width = gdk_pixbuf_get_width (pixbuf);
+    height = gdk_pixbuf_get_height (pixbuf);
+    gdk_pixels = gdk_pixbuf_get_pixels (pixbuf);
+    gdk_rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+    n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+    cairo_stride = cairo_image_surface_get_stride (surface);
+    cairo_pixels = cairo_image_surface_get_data (surface);
 
-  for (j = height; j; j--)
+    for (j = height; j; j--)
     {
-      guchar *p = gdk_pixels;
-      guchar *q = cairo_pixels;
+        guchar *p = gdk_pixels;
+        guchar *q = cairo_pixels;
 
-      if (n_channels == 3)
+        if (n_channels == 3)
         {
-          guchar *end = p + 3 * width;
+            guchar *end = p + 3 * width;
 
-          while (p < end)
+            while (p < end)
             {
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-              q[0] = p[2];
-              q[1] = p[1];
-              q[2] = p[0];
+                q[0] = p[2];
+                q[1] = p[1];
+                q[2] = p[0];
 #else
-              q[1] = p[0];
-              q[2] = p[1];
-              q[3] = p[2];
+                q[1] = p[0];
+                q[2] = p[1];
+                q[3] = p[2];
 #endif
-              p += 3;
-              q += 4;
+                p += 3;
+                q += 4;
             }
         }
-      else
+        else
         {
-          guchar *end = p + 4 * width;
-          guint t1,t2,t3;
+            guchar *end = p + 4 * width;
+            guint t1,t2,t3;
 
 #define MULT(d,c,a,t) G_STMT_START { t = c * a + 0x80; d = ((t >> 8) + t) >> 8; } G_STMT_END
 
-          while (p < end)
+            while (p < end)
             {
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-              MULT(q[0], p[2], p[3], t1);
-              MULT(q[1], p[1], p[3], t2);
-              MULT(q[2], p[0], p[3], t3);
-              q[3] = p[3];
+                MULT(q[0], p[2], p[3], t1);
+                MULT(q[1], p[1], p[3], t2);
+                MULT(q[2], p[0], p[3], t3);
+                q[3] = p[3];
 #else
-              q[0] = p[3];
-              MULT(q[1], p[0], p[3], t1);
-              MULT(q[2], p[1], p[3], t2);
-              MULT(q[3], p[2], p[3], t3);
+                q[0] = p[3];
+                MULT(q[1], p[0], p[3], t1);
+                MULT(q[2], p[1], p[3], t2);
+                MULT(q[3], p[2], p[3], t3);
 #endif
 
-              p += 4;
-              q += 4;
+                p += 4;
+                q += 4;
             }
 
 #undef MULT
         }
 
-      gdk_pixels += gdk_rowstride;
-      cairo_pixels += cairo_stride;
+        gdk_pixels += gdk_rowstride;
+        cairo_pixels += cairo_stride;
     }
 
-  cairo_surface_mark_dirty (surface);
+    cairo_surface_mark_dirty (surface);
 }
 
 cairo_surface_t *
 test_utils_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf)
 {
-  cairo_surface_t *surface;
+    cairo_surface_t *surface;
 
-  g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
-  g_return_val_if_fail (gdk_pixbuf_get_n_channels (pixbuf) == 4, NULL);
+    g_return_val_if_fail (GDK_IS_PIXBUF (pixbuf), NULL);
+    g_return_val_if_fail (gdk_pixbuf_get_n_channels (pixbuf) == 4, NULL);
 
-  surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
-                                        gdk_pixbuf_get_width (pixbuf),
-                                        gdk_pixbuf_get_height (pixbuf));
+    surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+                                          gdk_pixbuf_get_width (pixbuf),
+                                          gdk_pixbuf_get_height (pixbuf));
 
-  test_utils_cairo_surface_paint_pixbuf (surface, pixbuf);
+    test_utils_cairo_surface_paint_pixbuf (surface, pixbuf);
 
-  return surface;
+    return surface;
 }
 
 static gchar *data_path = NULL;
@@ -234,20 +234,20 @@ test_utils_get_test_data_path (void)
 static int
 compare_files (gconstpointer a, gconstpointer b)
 {
-  GFile *file1 = G_FILE (a);
-  GFile *file2 = G_FILE (b);
-  char *uri1, *uri2;
-  int result;
+    GFile *file1 = G_FILE (a);
+    GFile *file2 = G_FILE (b);
+    char *uri1, *uri2;
+    int result;
 
-  uri1 = g_file_get_uri (file1);
-  uri2 = g_file_get_uri (file2);
+    uri1 = g_file_get_uri (file1);
+    uri2 = g_file_get_uri (file2);
 
-  result = strcmp (uri1, uri2);
+    result = strcmp (uri1, uri2);
 
-  g_free (uri1);
-  g_free (uri2);
+    g_free (uri1);
+    g_free (uri2);
 
-  return result;
+    return result;
 }
 
 void
@@ -257,67 +257,68 @@ test_utils_add_test_for_all_files (const gchar   *prefix,
                                    GTestDataFunc  test_func,
                                    AddTestFunc    add_test_func)
 {
-  GFileEnumerator *enumerator;
-  GFileInfo *info;
-  GList *l, *files;
-  GError *error = NULL;
+    GFileEnumerator *enumerator;
+    GFileInfo *info;
+    GList *l, *files;
+    GError *error = NULL;
 
 
-  if (g_file_query_file_type (file, 0, NULL) != G_FILE_TYPE_DIRECTORY)
+    if (g_file_query_file_type (file, 0, NULL) != G_FILE_TYPE_DIRECTORY)
     {
-      gchar *test_path;
-      gchar *relative_path;
+        gchar *test_path;
+        gchar *relative_path;
 
-      if (base)
-        relative_path = g_file_get_relative_path (base, file);
-      else
-        relative_path = g_file_get_path (file);
+        if (base)
+            relative_path = g_file_get_relative_path (base, file);
+        else
+            relative_path = g_file_get_path (file);
 
-      test_path = g_strconcat (prefix, "/", relative_path, NULL);
-      g_free (relative_path);
-      
-      g_test_add_data_func_full (test_path, g_object_ref (file), test_func, g_object_unref);
+        test_path = g_strconcat (prefix, "/", relative_path, NULL);
+        g_free (relative_path);
 
-      g_free (test_path);
-      return;
+        g_test_add_data_func_full (test_path, g_object_ref (file), test_func, g_object_unref);
+
+        g_free (test_path);
+        return;
     }
 
 
-  enumerator = g_file_enumerate_children (file, G_FILE_ATTRIBUTE_STANDARD_NAME, 0, NULL, &error);
-  g_assert_no_error (error);
-  files = NULL;
+    enumerator = g_file_enumerate_children (file, G_FILE_ATTRIBUTE_STANDARD_NAME, 0, NULL, &error);
+    g_assert_no_error (error);
+    files = NULL;
 
-  while ((info = g_file_enumerator_next_file (enumerator, NULL, &error)))
+    while ((info = g_file_enumerator_next_file (enumerator, NULL, &error)))
     {
-      GFile *next_file = g_file_get_child (file, g_file_info_get_name (info));
+        GFile *next_file = g_file_get_child (file, g_file_info_get_name (info));
 
-      if (add_test_func == NULL || add_test_func (next_file))
+        if (add_test_func == NULL || add_test_func (next_file))
         {
-          files = g_list_prepend (files, g_object_ref (next_file));
+            files = g_list_prepend (files, g_object_ref (next_file));
         }
 
-      g_object_unref (next_file);
-      g_object_unref (info);
+        g_object_unref (next_file);
+        g_object_unref (info);
     }
-  
-  g_assert_no_error (error);
-  g_object_unref (enumerator);
 
-  files = g_list_sort (files, compare_files);
+    g_assert_no_error (error);
+    g_object_unref (enumerator);
 
-  for (l = files; l; l = l->next)
+    files = g_list_sort (files, compare_files);
+
+    for (l = files; l; l = l->next)
     {
-      test_utils_add_test_for_all_files (prefix, base, l->data, test_func, add_test_func);
+        test_utils_add_test_for_all_files (prefix, base, l->data, test_func, add_test_func);
     }
 
-  g_list_free_full (files, g_object_unref);
+    g_list_free_full (files, g_object_unref);
 }
 
 #ifdef HAVE_PANGOFT2
 static FcConfig *
 create_font_config_for_testing (void)
 {
-    const char *font_paths[] = {
+    const char *font_paths[] =
+    {
         "resources/Roboto-Regular.ttf",
         "resources/Roboto-Italic.ttf",
         "resources/Roboto-Bold.ttf",
@@ -327,10 +328,12 @@ create_font_config_for_testing (void)
     FcConfig *config = FcConfigCreate ();
     int i;
 
-    for (i = 0; i < G_N_ELEMENTS(font_paths); i++) {
+    for (i = 0; i < G_N_ELEMENTS(font_paths); i++)
+    {
         char *font_path = g_test_build_filename (G_TEST_DIST, font_paths[i], NULL);
 
-        if (!FcConfigAppFontAddFile (config, (const FcChar8 *) font_path)) {
+        if (!FcConfigAppFontAddFile (config, (const FcChar8 *) font_path))
+        {
             g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
         }
 
@@ -361,9 +364,17 @@ test_utils_setup_font_map (void)
 void
 test_utils_print_dependency_versions (void)
 {
+    FT_Library ft_lib;
+    FT_Int ft_major = 0;
+    FT_Int ft_minor = 0;
+    FT_Int ft_patch = 0;
+
+    FT_Init_FreeType (&ft_lib);
+    FT_Library_Version (ft_lib, &ft_major, &ft_minor, &ft_patch);
+    FT_Done_FreeType (ft_lib);
+
     g_test_message ("Cairo version:    %s", cairo_version_string ());
     g_test_message ("Pango version:    %s", pango_version_string ());
-    g_test_message ("Freetype version: %d.%d.%d", FREETYPE_MAJOR, FREETYPE_MINOR, FREETYPE_PATCH);
+    g_test_message ("Freetype version: %d.%d.%d", ft_major, ft_minor, ft_patch);
     g_test_message ("Harfbuzz version: %s", hb_version_string ());
 }
-
