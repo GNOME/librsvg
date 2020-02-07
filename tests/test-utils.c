@@ -361,9 +361,17 @@ test_utils_setup_font_map (void)
 void
 test_utils_print_dependency_versions (void)
 {
+    FT_Library ft_lib;
+    FT_Int ft_major = 0;
+    FT_Int ft_minor = 0;
+    FT_Int ft_patch = 0;
+
+    FT_Init_FreeType (&ft_lib);
+    FT_Library_Version (ft_lib, &ft_major, &ft_minor, &ft_patch);
+    FT_Done_FreeType (ft_lib);
+
     g_test_message ("Cairo version:    %s", cairo_version_string ());
     g_test_message ("Pango version:    %s", pango_version_string ());
-    g_test_message ("Freetype version: %d.%d.%d", FREETYPE_MAJOR, FREETYPE_MINOR, FREETYPE_PATCH);
+    g_test_message ("Freetype version: %d.%d.%d", ft_major, ft_minor, ft_patch);
     g_test_message ("Harfbuzz version: %s", hb_version_string ());
 }
-
