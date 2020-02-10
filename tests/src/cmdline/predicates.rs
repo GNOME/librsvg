@@ -1,3 +1,4 @@
+extern crate lopdf;
 extern crate png;
 extern crate predicates;
 
@@ -10,35 +11,25 @@ pub mod file {
 
     use std::fmt;
 
-    /// Checks that the variable of type [u8] looks like a PDF file.
-    /// Actually it only looks at the very first bytes.
+    /// Checks that the variable of type [u8] can be parsed as a PDF file.
     #[derive(Debug)]
     pub struct PdfPredicate {}
 
     impl PdfPredicate {
-        fn not_a_pdf<'a>(&'a self, reason: &'static str) -> Option<Case<'a>> {
-            Some(Case::new(Some(self), false).add_product(Product::new("not a PDF", reason)))
+        pub fn with_page_count(self: Self, num_pages: usize) -> PageCountPredicate<Self> {
+            PageCountPredicate::<Self> { p: self, n: num_pages }
         }
     }
 
     impl Predicate<[u8]> for PdfPredicate {
         fn eval(&self, data: &[u8]) -> bool {
-            match data.get(0..5) {
-                Some(head) => head == b"%PDF-",
-                None => false,
-            }
+            lopdf::Document::load_mem(data).is_ok()
         }
 
         fn find_case<'a>(&'a self, _expected: bool, data: &[u8]) -> Option<Case<'a>> {
-            match data.get(0..5) {
-                Some(head) => {
-                    if head == b"%PDF-" {
-                        None
-                    } else {
-                        self.not_a_pdf("header mismatch")
-                    }
-                }
-                None => self.not_a_pdf("too short"),
+            match lopdf::Document::load_mem(data) {
+                Ok(_) => None,
+                Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e)))
             }
         }
     }
@@ -47,7 +38,67 @@ pub mod file {
 
     impl fmt::Display for PdfPredicate {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "has PDF header")
+            write!(f, "is a PDF")
+        }
+    }
+
+    /// Extends a PdfPredicate by a check for a given number of pages.
+    #[derive(Debug)]
+    pub struct PageCountPredicate<PdfPredicate> {
+        p: PdfPredicate,
+        n: usize
+    }
+
+    impl PageCountPredicate<PdfPredicate> {
+        fn eval_doc(&self, doc: &lopdf::Document) -> bool {
+            doc.get_pages().len() == self.n
+        }
+
+        fn find_case_for_doc<'a>(
+            &'a self,
+            expected: bool,
+            doc: &lopdf::Document,
+        ) -> Option<Case<'a>> {
+            if self.eval_doc(doc) == expected {
+                let product = self.product_for_doc(doc);
+                Some(Case::new(Some(self), false).add_product(product))
+            } else {
+                None
+            }
+        }
+
+        fn product_for_doc(&self, doc: &lopdf::Document) -> Product {
+            let actual_count = format!("{} page(s)", doc.get_pages().len());
+            Product::new("actual page count", actual_count)
+        }
+    }
+
+    impl Predicate<[u8]> for PageCountPredicate<PdfPredicate> {
+        fn eval(&self, data: &[u8]) -> bool {
+            match lopdf::Document::load_mem(data) {
+                Ok(doc) => self.eval_doc(&doc),
+                _ => false,
+            }
+        }
+
+        fn find_case<'a>(&'a self, expected: bool, data: &[u8]) -> Option<Case<'a>> {
+            match lopdf::Document::load_mem(data) {
+                Ok(doc) => self.find_case_for_doc(expected, &doc),
+                Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
+            }
+        }
+    }
+
+    impl PredicateReflection for PageCountPredicate<PdfPredicate> {
+        fn children<'a>(&'a self) -> Box<dyn Iterator<Item = Child<'a>> + 'a> {
+            let params = vec![Child::new("predicate", &self.p)];
+            Box::new(params.into_iter())
+        }
+    }
+
+    impl fmt::Display for PageCountPredicate<PdfPredicate> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "is a PDF with {} page(s)", self.n)
         }
     }
 

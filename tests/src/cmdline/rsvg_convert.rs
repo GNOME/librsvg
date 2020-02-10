@@ -105,7 +105,7 @@ fn output_format_pdf() {
         .arg("--format=pdf")
         .assert()
         .success()
-        .stdout(file::is_pdf());
+        .stdout(file::is_pdf().with_page_count(1));
 }
 
 #[test]
@@ -174,19 +174,6 @@ fn multiple_input_files_accepted_for_eps_output() {
 }
 
 #[test]
-fn multiple_input_files_accepted_for_pdf_output() {
-    let one = Path::new("fixtures/dimensions/521-with-viewbox.svg");
-    let two = Path::new("fixtures/dimensions/sub-rect-no-unit.svg");
-    RsvgConvert::new()
-        .arg("--format=pdf")
-        .arg(one)
-        .arg(two)
-        .assert()
-        .success()
-        .stdout(file::is_pdf());
-}
-
-#[test]
 fn multiple_input_files_accepted_for_ps_output() {
     let one = Path::new("fixtures/dimensions/521-with-viewbox.svg");
     let two = Path::new("fixtures/dimensions/sub-rect-no-unit.svg");
@@ -197,6 +184,19 @@ fn multiple_input_files_accepted_for_ps_output() {
         .assert()
         .success()
         .stdout(file::is_ps());
+}
+
+#[test]
+fn multiple_input_files_create_multi_page_pdf_output() {
+    let one = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    let two = Path::new("fixtures/dimensions/sub-rect-no-unit.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .arg(one)
+        .arg(two)
+        .assert()
+        .success()
+        .stdout(file::is_pdf().with_page_count(2));
 }
 
 #[test]
