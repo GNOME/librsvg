@@ -1,2 +1,2 @@
-mod png_predicate;
+mod predicates;
 mod rsvg_convert;
