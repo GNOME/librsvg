@@ -1,8 +1,11 @@
+extern crate chrono;
 extern crate lopdf;
 extern crate png;
 extern crate predicates;
 
 pub mod file {
+
+    use chrono::{DateTime, FixedOffset, UTC};
 
     use predicates::boolean::AndPredicate;
     use predicates::prelude::*;
@@ -16,8 +19,18 @@ pub mod file {
     pub struct PdfPredicate {}
 
     impl PdfPredicate {
-        pub fn with_page_count(self: Self, num_pages: usize) -> PageCountPredicate<Self> {
-            PageCountPredicate::<Self> { p: self, n: num_pages }
+        pub fn with_page_count(self: Self, num_pages: usize) -> DetailPredicate<Self> {
+            DetailPredicate::<Self> {
+                p: self,
+                d: Detail::PageCount(num_pages),
+            }
+        }
+
+        pub fn with_creation_date(self: Self, when: DateTime<UTC>) -> DetailPredicate<Self> {
+            DetailPredicate::<Self> {
+                p: self,
+                d: Detail::CreationDate(when),
+            }
         }
     }
 
@@ -29,7 +42,7 @@ pub mod file {
         fn find_case<'a>(&'a self, _expected: bool, data: &[u8]) -> Option<Case<'a>> {
             match lopdf::Document::load_mem(data) {
                 Ok(_) => None,
-                Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e)))
+                Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
             }
         }
     }
@@ -42,16 +55,30 @@ pub mod file {
         }
     }
 
-    /// Extends a PdfPredicate by a check for a given number of pages.
+    /// Extends a PdfPredicate by a check for page count or creation date.
     #[derive(Debug)]
-    pub struct PageCountPredicate<PdfPredicate> {
+    pub struct DetailPredicate<PdfPredicate> {
         p: PdfPredicate,
-        n: usize
+        d: Detail,
     }
 
-    impl PageCountPredicate<PdfPredicate> {
+    #[derive(Debug)]
+    enum Detail {
+        PageCount(usize),
+        CreationDate(DateTime<UTC>),
+    }
+
+    trait Details {
+        fn get_num_pages(&self) -> usize;
+        fn get_creation_date(&self) -> Option<DateTime<UTC>>;
+    }
+
+    impl DetailPredicate<PdfPredicate> {
         fn eval_doc(&self, doc: &lopdf::Document) -> bool {
-            doc.get_pages().len() == self.n
+            match self.d {
+                Detail::PageCount(n) => n == doc.get_num_pages(),
+                Detail::CreationDate(d) => doc.get_creation_date().map_or(false, |date| date == d),
+            }
         }
 
         fn find_case_for_doc<'a>(
@@ -68,12 +95,71 @@ pub mod file {
         }
 
         fn product_for_doc(&self, doc: &lopdf::Document) -> Product {
-            let actual_count = format!("{} page(s)", doc.get_pages().len());
-            Product::new("actual page count", actual_count)
+            match self.d {
+                Detail::PageCount(_) => Product::new(
+                    "actual page count",
+                    format!("{} page(s)", doc.get_num_pages()),
+                ),
+                Detail::CreationDate(_) => Product::new(
+                    "actual creation date",
+                    format!("{:?}", doc.get_creation_date()),
+                ),
+            }
         }
     }
 
-    impl Predicate<[u8]> for PageCountPredicate<PdfPredicate> {
+    impl Details for lopdf::Document {
+        fn get_creation_date(self: &Self) -> Option<DateTime<UTC>> {
+            fn get_from_trailer<'a>(
+                doc: &'a lopdf::Document,
+                key: &[u8],
+            ) -> lopdf::Result<&'a lopdf::Object> {
+                let id = doc.trailer.get(b"Info")?.as_reference()?;
+                doc.get_object(id)?.as_dict()?.get(key)
+            }
+
+            if let Ok(obj) = get_from_trailer(self, b"CreationDate") {
+                // Now this should actually be as simple as returning obj.as_datetime().
+                // However there are bugs that need to be worked around here:
+                //
+                // First of all cairo inadvertently truncates the timezone offset,
+                // see https://gitlab.freedesktop.org/cairo/cairo/issues/392
+                //
+                // On top of that the lopdf::Object::as_datetime() method has issues
+                // and can not be used, see https://github.com/J-F-Liu/lopdf/issues/88
+                //
+                // So here's our implentation instead.
+
+                fn as_datetime(str: &str) -> Option<DateTime<FixedOffset>> {
+                    if str.ends_with("0000") {
+                        DateTime::parse_from_str(str, "%Y%m%d%H%M%S%z").ok()
+                    } else {
+                        let str = String::from(str) + "00";
+                        as_datetime(&str)
+                    }
+                }
+
+                if let lopdf::Object::String(ref bytes, _) = obj {
+                    if let Ok(str) = String::from_utf8(
+                        bytes
+                            .iter()
+                            .filter(|b| ![b'D', b':', b'\''].contains(b))
+                            .cloned()
+                            .collect(),
+                    ) {
+                        return as_datetime(&str).map(|date| date.with_timezone(&UTC));
+                    }
+                }
+            }
+            None
+        }
+
+        fn get_num_pages(self: &Self) -> usize {
+            self.get_pages().len()
+        }
+    }
+
+    impl Predicate<[u8]> for DetailPredicate<PdfPredicate> {
         fn eval(&self, data: &[u8]) -> bool {
             match lopdf::Document::load_mem(data) {
                 Ok(doc) => self.eval_doc(&doc),
@@ -89,16 +175,19 @@ pub mod file {
         }
     }
 
-    impl PredicateReflection for PageCountPredicate<PdfPredicate> {
+    impl PredicateReflection for DetailPredicate<PdfPredicate> {
         fn children<'a>(&'a self) -> Box<dyn Iterator<Item = Child<'a>> + 'a> {
             let params = vec![Child::new("predicate", &self.p)];
             Box::new(params.into_iter())
         }
     }
 
-    impl fmt::Display for PageCountPredicate<PdfPredicate> {
+    impl fmt::Display for DetailPredicate<PdfPredicate> {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "is a PDF with {} page(s)", self.n)
+            match self.d {
+                Detail::PageCount(n) => write!(f, "is a PDF with {} page(s)", n),
+                Detail::CreationDate(d) => write!(f, "is a PDF created {:?}", d),
+            }
         }
     }
 

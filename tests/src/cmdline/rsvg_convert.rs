@@ -1,9 +1,11 @@
 extern crate assert_cmd;
+extern crate chrono;
 extern crate predicates;
 
-use crate::cmdline::predicates::file;
+use super::predicates::file;
 
 use assert_cmd::Command;
+use chrono::{TimeZone, UTC};
 use predicates::prelude::*;
 use std::path::Path;
 
@@ -16,7 +18,7 @@ use std::path::Path;
 //  - limit on output size (32767 pixels) ✔
 //  - output formats (PNG, PDF, PS, EPS, SVG), okay to ignore XML and recording ✔
 //  - multi-page output (for PDF) ✔
-//  - handling of SOURCE_DATA_EPOCH environment variable for PDF output
+//  - handling of SOURCE_DATA_EPOCH environment variable for PDF output ✔
 //  - handling of background color option
 //  - support for optional CSS stylesheet
 //  - error handling for missing SVG dimensions ✔
@@ -37,6 +39,7 @@ impl RsvgConvert {
         let path = Self::binary_location().join("rsvg-convert");
         let mut command = Command::new(path);
         command.env_clear();
+        command.env("TZ", "Berlin");
         command
     }
 
@@ -190,13 +193,73 @@ fn multiple_input_files_accepted_for_ps_output() {
 fn multiple_input_files_create_multi_page_pdf_output() {
     let one = Path::new("fixtures/dimensions/521-with-viewbox.svg");
     let two = Path::new("fixtures/dimensions/sub-rect-no-unit.svg");
+    let three = Path::new("fixtures/api/example.svg");
     RsvgConvert::new()
         .arg("--format=pdf")
         .arg(one)
         .arg(two)
+        .arg(three)
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_count(2));
+        .stdout(file::is_pdf().with_page_count(3));
+}
+
+#[test]
+fn env_source_data_epoch_controls_pdf_creation_date() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    let date = 1581411039; // seconds since epoch
+    RsvgConvert::new()
+        .env("SOURCE_DATE_EPOCH", format!("{}", date))
+        .arg("--format=pdf")
+        .arg(input)
+        .assert()
+        .success()
+        .stdout(file::is_pdf().with_creation_date(UTC.timestamp(date, 0)));
+}
+
+#[test]
+fn env_source_data_epoch_no_digits() {
+    // intentionally not testing for the full error string here
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new()
+        .env("SOURCE_DATE_EPOCH", "foobar")
+        .arg("--format=pdf")
+        .arg(input)
+        .assert()
+        .failure()
+        .stderr(predicates::str::starts_with(
+            "Environment variable $SOURCE_DATE_EPOCH",
+        ));
+}
+
+#[test]
+fn env_source_data_epoch_trailing_garbage() {
+    // intentionally not testing for the full error string here
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .env("SOURCE_DATE_EPOCH", "1234556+")
+        .arg(input)
+        .assert()
+        .failure()
+        .stderr(predicates::str::starts_with(
+            "Environment variable $SOURCE_DATE_EPOCH",
+        ));
+}
+
+#[test]
+fn env_source_data_epoch_empty() {
+    // intentionally not testing for the full error string here
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .env("SOURCE_DATE_EPOCH", "")
+        .arg(input)
+        .assert()
+        .failure()
+        .stderr(predicates::str::starts_with(
+            "Environment variable $SOURCE_DATE_EPOCH",
+        ));
 }
 
 #[test]
