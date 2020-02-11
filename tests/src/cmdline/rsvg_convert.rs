@@ -1,6 +1,7 @@
 extern crate assert_cmd;
 extern crate chrono;
 extern crate predicates;
+extern crate tempfile;
 
 use super::predicates::file;
 
@@ -10,19 +11,20 @@ use chrono::{TimeZone, UTC};
 use predicate::str::*;
 use predicates::prelude::*;
 use std::path::Path;
+use tempfile::Builder;
 
 // What should be tested here?
 // The goal is to test the code in rsvg-convert, not the entire library.
 //
-//  - all command-line options are accepted
-//  - size of the output (should be sufficient to do that for PNG) ✔
 //  - command-line options that affect size (width, height, zoom, resolution) ✔
+//  - pixel dimensions of the output (should be sufficient to do that for PNG) ✔
 //  - limit on output size (32767 pixels) ✔
 //  - output formats (PNG, PDF, PS, EPS, SVG), okay to ignore XML and recording ✔
 //  - multi-page output (for PDF) ✔
-//  - handling of SOURCE_DATA_EPOCH environment variable for PDF output ✔
-//  - handling of background color option ✔
-//  - support for optional CSS stylesheet ✔
+//  - output file option ✔
+//  - SOURCE_DATA_EPOCH environment variable for PDF output ✔
+//  - background color option ✔
+//  - optional CSS stylesheet ✔
 //  - error handling for missing SVG dimensions ✔
 //  - error handling for export lookup ID ✔
 //  - error handling for invalid input ✔
@@ -144,13 +146,42 @@ fn output_format_svg_short_option() {
 }
 
 #[test]
-fn output_format_unknown_yields_error() {
+fn output_file_option() {
+    let output = {
+        let tempfile = Builder::new().suffix(".png").tempfile().unwrap();
+        tempfile.path().to_path_buf()
+    };
+    assert!(predicates::path::is_file().not().eval(&output));
+
     let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
     RsvgConvert::new_with_input(input)
-        .arg("--format=foo")
+        .arg(format!("--output={}", output.display()))
         .assert()
-        .failure()
-        .stderr("Unknown output format.\n");
+        .success()
+        .stdout(is_empty());
+
+    assert!(predicates::path::is_file().eval(&output));
+    std::fs::remove_file(&output).unwrap();
+}
+
+#[test]
+fn output_file_short_option() {
+    let output = {
+        let tempfile = Builder::new().suffix(".png").tempfile().unwrap();
+        tempfile.path().to_path_buf()
+    };
+    assert!(predicates::path::is_file().not().eval(&output));
+
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("-o")
+        .arg(format!("{}", output.display()))
+        .assert()
+        .success()
+        .stdout(is_empty());
+
+    assert!(predicates::path::is_file().eval(&output));
+    std::fs::remove_file(&output).unwrap();
 }
 
 #[test]
