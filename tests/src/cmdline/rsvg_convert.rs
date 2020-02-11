@@ -4,8 +4,10 @@ extern crate predicates;
 
 use super::predicates::file;
 
+use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
 use chrono::{TimeZone, UTC};
+use predicate::str::*;
 use predicates::prelude::*;
 use std::path::Path;
 
@@ -19,10 +21,10 @@ use std::path::Path;
 //  - output formats (PNG, PDF, PS, EPS, SVG), okay to ignore XML and recording ✔
 //  - multi-page output (for PDF) ✔
 //  - handling of SOURCE_DATA_EPOCH environment variable for PDF output ✔
-//  - handling of background color option
-//  - support for optional CSS stylesheet
+//  - handling of background color option ✔
+//  - support for optional CSS stylesheet ✔
 //  - error handling for missing SVG dimensions ✔
-//  - error handling for export lookup ID
+//  - error handling for export lookup ID ✔
 //  - error handling for invalid input ✔
 
 struct RsvgConvert {}
@@ -39,7 +41,6 @@ impl RsvgConvert {
         let path = Self::binary_location().join("rsvg-convert");
         let mut command = Command::new(path);
         command.env_clear();
-        command.env("TZ", "Berlin");
         command
     }
 
@@ -49,6 +50,26 @@ impl RsvgConvert {
             Ok(_) => command,
             Err(e) => panic!("Error opening file '{}': {}", input.display(), e),
         }
+    }
+
+    fn accepts_option(option: &str) {
+        let input = Path::new("fixtures/api/dpi.svg");
+        RsvgConvert::new_with_input(input)
+            .arg(option)
+            .assert()
+            .success();
+    }
+
+    fn option_yields_output<I, P>(option: &str, output_pred: I)
+    where
+        I: IntoOutputPredicate<P>,
+        P: Predicate<[u8]>,
+    {
+        RsvgConvert::new()
+            .arg(option)
+            .assert()
+            .success()
+            .stdout(output_pred);
     }
 }
 
@@ -134,8 +155,8 @@ fn output_format_unknown_yields_error() {
 
 #[test]
 fn empty_input_yields_error() {
-    let starts_with = predicate::str::starts_with("Error reading SVG");
-    let ends_with = predicate::str::ends_with("Input file is too short");
+    let starts_with = starts_with("Error reading SVG");
+    let ends_with = ends_with("Input file is too short");
     RsvgConvert::new()
         .assert()
         .failure()
@@ -227,9 +248,7 @@ fn env_source_data_epoch_no_digits() {
         .arg(input)
         .assert()
         .failure()
-        .stderr(predicates::str::starts_with(
-            "Environment variable $SOURCE_DATE_EPOCH",
-        ));
+        .stderr(starts_with("Environment variable $SOURCE_DATE_EPOCH"));
 }
 
 #[test]
@@ -242,9 +261,7 @@ fn env_source_data_epoch_trailing_garbage() {
         .arg(input)
         .assert()
         .failure()
-        .stderr(predicates::str::starts_with(
-            "Environment variable $SOURCE_DATE_EPOCH",
-        ));
+        .stderr(starts_with("Environment variable $SOURCE_DATE_EPOCH"));
 }
 
 #[test]
@@ -257,9 +274,7 @@ fn env_source_data_epoch_empty() {
         .arg(input)
         .assert()
         .failure()
-        .stderr(predicates::str::starts_with(
-            "Environment variable $SOURCE_DATE_EPOCH",
-        ));
+        .stderr(starts_with("Environment variable $SOURCE_DATE_EPOCH"));
 }
 
 #[test]
@@ -312,7 +327,7 @@ fn zoom_factor_and_width_conflicts() {
         .arg("--zoom=1.5")
         .assert()
         .failure()
-        .stderr(predicate::str::ends_with("Could not render file stdin").trim());
+        .stderr(ends_with("Could not render file stdin").trim());
 }
 
 #[test]
@@ -384,9 +399,8 @@ fn y_short_option() {
 #[test]
 fn huge_zoom_factor_yields_error() {
     let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
-    let starts_with =
-        predicate::str::starts_with("The resulting image would be larger than 32767 pixels");
-    let ends_with = predicate::str::ends_with("Please specify a smaller size.");
+    let starts_with = starts_with("The resulting image would be larger than 32767 pixels");
+    let ends_with = ends_with("Please specify a smaller size.");
     RsvgConvert::new_with_input(input)
         .arg("--zoom=1000")
         .assert()
@@ -479,31 +493,147 @@ fn defaults_are_used_for_negative_resolutions() {
 }
 
 #[test]
+fn background_color_option_with_valid_color() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--background-color=purple")
+        .assert()
+        .success();
+}
+
+#[test]
+fn background_color_option_none() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--background-color=None")
+        .assert()
+        .success();
+}
+
+#[test]
+fn background_color_short_option() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("-b")
+        .arg("#aabbcc")
+        .assert()
+        .success();
+}
+
+#[test]
+fn background_color_option_invalid_color_yields_error() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--background-color=foobar")
+        .assert()
+        .failure()
+        .stderr("Invalid color specification.\n");
+}
+
+#[test]
+fn stylesheet_option() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--stylesheet=fixtures/dimensions/empty.svg")
+        .assert()
+        .success();
+}
+
+#[test]
+fn stylesheet_short_option() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("-s")
+        .arg("fixtures/dimensions/empty.svg")
+        .assert()
+        .success();
+}
+
+#[test]
+fn stylesheet_option_error() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--stylesheet=foobar")
+        .assert()
+        .failure()
+        .stderr(starts_with("Error reading stylesheet"));
+}
+
+#[test]
+fn export_id_option() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--export-id=one")
+        .assert()
+        .success();
+}
+
+#[test]
+fn export_id_short_option() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("-i")
+        .arg("two")
+        .assert()
+        .success();
+}
+
+#[test]
+fn export_id_option_error() {
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--export-id=foobar")
+        .assert()
+        .failure()
+        .stderr("File stdin does not have an object with id \"foobar\"\n");
+}
+
+#[test]
+fn unlimited_option() {
+    RsvgConvert::accepts_option("--unlimited");
+}
+
+#[test]
+fn unlimited_short_option() {
+    RsvgConvert::accepts_option("-u");
+}
+
+#[test]
+fn keep_aspect_ratio_option() {
+    RsvgConvert::accepts_option("--keep-aspect-ratio");
+}
+
+#[test]
+fn keep_aspect_ratio_short_option() {
+    RsvgConvert::accepts_option("-a");
+}
+
+#[test]
+fn keep_image_data_option() {
+    RsvgConvert::accepts_option("--keep-image-data");
+}
+
+#[test]
+fn no_keep_image_data_option() {
+    RsvgConvert::accepts_option("--no-keep-image-data");
+}
+
+#[test]
 fn version_option() {
-    let out = predicate::str::starts_with("rsvg-convert version ");
-    RsvgConvert::new()
-        .arg("-v")
-        .assert()
-        .success()
-        .stdout(out.clone());
-    RsvgConvert::new()
-        .arg("--version")
-        .assert()
-        .success()
-        .stdout(out);
+    RsvgConvert::option_yields_output("--version", starts_with("rsvg-convert version "));
+}
+
+#[test]
+fn version_short_option() {
+    RsvgConvert::option_yields_output("-v", starts_with("rsvg-convert version "));
 }
 
 #[test]
 fn help_option() {
-    let out = predicate::str::starts_with("Usage:");
-    RsvgConvert::new()
-        .arg("-?")
-        .assert()
-        .success()
-        .stdout(out.clone());
-    RsvgConvert::new()
-        .arg("--help")
-        .assert()
-        .success()
-        .stdout(out);
+    RsvgConvert::option_yields_output("--help", starts_with("Usage:"));
+}
+
+#[test]
+fn help_short_option() {
+    RsvgConvert::option_yields_output("-?", starts_with("Usage:"));
 }
