@@ -333,86 +333,86 @@ fn huge_zoom_factor_yields_error() {
 
 #[test]
 fn default_resolution_is_90dpi() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .assert()
         .success()
-        .stdout(file::is_png().with_size(262, 184));
+        .stdout(file::is_png().with_size(90, 360));
 }
 
 #[test]
 fn x_resolution() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .arg("--dpi-x=300")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(874, 184));
+        .stdout(file::is_png().with_size(300, 360));
 }
 
 #[test]
 fn x_resolution_short_option() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .arg("-d")
         .arg("45")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(131, 184));
+        .stdout(file::is_png().with_size(45, 360));
 }
 
 #[test]
 fn y_resolution() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .arg("--dpi-y=300")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(262, 614));
+        .stdout(file::is_png().with_size(90, 1200));
 }
 
 #[test]
 fn y_resolution_short_option() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .arg("-p")
         .arg("45")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(262, 92));
+        .stdout(file::is_png().with_size(90, 180));
 }
 
 #[test]
 fn x_and_y_resolution() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .arg("--dpi-x=300")
         .arg("--dpi-y=150")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(874, 307));
+        .stdout(file::is_png().with_size(300, 600));
 }
 
 #[test]
-fn default_is_used_for_zero_resolution() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+fn defaults_are_used_for_zero_resolutions() {
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .arg("--dpi-x=0")
         .arg("--dpi-y=0")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(262, 184));
+        .stdout(file::is_png().with_size(90, 360));
 }
 
 #[test]
-fn default_is_used_for_negative_resolution() {
-    let input = Path::new("fixtures/dimensions/units.svg");
+fn defaults_are_used_for_negative_resolutions() {
+    let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
         .arg("--dpi-x=-100")
         .arg("--dpi-y=-100")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(262, 184));
+        .stdout(file::is_png().with_size(90, 360));
 }
 
 #[test]
