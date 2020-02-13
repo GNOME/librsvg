@@ -1,3 +1,11 @@
+Version 2.47.4
+
+- (#240) - Fix rsvg-convert's multipage PDF output when the zoom
+  option is used (Sven Neumann).
+
+- (#547) - Do not stop rendering if an <image> element references a
+  nonexistent file.  This fixes a number of Open Clipart cases.
+
 Version 2.47.3
 
 - #379 - New API, rsvg_handle_set_stylesheet(), to set a CSS
