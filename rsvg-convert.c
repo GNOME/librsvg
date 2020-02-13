@@ -560,6 +560,9 @@ main (int argc, char **argv)
             }
 
             cr = cairo_create (surface);
+            cairo_scale (cr,
+                         scaled_width / unscaled_width,
+                         scaled_height / unscaled_height);
         }
 
         // Set background color
@@ -579,13 +582,9 @@ main (int argc, char **argv)
                 ((background_color >> 16) & 0xff) / 255.0, 
                 ((background_color >> 8) & 0xff) / 255.0, 
                 ((background_color >> 0) & 0xff) / 255.0);
-            cairo_rectangle (cr, 0, 0, scaled_width, scaled_height);
+            cairo_rectangle (cr, 0, 0, unscaled_width, unscaled_height);
             cairo_fill (cr);
         }
-
-        cairo_scale (cr,
-                     scaled_width / unscaled_width,
-                     scaled_height / unscaled_height);
 
         if (export_lookup_id) {
             RsvgPositionData pos;
