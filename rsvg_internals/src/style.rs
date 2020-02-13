@@ -1,11 +1,9 @@
 //! The `style` element.
 
-use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::error::*;
 use crate::node::{NodeResult, NodeTrait, RsvgNode};
-use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 
 /// Represents the syntax used in the <style> node.
@@ -14,15 +12,26 @@ use crate::property_bag::PropertyBag;
 ///
 /// https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute
 /// https://www.w3.org/TR/SVG11/styling.html#ContentStyleTypeAttribute
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum StyleType {
     TextCss,
 }
 
-impl Parse for StyleType {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<StyleType, ParseError<'i>> {
-        parser.expect_ident_matching("text/css")?;
-        Ok(StyleType::TextCss)
+impl StyleType {
+    fn parse(value: &str) -> Result<StyleType, ValueErrorKind> {
+        // https://html.spec.whatwg.org/multipage/semantics.html#the-style-element
+        //
+        // 4. If element's type attribute is present and its value is
+        // neither the empty string nor an ASCII case-insensitive
+        // match for "text/css", then return.
+
+        if value.eq_ignore_ascii_case("text/css") {
+            Ok(StyleType::TextCss)
+        } else {
+            Err(ValueErrorKind::parse_error(
+                "invalid value for type attribute in style element",
+            ))
+        }
     }
 }
 
@@ -45,10 +54,26 @@ impl NodeTrait for Style {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "type") {
-                self.type_ = Some(attr.parse(value)?);
+                self.type_ = Some(StyleType::parse(value).attribute(attr)?);
             }
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_style_type() {
+        assert_eq!(StyleType::parse("text/css"), Ok(StyleType::TextCss));
+    }
+
+    #[test]
+    fn invalid_style_type_yields_error() {
+        assert!(StyleType::parse("").is_err());
+        assert!(StyleType::parse("some-other-stylesheet-language").is_err());
     }
 }
