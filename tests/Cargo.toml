@@ -1,0 +1,14 @@
+[package]
+name = "librsvg-tests"
+version = "0.1.0"
+authors = ["Sven Neumann <sven@svenfoo.org>"]
+workspace = ".."
+edition = "2018"
+
+[dev-dependencies]
+assert_cmd = "0.12"
+chrono = "0.3"
+lopdf = "0.23.0"
+png = "0.15.3"
+predicates = "1.0.2"
+tempfile = "3"
