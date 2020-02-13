@@ -1,6 +1,14 @@
 include $(top_srcdir)/glib-tap.mk
 
+test_sources =				\
+	Cargo.toml			\
+	src/main.rs			\
+	src/cmdline/mod.rs		\
+	src/cmdline/predicates.rs	\
+	src/cmdline/rsvg_convert.rs
+
 EXTRA_DIST +=		\
+	$(test_sources)	\
 	README.md
 
 # Keep "errors" at the end; they are the slowest to run
