@@ -250,6 +250,7 @@ impl NodeData {
     }
 
     fn set_error(&mut self, error: NodeError) {
+        rsvg_log!("setting node {} in error: {}", self, error);
         self.result = Err(error);
     }
 
