@@ -469,6 +469,13 @@ impl SpecifiedValues {
     }
 
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
+        // First, compute font.  It needs to be done before everything
+        // else, so that properties that depend on its computed value
+        // will be able to use it.  For example, baseline-shift
+        // depends on font-size.
+        compute_value!(self, computed, font_size);
+
+        // Then, do all the other properties.
         compute_value!(self, computed, baseline_shift);
         compute_value!(self, computed, clip_path);
         compute_value!(self, computed, clip_rule);
@@ -484,7 +491,6 @@ impl SpecifiedValues {
         compute_value!(self, computed, flood_color);
         compute_value!(self, computed, flood_opacity);
         compute_value!(self, computed, font_family);
-        compute_value!(self, computed, font_size);
         compute_value!(self, computed, font_stretch);
         compute_value!(self, computed, font_style);
         compute_value!(self, computed, font_variant);
