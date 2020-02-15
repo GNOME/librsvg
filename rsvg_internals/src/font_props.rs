@@ -34,22 +34,44 @@ impl FontSizeSpec {
     pub fn compute(&self, v: &ComputedValues) -> Self {
         let compute_points = |p| 12.0 * 1.2f64.powf(p) / POINTS_PER_INCH;
 
-        let size = v.font_size.0.value();
+        let parent = v.font_size.0.value();
 
+        // The parent must already have resolved to an absolute unit
+        assert!(
+            parent.unit != LengthUnit::Percent
+                && parent.unit != LengthUnit::Em
+                && parent.unit != LengthUnit::Ex
+        );
+
+        use FontSizeSpec::*;
+
+        #[rustfmt::skip]
         let new_size = match self {
-            FontSizeSpec::Smaller => Length::<Both>::new(size.length / 1.2, size.unit),
-            FontSizeSpec::Larger => Length::<Both>::new(size.length * 1.2, size.unit),
-            FontSizeSpec::XXSmall => Length::<Both>::new(compute_points(-3.0), LengthUnit::In),
-            FontSizeSpec::XSmall => Length::<Both>::new(compute_points(-2.0), LengthUnit::In),
-            FontSizeSpec::Small => Length::<Both>::new(compute_points(-1.0), LengthUnit::In),
-            FontSizeSpec::Medium => Length::<Both>::new(compute_points(0.0), LengthUnit::In),
-            FontSizeSpec::Large => Length::<Both>::new(compute_points(1.0), LengthUnit::In),
-            FontSizeSpec::XLarge => Length::<Both>::new(compute_points(2.0), LengthUnit::In),
-            FontSizeSpec::XXLarge => Length::<Both>::new(compute_points(3.0), LengthUnit::In),
-            FontSizeSpec::Value(s) if s.unit == LengthUnit::Percent => {
-                Length::<Both>::new(size.length * s.length, size.unit)
+            Smaller => Length::<Both>::new(parent.length / 1.2,  parent.unit),
+            Larger  => Length::<Both>::new(parent.length * 1.2,  parent.unit),
+            XXSmall => Length::<Both>::new(compute_points(-3.0), LengthUnit::In),
+            XSmall  => Length::<Both>::new(compute_points(-2.0), LengthUnit::In),
+            Small   => Length::<Both>::new(compute_points(-1.0), LengthUnit::In),
+            Medium  => Length::<Both>::new(compute_points(0.0),  LengthUnit::In),
+            Large   => Length::<Both>::new(compute_points(1.0),  LengthUnit::In),
+            XLarge  => Length::<Both>::new(compute_points(2.0),  LengthUnit::In),
+            XXLarge => Length::<Both>::new(compute_points(3.0),  LengthUnit::In),
+
+            Value(s) if s.unit == LengthUnit::Percent => {
+                Length::<Both>::new(parent.length * s.length, parent.unit)
             }
-            FontSizeSpec::Value(s) => *s,
+
+            Value(s) if s.unit == LengthUnit::Em => {
+                Length::<Both>::new(parent.length * s.length, parent.unit)
+            }
+
+            Value(s) if s.unit == LengthUnit::Ex => {
+                // FIXME: it would be nice to know the actual Ex-height
+                // of the font.
+                Length::<Both>::new(parent.length * s.length / 2.0, parent.unit)
+            }
+
+            Value(s) => *s,
         };
 
         FontSizeSpec::Value(new_size)
@@ -209,9 +231,49 @@ impl Parse for SingleFontFamily {
 mod tests {
     use super::*;
 
+    use crate::property_defs::FontSize;
+    use crate::property_macros::Property;
+
     #[test]
     fn detects_invalid_invalid_font_size() {
         assert!(FontSizeSpec::parse_str("furlong").is_err());
+    }
+
+    #[test]
+    fn computes_parent_relative_font_size() {
+        let mut values = ComputedValues::default();
+        values.font_size = FontSize::parse_str("10px").unwrap();
+
+        assert_eq!(
+            FontSize::parse_str("150%").unwrap().compute(&values),
+            FontSize::parse_str("15px").unwrap()
+        );
+
+        assert_eq!(
+            FontSize::parse_str("1.5em").unwrap().compute(&values),
+            FontSize::parse_str("15px").unwrap()
+        );
+
+        assert_eq!(
+            FontSize::parse_str("1ex").unwrap().compute(&values),
+            FontSize::parse_str("5px").unwrap()
+        );
+
+        let smaller = FontSize::parse_str("smaller").unwrap().compute(&values).0;
+        if let FontSizeSpec::Value(v) = smaller {
+            assert!(v.length < 10.0);
+            assert_eq!(v.unit, LengthUnit::Px);
+        } else {
+            unreachable!();
+        }
+
+        let larger = FontSize::parse_str("larger").unwrap().compute(&values).0;
+        if let FontSizeSpec::Value(v) = larger {
+            assert!(v.length > 10.0);
+            assert_eq!(v.unit, LengthUnit::Px);
+        } else {
+            unreachable!();
+        }
     }
 
     #[test]
