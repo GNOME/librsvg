@@ -1,7 +1,9 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace};
+use markup5ever::{
+    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
+};
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
@@ -200,7 +202,14 @@ impl UnresolvedVariant {
                 y2: y2.unwrap(),
             },
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr } => Variant::Radial {
+            UnresolvedVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => Variant::Radial {
                 cx: cx.unwrap(),
                 cy: cy.unwrap(),
                 r: r.unwrap(),
@@ -217,8 +226,20 @@ impl UnresolvedVariant {
                 x1.is_some() && y1.is_some() && x2.is_some() && y2.is_some()
             }
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr } => {
-                cx.is_some() && cy.is_some() && r.is_some() && fx.is_some() && fy.is_some() && fr.is_some()
+            UnresolvedVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
+                cx.is_some()
+                    && cy.is_some()
+                    && r.is_some()
+                    && fx.is_some()
+                    && fy.is_some()
+                    && fr.is_some()
             }
         }
     }
@@ -241,7 +262,14 @@ impl UnresolvedVariant {
             },
 
             (
-                UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr },
+                UnresolvedVariant::Radial {
+                    cx,
+                    cy,
+                    r,
+                    fx,
+                    fy,
+                    fr,
+                },
                 UnresolvedVariant::Radial {
                     cx: f_cx,
                     cy: f_cy,
@@ -274,7 +302,14 @@ impl UnresolvedVariant {
                 y2: y2.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
             },
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr } => {
+            UnresolvedVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
                 let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str("50%").unwrap()));
                 let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str("50%").unwrap()));
                 let r = r.or_else(|| Some(Length::<Both>::parse_str("50%").unwrap()));
@@ -284,7 +319,14 @@ impl UnresolvedVariant {
                 let fy = fy.or(cy);
                 let fr = fr.or_else(|| Some(Length::<Both>::parse_str("0%").unwrap()));
 
-                UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr }
+                UnresolvedVariant::Radial {
+                    cx,
+                    cy,
+                    r,
+                    fx,
+                    fy,
+                    fr,
+                }
             }
         }
     }
@@ -305,7 +347,14 @@ impl Variant {
                 ))
             }
 
-            Variant::Radial { cx, cy, r, fx, fy, fr } => {
+            Variant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
                 let n_cx = cx.normalize(values, params);
                 let n_cy = cy.normalize(values, params);
                 let n_r = r.normalize(values, params);
@@ -315,7 +364,7 @@ impl Variant {
                 let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
 
                 cairo::Gradient::clone(&cairo::RadialGradient::new(
-                    new_fx, new_fy, n_fr, n_cx, n_cy, n_r
+                    new_fx, new_fy, n_fr, n_cx, n_cy, n_r,
                 ))
             }
         }
