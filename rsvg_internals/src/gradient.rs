@@ -1,7 +1,7 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace};
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
@@ -622,16 +622,27 @@ impl NodeTrait for LinearGradient {
 impl NodeTrait for RadialGradient {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.common.set_atts(pbag)?;
+        // Create a local expanded name for "fr" because markup5ever doesn't have built-in
+        let expanded_name_fr = ExpandedName {
+            ns: &Namespace::from(""),
+            local: &LocalName::from("fr"),
+        };
 
         for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
-                expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
-                expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
-                expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
-                expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
+            let attr_expanded = attr.expanded();
 
-                _ => (),
+            if attr_expanded == expanded_name_fr {
+                self.fr = Some(attr.parse(value)?);
+            } else {
+                match attr_expanded {
+                    expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
+                    expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
+                    expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
+                    expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
+                    expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
+
+                    _ => (),
+                }
             }
         }
 
