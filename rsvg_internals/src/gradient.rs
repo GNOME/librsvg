@@ -164,6 +164,7 @@ enum UnresolvedVariant {
         r: Option<Length<Both>>,
         fx: Option<Length<Horizontal>>,
         fy: Option<Length<Vertical>>,
+        fr: Option<Length<Both>>,
     },
 }
 
@@ -183,6 +184,7 @@ enum Variant {
         r: Length<Both>,
         fx: Length<Horizontal>,
         fy: Length<Vertical>,
+        fr: Length<Both>,
     },
 }
 
@@ -198,12 +200,13 @@ impl UnresolvedVariant {
                 y2: y2.unwrap(),
             },
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => Variant::Radial {
+            UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr } => Variant::Radial {
                 cx: cx.unwrap(),
                 cy: cy.unwrap(),
                 r: r.unwrap(),
                 fx: fx.unwrap(),
                 fy: fy.unwrap(),
+                fr: fr.unwrap(),
             },
         }
     }
@@ -214,8 +217,8 @@ impl UnresolvedVariant {
                 x1.is_some() && y1.is_some() && x2.is_some() && y2.is_some()
             }
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
-                cx.is_some() && cy.is_some() && r.is_some() && fx.is_some() && fy.is_some()
+            UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr } => {
+                cx.is_some() && cy.is_some() && r.is_some() && fx.is_some() && fy.is_some() && fr.is_some()
             }
         }
     }
@@ -238,20 +241,22 @@ impl UnresolvedVariant {
             },
 
             (
-                UnresolvedVariant::Radial { cx, cy, r, fx, fy },
+                UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr },
                 UnresolvedVariant::Radial {
-                    cx: fcx,
-                    cy: fcy,
-                    r: fr,
-                    fx: ffx,
-                    fy: ffy,
+                    cx: f_cx,
+                    cy: f_cy,
+                    r: f_r,
+                    fx: f_fx,
+                    fy: f_fy,
+                    fr: f_fr,
                 },
             ) => UnresolvedVariant::Radial {
-                cx: cx.or(fcx),
-                cy: cy.or(fcy),
-                r: r.or(fr),
-                fx: fx.or(ffx),
-                fy: fy.or(ffy),
+                cx: cx.or(f_cx),
+                cy: cy.or(f_cy),
+                r: r.or(f_r),
+                fx: fx.or(f_fx),
+                fy: fy.or(f_fy),
+                fr: fr.or(f_fr),
             },
 
             _ => *self, // If variants are of different types, then nothing to resolve
@@ -269,7 +274,7 @@ impl UnresolvedVariant {
                 y2: y2.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
             },
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
+            UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr } => {
                 let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str("50%").unwrap()));
                 let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str("50%").unwrap()));
                 let r = r.or_else(|| Some(Length::<Both>::parse_str("50%").unwrap()));
@@ -277,8 +282,9 @@ impl UnresolvedVariant {
                 // fx and fy fall back to the presentational value of cx and cy
                 let fx = fx.or(cx);
                 let fy = fy.or(cy);
+                let fr = fr.or_else(|| Some(Length::<Both>::parse_str("0%").unwrap()));
 
-                UnresolvedVariant::Radial { cx, cy, r, fx, fy }
+                UnresolvedVariant::Radial { cx, cy, r, fx, fy, fr }
             }
         }
     }
@@ -299,16 +305,17 @@ impl Variant {
                 ))
             }
 
-            Variant::Radial { cx, cy, r, fx, fy } => {
+            Variant::Radial { cx, cy, r, fx, fy, fr } => {
                 let n_cx = cx.normalize(values, params);
                 let n_cy = cy.normalize(values, params);
                 let n_r = r.normalize(values, params);
                 let n_fx = fx.normalize(values, params);
                 let n_fy = fy.normalize(values, params);
+                let n_fr = fr.normalize(values, params);
                 let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
 
                 cairo::Gradient::clone(&cairo::RadialGradient::new(
-                    new_fx, new_fy, 0.0, n_cx, n_cy, n_r,
+                    new_fx, new_fy, n_fr, n_cx, n_cy, n_r
                 ))
             }
         }
@@ -348,6 +355,7 @@ pub struct RadialGradient {
     r: Option<Length<Both>>,
     fx: Option<Length<Horizontal>>,
     fy: Option<Length<Vertical>>,
+    fr: Option<Length<Both>>,
 }
 
 /// Main structure used during gradient resolution.  For unresolved
@@ -542,6 +550,7 @@ impl RadialGradient {
             r: self.r,
             fx: self.fx,
             fy: self.fy,
+            fr: self.fr,
         }
     }
 }
