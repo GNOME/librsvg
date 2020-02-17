@@ -34,12 +34,16 @@ as the default.
 Specify how tall you wish the image to be.  If unspecified, the natural height of the image is used
 as the default.
 .TP
-.I "\-f \-\-format [png, pdf, ps, svg, xml, recording]"
+.I "\-f \-\-format [png, pdf, ps, eps, svg, xml, recording]"
 Specify the output format you wish the image to be saved in.  If unspecified, PNG is used as the
 default.
 .TP
 .I "\-o \-\-output filename"
 Specify the output filename.  If unspecified, outputs to stdout.
+.TP
+.I "\-i \-\-export-id object-id"
+Allows to specify an SVG object that should be exported. If unspecified, all objects will be
+exported.
 .TP
 .I "\-a \-\-keep-aspect-ratio"
 Specify that the aspect ratio is to be preserved.  If unspecified, aspect ratio will not be
@@ -51,8 +55,18 @@ Specify the background color.  If unspecified, none is used as the default.
 .I "\-s \-\-stylesheet filename"
 Filename of a CSS stylesheet.
 .TP
-.I "\-\-base-uri uri"
-Specify the base URI for SVG files.  If unspecified, none is used as the default.
+.I "\-u \-\-unlimited"
+The SVG parser has some guards designed to mitigate large CPU or memory consumption in the face of
+malicious XML.  It may also refuse to resolve URIs used to embed image data.  If you are running
+into such issues when converting a SVG, this option allows to turn off these guards.
+.TP
+.I "\-\-keep-image-data"
+Include the original, compressed images in the final output, rather than uncompressed RGB data. This
+is the default behavior for PDF and (E)PS output.
+.TP
+.I "\-\-no-keep-image-data"
+Do not include the original, compressed images but instead embed uncompressed RGB date in PDF or
+(E)PS output. This will most likely result in larger documents that are slower to read.
 .TP
 .I "\-v \-\-version"
 Display what version of rsvg this is.
