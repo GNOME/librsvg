@@ -5,7 +5,7 @@ extern crate predicates;
 
 pub mod file {
 
-    use chrono::{DateTime, FixedOffset, UTC};
+    use chrono::{DateTime, Utc};
 
     use predicates::boolean::AndPredicate;
     use predicates::prelude::*;
@@ -26,7 +26,7 @@ pub mod file {
             }
         }
 
-        pub fn with_creation_date(self: Self, when: DateTime<UTC>) -> DetailPredicate<Self> {
+        pub fn with_creation_date(self: Self, when: DateTime<Utc>) -> DetailPredicate<Self> {
             DetailPredicate::<Self> {
                 p: self,
                 d: Detail::CreationDate(when),
@@ -65,12 +65,12 @@ pub mod file {
     #[derive(Debug)]
     enum Detail {
         PageCount(usize),
-        CreationDate(DateTime<UTC>),
+        CreationDate(DateTime<Utc>),
     }
 
     trait Details {
         fn get_num_pages(&self) -> usize;
-        fn get_creation_date(&self) -> Option<DateTime<UTC>>;
+        fn get_creation_date(&self) -> Option<DateTime<Utc>>;
     }
 
     impl DetailPredicate<PdfPredicate> {
@@ -109,7 +109,7 @@ pub mod file {
     }
 
     impl Details for lopdf::Document {
-        fn get_creation_date(self: &Self) -> Option<DateTime<UTC>> {
+        fn get_creation_date(self: &Self) -> Option<DateTime<Utc>> {
             fn get_from_trailer<'a>(
                 doc: &'a lopdf::Document,
                 key: &[u8],
@@ -118,40 +118,10 @@ pub mod file {
                 doc.get_object(id)?.as_dict()?.get(key)
             }
 
-            if let Ok(obj) = get_from_trailer(self, b"CreationDate") {
-                // Now this should actually be as simple as returning obj.as_datetime().
-                // However there are bugs that need to be worked around here:
-                //
-                // First of all cairo inadvertently truncates the timezone offset,
-                // see https://gitlab.freedesktop.org/cairo/cairo/issues/392
-                //
-                // On top of that the lopdf::Object::as_datetime() method has issues
-                // and can not be used, see https://github.com/J-F-Liu/lopdf/issues/88
-                //
-                // So here's our implentation instead.
-
-                fn as_datetime(str: &str) -> Option<DateTime<FixedOffset>> {
-                    if str.ends_with("0000") {
-                        DateTime::parse_from_str(str, "%Y%m%d%H%M%S%z").ok()
-                    } else {
-                        let str = String::from(str) + "00";
-                        as_datetime(&str)
-                    }
-                }
-
-                if let lopdf::Object::String(ref bytes, _) = obj {
-                    if let Ok(str) = String::from_utf8(
-                        bytes
-                            .iter()
-                            .filter(|b| ![b'D', b':', b'\''].contains(b))
-                            .cloned()
-                            .collect(),
-                    ) {
-                        return as_datetime(&str).map(|date| date.with_timezone(&UTC));
-                    }
-                }
+            match get_from_trailer(self, b"CreationDate") {
+                Ok(obj) => obj.as_datetime().map(|date| date.with_timezone(&Utc)),
+                Err(_) => None,
             }
-            None
         }
 
         fn get_num_pages(self: &Self) -> usize {
