@@ -85,9 +85,17 @@ impl From<SpreadMethod> for cairo::Extend {
 // defined by ‘cx’, ‘cy’ and ‘r’.
 //
 // So, let's do that!
-fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64) {
-    // Easy case first: the focus point is inside the circle
+fn fix_focus_point(fx: f64, fy: f64, fr: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64) {
+    // If fr is specified (not equal to pure zero), consider SVG2 spec :
+    //   Changed in SVG 2.
+    //   SVG 1.1 required that the focal point,
+    //   if outside the end circle, be moved to be on the end circle.
+    //   The change was made to align with Canvas.
+    if fr == 0. {
+        return (fx, fy);
+    }
 
+    // Easy case first: the focus point is inside the circle
     if (fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius {
         return (fx, fy);
     }
@@ -361,7 +369,7 @@ impl Variant {
                 let n_fx = fx.normalize(values, params);
                 let n_fy = fy.normalize(values, params);
                 let n_fr = fr.normalize(values, params);
-                let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+                let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_fr, n_cx, n_cy, n_r);
 
                 cairo::Gradient::clone(&cairo::RadialGradient::new(
                     new_fx, new_fy, n_fr, n_cx, n_cy, n_r,
@@ -901,13 +909,16 @@ mod tests {
     #[test]
     fn fixes_focus_point() {
         // inside the circle
-        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 2.0, 1.0, 3.0), &(1.0, 1.0));
+        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 0.0, 2.0, 1.0, 3.0), &(1.0, 1.0));
 
         // on the edge
-        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 2.0, 1.0, 2.0), &(1.0, 1.0));
+        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 0.0, 2.0, 1.0, 2.0), &(1.0, 1.0));
 
         // outside the circle
-        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 3.0, 1.0, 1.0), &(2.0, 1.0));
+        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 0.0, 3.0, 1.0, 1.0), &(2.0, 1.0));
+
+        // SVG2 outside the circle
+        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 0.1, 3.0, 1.0, 1.0), &(1.0, 1.0));
     }
 
     #[test]
