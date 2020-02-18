@@ -7,7 +7,7 @@ use super::predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
-use chrono::{TimeZone, UTC};
+use chrono::{TimeZone, Utc};
 use predicate::str::*;
 use predicates::prelude::*;
 use std::path::Path;
@@ -266,7 +266,7 @@ fn env_source_data_epoch_controls_pdf_creation_date() {
         .arg(input)
         .assert()
         .success()
-        .stdout(file::is_pdf().with_creation_date(UTC.timestamp(date, 0)));
+        .stdout(file::is_pdf().with_creation_date(Utc.timestamp(date, 0)));
 }
 
 #[test]
