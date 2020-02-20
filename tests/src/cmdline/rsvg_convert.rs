@@ -131,7 +131,7 @@ fn output_format_pdf() {
         .arg("--format=pdf")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_count(1));
+        .stdout(file::is_pdf());
 }
 
 #[test]
@@ -521,6 +521,18 @@ fn defaults_are_used_for_negative_resolutions() {
         .assert()
         .success()
         .stdout(file::is_png().with_size(90, 360));
+}
+
+#[test]
+fn pdf_page_size() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--format=pdf")
+        .assert()
+        .success()
+        // TODO: the PDF size and resolution is actually a bug in rsvg-convert,
+        // see https://gitlab.gnome.org/GNOME/librsvg/issues/514
+        .stdout(file::is_pdf().with_page_size(200, 100, 72.0));
 }
 
 #[test]
