@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate float_cmp;
+
 #[cfg(test)]
 mod cmdline;
 

@@ -12,6 +12,7 @@ pub mod file {
     use predicates::reflection::{Case, Child, PredicateReflection, Product};
     use predicates::str::{ContainsPredicate, StartsWithPredicate};
 
+    use std::cmp;
     use std::fmt;
 
     /// Checks that the variable of type [u8] can be parsed as a PDF file.
@@ -23,6 +24,22 @@ pub mod file {
             DetailPredicate::<Self> {
                 p: self,
                 d: Detail::PageCount(num_pages),
+            }
+        }
+
+        pub fn with_page_size(
+            self: Self,
+            width: i64,
+            height: i64,
+            dpi: f64,
+        ) -> DetailPredicate<Self> {
+            DetailPredicate::<Self> {
+                p: self,
+                d: Detail::PageSize(Dimensions {
+                    w: width,
+                    h: height,
+                    unit: dpi / 72.0,
+                }),
             }
         }
 
@@ -55,7 +72,7 @@ pub mod file {
         }
     }
 
-    /// Extends a PdfPredicate by a check for page count or creation date.
+    /// Extends a PdfPredicate by a check for page count, page size or creation date.
     #[derive(Debug)]
     pub struct DetailPredicate<PdfPredicate> {
         p: PdfPredicate,
@@ -65,19 +82,65 @@ pub mod file {
     #[derive(Debug)]
     enum Detail {
         PageCount(usize),
+        PageSize(Dimensions),
         CreationDate(DateTime<Utc>),
     }
 
+    #[derive(Debug)]
+    struct Dimensions {
+        w: i64,
+        h: i64,    //
+        unit: f64, // UserUnit, in 1/72 of an inch
+    }
+
+    impl Dimensions {
+        pub fn from_media_box(obj: &lopdf::Object, unit: Option<f64>) -> lopdf::Result<Dimensions> {
+            let a = obj.as_array()?;
+            Ok(Dimensions {
+                w: a[2].as_i64()?,
+                h: a[3].as_i64()?,
+                unit: unit.unwrap_or(1.0),
+            })
+        }
+
+        pub fn width_in_mm(self: &Self) -> f64 {
+            self.w as f64 * self.unit * 72.0 / 254.0
+        }
+
+        pub fn height_in_mm(self: &Self) -> f64 {
+            self.h as f64 * self.unit * 72.0 / 254.0
+        }
+    }
+
+    impl fmt::Display for Dimensions {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{} mm x {} mm", self.width_in_mm(), self.height_in_mm())
+        }
+    }
+
+    impl cmp::PartialEq for Dimensions {
+        fn eq(&self, other: &Self) -> bool {
+            approx_eq!(f64, self.width_in_mm(), other.width_in_mm())
+                && approx_eq!(f64, self.height_in_mm(), other.height_in_mm())
+        }
+    }
+
+    impl cmp::Eq for Dimensions {}
+
     trait Details {
-        fn get_num_pages(&self) -> usize;
+        fn get_page_count(&self) -> usize;
+        fn get_page_size(&self) -> Option<Dimensions>;
         fn get_creation_date(&self) -> Option<DateTime<Utc>>;
+        fn get_from_trailer<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object>;
+        fn get_from_first_page<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object>;
     }
 
     impl DetailPredicate<PdfPredicate> {
         fn eval_doc(&self, doc: &lopdf::Document) -> bool {
-            match self.d {
-                Detail::PageCount(n) => n == doc.get_num_pages(),
-                Detail::CreationDate(d) => doc.get_creation_date().map_or(false, |date| date == d),
+            match &self.d {
+                Detail::PageCount(n) => doc.get_page_count() == *n,
+                Detail::PageSize(d) => doc.get_page_size().map_or(false, |dim| dim == *d),
+                Detail::CreationDate(d) => doc.get_creation_date().map_or(false, |date| date == *d),
             }
         }
 
@@ -95,10 +158,17 @@ pub mod file {
         }
 
         fn product_for_doc(&self, doc: &lopdf::Document) -> Product {
-            match self.d {
+            match &self.d {
                 Detail::PageCount(_) => Product::new(
                     "actual page count",
-                    format!("{} page(s)", doc.get_num_pages()),
+                    format!("{} page(s)", doc.get_page_count()),
+                ),
+                Detail::PageSize(_) => Product::new(
+                    "actual page size",
+                    match doc.get_page_size() {
+                        Some(dim) => format!("{}", dim),
+                        None => "None".to_string(),
+                    },
                 ),
                 Detail::CreationDate(_) => Product::new(
                     "actual creation date",
@@ -109,23 +179,38 @@ pub mod file {
     }
 
     impl Details for lopdf::Document {
-        fn get_creation_date(self: &Self) -> Option<DateTime<Utc>> {
-            fn get_from_trailer<'a>(
-                doc: &'a lopdf::Document,
-                key: &[u8],
-            ) -> lopdf::Result<&'a lopdf::Object> {
-                let id = doc.trailer.get(b"Info")?.as_reference()?;
-                doc.get_object(id)?.as_dict()?.get(key)
-            }
+        fn get_page_count(self: &Self) -> usize {
+            self.get_pages().len()
+        }
 
-            match get_from_trailer(self, b"CreationDate") {
+        fn get_page_size(self: &Self) -> Option<Dimensions> {
+            let to_f64 = |obj: &lopdf::Object| obj.as_f64();
+            match self.get_from_first_page(b"MediaBox") {
+                Ok(obj) => {
+                    let unit = self.get_from_first_page(b"UserUnit").and_then(to_f64).ok();
+                    Dimensions::from_media_box(obj, unit).ok()
+                }
+                Err(_) => None,
+            }
+        }
+
+        fn get_creation_date(self: &Self) -> Option<DateTime<Utc>> {
+            match self.get_from_trailer(b"CreationDate") {
                 Ok(obj) => obj.as_datetime().map(|date| date.with_timezone(&Utc)),
                 Err(_) => None,
             }
         }
 
-        fn get_num_pages(self: &Self) -> usize {
-            self.get_pages().len()
+        fn get_from_trailer<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object> {
+            let id = self.trailer.get(b"Info")?.as_reference()?;
+            self.get_object(id)?.as_dict()?.get(key)
+        }
+
+        fn get_from_first_page<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object> {
+            match self.page_iter().next() {
+                Some(id) => self.get_object(id)?.as_dict()?.get(key),
+                None => Err(lopdf::Error::ObjectNotFound),
+            }
         }
     }
 
@@ -154,8 +239,9 @@ pub mod file {
 
     impl fmt::Display for DetailPredicate<PdfPredicate> {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            match self.d {
+            match &self.d {
                 Detail::PageCount(n) => write!(f, "is a PDF with {} page(s)", n),
+                Detail::PageSize(d) => write!(f, "is a PDF sized {}", d),
                 Detail::CreationDate(d) => write!(f, "is a PDF created {:?}", d),
             }
         }
