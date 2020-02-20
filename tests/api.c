@@ -59,7 +59,7 @@ flags_registration (void)
     g_assert (G_FLAGS_CLASS_TYPE (type_class) == ty);
 
     flags_class = G_FLAGS_CLASS (type_class);
-    g_assert (flags_class->n_values == 3);
+    g_assert_cmpint (flags_class->n_values, ==, 3);
 
     g_assert (flags_value_matches(&flags_class->values[0],
                                   RSVG_HANDLE_FLAGS_NONE,
@@ -114,7 +114,7 @@ error_registration (void)
     g_assert (G_ENUM_CLASS_TYPE (type_class) == ty);
 
     enum_class = G_ENUM_CLASS (type_class);
-    g_assert (enum_class->n_values == 1);
+    g_assert_cmpint (enum_class->n_values, ==, 1);
 
     g_assert (enum_value_matches (&enum_class->values[0],
                                   RSVG_ERROR_FAILED,
@@ -234,7 +234,8 @@ static const PixbufTest pixbuf_tests[] = {
 };
 
 static void
-test_pixbuf (gconstpointer data) {
+test_pixbuf (gconstpointer data)
+{
     const PixbufTest *test = data;
 
     char *filename = get_test_filename ("example.svg");
@@ -244,8 +245,8 @@ test_pixbuf (gconstpointer data) {
 
     g_free (filename);
 
-    g_assert (pixbuf != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (pixbuf);
+    g_assert_no_error (error);
     g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, test->expected_width);
     g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, test->expected_height);
 
@@ -261,9 +262,9 @@ noops (void)
     rsvg_cleanup ();
 
     /* Just test that these are in the binary */
-    g_assert (rsvg_handle_get_title != NULL);
-    g_assert (rsvg_handle_get_desc != NULL);
-    g_assert (rsvg_handle_get_metadata != NULL);
+    g_assert_nonnull (rsvg_handle_get_title);
+    g_assert_nonnull (rsvg_handle_get_desc);
+    g_assert_nonnull (rsvg_handle_get_metadata);
 }
 
 static void
@@ -277,8 +278,8 @@ set_dpi (void)
     rsvg_set_default_dpi (100.0);
 
     handle = rsvg_handle_new_from_file (filename, &error);
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     rsvg_handle_get_dimensions (handle, &dim);
     g_assert_cmpint (dim.width,  ==, 100);
@@ -291,8 +292,8 @@ set_dpi (void)
     g_object_unref (handle);
 
     handle = rsvg_handle_new_from_file (filename, &error);
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     rsvg_handle_set_dpi_x_y (handle, 400.0, 300.0);
     rsvg_handle_get_dimensions (handle, &dim);
@@ -310,7 +311,7 @@ base_uri (void)
     const char *uri;
 
     uri = rsvg_handle_get_base_uri (handle);
-    g_assert (uri == NULL);
+    g_assert_null (uri);
 
     rsvg_handle_set_base_uri (handle, "file:///foo/bar.svg");
     uri = rsvg_handle_get_base_uri (handle);
@@ -328,7 +329,7 @@ base_gfile (void)
     const char *uri;
 
     uri = rsvg_handle_get_base_uri (handle);
-    g_assert (uri == NULL);
+    g_assert_null (uri);
 
     file = g_file_new_for_uri ("file:///foo/bar.svg");
 
@@ -353,18 +354,18 @@ handle_write_close_free (void)
     g_assert (g_file_get_contents (filename, &data, &length, &error));
     g_free (filename);
 
-    g_assert (data != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (data);
+    g_assert_no_error (error);
 
     RsvgHandle *handle = rsvg_handle_new_with_flags (RSVG_HANDLE_FLAGS_NONE);
 
     for (i = 0; i < length; i++) {
         g_assert (rsvg_handle_write (handle, (guchar *) &data[i], 1, &error));
-        g_assert (error == NULL);
+        g_assert_no_error (error);
     }
 
     g_assert (rsvg_handle_close (handle, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     rsvg_handle_free (handle);
     g_free (data);
@@ -382,13 +383,13 @@ handle_new_from_file (void)
     /* rsvg_handle_new_from_file() can take both filenames and URIs */
 
     handle = rsvg_handle_new_from_file (filename, &error);
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
     g_object_unref (handle);
 
     handle = rsvg_handle_new_from_file (uri, &error);
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
     g_object_unref (handle);
 
     g_free (filename);
@@ -406,12 +407,12 @@ handle_new_from_data (void)
     g_assert (g_file_get_contents (filename, &data, &length, &error));
     g_free (filename);
 
-    g_assert (data != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (data);
+    g_assert_no_error (error);
 
     RsvgHandle *handle = rsvg_handle_new_from_data ((guint8 *) data, length, &error);
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     g_object_unref (handle);
     g_free (data);
@@ -423,7 +424,7 @@ handle_new_from_gfile_sync (void)
     char *filename = get_test_filename ("dpi.svg");
     GError *error = NULL;
     GFile *file = g_file_new_for_path (filename);
-    g_assert (file != NULL);
+    g_assert_nonnull (file);
 
     g_free (filename);
 
@@ -432,8 +433,8 @@ handle_new_from_gfile_sync (void)
                                                           NULL,
                                                           &error);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     g_object_unref (handle);
     g_object_unref (file);
@@ -445,13 +446,13 @@ handle_new_from_stream_sync (void)
     char *filename = get_test_filename ("dpi.svg");
     GError *error = NULL;
     GFile *file = g_file_new_for_path (filename);
-    g_assert (file != NULL);
+    g_assert_nonnull (file);
 
     g_free (filename);
 
     GFileInputStream *stream = g_file_read (file, NULL, &error);
     g_assert (stream != NULL);
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     RsvgHandle *handle = rsvg_handle_new_from_stream_sync (G_INPUT_STREAM (stream),
                                                            file,
@@ -459,8 +460,8 @@ handle_new_from_stream_sync (void)
                                                            NULL,
                                                            &error);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     g_object_unref (handle);
     g_object_unref (file);
@@ -473,18 +474,18 @@ handle_read_stream_sync (void)
     char *filename = get_test_filename ("dpi.svg");
     GError *error = NULL;
     GFile *file = g_file_new_for_path (filename);
-    g_assert (file != NULL);
+    g_assert_nonnull (file);
 
     g_free (filename);
 
     GFileInputStream *stream = g_file_read (file, NULL, &error);
-    g_assert (stream != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (stream);
+    g_assert_no_error (error);
 
     RsvgHandle *handle = rsvg_handle_new ();
 
     g_assert (rsvg_handle_read_stream_sync (handle, G_INPUT_STREAM (stream), NULL, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     g_object_unref (handle);
     g_object_unref (file);
@@ -500,8 +501,8 @@ handle_has_sub (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     g_assert (rsvg_handle_has_sub (handle, EXAMPLE_ONE_ID));
     g_assert (rsvg_handle_has_sub (handle, EXAMPLE_TWO_ID));
@@ -519,8 +520,8 @@ test_get_pixbuf (gboolean sub)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     GdkPixbuf *pixbuf;
     if (sub) {
@@ -529,7 +530,7 @@ test_get_pixbuf (gboolean sub)
         pixbuf = rsvg_handle_get_pixbuf (handle);
     }
 
-    g_assert (pixbuf != NULL);
+    g_assert_nonnull (pixbuf);
 
     /* Note that rsvg_handle_get_pixbuf_sub() creates a surface the size of the
      * whole SVG, not just the size of the sub-element.
@@ -543,9 +544,9 @@ test_get_pixbuf (gboolean sub)
 
     g_object_unref (pixbuf);
 
-    g_assert (surface_a != NULL);
-    g_assert (surface_b != NULL);
-    g_assert (surface_diff != NULL);
+    g_assert_nonnull (surface_a);
+    g_assert_nonnull (surface_b);
+    g_assert_nonnull (surface_diff);
 
     cairo_t *cr = cairo_create (surface_b);
     if (sub) {
@@ -590,8 +591,8 @@ dimensions_and_position (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     RsvgDimensionData dim;
 
@@ -604,13 +605,14 @@ dimensions_and_position (void)
     g_assert_cmpint (pos.x, ==, EXAMPLE_TWO_X);
     g_assert_cmpint (pos.y, ==, EXAMPLE_TWO_Y);
 
-    g_assert (!rsvg_handle_get_position_sub (handle, &pos, EXAMPLE_NONEXISTENT_ID));
-    g_assert (!rsvg_handle_get_dimensions_sub (handle, &dim, EXAMPLE_NONEXISTENT_ID));
+    g_assert_false (rsvg_handle_get_position_sub (handle, &pos, EXAMPLE_NONEXISTENT_ID));
+    g_assert_false (rsvg_handle_get_dimensions_sub (handle, &dim, EXAMPLE_NONEXISTENT_ID));
 
     g_object_unref (handle);
 }
 
-struct size_func_data {
+struct size_func_data
+{
     gboolean called;
     gboolean destroyed;
     gboolean testing_size_func_calls;
@@ -622,10 +624,10 @@ size_func (gint *width, gint *height, gpointer user_data)
     struct size_func_data *data = user_data;
 
     if (data->testing_size_func_calls) {
-        g_assert (!data->called);
+        g_assert_false (data->called);
         data->called = TRUE;
 
-        g_assert (!data->destroyed);
+        g_assert_false (data->destroyed);
     }
 
     *width = 42;
@@ -638,7 +640,7 @@ size_func_destroy (gpointer user_data)
     struct size_func_data *data = user_data;
 
     if (data->testing_size_func_calls) {
-        g_assert (!data->destroyed);
+        g_assert_false (data->destroyed);
         data->destroyed = TRUE;
     }
 }
@@ -655,8 +657,8 @@ set_size_callback (void)
     handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     data.called = FALSE;
     data.destroyed = FALSE;
@@ -670,8 +672,8 @@ set_size_callback (void)
 
     g_object_unref (handle);
 
-    g_assert (data.called);
-    g_assert (data.destroyed);
+    g_assert_true (data.called);
+    g_assert_true (data.destroyed);
 }
 
 static void
@@ -686,8 +688,8 @@ reset_size_callback (void)
     handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     data_1.called = FALSE;
     data_1.destroyed = FALSE;
@@ -700,11 +702,11 @@ reset_size_callback (void)
     data_2.testing_size_func_calls = TRUE;
 
     rsvg_handle_set_size_callback (handle, size_func, &data_2, size_func_destroy);
-    g_assert (data_1.destroyed);
+    g_assert_true (data_1.destroyed);
 
     g_object_unref (handle);
 
-    g_assert (data_2.destroyed);
+    g_assert_true (data_2.destroyed);
 }
 
 static void
@@ -735,15 +737,15 @@ render_with_zero_size_callback (void)
     handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     rsvg_handle_set_size_callback (handle, zero_size_func, NULL, NULL);
 
     pixbuf = rsvg_handle_get_pixbuf (handle);
-    g_assert (pixbuf != NULL);
-    g_assert (gdk_pixbuf_get_width (pixbuf) == 1);
-    g_assert (gdk_pixbuf_get_height (pixbuf) == 1);
+    g_assert_nonnull (pixbuf);
+    g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, 1);
+    g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, 1);
 
     g_object_unref (pixbuf);
     g_object_unref (handle);
@@ -764,23 +766,23 @@ get_pixbuf_with_size_callback (void)
     rsvg_handle_set_size_callback (handle, pixbuf_size_func, NULL, NULL);
 
     char *filename = get_test_filename ("example.svg");
-    guchar *data;
+    guchar *data = NULL;
     gsize length;
     GError *error = NULL;
 
     g_assert (g_file_get_contents (filename, (gchar **) &data, &length, &error));
-    g_assert (data != NULL);
+    g_assert_nonnull (data);
 
     g_free (filename);
 
     g_assert (rsvg_handle_write (handle, data, length, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     g_assert (rsvg_handle_close (handle, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     GdkPixbuf *pixbuf = rsvg_handle_get_pixbuf (handle);
-    g_assert (pixbuf != NULL);
+    g_assert_nonnull (pixbuf);
     g_assert_cmpint (gdk_pixbuf_get_width (pixbuf), ==, 420);
     g_assert_cmpint (gdk_pixbuf_get_height (pixbuf), ==, 430);
 
@@ -797,14 +799,16 @@ detects_cairo_context_in_error (void)
         GError *error = NULL;
 
         RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-        g_assert (handle != NULL);
-        g_assert (error == NULL);
+        g_free (filename);
+
+        g_assert_nonnull (handle);
+        g_assert_no_error (error);
 
         /* this is wrong; it is to simulate creating a surface and a cairo_t in error */
         cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, -1, -1);
         cairo_t *cr = cairo_create (surf);
         /* rsvg_handle_render_cairo() should return FALSE when it gets a cr in an error state */
-        g_assert (!rsvg_handle_render_cairo (handle, cr));
+        g_assert_false (rsvg_handle_render_cairo (handle, cr));
 
         return;
     }
@@ -838,8 +842,8 @@ can_draw_to_non_image_surface (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     rect.x = 0.0;
     rect.y = 0.0;
@@ -882,8 +886,8 @@ render_cairo_sub (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 200, 200);
     cairo_t *cr = cairo_create (surf);
@@ -914,8 +918,8 @@ get_intrinsic_dimensions (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     gboolean has_width;
     RsvgLength width;
@@ -952,8 +956,8 @@ render_document (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 150, 150);
     cairo_t *cr = cairo_create (output);
@@ -961,7 +965,7 @@ render_document (void)
     RsvgRectangle viewport = { 50.0, 50.0, 50.0, 50.0 };
 
     g_assert (rsvg_handle_render_document (handle, cr, &viewport, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     cairo_destroy (cr);
 
@@ -998,23 +1002,22 @@ get_geometry_for_layer (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     RsvgRectangle viewport = { 0.0, 0.0, 100.0, 400.0 };
     RsvgRectangle ink_rect;
     RsvgRectangle logical_rect;
 
-    g_assert (!rsvg_handle_get_geometry_for_layer (handle, "#nonexistent", &viewport,
-                                                   &ink_rect, &logical_rect, &error));
-    g_assert (error != NULL);
+    g_assert_false (rsvg_handle_get_geometry_for_layer (handle, "#nonexistent", &viewport,
+                                                        &ink_rect, &logical_rect, &error));
+    g_assert_nonnull (error);
 
-    g_error_free (error);
-    error = NULL;
+    g_clear_error (&error);
 
     g_assert (rsvg_handle_get_geometry_for_layer (handle, "#two", &viewport,
                                                   &ink_rect, &logical_rect, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     g_assert_cmpfloat (ink_rect.x, ==, 5.0);
     g_assert_cmpfloat (ink_rect.y, ==, 195.0);
@@ -1038,8 +1041,8 @@ render_layer (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
     cairo_t *cr = cairo_create (output);
@@ -1047,7 +1050,7 @@ render_layer (void)
     RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
 
     g_assert (rsvg_handle_render_layer (handle, cr, "#bar", &viewport, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     cairo_destroy (cr);
 
@@ -1084,22 +1087,21 @@ untransformed_element (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     RsvgRectangle ink_rect;
     RsvgRectangle logical_rect;
 
     g_assert (!rsvg_handle_get_geometry_for_element (handle, "#nonexistent",
                                                      &ink_rect, &logical_rect, &error));
-    g_assert (error != NULL);
+    g_assert_nonnull (error);
 
-    g_error_free (error);
-    error = NULL;
+    g_clear_error (&error);
 
     g_assert (rsvg_handle_get_geometry_for_element (handle, "#foo",
                                                     &ink_rect, &logical_rect, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     g_assert_cmpfloat (ink_rect.x, ==, 0.0);
     g_assert_cmpfloat (ink_rect.y, ==, 0.0);
@@ -1117,7 +1119,7 @@ untransformed_element (void)
     RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
 
     g_assert (rsvg_handle_render_element (handle, cr, "#foo", &viewport, &error));
-    g_assert (error == NULL);
+    g_assert_no_error (error);
 
     cairo_destroy (cr);
 
@@ -1157,7 +1159,7 @@ no_write_before_close (void)
     RsvgHandle *handle = rsvg_handle_new();
     GError *error = NULL;
 
-    g_assert (rsvg_handle_close (handle, &error) == FALSE);
+    g_assert_false (rsvg_handle_close (handle, &error));
     g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
     g_error_free (error);
 
@@ -1171,10 +1173,10 @@ empty_write_close (void)
     GError *error = NULL;
     guchar buf = 0;
 
-    g_assert (rsvg_handle_write (handle, &buf, 0, &error) == TRUE);
+    g_assert_true (rsvg_handle_write (handle, &buf, 0, &error));
     g_assert_no_error (error);
 
-    g_assert (rsvg_handle_close (handle, &error) == FALSE);
+    g_assert_false (rsvg_handle_close (handle, &error));
     g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
 
     g_error_free (error);
@@ -1200,10 +1202,10 @@ cannot_request_external_elements (void)
         handle = rsvg_handle_new_from_file (filename, &error);
         g_free (filename);
 
-        g_assert (handle != NULL);
-        g_assert (error == NULL);
+        g_assert_nonnull (handle);
+        g_assert_no_error (error);
 
-        g_assert (rsvg_handle_get_position_sub (handle, &pos, "dpi.svg#one") == FALSE);
+        g_assert_false (rsvg_handle_get_position_sub (handle, &pos, "dpi.svg#one"));
 
         g_object_unref (handle);
     }
@@ -1250,8 +1252,8 @@ property_dpi (void)
                   "dpi-y", &y,
                   NULL);
 
-    g_assert (x == 42.0);
-    g_assert (y == 43.0);
+    g_assert_cmpfloat (x, ==, 42.0);
+    g_assert_cmpfloat (y, ==, 43.0);
 
     g_object_unref (handle);
 }
@@ -1268,7 +1270,7 @@ property_base_uri (void)
                   "base-uri", &uri,
                   NULL);
 
-    g_assert (strcmp (uri, "file:///foo/bar.svg") == 0);
+    g_assert_cmpstr (uri, ==, "file:///foo/bar.svg");
     g_free (uri);
 
     g_object_unref (handle);
@@ -1283,8 +1285,8 @@ property_dimensions (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     int width;
     int height;
@@ -1316,8 +1318,8 @@ property_deprecated (void)
     RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
     g_free (filename);
 
-    g_assert (handle != NULL);
-    g_assert (error == NULL);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
     char *title;
     char *desc;
@@ -1329,9 +1331,9 @@ property_deprecated (void)
                   "metadata", &metadata,
                   NULL);
 
-    g_assert (title == NULL);
-    g_assert (desc == NULL);
-    g_assert (metadata == NULL);
+    g_assert_null (title);
+    g_assert_null (desc);
+    g_assert_null (metadata);
 
     g_object_unref (handle);
 }

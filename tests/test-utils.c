@@ -224,9 +224,7 @@ test_utils_get_test_data_path (void)
     if (data_path)
         return data_path;
 
-    data_path = g_build_filename (g_test_get_dir (G_TEST_DIST),
-                                  "fixtures",
-                                  NULL);
+    data_path = g_test_build_filename (G_TEST_DIST, "fixtures", NULL);
 
     return data_path;
 }
@@ -234,15 +232,10 @@ test_utils_get_test_data_path (void)
 static int
 compare_files (gconstpointer a, gconstpointer b)
 {
-    GFile *file1 = G_FILE (a);
-    GFile *file2 = G_FILE (b);
-    char *uri1, *uri2;
-    int result;
+    char *uri1 = g_file_get_uri (G_FILE(a));
+    char *uri2 = g_file_get_uri (G_FILE(b));
 
-    uri1 = g_file_get_uri (file1);
-    uri2 = g_file_get_uri (file2);
-
-    result = strcmp (uri1, uri2);
+    int result = strcmp (uri1, uri2);
 
     g_free (uri1);
     g_free (uri2);
@@ -259,9 +252,8 @@ test_utils_add_test_for_all_files (const gchar   *prefix,
 {
     GFileEnumerator *enumerator;
     GFileInfo *info;
-    GList *l, *files;
+    GList *l, *files = NULL;
     GError *error = NULL;
-
 
     if (g_file_query_file_type (file, 0, NULL) != G_FILE_TYPE_DIRECTORY)
     {
@@ -279,13 +271,12 @@ test_utils_add_test_for_all_files (const gchar   *prefix,
         g_test_add_data_func_full (test_path, g_object_ref (file), test_func, g_object_unref);
 
         g_free (test_path);
+
         return;
     }
 
-
     enumerator = g_file_enumerate_children (file, G_FILE_ATTRIBUTE_STANDARD_NAME, 0, NULL, &error);
     g_assert_no_error (error);
-    files = NULL;
 
     while ((info = g_file_enumerator_next_file (enumerator, NULL, &error)))
     {
@@ -319,10 +310,10 @@ create_font_config_for_testing (void)
 {
     const char *font_paths[] =
     {
-        "resources/Roboto-Regular.ttf",
-        "resources/Roboto-Italic.ttf",
-        "resources/Roboto-Bold.ttf",
-        "resources/Roboto-BoldItalic.ttf",
+        "Roboto-Regular.ttf",
+        "Roboto-Italic.ttf",
+        "Roboto-Bold.ttf",
+        "Roboto-BoldItalic.ttf",
     };
 
     FcConfig *config = FcConfigCreate ();
@@ -330,7 +321,7 @@ create_font_config_for_testing (void)
 
     for (i = 0; i < G_N_ELEMENTS(font_paths); i++)
     {
-        char *font_path = g_test_build_filename (G_TEST_DIST, font_paths[i], NULL);
+        char *font_path = g_test_build_filename (G_TEST_DIST, "resources", font_paths[i], NULL);
 
         if (!FcConfigAppFontAddFile (config, (const FcChar8 *) font_path))
         {
