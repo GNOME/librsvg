@@ -6,6 +6,11 @@ Version 2.47.4
 - (#547) - Do not stop rendering if an <image> element references a
   nonexistent file.  This fixes a number of Open Clipart cases.
 
+- (#558) - Compute the font-size cascade correctly when there are "em"
+   #and "ex" units involved.
+
+- Updated the man page for rsvg-convert (Sven Neumann).
+
 Version 2.47.3
 
 - #379 - New API, rsvg_handle_set_stylesheet(), to set a CSS
