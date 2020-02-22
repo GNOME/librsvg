@@ -3,7 +3,7 @@ extern crate chrono;
 extern crate predicates;
 extern crate tempfile;
 
-use super::predicates::file;
+use crate::predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
