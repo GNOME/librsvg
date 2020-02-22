@@ -4,8 +4,11 @@ test_sources =				\
 	Cargo.toml			\
 	src/main.rs			\
 	src/cmdline/mod.rs		\
-	src/cmdline/predicates.rs	\
-	src/cmdline/rsvg_convert.rs
+	src/cmdline/rsvg_convert.rs	\
+	src/predicates/file.rs		\
+	src/predicates/mod.rs		\
+	src/predicates/pdf.rs		\
+	src/predicates/png.rs
 
 EXTRA_DIST +=		\
 	$(test_sources)	\
