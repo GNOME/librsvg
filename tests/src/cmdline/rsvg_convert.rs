@@ -643,12 +643,38 @@ fn unlimited_short_option() {
 
 #[test]
 fn keep_aspect_ratio_option() {
-    RsvgConvert::accepts_option("--keep-aspect-ratio");
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--width=500")
+        .arg("--height=1000")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(500, 1000));
+    RsvgConvert::new_with_input(input)
+        .arg("--width=500")
+        .arg("--height=1000")
+        .arg("--keep-aspect-ratio")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(500, 2000));
 }
 
 #[test]
 fn keep_aspect_ratio_short_option() {
-    RsvgConvert::accepts_option("-a");
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--width=1000")
+        .arg("--height=500")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(1000, 500));
+    RsvgConvert::new_with_input(input)
+        .arg("--width=1000")
+        .arg("--height=500")
+        .arg("-a")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(125, 500));
 }
 
 #[test]
