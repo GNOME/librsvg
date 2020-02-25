@@ -431,11 +431,28 @@ node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, 
     }
 }
 
+static gboolean
+loading_limits_exceeded (RsvgHandle *handle)
+{
+    /* This is a mitigation for SVG files which create millions of elements
+     * in an attempt to exhaust memory.  We don't allow loading more than
+     * this number of elements during the initial streaming load process.
+     */
+    return handle->priv->num_loaded_elements > 200000;
+}
+
 static void
 rsvg_standard_element_start (RsvgHandle *handle, const char *name, RsvgPropertyBag * atts)
 {
     const NodeCreator *creator;
     RsvgNode *newnode = NULL;
+
+    if (loading_limits_exceeded (handle)) {
+        g_set_error (handle->priv->error, RSVG_ERROR, 0, "instancing limit");
+
+        xmlStopParser (handle->priv->ctxt);
+        return;
+    }
 
     creator = get_node_creator_for_element_name (name);
     g_assert (creator != NULL && creator->create_fn != NULL);
@@ -456,6 +473,7 @@ rsvg_standard_element_start (RsvgHandle *handle, const char *name, RsvgPropertyB
         handle->priv->treebase = rsvg_node_ref (newnode);
     }
 
+    handle->priv->num_loaded_elements += 1;
     handle->priv->currentnode = rsvg_node_ref (newnode);
 
     node_set_atts (newnode, handle, creator, atts);
