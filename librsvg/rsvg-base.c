@@ -431,11 +431,28 @@ node_set_atts (RsvgNode * node, RsvgHandle *handle, const NodeCreator *creator, 
     }
 }
 
+static gboolean
+loading_limits_exceeded (RsvgHandle *handle)
+{
+    /* This is a mitigation for SVG files which create millions of elements
+     * in an attempt to exhaust memory.  We don't allow loading more than
+     * this number of elements during the initial streaming load process.
+     */
+    return handle->priv->num_loaded_elements > 200000;
+}
+
 static void
 rsvg_standard_element_start (RsvgHandle *handle, const char *name, RsvgPropertyBag * atts)
 {
     const NodeCreator *creator;
     RsvgNode *newnode = NULL;
+
+    if (loading_limits_exceeded (handle)) {
+        g_set_error (handle->priv->error, RSVG_ERROR, 0, "instancing limit");
+
+        xmlStopParser (handle->priv->ctxt);
+        return;
+    }
 
     creator = get_node_creator_for_element_name (name);
     g_assert (creator != NULL && creator->create_fn != NULL);
@@ -456,6 +473,7 @@ rsvg_standard_element_start (RsvgHandle *handle, const char *name, RsvgPropertyB
         handle->priv->treebase = rsvg_node_ref (newnode);
     }
 
+    handle->priv->num_loaded_elements += 1;
     handle->priv->currentnode = rsvg_node_ref (newnode);
 
     node_set_atts (newnode, handle, creator, atts);
@@ -1641,6 +1659,52 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
     ctx->render->push_discrete_layer (ctx);
 }
 
+void
+rsvg_drawing_ctx_increase_num_elements_acquired (RsvgDrawingCtx *draw_ctx)
+{
+    draw_ctx->num_elements_acquired++;
+}
+
+/* This is a mitigation for the security-related bugs:
+ * https://gitlab.gnome.org/GNOME/librsvg/issues/323
+ * https://gitlab.gnome.org/GNOME/librsvg/issues/515
+ * 
+ * Imagine the XML [billion laughs attack], but done in SVG's terms:
+ * 
+ * - #323 above creates deeply nested groups of `<use>` elements.
+ * The first one references the second one ten times, the second one
+ * references the third one ten times, and so on.  In the file given,
+ * this causes 10^17 objects to be rendered.  While this does not
+ * exhaust memory, it would take a really long time.
+ * 
+ * - #515 has deeply nested references of `<pattern>` elements.  Each
+ * object inside each pattern has an attribute
+ * fill="url(#next_pattern)", so the number of final rendered objects
+ * grows exponentially.
+ * 
+ * We deal with both cases by placing a limit on how many references
+ * will be resolved during the SVG rendering process, that is,
+ * how many `url(#foo)` will be resolved.
+ * 
+ * [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
+ */
+static gboolean
+limits_exceeded (RsvgDrawingCtx *draw_ctx)
+{
+    return draw_ctx->num_elements_acquired > 500000;
+}
+
+RsvgNode *
+rsvg_drawing_ctx_acquire_node_ref (RsvgDrawingCtx * ctx, RsvgNode *node)
+{
+  if (g_slist_find (ctx->acquired_nodes, node))
+    return NULL;
+
+  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
+
+  return node;
+}
+
 /*
  * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
@@ -1668,16 +1732,15 @@ rsvg_drawing_ctx_acquire_node (RsvgDrawingCtx * ctx, const char *url)
   if (url == NULL)
       return NULL;
 
+  rsvg_drawing_ctx_increase_num_elements_acquired (ctx);
+  if (limits_exceeded (ctx))
+      return NULL;
+
   node = rsvg_defs_lookup (ctx->defs, url);
   if (node == NULL)
     return NULL;
 
-  if (g_slist_find (ctx->acquired_nodes, node))
-    return NULL;
-
-  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
-
-  return node;
+  return rsvg_drawing_ctx_acquire_node_ref (ctx, node);
 }
 
 /**
@@ -1734,16 +1797,7 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
   if (node == NULL)
     return;
 
-  g_return_if_fail (ctx->acquired_nodes != NULL);
-  g_return_if_fail (ctx->acquired_nodes->data == node);
-
   ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
-}
-
-void
-rsvg_drawing_ctx_increase_num_elements_rendered_through_use (RsvgDrawingCtx *draw_ctx)
-{
-    draw_ctx->num_elements_rendered_through_use++;
 }
 
 void
@@ -1757,12 +1811,6 @@ rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, Rsvg
             node = rsvg_node_get_parent (node);
         }
     }
-}
-
-static gboolean
-limits_exceeded (RsvgDrawingCtx *draw_ctx)
-{
-    return draw_ctx->num_elements_rendered_through_use > 500000;
 }
 
 gboolean

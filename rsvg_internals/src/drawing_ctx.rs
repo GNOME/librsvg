@@ -32,6 +32,11 @@ extern "C" {
 
     fn rsvg_drawing_ctx_pop_view_box(draw_ctx: *const RsvgDrawingCtx);
 
+    fn rsvg_drawing_ctx_acquire_node_ref(
+        draw_ctx: *const RsvgDrawingCtx,
+        node: *const RsvgNode,
+    ) -> *mut RsvgNode;
+
     fn rsvg_drawing_ctx_acquire_node(
         draw_ctx: *const RsvgDrawingCtx,
         url: *const libc::c_char,
@@ -44,8 +49,6 @@ extern "C" {
     ) -> *mut RsvgNode;
 
     fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
-
-    fn rsvg_drawing_ctx_increase_num_elements_rendered_through_use(draw_ctx: *const RsvgDrawingCtx);
 
     fn rsvg_drawing_ctx_get_current_state_affine(draw_ctx: *const RsvgDrawingCtx) -> cairo::Matrix;
 
@@ -146,6 +149,16 @@ pub fn push_view_box(draw_ctx: *const RsvgDrawingCtx, width: f64, height: f64) {
 pub fn pop_view_box(draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
         rsvg_drawing_ctx_pop_view_box(draw_ctx);
+    }
+}
+
+pub fn acquire_node_ref(draw_ctx: *const RsvgDrawingCtx, node: *const RsvgNode) -> Option<AcquiredNode> {
+    let raw_node = unsafe { rsvg_drawing_ctx_acquire_node_ref(draw_ctx, node) };
+
+    if raw_node.is_null() {
+        None
+    } else {
+        Some(AcquiredNode(draw_ctx, raw_node))
     }
 }
 
@@ -287,12 +300,6 @@ pub fn state_push(draw_ctx: *const RsvgDrawingCtx) {
 pub fn state_pop(draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
         rsvg_state_pop(draw_ctx);
-    }
-}
-
-pub fn increase_num_elements_rendered_through_use(draw_ctx: *const RsvgDrawingCtx) {
-    unsafe {
-        rsvg_drawing_ctx_increase_num_elements_rendered_through_use(draw_ctx);
     }
 }
 

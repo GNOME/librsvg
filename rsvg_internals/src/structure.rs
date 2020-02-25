@@ -278,6 +278,20 @@ impl NodeTrait for NodeUse {
             return;
         }
 
+        // <use> is an element that is used directly, unlike
+        // <pattern>, which is used through a fill="url(#...)"
+        // reference.  However, <use> will always reference another
+        // element, potentially itself or an ancestor of itself (or
+        // another <use> which references the first one, etc.).  So,
+        // we acquire the <use> element itself so that circular
+        // references can be caught.
+        let self_box = box_node(node.clone());
+        let self_acquired = drawing_ctx::acquire_node_ref(draw_ctx, self_box);
+        rsvg_node_unref(self_box);
+        if self_acquired.is_none() {
+            return;
+        }
+
         let child = if let Some(acquired) =
             drawing_ctx::get_acquired_node(draw_ctx, link.as_ref().unwrap())
         {
@@ -285,13 +299,6 @@ impl NodeTrait for NodeUse {
         } else {
             return;
         };
-
-        if Node::is_ancestor(node.clone(), child.clone()) {
-            // or, if we're <use>'ing ourselves
-            return;
-        }
-
-        drawing_ctx::increase_num_elements_rendered_through_use(draw_ctx);
 
         let nx = self.x.get().normalize(draw_ctx);
         let ny = self.y.get().normalize(draw_ctx);
