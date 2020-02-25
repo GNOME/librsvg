@@ -1641,6 +1641,18 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
     ctx->render->push_discrete_layer (ctx);
 }
 
+void
+rsvg_drawing_ctx_increase_num_elements_acquired (RsvgDrawingCtx *draw_ctx)
+{
+    draw_ctx->num_elements_acquired++;
+}
+
+static gboolean
+limits_exceeded (RsvgDrawingCtx *draw_ctx)
+{
+    return draw_ctx->num_elements_acquired > 500000;
+}
+
 /*
  * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
@@ -1666,6 +1678,10 @@ rsvg_drawing_ctx_acquire_node (RsvgDrawingCtx * ctx, const char *url)
   RsvgNode *node;
 
   if (url == NULL)
+      return NULL;
+
+  rsvg_drawing_ctx_increase_num_elements_acquired (ctx);
+  if (limits_exceeded (ctx))
       return NULL;
 
   node = rsvg_defs_lookup (ctx->defs, url);
@@ -1741,12 +1757,6 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 }
 
 void
-rsvg_drawing_ctx_increase_num_elements_acquired (RsvgDrawingCtx *draw_ctx)
-{
-    draw_ctx->num_elements_acquired++;
-}
-
-void
 rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, RsvgNode *node)
 {
     if (node) {
@@ -1757,12 +1767,6 @@ rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, Rsvg
             node = rsvg_node_get_parent (node);
         }
     }
-}
-
-static gboolean
-limits_exceeded (RsvgDrawingCtx *draw_ctx)
-{
-    return draw_ctx->num_elements_acquired > 500000;
 }
 
 gboolean
