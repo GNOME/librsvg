@@ -1676,6 +1676,17 @@ limits_exceeded (RsvgDrawingCtx *draw_ctx)
     return draw_ctx->num_elements_acquired > 500000;
 }
 
+RsvgNode *
+rsvg_drawing_ctx_acquire_node_ref (RsvgDrawingCtx * ctx, RsvgNode *node)
+{
+  if (g_slist_find (ctx->acquired_nodes, node))
+    return NULL;
+
+  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
+
+  return node;
+}
+
 /*
  * rsvg_drawing_ctx_acquire_node:
  * @ctx: The drawing context in use
@@ -1711,12 +1722,7 @@ rsvg_drawing_ctx_acquire_node (RsvgDrawingCtx * ctx, const char *url)
   if (node == NULL)
     return NULL;
 
-  if (g_slist_find (ctx->acquired_nodes, node))
-    return NULL;
-
-  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
-
-  return node;
+  return rsvg_drawing_ctx_acquire_node_ref (ctx, node);
 }
 
 /**
@@ -1772,9 +1778,6 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 {
   if (node == NULL)
     return;
-
-  g_return_if_fail (ctx->acquired_nodes != NULL);
-  g_return_if_fail (ctx->acquired_nodes->data == node);
 
   ctx->acquired_nodes = g_slist_remove (ctx->acquired_nodes, node);
 }

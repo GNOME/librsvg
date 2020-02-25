@@ -502,6 +502,8 @@ RsvgNode *rsvg_drawing_ctx_acquire_node         (RsvgDrawingCtx * ctx, const cha
 G_GNUC_INTERNAL
 RsvgNode *rsvg_drawing_ctx_acquire_node_of_type (RsvgDrawingCtx * ctx, const char *url, RsvgNodeType type);
 G_GNUC_INTERNAL
+RsvgNode *rsvg_drawing_ctx_acquire_node_ref     (RsvgDrawingCtx * ctx, RsvgNode *node);
+G_GNUC_INTERNAL
 void rsvg_drawing_ctx_release_node              (RsvgDrawingCtx * ctx, RsvgNode *node);
 
 G_GNUC_INTERNAL
