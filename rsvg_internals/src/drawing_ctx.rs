@@ -45,7 +45,7 @@ extern "C" {
 
     fn rsvg_drawing_ctx_release_node(draw_ctx: *const RsvgDrawingCtx, node: *mut RsvgNode);
 
-    fn rsvg_drawing_ctx_increase_num_elements_rendered_through_use(draw_ctx: *const RsvgDrawingCtx);
+    fn rsvg_drawing_ctx_increase_num_elements_acquired(draw_ctx: *const RsvgDrawingCtx);
 
     fn rsvg_drawing_ctx_get_current_state_affine(draw_ctx: *const RsvgDrawingCtx) -> cairo::Matrix;
 
@@ -290,9 +290,9 @@ pub fn state_pop(draw_ctx: *const RsvgDrawingCtx) {
     }
 }
 
-pub fn increase_num_elements_rendered_through_use(draw_ctx: *const RsvgDrawingCtx) {
+pub fn increase_num_elements_acquired(draw_ctx: *const RsvgDrawingCtx) {
     unsafe {
-        rsvg_drawing_ctx_increase_num_elements_rendered_through_use(draw_ctx);
+        rsvg_drawing_ctx_increase_num_elements_acquired(draw_ctx);
     }
 }
 

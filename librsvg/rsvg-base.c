@@ -1741,9 +1741,9 @@ rsvg_drawing_ctx_release_node (RsvgDrawingCtx * ctx, RsvgNode *node)
 }
 
 void
-rsvg_drawing_ctx_increase_num_elements_rendered_through_use (RsvgDrawingCtx *draw_ctx)
+rsvg_drawing_ctx_increase_num_elements_acquired (RsvgDrawingCtx *draw_ctx)
 {
-    draw_ctx->num_elements_rendered_through_use++;
+    draw_ctx->num_elements_acquired++;
 }
 
 void
@@ -1762,7 +1762,7 @@ rsvg_drawing_ctx_add_node_and_ancestors_to_stack (RsvgDrawingCtx *draw_ctx, Rsvg
 static gboolean
 limits_exceeded (RsvgDrawingCtx *draw_ctx)
 {
-    return draw_ctx->num_elements_rendered_through_use > 500000;
+    return draw_ctx->num_elements_acquired > 500000;
 }
 
 gboolean
