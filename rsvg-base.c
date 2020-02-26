@@ -1387,6 +1387,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     RsvgNodeSvg *root = NULL;
     RsvgNode *sself = NULL;
     RsvgBbox bbox;
+    gboolean retval = FALSE;
 
     gboolean handle_subelement = TRUE;
 
@@ -1446,6 +1447,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         rsvg_node_draw (handle->priv->treebase, draw, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
+        if (rsvg_drawing_ctx_limits_exceeded (draw)) {
+            retval = FALSE;
+        } else {
+            retval = TRUE;
+        }
+
         cairo_restore (cr);
         rsvg_state_pop (draw);
         rsvg_drawing_ctx_free (draw);
@@ -1463,6 +1470,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y,
                                          bbox.rect.height + bbox.rect.y * 2,
                                          12) + 0.5);
+
+        retval = TRUE;
     }
     
     dimension_data->em = dimension_data->width;
@@ -1472,7 +1481,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
                                     handle->priv->user_data);
 
-    return TRUE;
+    return retval;
 }
 
 /**
@@ -1498,7 +1507,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     RsvgDimensionData    dimension_data;
     cairo_surface_t		*target = NULL;
     cairo_t				*cr = NULL;
-    gboolean			 ret = FALSE;
+    gboolean			 retval = FALSE;
 
     g_return_val_if_fail (handle, FALSE);
     g_return_val_if_fail (position_data, FALSE);
@@ -1544,6 +1553,12 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_node_draw (handle->priv->treebase, draw, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
+    if (rsvg_drawing_ctx_limits_exceeded (draw)) {
+        retval = FALSE;
+    } else {
+        retval = TRUE;
+    }
+
     cairo_restore (cr);
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
@@ -1560,15 +1575,13 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         (*handle->priv->size_func) (&dimension_data.width, &dimension_data.height,
                                     handle->priv->user_data);
 
-    ret = TRUE;
-
 bail:
     if (cr)
         cairo_destroy (cr);
     if (target)
         cairo_surface_destroy (target);
 
-    return ret;
+    return retval;
 }
 
 /** 
