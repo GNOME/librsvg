@@ -91,6 +91,7 @@ pub enum RenderingError {
     Cairo(cairo::Status),
     CircularReference,
     InstancingLimit,
+    MaxReferencesExceeded,
 }
 
 impl From<cairo::Status> for RenderingError {

@@ -275,15 +275,29 @@ impl<'a> DrawingCtx<'a> {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
-        if let Some(node) = self.defs.borrow_mut().lookup(url) {
-            if !self.acquired_nodes_contains(node) {
-                self.acquired_nodes.borrow_mut().push(node.clone());
-                let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
-                return Some(acq);
-            }
+        self.num_elements_acquired += 1;
+
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            return None;
         }
 
-        None
+        let mut defs_mut = self.defs.borrow_mut();
+
+        if let Some(node) = defs_mut.lookup(url) {
+            self.acquire_node_ref(node)
+        } else {
+            None
+        }
+    }
+
+    pub fn acquire_node_ref(&self, node: &RsvgNode) -> Option<AcquiredNode> {
+        if !self.acquired_nodes_contains(node) {
+            self.acquired_nodes.borrow_mut().push(node.clone());
+            let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
+            Some(acq)
+        } else {
+            None
+        }
     }
 
     fn acquired_nodes_contains(&self, node: &RsvgNode) -> bool {
@@ -857,7 +871,7 @@ impl<'a> DrawingCtx<'a> {
 
     fn check_limits(&self) -> Result<(), RenderingError> {
         if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
-            Err(RenderingError::InstancingLimit)
+            Err(RenderingError::MaxReferencesExceeded)
         } else {
             Ok(())
         }
