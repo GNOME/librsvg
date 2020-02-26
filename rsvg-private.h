@@ -167,6 +167,7 @@ struct RsvgHandlePrivate {
      */
     RsvgSaxHandler *handler;
     int handler_nest;
+    gsize num_loaded_elements;
 
     GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
 

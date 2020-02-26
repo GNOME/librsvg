@@ -705,11 +705,35 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
 
 /* end xinclude */
 
+static gboolean
+loading_limits_exceeded (RsvgHandle *handle)
+{
+    /* This is a mitigation for SVG files which create millions of elements
+     * in an attempt to exhaust memory.  We don't allow loading more than
+     * this number of elements during the initial streaming load process.
+     */
+    return handle->priv->num_loaded_elements > 200000;
+}
+
 static void
 rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 {
     RsvgPropertyBag *bag;
     RsvgHandle *ctx = (RsvgHandle *) data;
+
+    /* In a different way from librsvg 2.42, we do the following check here, not
+     * in rsvg_standard_element_start() as it is done there.  This is because
+     * librsvg 2.40 still creates nodes for <title> and <metadata> elements, and
+     * we'd like to prevent unbounded memory consuption for those elements, too.
+     */
+    if (loading_limits_exceeded (ctx)) {
+        g_set_error (ctx->priv->error, RSVG_ERROR, 0, "instancing limit");
+
+        xmlStopParser (ctx->priv->ctxt);
+        return;
+    }
+
+    ctx->priv->num_loaded_elements += 1;
 
     bag = rsvg_property_bag_new ((const char **) atts);
 

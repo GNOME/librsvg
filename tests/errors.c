@@ -90,13 +90,11 @@ main (int argc, char **argv)
                                "308-doubly-recursive-use.svg",
                                test_instancing_limit,
                                NULL);
-/*
+
     g_test_add_data_func_full ("/errors/515-too-many-elements.svgz",
                                "515-too-many-elements.svgz",
                                test_loading_error,
                                NULL);
-*/
-
 
     return g_test_run ();
 }
