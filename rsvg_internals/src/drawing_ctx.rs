@@ -865,10 +865,6 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
-    pub fn increase_num_elements_rendered_through_use(&mut self, n: usize) {
-        self.num_elements_acquired += n;
-    }
-
     fn check_limits(&self) -> Result<(), RenderingError> {
         if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
             Err(RenderingError::MaxReferencesExceeded)
