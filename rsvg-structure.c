@@ -162,23 +162,6 @@ rsvg_node_group_pack (RsvgNode * self, RsvgNode * child)
     child->parent = self;
 }
 
-static gboolean
-rsvg_node_is_ancestor (RsvgNode * potential_ancestor, RsvgNode * potential_descendant)
-{
-    /* work our way up the family tree */
-    while (TRUE) {
-        if (potential_ancestor == potential_descendant)
-            return TRUE;
-        else if (potential_descendant->parent == NULL)
-            return FALSE;
-        else
-            potential_descendant = potential_descendant->parent;
-    }
-
-    g_assert_not_reached ();
-    return FALSE;
-}
-
 static void
 rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
