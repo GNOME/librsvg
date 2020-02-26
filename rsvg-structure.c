@@ -40,6 +40,9 @@ rsvg_node_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
     RsvgState *state;
     GSList *stacksave;
 
+    if (rsvg_drawing_ctx_limits_exceeded (ctx))
+        return;
+
     state = self->state;
 
     stacksave = ctx->drawsub_stack;
