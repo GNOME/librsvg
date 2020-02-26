@@ -183,6 +183,7 @@ static void
 rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 {
     RsvgNodeUse *use = (RsvgNodeUse *) self;
+    RsvgNode *self_acquired = NULL;
     RsvgNode *child;
     RsvgState *state;
     cairo_matrix_t affine;
@@ -194,14 +195,26 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
 
     rsvg_state_reinherit_top (ctx, self->state, dominate);
 
-    if (use->link == NULL)
-      return;
+    /* <use> is an element that is used directly, unlike
+     * <pattern>, which is used through a fill="url(#...)"
+     * reference.  However, <use> will always reference another
+     * element, potentially itself or an ancestor of itself (or
+     * another <use> which references the first one, etc.).  So,
+     * we acquire the <use> element itself so that circular
+     * references can be caught.
+     */
+    self_acquired = rsvg_drawing_ctx_acquire_node_ref (ctx, self);
+    if (!self_acquired) {
+        goto out;
+    }
+
+    if (use->link == NULL) {
+        goto out;
+    }
+
     child = rsvg_acquire_node (ctx, use->link);
-    if (!child)
-        return;
-    else if (rsvg_node_is_ancestor (child, self)) {     /* or, if we're <use>'ing ourself */
-        rsvg_release_node (ctx, child);
-        return;
+    if (!child) {
+        goto out;
     }
 
     state = rsvg_current_state (ctx);
@@ -253,6 +266,12 @@ rsvg_node_use_draw (RsvgNode * self, RsvgDrawingCtx * ctx, int dominate)
             _rsvg_pop_view_box (ctx);
 
         rsvg_release_node (ctx, child);
+    }
+
+out:
+
+    if (self_acquired) {
+        rsvg_release_node (ctx, self_acquired);
     }
 }
 
