@@ -2166,6 +2166,17 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
     ctx->render->push_discrete_layer (ctx);
 }
 
+RsvgNode *
+rsvg_drawing_ctx_acquire_node_ref (RsvgDrawingCtx * ctx, RsvgNode *node)
+{
+  if (g_slist_find (ctx->acquired_nodes, node))
+    return NULL;
+
+  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
+
+  return node;
+}
+
 /*
  * rsvg_acquire_node:
  * @ctx: The drawing context in use
@@ -2190,12 +2201,7 @@ rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
   if (node == NULL)
     return NULL;
 
-  if (g_slist_find (ctx->acquired_nodes, node))
-    return NULL;
-
-  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
-
-  return node;
+  return rsvg_drawing_ctx_acquire_node_ref (ctx, node);
 }
 
 /*

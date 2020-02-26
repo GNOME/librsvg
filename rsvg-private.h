@@ -369,6 +369,8 @@ void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
+RsvgNode *rsvg_drawing_ctx_acquire_node_ref     (RsvgDrawingCtx * ctx, RsvgNode *node);
+G_GNUC_INTERNAL
 RsvgNode *rsvg_acquire_node     (RsvgDrawingCtx * ctx, const char *url);
 G_GNUC_INTERNAL
 void rsvg_release_node          (RsvgDrawingCtx * ctx, RsvgNode *node);
