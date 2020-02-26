@@ -1,12 +1,14 @@
 include $(top_srcdir)/glib-tap.mk
 
+# Keep "errors" at the end; they are the slowest to run
 test_programs =		\
 	loading		\
 	rsvg-test	\
 	crash		\
 	styles		\
 	render-crash	\
-	dimensions
+	dimensions	\
+	errors
 
 test_utils_common_sources = \
 	test-utils.c	\
@@ -14,6 +16,10 @@ test_utils_common_sources = \
 
 rsvg_test_SOURCES = \
 	rsvg-test.c	\
+	$(test_utils_common_sources)
+
+errors_SOURCES = 	\
+	errors.c	\
 	$(test_utils_common_sources)
 
 crash_SOURCES = \
@@ -51,6 +57,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/resources/*)				\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
+	$(wildcard $(srcdir)/fixtures/errors/*)				\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.png)			\

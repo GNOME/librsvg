@@ -705,11 +705,35 @@ rsvg_start_xinclude (RsvgHandle * ctx, RsvgPropertyBag * atts)
 
 /* end xinclude */
 
+static gboolean
+loading_limits_exceeded (RsvgHandle *handle)
+{
+    /* This is a mitigation for SVG files which create millions of elements
+     * in an attempt to exhaust memory.  We don't allow loading more than
+     * this number of elements during the initial streaming load process.
+     */
+    return handle->priv->num_loaded_elements > 200000;
+}
+
 static void
 rsvg_start_element (void *data, const xmlChar * name, const xmlChar ** atts)
 {
     RsvgPropertyBag *bag;
     RsvgHandle *ctx = (RsvgHandle *) data;
+
+    /* In a different way from librsvg 2.42, we do the following check here, not
+     * in rsvg_standard_element_start() as it is done there.  This is because
+     * librsvg 2.40 still creates nodes for <title> and <metadata> elements, and
+     * we'd like to prevent unbounded memory consuption for those elements, too.
+     */
+    if (loading_limits_exceeded (ctx)) {
+        g_set_error (ctx->priv->error, RSVG_ERROR, 0, "instancing limit");
+
+        xmlStopParser (ctx->priv->ctxt);
+        return;
+    }
+
+    ctx->priv->num_loaded_elements += 1;
 
     bag = rsvg_property_bag_new ((const char **) atts);
 
@@ -1387,6 +1411,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
     RsvgNodeSvg *root = NULL;
     RsvgNode *sself = NULL;
     RsvgBbox bbox;
+    gboolean retval = FALSE;
 
     gboolean handle_subelement = TRUE;
 
@@ -1446,6 +1471,12 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         rsvg_node_draw (handle->priv->treebase, draw, 0);
         bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
+        if (rsvg_drawing_ctx_limits_exceeded (draw)) {
+            retval = FALSE;
+        } else {
+            retval = TRUE;
+        }
+
         cairo_restore (cr);
         rsvg_state_pop (draw);
         rsvg_drawing_ctx_free (draw);
@@ -1463,6 +1494,8 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         dimension_data->height = (int) (_rsvg_css_hand_normalize_length (&root->h, handle->priv->dpi_y,
                                          bbox.rect.height + bbox.rect.y * 2,
                                          12) + 0.5);
+
+        retval = TRUE;
     }
     
     dimension_data->em = dimension_data->width;
@@ -1472,7 +1505,7 @@ rsvg_handle_get_dimensions_sub (RsvgHandle * handle, RsvgDimensionData * dimensi
         (*handle->priv->size_func) (&dimension_data->width, &dimension_data->height,
                                     handle->priv->user_data);
 
-    return TRUE;
+    return retval;
 }
 
 /**
@@ -1498,7 +1531,7 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     RsvgDimensionData    dimension_data;
     cairo_surface_t		*target = NULL;
     cairo_t				*cr = NULL;
-    gboolean			 ret = FALSE;
+    gboolean			 retval = FALSE;
 
     g_return_val_if_fail (handle, FALSE);
     g_return_val_if_fail (position_data, FALSE);
@@ -1544,6 +1577,12 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
     rsvg_node_draw (handle->priv->treebase, draw, 0);
     bbox = RSVG_CAIRO_RENDER (draw->render)->bbox;
 
+    if (rsvg_drawing_ctx_limits_exceeded (draw)) {
+        retval = FALSE;
+    } else {
+        retval = TRUE;
+    }
+
     cairo_restore (cr);
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
@@ -1560,15 +1599,13 @@ rsvg_handle_get_position_sub (RsvgHandle * handle, RsvgPositionData * position_d
         (*handle->priv->size_func) (&dimension_data.width, &dimension_data.height,
                                     handle->priv->user_data);
 
-    ret = TRUE;
-
 bail:
     if (cr)
         cairo_destroy (cr);
     if (target)
         cairo_surface_destroy (target);
 
-    return ret;
+    return retval;
 }
 
 /** 
@@ -2166,6 +2203,52 @@ rsvg_push_discrete_layer (RsvgDrawingCtx * ctx)
     ctx->render->push_discrete_layer (ctx);
 }
 
+void
+rsvg_drawing_ctx_increase_num_elements_acquired (RsvgDrawingCtx *draw_ctx)
+{
+    draw_ctx->num_elements_acquired++;
+}
+
+/* This is a mitigation for the security-related bugs:
+ * https://gitlab.gnome.org/GNOME/librsvg/issues/323
+ * https://gitlab.gnome.org/GNOME/librsvg/issues/515
+ * 
+ * Imagine the XML [billion laughs attack], but done in SVG's terms:
+ * 
+ * - #323 above creates deeply nested groups of `<use>` elements.
+ * The first one references the second one ten times, the second one
+ * references the third one ten times, and so on.  In the file given,
+ * this causes 10^17 objects to be rendered.  While this does not
+ * exhaust memory, it would take a really long time.
+ * 
+ * - #515 has deeply nested references of `<pattern>` elements.  Each
+ * object inside each pattern has an attribute
+ * fill="url(#next_pattern)", so the number of final rendered objects
+ * grows exponentially.
+ * 
+ * We deal with both cases by placing a limit on how many references
+ * will be resolved during the SVG rendering process, that is,
+ * how many `url(#foo)` will be resolved.
+ * 
+ * [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
+ */
+gboolean
+rsvg_drawing_ctx_limits_exceeded (RsvgDrawingCtx *draw_ctx)
+{
+    return draw_ctx->num_elements_acquired > 500000;
+}
+
+RsvgNode *
+rsvg_drawing_ctx_acquire_node_ref (RsvgDrawingCtx * ctx, RsvgNode *node)
+{
+  if (g_slist_find (ctx->acquired_nodes, node))
+    return NULL;
+
+  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
+
+  return node;
+}
+
 /*
  * rsvg_acquire_node:
  * @ctx: The drawing context in use
@@ -2186,16 +2269,18 @@ rsvg_acquire_node (RsvgDrawingCtx * ctx, const char *url)
 {
   RsvgNode *node;
 
+  if (url == NULL)
+      return NULL;
+
+  rsvg_drawing_ctx_increase_num_elements_acquired (ctx);
+  if (rsvg_drawing_ctx_limits_exceeded (ctx))
+      return NULL;
+
   node = rsvg_defs_lookup (ctx->defs, url);
   if (node == NULL)
     return NULL;
 
-  if (g_slist_find (ctx->acquired_nodes, node))
-    return NULL;
-
-  ctx->acquired_nodes = g_slist_prepend (ctx->acquired_nodes, node);
-
-  return node;
+  return rsvg_drawing_ctx_acquire_node_ref (ctx, node);
 }
 
 /*

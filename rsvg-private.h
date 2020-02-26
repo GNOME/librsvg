@@ -167,6 +167,7 @@ struct RsvgHandlePrivate {
      */
     RsvgSaxHandler *handler;
     int handler_nest;
+    gsize num_loaded_elements;
 
     GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
 
@@ -203,6 +204,7 @@ struct RsvgDrawingCtx {
     RsvgState *state;
     GError **error;
     RsvgDefs *defs;
+    gsize num_elements_acquired;
     PangoContext *pango_context;
     double dpi_x, dpi_y;
     RsvgViewBox vb;
@@ -368,6 +370,10 @@ G_GNUC_INTERNAL
 void rsvg_pop_discrete_layer    (RsvgDrawingCtx * ctx);
 G_GNUC_INTERNAL
 void rsvg_push_discrete_layer   (RsvgDrawingCtx * ctx);
+G_GNUC_INTERNAL
+gboolean rsvg_drawing_ctx_limits_exceeded (RsvgDrawingCtx *draw_ctx);
+G_GNUC_INTERNAL
+RsvgNode *rsvg_drawing_ctx_acquire_node_ref     (RsvgDrawingCtx * ctx, RsvgNode *node);
 G_GNUC_INTERNAL
 RsvgNode *rsvg_acquire_node     (RsvgDrawingCtx * ctx, const char *url);
 G_GNUC_INTERNAL

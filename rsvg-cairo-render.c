@@ -174,6 +174,7 @@ rsvg_cairo_new_drawing_ctx (cairo_t * cr, RsvgHandle * handle)
     draw->dpi_y = handle->priv->dpi_y;
     draw->vb.rect.width = data.em;
     draw->vb.rect.height = data.ex;
+    draw->num_elements_acquired = 0;
     draw->pango_context = NULL;
     draw->drawsub_stack = NULL;
     draw->acquired_nodes = NULL;
@@ -219,6 +220,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 {
     RsvgDrawingCtx *draw;
     RsvgNode *drawsub = NULL;
+    gboolean retval = FALSE;
 
     g_return_val_if_fail (handle != NULL, FALSE);
 
@@ -247,11 +249,17 @@ rsvg_handle_render_cairo_sub (RsvgHandle * handle, cairo_t * cr, const char *id)
 
     rsvg_node_draw ((RsvgNode *) handle->priv->treebase, draw, 0);
 
+    if (rsvg_drawing_ctx_limits_exceeded (draw)) {
+        retval = FALSE;
+    } else {
+        retval = TRUE;
+    }
+
     cairo_restore (cr);
     rsvg_state_pop (draw);
     rsvg_drawing_ctx_free (draw);
 
-    return TRUE;
+    return retval;
 }
 
 /**
