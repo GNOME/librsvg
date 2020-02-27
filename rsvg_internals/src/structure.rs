@@ -297,6 +297,18 @@ impl NodeTrait for NodeUse {
 
         let uri = link.as_ref().unwrap();
 
+        // <use> is an element that is used directly, unlike
+        // <pattern>, which is used through a fill="url(#...)"
+        // reference.  However, <use> will always reference another
+        // element, potentially itself or an ancestor of itself (or
+        // another <use> which references the first one, etc.).  So,
+        // we acquire the <use> element itself so that circular
+        // references can be caught.
+        let self_acquired = draw_ctx.acquire_node_ref(node);
+        if self_acquired.is_none() {
+            return Err(RenderingError::CircularReference);
+        }
+
         let child = if let Some(acquired) = draw_ctx.get_acquired_node(uri) {
             // Here we clone the acquired child, so that we can drop the AcquiredNode as
             // early as possible.  This is so that the child's drawing method will be able
@@ -310,13 +322,6 @@ impl NodeTrait for NodeUse {
             );
             return Ok(());
         };
-
-        if Node::is_ancestor(child.clone(), node.clone()) {
-            // or, if we're <use>'ing ourselves
-            return Err(RenderingError::CircularReference);
-        }
-
-        draw_ctx.increase_num_elements_rendered_through_use(1);
 
         let params = draw_ctx.get_view_params();
 

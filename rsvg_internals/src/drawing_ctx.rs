@@ -19,6 +19,7 @@ use error::RenderingError;
 use filters;
 use float_eq_cairo::ApproxEqCairo;
 use length::Dasharray;
+use limits;
 use mask::NodeMask;
 use node::{CascadedValues, NodeType, RsvgNode};
 use paint_server::{self, PaintServer};
@@ -100,17 +101,9 @@ pub struct DrawingCtx<'a> {
     dpi_x: f64,
     dpi_y: f64,
 
-    /// This is a mitigation for the security-related bug
-    /// https://gitlab.gnome.org/GNOME/librsvg/issues/323 - imagine
-    /// the XML [billion laughs attack], but done by creating deeply
-    /// nested groups of `<use>` elements.  The first one references
-    /// the second one ten times, the second one references the third
-    /// one ten times, and so on.  In the file given, this causes
-    /// 10^17 objects to be rendered.  While this does not exhaust
-    /// memory, it would take a really long time.
-    ///
-    /// [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
-    num_elements_rendered_through_use: usize,
+    // This is a mitigation for SVG files that try to instance a huge number of
+    // elements via <use>, recursive patterns, etc.  See limits.rs for details.
+    num_elements_acquired: usize,
 
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
@@ -169,7 +162,7 @@ impl<'a> DrawingCtx<'a> {
             rect,
             dpi_x,
             dpi_y,
-            num_elements_rendered_through_use: 0,
+            num_elements_acquired: 0,
             cr_stack: Vec::new(),
             cr: cr.clone(),
             initial_cr: cr.clone(),
@@ -282,15 +275,29 @@ impl<'a> DrawingCtx<'a> {
     // acquire it again.  If you acquire a node "#foo" and don't release it before
     // trying to acquire "foo" again, you will obtain a %NULL the second time.
     pub fn get_acquired_node(&mut self, url: &str) -> Option<AcquiredNode> {
-        if let Some(node) = self.defs.borrow_mut().lookup(url) {
-            if !self.acquired_nodes_contains(node) {
-                self.acquired_nodes.borrow_mut().push(node.clone());
-                let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
-                return Some(acq);
-            }
+        self.num_elements_acquired += 1;
+
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            return None;
         }
 
-        None
+        let mut defs_mut = self.defs.borrow_mut();
+
+        if let Some(node) = defs_mut.lookup(url) {
+            self.acquire_node_ref(node)
+        } else {
+            None
+        }
+    }
+
+    pub fn acquire_node_ref(&self, node: &RsvgNode) -> Option<AcquiredNode> {
+        if !self.acquired_nodes_contains(node) {
+            self.acquired_nodes.borrow_mut().push(node.clone());
+            let acq = AcquiredNode(self.acquired_nodes.clone(), node.clone());
+            Some(acq)
+        } else {
+            None
+        }
     }
 
     fn acquired_nodes_contains(&self, node: &RsvgNode) -> bool {
@@ -858,13 +865,9 @@ impl<'a> DrawingCtx<'a> {
         }
     }
 
-    pub fn increase_num_elements_rendered_through_use(&mut self, n: usize) {
-        self.num_elements_rendered_through_use += n;
-    }
-
     fn check_limits(&self) -> Result<(), RenderingError> {
-        if self.num_elements_rendered_through_use > 500_000 {
-            Err(RenderingError::InstancingLimit)
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            Err(RenderingError::MaxReferencesExceeded)
         } else {
             Ok(())
         }
