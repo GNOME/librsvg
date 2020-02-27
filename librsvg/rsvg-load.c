@@ -66,6 +66,7 @@ struct RsvgLoad {
      */
     RsvgSaxHandler *handler;
     int handler_nest;
+    gsize num_loaded_elements;
 
     GHashTable *entities;       /* g_malloc'd string -> xmlEntityPtr */
 
@@ -608,11 +609,30 @@ start_xinclude (RsvgLoad *load, RsvgPropertyBag * atts)
 
 /* end xinclude */
 
+static gboolean
+loading_limits_exceeded (RsvgLoad *load)
+{
+    /* This is a mitigation for SVG files which create millions of elements
+     * in an attempt to exhaust memory.  We don't allow loading more than
+     * this number of elements during the initial streaming load process.
+    */
+    return load->num_loaded_elements > 200000;
+}
+
 static void
 sax_start_element_cb (void *data, const xmlChar * name, const xmlChar ** atts)
 {
     RsvgPropertyBag bag;
     RsvgLoad *load = data;
+
+    if (loading_limits_exceeded (load)) {
+        g_set_error (load->error, RSVG_ERROR, 0, "instancing limit");
+
+        xmlStopParser (load->ctxt);
+        return;
+    }
+
+    load->num_loaded_elements += 1;
 
     bag = rsvg_property_bag_new ((const char **) atts);
 
