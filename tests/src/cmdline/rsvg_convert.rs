@@ -3,7 +3,7 @@ extern crate chrono;
 extern crate predicates;
 extern crate tempfile;
 
-use super::predicates::file;
+use crate::predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
@@ -131,7 +131,7 @@ fn output_format_pdf() {
         .arg("--format=pdf")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_count(1));
+        .stdout(file::is_pdf());
 }
 
 #[test]
@@ -524,6 +524,18 @@ fn defaults_are_used_for_negative_resolutions() {
 }
 
 #[test]
+fn pdf_page_size() {
+    let input = Path::new("fixtures/dimensions/521-with-viewbox.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--format=pdf")
+        .assert()
+        .success()
+        // TODO: the PDF size and resolution is actually a bug in rsvg-convert,
+        // see https://gitlab.gnome.org/GNOME/librsvg/issues/514
+        .stdout(file::is_pdf().with_page_size(200, 100, 72.0));
+}
+
+#[test]
 fn background_color_option_with_valid_color() {
     let input = Path::new("fixtures/api/dpi.svg");
     RsvgConvert::new_with_input(input)
@@ -631,12 +643,38 @@ fn unlimited_short_option() {
 
 #[test]
 fn keep_aspect_ratio_option() {
-    RsvgConvert::accepts_option("--keep-aspect-ratio");
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--width=500")
+        .arg("--height=1000")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(500, 1000));
+    RsvgConvert::new_with_input(input)
+        .arg("--width=500")
+        .arg("--height=1000")
+        .arg("--keep-aspect-ratio")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(500, 2000));
 }
 
 #[test]
 fn keep_aspect_ratio_short_option() {
-    RsvgConvert::accepts_option("-a");
+    let input = Path::new("fixtures/api/dpi.svg");
+    RsvgConvert::new_with_input(input)
+        .arg("--width=1000")
+        .arg("--height=500")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(1000, 500));
+    RsvgConvert::new_with_input(input)
+        .arg("--width=1000")
+        .arg("--height=500")
+        .arg("-a")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(125, 500));
 }
 
 #[test]
