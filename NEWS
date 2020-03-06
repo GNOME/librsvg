@@ -1,3 +1,47 @@
+Version 2.48.0
+
+- The following is a summary of changes between 2.46.x and 2.48.0.
+  For full details, please see the 2.47.x release notes below.
+
+- This release requires at least Rust 1.39.
+
+- #379 - New API, rsvg_handle_set_stylesheet(), to set a CSS
+  stylesheet independent of the SVG document.
+
+- #510 - support opacity in patterns.
+
+- Librsvg's XML parser now supports namespaces (xmlns), and is
+  stricter than before about it.  Files may fail to parse if there are
+  attributes or elements with namespace prefixes (e.g. foo:bar instead
+  of plain bar), but without a corresponding namespace declaration
+  (e.g. xmlns:foo="http://example.com/foo").
+
+  This may happen especially with incorrectly-written SVGs that use
+  xlink:href or xi:include attributes without the corresponding
+  namespace declarations.  If you run into this, just add the
+  following to your toplevel SVG element:
+
+      <svg xmlns="http://www.w3.org/2000/svg"
+           xmlns:xlink="http://www.w3.org/1999/xlink"
+	   xmlns:xi="http://www.w3.org/2001/XInclude">
+           ^^^^^^^^^ these ones
+
+- Librsvg no longer depends on libcroco, and now does all CSS
+  processing using Rust crates from Mozilla Servo.  As a result,
+  librsvg can now handle much more complex CSS selectors than before.
+
+- Link-time optimization (LTO) is disabled by default on release
+  builds, as this increased build time too much.  Downstream
+  distributors may want to turn it back on in the toplevel Cargo.toml.
+
+- #515 (CVE-2019-20446) - Librsvg now has limits on the number of
+  loaded XML elements, and the number of referenced elements within an
+  SVG document.  This is to mitigate malicious SVGs which try to
+  consume all memory, and those which try to consume an exponential
+  amount of CPU time.
+
+- Many bugfixes; please see the 2.47.x release notes below.
+
 Version 2.47.4
 
 - (#240) - Fix rsvg-convert's multipage PDF output when the zoom
@@ -97,10 +141,11 @@ Version 2.47.0
   get resolved once now; this should make things marginally faster for
   patterns or gradients with fallbacks.
 
-- #515 - Librsvg now has limits on the number of loaded XML elements,
-  and the number of referenced elements within an SVG document.  This
-  is to mitigate malicious SVGs which try to consume all memory, and
-  those which try to consume an exponential amount of CPU time.
+- #515 (CVE-2019-20446) - Librsvg now has limits on the number of
+  loaded XML elements, and the number of referenced elements within an
+  SVG document.  This is to mitigate malicious SVGs which try to
+  consume all memory, and those which try to consume an exponential
+  amount of CPU time.
 
 - #521 - Compute geometries correctly if there is a viewBox attribute.
 
@@ -112,11 +157,43 @@ Version 2.47.0
   get resolved once now; this should make things marginally faster for
   patterns or gradients with fallbacks.
 
-- #515 - Librsvg now has limits on the number of loaded XML elements,
-  and the number of referenced elements within an SVG document.  This
-  is to mitigate malicious SVGs which try to consume all memory, and
-  those which try to consume an exponential amount of CPU time.
+- #506 - Fix empty patterns which reference a fallback pattern with
+  children.
 
+Version 2.46.4
+
+- #524 - Panic when reading an invalid stylesheet URL in an XML
+  processing instruction (Paolo Borelli)
+
+- #525 - Consider specificity when applying CSS selector matches.
+
+- #504 - Provide an usage example in the librsvg crate docs.
+
+Version 2.46.3
+
+- #516 - Fix inadvertent bump in the minimum Rust version required.  The
+  string_cache crate is now pinned to a version that still works on
+  Rust 1.34.  (Jordan Petridis)
+
+- #521 - Compute geometries correctly if there is a viewBox attribute.
+
+- #308 - Fix stack exhaustion with circular references in <use> elements.
+
+- Consistently use the LGPL 2.1 wherever it is mentioned.
+
+Version 2.46.2
+
+- Patterns and gradients reused across more than one element will only
+  get resolved once now; this should make things marginally faster for
+  patterns or gradients with fallbacks.
+
+- #515 (CVE-2019-20446) - Librsvg now has limits on the number of
+  loaded XML elements, and the number of referenced elements within an
+  SVG document.  This is to mitigate malicious SVGs which try to
+  consume all memory, and those which try to consume an exponential
+  amount of CPU time.
+
+Version 2.46.1
 - #506 - Fix empty patterns which reference a fallback pattern with
   children.
 
