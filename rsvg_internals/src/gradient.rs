@@ -1,7 +1,9 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{
+    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
+};
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
@@ -71,45 +73,6 @@ impl From<SpreadMethod> for cairo::Extend {
     }
 }
 
-// SVG defines radial gradients as being inside a circle (cx, cy, radius).  The
-// gradient projects out from a focus point (fx, fy), which is assumed to be
-// inside the circle, to the edge of the circle.
-// The description of https://www.w3.org/TR/SVG/pservers.html#RadialGradientElement
-// states:
-//
-// If the point defined by ‘fx’ and ‘fy’ lies outside the circle defined by
-// ‘cx’, ‘cy’ and ‘r’, then the user agent shall set the focal point to the
-// intersection of the line from (‘cx’, ‘cy’) to (‘fx’, ‘fy’) with the circle
-// defined by ‘cx’, ‘cy’ and ‘r’.
-//
-// So, let's do that!
-fn fix_focus_point(fx: f64, fy: f64, cx: f64, cy: f64, radius: f64) -> (f64, f64) {
-    // Easy case first: the focus point is inside the circle
-
-    if (fx - cx) * (fx - cx) + (fy - cy) * (fy - cy) <= radius * radius {
-        return (fx, fy);
-    }
-
-    // Hard case: focus point is outside the circle.
-    // Find the vector from the origin to (fx, fy)
-
-    let mut dx = fx - cx;
-    let mut dy = fy - cy;
-
-    // Find the vector's magnitude
-    let mag = (dx * dx + dy * dy).sqrt();
-
-    // Normalize the vector to have a magnitude equal to radius
-    let scale = mag / radius;
-
-    dx /= scale;
-    dy /= scale;
-
-    // Translate back to (cx, cy) and we are done!
-
-    (cx + dx, cy + dy)
-}
-
 /// Node for the <stop> element
 #[derive(Default)]
 pub struct Stop {
@@ -164,6 +127,7 @@ enum UnresolvedVariant {
         r: Option<Length<Both>>,
         fx: Option<Length<Horizontal>>,
         fy: Option<Length<Vertical>>,
+        fr: Option<Length<Both>>,
     },
 }
 
@@ -183,6 +147,7 @@ enum Variant {
         r: Length<Both>,
         fx: Length<Horizontal>,
         fy: Length<Vertical>,
+        fr: Length<Both>,
     },
 }
 
@@ -198,12 +163,20 @@ impl UnresolvedVariant {
                 y2: y2.unwrap(),
             },
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => Variant::Radial {
+            UnresolvedVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => Variant::Radial {
                 cx: cx.unwrap(),
                 cy: cy.unwrap(),
                 r: r.unwrap(),
                 fx: fx.unwrap(),
                 fy: fy.unwrap(),
+                fr: fr.unwrap(),
             },
         }
     }
@@ -214,8 +187,20 @@ impl UnresolvedVariant {
                 x1.is_some() && y1.is_some() && x2.is_some() && y2.is_some()
             }
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
-                cx.is_some() && cy.is_some() && r.is_some() && fx.is_some() && fy.is_some()
+            UnresolvedVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
+                cx.is_some()
+                    && cy.is_some()
+                    && r.is_some()
+                    && fx.is_some()
+                    && fy.is_some()
+                    && fr.is_some()
             }
         }
     }
@@ -238,20 +223,29 @@ impl UnresolvedVariant {
             },
 
             (
-                UnresolvedVariant::Radial { cx, cy, r, fx, fy },
                 UnresolvedVariant::Radial {
-                    cx: fcx,
-                    cy: fcy,
-                    r: fr,
-                    fx: ffx,
-                    fy: ffy,
+                    cx,
+                    cy,
+                    r,
+                    fx,
+                    fy,
+                    fr,
+                },
+                UnresolvedVariant::Radial {
+                    cx: f_cx,
+                    cy: f_cy,
+                    r: f_r,
+                    fx: f_fx,
+                    fy: f_fy,
+                    fr: f_fr,
                 },
             ) => UnresolvedVariant::Radial {
-                cx: cx.or(fcx),
-                cy: cy.or(fcy),
-                r: r.or(fr),
-                fx: fx.or(ffx),
-                fy: fy.or(ffy),
+                cx: cx.or(f_cx),
+                cy: cy.or(f_cy),
+                r: r.or(f_r),
+                fx: fx.or(f_fx),
+                fy: fy.or(f_fy),
+                fr: fr.or(f_fr),
             },
 
             _ => *self, // If variants are of different types, then nothing to resolve
@@ -269,7 +263,14 @@ impl UnresolvedVariant {
                 y2: y2.or_else(|| Some(Length::<Vertical>::parse_str("0%").unwrap())),
             },
 
-            UnresolvedVariant::Radial { cx, cy, r, fx, fy } => {
+            UnresolvedVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
                 let cx = cx.or_else(|| Some(Length::<Horizontal>::parse_str("50%").unwrap()));
                 let cy = cy.or_else(|| Some(Length::<Vertical>::parse_str("50%").unwrap()));
                 let r = r.or_else(|| Some(Length::<Both>::parse_str("50%").unwrap()));
@@ -277,8 +278,16 @@ impl UnresolvedVariant {
                 // fx and fy fall back to the presentational value of cx and cy
                 let fx = fx.or(cx);
                 let fy = fy.or(cy);
+                let fr = fr.or_else(|| Some(Length::<Both>::parse_str("0%").unwrap()));
 
-                UnresolvedVariant::Radial { cx, cy, r, fx, fy }
+                UnresolvedVariant::Radial {
+                    cx,
+                    cy,
+                    r,
+                    fx,
+                    fy,
+                    fr,
+                }
             }
         }
     }
@@ -299,16 +308,23 @@ impl Variant {
                 ))
             }
 
-            Variant::Radial { cx, cy, r, fx, fy } => {
+            Variant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
                 let n_cx = cx.normalize(values, params);
                 let n_cy = cy.normalize(values, params);
                 let n_r = r.normalize(values, params);
                 let n_fx = fx.normalize(values, params);
                 let n_fy = fy.normalize(values, params);
-                let (new_fx, new_fy) = fix_focus_point(n_fx, n_fy, n_cx, n_cy, n_r);
+                let n_fr = fr.normalize(values, params);
 
                 cairo::Gradient::clone(&cairo::RadialGradient::new(
-                    new_fx, new_fy, 0.0, n_cx, n_cy, n_r,
+                    n_fx, n_fy, n_fr, n_cx, n_cy, n_r,
                 ))
             }
         }
@@ -348,6 +364,7 @@ pub struct RadialGradient {
     r: Option<Length<Both>>,
     fx: Option<Length<Horizontal>>,
     fy: Option<Length<Vertical>>,
+    fr: Option<Length<Both>>,
 }
 
 /// Main structure used during gradient resolution.  For unresolved
@@ -542,6 +559,7 @@ impl RadialGradient {
             r: self.r,
             fx: self.fx,
             fy: self.fy,
+            fr: self.fr,
         }
     }
 }
@@ -613,16 +631,27 @@ impl NodeTrait for LinearGradient {
 impl NodeTrait for RadialGradient {
     fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
         self.common.set_atts(pbag)?;
+        // Create a local expanded name for "fr" because markup5ever doesn't have built-in
+        let expanded_name_fr = ExpandedName {
+            ns: &Namespace::from(""),
+            local: &LocalName::from("fr"),
+        };
 
         for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
-                expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
-                expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
-                expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
-                expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
+            let attr_expanded = attr.expanded();
 
-                _ => (),
+            if attr_expanded == expanded_name_fr {
+                self.fr = Some(attr.parse(value)?);
+            } else {
+                match attr_expanded {
+                    expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
+                    expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
+                    expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
+                    expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
+                    expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
+
+                    _ => (),
+                }
             }
         }
 
@@ -809,7 +838,6 @@ fn acquire_gradient(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::float_eq_cairo::ApproxEqCairo;
     use crate::node::{NodeData, NodeType, RsvgNode};
     use markup5ever::{namespace_url, ns, QualName};
 
@@ -822,23 +850,6 @@ mod tests {
         );
         assert_eq!(SpreadMethod::parse_str("repeat"), Ok(SpreadMethod::Repeat));
         assert!(SpreadMethod::parse_str("foobar").is_err());
-    }
-
-    fn assert_tuples_equal(a: &(f64, f64), b: &(f64, f64)) {
-        assert_approx_eq_cairo!(a.0, b.0);
-        assert_approx_eq_cairo!(a.1, b.1);
-    }
-
-    #[test]
-    fn fixes_focus_point() {
-        // inside the circle
-        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 2.0, 1.0, 3.0), &(1.0, 1.0));
-
-        // on the edge
-        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 2.0, 1.0, 2.0), &(1.0, 1.0));
-
-        // outside the circle
-        assert_tuples_equal(&fix_focus_point(1.0, 1.0, 3.0, 1.0, 1.0), &(2.0, 1.0));
     }
 
     #[test]
