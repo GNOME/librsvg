@@ -30,6 +30,7 @@ use crate::parsers::Parse;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::Overflow;
+use crate::text::NodeChars;
 use crate::transform::Transform;
 
 /// Strong reference to an element in the SVG tree.
@@ -96,6 +97,10 @@ impl NodeData {
 
     pub fn get_type(&self) -> NodeType {
         self.node_type
+    }
+
+    pub fn get_chars(&self) -> &NodeChars {
+        self.get_impl::<NodeChars>()
     }
 
     pub fn element_name(&self) -> &QualName {
