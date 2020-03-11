@@ -94,7 +94,6 @@ use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{NodeCascade, NodeType, RsvgNode};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
-use crate::text::NodeChars;
 
 /// A parsed CSS declaration
 ///
@@ -550,7 +549,7 @@ impl selectors::Element for RsvgElement {
         !self.0.has_children()
             || self.0.children().all(|child| {
                 child.borrow().get_type() == NodeType::Chars
-                    && child.borrow().get_impl::<NodeChars>().is_empty()
+                    && child.borrow().get_chars().is_empty()
             })
     }
 

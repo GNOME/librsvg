@@ -19,7 +19,6 @@ use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::{Style, StyleType};
-use crate::text::NodeChars;
 use crate::xml2_load::Xml2Parser;
 use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 
@@ -374,7 +373,7 @@ impl XmlState {
                     let child_borrow = child.borrow();
 
                     assert!(child_borrow.get_type() == NodeType::Chars);
-                    child_borrow.get_impl::<NodeChars>().get_string()
+                    child_borrow.get_chars().get_string()
                 })
                 .collect::<String>();
 

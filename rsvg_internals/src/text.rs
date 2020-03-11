@@ -433,7 +433,7 @@ fn children_to_chunks(
                 let values = cascaded.get();
                 child
                     .borrow()
-                    .get_impl::<NodeChars>()
+                    .get_chars()
                     .to_chunks(&child, values, chunks, dx, dy, depth);
             }
 
@@ -718,7 +718,7 @@ fn extract_chars_children_to_chunks_recursively(
         match child.borrow().get_type() {
             NodeType::Chars => child
                 .borrow()
-                .get_impl::<NodeChars>()
+                .get_chars()
                 .to_chunks(&child, values, chunks, None, None, depth),
             _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
         }

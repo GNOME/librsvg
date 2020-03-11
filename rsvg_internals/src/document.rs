@@ -497,7 +497,7 @@ impl DocumentBuilder {
             child
         };
 
-        chars_node.borrow().get_impl::<NodeChars>().append(text);
+        chars_node.borrow().get_chars().append(text);
     }
 
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
