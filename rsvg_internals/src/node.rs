@@ -14,7 +14,7 @@
 
 use downcast_rs::*;
 use locale_config::Locale;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, LocalName, Namespace, QualName};
 use std::cell::Ref;
 use std::collections::HashSet;
 use std::fmt;
@@ -81,6 +81,20 @@ impl NodeData {
             style_attr: String::new(),
             node_impl,
         }
+    }
+
+    pub fn new_chars() -> NodeData {
+        Self::new(
+            NodeType::Chars,
+            &QualName::new(
+                None,
+                Namespace::from("https://wiki.gnome.org/Projects/LibRsvg"),
+                LocalName::from("rsvg-chars"),
+            ),
+            None,
+            None,
+            Box::new(NodeChars::new()),
+        )
     }
 
     pub fn get_node_trait(&self) -> &dyn NodeTrait {

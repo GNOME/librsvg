@@ -1,7 +1,7 @@
 //! Main SVG document structure.
 
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
-use markup5ever::{LocalName, Namespace, QualName};
+use markup5ever::QualName;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -18,7 +18,6 @@ use crate::node::{NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::text::NodeChars;
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
 /// A loaded SVG file and its derived data.
@@ -480,20 +479,8 @@ impl DocumentBuilder {
         {
             child
         } else {
-            let child = RsvgNode::new(NodeData::new(
-                NodeType::Chars,
-                &QualName::new(
-                    None,
-                    Namespace::from("https://wiki.gnome.org/Projects/LibRsvg"),
-                    LocalName::from("rsvg-chars"),
-                ),
-                None,
-                None,
-                Box::new(NodeChars::new()),
-            ));
-
+            let child = RsvgNode::new(NodeData::new_chars());
             parent.append(child.clone());
-
             child
         };
 
