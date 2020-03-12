@@ -843,7 +843,7 @@ mod tests {
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
-        let node = RsvgNode::new(NodeData::new(
+        let node = RsvgNode::new(NodeData::new_element(
             NodeType::LinearGradient,
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             None,
@@ -857,7 +857,7 @@ mod tests {
         let gradient = gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
-        let node = RsvgNode::new(NodeData::new(
+        let node = RsvgNode::new(NodeData::new_element(
             NodeType::RadialGradient,
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             None,

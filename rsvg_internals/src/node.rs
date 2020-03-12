@@ -60,7 +60,7 @@ pub struct NodeData {
 }
 
 impl NodeData {
-    pub fn new(
+    pub fn new_element(
         node_type: NodeType,
         element_name: &QualName,
         id: Option<&str>,
@@ -84,7 +84,7 @@ impl NodeData {
     }
 
     pub fn new_chars() -> NodeData {
-        Self::new(
+        Self::new_element(
             NodeType::Chars,
             &QualName::new(
                 None,

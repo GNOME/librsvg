@@ -46,7 +46,7 @@ use crate::text::{TRef, TSpan, Text};
 macro_rules! n {
     ($name:ident, $node_type:ident) => {
         pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
-            RsvgNode::new(NodeData::new(
+            RsvgNode::new(NodeData::new_element(
                 NodeType::$node_type,
                 element_name,
                 id,
