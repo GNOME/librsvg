@@ -14,7 +14,7 @@ use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
-use crate::node::{NodeData, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeData, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -95,10 +95,10 @@ impl Document {
     /// Gets the dimension parameters of the toplevel `<svg>`.
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let root = self.root();
-        let node_data = root.borrow();
+        let elt = root.borrow_element();
 
-        assert!(node_data.get_type() == NodeType::Svg);
-        node_data.get_impl::<Svg>().get_intrinsic_dimensions()
+        assert!(elt.get_type() == NodeType::Svg);
+        elt.get_impl::<Svg>().get_intrinsic_dimensions()
     }
 
     /// Runs the CSS cascade on the document tree
@@ -434,15 +434,18 @@ impl DocumentBuilder {
     ) -> RsvgNode {
         let mut node = create_node(name, pbag);
 
-        if let Some(id) = node.borrow().get_id() {
+        if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id
             self.ids
                 .entry(id.to_string())
                 .or_insert_with(|| node.clone());
         }
 
-        node.borrow_mut()
-            .set_atts(parent.as_ref().clone(), pbag, self.load_options.locale());
+        node.borrow_element_mut().set_atts(
+            parent.as_ref().clone(),
+            pbag,
+            self.load_options.locale(),
+        );
 
         if let Some(mut parent) = parent {
             parent.append(node.clone());
@@ -484,7 +487,7 @@ impl DocumentBuilder {
             child
         };
 
-        chars_node.borrow().get_chars().append(text);
+        chars_node.borrow_chars().append(text);
     }
 
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {

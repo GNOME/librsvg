@@ -18,7 +18,7 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
 use crate::marker;
-use crate::node::{CascadedValues, NodeDraw, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeDraw, NodeType, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::path_builder::*;
 use crate::pattern::Pattern;
@@ -318,7 +318,7 @@ impl DrawingCtx {
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         if let Some(node) = clip_node {
-            let units = node.borrow().get_impl::<ClipPath>().get_units();
+            let units = node.borrow_element().get_impl::<ClipPath>().get_units();
 
             if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
                 // The node being clipped is empty / doesn't have a
@@ -397,7 +397,7 @@ impl DrawingCtx {
         };
 
         let mask_transform = mask_node
-            .borrow()
+            .borrow_element()
             .get_transform()
             .post_transform(&transform);
 
@@ -576,7 +576,7 @@ impl DrawingCtx {
 
                             res = res.and_then(|bbox| {
                                 dc.generate_cairo_mask(
-                                    &mask_node.borrow().get_impl::<Mask>(),
+                                    &mask_node.borrow_element().get_impl::<Mask>(),
                                     &mask_node,
                                     affines.for_temporary_surface,
                                     &bbox,
@@ -742,7 +742,7 @@ impl DrawingCtx {
             Ok(acquired) => {
                 let filter_node = acquired.get();
 
-                if !filter_node.borrow().is_in_error() {
+                if !filter_node.borrow_element().is_in_error() {
                     // FIXME: deal with out of memory here
                     filters::render(
                         &filter_node,
@@ -816,7 +816,7 @@ impl DrawingCtx {
 
                         had_paint_server = match node.borrow().get_type() {
                             NodeType::LinearGradient => node
-                                .borrow()
+                                .borrow_element()
                                 .get_impl::<LinearGradient>()
                                 .resolve_fallbacks_and_set_pattern(
                                     &node,
@@ -826,7 +826,7 @@ impl DrawingCtx {
                                     bbox,
                                 )?,
                             NodeType::RadialGradient => node
-                                .borrow()
+                                .borrow_element()
                                 .get_impl::<RadialGradient>()
                                 .resolve_fallbacks_and_set_pattern(
                                     &node,
@@ -836,7 +836,7 @@ impl DrawingCtx {
                                     bbox,
                                 )?,
                             NodeType::Pattern => node
-                                .borrow()
+                                .borrow_element()
                                 .get_impl::<Pattern>()
                                 .resolve_fallbacks_and_set_pattern(
                                     &node,
@@ -1112,8 +1112,8 @@ impl DrawingCtx {
         cascaded: &CascadedValues<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let node_data = node.borrow();
-        let use_ = node_data.get_impl::<Use>();
+        let elt = node.borrow_element();
+        let use_ = elt.get_impl::<Use>();
 
         // <use> is an element that is used directly, unlike
         // <pattern>, which is used through a fill="url(#...)"
@@ -1181,11 +1181,11 @@ impl DrawingCtx {
                 )
             })
         } else {
-            let node_data = child.borrow();
-            let symbol = node_data.get_impl::<Symbol>();
+            let elt = child.borrow_element();
+            let symbol = elt.get_impl::<Symbol>();
 
             let clip_mode = if !values.is_overflow()
-                || (values.overflow == Overflow::Visible && child.borrow().is_overflow())
+                || (values.overflow == Overflow::Visible && child.borrow_element().is_overflow())
             {
                 Some(ClipMode::ClipToVbox)
             } else {
@@ -1270,7 +1270,10 @@ fn get_clip_in_user_and_object_space(
         .and_then(|acquired| {
             let clip_node = acquired.get().clone();
 
-            let units = clip_node.borrow().get_impl::<ClipPath>().get_units();
+            let units = clip_node
+                .borrow_element()
+                .get_impl::<ClipPath>()
+                .get_units();
 
             match units {
                 CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),

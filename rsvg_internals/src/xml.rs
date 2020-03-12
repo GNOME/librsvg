@@ -16,7 +16,7 @@ use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
-use crate::node::{NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeType, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::{Style, StyleType};
 use crate::xml2_load::Xml2Parser;
@@ -361,7 +361,7 @@ impl XmlState {
         assert!(current_node.borrow().get_type() == NodeType::Style);
 
         let style_type = current_node
-            .borrow()
+            .borrow_element()
             .get_impl::<Style>()
             .style_type()
             .unwrap_or(StyleType::TextCss);
@@ -370,10 +370,10 @@ impl XmlState {
             let stylesheet_text = current_node
                 .children()
                 .map(|child| {
-                    let child_borrow = child.borrow();
-
-                    assert!(child_borrow.get_type() == NodeType::Chars);
-                    child_borrow.get_chars().get_string()
+                    // Note that here we assume that the only children of <style>
+                    // are indeed text nodes.
+                    let child_borrow = child.borrow_chars();
+                    child_borrow.get_string()
                 })
                 .collect::<String>();
 

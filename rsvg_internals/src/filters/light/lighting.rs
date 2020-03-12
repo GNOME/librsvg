@@ -18,7 +18,7 @@ use crate::filters::{
     },
     FilterEffect, FilterError, PrimitiveWithInput,
 };
-use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -504,14 +504,23 @@ fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource
     }
 
     let node = node.unwrap();
-    if node.borrow().is_in_error() {
+    if node.borrow_element().is_in_error() {
         return Err(FilterError::ChildNodeInError);
     }
 
     let light_source = match node.borrow().get_type() {
-        NodeType::FeDistantLight => node.borrow().get_impl::<FeDistantLight>().transform(ctx),
-        NodeType::FePointLight => node.borrow().get_impl::<FePointLight>().transform(ctx),
-        NodeType::FeSpotLight => node.borrow().get_impl::<FeSpotLight>().transform(ctx),
+        NodeType::FeDistantLight => node
+            .borrow_element()
+            .get_impl::<FeDistantLight>()
+            .transform(ctx),
+        NodeType::FePointLight => node
+            .borrow_element()
+            .get_impl::<FePointLight>()
+            .transform(ctx),
+        NodeType::FeSpotLight => node
+            .borrow_element()
+            .get_impl::<FeSpotLight>()
+            .transform(ctx),
         _ => unreachable!(),
     };
 

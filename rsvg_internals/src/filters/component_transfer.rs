@@ -6,7 +6,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
-use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -257,7 +257,7 @@ macro_rules! func_or_default {
     ($func_node:ident, $func_type:ty, $func_data:ident, $func_default:ident) => {
         match $func_node {
             Some(ref f) => {
-                $func_data = f.borrow();
+                $func_data = f.borrow_element();
                 $func_data.get_impl::<$func_type>()
             }
             _ => &$func_default,
@@ -295,7 +295,7 @@ impl FilterEffect for FeComponentTransfer {
             node.children()
                 .rev()
                 .filter(|c| c.borrow().get_type() == node_type)
-                .find(|c| c.borrow().get_impl::<F>().channel() == channel)
+                .find(|c| c.borrow_element().get_impl::<F>().channel() == channel)
         };
 
         let func_r_node = get_node::<FeFuncR>(node, NodeType::FeFuncR, Channel::R);
@@ -307,7 +307,7 @@ impl FilterEffect for FeComponentTransfer {
             .iter()
             .filter_map(|x| x.as_ref())
         {
-            if node.borrow().is_in_error() {
+            if node.borrow_element().is_in_error() {
                 return Err(FilterError::ChildNodeInError);
             }
         }
@@ -319,15 +319,15 @@ impl FilterEffect for FeComponentTransfer {
         let func_a_default = FeFuncA::default();
 
         // We need to tell the borrow checker that these live long enough
-        let func_r_data;
-        let func_g_data;
-        let func_b_data;
-        let func_a_data;
+        let func_r_element;
+        let func_g_element;
+        let func_b_element;
+        let func_a_element;
 
-        let func_r = func_or_default!(func_r_node, FeFuncR, func_r_data, func_r_default);
-        let func_g = func_or_default!(func_g_node, FeFuncG, func_g_data, func_g_default);
-        let func_b = func_or_default!(func_b_node, FeFuncB, func_b_data, func_b_default);
-        let func_a = func_or_default!(func_a_node, FeFuncA, func_a_data, func_a_default);
+        let func_r = func_or_default!(func_r_node, FeFuncR, func_r_element, func_r_default);
+        let func_g = func_or_default!(func_g_node, FeFuncG, func_g_element, func_g_default);
+        let func_b = func_or_default!(func_b_node, FeFuncB, func_b_element, func_b_default);
+        let func_a = func_or_default!(func_a_node, FeFuncA, func_a_element, func_a_default);
 
         #[inline]
         fn compute_func<'a, F>(func: &'a F) -> impl Fn(u8, f64, f64) -> u8 + 'a

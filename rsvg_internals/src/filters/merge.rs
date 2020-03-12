@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::node::{NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
@@ -92,14 +92,16 @@ impl FilterEffect for FeMerge {
             .children()
             .filter(|c| c.borrow().get_type() == NodeType::FeMergeNode)
         {
-            if child.borrow().is_in_error() {
+            let elt = child.borrow_element();
+
+            if elt.is_in_error() {
                 return Err(FilterError::ChildNodeInError);
             }
 
             let input = ctx.get_input(
                 acquired_nodes,
                 draw_ctx,
-                child.borrow().get_impl::<FeMergeNode>().in_.as_ref(),
+                elt.get_impl::<FeMergeNode>().in_.as_ref(),
             )?;
             bounds = bounds.add_input(&input);
         }
@@ -111,7 +113,7 @@ impl FilterEffect for FeMerge {
             .children()
             .filter(|c| c.borrow().get_type() == NodeType::FeMergeNode)
         {
-            output_surface = Some(child.borrow().get_impl::<FeMergeNode>().render(
+            output_surface = Some(child.borrow_element().get_impl::<FeMergeNode>().render(
                 ctx,
                 acquired_nodes,
                 draw_ctx,
