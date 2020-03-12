@@ -14,8 +14,8 @@
 
 use downcast_rs::*;
 use locale_config::Locale;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, LocalName, Namespace, QualName};
-use std::cell::Ref;
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use std::cell::{Ref, RefMut};
 use std::collections::HashSet;
 use std::fmt;
 
@@ -43,8 +43,13 @@ pub type RsvgNode = rctree::Node<NodeData>;
 /// See the [module documentation](index.html) for more information.
 pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 
-/// Contents of a tree node
-pub struct NodeData {
+pub enum NodeData {
+    Element(Element),
+    Text(NodeChars),
+}
+
+/// Contents of an element node in the DOM
+pub struct Element {
     node_type: NodeType,
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
@@ -67,7 +72,7 @@ impl NodeData {
         class: Option<&str>,
         node_impl: Box<dyn NodeTrait>,
     ) -> NodeData {
-        NodeData {
+        NodeData::Element(Element {
             node_type,
             element_name: element_name.clone(),
             id: id.map(str::to_string),
@@ -80,21 +85,24 @@ impl NodeData {
             cond: true,
             style_attr: String::new(),
             node_impl,
-        }
+        })
     }
 
     pub fn new_chars() -> NodeData {
-        Self::new_element(
-            NodeType::Chars,
-            &QualName::new(
-                None,
-                Namespace::from("https://wiki.gnome.org/Projects/LibRsvg"),
-                LocalName::from("rsvg-chars"),
-            ),
-            None,
-            None,
-            Box::new(NodeChars::new()),
-        )
+        NodeData::Text(NodeChars::new())
+    }
+
+    pub fn get_type(&self) -> NodeType {
+        match *self {
+            NodeData::Element(ref e) => e.node_type,
+            NodeData::Text(_) => NodeType::Chars,
+        }
+    }
+}
+
+impl Element {
+    pub fn get_type(&self) -> NodeType {
+        self.node_type
     }
 
     pub fn get_node_trait(&self) -> &dyn NodeTrait {
@@ -107,14 +115,6 @@ impl NodeData {
         } else {
             panic!("could not downcast");
         }
-    }
-
-    pub fn get_type(&self) -> NodeType {
-        self.node_type
-    }
-
-    pub fn get_chars(&self) -> &NodeChars {
-        self.get_impl::<NodeChars>()
     }
 
     pub fn element_name(&self) -> &QualName {
@@ -280,12 +280,25 @@ impl NodeData {
 
 impl fmt::Display for NodeData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:?} id={}",
-            self.get_type(),
-            self.get_id().unwrap_or("None")
-        )
+        write!(f, "{:?}", self.get_type())?;
+
+        match *self {
+            NodeData::Element(ref e) => {
+                write!(f, " id={}", e.get_id().unwrap_or("None"))?;
+            }
+
+            _ => (),
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.get_type())?;
+        write!(f, " id={}", self.get_id().unwrap_or("None"))?;
+        Ok(())
     }
 }
 
@@ -304,7 +317,7 @@ pub struct CascadedValues<'a> {
 }
 
 enum CascadedInner<'a> {
-    FromNode(Ref<'a, NodeData>),
+    FromNode(Ref<'a, Element>),
     FromValues(ComputedValues),
 }
 
@@ -317,7 +330,7 @@ impl<'a> CascadedValues<'a> {
     pub fn new(&self, node: &'a RsvgNode) -> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
-                inner: CascadedInner::FromNode(node.borrow()),
+                inner: CascadedInner::FromNode(node.borrow_element()),
             },
 
             CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, v),
@@ -331,7 +344,7 @@ impl<'a> CascadedValues<'a> {
     /// `new()` to derive the cascade from an existing one.
     pub fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
         CascadedValues {
-            inner: CascadedInner::FromNode(node.borrow()),
+            inner: CascadedInner::FromNode(node.borrow_element()),
         }
     }
 
@@ -342,7 +355,7 @@ impl<'a> CascadedValues<'a> {
     /// `<use>`'s own cascade, not wih the element's original cascade.
     pub fn new_from_values(node: &'a RsvgNode, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
-        node.borrow().specified_values.to_computed_values(&mut v);
+        node.borrow_element().specified_values.to_computed_values(&mut v);
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
@@ -355,7 +368,7 @@ impl<'a> CascadedValues<'a> {
     /// `ComputedValues` from the `CascadedValues` that got passed to `draw()`.
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {
-            CascadedInner::FromNode(ref node) => &node.values,
+            CascadedInner::FromNode(ref element) => &element.values,
             CascadedInner::FromValues(ref v) => v,
         }
     }
@@ -478,6 +491,57 @@ pub enum NodeType {
     FeTurbulence,
 }
 
+/// Helper trait to get different NodeData variants
+pub trait NodeBorrow {
+    /// Returns `false` for NodeData::Text, `true` otherwise.
+    fn is_element(&self) -> bool;
+
+    /// Borrows a `NodeChars` reference.
+    ///
+    /// Panics: will panic if `&self` is not a `NodeData::Text` node
+    fn borrow_chars(&self) -> Ref<NodeChars>;
+
+    /// Borrows an `Element` reference
+    ///
+    /// Panics: will panic if `&self` is not a `NodeData::Element` node
+    fn borrow_element(&self) -> Ref<Element>;
+
+    /// Borrows an `Element` reference mutably
+    ///
+    /// Panics: will panic if `&self` is not a `NodeData::Element` node
+    fn borrow_element_mut(&mut self) -> RefMut<Element>;
+}
+
+impl NodeBorrow for RsvgNode {
+    fn is_element(&self) -> bool {
+        match *self.borrow() {
+            NodeData::Element(_) => true,
+            _ => false,
+        }
+    }
+
+    fn borrow_chars(&self) -> Ref<NodeChars> {
+        Ref::map(self.borrow(), |n| match *n {
+            NodeData::Text(ref c) => c,
+            _ => panic!("tried to borrow_chars for a non-text node"),
+        })
+    }
+
+    fn borrow_element(&self) -> Ref<Element> {
+        Ref::map(self.borrow(), |n| match *n {
+            NodeData::Element(ref e) => e,
+            _ => panic!("tried to borrow_element for a non-element node"),
+        })
+    }
+
+    fn borrow_element_mut(&mut self) -> RefMut<Element> {
+        RefMut::map(self.borrow_mut(), |n| match *n {
+            NodeData::Element(ref mut e) => e,
+            _ => panic!("tried to borrow_element_mut for a non-element node"),
+        })
+    }
+}
+
 /// Helper trait for cascading recursively
 pub trait NodeCascade {
     fn cascade(&mut self, values: &ComputedValues);
@@ -488,13 +552,13 @@ impl NodeCascade for RsvgNode {
         let mut values = values.clone();
 
         {
-            let mut node_mut = self.borrow_mut();
+            let mut elt = self.borrow_element_mut();
 
-            node_mut.specified_values.to_computed_values(&mut values);
-            node_mut.values = values.clone();
+            elt.specified_values.to_computed_values(&mut values);
+            elt.values = values.clone();
         }
 
-        for mut child in self.children() {
+        for mut child in self.children().filter(|c| c.is_element()) {
             child.cascade(&values);
         }
     }
@@ -527,18 +591,23 @@ impl NodeDraw for RsvgNode {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if !self.borrow().is_in_error() {
-            let transform = self.borrow().get_transform();
-            draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
-                self.borrow()
-                    .get_node_trait()
-                    .draw(self, acquired_nodes, cascaded, dc, clipping)
-            })
-        } else {
-            rsvg_log!("(not rendering element {} because it is in error)", self);
+        match *self.borrow() {
+            NodeData::Element(ref e) => {
+                if !e.is_in_error() {
+                    let transform = e.get_transform();
+                    draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
+                        e.get_node_trait()
+                            .draw(self, acquired_nodes, cascaded, dc, clipping)
+                    })
+                } else {
+                    rsvg_log!("(not rendering element {} because it is in error)", self);
 
-            // maybe we should actually return a RenderingError::NodeIsInError here?
-            Ok(draw_ctx.empty_bbox())
+                    // maybe we should actually return a RenderingError::NodeIsInError here?
+                    Ok(draw_ctx.empty_bbox())
+                }
+            }
+
+            _ => Ok(draw_ctx.empty_bbox()),
         }
     }
 
@@ -551,7 +620,7 @@ impl NodeDraw for RsvgNode {
     ) -> Result<BoundingBox, RenderingError> {
         let mut bbox = draw_ctx.empty_bbox();
 
-        for child in self.children() {
+        for child in self.children().filter(|c| c.is_element()) {
             let child_bbox = draw_ctx.draw_node_from_stack(
                 &child,
                 acquired_nodes,

@@ -188,7 +188,7 @@ impl PaintSource for Pattern {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let borrowed_node = acquired_node.borrow();
+                        let borrowed_node = acquired_node.borrow_element();
                         let borrowed_pattern = borrowed_node.get_impl::<Pattern>();
                         let unresolved = borrowed_pattern.get_unresolved(&acquired_node);
 
@@ -478,10 +478,7 @@ impl UnresolvedChildren {
     fn from_node(node: &RsvgNode) -> UnresolvedChildren {
         let weak = node.downgrade();
 
-        if node
-            .children()
-            .any(|child| child.borrow().get_type() != NodeType::Chars)
-        {
+        if node.children().any(|child| child.is_element()) {
             UnresolvedChildren::WithChildren(weak)
         } else {
             UnresolvedChildren::Unresolved
@@ -578,7 +575,7 @@ mod tests {
             Box::new(Pattern::default()),
         ));
 
-        let borrow = node.borrow();
+        let borrow = node.borrow_element();
         let p = borrow.get_impl::<Pattern>();
         let Unresolved { pattern, .. } = p.get_unresolved(&node);
         let pattern = pattern.resolve_from_defaults();

@@ -11,7 +11,7 @@ use crate::document::{AcquiredNode, AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::error::*;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
@@ -448,8 +448,8 @@ impl UnresolvedGradient {
 
         assert!(node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient);
 
-        for child_node in node.children() {
-            let child = child_node.borrow();
+        for child_node in node.children().filter(|c| c.is_element()) {
+            let child = child_node.borrow_element();
 
             if child.get_type() != NodeType::Stop {
                 continue;
@@ -661,7 +661,7 @@ macro_rules! impl_paint_source {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let borrowed_node = acquired_node.borrow();
+                        let borrowed_node = acquired_node.borrow_element();
                         let unresolved = match borrowed_node.get_type() {
                             $node_type => {
                                 let a_gradient = borrowed_node.get_impl::<$gradient>();
@@ -851,7 +851,7 @@ mod tests {
             Box::new(LinearGradient::default()),
         ));
 
-        let borrow = node.borrow();
+        let borrow = node.borrow_element();
         let g = borrow.get_impl::<LinearGradient>();
         let Unresolved { gradient, .. } = g.get_unresolved(&node);
         let gradient = gradient.resolve_from_defaults();
@@ -865,7 +865,7 @@ mod tests {
             Box::new(RadialGradient::default()),
         ));
 
-        let borrow = node.borrow();
+        let borrow = node.borrow_element();
         let g = borrow.get_impl::<RadialGradient>();
         let Unresolved { gradient, .. } = g.get_unresolved(&node);
         let gradient = gradient.resolve_from_defaults();

@@ -12,7 +12,7 @@ use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -432,14 +432,13 @@ fn children_to_chunks(
             NodeType::Chars => {
                 let values = cascaded.get();
                 child
-                    .borrow()
-                    .get_chars()
+                    .borrow_chars()
                     .to_chunks(&child, values, chunks, dx, dy, depth);
             }
 
             NodeType::TSpan => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow().get_impl::<TSpan>().to_chunks(
+                child.borrow_element().get_impl::<TSpan>().to_chunks(
                     &child,
                     acquired_nodes,
                     &cascaded,
@@ -451,7 +450,7 @@ fn children_to_chunks(
 
             NodeType::TRef => {
                 let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow().get_impl::<TRef>().to_chunks(
+                child.borrow_element().get_impl::<TRef>().to_chunks(
                     &child,
                     acquired_nodes,
                     &cascaded,
@@ -565,12 +564,6 @@ impl NodeChars {
 
     pub fn get_string(&self) -> String {
         self.string.borrow().clone()
-    }
-}
-
-impl NodeTrait for NodeChars {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
-        Ok(())
     }
 }
 
@@ -717,9 +710,9 @@ fn extract_chars_children_to_chunks_recursively(
     for child in node.children() {
         match child.borrow().get_type() {
             NodeType::Chars => child
-                .borrow()
-                .get_chars()
+                .borrow_chars()
                 .to_chunks(&child, values, chunks, None, None, depth),
+
             _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
         }
     }
