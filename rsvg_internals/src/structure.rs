@@ -76,8 +76,8 @@ impl NodeTrait for Switch {
         draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             if let Some(child) = node
                 .children()
-                .filter(|c| c.borrow().get_type() != NodeType::Chars)
-                .find(|c| c.borrow().get_cond())
+                .filter(|c| c.is_element())
+                .find(|c| c.borrow_element().get_cond())
             {
                 dc.draw_node_from_stack(
                     &child,

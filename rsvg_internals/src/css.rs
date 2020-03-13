@@ -92,9 +92,8 @@ use url::Url;
 use crate::allowed_url::AllowedUrl;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeCascade, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeCascade, NodeType, RsvgNode};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
-use crate::text::NodeChars;
 
 /// A parsed CSS declaration
 ///
@@ -451,17 +450,17 @@ impl selectors::Element for RsvgElement {
     }
 
     fn has_local_name(&self, local_name: &LocalName) -> bool {
-        self.0.borrow().element_name().local == *local_name
+        self.0.borrow_element().element_name().local == *local_name
     }
 
     /// Empty string for no namespace
     fn has_namespace(&self, ns: &Namespace) -> bool {
-        self.0.borrow().element_name().ns == *ns
+        self.0.borrow_element().element_name().ns == *ns
     }
 
     /// Whether this element and the `other` element have the same local name and namespace.
     fn is_same_type(&self, other: &Self) -> bool {
-        self.0.borrow().element_name() == other.0.borrow().element_name()
+        self.0.borrow_element().element_name() == other.0.borrow_element().element_name()
     }
 
     fn attr_matches(
@@ -509,7 +508,7 @@ impl selectors::Element for RsvgElement {
 
     fn has_id(&self, id: &LocalName, case_sensitivity: CaseSensitivity) -> bool {
         self.0
-            .borrow()
+            .borrow_element()
             .get_id()
             .map(|self_id| case_sensitivity.eq(self_id.as_bytes(), id.as_ref().as_bytes()))
             .unwrap_or(false)
@@ -517,7 +516,7 @@ impl selectors::Element for RsvgElement {
 
     fn has_class(&self, name: &LocalName, case_sensitivity: CaseSensitivity) -> bool {
         self.0
-            .borrow()
+            .borrow_element()
             .get_class()
             .map(|classes| {
                 classes
@@ -549,8 +548,7 @@ impl selectors::Element for RsvgElement {
     fn is_empty(&self) -> bool {
         !self.0.has_children()
             || self.0.children().all(|child| {
-                child.borrow().get_type() == NodeType::Chars
-                    && child.borrow().get_impl::<NodeChars>().is_empty()
+                child.borrow().get_type() == NodeType::Chars && child.borrow_chars().is_empty()
             })
     }
 
@@ -737,7 +735,7 @@ impl Stylesheet {
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
 pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet], extra: &[Stylesheet]) {
-    for mut node in root.descendants() {
+    for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
 
         let mut match_ctx = MatchingContext::new(
@@ -756,10 +754,11 @@ pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet], extra: &[Stylesh
         matches.as_mut_slice().sort();
 
         for m in matches {
-            node.borrow_mut().apply_style_declaration(m.declaration);
+            node.borrow_element_mut()
+                .apply_style_declaration(m.declaration);
         }
 
-        node.borrow_mut().set_style_attribute();
+        node.borrow_element_mut().set_style_attribute();
     }
 
     let values = ComputedValues::default();
