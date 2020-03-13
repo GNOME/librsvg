@@ -573,7 +573,7 @@ fn emit_marker_by_name(
     if let Ok(acquired) = acquired_nodes.acquire(name, &[NodeType::Marker]) {
         let node = acquired.get();
 
-        node.borrow().get_impl::<Marker>().render(
+        node.borrow_element().get_impl::<Marker>().render(
             &node,
             acquired_nodes,
             draw_ctx,

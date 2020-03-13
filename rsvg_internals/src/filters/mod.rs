@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -118,7 +118,12 @@ impl NodeTrait for Primitive {
         let primitiveunits = parent
             .and_then(|parent| {
                 if parent.borrow().get_type() == NodeType::Filter {
-                    Some(parent.borrow().get_impl::<Filter>().get_primitive_units())
+                    Some(
+                        parent
+                            .borrow_element()
+                            .get_impl::<Filter>()
+                            .get_primitive_units(),
+                    )
                 } else {
                     None
                 }
@@ -248,8 +253,8 @@ pub fn render(
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
     let filter_node = &*filter_node;
-    assert_eq!(filter_node.borrow().get_type(), NodeType::Filter);
-    assert!(!filter_node.borrow().is_in_error());
+    assert_eq!(filter_node.borrow_element().get_type(), NodeType::Filter);
+    assert!(!filter_node.borrow_element().is_in_error());
 
     let mut filter_ctx = FilterContext::new(
         filter_node,
@@ -267,9 +272,10 @@ pub fn render(
 
     let primitives = filter_node
         .children()
+        .filter(|c| c.is_element())
         // Skip nodes in error.
         .filter(|c| {
-            let in_error = c.borrow().is_in_error();
+            let in_error = c.borrow_element().is_in_error();
 
             if in_error {
                 rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
@@ -278,7 +284,12 @@ pub fn render(
             !in_error
         })
         // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow().get_node_trait().as_filter_effect().is_some())
+        .filter(|c| {
+            c.borrow_element()
+                .get_node_trait()
+                .as_filter_effect()
+                .is_some()
+        })
         // Check if the node wants linear RGB.
         .map(|c| {
             let linear_rgb = {
@@ -292,8 +303,8 @@ pub fn render(
         });
 
     for (c, linear_rgb) in primitives {
-        let node_data = c.borrow();
-        let filter = node_data.get_node_trait().as_filter_effect().unwrap();
+        let elt = c.borrow_element();
+        let filter = elt.get_node_trait().as_filter_effect().unwrap();
 
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = filter
