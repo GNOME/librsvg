@@ -43,8 +43,42 @@ pub type RsvgNode = rctree::Node<NodeData>;
 /// See the [module documentation](index.html) for more information.
 pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 
+/// Data for a single DOM node.
+///
+/// ## Memory consumption
+///
+/// SVG files look like this, roughly:
+///
+/// ```xml
+/// <svg>
+///   <rect x="10" y="20"/>
+///   <path d="..."/>
+///   <text x="10" y="20">Hello</text>
+///   <!-- etc -->
+/// </svg>
+/// ```
+///
+/// Each element has a bunch of data, including the styles, which is
+/// the biggest consumer of memory within the `Element` struct.  But
+/// between each element there is a text node; in the example above
+/// there are a bunch of text nodes with just whitespace (newlines and
+/// spaces), and a single text node with "`Hello`" in it from the
+/// `<text>` element.
+///
+/// This enum uses `Box<Element>` instead of embedding the `Element`
+/// struct directly in its variant, in order to make text nodes as
+/// small as possible, i.e. without all the baggage in an `Element`.
+/// With the Box, the `Element` variant is the size of a pointer,
+/// which is smaller than the `Text` variant.
+///
+/// ## Accessing the node's contents
+///
+/// Code that traverses the DOM tree needs to find out at runtime what
+/// each node stands for.  First, use the `get_type` or `is_element`
+/// methods from the `NodeBorrow` trait to see if you can then call
+/// `borrow_chars`, `borrow_element`, or `borrow_element_mut`.
 pub enum NodeData {
-    Element(Element),
+    Element(Box<Element>),
     Text(NodeChars),
 }
 
@@ -72,7 +106,7 @@ impl NodeData {
         class: Option<&str>,
         node_impl: Box<dyn NodeTrait>,
     ) -> NodeData {
-        NodeData::Element(Element {
+        NodeData::Element(Box::new(Element {
             node_type,
             element_name: element_name.clone(),
             id: id.map(str::to_string),
@@ -85,7 +119,7 @@ impl NodeData {
             cond: true,
             style_attr: String::new(),
             node_impl,
-        })
+        }))
     }
 
     pub fn new_chars() -> NodeData {
@@ -531,14 +565,14 @@ impl NodeBorrow for RsvgNode {
 
     fn borrow_element(&self) -> Ref<Element> {
         Ref::map(self.borrow(), |n| match *n {
-            NodeData::Element(ref e) => e,
+            NodeData::Element(ref e) => e.as_ref(),
             _ => panic!("tried to borrow_element for a non-element node"),
         })
     }
 
     fn borrow_element_mut(&mut self) -> RefMut<Element> {
         RefMut::map(self.borrow_mut(), |n| match *n {
-            NodeData::Element(ref mut e) => e,
+            NodeData::Element(ref mut e) => e.as_mut(),
             _ => panic!("tried to borrow_element_mut for a non-element node"),
         })
     }
