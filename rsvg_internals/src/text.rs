@@ -708,12 +708,12 @@ fn extract_chars_children_to_chunks_recursively(
     depth: usize,
 ) {
     for child in node.children() {
-        match child.borrow().get_type() {
-            NodeType::Chars => child
+        if child.is_chars() {
+            child
                 .borrow_chars()
-                .to_chunks(&child, values, chunks, None, None, depth),
-
-            _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
+                .to_chunks(&child, values, chunks, None, None, depth)
+        } else {
+            extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1)
         }
     }
 }

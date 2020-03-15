@@ -476,10 +476,7 @@ impl DocumentBuilder {
     fn append_chars_to_parent(&mut self, text: &str, parent: &mut RsvgNode) {
         // When the last child is a Chars node we can coalesce
         // the text and avoid screwing up the Pango layouts
-        let chars_node = if let Some(child) = parent
-            .last_child()
-            .filter(|c| c.borrow().get_type() == NodeType::Chars)
-        {
+        let chars_node = if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
             child
         } else {
             let child = RsvgNode::new(NodeData::new_chars());

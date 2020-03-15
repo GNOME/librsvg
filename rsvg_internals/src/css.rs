@@ -547,9 +547,10 @@ impl selectors::Element for RsvgElement {
     /// See http://dev.w3.org/csswg/selectors-3/#empty-pseudo
     fn is_empty(&self) -> bool {
         !self.0.has_children()
-            || self.0.children().all(|child| {
-                child.borrow().get_type() == NodeType::Chars && child.borrow_chars().is_empty()
-            })
+            || self
+                .0
+                .children()
+                .all(|child| child.is_chars() && child.borrow_chars().is_empty())
     }
 
     /// Returns whether this element matches `:root`,

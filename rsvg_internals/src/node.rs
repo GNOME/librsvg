@@ -532,6 +532,9 @@ pub trait NodeBorrow {
     /// Returns `false` for NodeData::Text, `true` otherwise.
     fn is_element(&self) -> bool;
 
+    /// Returns `true` for NodeData::Text, `false` otherwise.
+    fn is_chars(&self) -> bool;
+
     /// Borrows a `NodeChars` reference.
     ///
     /// Panics: will panic if `&self` is not a `NodeData::Text` node
@@ -552,6 +555,13 @@ impl NodeBorrow for RsvgNode {
     fn is_element(&self) -> bool {
         match *self.borrow() {
             NodeData::Element(_) => true,
+            _ => false,
+        }
+    }
+
+    fn is_chars(&self) -> bool {
+        match *self.borrow() {
+            NodeData::Text(_) => true,
             _ => false,
         }
     }
