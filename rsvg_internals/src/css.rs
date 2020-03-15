@@ -420,7 +420,7 @@ impl selectors::Element for RsvgElement {
         let mut sibling = self.0.previous_sibling();
 
         while let Some(ref sib) = sibling {
-            if sib.borrow().get_type() != NodeType::Chars {
+            if sib.is_element() {
                 return sibling.map(|n| n.into());
             }
 
@@ -435,7 +435,7 @@ impl selectors::Element for RsvgElement {
         let mut sibling = self.0.next_sibling();
 
         while let Some(ref sib) = sibling {
-            if sib.borrow().get_type() != NodeType::Chars {
+            if sib.is_element() {
                 return sibling.map(|n| n.into());
             }
 
