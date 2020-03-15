@@ -546,11 +546,10 @@ impl selectors::Element for RsvgElement {
     /// That is, whether it does not contain any child element or any non-zero-length text node.
     /// See http://dev.w3.org/csswg/selectors-3/#empty-pseudo
     fn is_empty(&self) -> bool {
-        !self.0.has_children()
-            || self
-                .0
-                .children()
-                .all(|child| child.is_chars() && child.borrow_chars().is_empty())
+        // .all() returns true for the empty iterator
+        self.0
+            .children()
+            .all(|child| child.is_chars() && child.borrow_chars().is_empty())
     }
 
     /// Returns whether this element matches `:root`,
