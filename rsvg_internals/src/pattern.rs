@@ -180,7 +180,7 @@ impl PaintSource for Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                match acquired_nodes.acquire(&fragment, &[NodeType::Pattern]) {
+                match acquired_nodes.acquire(&fragment, &[ElementType::Pattern]) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -562,13 +562,13 @@ impl Pattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::{NodeData, NodeType, RsvgNode};
+    use crate::node::{ElementType, NodeData, RsvgNode};
     use markup5ever::{namespace_url, ns, QualName};
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
         let node = RsvgNode::new(NodeData::new_element(
-            NodeType::Pattern,
+            ElementType::Pattern,
             &QualName::new(None, ns!(svg), local_name!("pattern")),
             None,
             None,

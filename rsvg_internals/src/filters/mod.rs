@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, ElementType, NodeBorrow, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -120,7 +120,7 @@ impl NodeTrait for Primitive {
                 assert!(parent.is_element());
                 let parent_elt = parent.borrow_element();
 
-                if parent_elt.get_type() == NodeType::Filter {
+                if parent_elt.get_type() == ElementType::Filter {
                     Some(parent_elt.get_impl::<Filter>().get_primitive_units())
                 } else {
                     None
@@ -251,7 +251,7 @@ pub fn render(
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
     let filter_node = &*filter_node;
-    assert_eq!(filter_node.borrow_element().get_type(), NodeType::Filter);
+    assert_eq!(filter_node.borrow_element().get_type(), ElementType::Filter);
     assert!(!filter_node.borrow_element().is_in_error());
 
     let mut filter_ctx = FilterContext::new(

@@ -12,7 +12,7 @@ use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, ElementType, NodeBorrow, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -439,7 +439,7 @@ fn children_to_chunks(
             let elt = child.borrow_element();
 
             match elt.get_type() {
-                NodeType::TSpan => {
+                ElementType::TSpan => {
                     let cascaded = CascadedValues::new(cascaded, &child);
                     elt.get_impl::<TSpan>().to_chunks(
                         &child,
@@ -451,7 +451,7 @@ fn children_to_chunks(
                     );
                 }
 
-                NodeType::TRef => {
+                ElementType::TRef => {
                     let cascaded = CascadedValues::new(cascaded, &child);
                     elt.get_impl::<TRef>().to_chunks(
                         &child,

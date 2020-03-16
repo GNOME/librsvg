@@ -18,7 +18,7 @@ use crate::filters::{
     },
     FilterEffect, FilterError, PrimitiveWithInput,
 };
-use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, ElementType, NodeBorrow, NodeResult, NodeTrait, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -493,7 +493,9 @@ fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource
     let mut light_sources = node.children().rev().filter(|c| {
         c.is_element()
             && match c.borrow_element().get_type() {
-                NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
+                ElementType::FeDistantLight
+                | ElementType::FePointLight
+                | ElementType::FeSpotLight => true,
                 _ => false,
             }
     });
@@ -511,9 +513,9 @@ fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource
     }
 
     let light_source = match elt.get_type() {
-        NodeType::FeDistantLight => elt.get_impl::<FeDistantLight>().transform(ctx),
-        NodeType::FePointLight => elt.get_impl::<FePointLight>().transform(ctx),
-        NodeType::FeSpotLight => elt.get_impl::<FeSpotLight>().transform(ctx),
+        ElementType::FeDistantLight => elt.get_impl::<FeDistantLight>().transform(ctx),
+        ElementType::FePointLight => elt.get_impl::<FePointLight>().transform(ctx),
+        ElementType::FeSpotLight => elt.get_impl::<FeSpotLight>().transform(ctx),
         _ => unreachable!(),
     };
 

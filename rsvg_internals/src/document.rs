@@ -14,7 +14,7 @@ use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
-use crate::node::{NodeBorrow, NodeData, NodeType, RsvgNode};
+use crate::node::{ElementType, NodeBorrow, NodeData, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -97,7 +97,7 @@ impl Document {
         let root = self.root();
         let elt = root.borrow_element();
 
-        assert!(elt.get_type() == NodeType::Svg);
+        assert!(elt.get_type() == ElementType::Svg);
         elt.get_impl::<Svg>().get_intrinsic_dimensions()
     }
 
@@ -277,7 +277,7 @@ impl<'i> AcquiredNodes<'i> {
     pub fn lookup_node(
         &self,
         fragment: &Fragment,
-        node_types: &[NodeType],
+        element_types: &[ElementType],
     ) -> Result<RsvgNode, AcquireError> {
         let node = self.document.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
@@ -291,11 +291,11 @@ impl<'i> AcquiredNodes<'i> {
             AcquireError::LinkNotFound(fragment.clone())
         })?;
 
-        if node_types.is_empty() {
+        if element_types.is_empty() {
             Ok(node)
         } else if node.is_element() {
-            let node_type = node.borrow_element().get_type();
-            if node_types.iter().find(|&&t| t == node_type).is_some() {
+            let element_type = node.borrow_element().get_type();
+            if element_types.iter().find(|&&t| t == element_type).is_some() {
                 Ok(node)
             } else {
                 Err(AcquireError::InvalidLinkType(fragment.clone()))
@@ -310,13 +310,13 @@ impl<'i> AcquiredNodes<'i> {
     }
 
     /// Acquires a node.
-    /// Specify `node_types` when expecting the node to be of a particular type,
-    /// or use an empty slice for `node_types` if you want a node of any type.
+    /// Specify `element_types` when expecting the node to be of a particular type,
+    /// or use an empty slice for `element_types` if you want a node of any type.
     /// Nodes acquired by this function must be released in reverse acquiring order.
     pub fn acquire(
         &mut self,
         fragment: &Fragment,
-        node_types: &[NodeType],
+        element_types: &[ElementType],
     ) -> Result<AcquiredNode, AcquireError> {
         self.num_elements_acquired += 1;
 
@@ -326,7 +326,7 @@ impl<'i> AcquiredNodes<'i> {
             return Err(AcquireError::MaxReferencesExceeded);
         }
 
-        let node = self.lookup_node(fragment, node_types)?;
+        let node = self.lookup_node(fragment, element_types)?;
 
         if node_is_accessed_by_reference(&node) {
             self.acquire_ref(&node)
@@ -355,7 +355,7 @@ impl<'i> AcquiredNodes<'i> {
 // from other nodes' atributes.  The node could in turn cause other nodes
 // to get referenced, potentially causing reference cycles.
 fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
-    use NodeType::*;
+    use ElementType::*;
 
     if !node.is_element() {
         return false;
@@ -508,7 +508,7 @@ impl DocumentBuilder {
 
         match tree {
             Some(root) if root.is_element() => {
-                if root.borrow_element().get_type() == NodeType::Svg {
+                if root.borrow_element().get_type() == ElementType::Svg {
                     let mut document = Document {
                         tree: root,
                         ids,

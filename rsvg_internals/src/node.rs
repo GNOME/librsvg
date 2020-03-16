@@ -84,7 +84,7 @@ pub enum NodeData {
 
 /// Contents of an element node in the DOM
 pub struct Element {
-    node_type: NodeType,
+    element_type: ElementType,
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
@@ -100,14 +100,14 @@ pub struct Element {
 
 impl NodeData {
     pub fn new_element(
-        node_type: NodeType,
+        element_type: ElementType,
         element_name: &QualName,
         id: Option<&str>,
         class: Option<&str>,
         node_impl: Box<dyn NodeTrait>,
     ) -> NodeData {
         NodeData::Element(Box::new(Element {
-            node_type,
+            element_type,
             element_name: element_name.clone(),
             id: id.map(str::to_string),
             class: class.map(str::to_string),
@@ -128,8 +128,8 @@ impl NodeData {
 }
 
 impl Element {
-    pub fn get_type(&self) -> NodeType {
-        self.node_type
+    pub fn get_type(&self) -> ElementType {
+        self.element_type
     }
 
     pub fn get_node_trait(&self) -> &dyn NodeTrait {
@@ -462,8 +462,7 @@ impl_downcast!(NodeTrait);
 pub type NodeResult = Result<(), NodeError>;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub enum NodeType {
-    Chars,
+pub enum ElementType {
     Circle,
     ClipPath,
     Ellipse,

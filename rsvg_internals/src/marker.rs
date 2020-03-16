@@ -570,7 +570,7 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Ok(acquired) = acquired_nodes.acquire(name, &[NodeType::Marker]) {
+    if let Ok(acquired) = acquired_nodes.acquire(name, &[ElementType::Marker]) {
         let node = acquired.get();
 
         node.borrow_element().get_impl::<Marker>().render(

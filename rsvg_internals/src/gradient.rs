@@ -11,7 +11,7 @@ use crate::document::{AcquiredNode, AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::error::*;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, ElementType, NodeBorrow, NodeResult, NodeTrait, RsvgNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
@@ -444,14 +444,17 @@ impl UnresolvedGradient {
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
     fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
-        let node_type = node.borrow_element().get_type();
+        let element_type = node.borrow_element().get_type();
 
-        assert!(node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient);
+        assert!(
+            element_type == ElementType::LinearGradient
+                || element_type == ElementType::RadialGradient
+        );
 
         for child_node in node.children().filter(|c| c.is_element()) {
             let child = child_node.borrow_element();
 
-            if child.get_type() != NodeType::Stop {
+            if child.get_type() != ElementType::Stop {
                 continue;
             }
 
@@ -631,7 +634,7 @@ impl NodeTrait for RadialGradient {
 }
 
 macro_rules! impl_paint_source {
-    ($gradient:ty, $node_type:pat, $other_gradient:ty, $other_type:pat,) => {
+    ($gradient:ty, $element_type:pat, $other_gradient:ty, $other_type:pat,) => {
         impl PaintSource for $gradient {
             type Resolved = Gradient;
 
@@ -663,7 +666,7 @@ macro_rules! impl_paint_source {
 
                         let borrowed_node = acquired_node.borrow_element();
                         let unresolved = match borrowed_node.get_type() {
-                            $node_type => {
+                            $element_type => {
                                 let a_gradient = borrowed_node.get_impl::<$gradient>();
                                 a_gradient.get_unresolved(&acquired_node)
                             }
@@ -698,16 +701,16 @@ macro_rules! impl_paint_source {
 
 impl_paint_source!(
     LinearGradient,
-    NodeType::LinearGradient,
+    ElementType::LinearGradient,
     RadialGradient,
-    NodeType::RadialGradient,
+    ElementType::RadialGradient,
 );
 
 impl_paint_source!(
     RadialGradient,
-    NodeType::RadialGradient,
+    ElementType::RadialGradient,
     LinearGradient,
-    NodeType::LinearGradient,
+    ElementType::LinearGradient,
 );
 
 impl AsPaintSource for Gradient {
@@ -802,7 +805,7 @@ fn acquire_gradient(
 ) -> Result<AcquiredNode, AcquireError> {
     acquired_nodes.acquire(
         fragment,
-        &[NodeType::LinearGradient, NodeType::RadialGradient],
+        &[ElementType::LinearGradient, ElementType::RadialGradient],
     )
 }
 
@@ -810,7 +813,7 @@ fn acquire_gradient(
 mod tests {
     use super::*;
     use crate::float_eq_cairo::ApproxEqCairo;
-    use crate::node::{NodeData, NodeType, RsvgNode};
+    use crate::node::{ElementType, NodeData, RsvgNode};
     use markup5ever::{namespace_url, ns, QualName};
 
     #[test]
@@ -844,7 +847,7 @@ mod tests {
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
         let node = RsvgNode::new(NodeData::new_element(
-            NodeType::LinearGradient,
+            ElementType::LinearGradient,
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             None,
             None,
@@ -858,7 +861,7 @@ mod tests {
         assert!(gradient.is_resolved());
 
         let node = RsvgNode::new(NodeData::new_element(
-            NodeType::RadialGradient,
+            ElementType::RadialGradient,
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             None,
             None,

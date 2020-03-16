@@ -44,14 +44,14 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 
 macro_rules! n {
-    ($name:ident, $node_type:ident) => {
+    ($name:ident, $element_type:ident) => {
         pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> RsvgNode {
             RsvgNode::new(NodeData::new_element(
-                NodeType::$node_type,
+                ElementType::$element_type,
                 element_name,
                 id,
                 class,
-                Box::new(<$node_type>::default()),
+                Box::new(<$element_type>::default()),
             ))
         }
     };
