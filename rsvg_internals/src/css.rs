@@ -90,9 +90,10 @@ use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use url::Url;
 
 use crate::allowed_url::AllowedUrl;
+use crate::element::ElementType;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::{ElementType, NodeBorrow, NodeCascade, RsvgNode};
+use crate::node::{NodeBorrow, NodeCascade, RsvgNode};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
 
 /// A parsed CSS declaration

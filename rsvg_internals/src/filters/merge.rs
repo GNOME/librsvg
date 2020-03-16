@@ -2,7 +2,8 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::node::{ElementType, NodeBorrow, NodeResult, NodeTrait, RsvgNode};
+use crate::element::{ElementResult, ElementType};
+use crate::node::{NodeBorrow, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
@@ -37,14 +38,14 @@ impl NodeTrait for FeMerge {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)
     }
 }
 
 impl NodeTrait for FeMergeNode {
     #[inline]
-    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "in") => self.in_ = Some(attr.parse(value)?),

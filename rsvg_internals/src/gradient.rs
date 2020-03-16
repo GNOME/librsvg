@@ -9,9 +9,10 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::length::*;
-use crate::node::{CascadedValues, ElementType, NodeBorrow, NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
@@ -129,7 +130,7 @@ fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind>
 }
 
 impl NodeTrait for Stop {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "offset") => {
@@ -575,7 +576,7 @@ impl_get_unresolved!(LinearGradient);
 impl_get_unresolved!(RadialGradient);
 
 impl Common {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => self.units = Some(attr.parse(value)?),
@@ -595,7 +596,7 @@ impl Common {
 }
 
 impl NodeTrait for LinearGradient {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -614,7 +615,7 @@ impl NodeTrait for LinearGradient {
 }
 
 impl NodeTrait for RadialGradient {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -813,8 +814,9 @@ fn acquire_gradient(
 mod tests {
     use super::*;
     use crate::float_eq_cairo::ApproxEqCairo;
-    use crate::node::{ElementType, NodeData, RsvgNode};
+    use crate::node::{NodeData, RsvgNode};
     use markup5ever::{namespace_url, ns, QualName};
+    use std::ptr;
 
     #[test]
     fn parses_spread_method() {
@@ -846,12 +848,11 @@ mod tests {
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
+        let bag = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
+
         let node = RsvgNode::new(NodeData::new_element(
-            ElementType::LinearGradient,
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
-            None,
-            None,
-            Box::new(LinearGradient::default()),
+            &bag,
         ));
 
         let borrow = node.borrow_element();
@@ -861,11 +862,8 @@ mod tests {
         assert!(gradient.is_resolved());
 
         let node = RsvgNode::new(NodeData::new_element(
-            ElementType::RadialGradient,
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
-            None,
-            None,
-            Box::new(RadialGradient::default()),
+            &bag,
         ));
 
         let borrow = node.borrow_element();
