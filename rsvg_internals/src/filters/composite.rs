@@ -3,8 +3,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::ElementResult;
 use crate::error::*;
-use crate::node::{NodeResult, NodeTrait, RsvgNode};
+use crate::node::{NodeTrait, RsvgNode};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 
@@ -53,7 +54,7 @@ impl Default for FeComposite {
 impl NodeTrait for FeComposite {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {

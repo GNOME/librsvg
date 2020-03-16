@@ -10,6 +10,7 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
@@ -118,7 +119,7 @@ pub struct Pattern {
 }
 
 impl NodeTrait for Pattern {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "patternUnits") => self.common.units = Some(attr.parse(value)?),
@@ -180,7 +181,7 @@ impl PaintSource for Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                match acquired_nodes.acquire(&fragment, &[NodeType::Pattern]) {
+                match acquired_nodes.acquire(&fragment, &[ElementType::Pattern]) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -562,17 +563,17 @@ impl Pattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::{NodeData, NodeType, RsvgNode};
+    use crate::node::{NodeData, RsvgNode};
     use markup5ever::{namespace_url, ns, QualName};
+    use std::ptr;
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
+        let bag = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
+
         let node = RsvgNode::new(NodeData::new_element(
-            NodeType::Pattern,
             &QualName::new(None, ns!(svg), local_name!("pattern")),
-            None,
-            None,
-            Box::new(Pattern::default()),
+            &bag,
         ));
 
         let borrow = node.borrow_element();

@@ -73,12 +73,12 @@ impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
 
 /// A complete error for an attribute and its erroneous value
 #[derive(Debug, Clone, PartialEq)]
-pub struct NodeError {
+pub struct ElementError {
     pub attr: QualName,
     pub err: ValueErrorKind,
 }
 
-impl error::Error for NodeError {
+impl error::Error for ElementError {
     fn description(&self) -> &str {
         match self.err {
             ValueErrorKind::UnknownProperty => "unknown property",
@@ -88,7 +88,7 @@ impl error::Error for NodeError {
     }
 }
 
-impl fmt::Display for NodeError {
+impl fmt::Display for ElementError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}: {}", self.attr.expanded(), self.err)
     }
@@ -147,9 +147,9 @@ impl fmt::Display for AcquireError {
     }
 }
 
-/// Helper for converting `Result<O, E>` into `Result<O, NodeError>`
+/// Helper for converting `Result<O, E>` into `Result<O, ElementError>`
 ///
-/// A `NodeError` requires a `QualName` that corresponds to the attribute to which the
+/// A `ElementError` requires a `QualName` that corresponds to the attribute to which the
 /// error refers, plus the actual `ValueErrorKind` that describes the error.  However,
 /// parsing functions for attribute value types will want to return their own kind of
 /// error, instead of `ValueErrorKind`.  If that particular error type has an `impl
@@ -167,21 +167,21 @@ impl fmt::Display for AcquireError {
 /// ```
 ///
 /// The call to `.attribute(attr)` converts the `Result` from `parse_foo()` into a full
-/// `NodeError` with the provided `attr`.
+/// `ElementError` with the provided `attr`.
 pub trait AttributeResultExt<O> {
-    fn attribute(self, attr: QualName) -> Result<O, NodeError>;
+    fn attribute(self, attr: QualName) -> Result<O, ElementError>;
 }
 
 impl<O, E: Into<ValueErrorKind>> AttributeResultExt<O> for Result<O, E> {
-    fn attribute(self, attr: QualName) -> Result<O, NodeError> {
+    fn attribute(self, attr: QualName) -> Result<O, ElementError> {
         self.map_err(|e| e.into())
-            .map_err(|err| NodeError { attr, err })
+            .map_err(|err| ElementError { attr, err })
     }
 }
 
-/// Turns a short-lived `ParseError` into a long-lived `NodeError`
+/// Turns a short-lived `ParseError` into a long-lived `ElementError`
 impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
-    fn attribute(self, attr: QualName) -> Result<O, NodeError> {
+    fn attribute(self, attr: QualName) -> Result<O, ElementError> {
         self.map_err(|e| {
             // FIXME: eventually, here we'll want to preserve the location information
 
@@ -196,13 +196,13 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
                     tok.to_css(&mut s).unwrap(); // FIXME: what do we do with a fmt::Error?
                     s.push_str("'");
 
-                    NodeError {
+                    ElementError {
                         attr,
                         err: ValueErrorKind::Parse(s),
                     }
                 }
 
-                ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => NodeError {
+                ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => ElementError {
                     attr,
                     err: ValueErrorKind::parse_error("unexpected end of input"),
                 },
@@ -211,7 +211,7 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
                     unreachable!("attribute parsers should not return errors for CSS rules")
                 }
 
-                ParseErrorKind::Custom(err) => NodeError { attr, err },
+                ParseErrorKind::Custom(err) => ElementError { attr, err },
             }
         })
     }

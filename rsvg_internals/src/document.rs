@@ -8,13 +8,13 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
-use crate::create_node::create_node;
 use crate::css::{self, Origin, Stylesheet};
+use crate::element::ElementType;
 use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
-use crate::node::{NodeBorrow, NodeData, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeData, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -97,7 +97,7 @@ impl Document {
         let root = self.root();
         let elt = root.borrow_element();
 
-        assert!(elt.get_type() == NodeType::Svg);
+        assert!(elt.get_type() == ElementType::Svg);
         elt.get_impl::<Svg>().get_intrinsic_dimensions()
     }
 
@@ -277,7 +277,7 @@ impl<'i> AcquiredNodes<'i> {
     pub fn lookup_node(
         &self,
         fragment: &Fragment,
-        node_types: &[NodeType],
+        element_types: &[ElementType],
     ) -> Result<RsvgNode, AcquireError> {
         let node = self.document.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
@@ -291,15 +291,17 @@ impl<'i> AcquiredNodes<'i> {
             AcquireError::LinkNotFound(fragment.clone())
         })?;
 
-        if node_types.is_empty() {
+        if element_types.is_empty() {
             Ok(node)
-        } else {
-            let node_type = node.borrow().get_type();
-            if node_types.iter().find(|&&t| t == node_type).is_some() {
+        } else if node.is_element() {
+            let element_type = node.borrow_element().get_type();
+            if element_types.iter().find(|&&t| t == element_type).is_some() {
                 Ok(node)
             } else {
                 Err(AcquireError::InvalidLinkType(fragment.clone()))
             }
+        } else {
+            Err(AcquireError::InvalidLinkType(fragment.clone()))
         }
     }
 
@@ -308,13 +310,13 @@ impl<'i> AcquiredNodes<'i> {
     }
 
     /// Acquires a node.
-    /// Specify `node_types` when expecting the node to be of a particular type,
-    /// or use an empty slice for `node_types` if you want a node of any type.
+    /// Specify `element_types` when expecting the node to be of a particular type,
+    /// or use an empty slice for `element_types` if you want a node of any type.
     /// Nodes acquired by this function must be released in reverse acquiring order.
     pub fn acquire(
         &mut self,
         fragment: &Fragment,
-        node_types: &[NodeType],
+        element_types: &[ElementType],
     ) -> Result<AcquiredNode, AcquireError> {
         self.num_elements_acquired += 1;
 
@@ -324,7 +326,7 @@ impl<'i> AcquiredNodes<'i> {
             return Err(AcquireError::MaxReferencesExceeded);
         }
 
-        let node = self.lookup_node(fragment, node_types)?;
+        let node = self.lookup_node(fragment, element_types)?;
 
         if node_is_accessed_by_reference(&node) {
             self.acquire_ref(&node)
@@ -353,9 +355,13 @@ impl<'i> AcquiredNodes<'i> {
 // from other nodes' atributes.  The node could in turn cause other nodes
 // to get referenced, potentially causing reference cycles.
 fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
-    use NodeType::*;
+    use ElementType::*;
 
-    match node.borrow().get_type() {
+    if !node.is_element() {
+        return false;
+    }
+
+    match node.borrow_element().get_type() {
         ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
 
         _ => false,
@@ -432,7 +438,7 @@ impl DocumentBuilder {
         pbag: &PropertyBag,
         parent: Option<RsvgNode>,
     ) -> RsvgNode {
-        let mut node = create_node(name, pbag);
+        let mut node = RsvgNode::new(NodeData::new_element(name, pbag));
 
         if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id
@@ -476,10 +482,7 @@ impl DocumentBuilder {
     fn append_chars_to_parent(&mut self, text: &str, parent: &mut RsvgNode) {
         // When the last child is a Chars node we can coalesce
         // the text and avoid screwing up the Pango layouts
-        let chars_node = if let Some(child) = parent
-            .last_child()
-            .filter(|c| c.borrow().get_type() == NodeType::Chars)
-        {
+        let chars_node = if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
             child
         } else {
             let child = RsvgNode::new(NodeData::new_chars());
@@ -504,9 +507,8 @@ impl DocumentBuilder {
         } = self;
 
         match tree {
-            None => Err(LoadingError::SvgHasNoElements),
-            Some(root) => {
-                if root.borrow().get_type() == NodeType::Svg {
+            Some(root) if root.is_element() => {
+                if root.borrow_element().get_type() == ElementType::Svg {
                     let mut document = Document {
                         tree: root,
                         ids,
@@ -523,6 +525,7 @@ impl DocumentBuilder {
                     Err(LoadingError::RootElementIsNotSvg)
                 }
             }
+            _ => Err(LoadingError::SvgHasNoElements),
         }
     }
 }

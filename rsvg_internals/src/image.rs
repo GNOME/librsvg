@@ -7,6 +7,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
+use crate::element::ElementResult;
 use crate::error::*;
 use crate::length::*;
 use crate::node::*;
@@ -27,7 +28,7 @@ pub struct Image {
 }
 
 impl NodeTrait for Image {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,

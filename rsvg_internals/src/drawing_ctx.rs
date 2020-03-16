@@ -14,11 +14,12 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNode, AcquiredNodes};
 use crate::dpi::Dpi;
+use crate::element::ElementType;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
 use crate::marker;
-use crate::node::{CascadedValues, NodeBorrow, NodeDraw, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeDraw, RsvgNode};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::path_builder::*;
 use crate::pattern::Pattern;
@@ -475,11 +476,12 @@ impl DrawingCtx {
                 let mask = values.mask.0.get();
 
                 // The `filter` property does not apply to masks.
-                let filter = if node.borrow().get_type() == NodeType::Mask {
-                    None
-                } else {
-                    values.filter.0.get()
-                };
+                let filter =
+                    if node.is_element() && node.borrow_element().get_type() == ElementType::Mask {
+                        None
+                    } else {
+                        values.filter.0.get()
+                    };
 
                 let UnitInterval(opacity) = values.opacity.0;
 
@@ -571,7 +573,8 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(fragment) = mask {
-                        if let Ok(acquired) = acquired_nodes.acquire(fragment, &[NodeType::Mask]) {
+                        if let Ok(acquired) = acquired_nodes.acquire(fragment, &[ElementType::Mask])
+                        {
                             let mask_node = acquired.get();
 
                             res = res.and_then(|bbox| {
@@ -738,7 +741,7 @@ impl DrawingCtx {
         child_surface: SharedImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
-        match acquired_nodes.acquire(filter_uri, &[NodeType::Filter]) {
+        match acquired_nodes.acquire(filter_uri, &[ElementType::Filter]) {
             Ok(acquired) => {
                 let filter_node = acquired.get();
 
@@ -814,8 +817,10 @@ impl DrawingCtx {
                     Ok(acquired) => {
                         let node = acquired.get();
 
-                        had_paint_server = match node.borrow().get_type() {
-                            NodeType::LinearGradient => node
+                        assert!(node.is_element());
+
+                        had_paint_server = match node.borrow_element().get_type() {
+                            ElementType::LinearGradient => node
                                 .borrow_element()
                                 .get_impl::<LinearGradient>()
                                 .resolve_fallbacks_and_set_pattern(
@@ -825,7 +830,7 @@ impl DrawingCtx {
                                     opacity,
                                     bbox,
                                 )?,
-                            NodeType::RadialGradient => node
+                            ElementType::RadialGradient => node
                                 .borrow_element()
                                 .get_impl::<RadialGradient>()
                                 .resolve_fallbacks_and_set_pattern(
@@ -835,7 +840,7 @@ impl DrawingCtx {
                                     opacity,
                                     bbox,
                                 )?,
-                            NodeType::Pattern => node
+                            ElementType::Pattern => node
                                 .borrow_element()
                                 .get_impl::<Pattern>()
                                 .resolve_fallbacks_and_set_pattern(
@@ -1168,19 +1173,7 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
-        if child.borrow().get_type() != NodeType::Symbol {
-            let cr = self.get_cairo_context();
-            cr.translate(use_rect.x0, use_rect.y0);
-
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                dc.draw_node_from_stack(
-                    &child,
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    clipping,
-                )
-            })
-        } else {
+        if child.is_element() && child.borrow_element().get_type() == ElementType::Symbol {
             let elt = child.borrow_element();
             let symbol = elt.get_impl::<Symbol>();
 
@@ -1204,6 +1197,18 @@ impl DrawingCtx {
                     an,
                     &CascadedValues::new_from_values(&child, values),
                     dc,
+                    clipping,
+                )
+            })
+        } else {
+            let cr = self.get_cairo_context();
+            cr.translate(use_rect.x0, use_rect.y0);
+
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                dc.draw_node_from_stack(
+                    &child,
+                    an,
+                    &CascadedValues::new_from_values(&child, values),
                     clipping,
                 )
             })
@@ -1266,7 +1271,11 @@ fn get_clip_in_user_and_object_space(
     clip_uri: Option<&Fragment>,
 ) -> (Option<RsvgNode>, Option<RsvgNode>) {
     clip_uri
-        .and_then(|fragment| acquired_nodes.acquire(fragment, &[NodeType::ClipPath]).ok())
+        .and_then(|fragment| {
+            acquired_nodes
+                .acquire(fragment, &[ElementType::ClipPath])
+                .ok()
+        })
         .and_then(|acquired| {
             let clip_node = acquired.get().clone();
 
@@ -1290,9 +1299,9 @@ fn acquire_paint_server(
     acquired_nodes.acquire(
         fragment,
         &[
-            NodeType::LinearGradient,
-            NodeType::RadialGradient,
-            NodeType::Pattern,
+            ElementType::LinearGradient,
+            ElementType::RadialGradient,
+            ElementType::Pattern,
         ],
     )
 }
