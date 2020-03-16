@@ -428,38 +428,42 @@ fn children_to_chunks(
     depth: usize,
 ) {
     for child in node.children() {
-        match child.borrow().get_type() {
-            NodeType::Chars => {
-                let values = cascaded.get();
-                child
-                    .borrow_chars()
-                    .to_chunks(&child, values, chunks, dx, dy, depth);
-            }
+        if child.is_chars() {
+            let values = cascaded.get();
+            child
+                .borrow_chars()
+                .to_chunks(&child, values, chunks, dx, dy, depth);
+        } else {
+            assert!(child.is_element());
 
-            NodeType::TSpan => {
-                let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow_element().get_impl::<TSpan>().to_chunks(
-                    &child,
-                    acquired_nodes,
-                    &cascaded,
-                    draw_ctx,
-                    chunks,
-                    depth + 1,
-                );
-            }
+            let elt = child.borrow_element();
 
-            NodeType::TRef => {
-                let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow_element().get_impl::<TRef>().to_chunks(
-                    &child,
-                    acquired_nodes,
-                    &cascaded,
-                    chunks,
-                    depth + 1,
-                );
-            }
+            match elt.get_type() {
+                NodeType::TSpan => {
+                    let cascaded = CascadedValues::new(cascaded, &child);
+                    elt.get_impl::<TSpan>().to_chunks(
+                        &child,
+                        acquired_nodes,
+                        &cascaded,
+                        draw_ctx,
+                        chunks,
+                        depth + 1,
+                    );
+                }
 
-            _ => (),
+                NodeType::TRef => {
+                    let cascaded = CascadedValues::new(cascaded, &child);
+                    elt.get_impl::<TRef>().to_chunks(
+                        &child,
+                        acquired_nodes,
+                        &cascaded,
+                        chunks,
+                        depth + 1,
+                    );
+                }
+
+                _ => (),
+            }
         }
     }
 }
