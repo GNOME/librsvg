@@ -127,7 +127,7 @@ pub enum ElementType {
 // that come in an element and build up a Vec<ElementError>.  However, we
 // don't do this now.  Doing that may be more useful for an SVG
 // validator, not a renderer like librsvg is.
-pub type ElementResult = Result<(), NodeError>;
+pub type ElementResult = Result<(), ElementError>;
 
 /// Contents of an element node in the DOM
 pub struct Element {
@@ -227,7 +227,7 @@ impl Element {
         }
     }
 
-    fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+    fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "transform") => {
@@ -249,7 +249,7 @@ impl Element {
         &mut self,
         pbag: &PropertyBag<'_>,
         locale: &Locale,
-    ) -> Result<(), NodeError> {
+    ) -> Result<(), ElementError> {
         let mut cond = self.cond;
 
         for (attr, value) in pbag.iter() {
@@ -283,7 +283,7 @@ impl Element {
     }
 
     /// Hands the pbag to the node's state, to apply the presentation attributes
-    fn set_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), NodeError> {
+    fn set_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
         match self.specified_values.parse_presentation_attributes(pbag) {
             Ok(_) => Ok(()),
             Err(e) => {
@@ -325,7 +325,7 @@ impl Element {
         }
     }
 
-    fn set_error(&mut self, error: NodeError) {
+    fn set_error(&mut self, error: ElementError) {
         rsvg_log!("setting node {} in error: {}", self, error);
         self.result = Err(error);
     }

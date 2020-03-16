@@ -536,7 +536,7 @@ impl SpecifiedValues {
         &mut self,
         attr: QualName,
         value: &str,
-    ) -> Result<(), NodeError> {
+    ) -> Result<(), ElementError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
@@ -614,7 +614,7 @@ impl SpecifiedValues {
     pub fn parse_presentation_attributes(
         &mut self,
         pbag: &PropertyBag<'_>,
-    ) -> Result<(), NodeError> {
+    ) -> Result<(), ElementError> {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xml "lang") => {
@@ -658,7 +658,7 @@ impl SpecifiedValues {
         &mut self,
         declarations: &str,
         important_styles: &mut HashSet<QualName>,
-    ) -> Result<(), NodeError> {
+    ) -> Result<(), ElementError> {
         let mut input = ParserInput::new(declarations);
         let mut parser = Parser::new(&mut input);
 

@@ -44,18 +44,18 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
 
 pub trait ParseValue<T: Parse> {
     /// Parses a `value` string into a type `T`.
-    fn parse(&self, value: &str) -> Result<T, NodeError>;
+    fn parse(&self, value: &str) -> Result<T, ElementError>;
 
     /// Parses a `value` string into a type `T` with an optional validation function.
     fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
         &self,
         value: &str,
         validate: F,
-    ) -> Result<T, NodeError>;
+    ) -> Result<T, ElementError>;
 }
 
 impl<T: Parse> ParseValue<T> for QualName {
-    fn parse(&self, value: &str) -> Result<T, NodeError> {
+    fn parse(&self, value: &str) -> Result<T, ElementError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
@@ -66,7 +66,7 @@ impl<T: Parse> ParseValue<T> for QualName {
         &self,
         value: &str,
         validate: F,
-    ) -> Result<T, NodeError> {
+    ) -> Result<T, ElementError> {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
