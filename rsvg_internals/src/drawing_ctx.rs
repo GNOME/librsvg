@@ -475,11 +475,12 @@ impl DrawingCtx {
                 let mask = values.mask.0.get();
 
                 // The `filter` property does not apply to masks.
-                let filter = if node.borrow().get_type() == NodeType::Mask {
-                    None
-                } else {
-                    values.filter.0.get()
-                };
+                let filter =
+                    if node.is_element() && node.borrow_element().get_type() == NodeType::Mask {
+                        None
+                    } else {
+                        values.filter.0.get()
+                    };
 
                 let UnitInterval(opacity) = values.opacity.0;
 
@@ -814,7 +815,9 @@ impl DrawingCtx {
                     Ok(acquired) => {
                         let node = acquired.get();
 
-                        had_paint_server = match node.borrow().get_type() {
+                        assert!(node.is_element());
+
+                        had_paint_server = match node.borrow_element().get_type() {
                             NodeType::LinearGradient => node
                                 .borrow_element()
                                 .get_impl::<LinearGradient>()
@@ -1168,19 +1171,7 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
-        if child.borrow().get_type() != NodeType::Symbol {
-            let cr = self.get_cairo_context();
-            cr.translate(use_rect.x0, use_rect.y0);
-
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                dc.draw_node_from_stack(
-                    &child,
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    clipping,
-                )
-            })
-        } else {
+        if child.is_element() && child.borrow_element().get_type() == NodeType::Symbol {
             let elt = child.borrow_element();
             let symbol = elt.get_impl::<Symbol>();
 
@@ -1204,6 +1195,18 @@ impl DrawingCtx {
                     an,
                     &CascadedValues::new_from_values(&child, values),
                     dc,
+                    clipping,
+                )
+            })
+        } else {
+            let cr = self.get_cairo_context();
+            cr.translate(use_rect.x0, use_rect.y0);
+
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                dc.draw_node_from_stack(
+                    &child,
+                    an,
+                    &CascadedValues::new_from_values(&child, values),
                     clipping,
                 )
             })

@@ -90,7 +90,7 @@ impl FilterEffect for FeMerge {
         let mut bounds = self.base.get_bounds(ctx);
         for child in node
             .children()
-            .filter(|c| c.borrow().get_type() == NodeType::FeMergeNode)
+            .filter(|c| c.is_element() && c.borrow_element().get_type() == NodeType::FeMergeNode)
         {
             let elt = child.borrow_element();
 
@@ -111,7 +111,7 @@ impl FilterEffect for FeMerge {
         let mut output_surface = None;
         for child in node
             .children()
-            .filter(|c| c.borrow().get_type() == NodeType::FeMergeNode)
+            .filter(|c| c.is_element() && c.borrow_element().get_type() == NodeType::FeMergeNode)
         {
             output_surface = Some(child.borrow_element().get_impl::<FeMergeNode>().render(
                 ctx,

@@ -444,7 +444,7 @@ impl UnresolvedGradient {
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
     fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
-        let node_type = node.borrow().get_type();
+        let node_type = node.borrow_element().get_type();
 
         assert!(node_type == NodeType::LinearGradient || node_type == NodeType::RadialGradient);
 

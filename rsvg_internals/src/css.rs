@@ -498,7 +498,7 @@ impl selectors::Element for RsvgElement {
     /// Whether this element is a `link`.
     fn is_link(&self) -> bool {
         // FIXME: is this correct for SVG <a>, not HTML <a>?
-        self.0.borrow().get_type() == NodeType::Link
+        self.0.is_element() && self.0.borrow_element().get_type() == NodeType::Link
     }
 
     /// Returns whether the element is an HTML <slot> element.
@@ -815,10 +815,10 @@ mod tests {
 
         // Node types
 
-        assert!(a.borrow().get_type() == NodeType::Svg);
-        assert!(b.borrow().get_type() == NodeType::Rect);
-        assert!(c.borrow().get_type() == NodeType::Circle);
-        assert!(d.borrow().get_type() == NodeType::Rect);
+        assert!(a.borrow_element().get_type() == NodeType::Svg);
+        assert!(b.borrow_element().get_type() == NodeType::Rect);
+        assert!(c.borrow_element().get_type() == NodeType::Circle);
+        assert!(d.borrow_element().get_type() == NodeType::Rect);
 
         let a = RsvgElement(a);
         let b = RsvgElement(b);

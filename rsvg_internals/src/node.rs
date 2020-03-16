@@ -125,13 +125,6 @@ impl NodeData {
     pub fn new_chars() -> NodeData {
         NodeData::Text(NodeChars::new())
     }
-
-    pub fn get_type(&self) -> NodeType {
-        match *self {
-            NodeData::Element(ref e) => e.node_type,
-            NodeData::Text(_) => NodeType::Chars,
-        }
-    }
 }
 
 impl Element {
@@ -314,14 +307,13 @@ impl Element {
 
 impl fmt::Display for NodeData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.get_type())?;
-
         match *self {
             NodeData::Element(ref e) => {
-                write!(f, " id={}", e.get_id().unwrap_or("None"))?;
+                write!(f, "{:?} id={}", e.get_type(), e.get_id().unwrap_or("None"))?;
             }
-
-            _ => (),
+            NodeData::Text(_) => {
+                write!(f, "Chars")?;
+            }
         }
 
         Ok(())

@@ -358,7 +358,7 @@ impl XmlState {
         let mut inner = self.inner.borrow_mut();
         let current_node = inner.current_node.as_ref().unwrap();
 
-        assert!(current_node.borrow().get_type() == NodeType::Style);
+        assert!(current_node.borrow_element().get_type() == NodeType::Style);
 
         let style_type = current_node
             .borrow_element()

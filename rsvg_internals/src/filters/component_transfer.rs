@@ -294,7 +294,7 @@ impl FilterEffect for FeComponentTransfer {
         {
             node.children()
                 .rev()
-                .filter(|c| c.borrow().get_type() == node_type)
+                .filter(|c| c.is_element() && c.borrow_element().get_type() == node_type)
                 .find(|c| c.borrow_element().get_impl::<F>().channel() == channel)
         };
 

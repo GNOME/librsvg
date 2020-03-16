@@ -293,13 +293,15 @@ impl<'i> AcquiredNodes<'i> {
 
         if node_types.is_empty() {
             Ok(node)
-        } else {
-            let node_type = node.borrow().get_type();
+        } else if node.is_element() {
+            let node_type = node.borrow_element().get_type();
             if node_types.iter().find(|&&t| t == node_type).is_some() {
                 Ok(node)
             } else {
                 Err(AcquireError::InvalidLinkType(fragment.clone()))
             }
+        } else {
+            Err(AcquireError::InvalidLinkType(fragment.clone()))
         }
     }
 
@@ -355,7 +357,11 @@ impl<'i> AcquiredNodes<'i> {
 fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
     use NodeType::*;
 
-    match node.borrow().get_type() {
+    if !node.is_element() {
+        return false;
+    }
+
+    match node.borrow_element().get_type() {
         ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
 
         _ => false,
@@ -501,9 +507,8 @@ impl DocumentBuilder {
         } = self;
 
         match tree {
-            None => Err(LoadingError::SvgHasNoElements),
-            Some(root) => {
-                if root.borrow().get_type() == NodeType::Svg {
+            Some(root) if root.is_element() => {
+                if root.borrow_element().get_type() == NodeType::Svg {
                     let mut document = Document {
                         tree: root,
                         ids,
@@ -520,6 +525,7 @@ impl DocumentBuilder {
                     Err(LoadingError::RootElementIsNotSvg)
                 }
             }
+            _ => Err(LoadingError::SvgHasNoElements),
         }
     }
 }

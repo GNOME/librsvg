@@ -117,13 +117,11 @@ impl NodeTrait for Primitive {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = parent
             .and_then(|parent| {
-                if parent.borrow().get_type() == NodeType::Filter {
-                    Some(
-                        parent
-                            .borrow_element()
-                            .get_impl::<Filter>()
-                            .get_primitive_units(),
-                    )
+                assert!(parent.is_element());
+                let parent_elt = parent.borrow_element();
+
+                if parent_elt.get_type() == NodeType::Filter {
+                    Some(parent_elt.get_impl::<Filter>().get_primitive_units())
                 } else {
                     None
                 }

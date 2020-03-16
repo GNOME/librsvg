@@ -490,13 +490,13 @@ impl_lighting_filter!(FeDiffuseLighting, diffuse_alpha);
 impl_lighting_filter!(FeSpecularLighting, specular_alpha);
 
 fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource, FilterError> {
-    let mut light_sources = node
-        .children()
-        .rev()
-        .filter(|c| match c.borrow().get_type() {
-            NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
-            _ => false,
-        });
+    let mut light_sources = node.children().rev().filter(|c| {
+        c.is_element()
+            && match c.borrow_element().get_type() {
+                NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
+                _ => false,
+            }
+    });
 
     let node = light_sources.next();
     if node.is_none() || light_sources.next().is_some() {
@@ -504,23 +504,16 @@ fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource
     }
 
     let node = node.unwrap();
-    if node.borrow_element().is_in_error() {
+    let elt = node.borrow_element();
+
+    if elt.is_in_error() {
         return Err(FilterError::ChildNodeInError);
     }
 
-    let light_source = match node.borrow().get_type() {
-        NodeType::FeDistantLight => node
-            .borrow_element()
-            .get_impl::<FeDistantLight>()
-            .transform(ctx),
-        NodeType::FePointLight => node
-            .borrow_element()
-            .get_impl::<FePointLight>()
-            .transform(ctx),
-        NodeType::FeSpotLight => node
-            .borrow_element()
-            .get_impl::<FeSpotLight>()
-            .transform(ctx),
+    let light_source = match elt.get_type() {
+        NodeType::FeDistantLight => elt.get_impl::<FeDistantLight>().transform(ctx),
+        NodeType::FePointLight => elt.get_impl::<FePointLight>().transform(ctx),
+        NodeType::FeSpotLight => elt.get_impl::<FeSpotLight>().transform(ctx),
         _ => unreachable!(),
     };
 
