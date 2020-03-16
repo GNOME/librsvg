@@ -8,11 +8,12 @@ use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -428,73 +429,77 @@ fn children_to_chunks(
     depth: usize,
 ) {
     for child in node.children() {
-        match child.borrow().get_type() {
-            NodeType::Chars => {
-                let values = cascaded.get();
-                child
-                    .borrow_chars()
-                    .to_chunks(&child, values, chunks, dx, dy, depth);
-            }
+        if child.is_chars() {
+            let values = cascaded.get();
+            child
+                .borrow_chars()
+                .to_chunks(&child, values, chunks, dx, dy, depth);
+        } else {
+            assert!(child.is_element());
 
-            NodeType::TSpan => {
-                let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow_element().get_impl::<TSpan>().to_chunks(
-                    &child,
-                    acquired_nodes,
-                    &cascaded,
-                    draw_ctx,
-                    chunks,
-                    depth + 1,
-                );
-            }
+            let elt = child.borrow_element();
 
-            NodeType::TRef => {
-                let cascaded = CascadedValues::new(cascaded, &child);
-                child.borrow_element().get_impl::<TRef>().to_chunks(
-                    &child,
-                    acquired_nodes,
-                    &cascaded,
-                    chunks,
-                    depth + 1,
-                );
-            }
+            match elt.get_type() {
+                ElementType::TSpan => {
+                    let cascaded = CascadedValues::new(cascaded, &child);
+                    elt.get_impl::<TSpan>().to_chunks(
+                        &child,
+                        acquired_nodes,
+                        &cascaded,
+                        draw_ctx,
+                        chunks,
+                        depth + 1,
+                    );
+                }
 
-            _ => (),
+                ElementType::TRef => {
+                    let cascaded = CascadedValues::new(cascaded, &child);
+                    elt.get_impl::<TRef>().to_chunks(
+                        &child,
+                        acquired_nodes,
+                        &cascaded,
+                        chunks,
+                        depth + 1,
+                    );
+                }
+
+                _ => (),
+            }
         }
     }
 }
 
-/// In SVG text elements, we use `NodeChars` to store character data.  For example,
+/// In SVG text elements, we use `Chars` to store character data.  For example,
 /// an element like `<text>Foo Bar</text>` will be a `Text` with a single child,
-/// and the child will be a `NodeChars` with "Foo Bar" for its contents.
+/// and the child will be a `Chars` with "Foo Bar" for its contents.
 ///
 /// Text elements can contain `<tspan>` sub-elements.  In this case,
-/// those `tspan` nodes will also contain `NodeChars` children.
+/// those `tspan` nodes will also contain `Chars` children.
 ///
-/// A text or tspan element can contain more than one `NodeChars` child, for example,
+/// A text or tspan element can contain more than one `Chars` child, for example,
 /// if there is an XML comment that splits the character contents in two:
 ///
 /// ```xml
 /// <text>
-///   This sentence will create a NodeChars.
+///   This sentence will create a Chars.
 ///   <!-- this comment is ignored -->
-///   This sentence will cretea another NodeChars.
+///   This sentence will cretea another Chars.
 /// </text>
 /// ```
 ///
 /// When rendering a text element, it will take care of concatenating the strings
-/// in its `NodeChars` children as appropriate, depending on the
-/// `xml:space="preserve"` attribute.  A `NodeChars` stores the characters verbatim
+/// in its `Chars` children as appropriate, depending on the
+/// `xml:space="preserve"` attribute.  A `Chars` stores the characters verbatim
 /// as they come out of the XML parser, after ensuring that they are valid UTF-8.
 
-pub struct NodeChars {
+pub struct Chars {
     string: RefCell<String>,
     space_normalized: RefCell<Option<String>>,
 }
 
-impl NodeChars {
-    pub fn new() -> NodeChars {
-        NodeChars {
+impl Chars {
+    pub fn new() -> Chars {
+        Chars {
             string: RefCell::new(String::new()),
             space_normalized: RefCell::new(None),
         }
@@ -600,7 +605,7 @@ impl Text {
 }
 
 impl NodeTrait for Text {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -708,18 +713,18 @@ fn extract_chars_children_to_chunks_recursively(
     depth: usize,
 ) {
     for child in node.children() {
-        match child.borrow().get_type() {
-            NodeType::Chars => child
+        if child.is_chars() {
+            child
                 .borrow_chars()
-                .to_chunks(&child, values, chunks, None, None, depth),
-
-            _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
+                .to_chunks(&child, values, chunks, None, None, depth)
+        } else {
+            extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1)
         }
     }
 }
 
 impl NodeTrait for TRef {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => {
@@ -771,7 +776,7 @@ impl TSpan {
 }
 
 impl NodeTrait for TSpan {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value).map(Some)?,

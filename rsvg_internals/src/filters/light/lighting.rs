@@ -7,6 +7,7 @@ use rayon::prelude::*;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
@@ -18,7 +19,7 @@ use crate::filters::{
     },
     FilterEffect, FilterError, PrimitiveWithInput,
 };
-use crate::node::{CascadedValues, NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -48,7 +49,7 @@ impl Common {
         }
     }
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -95,7 +96,7 @@ impl Default for FeDiffuseLighting {
 impl NodeTrait for FeDiffuseLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -164,7 +165,7 @@ impl Default for FeSpecularLighting {
 impl NodeTrait for FeSpecularLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -490,13 +491,15 @@ impl_lighting_filter!(FeDiffuseLighting, diffuse_alpha);
 impl_lighting_filter!(FeSpecularLighting, specular_alpha);
 
 fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource, FilterError> {
-    let mut light_sources = node
-        .children()
-        .rev()
-        .filter(|c| match c.borrow().get_type() {
-            NodeType::FeDistantLight | NodeType::FePointLight | NodeType::FeSpotLight => true,
-            _ => false,
-        });
+    let mut light_sources = node.children().rev().filter(|c| {
+        c.is_element()
+            && match c.borrow_element().get_type() {
+                ElementType::FeDistantLight
+                | ElementType::FePointLight
+                | ElementType::FeSpotLight => true,
+                _ => false,
+            }
+    });
 
     let node = light_sources.next();
     if node.is_none() || light_sources.next().is_some() {
@@ -504,23 +507,16 @@ fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource
     }
 
     let node = node.unwrap();
-    if node.borrow_element().is_in_error() {
+    let elt = node.borrow_element();
+
+    if elt.is_in_error() {
         return Err(FilterError::ChildNodeInError);
     }
 
-    let light_source = match node.borrow().get_type() {
-        NodeType::FeDistantLight => node
-            .borrow_element()
-            .get_impl::<FeDistantLight>()
-            .transform(ctx),
-        NodeType::FePointLight => node
-            .borrow_element()
-            .get_impl::<FePointLight>()
-            .transform(ctx),
-        NodeType::FeSpotLight => node
-            .borrow_element()
-            .get_impl::<FeSpotLight>()
-            .transform(ctx),
+    let light_source = match elt.get_type() {
+        ElementType::FeDistantLight => elt.get_impl::<FeDistantLight>().transform(ctx),
+        ElementType::FePointLight => elt.get_impl::<FePointLight>().transform(ctx),
+        ElementType::FeSpotLight => elt.get_impl::<FeSpotLight>().transform(ctx),
         _ => unreachable!(),
     };
 

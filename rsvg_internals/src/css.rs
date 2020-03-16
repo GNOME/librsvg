@@ -90,9 +90,10 @@ use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use url::Url;
 
 use crate::allowed_url::AllowedUrl;
+use crate::element::ElementType;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeBorrow, NodeCascade, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeCascade, RsvgNode};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
 
 /// A parsed CSS declaration
@@ -420,7 +421,7 @@ impl selectors::Element for RsvgElement {
         let mut sibling = self.0.previous_sibling();
 
         while let Some(ref sib) = sibling {
-            if sib.borrow().get_type() != NodeType::Chars {
+            if sib.is_element() {
                 return sibling.map(|n| n.into());
             }
 
@@ -435,7 +436,7 @@ impl selectors::Element for RsvgElement {
         let mut sibling = self.0.next_sibling();
 
         while let Some(ref sib) = sibling {
-            if sib.borrow().get_type() != NodeType::Chars {
+            if sib.is_element() {
                 return sibling.map(|n| n.into());
             }
 
@@ -498,7 +499,7 @@ impl selectors::Element for RsvgElement {
     /// Whether this element is a `link`.
     fn is_link(&self) -> bool {
         // FIXME: is this correct for SVG <a>, not HTML <a>?
-        self.0.borrow().get_type() == NodeType::Link
+        self.0.is_element() && self.0.borrow_element().get_type() == ElementType::Link
     }
 
     /// Returns whether the element is an HTML <slot> element.
@@ -546,10 +547,10 @@ impl selectors::Element for RsvgElement {
     /// That is, whether it does not contain any child element or any non-zero-length text node.
     /// See http://dev.w3.org/csswg/selectors-3/#empty-pseudo
     fn is_empty(&self) -> bool {
-        !self.0.has_children()
-            || self.0.children().all(|child| {
-                child.borrow().get_type() == NodeType::Chars && child.borrow_chars().is_empty()
-            })
+        // .all() returns true for the empty iterator
+        self.0
+            .children()
+            .all(|child| child.is_chars() && child.borrow_chars().is_empty())
     }
 
     /// Returns whether this element matches `:root`,
@@ -815,10 +816,10 @@ mod tests {
 
         // Node types
 
-        assert!(a.borrow().get_type() == NodeType::Svg);
-        assert!(b.borrow().get_type() == NodeType::Rect);
-        assert!(c.borrow().get_type() == NodeType::Circle);
-        assert!(d.borrow().get_type() == NodeType::Rect);
+        assert!(a.borrow_element().get_type() == ElementType::Svg);
+        assert!(b.borrow_element().get_type() == ElementType::Rect);
+        assert!(c.borrow_element().get_type() == ElementType::Circle);
+        assert!(d.borrow_element().get_type() == ElementType::Rect);
 
         let a = RsvgElement(a);
         let b = RsvgElement(b);

@@ -29,13 +29,13 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
 	rsvg_internals/src/coord_units.rs			\
-	rsvg_internals/src/create_node.rs			\
 	rsvg_internals/src/css.rs				\
-	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/dasharray.rs				\
 	rsvg_internals/src/document.rs				\
 	rsvg_internals/src/dpi.rs				\
 	rsvg_internals/src/drawing_ctx.rs			\
+	rsvg_internals/src/element.rs				\
+	rsvg_internals/src/error.rs				\
 	rsvg_internals/src/filter.rs				\
 	rsvg_internals/src/filters/bounds.rs			\
 	rsvg_internals/src/filters/blend.rs			\

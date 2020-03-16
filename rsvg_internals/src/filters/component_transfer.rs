@@ -5,8 +5,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::{ElementResult, ElementType};
 use crate::error::*;
-use crate::node::{NodeBorrow, NodeResult, NodeTrait, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, NodeTrait, RsvgNode};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -37,7 +38,7 @@ impl NodeTrait for FeComponentTransfer {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)
     }
 }
@@ -204,7 +205,7 @@ macro_rules! func_x {
                 &mut self,
                 _parent: Option<&RsvgNode>,
                 pbag: &PropertyBag<'_>,
-            ) -> NodeResult {
+            ) -> ElementResult {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
                         expanded_name!("", "type") => self.function_type = attr.parse(value)?,
@@ -288,20 +289,24 @@ impl FilterEffect for FeComponentTransfer {
         )?;
 
         // Get a node for every pixel component.
-        fn get_node<F>(node: &RsvgNode, node_type: NodeType, channel: Channel) -> Option<RsvgNode>
+        fn get_node<F>(
+            node: &RsvgNode,
+            element_type: ElementType,
+            channel: Channel,
+        ) -> Option<RsvgNode>
         where
             F: FeComponentTransferFunc + NodeTrait,
         {
             node.children()
                 .rev()
-                .filter(|c| c.borrow().get_type() == node_type)
+                .filter(|c| c.is_element() && c.borrow_element().get_type() == element_type)
                 .find(|c| c.borrow_element().get_impl::<F>().channel() == channel)
         };
 
-        let func_r_node = get_node::<FeFuncR>(node, NodeType::FeFuncR, Channel::R);
-        let func_g_node = get_node::<FeFuncG>(node, NodeType::FeFuncG, Channel::G);
-        let func_b_node = get_node::<FeFuncB>(node, NodeType::FeFuncB, Channel::B);
-        let func_a_node = get_node::<FeFuncA>(node, NodeType::FeFuncA, Channel::A);
+        let func_r_node = get_node::<FeFuncR>(node, ElementType::FeFuncR, Channel::R);
+        let func_g_node = get_node::<FeFuncG>(node, ElementType::FeFuncG, Channel::G);
+        let func_b_node = get_node::<FeFuncB>(node, ElementType::FeFuncB, Channel::B);
+        let func_a_node = get_node::<FeFuncA>(node, ElementType::FeFuncA, Channel::A);
 
         for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
             .iter()

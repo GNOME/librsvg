@@ -12,6 +12,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
@@ -175,7 +176,7 @@ impl Marker {
 }
 
 impl NodeTrait for Marker {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,
@@ -570,7 +571,7 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Ok(acquired) = acquired_nodes.acquire(name, &[NodeType::Marker]) {
+    if let Ok(acquired) = acquired_nodes.acquire(name, &[ElementType::Marker]) {
         let node = acquired.get();
 
         node.borrow_element().get_impl::<Marker>().render(

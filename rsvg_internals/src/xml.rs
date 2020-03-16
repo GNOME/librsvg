@@ -13,10 +13,11 @@ use std::str;
 
 use crate::allowed_url::AllowedUrl;
 use crate::document::{Document, DocumentBuilder};
+use crate::element::ElementType;
 use crate::error::LoadingError;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
-use crate::node::{NodeBorrow, NodeType, RsvgNode};
+use crate::node::{NodeBorrow, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::style::{Style, StyleType};
 use crate::xml2_load::Xml2Parser;
@@ -358,7 +359,7 @@ impl XmlState {
         let mut inner = self.inner.borrow_mut();
         let current_node = inner.current_node.as_ref().unwrap();
 
-        assert!(current_node.borrow().get_type() == NodeType::Style);
+        assert!(current_node.borrow_element().get_type() == ElementType::Style);
 
         let style_type = current_node
             .borrow_element()
