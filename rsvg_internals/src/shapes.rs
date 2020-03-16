@@ -8,6 +8,7 @@ use std::rc::Rc;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::ElementResult;
 use crate::error::*;
 use crate::length::*;
 use crate::node::*;
@@ -115,7 +116,7 @@ pub struct Path {
 }
 
 impl NodeTrait for Path {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "d") {
                 let mut builder = PathBuilder::new();
@@ -219,7 +220,7 @@ pub struct Polygon {
 }
 
 impl NodeTrait for Polygon {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value).map(Some)?;
@@ -254,7 +255,7 @@ pub struct Polyline {
 }
 
 impl NodeTrait for Polyline {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value).map(Some)?;
@@ -290,7 +291,7 @@ pub struct Line {
 }
 
 impl NodeTrait for Line {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x1") => self.x1 = attr.parse(value)?,
@@ -352,7 +353,7 @@ pub struct Rect {
 }
 
 impl NodeTrait for Rect {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -580,7 +581,7 @@ pub struct Circle {
 }
 
 impl NodeTrait for Circle {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,
@@ -633,7 +634,7 @@ pub struct Ellipse {
 }
 
 impl NodeTrait for Ellipse {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,

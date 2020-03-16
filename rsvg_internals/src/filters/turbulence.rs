@@ -3,8 +3,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::ElementResult;
 use crate::error::*;
-use crate::node::{CascadedValues, NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeTrait, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -59,7 +60,7 @@ impl NodeTrait for FeTurbulence {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {

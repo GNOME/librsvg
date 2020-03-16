@@ -7,6 +7,7 @@ use rayon::prelude::*;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
@@ -18,7 +19,7 @@ use crate::filters::{
     },
     FilterEffect, FilterError, PrimitiveWithInput,
 };
-use crate::node::{CascadedValues, ElementType, NodeBorrow, NodeResult, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -48,7 +49,7 @@ impl Common {
         }
     }
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -95,7 +96,7 @@ impl Default for FeDiffuseLighting {
 impl NodeTrait for FeDiffuseLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -164,7 +165,7 @@ impl Default for FeSpecularLighting {
 impl NodeTrait for FeSpecularLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {

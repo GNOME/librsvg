@@ -8,13 +8,13 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
-use crate::create_node::create_node;
 use crate::css::{self, Origin, Stylesheet};
+use crate::element::ElementType;
 use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
-use crate::node::{ElementType, NodeBorrow, NodeData, RsvgNode};
+use crate::node::{NodeBorrow, NodeData, RsvgNode};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -438,7 +438,7 @@ impl DocumentBuilder {
         pbag: &PropertyBag,
         parent: Option<RsvgNode>,
     ) -> RsvgNode {
-        let mut node = create_node(name, pbag);
+        let mut node = RsvgNode::new(NodeData::new_element(name, pbag));
 
         if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id

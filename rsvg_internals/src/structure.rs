@@ -9,6 +9,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
+use crate::element::ElementResult;
 use crate::error::*;
 use crate::length::*;
 use crate::node::*;
@@ -22,7 +23,7 @@ use crate::viewbox::*;
 pub struct Group();
 
 impl NodeTrait for Group {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
 
@@ -50,7 +51,7 @@ impl NodeTrait for Group {
 pub struct NonRendering;
 
 impl NodeTrait for NonRendering {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
 }
@@ -59,7 +60,7 @@ impl NodeTrait for NonRendering {
 pub struct Switch();
 
 impl NodeTrait for Switch {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, _: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
 
@@ -183,7 +184,7 @@ impl Svg {
 }
 
 impl NodeTrait for Svg {
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let is_inner_svg = parent.is_some();
@@ -308,7 +309,7 @@ impl Use {
 }
 
 impl NodeTrait for Use {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => {
@@ -362,7 +363,7 @@ impl Symbol {
 }
 
 impl NodeTrait for Symbol {
-    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -395,7 +396,7 @@ impl ClipPath {
 }
 
 impl NodeTrait for ClipPath {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "clipPathUnits") => self.units = attr.parse(value)?,
@@ -455,7 +456,7 @@ impl Mask {
 }
 
 impl NodeTrait for Mask {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -484,7 +485,7 @@ pub struct Link {
 }
 
 impl NodeTrait for Link {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> NodeResult {
+    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => self.link = Some(value.to_owned()),
