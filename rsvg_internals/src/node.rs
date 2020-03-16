@@ -24,7 +24,7 @@ use crate::error::*;
 use crate::filters::FilterEffect;
 use crate::properties::{ComputedValues, SpecifiedValues};
 use crate::property_bag::PropertyBag;
-use crate::text::NodeChars;
+use crate::text::Chars;
 
 /// Strong reference to an element in the SVG tree.
 ///
@@ -72,7 +72,7 @@ pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
 /// `borrow_chars`, `borrow_element`, or `borrow_element_mut`.
 pub enum NodeData {
     Element(Box<Element>),
-    Text(NodeChars),
+    Text(Chars),
 }
 
 impl NodeData {
@@ -81,7 +81,7 @@ impl NodeData {
     }
 
     pub fn new_chars() -> NodeData {
-        NodeData::Text(NodeChars::new())
+        NodeData::Text(Chars::new())
     }
 }
 
@@ -219,10 +219,10 @@ pub trait NodeBorrow {
     /// Returns `true` for NodeData::Text, `false` otherwise.
     fn is_chars(&self) -> bool;
 
-    /// Borrows a `NodeChars` reference.
+    /// Borrows a `Chars` reference.
     ///
     /// Panics: will panic if `&self` is not a `NodeData::Text` node
-    fn borrow_chars(&self) -> Ref<NodeChars>;
+    fn borrow_chars(&self) -> Ref<Chars>;
 
     /// Borrows an `Element` reference
     ///
@@ -250,7 +250,7 @@ impl NodeBorrow for RsvgNode {
         }
     }
 
-    fn borrow_chars(&self) -> Ref<NodeChars> {
+    fn borrow_chars(&self) -> Ref<Chars> {
         Ref::map(self.borrow(), |n| match *n {
             NodeData::Text(ref c) => c,
             _ => panic!("tried to borrow_chars for a non-text node"),

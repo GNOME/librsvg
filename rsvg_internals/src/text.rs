@@ -469,37 +469,37 @@ fn children_to_chunks(
     }
 }
 
-/// In SVG text elements, we use `NodeChars` to store character data.  For example,
+/// In SVG text elements, we use `Chars` to store character data.  For example,
 /// an element like `<text>Foo Bar</text>` will be a `Text` with a single child,
-/// and the child will be a `NodeChars` with "Foo Bar" for its contents.
+/// and the child will be a `Chars` with "Foo Bar" for its contents.
 ///
 /// Text elements can contain `<tspan>` sub-elements.  In this case,
-/// those `tspan` nodes will also contain `NodeChars` children.
+/// those `tspan` nodes will also contain `Chars` children.
 ///
-/// A text or tspan element can contain more than one `NodeChars` child, for example,
+/// A text or tspan element can contain more than one `Chars` child, for example,
 /// if there is an XML comment that splits the character contents in two:
 ///
 /// ```xml
 /// <text>
-///   This sentence will create a NodeChars.
+///   This sentence will create a Chars.
 ///   <!-- this comment is ignored -->
-///   This sentence will cretea another NodeChars.
+///   This sentence will cretea another Chars.
 /// </text>
 /// ```
 ///
 /// When rendering a text element, it will take care of concatenating the strings
-/// in its `NodeChars` children as appropriate, depending on the
-/// `xml:space="preserve"` attribute.  A `NodeChars` stores the characters verbatim
+/// in its `Chars` children as appropriate, depending on the
+/// `xml:space="preserve"` attribute.  A `Chars` stores the characters verbatim
 /// as they come out of the XML parser, after ensuring that they are valid UTF-8.
 
-pub struct NodeChars {
+pub struct Chars {
     string: RefCell<String>,
     space_normalized: RefCell<Option<String>>,
 }
 
-impl NodeChars {
-    pub fn new() -> NodeChars {
-        NodeChars {
+impl Chars {
+    pub fn new() -> Chars {
+        Chars {
             string: RefCell::new(String::new()),
             space_normalized: RefCell::new(None),
         }
