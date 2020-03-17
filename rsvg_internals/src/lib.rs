@@ -19,7 +19,7 @@
 //! to the corresponding element nodes.
 //!
 //! * [The `node` module](node/index.html) provides the [`Node`] struct and
-//! [`NodeTrait`], which form the basis for the tree of SVG elements.
+//! [`ElementTrait`], which form the basis for the tree of SVG elements.
 //!
 //! * [The `xml` module](xml/index.html) receives events from the XML parser, and builds a
 //! [`Document`] as a tree of [`Node`].
@@ -32,7 +32,7 @@
 //!
 //! [`Document`]: document/struct.Document.html
 //! [`Node`]: node/type.Node.html
-//! [`NodeTrait`]: node/trait.NodeTrait.html
+//! [`ElementTrait`]: node/trait.ElementTrait.html
 
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]

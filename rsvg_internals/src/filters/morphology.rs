@@ -5,9 +5,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::*;
-use crate::node::{Node, NodeTrait};
+use crate::node::Node;
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
@@ -45,7 +45,7 @@ impl Default for FeMorphology {
     }
 }
 
-impl NodeTrait for FeMorphology {
+impl ElementTrait for FeMorphology {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

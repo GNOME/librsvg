@@ -9,11 +9,11 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementType};
+use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -33,7 +33,7 @@ mod input;
 use self::input::{CustomIdent, Input};
 
 /// A filter primitive interface.
-pub trait FilterEffect: NodeTrait {
+pub trait FilterEffect: ElementTrait {
     /// Renders this filter primitive.
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
@@ -113,7 +113,7 @@ impl Primitive {
     }
 }
 
-impl NodeTrait for Primitive {
+impl ElementTrait for Primitive {
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = parent
@@ -218,7 +218,7 @@ impl PrimitiveWithInput {
     }
 }
 
-impl NodeTrait for PrimitiveWithInput {
+impl ElementTrait for PrimitiveWithInput {
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
@@ -285,7 +285,7 @@ pub fn render(
         // Keep only filter primitives (those that implement the Filter trait)
         .filter(|c| {
             c.borrow_element()
-                .get_node_trait()
+                .get_element_trait()
                 .as_filter_effect()
                 .is_some()
         })
@@ -303,7 +303,7 @@ pub fn render(
 
     for (c, linear_rgb) in primitives {
         let elt = c.borrow_element();
-        let filter = elt.get_node_trait().as_filter_effect().unwrap();
+        let filter = elt.get_element_trait().as_filter_effect().unwrap();
 
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = filter

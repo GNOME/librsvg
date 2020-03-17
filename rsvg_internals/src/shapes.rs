@@ -8,10 +8,10 @@ use std::rc::Rc;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::*;
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeTrait};
+use crate::node::{CascadedValues, Node};
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::*;
 use crate::path_parser;
@@ -115,7 +115,7 @@ pub struct Path {
     builder: Option<Rc<PathBuilder>>,
 }
 
-impl NodeTrait for Path {
+impl ElementTrait for Path {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "d") {
@@ -219,7 +219,7 @@ pub struct Polygon {
     points: Option<Points>,
 }
 
-impl NodeTrait for Polygon {
+impl ElementTrait for Polygon {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "points") {
@@ -254,7 +254,7 @@ pub struct Polyline {
     points: Option<Points>,
 }
 
-impl NodeTrait for Polyline {
+impl ElementTrait for Polyline {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "points") {
@@ -290,7 +290,7 @@ pub struct Line {
     y2: Length<Vertical>,
 }
 
-impl NodeTrait for Line {
+impl ElementTrait for Line {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -352,7 +352,7 @@ pub struct Rect {
     ry: Option<Length<Vertical>>,
 }
 
-impl NodeTrait for Rect {
+impl ElementTrait for Rect {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -580,7 +580,7 @@ pub struct Circle {
     r: Length<Both>,
 }
 
-impl NodeTrait for Circle {
+impl ElementTrait for Circle {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -633,7 +633,7 @@ pub struct Ellipse {
     ry: Length<Vertical>,
 }
 
-impl NodeTrait for Ellipse {
+impl ElementTrait for Ellipse {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

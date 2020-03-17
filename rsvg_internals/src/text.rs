@@ -8,12 +8,12 @@ use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementType};
+use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -604,7 +604,7 @@ impl Text {
     }
 }
 
-impl NodeTrait for Text {
+impl ElementTrait for Text {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -723,7 +723,7 @@ fn extract_chars_children_to_chunks_recursively(
     }
 }
 
-impl NodeTrait for TRef {
+impl ElementTrait for TRef {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -775,7 +775,7 @@ impl TSpan {
     }
 }
 
-impl NodeTrait for TSpan {
+impl ElementTrait for TSpan {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

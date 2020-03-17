@@ -2,8 +2,8 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementType};
-use crate::node::{Node, NodeBorrow, NodeTrait};
+use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::node::{Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
@@ -34,7 +34,7 @@ impl Default for FeMerge {
     }
 }
 
-impl NodeTrait for FeMerge {
+impl ElementTrait for FeMerge {
     impl_node_as_filter_effect!();
 
     #[inline]
@@ -43,7 +43,7 @@ impl NodeTrait for FeMerge {
     }
 }
 
-impl NodeTrait for FeMergeNode {
+impl ElementTrait for FeMergeNode {
     #[inline]
     fn set_atts(&mut self, _parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {

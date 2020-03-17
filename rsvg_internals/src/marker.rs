@@ -12,12 +12,12 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementType};
+use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw, NodeTrait};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
@@ -175,7 +175,7 @@ impl Marker {
     }
 }
 
-impl NodeTrait for Marker {
+impl ElementTrait for Marker {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

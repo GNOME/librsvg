@@ -11,7 +11,6 @@
 //! [`Node`]: ../../rctree/struct.Node.html
 //! [`NodeData`]: struct.NodeData.html
 
-use downcast_rs::*;
 use markup5ever::QualName;
 use std::cell::{Ref, RefMut};
 use std::fmt;
@@ -21,8 +20,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::*;
 use crate::error::*;
-use crate::filters::FilterEffect;
-use crate::properties::{ComputedValues, SpecifiedValues};
+use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::text::Chars;
 
@@ -164,7 +162,7 @@ impl<'a> CascadedValues<'a> {
 
     /// Returns the cascaded `ComputedValues`.
     ///
-    /// Nodes should use this from their `NodeTrait::draw()` implementation to get the
+    /// Nodes should use this from their `ElementTrait::draw()` implementation to get the
     /// `ComputedValues` from the `CascadedValues` that got passed to `draw()`.
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {
@@ -173,43 +171,6 @@ impl<'a> CascadedValues<'a> {
         }
     }
 }
-
-/// The basic trait that all nodes must implement
-pub trait NodeTrait: Downcast {
-    /// Sets per-node attributes from the `pbag`
-    ///
-    /// Each node is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult;
-
-    /// Sets any special-cased properties that the node may have, that are different
-    /// from defaults in the node's `SpecifiedValues`.
-    fn set_overridden_properties(&self, _values: &mut SpecifiedValues) {}
-
-    /// Whether this node has overflow:hidden.
-    /// https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
-    fn overflow_hidden(&self) -> bool {
-        false
-    }
-
-    fn draw(
-        &self,
-        _node: &Node,
-        _acquired_nodes: &mut AcquiredNodes,
-        _cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        // by default nodes don't draw themselves
-        Ok(draw_ctx.empty_bbox())
-    }
-
-    /// Returns the FilterEffect trait if this node is a filter primitive
-    fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
-        None
-    }
-}
-
-impl_downcast!(NodeTrait);
 
 /// Helper trait to get different NodeData variants
 pub trait NodeBorrow {
@@ -326,7 +287,7 @@ impl NodeDraw for Node {
                 if !e.is_in_error() {
                     let transform = e.get_transform();
                     draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
-                        e.get_node_trait()
+                        e.get_element_trait()
                             .draw(self, acquired_nodes, cascaded, dc, clipping)
                     })
                 } else {

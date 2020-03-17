@@ -5,9 +5,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementType};
+use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::*;
-use crate::node::{Node, NodeBorrow, NodeTrait};
+use crate::node::{Node, NodeBorrow};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -34,7 +34,7 @@ impl Default for FeComponentTransfer {
     }
 }
 
-impl NodeTrait for FeComponentTransfer {
+impl ElementTrait for FeComponentTransfer {
     impl_node_as_filter_effect!();
 
     #[inline]
@@ -199,7 +199,7 @@ macro_rules! func_x {
             }
         }
 
-        impl NodeTrait for $func_name {
+        impl ElementTrait for $func_name {
             #[inline]
             fn set_atts(
                 &mut self,
@@ -291,7 +291,7 @@ impl FilterEffect for FeComponentTransfer {
         // Get a node for every pixel component.
         fn get_node<F>(node: &Node, element_type: ElementType, channel: Channel) -> Option<Node>
         where
-            F: FeComponentTransferFunc + NodeTrait,
+            F: FeComponentTransferFunc + ElementTrait,
         {
             node.children()
                 .rev()

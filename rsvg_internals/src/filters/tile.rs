@@ -1,7 +1,7 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
-use crate::node::{Node, NodeTrait};
+use crate::element::{ElementResult, ElementTrait};
+use crate::node::Node;
 use crate::property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
@@ -22,7 +22,7 @@ impl Default for FeTile {
     }
 }
 
-impl NodeTrait for FeTile {
+impl ElementTrait for FeTile {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

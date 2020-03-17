@@ -7,7 +7,7 @@ use rayon::prelude::*;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementType};
+use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
@@ -19,7 +19,7 @@ use crate::filters::{
     },
     FilterEffect, FilterError, PrimitiveWithInput,
 };
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -93,7 +93,7 @@ impl Default for FeDiffuseLighting {
     }
 }
 
-impl NodeTrait for FeDiffuseLighting {
+impl ElementTrait for FeDiffuseLighting {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
@@ -162,7 +162,7 @@ impl Default for FeSpecularLighting {
     }
 }
 
-impl NodeTrait for FeSpecularLighting {
+impl ElementTrait for FeSpecularLighting {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

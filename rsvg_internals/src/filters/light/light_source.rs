@@ -2,9 +2,9 @@ use cssparser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::Vector3;
 
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::filters::context::FilterContext;
-use crate::node::{Node, NodeTrait};
+use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::util::clamp;
@@ -103,7 +103,7 @@ impl FeDistantLight {
     }
 }
 
-impl NodeTrait for FeDistantLight {
+impl ElementTrait for FeDistantLight {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -135,7 +135,7 @@ impl FePointLight {
     }
 }
 
-impl NodeTrait for FePointLight {
+impl ElementTrait for FePointLight {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -184,7 +184,7 @@ impl FeSpotLight {
     }
 }
 
-impl NodeTrait for FeSpotLight {
+impl ElementTrait for FeSpotLight {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

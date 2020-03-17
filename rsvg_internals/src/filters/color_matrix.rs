@@ -4,9 +4,9 @@ use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::*;
-use crate::node::{Node, NodeTrait};
+use crate::node::Node;
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -51,7 +51,7 @@ impl Default for FeColorMatrix {
 }
 
 #[rustfmt::skip]
-impl NodeTrait for FeColorMatrix {
+impl ElementTrait for FeColorMatrix {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

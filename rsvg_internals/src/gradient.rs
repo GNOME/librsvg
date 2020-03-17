@@ -9,10 +9,10 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{ElementResult, ElementType};
+use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::*;
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
@@ -129,7 +129,7 @@ fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind>
     }
 }
 
-impl NodeTrait for Stop {
+impl ElementTrait for Stop {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -595,7 +595,7 @@ impl Common {
     }
 }
 
-impl NodeTrait for LinearGradient {
+impl ElementTrait for LinearGradient {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
@@ -614,7 +614,7 @@ impl NodeTrait for LinearGradient {
     }
 }
 
-impl NodeTrait for RadialGradient {
+impl ElementTrait for RadialGradient {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 

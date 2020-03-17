@@ -9,10 +9,10 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::*;
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw, NodeTrait};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -22,7 +22,7 @@ use crate::viewbox::*;
 #[derive(Default)]
 pub struct Group();
 
-impl NodeTrait for Group {
+impl ElementTrait for Group {
     fn set_atts(&mut self, _: Option<&Node>, _: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
@@ -50,7 +50,7 @@ impl NodeTrait for Group {
 #[derive(Default)]
 pub struct NonRendering;
 
-impl NodeTrait for NonRendering {
+impl ElementTrait for NonRendering {
     fn set_atts(&mut self, _: Option<&Node>, _: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
@@ -59,7 +59,7 @@ impl NodeTrait for NonRendering {
 #[derive(Default)]
 pub struct Switch();
 
-impl NodeTrait for Switch {
+impl ElementTrait for Switch {
     fn set_atts(&mut self, _: Option<&Node>, _: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
@@ -183,7 +183,7 @@ impl Svg {
     }
 }
 
-impl NodeTrait for Svg {
+impl ElementTrait for Svg {
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
@@ -308,7 +308,7 @@ impl Use {
     }
 }
 
-impl NodeTrait for Use {
+impl ElementTrait for Use {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -362,7 +362,7 @@ impl Symbol {
     }
 }
 
-impl NodeTrait for Symbol {
+impl ElementTrait for Symbol {
     fn set_atts(&mut self, _parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -395,7 +395,7 @@ impl ClipPath {
     }
 }
 
-impl NodeTrait for ClipPath {
+impl ElementTrait for ClipPath {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -455,7 +455,7 @@ impl Mask {
     }
 }
 
-impl NodeTrait for Mask {
+impl ElementTrait for Mask {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -484,7 +484,7 @@ pub struct Link {
     link: Option<String>,
 }
 
-impl NodeTrait for Link {
+impl ElementTrait for Link {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

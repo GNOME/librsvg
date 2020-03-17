@@ -4,9 +4,9 @@ use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::*;
-use crate::node::{CascadedValues, Node, NodeTrait};
+use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
@@ -110,7 +110,7 @@ impl FeImage {
     }
 }
 
-impl NodeTrait for FeImage {
+impl ElementTrait for FeImage {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

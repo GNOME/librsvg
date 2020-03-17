@@ -1,7 +1,7 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
-use crate::node::{CascadedValues, Node, NodeTrait};
+use crate::element::{ElementResult, ElementTrait};
+use crate::node::{CascadedValues, Node};
 use crate::property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -22,7 +22,7 @@ impl Default for FeFlood {
     }
 }
 
-impl NodeTrait for FeFlood {
+impl ElementTrait for FeFlood {
     impl_node_as_filter_effect!();
 
     #[inline]

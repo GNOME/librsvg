@@ -2,8 +2,8 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
-use crate::node::{Node, NodeTrait};
+use crate::element::{ElementResult, ElementTrait};
+use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 
@@ -29,7 +29,7 @@ impl Default for FeOffset {
     }
 }
 
-impl NodeTrait for FeOffset {
+impl ElementTrait for FeOffset {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

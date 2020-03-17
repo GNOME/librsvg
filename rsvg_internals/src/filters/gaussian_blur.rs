@@ -6,9 +6,9 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::*;
-use crate::node::{Node, NodeTrait};
+use crate::node::Node;
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
@@ -42,7 +42,7 @@ impl Default for FeGaussianBlur {
     }
 }
 
-impl NodeTrait for FeGaussianBlur {
+impl ElementTrait for FeGaussianBlur {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

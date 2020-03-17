@@ -3,9 +3,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::*;
-use crate::node::{Node, NodeTrait};
+use crate::node::Node;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 
@@ -51,7 +51,7 @@ impl Default for FeComposite {
     }
 }
 
-impl NodeTrait for FeComposite {
+impl ElementTrait for FeComposite {
     impl_node_as_filter_effect!();
 
     fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {

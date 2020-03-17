@@ -5,14 +5,18 @@
 //!
 //! [`create_element`]: fn.create_element.html
 
+use downcast_rs::*;
 use locale_config::Locale;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
+use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::Declaration;
+use crate::document::AcquiredNodes;
+use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -34,6 +38,7 @@ use crate::filters::{
     offset::FeOffset,
     tile::FeTile,
     turbulence::FeTurbulence,
+    FilterEffect,
 };
 use crate::gradient::{LinearGradient, RadialGradient, Stop};
 use crate::image::Image;
@@ -129,6 +134,43 @@ pub enum ElementType {
 // validator, not a renderer like librsvg is.
 pub type ElementResult = Result<(), ElementError>;
 
+/// The basic trait that all elements must implement
+pub trait ElementTrait: Downcast {
+    /// Sets per-element attributes from the `pbag`
+    ///
+    /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult;
+
+    /// Sets any special-cased properties that the element may have, that are different
+    /// from defaults in the element's `SpecifiedValues`.
+    fn set_overridden_properties(&self, _values: &mut SpecifiedValues) {}
+
+    /// Whether this element has overflow:hidden.
+    /// https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
+    fn overflow_hidden(&self) -> bool {
+        false
+    }
+
+    fn draw(
+        &self,
+        _node: &Node,
+        _acquired_nodes: &mut AcquiredNodes,
+        _cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        _clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        // by default elements don't draw themselves
+        Ok(draw_ctx.empty_bbox())
+    }
+
+    /// Returns the FilterEffect trait if this element is a filter primitive
+    fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
+        None
+    }
+}
+
+impl_downcast!(ElementTrait);
+
 /// Contents of an element node in the DOM
 pub struct Element {
     element_type: ElementType,
@@ -142,7 +184,7 @@ pub struct Element {
     values: ComputedValues,
     cond: bool,
     style_attr: String,
-    node_impl: Box<dyn NodeTrait>,
+    element_impl: Box<dyn ElementTrait>,
 }
 
 impl Element {
@@ -150,12 +192,12 @@ impl Element {
         self.element_type
     }
 
-    pub fn get_node_trait(&self) -> &dyn NodeTrait {
-        self.node_impl.as_ref()
+    pub fn get_element_trait(&self) -> &dyn ElementTrait {
+        self.element_impl.as_ref()
     }
 
-    pub fn get_impl<T: NodeTrait>(&self) -> &T {
-        if let Some(t) = (&self.node_impl).downcast_ref::<T>() {
+    pub fn get_impl<T: ElementTrait>(&self) -> &T {
+        if let Some(t) = (&self.element_impl).downcast_ref::<T>() {
             t
         } else {
             panic!("could not downcast");
@@ -199,7 +241,7 @@ impl Element {
     }
 
     pub fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>, locale: &Locale) {
-        if self.node_impl.overflow_hidden() {
+        if self.element_impl.overflow_hidden() {
             self.specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
         }
 
@@ -208,13 +250,13 @@ impl Element {
         if let Err(e) = self
             .set_transform_attribute(pbag)
             .and_then(|_| self.set_conditional_processing_attributes(pbag, locale))
-            .and_then(|_| self.node_impl.set_atts(parent, pbag))
+            .and_then(|_| self.element_impl.set_atts(parent, pbag))
             .and_then(|_| self.set_presentation_attributes(pbag))
         {
             self.set_error(e);
         }
 
-        self.node_impl
+        self.element_impl
             .set_overridden_properties(&mut self.specified_values);
     }
 
@@ -358,7 +400,7 @@ macro_rules! e {
                 values: ComputedValues::default(),
                 cond: true,
                 style_attr: String::new(),
-                node_impl: Box::new(<$element_type>::default()),
+                element_impl: Box::new(<$element_type>::default()),
             }
         }
     };

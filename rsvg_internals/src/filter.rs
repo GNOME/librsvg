@@ -5,10 +5,10 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::ElementResult;
+use crate::element::{ElementResult, ElementTrait};
 use crate::error::ValueErrorKind;
 use crate::length::*;
-use crate::node::{Node, NodeTrait};
+use crate::node::Node;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -111,7 +111,7 @@ impl Filter {
     }
 }
 
-impl NodeTrait for Filter {
+impl ElementTrait for Filter {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {

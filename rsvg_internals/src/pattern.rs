@@ -10,11 +10,11 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{ElementResult, ElementType};
+use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw, NodeTrait, WeakNode};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw, WeakNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
@@ -118,7 +118,7 @@ pub struct Pattern {
     resolved: RefCell<Option<ResolvedPattern>>,
 }
 
-impl NodeTrait for Pattern {
+impl ElementTrait for Pattern {
     fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
