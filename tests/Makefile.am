@@ -89,6 +89,8 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/*.png)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/images/*)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/resources/*)	\
+	$(wildcard $(srcdir)/fixtures/reftests/svg2/*.svg)		\
+	$(wildcard $(srcdir)/fixtures/reftests/svg2/*.png)		\
 	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/dimensions/*.svg)
 
