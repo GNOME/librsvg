@@ -113,7 +113,7 @@ pub struct Svg {
 
 impl Svg {
     pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {
-        let (_, _, w, h) = self.get_unnormalized_viewport();
+        let (w, h) = self.get_unnormalized_size();
 
         match (w, h, self.vbox) {
             (w, h, Some(vbox)) => {
@@ -145,15 +145,7 @@ impl Svg {
         }
     }
 
-    // returns (x, y, w, h)
-    fn get_unnormalized_viewport(
-        &self,
-    ) -> (
-        Length<Horizontal>,
-        Length<Vertical>,
-        Length<Horizontal>,
-        Length<Vertical>,
-    ) {
+    fn get_unnormalized_offset(&self) -> (Length<Horizontal>, Length<Vertical>) {
         // these defaults are per the spec
         let x = self
             .x
@@ -161,6 +153,12 @@ impl Svg {
         let y = self
             .y
             .unwrap_or_else(|| Length::<Vertical>::parse_str("0").unwrap());
+
+        (x, y)
+    }
+
+    fn get_unnormalized_size(&self) -> (Length<Horizontal>, Length<Vertical>) {
+        // these defaults are per the spec
         let w = self
             .w
             .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
@@ -168,34 +166,35 @@ impl Svg {
             .h
             .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
 
-        (x, y, w, h)
+        (w, h)
     }
 
-    fn get_viewport(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
-        let (x, y, w, h) = self.get_unnormalized_viewport();
+    fn get_viewport(&self, values: &ComputedValues, params: &ViewParams, outermost: bool) -> Rect {
+        // x & y attributes have no effect on outermost svg
+        // http://www.w3.org/TR/SVG/struct.html#SVGElement
+        let (nx, ny) = if outermost {
+            (0.0, 0.0)
+        } else {
+            let (x, y) = self.get_unnormalized_offset();
+            (x.normalize(values, &params), y.normalize(values, &params))
+        };
 
-        let nx = x.normalize(values, &params);
-        let ny = y.normalize(values, &params);
-        let nw = w.normalize(values, &params);
-        let nh = h.normalize(values, &params);
+        let (w, h) = self.get_unnormalized_size();
+        let (nw, nh) = (w.normalize(values, &params), h.normalize(values, &params));
 
         Rect::new(nx, ny, nx + nw, ny + nh)
     }
 }
 
 impl ElementTrait for Svg {
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        // x & y attributes have no effect on outermost svg
-        // http://www.w3.org/TR/SVG/struct.html#SVGElement
-        let is_inner_svg = parent.is_some();
-
+    fn set_atts(&mut self, _parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!("", "x") if is_inner_svg => self.x = Some(attr.parse(value)?),
-                expanded_name!("", "y") if is_inner_svg => self.y = Some(attr.parse(value)?),
+                expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
+                expanded_name!("", "y") => self.y = Some(attr.parse(value)?),
                 expanded_name!("", "width") => {
                     self.w = Some(
                         attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
@@ -237,7 +236,7 @@ impl ElementTrait for Svg {
             None
         };
 
-        let svg_viewport = self.get_viewport(values, &params);
+        let svg_viewport = self.get_viewport(values, &params, !has_parent);
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
