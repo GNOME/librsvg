@@ -153,10 +153,6 @@ impl ElementTrait for Pattern {
 
         Ok(())
     }
-
-    fn overflow_hidden(&self) -> bool {
-        true
-    }
 }
 
 impl PaintSource for Pattern {

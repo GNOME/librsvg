@@ -175,6 +175,15 @@ pub struct SpecifiedValues {
     pub xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
 }
 
+impl SpecifiedValues {
+    pub fn with_overflow_hidden() -> SpecifiedValues {
+        SpecifiedValues {
+            overflow: SpecifiedValue::Specified(Overflow::Hidden),
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct ComputedValues {
     pub baseline_shift: BaselineShift,
