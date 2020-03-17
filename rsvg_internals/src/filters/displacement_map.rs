@@ -5,7 +5,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementResult;
 use crate::error::*;
-use crate::node::{NodeTrait, RsvgNode};
+use crate::node::{Node, NodeTrait};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface};
@@ -48,7 +48,7 @@ impl Default for FeDisplacementMap {
 impl NodeTrait for FeDisplacementMap {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -74,7 +74,7 @@ impl NodeTrait for FeDisplacementMap {
 impl FilterEffect for FeDisplacementMap {
     fn render(
         &self,
-        _node: &RsvgNode,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,

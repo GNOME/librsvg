@@ -17,7 +17,7 @@ use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
 use crate::length::*;
-use crate::node::*;
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw, NodeTrait};
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::*;
 use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
@@ -100,7 +100,7 @@ impl Default for Marker {
 impl Marker {
     fn render(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         xpos: f64,
@@ -176,7 +176,7 @@ impl Marker {
 }
 
 impl NodeTrait for Marker {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,

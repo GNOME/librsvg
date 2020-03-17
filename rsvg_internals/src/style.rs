@@ -4,7 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::element::ElementResult;
 use crate::error::*;
-use crate::node::{NodeTrait, RsvgNode};
+use crate::node::{Node, NodeTrait};
 use crate::property_bag::PropertyBag;
 
 /// Represents the syntax used in the <style> node.
@@ -52,7 +52,7 @@ impl Style {
 }
 
 impl NodeTrait for Style {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "type") {
                 self.type_ = Some(StyleType::parse(value).attribute(attr)?);

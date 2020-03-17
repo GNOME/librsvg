@@ -19,7 +19,7 @@ use crate::filters::{
     },
     FilterEffect, FilterError, PrimitiveWithInput,
 };
-use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -49,7 +49,7 @@ impl Common {
         }
     }
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -96,7 +96,7 @@ impl Default for FeDiffuseLighting {
 impl NodeTrait for FeDiffuseLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -165,7 +165,7 @@ impl Default for FeSpecularLighting {
 impl NodeTrait for FeSpecularLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -249,7 +249,7 @@ macro_rules! impl_lighting_filter {
         impl FilterEffect for $lighting_type {
             fn render(
                 &self,
-                node: &RsvgNode,
+                node: &Node,
                 ctx: &FilterContext,
                 acquired_nodes: &mut AcquiredNodes,
                 draw_ctx: &mut DrawingCtx,
@@ -490,7 +490,7 @@ fn specular_alpha(r: u8, g: u8, b: u8) -> u8 {
 impl_lighting_filter!(FeDiffuseLighting, diffuse_alpha);
 impl_lighting_filter!(FeSpecularLighting, specular_alpha);
 
-fn find_light_source(node: &RsvgNode, ctx: &FilterContext) -> Result<LightSource, FilterError> {
+fn find_light_source(node: &Node, ctx: &FilterContext) -> Result<LightSource, FilterError> {
     let mut light_sources = node.children().rev().filter(|c| {
         c.is_element()
             && match c.borrow_element().get_type() {

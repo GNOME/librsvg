@@ -93,7 +93,7 @@ use crate::allowed_url::AllowedUrl;
 use crate::element::ElementType;
 use crate::error::*;
 use crate::io::{self, BinaryData};
-use crate::node::{NodeBorrow, NodeCascade, RsvgNode};
+use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
 
 /// A parsed CSS declaration
@@ -364,17 +364,17 @@ impl SelectorImpl for Selector {
     type PseudoElement = PseudoElement;
 }
 
-/// Wraps an `RsvgNode` with a locally-defined type, so we can implement
+/// Wraps an `Node` with a locally-defined type, so we can implement
 /// a foreign trait on it.
 ///
-/// RsvgNode is an alias for rctree::Node, so we can't implement
+/// `Node` is an alias for `rctree::Node`, so we can't implement
 /// `selectors::Element` directly on it.  We implement it on the
 /// `RsvgElement` wrapper instead.
 #[derive(Clone, PartialEq)]
-pub struct RsvgElement(RsvgNode);
+pub struct RsvgElement(Node);
 
-impl From<RsvgNode> for RsvgElement {
-    fn from(n: RsvgNode) -> RsvgElement {
+impl From<Node> for RsvgElement {
+    fn from(n: Node) -> RsvgElement {
         RsvgElement(n)
     }
 }
@@ -706,7 +706,7 @@ impl Stylesheet {
     /// Appends the style declarations that match a specified node to a given vector
     fn get_matches<'a>(
         &'a self,
-        node: &RsvgNode,
+        node: &Node,
         match_ctx: &mut MatchingContext<Selector>,
         acc: &mut Vec<Match<'a>>,
     ) {
@@ -735,7 +735,7 @@ impl Stylesheet {
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
-pub fn cascade(root: &mut RsvgNode, stylesheets: &[Stylesheet], extra: &[Stylesheet]) {
+pub fn cascade(root: &mut Node, stylesheets: &[Stylesheet], extra: &[Stylesheet]) {
     for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
 

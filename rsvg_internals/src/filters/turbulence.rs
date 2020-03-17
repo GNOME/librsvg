@@ -5,7 +5,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementResult;
 use crate::error::*;
-use crate::node::{CascadedValues, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeTrait};
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
@@ -60,7 +60,7 @@ impl NodeTrait for FeTurbulence {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -335,7 +335,7 @@ impl NoiseGenerator {
 impl FilterEffect for FeTurbulence {
     fn render(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,

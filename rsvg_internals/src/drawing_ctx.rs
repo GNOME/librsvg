@@ -19,7 +19,7 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::gradient::{LinearGradient, RadialGradient};
 use crate::marker;
-use crate::node::{CascadedValues, NodeBorrow, NodeDraw, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::path_builder::*;
 use crate::pattern::Pattern;
@@ -96,7 +96,7 @@ pub struct DrawingCtx {
 
     view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
 
-    drawsub_stack: Vec<RsvgNode>,
+    drawsub_stack: Vec<Node>,
 
     measuring: bool,
     testing: bool,
@@ -104,7 +104,7 @@ pub struct DrawingCtx {
 
 impl DrawingCtx {
     pub fn new(
-        node: Option<&RsvgNode>,
+        node: Option<&Node>,
         cr: &cairo::Context,
         viewport: Rect,
         dpi: Dpi,
@@ -314,7 +314,7 @@ impl DrawingCtx {
 
     fn clip_to_node(
         &mut self,
-        clip_node: &Option<RsvgNode>,
+        clip_node: &Option<Node>,
         acquired_nodes: &mut AcquiredNodes,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
@@ -367,7 +367,7 @@ impl DrawingCtx {
     fn generate_cairo_mask(
         &mut self,
         mask: &Mask,
-        mask_node: &RsvgNode,
+        mask_node: &Node,
         transform: Transform,
         bbox: &BoundingBox,
         acquired_nodes: &mut AcquiredNodes,
@@ -459,7 +459,7 @@ impl DrawingCtx {
 
     pub fn with_discrete_layer(
         &mut self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         clipping: bool,
@@ -736,7 +736,7 @@ impl DrawingCtx {
         &mut self,
         acquired_nodes: &mut AcquiredNodes,
         filter_uri: &Fragment,
-        node: &RsvgNode,
+        node: &Node,
         values: &ComputedValues,
         child_surface: SharedImageSurface,
         node_bbox: BoundingBox,
@@ -971,7 +971,7 @@ impl DrawingCtx {
     pub fn draw_path(
         &mut self,
         builder: &PathBuilder,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         markers: Markers,
@@ -1052,7 +1052,7 @@ impl DrawingCtx {
 
     pub fn draw_node_to_surface(
         &mut self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         affine: Transform,
@@ -1083,7 +1083,7 @@ impl DrawingCtx {
 
     pub fn draw_node_from_stack(
         &mut self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         clipping: bool,
@@ -1112,7 +1112,7 @@ impl DrawingCtx {
 
     pub fn draw_from_use_node(
         &mut self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         clipping: bool,
@@ -1265,11 +1265,11 @@ impl CompositingAffines {
     }
 }
 
-// Returns (clip_in_user_space, clip_in_object_space), both Option<RsvgNode>
+// Returns (clip_in_user_space, clip_in_object_space), both Option<Node>
 fn get_clip_in_user_and_object_space(
     acquired_nodes: &mut AcquiredNodes,
     clip_uri: Option<&Fragment>,
-) -> (Option<RsvgNode>, Option<RsvgNode>) {
+) -> (Option<Node>, Option<Node>) {
     clip_uri
         .and_then(|fragment| {
             acquired_nodes

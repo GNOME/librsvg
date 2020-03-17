@@ -7,7 +7,7 @@ use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
 use crate::allowed_url::Fragment;
-use crate::node::RsvgNode;
+use crate::node::Node;
 
 /// A short-lived error.
 ///
@@ -123,7 +123,7 @@ impl From<cairo::Status> for RenderingError {
 pub enum AcquireError {
     LinkNotFound(Fragment),
     InvalidLinkType(Fragment),
-    CircularReference(RsvgNode),
+    CircularReference(Node),
     MaxReferencesExceeded,
 }
 

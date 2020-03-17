@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
-use crate::node::{CascadedValues, RsvgNode};
+use crate::node::{CascadedValues, Node};
 use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::unit_interval::UnitInterval;
@@ -62,13 +62,13 @@ pub trait PaintSource {
 
     fn resolve(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
     ) -> Result<Self::Resolved, AcquireError>;
 
     fn resolve_fallbacks_and_set_pattern(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
         opacity: UnitInterval,

@@ -7,7 +7,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::filter::Filter;
-use crate::node::{NodeBorrow, RsvgNode};
+use crate::node::{Node, NodeBorrow};
 use crate::paint_server::PaintServer;
 use crate::properties::ComputedValues;
 use crate::rect::IRect;
@@ -52,7 +52,7 @@ pub enum FilterInput {
 /// The filter rendering context.
 pub struct FilterContext {
     /// The <filter> node.
-    node: RsvgNode,
+    node: Node,
     /// Bounding box of node being filtered
     node_bbox: BoundingBox,
     /// Values from the node which referenced this filter.
@@ -99,7 +99,7 @@ pub struct FilterContext {
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
-        filter_node: &RsvgNode,
+        filter_node: &Node,
         computed_from_node_being_filtered: &ComputedValues,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx,

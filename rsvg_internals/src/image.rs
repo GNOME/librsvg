@@ -10,7 +10,7 @@ use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::ElementResult;
 use crate::error::*;
 use crate::length::*;
-use crate::node::*;
+use crate::node::{CascadedValues, Node, NodeTrait};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -28,7 +28,7 @@ pub struct Image {
 }
 
 impl NodeTrait for Image {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -63,7 +63,7 @@ impl NodeTrait for Image {
 
     fn draw(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,

@@ -15,14 +15,14 @@
 //! to the drawing process.
 //!
 //! * [The `Document` struct](document/struct.Document.html) represents a loaded SVG
-//! document.  It holds the tree of [`RsvgNode`] elements, and a mapping of `id` attributes
+//! document.  It holds the tree of [`Node`] elements, and a mapping of `id` attributes
 //! to the corresponding element nodes.
 //!
-//! * [The `node` module](node/index.html) provides the [`RsvgNode`] struct and
+//! * [The `node` module](node/index.html) provides the [`Node`] struct and
 //! [`NodeTrait`], which form the basis for the tree of SVG elements.
 //!
 //! * [The `xml` module](xml/index.html) receives events from the XML parser, and builds a
-//! [`Document`] as a tree of [`RsvgNode`].
+//! [`Document`] as a tree of [`Node`].
 //!
 //! * [The `properties` module](properties/index.html) contains structs that represent
 //! collections of CSS properties.
@@ -31,7 +31,7 @@
 //! the CSS style properties that librsvg supports.
 //!
 //! [`Document`]: document/struct.Document.html
-//! [`RsvgNode`]: node/type.RsvgNode.html
+//! [`Node`]: node/type.Node.html
 //! [`NodeTrait`]: node/trait.NodeTrait.html
 
 #![allow(clippy::clone_on_ref_ptr)]

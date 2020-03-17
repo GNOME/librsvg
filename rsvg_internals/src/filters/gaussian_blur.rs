@@ -8,7 +8,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementResult;
 use crate::error::*;
-use crate::node::{NodeTrait, RsvgNode};
+use crate::node::{Node, NodeTrait};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
@@ -45,7 +45,7 @@ impl Default for FeGaussianBlur {
 impl NodeTrait for FeGaussianBlur {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -202,7 +202,7 @@ fn gaussian_blur(
 impl FilterEffect for FeGaussianBlur {
     fn render(
         &self,
-        _node: &RsvgNode,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,

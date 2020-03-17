@@ -14,7 +14,7 @@ use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
-use crate::node::{NodeBorrow, NodeData, RsvgNode};
+use crate::node::{Node, NodeBorrow, NodeData};
 use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -23,10 +23,10 @@ use crate::xml::xml_load_from_possibly_compressed_stream;
 /// A loaded SVG file and its derived data.
 pub struct Document {
     /// Tree of nodes; the root is guaranteed to be an `<svg>` element.
-    tree: RsvgNode,
+    tree: Node,
 
     /// Mapping from `id` attributes to nodes.
-    ids: HashMap<String, RsvgNode>,
+    ids: HashMap<String, Node>,
 
     // The following two require interior mutability because we load the extern
     // resources all over the place.  Eventually we'll be able to do this
@@ -60,7 +60,7 @@ impl Document {
     }
 
     /// Gets the root node.  This is guaranteed to be an `<svg>` element.
-    pub fn root(&self) -> RsvgNode {
+    pub fn root(&self) -> Node {
         self.tree.clone()
     }
 
@@ -68,7 +68,7 @@ impl Document {
     ///
     /// This is also used to find elements in referenced resources, as in
     /// `xlink:href="subresource.svg#element_name".
-    pub fn lookup(&self, fragment: &Fragment) -> Result<RsvgNode, LoadingError> {
+    pub fn lookup(&self, fragment: &Fragment) -> Result<Node, LoadingError> {
         if fragment.uri().is_some() {
             self.externs
                 .borrow_mut()
@@ -80,7 +80,7 @@ impl Document {
     }
 
     /// Looks up a node only in this document fragment by its `id` attribute.
-    pub fn lookup_node_by_id(&self, id: &str) -> Option<RsvgNode> {
+    pub fn lookup_node_by_id(&self, id: &str) -> Option<Node> {
         self.ids.get(id).map(|n| (*n).clone())
     }
 
@@ -125,7 +125,7 @@ impl Resources {
         &mut self,
         load_options: &LoadOptions,
         fragment: &Fragment,
-    ) -> Result<RsvgNode, LoadingError> {
+    ) -> Result<Node, LoadingError> {
         if let Some(ref href) = fragment.uri() {
             self.get_extern_document(load_options, href)
                 .and_then(|doc| {
@@ -231,7 +231,7 @@ fn load_image(
 
 pub struct AcquiredNode {
     stack: Option<Rc<RefCell<NodeStack>>>,
-    node: RsvgNode,
+    node: Node,
 }
 
 impl Drop for AcquiredNode {
@@ -245,7 +245,7 @@ impl Drop for AcquiredNode {
 }
 
 impl AcquiredNode {
-    pub fn get(&self) -> &RsvgNode {
+    pub fn get(&self) -> &Node {
         &self.node
     }
 }
@@ -278,7 +278,7 @@ impl<'i> AcquiredNodes<'i> {
         &self,
         fragment: &Fragment,
         element_types: &[ElementType],
-    ) -> Result<RsvgNode, AcquireError> {
+    ) -> Result<Node, AcquireError> {
         let node = self.document.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
             // Maybe we should have the following stages:
@@ -338,7 +338,7 @@ impl<'i> AcquiredNodes<'i> {
         }
     }
 
-    pub fn acquire_ref(&self, node: &RsvgNode) -> Result<AcquiredNode, AcquireError> {
+    pub fn acquire_ref(&self, node: &Node) -> Result<AcquiredNode, AcquireError> {
         if self.node_stack.borrow().contains(&node) {
             Err(AcquireError::CircularReference(node.clone()))
         } else {
@@ -354,7 +354,7 @@ impl<'i> AcquiredNodes<'i> {
 // Returns whether a node of a particular type is only accessed by reference
 // from other nodes' atributes.  The node could in turn cause other nodes
 // to get referenced, potentially causing reference cycles.
-fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
+fn node_is_accessed_by_reference(node: &Node) -> bool {
     use ElementType::*;
 
     if !node.is_element() {
@@ -373,30 +373,30 @@ fn node_is_accessed_by_reference(node: &RsvgNode) -> bool {
 /// Sometimes parts of the code cannot plainly use the implicit stack of acquired
 /// nodes as maintained by DrawingCtx::acquire_node(), and they must keep their
 /// own stack of nodes to test for reference cycles.  NodeStack can be used to do that.
-pub struct NodeStack(Vec<RsvgNode>);
+pub struct NodeStack(Vec<Node>);
 
 impl NodeStack {
     pub fn new() -> NodeStack {
         NodeStack(Vec::new())
     }
 
-    pub fn push(&mut self, node: &RsvgNode) {
+    pub fn push(&mut self, node: &Node) {
         self.0.push(node.clone());
     }
 
-    pub fn pop(&mut self) -> Option<RsvgNode> {
+    pub fn pop(&mut self) -> Option<Node> {
         self.0.pop()
     }
 
-    pub fn contains(&self, node: &RsvgNode) -> bool {
+    pub fn contains(&self, node: &Node) -> bool {
         self.0.iter().find(|n| **n == *node).is_some()
     }
 }
 
 pub struct DocumentBuilder {
     load_options: LoadOptions,
-    tree: Option<RsvgNode>,
-    ids: HashMap<String, RsvgNode>,
+    tree: Option<Node>,
+    ids: HashMap<String, Node>,
     stylesheets: Vec<Stylesheet>,
 }
 
@@ -436,9 +436,9 @@ impl DocumentBuilder {
         &mut self,
         name: &QualName,
         pbag: &PropertyBag,
-        parent: Option<RsvgNode>,
-    ) -> RsvgNode {
-        let mut node = RsvgNode::new(NodeData::new_element(name, pbag));
+        parent: Option<Node>,
+    ) -> Node {
+        let mut node = Node::new(NodeData::new_element(name, pbag));
 
         if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id
@@ -473,19 +473,19 @@ impl DocumentBuilder {
         }
     }
 
-    pub fn append_characters(&mut self, text: &str, parent: &mut RsvgNode) {
+    pub fn append_characters(&mut self, text: &str, parent: &mut Node) {
         if !text.is_empty() {
             self.append_chars_to_parent(text, parent);
         }
     }
 
-    fn append_chars_to_parent(&mut self, text: &str, parent: &mut RsvgNode) {
+    fn append_chars_to_parent(&mut self, text: &str, parent: &mut Node) {
         // When the last child is a Chars node we can coalesce
         // the text and avoid screwing up the Pango layouts
         let chars_node = if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
             child
         } else {
-            let child = RsvgNode::new(NodeData::new_chars());
+            let child = Node::new(NodeData::new_chars());
             parent.append(child.clone());
             child
         };

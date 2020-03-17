@@ -17,7 +17,7 @@ use crate::element::ElementType;
 use crate::error::LoadingError;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
-use crate::node::{NodeBorrow, RsvgNode};
+use crate::node::{Node, NodeBorrow};
 use crate::property_bag::PropertyBag;
 use crate::style::{Style, StyleType};
 use crate::xml2_load::Xml2Parser;
@@ -98,7 +98,7 @@ struct XmlStateInner {
     document_builder: Option<DocumentBuilder>,
     num_loaded_elements: usize,
     context_stack: Vec<Context>,
-    current_node: Option<RsvgNode>,
+    current_node: Option<Node>,
 
     entities: HashMap<String, XmlEntityPtr>,
 }

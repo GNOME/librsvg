@@ -7,7 +7,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, ElementType};
 use crate::error::*;
-use crate::node::{NodeBorrow, NodeTrait, RsvgNode};
+use crate::node::{Node, NodeBorrow, NodeTrait};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -38,7 +38,7 @@ impl NodeTrait for FeComponentTransfer {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)
     }
 }
@@ -203,7 +203,7 @@ macro_rules! func_x {
             #[inline]
             fn set_atts(
                 &mut self,
-                _parent: Option<&RsvgNode>,
+                _parent: Option<&Node>,
                 pbag: &PropertyBag<'_>,
             ) -> ElementResult {
                 for (attr, value) in pbag.iter() {
@@ -269,7 +269,7 @@ macro_rules! func_or_default {
 impl FilterEffect for FeComponentTransfer {
     fn render(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -289,11 +289,7 @@ impl FilterEffect for FeComponentTransfer {
         )?;
 
         // Get a node for every pixel component.
-        fn get_node<F>(
-            node: &RsvgNode,
-            element_type: ElementType,
-            channel: Channel,
-        ) -> Option<RsvgNode>
+        fn get_node<F>(node: &Node, element_type: ElementType, channel: Channel) -> Option<Node>
         where
             F: FeComponentTransferFunc + NodeTrait,
         {

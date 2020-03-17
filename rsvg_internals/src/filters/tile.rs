@@ -1,7 +1,7 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementResult;
-use crate::node::{NodeTrait, RsvgNode};
+use crate::node::{Node, NodeTrait};
 use crate::property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
@@ -25,7 +25,7 @@ impl Default for FeTile {
 impl NodeTrait for FeTile {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)
     }
 }
@@ -33,7 +33,7 @@ impl NodeTrait for FeTile {
 impl FilterEffect for FeTile {
     fn render(
         &self,
-        _node: &RsvgNode,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,

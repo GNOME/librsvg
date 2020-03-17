@@ -13,7 +13,7 @@ use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -420,7 +420,7 @@ fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
 /// will be used instead of the given arguments.
 fn children_to_chunks(
     chunks: &mut Vec<Chunk>,
-    node: &RsvgNode,
+    node: &Node,
     acquired_nodes: &mut AcquiredNodes,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
@@ -514,7 +514,7 @@ impl Chars {
         *self.space_normalized.borrow_mut() = None;
     }
 
-    fn ensure_normalized_string(&self, node: &RsvgNode, values: &ComputedValues) {
+    fn ensure_normalized_string(&self, node: &Node, values: &ComputedValues) {
         let mut normalized = self.space_normalized.borrow_mut();
 
         if (*normalized).is_none() {
@@ -533,7 +533,7 @@ impl Chars {
 
     fn make_span(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         values: &ComputedValues,
         dx: Option<Length<Horizontal>>,
         dy: Option<Length<Vertical>>,
@@ -552,7 +552,7 @@ impl Chars {
 
     fn to_chunks(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         values: &ComputedValues,
         chunks: &mut Vec<Chunk>,
         dx: Option<Length<Horizontal>>,
@@ -583,7 +583,7 @@ pub struct Text {
 impl Text {
     fn make_chunks(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -605,7 +605,7 @@ impl Text {
 }
 
 impl NodeTrait for Text {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -621,7 +621,7 @@ impl NodeTrait for Text {
 
     fn draw(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -680,7 +680,7 @@ pub struct TRef {
 impl TRef {
     fn to_chunks(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         chunks: &mut Vec<Chunk>,
@@ -708,7 +708,7 @@ impl TRef {
 
 fn extract_chars_children_to_chunks_recursively(
     chunks: &mut Vec<Chunk>,
-    node: &RsvgNode,
+    node: &Node,
     values: &ComputedValues,
     depth: usize,
 ) {
@@ -724,7 +724,7 @@ fn extract_chars_children_to_chunks_recursively(
 }
 
 impl NodeTrait for TRef {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => {
@@ -749,7 +749,7 @@ pub struct TSpan {
 impl TSpan {
     fn to_chunks(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -776,7 +776,7 @@ impl TSpan {
 }
 
 impl NodeTrait for TSpan {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value).map(Some)?,

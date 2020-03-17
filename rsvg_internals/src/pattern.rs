@@ -14,7 +14,7 @@ use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
-use crate::node::*;
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw, NodeTrait, WeakNode};
 use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
@@ -66,7 +66,7 @@ enum UnresolvedChildren {
     ResolvedEmpty,
 
     /// Points back to the Pattern that had usable children.
-    WithChildren(RsvgWeakNode),
+    WithChildren(WeakNode),
 }
 
 /// Keeps track of which Pattern provided a non-empty set of children during pattern resolution
@@ -75,7 +75,7 @@ enum Children {
     Empty,
 
     /// Points back to the Pattern that had usable children
-    WithChildren(RsvgWeakNode),
+    WithChildren(WeakNode),
 }
 
 /// Main structure used during pattern resolution.  For unresolved
@@ -119,7 +119,7 @@ pub struct Pattern {
 }
 
 impl NodeTrait for Pattern {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "patternUnits") => self.common.units = Some(attr.parse(value)?),
@@ -164,7 +164,7 @@ impl PaintSource for Pattern {
 
     fn resolve(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
     ) -> Result<Self::Resolved, AcquireError> {
         let mut resolved = self.resolved.borrow_mut();
@@ -476,7 +476,7 @@ impl UnresolvedPattern {
 }
 
 impl UnresolvedChildren {
-    fn from_node(node: &RsvgNode) -> UnresolvedChildren {
+    fn from_node(node: &Node) -> UnresolvedChildren {
         let weak = node.downgrade();
 
         if node.children().any(|child| child.is_element()) {
@@ -527,7 +527,7 @@ impl UnresolvedChildren {
 }
 
 impl Children {
-    fn node_with_children(&self) -> Option<RsvgNode> {
+    fn node_with_children(&self) -> Option<Node> {
         match *self {
             Children::Empty => None,
             Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
@@ -547,7 +547,7 @@ impl ResolvedPattern {
 }
 
 impl Pattern {
-    fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
+    fn get_unresolved(&self, node: &Node) -> Unresolved {
         let pattern = UnresolvedPattern {
             common: self.common.clone(),
             children: UnresolvedChildren::from_node(node),
@@ -563,7 +563,7 @@ impl Pattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::{NodeData, RsvgNode};
+    use crate::node::NodeData;
     use markup5ever::{namespace_url, ns, QualName};
     use std::ptr;
 
@@ -571,7 +571,7 @@ mod tests {
     fn pattern_resolved_from_defaults_is_really_resolved() {
         let bag = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
 
-        let node = RsvgNode::new(NodeData::new_element(
+        let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("pattern")),
             &bag,
         ));

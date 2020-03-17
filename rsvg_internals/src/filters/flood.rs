@@ -1,7 +1,7 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementResult;
-use crate::node::{CascadedValues, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeTrait};
 use crate::property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -26,7 +26,7 @@ impl NodeTrait for FeFlood {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)
     }
 }
@@ -34,7 +34,7 @@ impl NodeTrait for FeFlood {
 impl FilterEffect for FeFlood {
     fn render(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,

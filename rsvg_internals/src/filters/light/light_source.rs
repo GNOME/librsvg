@@ -4,7 +4,7 @@ use nalgebra::Vector3;
 
 use crate::element::ElementResult;
 use crate::filters::context::FilterContext;
-use crate::node::{NodeTrait, RsvgNode};
+use crate::node::{Node, NodeTrait};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::util::clamp;
@@ -104,7 +104,7 @@ impl FeDistantLight {
 }
 
 impl NodeTrait for FeDistantLight {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
@@ -136,7 +136,7 @@ impl FePointLight {
 }
 
 impl NodeTrait for FePointLight {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -185,7 +185,7 @@ impl FeSpotLight {
 }
 
 impl NodeTrait for FeSpotLight {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,

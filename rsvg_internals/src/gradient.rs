@@ -12,7 +12,7 @@ use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{ElementResult, ElementType};
 use crate::error::*;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
 use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
@@ -130,7 +130,7 @@ fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind>
 }
 
 impl NodeTrait for Stop {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "offset") => {
@@ -444,7 +444,7 @@ impl UnresolvedGradient {
 
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
-    fn add_color_stops_from_node(&mut self, node: &RsvgNode) {
+    fn add_color_stops_from_node(&mut self, node: &Node) {
         let element_type = node.borrow_element().get_type();
 
         assert!(
@@ -553,7 +553,7 @@ impl RadialGradient {
 macro_rules! impl_get_unresolved {
     ($gradient:ty) => {
         impl $gradient {
-            fn get_unresolved(&self, node: &RsvgNode) -> Unresolved {
+            fn get_unresolved(&self, node: &Node) -> Unresolved {
                 let mut gradient = UnresolvedGradient {
                     units: self.common.units,
                     transform: self.common.transform,
@@ -596,7 +596,7 @@ impl Common {
 }
 
 impl NodeTrait for LinearGradient {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -615,7 +615,7 @@ impl NodeTrait for LinearGradient {
 }
 
 impl NodeTrait for RadialGradient {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -641,7 +641,7 @@ macro_rules! impl_paint_source {
 
             fn resolve(
                 &self,
-                node: &RsvgNode,
+                node: &Node,
                 acquired_nodes: &mut AcquiredNodes,
             ) -> Result<Self::Resolved, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
@@ -814,7 +814,7 @@ fn acquire_gradient(
 mod tests {
     use super::*;
     use crate::float_eq_cairo::ApproxEqCairo;
-    use crate::node::{NodeData, RsvgNode};
+    use crate::node::{Node, NodeData};
     use markup5ever::{namespace_url, ns, QualName};
     use std::ptr;
 
@@ -850,7 +850,7 @@ mod tests {
     fn gradient_resolved_from_defaults_is_really_resolved() {
         let bag = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
 
-        let node = RsvgNode::new(NodeData::new_element(
+        let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             &bag,
         ));
@@ -861,7 +861,7 @@ mod tests {
         let gradient = gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
-        let node = RsvgNode::new(NodeData::new_element(
+        let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             &bag,
         ));

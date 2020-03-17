@@ -3,7 +3,7 @@
 //! Librsvg uses the [rctree crate][rctree] to represent the SVG tree of elements.
 //! Its [`Node`] struct provides a generic wrapper over nodes in a tree.
 //! Librsvg puts a [`NodeData`] as the type parameter of [`Node`].  For convenience,
-//! librsvg has a type alias `RsvgNode = Node<NodeData>`.
+//! librsvg has a type alias `Node = Node<NodeData>`.
 //!
 //! Nodes are not constructed directly by callers;
 //!
@@ -29,12 +29,12 @@ use crate::text::Chars;
 /// Strong reference to an element in the SVG tree.
 ///
 /// See the [module documentation](index.html) for more information.
-pub type RsvgNode = rctree::Node<NodeData>;
+pub type Node = rctree::Node<NodeData>;
 
 /// Weak reference to an element in the SVG tree.
 ///
 /// See the [module documentation](index.html) for more information.
-pub type RsvgWeakNode = rctree::WeakNode<NodeData>;
+pub type WeakNode = rctree::WeakNode<NodeData>;
 
 /// Data for a single DOM node.
 ///
@@ -125,7 +125,7 @@ impl<'a> CascadedValues<'a> {
     /// This is what nodes should normally use to draw their children from their `draw()` method.
     /// Nodes that need to override the cascade for their children can use `new_from_values()`
     /// instead.
-    pub fn new(&self, node: &'a RsvgNode) -> CascadedValues<'a> {
+    pub fn new(&self, node: &'a Node) -> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
                 inner: CascadedInner::FromNode(node.borrow_element()),
@@ -140,7 +140,7 @@ impl<'a> CascadedValues<'a> {
     /// This is to be used only in the toplevel drawing function, or in elements like `<marker>`
     /// that don't propagate their parent's cascade to their children.  All others should use
     /// `new()` to derive the cascade from an existing one.
-    pub fn new_from_node(node: &RsvgNode) -> CascadedValues<'_> {
+    pub fn new_from_node(node: &Node) -> CascadedValues<'_> {
         CascadedValues {
             inner: CascadedInner::FromNode(node.borrow_element()),
         }
@@ -151,7 +151,7 @@ impl<'a> CascadedValues<'a> {
     ///
     /// This is for the `<use>` element, which draws the element which it references with the
     /// `<use>`'s own cascade, not wih the element's original cascade.
-    pub fn new_from_values(node: &'a RsvgNode, values: &ComputedValues) -> CascadedValues<'a> {
+    pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
         node.borrow_element()
             .get_specified_values()
@@ -179,7 +179,7 @@ pub trait NodeTrait: Downcast {
     /// Sets per-node attributes from the `pbag`
     ///
     /// Each node is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult;
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult;
 
     /// Sets any special-cased properties that the node may have, that are different
     /// from defaults in the node's `SpecifiedValues`.
@@ -193,7 +193,7 @@ pub trait NodeTrait: Downcast {
 
     fn draw(
         &self,
-        _node: &RsvgNode,
+        _node: &Node,
         _acquired_nodes: &mut AcquiredNodes,
         _cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -235,7 +235,7 @@ pub trait NodeBorrow {
     fn borrow_element_mut(&mut self) -> RefMut<Element>;
 }
 
-impl NodeBorrow for RsvgNode {
+impl NodeBorrow for Node {
     fn is_element(&self) -> bool {
         match *self.borrow() {
             NodeData::Element(_) => true,
@@ -277,7 +277,7 @@ pub trait NodeCascade {
     fn cascade(&mut self, values: &ComputedValues);
 }
 
-impl NodeCascade for RsvgNode {
+impl NodeCascade for Node {
     fn cascade(&mut self, values: &ComputedValues) {
         let mut values = values.clone();
 
@@ -313,7 +313,7 @@ pub trait NodeDraw {
     ) -> Result<BoundingBox, RenderingError>;
 }
 
-impl NodeDraw for RsvgNode {
+impl NodeDraw for Node {
     fn draw(
         &self,
         acquired_nodes: &mut AcquiredNodes,

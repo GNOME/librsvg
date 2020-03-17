@@ -13,7 +13,7 @@ use crate::element::{ElementResult, ElementType};
 use crate::error::{RenderingError, ValueErrorKind};
 use crate::filter::Filter;
 use crate::length::*;
-use crate::node::{CascadedValues, NodeBorrow, NodeTrait, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeTrait};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -40,7 +40,7 @@ pub trait FilterEffect: NodeTrait {
     /// property hasn't been provided), an error is returned.
     fn render(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -114,7 +114,7 @@ impl Primitive {
 }
 
 impl NodeTrait for Primitive {
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let primitiveunits = parent
             .and_then(|parent| {
@@ -219,7 +219,7 @@ impl PrimitiveWithInput {
 }
 
 impl NodeTrait for PrimitiveWithInput {
-    fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(parent, pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -244,7 +244,7 @@ impl Deref for PrimitiveWithInput {
 
 /// Applies a filter and returns the resulting surface.
 pub fn render(
-    filter_node: &RsvgNode,
+    filter_node: &Node,
     computed_from_node_being_filtered: &ComputedValues,
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes,

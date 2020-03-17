@@ -8,7 +8,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementResult;
 use crate::error::ValueErrorKind;
 use crate::length::*;
-use crate::node::{NodeTrait, RsvgNode};
+use crate::node::{Node, NodeTrait};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -112,7 +112,7 @@ impl Filter {
 }
 
 impl NodeTrait for Filter {
-    fn set_atts(&mut self, _: Option<&RsvgNode>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

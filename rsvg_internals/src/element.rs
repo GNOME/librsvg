@@ -198,7 +198,7 @@ impl Element {
         self.specified_values.is_overflow()
     }
 
-    pub fn set_atts(&mut self, parent: Option<&RsvgNode>, pbag: &PropertyBag<'_>, locale: &Locale) {
+    pub fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>, locale: &Locale) {
         if self.node_impl.overflow_hidden() {
             self.specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
         }

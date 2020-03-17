@@ -14,7 +14,7 @@ use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
-use crate::node::{CascadedValues, NodeBorrow, RsvgNode};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::{IRect, Rect};
 use crate::structure::{IntrinsicDimensions, Svg};
 use url::Url;
@@ -291,7 +291,7 @@ impl Handle {
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry_with_viewport(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         viewport: Rect,
         dpi: Dpi,
         is_testing: bool,
@@ -348,7 +348,7 @@ impl Handle {
         self.get_node_geometry_with_viewport(&node, unit_rectangle(), dpi, is_testing)
     }
 
-    fn get_node_or_root(&self, id: Option<&str>) -> Result<RsvgNode, RenderingError> {
+    fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
         if let Some(id) = id {
             self.lookup_node(id).map_err(RenderingError::InvalidId)
         } else {
@@ -368,7 +368,7 @@ impl Handle {
         self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)
     }
 
-    fn lookup_node(&self, id: &str) -> Result<RsvgNode, DefsLookupErrorKind> {
+    fn lookup_node(&self, id: &str) -> Result<Node, DefsLookupErrorKind> {
         match Href::parse(&id).map_err(DefsLookupErrorKind::HrefError)? {
             Href::PlainUrl(_) => Err(DefsLookupErrorKind::CannotLookupExternalReferences),
             Href::WithFragment(fragment) => {
@@ -481,7 +481,7 @@ impl Handle {
 
     fn get_bbox_for_element(
         &self,
-        node: &RsvgNode,
+        node: &Node,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<BoundingBox, RenderingError> {
