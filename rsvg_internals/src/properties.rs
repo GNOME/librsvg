@@ -66,6 +66,7 @@ where
 }
 
 /// Embodies "which property is this" plus the property's value
+#[derive(Clone)]
 pub enum ParsedProperty {
     BaselineShift(SpecifiedValue<BaselineShift>),
     ClipPath(SpecifiedValue<ClipPath>),
@@ -113,66 +114,152 @@ pub enum ParsedProperty {
     UnicodeBidi(SpecifiedValue<UnicodeBidi>),
     Visibility(SpecifiedValue<Visibility>),
     WritingMode(SpecifiedValue<WritingMode>),
+    XmlLang(SpecifiedValue<XmlLang>), // not a property, but a non-presentation attribute
+    XmlSpace(SpecifiedValue<XmlSpace>), // not a property, but a non-presentation attribute
 }
 
-/// Holds the specified CSS properties
+/// Used to match `ParsedProperty` to their discriminant
 ///
-/// This is used for various purposes:
-///
-/// * Immutably, to store the attributes of element nodes after parsing.
-/// * Mutably, during cascading/rendering.
-///
-/// Each property should have its own data type, and implement
-/// `Default` and `parsers::Parse`.
-#[derive(Default, Clone)]
+/// The `PropertyId::UnsetProperty` can be used as a sentinel value, as
+/// it does not match any `ParsedProperty` discriminant; it is really the
+/// number of valid values in this enum.
+#[repr(u8)]
+#[derive(Copy, Clone, PartialEq)]
+enum PropertyId {
+    BaselineShift,
+    ClipPath,
+    ClipRule,
+    Color,
+    ColorInterpolationFilters,
+    Direction,
+    Display,
+    EnableBackground,
+    Fill,
+    FillOpacity,
+    FillRule,
+    Filter,
+    FloodColor,
+    FloodOpacity,
+    FontFamily,
+    FontSize,
+    FontStretch,
+    FontStyle,
+    FontVariant,
+    FontWeight,
+    LetterSpacing,
+    LightingColor,
+    Marker,
+    MarkerEnd,
+    MarkerMid,
+    MarkerStart,
+    Mask,
+    Opacity,
+    Overflow,
+    ShapeRendering,
+    StopColor,
+    StopOpacity,
+    Stroke,
+    StrokeDasharray,
+    StrokeDashoffset,
+    StrokeLinecap,
+    StrokeLinejoin,
+    StrokeOpacity,
+    StrokeMiterlimit,
+    StrokeWidth,
+    TextAnchor,
+    TextDecoration,
+    TextRendering,
+    UnicodeBidi,
+    Visibility,
+    WritingMode,
+    XmlLang,
+    XmlSpace,
+    UnsetProperty,
+}
+
+impl ParsedProperty {
+    #[rustfmt::skip]
+    fn get_property_id(&self) -> PropertyId {
+        use ParsedProperty::*;
+
+        match *self {
+            BaselineShift(_)             => PropertyId::BaselineShift,
+            ClipPath(_)                  => PropertyId::ClipPath,
+            ClipRule(_)                  => PropertyId::ClipRule,
+            Color(_)                     => PropertyId::Color,
+            ColorInterpolationFilters(_) => PropertyId::ColorInterpolationFilters,
+            Direction(_)                 => PropertyId::Direction,
+            Display(_)                   => PropertyId::Display,
+            EnableBackground(_)          => PropertyId::EnableBackground,
+            Fill(_)                      => PropertyId::Fill,
+            FillOpacity(_)               => PropertyId::FillOpacity,
+            FillRule(_)                  => PropertyId::FillRule,
+            Filter(_)                    => PropertyId::Filter,
+            FloodColor(_)                => PropertyId::FloodColor,
+            FloodOpacity(_)              => PropertyId::FloodOpacity,
+            FontFamily(_)                => PropertyId::FontFamily,
+            FontSize(_)                  => PropertyId::FontSize,
+            FontStretch(_)               => PropertyId::FontStretch,
+            FontStyle(_)                 => PropertyId::FontStyle,
+            FontVariant(_)               => PropertyId::FontVariant,
+            FontWeight(_)                => PropertyId::FontWeight,
+            LetterSpacing(_)             => PropertyId::LetterSpacing,
+            LightingColor(_)             => PropertyId::LightingColor,
+            Marker(_)                    => PropertyId::Marker,
+            MarkerEnd(_)                 => PropertyId::MarkerEnd,
+            MarkerMid(_)                 => PropertyId::MarkerMid,
+            MarkerStart(_)               => PropertyId::MarkerStart,
+            Mask(_)                      => PropertyId::Mask,
+            Opacity(_)                   => PropertyId::Opacity,
+            Overflow(_)                  => PropertyId::Overflow,
+            ShapeRendering(_)            => PropertyId::ShapeRendering,
+            StopColor(_)                 => PropertyId::StopColor,
+            StopOpacity(_)               => PropertyId::StopOpacity,
+            Stroke(_)                    => PropertyId::Stroke,
+            StrokeDasharray(_)           => PropertyId::StrokeDasharray,
+            StrokeDashoffset(_)          => PropertyId::StrokeDashoffset,
+            StrokeLinecap(_)             => PropertyId::StrokeLinecap,
+            StrokeLinejoin(_)            => PropertyId::StrokeLinejoin,
+            StrokeOpacity(_)             => PropertyId::StrokeOpacity,
+            StrokeMiterlimit(_)          => PropertyId::StrokeMiterlimit,
+            StrokeWidth(_)               => PropertyId::StrokeWidth,
+            TextAnchor(_)                => PropertyId::TextAnchor,
+            TextDecoration(_)            => PropertyId::TextDecoration,
+            TextRendering(_)             => PropertyId::TextRendering,
+            UnicodeBidi(_)               => PropertyId::UnicodeBidi,
+            Visibility(_)                => PropertyId::Visibility,
+            WritingMode(_)               => PropertyId::WritingMode,
+            XmlLang(_)                   => PropertyId::XmlLang,
+            XmlSpace(_)                  => PropertyId::XmlSpace,
+        }
+    }
+}
+
+impl PropertyId {
+    fn as_u8(&self) -> u8 {
+        *self as u8
+    }
+
+    fn as_usize(&self) -> usize {
+        *self as usize
+    }
+}
+
+/// Holds the specified CSS properties for an element
+#[derive(Clone)]
 pub struct SpecifiedValues {
-    baseline_shift: SpecifiedValue<BaselineShift>,
-    clip_path: SpecifiedValue<ClipPath>,
-    clip_rule: SpecifiedValue<ClipRule>,
-    color: SpecifiedValue<Color>,
-    color_interpolation_filters: SpecifiedValue<ColorInterpolationFilters>,
-    direction: SpecifiedValue<Direction>,
-    display: SpecifiedValue<Display>,
-    enable_background: SpecifiedValue<EnableBackground>,
-    fill: SpecifiedValue<Fill>,
-    fill_opacity: SpecifiedValue<FillOpacity>,
-    fill_rule: SpecifiedValue<FillRule>,
-    filter: SpecifiedValue<Filter>,
-    flood_color: SpecifiedValue<FloodColor>,
-    flood_opacity: SpecifiedValue<FloodOpacity>,
-    font_family: SpecifiedValue<FontFamily>,
-    font_size: SpecifiedValue<FontSize>,
-    font_stretch: SpecifiedValue<FontStretch>,
-    font_style: SpecifiedValue<FontStyle>,
-    font_variant: SpecifiedValue<FontVariant>,
-    font_weight: SpecifiedValue<FontWeight>,
-    letter_spacing: SpecifiedValue<LetterSpacing>,
-    lighting_color: SpecifiedValue<LightingColor>,
-    marker_end: SpecifiedValue<MarkerEnd>,
-    marker_mid: SpecifiedValue<MarkerMid>,
-    marker_start: SpecifiedValue<MarkerStart>,
-    mask: SpecifiedValue<Mask>,
-    opacity: SpecifiedValue<Opacity>,
-    overflow: SpecifiedValue<Overflow>,
-    shape_rendering: SpecifiedValue<ShapeRendering>,
-    stop_color: SpecifiedValue<StopColor>,
-    stop_opacity: SpecifiedValue<StopOpacity>,
-    stroke: SpecifiedValue<Stroke>,
-    stroke_dasharray: SpecifiedValue<StrokeDasharray>,
-    stroke_dashoffset: SpecifiedValue<StrokeDashoffset>,
-    stroke_line_cap: SpecifiedValue<StrokeLinecap>,
-    stroke_line_join: SpecifiedValue<StrokeLinejoin>,
-    stroke_opacity: SpecifiedValue<StrokeOpacity>,
-    stroke_miterlimit: SpecifiedValue<StrokeMiterlimit>,
-    stroke_width: SpecifiedValue<StrokeWidth>,
-    text_anchor: SpecifiedValue<TextAnchor>,
-    text_decoration: SpecifiedValue<TextDecoration>,
-    text_rendering: SpecifiedValue<TextRendering>,
-    unicode_bidi: SpecifiedValue<UnicodeBidi>,
-    visibility: SpecifiedValue<Visibility>,
-    writing_mode: SpecifiedValue<WritingMode>,
-    xml_lang: SpecifiedValue<XmlLang>, // not a property, but a non-presentation attribute
-    xml_space: SpecifiedValue<XmlSpace>, // not a property, but a non-presentation attribute
+    indices: [u8; PropertyId::UnsetProperty as usize],
+    props: Vec<ParsedProperty>,
+}
+
+impl Default for SpecifiedValues {
+    fn default() -> Self {
+        SpecifiedValues {
+            // this many elements, with the same value
+            indices: [PropertyId::UnsetProperty.as_u8(); PropertyId::UnsetProperty as usize],
+            props: Vec::new(),
+        }
+    }
 }
 
 impl SpecifiedValues {
@@ -409,137 +496,131 @@ impl ComputedValues {
     }
 }
 
-macro_rules! compute_value {
-    ($self:ident, $computed:ident, $name:ident) => {
-        $computed.$name = $self.$name.compute(&$computed.$name, &$computed)
-    };
-}
-
 impl SpecifiedValues {
+    fn property_index(&self, id: PropertyId) -> Option<usize> {
+        let v = self.indices[id.as_usize()];
+
+        if v == PropertyId::UnsetProperty.as_u8() {
+            None
+        } else {
+            Some(v as usize)
+        }
+    }
+
+    fn replace_property(&mut self, prop: &ParsedProperty) {
+        let id = prop.get_property_id();
+
+        if id == PropertyId::Marker {
+            unreachable!("should have processed shorthands earlier");
+        }
+
+        if let Some(index) = self.property_index(id) {
+            self.props[index] = prop.clone();
+        } else {
+            self.props.push(prop.clone());
+            let pos = self.props.len() - 1;
+            self.indices[id.as_usize()] = pos as u8;
+        }
+    }
+
     #[rustfmt::skip]
     pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
         use crate::properties::ParsedProperty::*;
-
         use crate::properties as p;
 
-        match *prop {
-            BaselineShift(ref x)             => self.baseline_shift               = x.clone(),
-            ClipPath(ref x)                  => self.clip_path                    = x.clone(),
-            ClipRule(ref x)                  => self.clip_rule                    = x.clone(),
-            Color(ref x)                     => self.color                        = x.clone(),
-            ColorInterpolationFilters(ref x) => self.color_interpolation_filters  = x.clone(),
-            Direction(ref x)                 => self.direction                    = x.clone(),
-            Display(ref x)                   => self.display                      = x.clone(),
-            EnableBackground(ref x)          => self.enable_background            = x.clone(),
-            Fill(ref x)                      => self.fill                         = x.clone(),
-            FillOpacity(ref x)               => self.fill_opacity                 = x.clone(),
-            FillRule(ref x)                  => self.fill_rule                    = x.clone(),
-            Filter(ref x)                    => self.filter                       = x.clone(),
-            FloodColor(ref x)                => self.flood_color                  = x.clone(),
-            FloodOpacity(ref x)              => self.flood_opacity                = x.clone(),
-            FontFamily(ref x)                => self.font_family                  = x.clone(),
-            FontSize(ref x)                  => self.font_size                    = x.clone(),
-            FontStretch(ref x)               => self.font_stretch                 = x.clone(),
-            FontStyle(ref x)                 => self.font_style                   = x.clone(),
-            FontVariant(ref x)               => self.font_variant                 = x.clone(),
-            FontWeight(ref x)                => self.font_weight                  = x.clone(),
-            LetterSpacing(ref x)             => self.letter_spacing               = x.clone(),
-            LightingColor(ref x)             => self.lighting_color               = x.clone(),
-
-            Marker(ref x) => if let SpecifiedValue::Specified(p::Marker(ref v)) = *x {
-                // Since "marker" is a shorthand property, we'll just expand it here
-                self.marker_end = SpecifiedValue::Specified(p::MarkerEnd(v.clone()));
-                self.marker_mid = SpecifiedValue::Specified(p::MarkerMid(v.clone()));
-                self.marker_start = SpecifiedValue::Specified(p::MarkerStart(v.clone()));
-            },
-
-            MarkerEnd(ref x)                 => self.marker_end                   = x.clone(),
-            MarkerMid(ref x)                 => self.marker_mid                   = x.clone(),
-            MarkerStart(ref x)               => self.marker_start                 = x.clone(),
-            Mask(ref x)                      => self.mask                         = x.clone(),
-            Opacity(ref x)                   => self.opacity                      = x.clone(),
-            Overflow(ref x)                  => self.overflow                     = x.clone(),
-            ShapeRendering(ref x)            => self.shape_rendering              = x.clone(),
-            StopColor(ref x)                 => self.stop_color                   = x.clone(),
-            StopOpacity(ref x)               => self.stop_opacity                 = x.clone(),
-            Stroke(ref x)                    => self.stroke                       = x.clone(),
-            StrokeDasharray(ref x)           => self.stroke_dasharray             = x.clone(),
-            StrokeDashoffset(ref x)          => self.stroke_dashoffset            = x.clone(),
-            StrokeLinecap(ref x)             => self.stroke_line_cap              = x.clone(),
-            StrokeLinejoin(ref x)            => self.stroke_line_join             = x.clone(),
-            StrokeOpacity(ref x)             => self.stroke_opacity               = x.clone(),
-            StrokeMiterlimit(ref x)          => self.stroke_miterlimit            = x.clone(),
-            StrokeWidth(ref x)               => self.stroke_width                 = x.clone(),
-            TextAnchor(ref x)                => self.text_anchor                  = x.clone(),
-            TextDecoration(ref x)            => self.text_decoration              = x.clone(),
-            TextRendering(ref x)             => self.text_rendering               = x.clone(),
-            UnicodeBidi(ref x)               => self.unicode_bidi                 = x.clone(),
-            Visibility(ref x)                => self.visibility                   = x.clone(),
-            WritingMode(ref x)               => self.writing_mode                 = x.clone(),
+        if let Marker(SpecifiedValue::Specified(p::Marker(ref v))) = *prop {
+            // Since "marker" is a shorthand property, we'll just expand it here
+            self.replace_property(&MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))));
+            self.replace_property(&MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))));
+            self.replace_property(&MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))));
+        } else {
+            self.replace_property(prop);
         }
     }
 
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
-        // First, compute font.  It needs to be done before everything
+        macro_rules! compute {
+            ($name:ident, $field:ident) => {
+                if let Some(index) = self.property_index(PropertyId::$name) {
+                    if let &ParsedProperty::$name(ref s) = &self.props[index] {
+                        computed.$field = s.compute(&computed.$field, computed);
+                    } else {
+                        unreachable!();
+                    }
+                } else {
+                    let s = SpecifiedValue::<$name>::Unspecified;
+                    computed.$field = s.compute(&computed.$field, computed);
+                }
+            };
+        }
+
+        // First, compute font_size.  It needs to be done before everything
         // else, so that properties that depend on its computed value
         // will be able to use it.  For example, baseline-shift
         // depends on font-size.
-        compute_value!(self, computed, font_size);
+
+        compute!(FontSize, font_size);
 
         // Then, do all the other properties.
-        compute_value!(self, computed, baseline_shift);
-        compute_value!(self, computed, clip_path);
-        compute_value!(self, computed, clip_rule);
-        compute_value!(self, computed, color);
-        compute_value!(self, computed, color_interpolation_filters);
-        compute_value!(self, computed, direction);
-        compute_value!(self, computed, display);
-        compute_value!(self, computed, enable_background);
-        compute_value!(self, computed, fill);
-        compute_value!(self, computed, fill_opacity);
-        compute_value!(self, computed, fill_rule);
-        compute_value!(self, computed, filter);
-        compute_value!(self, computed, flood_color);
-        compute_value!(self, computed, flood_opacity);
-        compute_value!(self, computed, font_family);
-        compute_value!(self, computed, font_stretch);
-        compute_value!(self, computed, font_style);
-        compute_value!(self, computed, font_variant);
-        compute_value!(self, computed, font_weight);
-        compute_value!(self, computed, letter_spacing);
-        compute_value!(self, computed, lighting_color);
-        compute_value!(self, computed, marker_end);
-        compute_value!(self, computed, marker_mid);
-        compute_value!(self, computed, marker_start);
-        compute_value!(self, computed, mask);
-        compute_value!(self, computed, opacity);
-        compute_value!(self, computed, overflow);
-        compute_value!(self, computed, shape_rendering);
-        compute_value!(self, computed, stop_color);
-        compute_value!(self, computed, stop_opacity);
-        compute_value!(self, computed, stroke);
-        compute_value!(self, computed, stroke_dasharray);
-        compute_value!(self, computed, stroke_dashoffset);
-        compute_value!(self, computed, stroke_line_cap);
-        compute_value!(self, computed, stroke_line_join);
-        compute_value!(self, computed, stroke_opacity);
-        compute_value!(self, computed, stroke_miterlimit);
-        compute_value!(self, computed, stroke_width);
-        compute_value!(self, computed, text_anchor);
-        compute_value!(self, computed, text_decoration);
-        compute_value!(self, computed, text_rendering);
-        compute_value!(self, computed, unicode_bidi);
-        compute_value!(self, computed, visibility);
-        compute_value!(self, computed, writing_mode);
-        compute_value!(self, computed, xml_lang);
-        compute_value!(self, computed, xml_space);
+
+        compute!(BaselineShift, baseline_shift);
+        compute!(ClipPath, clip_path);
+        compute!(ClipRule, clip_rule);
+        compute!(Color, color);
+        compute!(ColorInterpolationFilters, color_interpolation_filters);
+        compute!(Direction, direction);
+        compute!(Display, display);
+        compute!(EnableBackground, enable_background);
+        compute!(Fill, fill);
+        compute!(FillOpacity, fill_opacity);
+        compute!(FillRule, fill_rule);
+        compute!(Filter, filter);
+        compute!(FloodColor, flood_color);
+        compute!(FloodOpacity, flood_opacity);
+        compute!(FontFamily, font_family);
+        compute!(FontStretch, font_stretch);
+        compute!(FontStyle, font_style);
+        compute!(FontVariant, font_variant);
+        compute!(FontWeight, font_weight);
+        compute!(LetterSpacing, letter_spacing);
+        compute!(LightingColor, lighting_color);
+        compute!(MarkerEnd, marker_end);
+        compute!(MarkerMid, marker_mid);
+        compute!(MarkerStart, marker_start);
+        compute!(Mask, mask);
+        compute!(Opacity, opacity);
+        compute!(Overflow, overflow);
+        compute!(ShapeRendering, shape_rendering);
+        compute!(StopColor, stop_color);
+        compute!(StopOpacity, stop_opacity);
+        compute!(Stroke, stroke);
+        compute!(StrokeDasharray, stroke_dasharray);
+        compute!(StrokeDashoffset, stroke_dashoffset);
+        compute!(StrokeLinecap, stroke_line_cap);
+        compute!(StrokeLinejoin, stroke_line_join);
+        compute!(StrokeOpacity, stroke_opacity);
+        compute!(StrokeMiterlimit, stroke_miterlimit);
+        compute!(StrokeWidth, stroke_width);
+        compute!(TextAnchor, text_anchor);
+        compute!(TextDecoration, text_decoration);
+        compute!(TextRendering, text_rendering);
+        compute!(UnicodeBidi, unicode_bidi);
+        compute!(Visibility, visibility);
+        compute!(WritingMode, writing_mode);
+        compute!(XmlLang, xml_lang);
+        compute!(XmlSpace, xml_space);
     }
 
     pub fn is_overflow(&self) -> bool {
-        match self.overflow {
-            SpecifiedValue::Specified(Overflow::Auto)
-            | SpecifiedValue::Specified(Overflow::Visible) => true,
-            _ => false,
+        if let Some(overflow_index) = self.property_index(PropertyId::Overflow) {
+            match self.props[overflow_index] {
+                ParsedProperty::Overflow(SpecifiedValue::Specified(Overflow::Auto)) => true,
+                ParsedProperty::Overflow(SpecifiedValue::Specified(Overflow::Visible)) => true,
+                ParsedProperty::Overflow(_) => false,
+                _ => unreachable!(),
+            }
+        } else {
+            false
         }
     }
 
@@ -632,14 +713,18 @@ impl SpecifiedValues {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_lang = SpecifiedValue::Specified(attr.parse(value)?);
+                    self.set_parsed_property(&ParsedProperty::XmlLang(SpecifiedValue::Specified(
+                        attr.parse(value)?,
+                    )));
                 }
 
                 expanded_name!(xml "space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.xml_space = SpecifiedValue::Specified(attr.parse(value)?);
+                    self.set_parsed_property(&ParsedProperty::XmlSpace(SpecifiedValue::Specified(
+                        attr.parse(value)?,
+                    )));
                 }
 
                 _ => self.parse_one_presentation_attribute(attr, value)?,
@@ -699,5 +784,135 @@ where
         Ok(SpecifiedValue::Inherit)
     } else {
         Parse::parse(input).map(SpecifiedValue::Specified)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::iri::IRI;
+    use crate::length::*;
+
+    #[test]
+    fn empty_values_computes_to_defaults() {
+        let specified = SpecifiedValues::default();
+
+        let mut computed = ComputedValues::default();
+        specified.to_computed_values(&mut computed);
+
+        assert_eq!(computed.stroke_width, StrokeWidth::default());
+    }
+
+    #[test]
+    fn set_one_property() {
+        let length = Length::<Both>::new(42.0, LengthUnit::Px);
+
+        let mut specified = SpecifiedValues::default();
+        specified.set_parsed_property(&ParsedProperty::StrokeWidth(SpecifiedValue::Specified(
+            StrokeWidth(length),
+        )));
+
+        let mut computed = ComputedValues::default();
+        specified.to_computed_values(&mut computed);
+
+        assert_eq!(computed.stroke_width, StrokeWidth(length));
+    }
+
+    #[test]
+    fn replace_existing_property() {
+        let length1 = Length::<Both>::new(42.0, LengthUnit::Px);
+        let length2 = Length::<Both>::new(42.0, LengthUnit::Px);
+
+        let mut specified = SpecifiedValues::default();
+
+        specified.set_parsed_property(&ParsedProperty::StrokeWidth(SpecifiedValue::Specified(
+            StrokeWidth(length1),
+        )));
+
+        specified.set_parsed_property(&ParsedProperty::StrokeWidth(SpecifiedValue::Specified(
+            StrokeWidth(length2),
+        )));
+
+        let mut computed = ComputedValues::default();
+        specified.to_computed_values(&mut computed);
+
+        assert_eq!(computed.stroke_width, StrokeWidth(length2));
+    }
+
+    #[test]
+    fn expands_marker_shorthand() {
+        let mut specified = SpecifiedValues::default();
+        let iri = IRI::parse_str("url(#foo)").unwrap();
+
+        let marker = Marker(iri.clone());
+        specified.set_parsed_property(&ParsedProperty::Marker(SpecifiedValue::Specified(marker)));
+
+        let mut computed = ComputedValues::default();
+        specified.to_computed_values(&mut computed);
+
+        assert_eq!(computed.marker_start, MarkerStart(iri.clone()));
+        assert_eq!(computed.marker_mid, MarkerMid(iri.clone()));
+        assert_eq!(computed.marker_end, MarkerEnd(iri.clone()));
+    }
+
+    #[test]
+    fn replaces_marker_shorthand() {
+        let mut specified = SpecifiedValues::default();
+        let iri1 = IRI::parse_str("url(#foo)").unwrap();
+        let iri2 = IRI::None;
+
+        let marker1 = Marker(iri1.clone());
+        specified.set_parsed_property(&ParsedProperty::Marker(SpecifiedValue::Specified(marker1)));
+
+        let marker2 = Marker(iri2.clone());
+        specified.set_parsed_property(&ParsedProperty::Marker(SpecifiedValue::Specified(marker2)));
+
+        let mut computed = ComputedValues::default();
+        specified.to_computed_values(&mut computed);
+
+        assert_eq!(computed.marker_start, MarkerStart(iri2.clone()));
+        assert_eq!(computed.marker_mid, MarkerMid(iri2.clone()));
+        assert_eq!(computed.marker_end, MarkerEnd(iri2.clone()));
+    }
+
+    #[test]
+    fn computes_property_that_does_not_inherit_automatically() {
+        assert_eq!(
+            <Opacity as Property<ComputedValues>>::inherits_automatically(),
+            false
+        );
+
+        let half_opacity = Opacity::parse_str("0.5").unwrap();
+
+        // first level, as specified with opacity
+
+        let mut with_opacity = SpecifiedValues::default();
+        with_opacity.set_parsed_property(&ParsedProperty::Opacity(SpecifiedValue::Specified(
+            half_opacity.clone(),
+        )));
+
+        let mut computed_0_5 = ComputedValues::default();
+        with_opacity.to_computed_values(&mut computed_0_5);
+
+        assert_eq!(computed_0_5.opacity, half_opacity.clone());
+
+        // second level, no opacity specified, and it doesn't inherit
+
+        let without_opacity = SpecifiedValues::default();
+
+        let mut computed = computed_0_5.clone();
+        without_opacity.to_computed_values(&mut computed);
+
+        assert_eq!(computed.opacity, Opacity::default());
+
+        // another at second level, opacity set to explicitly inherit
+
+        let mut with_inherit_opacity = SpecifiedValues::default();
+        with_inherit_opacity.set_parsed_property(&ParsedProperty::Opacity(SpecifiedValue::Inherit));
+
+        let mut computed = computed_0_5.clone();
+        with_inherit_opacity.to_computed_values(&mut computed);
+
+        assert_eq!(computed.opacity, half_opacity.clone());
     }
 }
