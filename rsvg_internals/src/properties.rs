@@ -177,10 +177,12 @@ pub struct SpecifiedValues {
 
 impl SpecifiedValues {
     pub fn with_overflow_hidden() -> SpecifiedValues {
-        SpecifiedValues {
-            overflow: SpecifiedValue::Specified(Overflow::Hidden),
-            ..Default::default()
-        }
+        let mut s = SpecifiedValues::default();
+        s.set_parsed_property(&ParsedProperty::Overflow(SpecifiedValue::Specified(
+            Overflow::Hidden,
+        )));
+
+        s
     }
 }
 
