@@ -20,7 +20,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::*;
-use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
+use crate::properties::{ComputedValues, ParsedProperty, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::transform::Transform;
@@ -200,13 +200,11 @@ impl ElementTrait for Marker {
         Ok(())
     }
 
-    fn overflow_hidden(&self) -> bool {
-        true
-    }
-
     fn set_overridden_properties(&self, values: &mut SpecifiedValues) {
         // markers are always displayed, even if <marker> or its ancestors are display:none
-        values.display = SpecifiedValue::Specified(Default::default());
+        values.set_parsed_property(&ParsedProperty::Display(SpecifiedValue::Specified(
+            Default::default(),
+        )));
     }
 }
 

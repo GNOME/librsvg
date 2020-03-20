@@ -46,9 +46,8 @@ use crate::marker::Marker;
 use crate::node::*;
 use crate::parsers::Parse;
 use crate::pattern::Pattern;
-use crate::properties::{ComputedValues, SpecifiedValue, SpecifiedValues};
+use crate::properties::{ComputedValues, SpecifiedValues};
 use crate::property_bag::PropertyBag;
-use crate::property_defs::Overflow;
 use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
@@ -145,12 +144,6 @@ pub trait ElementTrait: Downcast {
     /// from defaults in the element's `SpecifiedValues`.
     fn set_overridden_properties(&self, _values: &mut SpecifiedValues) {}
 
-    /// Whether this element has overflow:hidden.
-    /// https://www.w3.org/TR/SVG/styling.html#UAStyleSheet
-    fn overflow_hidden(&self) -> bool {
-        false
-    }
-
     fn draw(
         &self,
         _node: &Node,
@@ -241,10 +234,6 @@ impl Element {
     }
 
     pub fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>, locale: &Locale) {
-        if self.element_impl.overflow_hidden() {
-            self.specified_values.overflow = SpecifiedValue::Specified(Overflow::Hidden);
-        }
-
         self.save_style_attribute(pbag);
 
         if let Err(e) = self
@@ -387,13 +376,18 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element {
+        pub fn $name(
+            element_name: &QualName,
+            id: Option<&str>,
+            class: Option<&str>,
+            specified_values: SpecifiedValues,
+        ) -> Element {
             Element {
                 element_type: ElementType::$element_type,
                 element_name: element_name.clone(),
                 id: id.map(str::to_string),
                 class: class.map(str::to_string),
-                specified_values: Default::default(),
+                specified_values,
                 important_styles: Default::default(),
                 transform: Default::default(),
                 result: Ok(()),
@@ -479,100 +473,115 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn =
-    fn(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element;
+type ElementCreateFn = fn(
+    element_name: &QualName,
+    id: Option<&str>,
+    class: Option<&str>,
+    specified_values: SpecifiedValues,
+) -> Element;
+
+// For now it's just an enum, if some element needs more than one flag
+// we will need something fancier
+#[derive(Copy, Clone, PartialEq)]
+enum ElementCreateFlags {
+    Default,
+    IgnoreClass,
+    OverflowHidden,
+}
 
 // Lines in comments are elements that we don't support.
 #[rustfmt::skip]
-static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (bool, ElementCreateFn)>> = Lazy::new(|| {
-    let creators_table: Vec<(&str, bool, ElementCreateFn)> = vec![
+static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCreateFlags)>> = Lazy::new(|| {
+    use ElementCreateFlags::*;
+
+    let creators_table: Vec<(&str, ElementCreateFn, ElementCreateFlags)> = vec![
         // name, supports_class, create_fn
-        ("a",                   true,  create_link),
-        /* ("altGlyph",         true,  ), */
-        /* ("altGlyphDef",      false, ), */
-        /* ("altGlyphItem",     false, ), */
-        /* ("animate",          false, ), */
-        /* ("animateColor",     false, ), */
-        /* ("animateMotion",    false, ), */
-        /* ("animateTransform", false, ), */
-        ("circle",              true,  create_circle),
-        ("clipPath",            true,  create_clip_path),
-        /* ("color-profile",    false, ), */
-        /* ("cursor",           false, ), */
-        ("defs",                true,  create_defs),
-        /* ("desc",             true,  ), */
-        ("ellipse",             true,  create_ellipse),
-        ("feBlend",             true,  create_fe_blend),
-        ("feColorMatrix",       true,  create_fe_color_matrix),
-        ("feComponentTransfer", true,  create_fe_component_transfer),
-        ("feComposite",         true,  create_fe_composite),
-        ("feConvolveMatrix",    true,  create_fe_convolve_matrix),
-        ("feDiffuseLighting",   true,  create_fe_diffuse_lighting),
-        ("feDisplacementMap",   true,  create_fe_displacement_map),
-        ("feDistantLight",      false, create_fe_distant_light),
-        ("feFuncA",             false, create_fe_func_a),
-        ("feFuncB",             false, create_fe_func_b),
-        ("feFuncG",             false, create_fe_func_g),
-        ("feFuncR",             false, create_fe_func_r),
-        ("feFlood",             true,  create_fe_flood),
-        ("feGaussianBlur",      true,  create_fe_gaussian_blur),
-        ("feImage",             true,  create_fe_image),
-        ("feMerge",             true,  create_fe_merge),
-        ("feMergeNode",         false, create_fe_merge_node),
-        ("feMorphology",        true,  create_fe_morphology),
-        ("feOffset",            true,  create_fe_offset),
-        ("fePointLight",        false, create_fe_point_light),
-        ("feSpecularLighting",  true,  create_fe_specular_lighting),
-        ("feSpotLight",         false, create_fe_spot_light),
-        ("feTile",              true,  create_fe_tile),
-        ("feTurbulence",        true,  create_fe_turbulence),
-        ("filter",              true,  create_filter),
-        /* ("font",             true,  ), */
-        /* ("font-face",        false, ), */
-        /* ("font-face-format", false, ), */
-        /* ("font-face-name",   false, ), */
-        /* ("font-face-src",    false, ), */
-        /* ("font-face-uri",    false, ), */
-        /* ("foreignObject",    true,  ), */
-        ("g",                   true,  create_group),
-        /* ("glyph",            true,  ), */
-        /* ("glyphRef",         true,  ), */
-        /* ("hkern",            false, ), */
-        ("image",               true,  create_image),
-        ("line",                true,  create_line),
-        ("linearGradient",      true,  create_linear_gradient),
-        ("marker",              true,  create_marker),
-        ("mask",                true,  create_mask),
-        /* ("metadata",         false, ), */
-        /* ("missing-glyph",    true,  ), */
-        /* ("mpath",            false, ), */
-        /* ("multiImage",       false, create_multi_image), */
-        ("path",                true,  create_path),
-        ("pattern",             true,  create_pattern),
-        ("polygon",             true,  create_polygon),
-        ("polyline",            true,  create_polyline),
-        ("radialGradient",      true,  create_radial_gradient),
-        ("rect",                true,  create_rect),
-        /* ("script",           false, ), */
-        /* ("set",              false, ), */
-        ("stop",                true,  create_stop),
-        ("style",               false, create_style),
-        /* ("subImage",         false, create_sub_image), */
-        /* ("subImageRef",      false, create_sub_image_ref), */
-        ("svg",                 true,  create_svg),
-        ("switch",              true,  create_switch),
-        ("symbol",              true,  create_symbol),
-        ("text",                true,  create_text),
-        /* ("textPath",         true,  ), */
-        /* ("title",            true,  ), */
-        ("tref",                true,  create_tref),
-        ("tspan",               true,  create_tspan),
-        ("use",                 true,  create_use),
-        /* ("view",             false, ), */
-        /* ("vkern",            false, ), */
+        ("a",                   create_link,                  Default),
+        /* ("altGlyph",         ), */
+        /* ("altGlyphDef",      ), */
+        /* ("altGlyphItem",     ), */
+        /* ("animate",          ), */
+        /* ("animateColor",     ), */
+        /* ("animateMotion",    ), */
+        /* ("animateTransform", ), */
+        ("circle",              create_circle,                Default),
+        ("clipPath",            create_clip_path,             Default),
+        /* ("color-profile",    ), */
+        /* ("cursor",           ), */
+        ("defs",                create_defs,                  Default),
+        /* ("desc",             ), */
+        ("ellipse",             create_ellipse,               Default),
+        ("feBlend",             create_fe_blend,              Default),
+        ("feColorMatrix",       create_fe_color_matrix,       Default),
+        ("feComponentTransfer", create_fe_component_transfer, Default),
+        ("feComposite",         create_fe_composite,          Default),
+        ("feConvolveMatrix",    create_fe_convolve_matrix,    Default),
+        ("feDiffuseLighting",   create_fe_diffuse_lighting,   Default),
+        ("feDisplacementMap",   create_fe_displacement_map,   Default),
+        ("feDistantLight",      create_fe_distant_light,      IgnoreClass),
+        ("feFuncA",             create_fe_func_a,             IgnoreClass),
+        ("feFuncB",             create_fe_func_b,             IgnoreClass),
+        ("feFuncG",             create_fe_func_g,             IgnoreClass),
+        ("feFuncR",             create_fe_func_r,             IgnoreClass),
+        ("feFlood",             create_fe_flood,              Default),
+        ("feGaussianBlur",      create_fe_gaussian_blur,      Default),
+        ("feImage",             create_fe_image,              Default),
+        ("feMerge",             create_fe_merge,              Default),
+        ("feMergeNode",         create_fe_merge_node,         IgnoreClass),
+        ("feMorphology",        create_fe_morphology,         Default),
+        ("feOffset",            create_fe_offset,             Default),
+        ("fePointLight",        create_fe_point_light,        IgnoreClass),
+        ("feSpecularLighting",  create_fe_specular_lighting,  Default),
+        ("feSpotLight",         create_fe_spot_light,         IgnoreClass),
+        ("feTile",              create_fe_tile,               Default),
+        ("feTurbulence",        create_fe_turbulence,         Default),
+        ("filter",              create_filter,                Default),
+        /* ("font",             ), */
+        /* ("font-face",        ), */
+        /* ("font-face-format", ), */
+        /* ("font-face-name",   ), */
+        /* ("font-face-src",    ), */
+        /* ("font-face-uri",    ), */
+        /* ("foreignObject",    ), */
+        ("g",                   create_group,                 Default),
+        /* ("glyph",            ), */
+        /* ("glyphRef",         ), */
+        /* ("hkern",            ), */
+        ("image",               create_image,                 OverflowHidden),
+        ("line",                create_line,                  Default),
+        ("linearGradient",      create_linear_gradient,       Default),
+        ("marker",              create_marker,                OverflowHidden),
+        ("mask",                create_mask,                  Default),
+        /* ("metadata",         ), */
+        /* ("missing-glyph",    ), */
+        /* ("mpath",            ), */
+        /* ("multiImage",       ), */
+        ("path",                create_path,                  Default),
+        ("pattern",             create_pattern,               OverflowHidden),
+        ("polygon",             create_polygon,               Default),
+        ("polyline",            create_polyline,              Default),
+        ("radialGradient",      create_radial_gradient,       Default),
+        ("rect",                create_rect,                  Default),
+        /* ("script",           ), */
+        /* ("set",              ), */
+        ("stop",                create_stop,                  Default),
+        ("style",               create_style,                 IgnoreClass),
+        /* ("subImage",         ), */
+        /* ("subImageRef",      ), */
+        ("svg",                 create_svg,                   OverflowHidden),
+        ("switch",              create_switch,                Default),
+        ("symbol",              create_symbol,                OverflowHidden),
+        ("text",                create_text,                  Default),
+        /* ("textPath",         ), */
+        /* ("title",            ), */
+        ("tref",                create_tref,                  Default),
+        ("tspan",               create_tspan,                 Default),
+        ("use",                 create_use,                   Default),
+        /* ("view",             ), */
+        /* ("vkern",            ), */
     ];
 
-    creators_table.into_iter().map(|(n, s, f)| (n, (s, f))).collect()
+    creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
 });
 
 /// Takes an XML element name and a list of attribute/value pairs and creates an [`Element`].
@@ -594,27 +603,39 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
         }
     }
 
-    let (supports_class, create_fn) = if name.ns == ns!(svg) {
+    let (create_fn, flags) = if name.ns == ns!(svg) {
         match ELEMENT_CREATORS.get(name.local.as_ref()) {
             // hack in the SVG namespace for supported element names
-            Some(&(supports_class, create_fn)) => (supports_class, create_fn),
+            Some(&(create_fn, flags)) => (create_fn, flags),
 
             // Whenever we encounter a element name we don't understand, represent it as a
             // non-rendering element.  This is like a group, but it doesn't do any rendering
             // of children.  The effect is that we will ignore all children of unknown elements.
-            None => (true, create_non_rendering as ElementCreateFn),
+            None => (
+                create_non_rendering as ElementCreateFn,
+                ElementCreateFlags::Default,
+            ),
         }
     } else {
-        (true, create_non_rendering as ElementCreateFn)
+        (
+            create_non_rendering as ElementCreateFn,
+            ElementCreateFlags::Default,
+        )
     };
 
-    if !supports_class {
+    if flags == ElementCreateFlags::IgnoreClass {
         class = None;
+    };
+
+    let specified_values = if flags == ElementCreateFlags::OverflowHidden {
+        SpecifiedValues::with_overflow_hidden()
+    } else {
+        SpecifiedValues::default()
     };
 
     //    sizes::print_sizes();
 
-    create_fn(name, id, class)
+    create_fn(name, id, class, specified_values)
 }
 
 #[cfg(ignore)]

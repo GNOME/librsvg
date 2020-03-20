@@ -212,10 +212,6 @@ impl ElementTrait for Svg {
         Ok(())
     }
 
-    fn overflow_hidden(&self) -> bool {
-        true
-    }
-
     fn draw(
         &self,
         node: &Node,
@@ -374,10 +370,6 @@ impl ElementTrait for Symbol {
         }
 
         Ok(())
-    }
-
-    fn overflow_hidden(&self) -> bool {
-        true
     }
 }
 
