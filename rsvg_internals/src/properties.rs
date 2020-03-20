@@ -262,17 +262,6 @@ impl Default for SpecifiedValues {
     }
 }
 
-impl SpecifiedValues {
-    pub fn with_overflow_hidden() -> SpecifiedValues {
-        let mut s = SpecifiedValues::default();
-        s.set_parsed_property(&ParsedProperty::Overflow(SpecifiedValue::Specified(
-            Overflow::Hidden,
-        )));
-
-        s
-    }
-}
-
 #[derive(Debug, Default, Clone)]
 pub struct ComputedValues {
     pub baseline_shift: BaselineShift,

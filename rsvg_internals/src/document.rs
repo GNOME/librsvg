@@ -2,9 +2,11 @@
 
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use markup5ever::QualName;
+use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::include_str;
 use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
@@ -19,6 +21,10 @@ use crate::property_bag::PropertyBag;
 use crate::structure::{IntrinsicDimensions, Svg};
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::xml::xml_load_from_possibly_compressed_stream;
+
+static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
+    vec![Stylesheet::from_data(include_str!("ua.css"), None, Origin::UserAgent).unwrap()]
+});
 
 /// A loaded SVG file and its derived data.
 pub struct Document {
@@ -103,10 +109,10 @@ impl Document {
 
     /// Runs the CSS cascade on the document tree
     ///
-    /// This uses the document's internal stylesheets, plus an extra set of stylesheets
-    /// supplied by the caller.
+    /// This uses the deafault UserAgent stylesheet, the document's internal stylesheets,
+    /// plus an extra set of stylesheets supplied by the caller.
     pub fn cascade(&mut self, extra: &[Stylesheet]) {
-        css::cascade(&mut self.tree, &self.stylesheets, extra);
+        css::cascade(&mut self.tree, &UA_STYLESHEETS, &self.stylesheets, extra);
     }
 }
 
