@@ -655,6 +655,7 @@ mod sizes {
         use std::mem;
 
         print_size!(NodeData);
+        print_size!(Element);
         print_size!(SpecifiedValues);
         print_size!(ComputedValues);
         print_size!(ParsedProperty);
