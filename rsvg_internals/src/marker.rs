@@ -200,10 +200,6 @@ impl ElementTrait for Marker {
         Ok(())
     }
 
-    fn overflow_hidden(&self) -> bool {
-        true
-    }
-
     fn set_overridden_properties(&self, values: &mut SpecifiedValues) {
         // markers are always displayed, even if <marker> or its ancestors are display:none
         values.display = SpecifiedValue::Specified(Default::default());

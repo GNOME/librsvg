@@ -57,10 +57,6 @@ impl ElementTrait for Image {
         Ok(())
     }
 
-    fn overflow_hidden(&self) -> bool {
-        true
-    }
-
     fn draw(
         &self,
         node: &Node,
