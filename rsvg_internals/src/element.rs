@@ -229,10 +229,6 @@ impl Element {
         self.transform
     }
 
-    pub fn is_overflow(&self) -> bool {
-        self.specified_values.is_overflow()
-    }
-
     pub fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>, locale: &Locale) {
         self.save_style_attribute(pbag);
 

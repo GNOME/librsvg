@@ -1178,7 +1178,8 @@ impl DrawingCtx {
             let symbol = elt.get_impl::<Symbol>();
 
             let clip_mode = if !values.is_overflow()
-                || (values.overflow == Overflow::Visible && child.borrow_element().is_overflow())
+                || (values.overflow == Overflow::Visible
+                    && child.borrow_element().get_specified_values().is_overflow())
             {
                 Some(ClipMode::ClipToVbox)
             } else {
