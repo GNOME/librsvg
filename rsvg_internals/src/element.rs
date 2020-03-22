@@ -14,7 +14,7 @@ use std::fmt;
 
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
-use crate::css::Declaration;
+use crate::css::{Declaration, Origin};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
@@ -336,18 +336,22 @@ impl Element {
     }
 
     // Applies a style declaration to the node's specified_values
-    pub fn apply_style_declaration(&mut self, declaration: &Declaration) {
-        self.specified_values
-            .set_property_from_declaration(declaration, &mut self.important_styles);
+    pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
+        self.specified_values.set_property_from_declaration(
+            declaration,
+            origin,
+            &mut self.important_styles,
+        );
     }
 
     /// Applies CSS styles from the saved value of the "style" attribute
     pub fn set_style_attribute(&mut self) {
         if !self.style_attr.is_empty() {
-            if let Err(e) = self
-                .specified_values
-                .parse_style_declarations(self.style_attr.as_str(), &mut self.important_styles)
-            {
+            if let Err(e) = self.specified_values.parse_style_declarations(
+                self.style_attr.as_str(),
+                Origin::Author,
+                &mut self.important_styles,
+            ) {
                 self.set_error(e);
             }
 
