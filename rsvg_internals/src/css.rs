@@ -760,7 +760,7 @@ pub fn cascade(
 
         for m in matches {
             node.borrow_element_mut()
-                .apply_style_declaration(m.declaration);
+                .apply_style_declaration(m.declaration, m.origin);
         }
 
         node.borrow_element_mut().set_style_attribute();
