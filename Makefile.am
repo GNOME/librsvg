@@ -130,6 +130,7 @@ RUST_EXTRA = 						\
 	rsvg_internals/benches/lighting.rs		\
 	rsvg_internals/benches/pixel_iterators.rs	\
 	rsvg_internals/benches/srgb.rs			\
+	rsvg_internals/src/ua.css			\
 	$(NULL)
 
 if DEBUG_RELEASE

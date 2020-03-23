@@ -14,7 +14,7 @@ use std::fmt;
 
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
-use crate::css::Declaration;
+use crate::css::{Declaration, Origin};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
@@ -332,18 +332,22 @@ impl Element {
     }
 
     // Applies a style declaration to the node's specified_values
-    pub fn apply_style_declaration(&mut self, declaration: &Declaration) {
-        self.specified_values
-            .set_property_from_declaration(declaration, &mut self.important_styles);
+    pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
+        self.specified_values.set_property_from_declaration(
+            declaration,
+            origin,
+            &mut self.important_styles,
+        );
     }
 
     /// Applies CSS styles from the saved value of the "style" attribute
     pub fn set_style_attribute(&mut self) {
         if !self.style_attr.is_empty() {
-            if let Err(e) = self
-                .specified_values
-                .parse_style_declarations(self.style_attr.as_str(), &mut self.important_styles)
-            {
+            if let Err(e) = self.specified_values.parse_style_declarations(
+                self.style_attr.as_str(),
+                Origin::Author,
+                &mut self.important_styles,
+            ) {
                 self.set_error(e);
             }
 
@@ -372,18 +376,13 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(
-            element_name: &QualName,
-            id: Option<&str>,
-            class: Option<&str>,
-            specified_values: SpecifiedValues,
-        ) -> Element {
+        pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element {
             Element {
                 element_type: ElementType::$element_type,
                 element_name: element_name.clone(),
                 id: id.map(str::to_string),
                 class: class.map(str::to_string),
-                specified_values,
+                specified_values: Default::default(),
                 important_styles: Default::default(),
                 transform: Default::default(),
                 result: Ok(()),
@@ -469,20 +468,13 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn = fn(
-    element_name: &QualName,
-    id: Option<&str>,
-    class: Option<&str>,
-    specified_values: SpecifiedValues,
-) -> Element;
+type ElementCreateFn =
+    fn(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element;
 
-// For now it's just an enum, if some element needs more than one flag
-// we will need something fancier
 #[derive(Copy, Clone, PartialEq)]
 enum ElementCreateFlags {
     Default,
     IgnoreClass,
-    OverflowHidden,
 }
 
 // Lines in comments are elements that we don't support.
@@ -543,17 +535,17 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
         /* ("glyph",            ), */
         /* ("glyphRef",         ), */
         /* ("hkern",            ), */
-        ("image",               create_image,                 OverflowHidden),
+        ("image",               create_image,                 Default),
         ("line",                create_line,                  Default),
         ("linearGradient",      create_linear_gradient,       Default),
-        ("marker",              create_marker,                OverflowHidden),
+        ("marker",              create_marker,                Default),
         ("mask",                create_mask,                  Default),
         /* ("metadata",         ), */
         /* ("missing-glyph",    ), */
         /* ("mpath",            ), */
         /* ("multiImage",       ), */
         ("path",                create_path,                  Default),
-        ("pattern",             create_pattern,               OverflowHidden),
+        ("pattern",             create_pattern,               Default),
         ("polygon",             create_polygon,               Default),
         ("polyline",            create_polyline,              Default),
         ("radialGradient",      create_radial_gradient,       Default),
@@ -564,9 +556,9 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
         ("style",               create_style,                 IgnoreClass),
         /* ("subImage",         ), */
         /* ("subImageRef",      ), */
-        ("svg",                 create_svg,                   OverflowHidden),
+        ("svg",                 create_svg,                   Default),
         ("switch",              create_switch,                Default),
-        ("symbol",              create_symbol,                OverflowHidden),
+        ("symbol",              create_symbol,                Default),
         ("text",                create_text,                  Default),
         /* ("textPath",         ), */
         /* ("title",            ), */
@@ -623,15 +615,9 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
         class = None;
     };
 
-    let specified_values = if flags == ElementCreateFlags::OverflowHidden {
-        SpecifiedValues::with_overflow_hidden()
-    } else {
-        SpecifiedValues::default()
-    };
-
     //    sizes::print_sizes();
 
-    create_fn(name, id, class, specified_values)
+    create_fn(name, id, class)
 }
 
 #[cfg(ignore)]
