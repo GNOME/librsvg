@@ -19,7 +19,10 @@
 //! to the corresponding element nodes.
 //!
 //! * [The `node` module](node/index.html) provides the [`Node`] struct and
-//! [`ElementTrait`], which form the basis for the tree of SVG elements.
+//! helper traits used to operate on nodes.
+//!
+//! * [The `element` module](node/index.html) provides the [`Element`] struct and
+//! [`ElementTrait`] which is implemented by all SVG elements.
 //!
 //! * [The `xml` module](xml/index.html) receives events from the XML parser, and builds a
 //! [`Document`] as a tree of [`Node`].
@@ -30,9 +33,13 @@
 //! * [The `property_defs` module](property_defs/index.html) contains one type for each of
 //! the CSS style properties that librsvg supports.
 //!
+//! * [The `css` module](css/index.html) contains the implementation of CSS parsing
+//! and matching.
+//!
 //! [`Document`]: document/struct.Document.html
 //! [`Node`]: node/type.Node.html
-//! [`ElementTrait`]: node/trait.ElementTrait.html
+//! [`Element`]: element/struct.Element.html
+//! [`ElementTrait`]: element/trait.ElementTrait.html
 
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
