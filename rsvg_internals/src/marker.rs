@@ -337,8 +337,8 @@ impl Deref for Segments {
 // The tangent at the end point is given by the vector (P4 - P3).
 // The tangents also work if the segment refers to a lineto (they will
 // both just point in the same direction).
-impl<'a> From<&'a PathBuilder> for Segments {
-    fn from(builder: &PathBuilder) -> Segments {
+impl From<&[PathCommand]> for Segments {
+    fn from(path_commands: &[PathCommand]) -> Segments {
         let mut last_x: f64;
         let mut last_y: f64;
         let mut cur_x: f64;
@@ -356,7 +356,7 @@ impl<'a> From<&'a PathBuilder> for Segments {
         segments = Vec::new();
         state = SegmentState::Initial;
 
-        for path_command in builder.get_path_commands() {
+        for path_command in path_commands {
             last_x = cur_x;
             last_y = cur_y;
 
@@ -682,7 +682,7 @@ where
     let mut bbox = empty_bbox;
 
     // Convert the path to a list of segments and bare points
-    let segments = Segments::from(builder);
+    let segments = Segments::from(builder.get_path_commands());
 
     let mut subpath_state = SubpathState::NoSubpath;
 
@@ -866,7 +866,7 @@ mod directionality_tests {
         builder.line_to(20.0, 10.0);
         builder.line_to(20.0, 20.0);
 
-        Segments::from(&builder)
+        Segments::from(builder.get_path_commands())
     }
 
     #[test]
@@ -891,7 +891,7 @@ mod directionality_tests {
         builder.curve_to(50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
         builder.line_to(80.0, 90.0);
 
-        Segments::from(&builder)
+        Segments::from(builder.get_path_commands())
     }
 
     #[test]
@@ -916,7 +916,7 @@ mod directionality_tests {
         builder.line_to(20.0, 20.0);
         builder.close_path();
 
-        Segments::from(&builder)
+        Segments::from(builder.get_path_commands())
     }
 
     #[test]
@@ -946,7 +946,7 @@ mod directionality_tests {
         builder.line_to(80.0, 90.0);
         builder.close_path();
 
-        Segments::from(&builder)
+        Segments::from(builder.get_path_commands())
     }
 
     #[test]
@@ -976,7 +976,7 @@ mod directionality_tests {
 
         builder.line_to(40.0, 30.0);
 
-        Segments::from(&builder)
+        Segments::from(builder.get_path_commands())
     }
 
     #[test]
