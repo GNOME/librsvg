@@ -290,14 +290,31 @@ impl PathCommand {
     }
 }
 
+/// Constructs a path out of commands
+///
+/// When you are finished constructing a path builder, turn it into
+/// a `Path` with `into_path`.
 #[derive(Clone, Default)]
 pub struct PathBuilder {
     path_commands: Vec<PathCommand>,
 }
 
+/// An immutable path
+///
+/// This is constructed from a `PathBuilder` once it is finished.
+pub struct Path {
+    path_commands: Box<[PathCommand]>,
+}
+
 impl PathBuilder {
     pub fn new() -> PathBuilder {
         PathBuilder::default()
+    }
+
+    pub fn into_path(self) -> Path {
+        Path {
+            path_commands: self.path_commands.into_boxed_slice(),
+        }
     }
 
     pub fn move_to(&mut self, x: f64, y: f64) {
@@ -343,7 +360,9 @@ impl PathBuilder {
     pub fn close_path(&mut self) {
         self.path_commands.push(PathCommand::ClosePath);
     }
+}
 
+impl Path {
     pub fn get_path_commands(&self) -> &[PathCommand] {
         &self.path_commands
     }
@@ -355,7 +374,7 @@ impl PathBuilder {
     pub fn to_cairo(&self, cr: &cairo::Context) -> Result<(), cairo::Status> {
         assert!(!self.is_empty());
 
-        for s in &self.path_commands {
+        for s in self.path_commands.iter() {
             s.to_cairo(cr);
         }
 
