@@ -1,5 +1,7 @@
 //! Representation of Bézier paths.
 
+use smallvec::SmallVec;
+
 use std::f64;
 use std::f64::consts::*;
 
@@ -294,9 +296,9 @@ impl PathCommand {
 ///
 /// When you are finished constructing a path builder, turn it into
 /// a `Path` with `into_path`.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct PathBuilder {
-    path_commands: Vec<PathCommand>,
+    path_commands: SmallVec<[PathCommand; 32]>,
 }
 
 /// An immutable path
@@ -308,7 +310,9 @@ pub struct Path {
 
 impl PathBuilder {
     pub fn new() -> PathBuilder {
-        PathBuilder::default()
+        PathBuilder {
+            path_commands: SmallVec::new(),
+        }
     }
 
     pub fn into_path(self) -> Path {
