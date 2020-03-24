@@ -566,7 +566,6 @@ impl selectors::Element for RsvgElement {
 /// Origin for a stylesheet, per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
 ///
 /// This is used when sorting selector matches according to their origin and specificity.
-#[allow(unused)]
 #[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Origin {
     UserAgent,
@@ -735,7 +734,12 @@ impl Stylesheet {
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets
-pub fn cascade(root: &mut Node, stylesheets: &[Stylesheet], extra: &[Stylesheet]) {
+pub fn cascade(
+    root: &mut Node,
+    ua_stylesheets: &[Stylesheet],
+    author_stylesheets: &[Stylesheet],
+    user_stylesheets: &[Stylesheet],
+) {
     for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
 
@@ -748,15 +752,19 @@ pub fn cascade(root: &mut Node, stylesheets: &[Stylesheet], extra: &[Stylesheet]
             QuirksMode::NoQuirks,
         );
 
-        for stylesheet in stylesheets.iter().chain(extra.iter()) {
-            stylesheet.get_matches(&node, &mut match_ctx, &mut matches);
+        for s in ua_stylesheets
+            .iter()
+            .chain(author_stylesheets)
+            .chain(user_stylesheets)
+        {
+            s.get_matches(&node, &mut match_ctx, &mut matches);
         }
 
         matches.as_mut_slice().sort();
 
         for m in matches {
             node.borrow_element_mut()
-                .apply_style_declaration(m.declaration);
+                .apply_style_declaration(m.declaration, m.origin);
         }
 
         node.borrow_element_mut().set_style_attribute();

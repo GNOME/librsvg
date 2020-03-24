@@ -6,7 +6,7 @@ use cssparser::{
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::collections::HashSet;
 
-use crate::css::{DeclParser, Declaration};
+use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
@@ -262,17 +262,6 @@ impl Default for SpecifiedValues {
     }
 }
 
-impl SpecifiedValues {
-    pub fn with_overflow_hidden() -> SpecifiedValues {
-        let mut s = SpecifiedValues::default();
-        s.set_parsed_property(&ParsedProperty::Overflow(SpecifiedValue::Specified(
-            Overflow::Hidden,
-        )));
-
-        s
-    }
-}
-
 #[derive(Debug, Default, Clone)]
 pub struct ComputedValues {
     pub baseline_shift: BaselineShift,
@@ -507,7 +496,7 @@ impl SpecifiedValues {
         }
     }
 
-    fn replace_property(&mut self, prop: &ParsedProperty) {
+    fn set_property(&mut self, prop: &ParsedProperty, replace: bool) {
         let id = prop.get_property_id();
 
         if id == PropertyId::Marker {
@@ -515,7 +504,9 @@ impl SpecifiedValues {
         }
 
         if let Some(index) = self.property_index(id) {
-            self.props[index] = prop.clone();
+            if replace {
+                self.props[index] = prop.clone();
+            }
         } else {
             self.props.push(prop.clone());
             let pos = self.props.len() - 1;
@@ -524,18 +515,27 @@ impl SpecifiedValues {
     }
 
     #[rustfmt::skip]
-    pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
+    fn set_property_expanding_shorthands(&mut self, prop: &ParsedProperty, replace: bool) {
         use crate::properties::ParsedProperty::*;
         use crate::properties as p;
 
         if let Marker(SpecifiedValue::Specified(p::Marker(ref v))) = *prop {
             // Since "marker" is a shorthand property, we'll just expand it here
-            self.replace_property(&MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))));
-            self.replace_property(&MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))));
-            self.replace_property(&MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))));
+            self.set_property(&MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))), replace);
+            self.set_property(&MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))), replace);
+            self.set_property(&MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))), replace);
         } else {
-            self.replace_property(prop);
+            self.set_property(prop, replace);
         }
+    }
+
+    pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
+        self.set_property_expanding_shorthands(prop, true);
+    }
+
+    /* user agent property have less priority than presentation attributes */
+    pub fn set_parsed_property_user_agent(&mut self, prop: &ParsedProperty) {
+        self.set_property_expanding_shorthands(prop, false);
     }
 
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
@@ -737,6 +737,7 @@ impl SpecifiedValues {
     pub fn set_property_from_declaration(
         &mut self,
         declaration: &Declaration,
+        origin: Origin,
         important_styles: &mut HashSet<QualName>,
     ) {
         if !declaration.important && important_styles.contains(&declaration.prop_name) {
@@ -747,12 +748,17 @@ impl SpecifiedValues {
             important_styles.insert(declaration.prop_name.clone());
         }
 
-        self.set_parsed_property(&declaration.property);
+        if origin == Origin::UserAgent {
+            self.set_parsed_property_user_agent(&declaration.property);
+        } else {
+            self.set_parsed_property(&declaration.property);
+        }
     }
 
     pub fn parse_style_declarations(
         &mut self,
         declarations: &str,
+        origin: Origin,
         important_styles: &mut HashSet<QualName>,
     ) -> Result<(), ElementError> {
         let mut input = ParserInput::new(declarations);
@@ -766,7 +772,7 @@ impl SpecifiedValues {
                     None
                 }
             })
-            .for_each(|decl| self.set_property_from_declaration(&decl, important_styles));
+            .for_each(|decl| self.set_property_from_declaration(&decl, origin, important_styles));
 
         Ok(())
     }
