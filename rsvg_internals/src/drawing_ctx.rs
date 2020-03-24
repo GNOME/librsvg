@@ -970,19 +970,19 @@ impl DrawingCtx {
 
     pub fn draw_path(
         &mut self,
-        builder: &PathBuilder,
+        path: &Path,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         markers: Markers,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if !builder.is_empty() {
+        if !path.is_empty() {
             let bbox =
                 self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
                     let cr = dc.get_cairo_context();
 
-                    builder.to_cairo(&cr)?;
+                    path.to_cairo(&cr)?;
 
                     if clipping {
                         cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
@@ -994,8 +994,8 @@ impl DrawingCtx {
                 })?;
 
             if markers == Markers::Yes {
-                marker::render_markers_for_path_builder(
-                    builder,
+                marker::render_markers_for_path(
+                    path.get_path_commands(),
                     self,
                     acquired_nodes,
                     values,

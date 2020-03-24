@@ -13,7 +13,7 @@ use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{optional_comma, Parse, ParseValue};
-use crate::path_builder::*;
+use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -26,13 +26,13 @@ pub enum Markers {
 }
 
 pub struct Shape {
-    builder: Rc<PathBuilder>,
+    path: Rc<SvgPath>,
     markers: Markers,
 }
 
 impl Shape {
-    fn new(builder: Rc<PathBuilder>, markers: Markers) -> Shape {
-        Shape { builder, markers }
+    fn new(path: Rc<SvgPath>, markers: Markers) -> Shape {
+        Shape { path, markers }
     }
 
     fn draw(
@@ -44,7 +44,7 @@ impl Shape {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         draw_ctx.draw_path(
-            &self.builder,
+            &self.path,
             node,
             acquired_nodes,
             values,
@@ -54,12 +54,12 @@ impl Shape {
     }
 }
 
-fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> PathBuilder {
+fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
     let mut builder = PathBuilder::new();
 
     // Per the spec, rx and ry must be nonnegative
     if rx <= 0.0 || ry <= 0.0 {
-        return builder;
+        return builder.into_path();
     }
 
     // 4/3 * (1-cos 45°)/sin 45° = 4/3 * sqrt(2) - 1
@@ -107,12 +107,12 @@ fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> PathBuilder {
 
     builder.close_path();
 
-    builder
+    builder.into_path()
 }
 
 #[derive(Default)]
 pub struct Path {
-    builder: Option<Rc<PathBuilder>>,
+    path: Option<Rc<SvgPath>>,
 }
 
 impl ElementTrait for Path {
@@ -126,7 +126,7 @@ impl ElementTrait for Path {
 
                     rsvg_log!("could not parse path: {}", e);
                 }
-                self.builder = Some(Rc::new(builder));
+                self.path = Some(Rc::new(builder.into_path()));
             }
         }
 
@@ -141,9 +141,9 @@ impl ElementTrait for Path {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if let Some(builder) = self.builder.as_ref() {
+        if let Some(path) = self.path.as_ref() {
             let values = cascaded.get();
-            Shape::new(builder.clone(), Markers::Yes).draw(
+            Shape::new(path.clone(), Markers::Yes).draw(
                 node,
                 acquired_nodes,
                 values,
@@ -194,7 +194,7 @@ impl Parse for Points {
     }
 }
 
-fn make_poly(points: Option<&Points>, closed: bool) -> PathBuilder {
+fn make_poly(points: Option<&Points>, closed: bool) -> SvgPath {
     let mut builder = PathBuilder::new();
 
     if let Some(points) = points {
@@ -211,7 +211,7 @@ fn make_poly(points: Option<&Points>, closed: bool) -> PathBuilder {
         }
     }
 
-    builder
+    builder.into_path()
 }
 
 #[derive(Default)]
@@ -314,16 +314,18 @@ impl ElementTrait for Line {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(
-            Rc::new(self.make_path_builder(values, draw_ctx)),
-            Markers::Yes,
+        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::Yes).draw(
+            node,
+            acquired_nodes,
+            values,
+            draw_ctx,
+            clipping,
         )
-        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl Line {
-    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
+    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let mut builder = PathBuilder::new();
 
         let params = draw_ctx.get_view_params();
@@ -336,7 +338,7 @@ impl Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        builder
+        builder.into_path()
     }
 }
 
@@ -392,16 +394,18 @@ impl ElementTrait for Rect {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(
-            Rc::new(self.make_path_builder(values, draw_ctx)),
-            Markers::No,
+        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::No).draw(
+            node,
+            acquired_nodes,
+            values,
+            draw_ctx,
+            clipping,
         )
-        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl Rect {
-    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
+    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -438,12 +442,12 @@ impl Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return builder;
+            return builder.into_path();
         }
 
         // ... and rx,ry must be nonnegative
         if rx < 0.0 || ry < 0.0 {
-            return builder;
+            return builder.into_path();
         }
 
         let half_w = w / 2.0;
@@ -569,7 +573,7 @@ impl Rect {
             builder.close_path();
         }
 
-        builder
+        builder.into_path()
     }
 }
 
@@ -605,16 +609,18 @@ impl ElementTrait for Circle {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(
-            Rc::new(self.make_path_builder(values, draw_ctx)),
-            Markers::No,
+        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::No).draw(
+            node,
+            acquired_nodes,
+            values,
+            draw_ctx,
+            clipping,
         )
-        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl Circle {
-    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
+    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -663,16 +669,18 @@ impl ElementTrait for Ellipse {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(
-            Rc::new(self.make_path_builder(values, draw_ctx)),
-            Markers::No,
+        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::No).draw(
+            node,
+            acquired_nodes,
+            values,
+            draw_ctx,
+            clipping,
         )
-        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl Ellipse {
-    fn make_path_builder(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> PathBuilder {
+    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);

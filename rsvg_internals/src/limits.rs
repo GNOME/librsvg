@@ -31,4 +31,4 @@ pub const MAX_REFERENCED_ELEMENTS: usize = 500_000;
 /// This is a mitigation for SVG files which create millions of elements
 /// in an attempt to exhaust memory.  We don't allow loading more than
 /// this number of elements during the initial streaming load process.
-pub const MAX_LOADED_ELEMENTS: usize = 200_000;
+pub const MAX_LOADED_ELEMENTS: usize = 1_000_000;
