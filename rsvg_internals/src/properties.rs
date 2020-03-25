@@ -56,65 +56,6 @@ where
     }
 }
 
-/// Used to match `ParsedProperty` to their discriminant
-///
-/// The `PropertyId::UnsetProperty` can be used as a sentinel value, as
-/// it does not match any `ParsedProperty` discriminant; it is really the
-/// number of valid values in this enum.
-#[repr(u8)]
-#[derive(Copy, Clone, PartialEq)]
-enum PropertyId {
-    BaselineShift,
-    ClipPath,
-    ClipRule,
-    Color,
-    ColorInterpolationFilters,
-    Direction,
-    Display,
-    EnableBackground,
-    Fill,
-    FillOpacity,
-    FillRule,
-    Filter,
-    FloodColor,
-    FloodOpacity,
-    FontFamily,
-    FontSize,
-    FontStretch,
-    FontStyle,
-    FontVariant,
-    FontWeight,
-    LetterSpacing,
-    LightingColor,
-    Marker,
-    MarkerEnd,
-    MarkerMid,
-    MarkerStart,
-    Mask,
-    Opacity,
-    Overflow,
-    ShapeRendering,
-    StopColor,
-    StopOpacity,
-    Stroke,
-    StrokeDasharray,
-    StrokeDashoffset,
-    StrokeLinecap,
-    StrokeLinejoin,
-    StrokeOpacity,
-    StrokeMiterlimit,
-    StrokeWidth,
-    TextAnchor,
-    TextDecoration,
-    TextRendering,
-    UnicodeBidi,
-    Visibility,
-    WritingMode,
-    XmlLang,
-    XmlSpace,
-    UnsetProperty,
-}
-
 impl PropertyId {
     fn as_u8(&self) -> u8 {
         *self as u8
@@ -325,6 +266,20 @@ macro_rules! make_properties {
             $($long_field:ident: $long_name:ident,)+
         }
     }=> {
+        /// Used to match `ParsedProperty` to their discriminant
+        ///
+        /// The `PropertyId::UnsetProperty` can be used as a sentinel value, as
+        /// it does not match any `ParsedProperty` discriminant; it is really the
+        /// number of valid values in this enum.
+        #[repr(u8)]
+        #[derive(Copy, Clone, PartialEq)]
+        enum PropertyId {
+            $($short_name,)+
+            $($long_name,)+
+
+            UnsetProperty,
+        }
+
         /// Embodies "which property is this" plus the property's value
         #[derive(Clone)]
         pub enum ParsedProperty {
@@ -344,7 +299,7 @@ macro_rules! make_properties {
             fn get_property_id(&self) -> PropertyId {
                 match *self {
                     $(ParsedProperty::$long_name(_) => PropertyId::$long_name,)+
-                    $(ParsedProperty::$short_name(_) => PropertyId::$short_name,)+
+                        $(ParsedProperty::$short_name(_) => PropertyId::$short_name,)+
                 }
             }
 
