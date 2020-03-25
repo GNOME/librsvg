@@ -240,14 +240,14 @@ pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, acce
 
 impl ComputedValues {
     pub fn is_overflow(&self) -> bool {
-        match self.overflow {
+        match self.overflow() {
             Overflow::Auto | Overflow::Visible => true,
             _ => false,
         }
     }
 
     pub fn is_visible(&self) -> bool {
-        match (self.display, self.visibility) {
+        match (self.display(), self.visibility()) {
             (Display::None, _) => false,
             (_, Visibility::Visible) => true,
             _ => false,
@@ -475,7 +475,7 @@ impl SpecifiedValues {
             ($name:ident, $field:ident) => {
                 let prop_val = self.get_property(PropertyId::$name);
                 if let ParsedProperty::$name(s) = prop_val {
-                    computed.set_value(ComputedValue::$name(s.compute(&computed.$field, computed)));
+                    computed.set_value(ComputedValue::$name(s.compute(&computed.$field(), computed)));
                 } else {
                     unreachable!();
                 }
@@ -734,7 +734,7 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.stroke_width, StrokeWidth::default());
+        assert_eq!(computed.stroke_width(), StrokeWidth::default());
     }
 
     #[test]
@@ -749,7 +749,7 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.stroke_width, StrokeWidth(length));
+        assert_eq!(computed.stroke_width(), StrokeWidth(length));
     }
 
     #[test]
@@ -770,7 +770,7 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.stroke_width, StrokeWidth(length2));
+        assert_eq!(computed.stroke_width(), StrokeWidth(length2));
     }
 
     #[test]
@@ -784,9 +784,9 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.marker_start, MarkerStart(iri.clone()));
-        assert_eq!(computed.marker_mid, MarkerMid(iri.clone()));
-        assert_eq!(computed.marker_end, MarkerEnd(iri.clone()));
+        assert_eq!(computed.marker_start(), MarkerStart(iri.clone()));
+        assert_eq!(computed.marker_mid(), MarkerMid(iri.clone()));
+        assert_eq!(computed.marker_end(), MarkerEnd(iri.clone()));
     }
 
     #[test]
@@ -804,9 +804,9 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.marker_start, MarkerStart(iri2.clone()));
-        assert_eq!(computed.marker_mid, MarkerMid(iri2.clone()));
-        assert_eq!(computed.marker_end, MarkerEnd(iri2.clone()));
+        assert_eq!(computed.marker_start(), MarkerStart(iri2.clone()));
+        assert_eq!(computed.marker_mid(), MarkerMid(iri2.clone()));
+        assert_eq!(computed.marker_end(), MarkerEnd(iri2.clone()));
     }
 
     #[test]
@@ -828,7 +828,7 @@ mod tests {
         let mut computed_0_5 = ComputedValues::default();
         with_opacity.to_computed_values(&mut computed_0_5);
 
-        assert_eq!(computed_0_5.opacity, half_opacity.clone());
+        assert_eq!(computed_0_5.opacity(), half_opacity.clone());
 
         // second level, no opacity specified, and it doesn't inherit
 
@@ -837,7 +837,7 @@ mod tests {
         let mut computed = computed_0_5.clone();
         without_opacity.to_computed_values(&mut computed);
 
-        assert_eq!(computed.opacity, Opacity::default());
+        assert_eq!(computed.opacity(), Opacity::default());
 
         // another at second level, opacity set to explicitly inherit
 
@@ -847,6 +847,6 @@ mod tests {
         let mut computed = computed_0_5.clone();
         with_inherit_opacity.to_computed_values(&mut computed);
 
-        assert_eq!(computed.opacity, half_opacity.clone());
+        assert_eq!(computed.opacity(), half_opacity.clone());
     }
 }
