@@ -26,17 +26,18 @@ make_property!(
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {
-                let font_size = v.font_size.0.value();
+                let font_size = v.font_size().0.value();
+                let baseline_shift = v.baseline_shift();
 
                 // FIXME: this implementation has limitations:
                 // 1) we only handle 'percent' shifts, but it could also be an absolute offset
                 // 2) we should be able to normalize the lengths and add even if they have
                 //    different units, but at the moment that requires access to the draw_ctx
-                if self.0.unit != LengthUnit::Percent || v.baseline_shift.0.unit != font_size.unit {
-                    return BaselineShift(Length::<Both>::new(v.baseline_shift.0.length, v.baseline_shift.0.unit));
+                if self.0.unit != LengthUnit::Percent || baseline_shift.0.unit != font_size.unit {
+                    return BaselineShift(Length::<Both>::new(baseline_shift.0.length, baseline_shift.0.unit));
                 }
 
-                BaselineShift(Length::<Both>::new(self.0.length * font_size.length + v.baseline_shift.0.length, font_size.unit))
+                BaselineShift(Length::<Both>::new(self.0.length * font_size.length + baseline_shift.0.length, font_size.unit))
             }
         }
     },

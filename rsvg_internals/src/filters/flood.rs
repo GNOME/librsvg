@@ -44,11 +44,11 @@ impl FilterEffect for FeFlood {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        let color = match values.flood_color.0 {
-            cssparser::Color::CurrentColor => values.color.0,
+        let color = match values.flood_color().0 {
+            cssparser::Color::CurrentColor => values.color().0,
             cssparser::Color::RGBA(rgba) => rgba,
         };
-        let opacity = values.flood_opacity.0;
+        let opacity = values.flood_opacity().0;
 
         let surface = ctx.source_graphic().flood(bounds, color, opacity)?;
 

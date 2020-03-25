@@ -358,7 +358,7 @@ impl FilterEffect for FeTurbulence {
         let values = cascaded.get();
         // The generated color values are in the color space determined by
         // color-interpolation-filters.
-        let surface_type = SurfaceType::from(values.color_interpolation_filters);
+        let surface_type = SurfaceType::from(values.color_interpolation_filters());
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),

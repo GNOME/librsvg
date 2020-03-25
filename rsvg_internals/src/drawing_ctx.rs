@@ -448,7 +448,7 @@ impl DrawingCtx {
             res?;
         }
 
-        let Opacity(opacity) = values.opacity;
+        let Opacity(opacity) = values.opacity();
 
         let mask = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?
             .to_mask(opacity)?
@@ -472,18 +472,21 @@ impl DrawingCtx {
             draw_fn(acquired_nodes, self)
         } else {
             self.with_saved_cr(&mut |dc| {
-                let clip_uri = values.clip_path.0.get();
-                let mask = values.mask.0.get();
+                let clip_path_value = values.clip_path();
+                let mask_value = values.mask();
+
+                let clip_uri = clip_path_value.0.get();
+                let mask = mask_value.0.get();
 
                 // The `filter` property does not apply to masks.
                 let filter =
                     if node.is_element() && node.borrow_element().get_type() == ElementType::Mask {
                         None
                     } else {
-                        values.filter.0.get()
+                        values.filter().0.get().cloned()
                     };
 
-                let UnitInterval(opacity) = values.opacity.0;
+                let UnitInterval(opacity) = values.opacity().0;
 
                 let affine_at_start = dc.get_transform();
 
@@ -544,7 +547,7 @@ impl DrawingCtx {
                         let img_surface = dc
                             .run_filter(
                                 acquired_nodes,
-                                filter_uri,
+                                &filter_uri,
                                 node,
                                 values,
                                 child_surface,
@@ -886,12 +889,12 @@ impl DrawingCtx {
     pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
         let params = self.get_view_params();
 
-        cr.set_line_width(values.stroke_width.0.normalize(values, &params));
-        cr.set_miter_limit(values.stroke_miterlimit.0);
-        cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap));
-        cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join));
+        cr.set_line_width(values.stroke_width().0.normalize(values, &params));
+        cr.set_miter_limit(values.stroke_miterlimit().0);
+        cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap()));
+        cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join()));
 
-        if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray {
+        if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray() {
             let normalized_dashes: Vec<f64> = dashes
                 .iter()
                 .map(|l| l.normalize(values, &params))
@@ -900,7 +903,7 @@ impl DrawingCtx {
             let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
 
             if total_length > 0.0 {
-                let offset = values.stroke_dashoffset.0.normalize(values, &params);
+                let offset = values.stroke_dashoffset().0.normalize(values, &params);
                 cr.set_dash(&normalized_dashes, offset);
             } else {
                 cr.set_dash(&[], 0.0);
@@ -914,7 +917,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
     ) -> Result<BoundingBox, RenderingError> {
-        cr.set_antialias(cairo::Antialias::from(values.shape_rendering));
+        cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
 
         self.setup_cr_for_stroke(cr, values);
 
@@ -924,19 +927,19 @@ impl DrawingCtx {
         // coordinate system in patterns.
         let bbox = compute_stroke_and_fill_box(cr, values);
 
-        let current_color = values.color.0;
+        let current_color = values.color().0;
 
         let res = self
             .set_source_paint_server(
                 acquired_nodes,
-                &values.fill.0,
-                values.fill_opacity.0,
+                &values.fill().0,
+                values.fill_opacity().0,
                 &bbox,
                 current_color,
             )
             .and_then(|had_paint_server| {
                 if had_paint_server {
-                    if values.stroke.0 == PaintServer::None {
+                    if values.stroke().0 == PaintServer::None {
                         cr.fill();
                     } else {
                         cr.fill_preserve();
@@ -948,8 +951,8 @@ impl DrawingCtx {
             .and_then(|_| {
                 self.set_source_paint_server(
                     acquired_nodes,
-                    &values.stroke.0,
-                    values.stroke_opacity.0,
+                    &values.stroke().0,
+                    values.stroke_opacity().0,
                     &bbox,
                     current_color,
                 )
@@ -985,10 +988,10 @@ impl DrawingCtx {
                     path.to_cairo(&cr)?;
 
                     if clipping {
-                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule));
+                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
                         Ok(dc.empty_bbox())
                     } else {
-                        cr.set_fill_rule(cairo::FillRule::from(values.fill_rule));
+                        cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
                         dc.stroke_and_fill(&cr, an, values)
                     }
                 })?;
@@ -1178,7 +1181,7 @@ impl DrawingCtx {
             let symbol = elt.get_impl::<Symbol>();
 
             let clip_mode = if !values.is_overflow()
-                || (values.overflow == Overflow::Visible
+                || (values.overflow() == Overflow::Visible
                     && child.borrow_element().get_specified_values().is_overflow())
             {
                 Some(ClipMode::ClipToVbox)
@@ -1334,7 +1337,7 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
 
     // Bounding box for stroke
 
-    if values.stroke.0 != PaintServer::None {
+    if values.stroke().0 != PaintServer::None {
         let (x0, y0, x1, y1) = cr.stroke_extents();
         let sb = BoundingBox::new()
             .with_transform(affine)
