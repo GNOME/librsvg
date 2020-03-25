@@ -262,57 +262,6 @@ impl Default for SpecifiedValues {
     }
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct ComputedValues {
-    pub baseline_shift: BaselineShift,
-    pub clip_path: ClipPath,
-    pub clip_rule: ClipRule,
-    pub color: Color,
-    pub color_interpolation_filters: ColorInterpolationFilters,
-    pub direction: Direction,
-    pub display: Display,
-    pub enable_background: EnableBackground,
-    pub fill: Fill,
-    pub fill_opacity: FillOpacity,
-    pub fill_rule: FillRule,
-    pub filter: Filter,
-    pub flood_color: FloodColor,
-    pub flood_opacity: FloodOpacity,
-    pub font_family: FontFamily,
-    pub font_size: FontSize,
-    pub font_stretch: FontStretch,
-    pub font_style: FontStyle,
-    pub font_variant: FontVariant,
-    pub font_weight: FontWeight,
-    pub letter_spacing: LetterSpacing,
-    pub lighting_color: LightingColor,
-    pub marker_end: MarkerEnd,
-    pub marker_mid: MarkerMid,
-    pub marker_start: MarkerStart,
-    pub mask: Mask,
-    pub opacity: Opacity,
-    pub overflow: Overflow,
-    pub shape_rendering: ShapeRendering,
-    pub stop_color: StopColor,
-    pub stop_opacity: StopOpacity,
-    pub stroke: Stroke,
-    pub stroke_dasharray: StrokeDasharray,
-    pub stroke_dashoffset: StrokeDashoffset,
-    pub stroke_line_cap: StrokeLinecap,
-    pub stroke_line_join: StrokeLinejoin,
-    pub stroke_opacity: StrokeOpacity,
-    pub stroke_miterlimit: StrokeMiterlimit,
-    pub stroke_width: StrokeWidth,
-    pub text_anchor: TextAnchor,
-    pub text_decoration: TextDecoration,
-    pub text_rendering: TextRendering,
-    pub unicode_bidi: UnicodeBidi,
-    pub visibility: Visibility,
-    pub writing_mode: WritingMode,
-    pub xml_lang: XmlLang,   // not a property, but a non-presentation attribute
-    pub xml_space: XmlSpace, // not a property, but a non-presentation attribute
-}
-
 #[rustfmt::skip]
 pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
     // please keep these sorted
@@ -483,6 +432,67 @@ impl ComputedValues {
             _ => false,
         }
     }
+}
+
+macro_rules! make_computed_values {
+    { $($field:ident: $ty:ident,)+ } => {
+        #[derive(Debug, Default, Clone)]
+        pub struct ComputedValues {
+            $(
+                pub $field: $ty,
+            )+
+        }
+    };
+}
+
+make_computed_values! {
+    baseline_shift: BaselineShift,
+    clip_path: ClipPath,
+    clip_rule: ClipRule,
+    color: Color,
+    color_interpolation_filters: ColorInterpolationFilters,
+    direction: Direction,
+    display: Display,
+    enable_background: EnableBackground,
+    fill: Fill,
+    fill_opacity: FillOpacity,
+    fill_rule: FillRule,
+    filter: Filter,
+    flood_color: FloodColor,
+    flood_opacity: FloodOpacity,
+    font_family: FontFamily,
+    font_size: FontSize,
+    font_stretch: FontStretch,
+    font_style: FontStyle,
+    font_variant: FontVariant,
+    font_weight: FontWeight,
+    letter_spacing: LetterSpacing,
+    lighting_color: LightingColor,
+    marker_end: MarkerEnd,
+    marker_mid: MarkerMid,
+    marker_start: MarkerStart,
+    mask: Mask,
+    opacity: Opacity,
+    overflow: Overflow,
+    shape_rendering: ShapeRendering,
+    stop_color: StopColor,
+    stop_opacity: StopOpacity,
+    stroke: Stroke,
+    stroke_dasharray: StrokeDasharray,
+    stroke_dashoffset: StrokeDashoffset,
+    stroke_line_cap: StrokeLinecap,
+    stroke_line_join: StrokeLinejoin,
+    stroke_opacity: StrokeOpacity,
+    stroke_miterlimit: StrokeMiterlimit,
+    stroke_width: StrokeWidth,
+    text_anchor: TextAnchor,
+    text_decoration: TextDecoration,
+    text_rendering: TextRendering,
+    unicode_bidi: UnicodeBidi,
+    visibility: Visibility,
+    writing_mode: WritingMode,
+    xml_lang: XmlLang,   // not a property, but a non-presentation attribute
+    xml_space: XmlSpace, // not a property, but a non-presentation attribute
 }
 
 impl SpecifiedValues {
