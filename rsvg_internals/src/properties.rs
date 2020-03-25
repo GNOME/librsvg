@@ -56,15 +56,6 @@ where
     }
 }
 
-impl<T> Default for SpecifiedValue<T>
-where
-    T: Property<ComputedValues> + Clone + Default,
-{
-    fn default() -> SpecifiedValue<T> {
-        SpecifiedValue::Unspecified
-    }
-}
-
 /// Embodies "which property is this" plus the property's value
 #[derive(Clone)]
 pub enum ParsedProperty {
