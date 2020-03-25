@@ -297,6 +297,12 @@ macro_rules! make_properties {
             $($long_name(SpecifiedValue<$long_name>),)+
         }
 
+        enum ComputedValue {
+            $(
+                $long_name($long_name),
+            )+
+        }
+
         #[derive(Debug, Default, Clone)]
         pub struct ComputedValues {
             $(
@@ -330,6 +336,12 @@ macro_rules! make_properties {
                     self.$long_field.clone()
                 }
             )+
+
+            fn set_value(&mut self, computed: ComputedValue) {
+                match computed {
+                    $(ComputedValue::$long_name(v) => self.$long_field = v,)+
+                }
+            }
         }
     };
 }
@@ -463,7 +475,7 @@ impl SpecifiedValues {
             ($name:ident, $field:ident) => {
                 let prop_val = self.get_property(PropertyId::$name);
                 if let ParsedProperty::$name(s) = prop_val {
-                    computed.$field = s.compute(&computed.$field, computed);
+                    computed.set_value(ComputedValue::$name(s.compute(&computed.$field, computed)));
                 } else {
                     unreachable!();
                 }
