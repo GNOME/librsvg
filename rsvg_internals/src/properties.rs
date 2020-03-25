@@ -56,59 +56,6 @@ where
     }
 }
 
-/// Embodies "which property is this" plus the property's value
-#[derive(Clone)]
-pub enum ParsedProperty {
-    BaselineShift(SpecifiedValue<BaselineShift>),
-    ClipPath(SpecifiedValue<ClipPath>),
-    ClipRule(SpecifiedValue<ClipRule>),
-    Color(SpecifiedValue<Color>),
-    ColorInterpolationFilters(SpecifiedValue<ColorInterpolationFilters>),
-    Direction(SpecifiedValue<Direction>),
-    Display(SpecifiedValue<Display>),
-    EnableBackground(SpecifiedValue<EnableBackground>),
-    Fill(SpecifiedValue<Fill>),
-    FillOpacity(SpecifiedValue<FillOpacity>),
-    FillRule(SpecifiedValue<FillRule>),
-    Filter(SpecifiedValue<Filter>),
-    FloodColor(SpecifiedValue<FloodColor>),
-    FloodOpacity(SpecifiedValue<FloodOpacity>),
-    FontFamily(SpecifiedValue<FontFamily>),
-    FontSize(SpecifiedValue<FontSize>),
-    FontStretch(SpecifiedValue<FontStretch>),
-    FontStyle(SpecifiedValue<FontStyle>),
-    FontVariant(SpecifiedValue<FontVariant>),
-    FontWeight(SpecifiedValue<FontWeight>),
-    LetterSpacing(SpecifiedValue<LetterSpacing>),
-    LightingColor(SpecifiedValue<LightingColor>),
-    Marker(SpecifiedValue<Marker>), // this is a shorthand property
-    MarkerEnd(SpecifiedValue<MarkerEnd>),
-    MarkerMid(SpecifiedValue<MarkerMid>),
-    MarkerStart(SpecifiedValue<MarkerStart>),
-    Mask(SpecifiedValue<Mask>),
-    Opacity(SpecifiedValue<Opacity>),
-    Overflow(SpecifiedValue<Overflow>),
-    ShapeRendering(SpecifiedValue<ShapeRendering>),
-    StopColor(SpecifiedValue<StopColor>),
-    StopOpacity(SpecifiedValue<StopOpacity>),
-    Stroke(SpecifiedValue<Stroke>),
-    StrokeDasharray(SpecifiedValue<StrokeDasharray>),
-    StrokeDashoffset(SpecifiedValue<StrokeDashoffset>),
-    StrokeLinecap(SpecifiedValue<StrokeLinecap>),
-    StrokeLinejoin(SpecifiedValue<StrokeLinejoin>),
-    StrokeOpacity(SpecifiedValue<StrokeOpacity>),
-    StrokeMiterlimit(SpecifiedValue<StrokeMiterlimit>),
-    StrokeWidth(SpecifiedValue<StrokeWidth>),
-    TextAnchor(SpecifiedValue<TextAnchor>),
-    TextDecoration(SpecifiedValue<TextDecoration>),
-    TextRendering(SpecifiedValue<TextRendering>),
-    UnicodeBidi(SpecifiedValue<UnicodeBidi>),
-    Visibility(SpecifiedValue<Visibility>),
-    WritingMode(SpecifiedValue<WritingMode>),
-    XmlLang(SpecifiedValue<XmlLang>), // not a property, but a non-presentation attribute
-    XmlSpace(SpecifiedValue<XmlSpace>), // not a property, but a non-presentation attribute
-}
-
 /// Used to match `ParsedProperty` to their discriminant
 ///
 /// The `PropertyId::UnsetProperty` can be used as a sentinel value, as
@@ -166,122 +113,6 @@ enum PropertyId {
     XmlLang,
     XmlSpace,
     UnsetProperty,
-}
-
-impl ParsedProperty {
-    #[rustfmt::skip]
-    fn get_property_id(&self) -> PropertyId {
-        use ParsedProperty::*;
-
-        match *self {
-            BaselineShift(_)             => PropertyId::BaselineShift,
-            ClipPath(_)                  => PropertyId::ClipPath,
-            ClipRule(_)                  => PropertyId::ClipRule,
-            Color(_)                     => PropertyId::Color,
-            ColorInterpolationFilters(_) => PropertyId::ColorInterpolationFilters,
-            Direction(_)                 => PropertyId::Direction,
-            Display(_)                   => PropertyId::Display,
-            EnableBackground(_)          => PropertyId::EnableBackground,
-            Fill(_)                      => PropertyId::Fill,
-            FillOpacity(_)               => PropertyId::FillOpacity,
-            FillRule(_)                  => PropertyId::FillRule,
-            Filter(_)                    => PropertyId::Filter,
-            FloodColor(_)                => PropertyId::FloodColor,
-            FloodOpacity(_)              => PropertyId::FloodOpacity,
-            FontFamily(_)                => PropertyId::FontFamily,
-            FontSize(_)                  => PropertyId::FontSize,
-            FontStretch(_)               => PropertyId::FontStretch,
-            FontStyle(_)                 => PropertyId::FontStyle,
-            FontVariant(_)               => PropertyId::FontVariant,
-            FontWeight(_)                => PropertyId::FontWeight,
-            LetterSpacing(_)             => PropertyId::LetterSpacing,
-            LightingColor(_)             => PropertyId::LightingColor,
-            Marker(_)                    => PropertyId::Marker,
-            MarkerEnd(_)                 => PropertyId::MarkerEnd,
-            MarkerMid(_)                 => PropertyId::MarkerMid,
-            MarkerStart(_)               => PropertyId::MarkerStart,
-            Mask(_)                      => PropertyId::Mask,
-            Opacity(_)                   => PropertyId::Opacity,
-            Overflow(_)                  => PropertyId::Overflow,
-            ShapeRendering(_)            => PropertyId::ShapeRendering,
-            StopColor(_)                 => PropertyId::StopColor,
-            StopOpacity(_)               => PropertyId::StopOpacity,
-            Stroke(_)                    => PropertyId::Stroke,
-            StrokeDasharray(_)           => PropertyId::StrokeDasharray,
-            StrokeDashoffset(_)          => PropertyId::StrokeDashoffset,
-            StrokeLinecap(_)             => PropertyId::StrokeLinecap,
-            StrokeLinejoin(_)            => PropertyId::StrokeLinejoin,
-            StrokeOpacity(_)             => PropertyId::StrokeOpacity,
-            StrokeMiterlimit(_)          => PropertyId::StrokeMiterlimit,
-            StrokeWidth(_)               => PropertyId::StrokeWidth,
-            TextAnchor(_)                => PropertyId::TextAnchor,
-            TextDecoration(_)            => PropertyId::TextDecoration,
-            TextRendering(_)             => PropertyId::TextRendering,
-            UnicodeBidi(_)               => PropertyId::UnicodeBidi,
-            Visibility(_)                => PropertyId::Visibility,
-            WritingMode(_)               => PropertyId::WritingMode,
-            XmlLang(_)                   => PropertyId::XmlLang,
-            XmlSpace(_)                  => PropertyId::XmlSpace,
-        }
-    }
-
-    #[rustfmt::skip]
-    fn unspecified(id: PropertyId) -> Self {
-        use PropertyId::*;
-        use SpecifiedValue::Unspecified;
-
-        match id {
-            BaselineShift             => ParsedProperty::BaselineShift(Unspecified),
-            ClipPath                  => ParsedProperty::ClipPath(Unspecified),
-            ClipRule                  => ParsedProperty::ClipRule(Unspecified),
-            Color                     => ParsedProperty::Color(Unspecified),
-            ColorInterpolationFilters => ParsedProperty::ColorInterpolationFilters(Unspecified),
-            Direction                 => ParsedProperty::Direction(Unspecified),
-            Display                   => ParsedProperty::Display(Unspecified),
-            EnableBackground          => ParsedProperty::EnableBackground(Unspecified),
-            Fill                      => ParsedProperty::Fill(Unspecified),
-            FillOpacity               => ParsedProperty::FillOpacity(Unspecified),
-            FillRule                  => ParsedProperty::FillRule(Unspecified),
-            Filter                    => ParsedProperty::Filter(Unspecified),
-            FloodColor                => ParsedProperty::FloodColor(Unspecified),
-            FloodOpacity              => ParsedProperty::FloodOpacity(Unspecified),
-            FontFamily                => ParsedProperty::FontFamily(Unspecified),
-            FontSize                  => ParsedProperty::FontSize(Unspecified),
-            FontStretch               => ParsedProperty::FontStretch(Unspecified),
-            FontStyle                 => ParsedProperty::FontStyle(Unspecified),
-            FontVariant               => ParsedProperty::FontVariant(Unspecified),
-            FontWeight                => ParsedProperty::FontWeight(Unspecified),
-            LetterSpacing             => ParsedProperty::LetterSpacing(Unspecified),
-            LightingColor             => ParsedProperty::LightingColor(Unspecified),
-            Marker                    => ParsedProperty::Marker(Unspecified),
-            MarkerEnd                 => ParsedProperty::MarkerEnd(Unspecified),
-            MarkerMid                 => ParsedProperty::MarkerMid(Unspecified),
-            MarkerStart               => ParsedProperty::MarkerStart(Unspecified),
-            Mask                      => ParsedProperty::Mask(Unspecified),
-            Opacity                   => ParsedProperty::Opacity(Unspecified),
-            Overflow                  => ParsedProperty::Overflow(Unspecified),
-            ShapeRendering            => ParsedProperty::ShapeRendering(Unspecified),
-            StopColor                 => ParsedProperty::StopColor(Unspecified),
-            StopOpacity               => ParsedProperty::StopOpacity(Unspecified),
-            Stroke                    => ParsedProperty::Stroke(Unspecified),
-            StrokeDasharray           => ParsedProperty::StrokeDasharray(Unspecified),
-            StrokeDashoffset          => ParsedProperty::StrokeDashoffset(Unspecified),
-            StrokeLinecap             => ParsedProperty::StrokeLinecap(Unspecified),
-            StrokeLinejoin            => ParsedProperty::StrokeLinejoin(Unspecified),
-            StrokeOpacity             => ParsedProperty::StrokeOpacity(Unspecified),
-            StrokeMiterlimit          => ParsedProperty::StrokeMiterlimit(Unspecified),
-            StrokeWidth               => ParsedProperty::StrokeWidth(Unspecified),
-            TextAnchor                => ParsedProperty::TextAnchor(Unspecified),
-            TextDecoration            => ParsedProperty::TextDecoration(Unspecified),
-            TextRendering             => ParsedProperty::TextRendering(Unspecified),
-            UnicodeBidi               => ParsedProperty::UnicodeBidi(Unspecified),
-            Visibility                => ParsedProperty::Visibility(Unspecified),
-            WritingMode               => ParsedProperty::WritingMode(Unspecified),
-            XmlLang                   => ParsedProperty::XmlLang(Unspecified),
-            XmlSpace                  => ParsedProperty::XmlSpace(Unspecified),
-            UnsetProperty             => unreachable!(),
-        }
-    }
 }
 
 impl PropertyId {
@@ -494,11 +325,39 @@ macro_rules! make_properties {
             $($long_field:ident: $long_name:ident,)+
         }
     }=> {
+        /// Embodies "which property is this" plus the property's value
+        #[derive(Clone)]
+        pub enum ParsedProperty {
+            // we put all the properties here; these are for SpecifiedValues
+            $($short_name(SpecifiedValue<$short_name>),)+
+            $($long_name(SpecifiedValue<$long_name>),)+
+        }
+
         #[derive(Debug, Default, Clone)]
         pub struct ComputedValues {
             $(
                 $long_field: $long_name,
             )+
+        }
+
+        impl ParsedProperty {
+            fn get_property_id(&self) -> PropertyId {
+                match *self {
+                    $(ParsedProperty::$long_name(_) => PropertyId::$long_name,)+
+                    $(ParsedProperty::$short_name(_) => PropertyId::$short_name,)+
+                }
+            }
+
+            fn unspecified(id: PropertyId) -> Self {
+                use SpecifiedValue::Unspecified;
+
+                match id {
+                    $(PropertyId::$long_name => ParsedProperty::$long_name(Unspecified),)+
+                    $(PropertyId::$short_name => ParsedProperty::$short_name(Unspecified),)+
+
+                    PropertyId::UnsetProperty => unreachable!(),
+                }
+            }
         }
 
         impl ComputedValues {
@@ -513,6 +372,7 @@ macro_rules! make_properties {
 
 make_properties! {
     shorthands: {
+        marker: Marker,
     }
 
     longhands: {
