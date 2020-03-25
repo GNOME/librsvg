@@ -485,18 +485,22 @@ impl ComputedValues {
 
 /// Macro to generate the ComputedValues struct
 macro_rules! make_properties {
-    { $($field:ident: $name:ident,)+ } => {
+    {
+        longhands: {
+            $($long_field:ident: $long_name:ident,)+
+        }
+    }=> {
         #[derive(Debug, Default, Clone)]
         pub struct ComputedValues {
             $(
-                $field: $name,
+                $long_field: $long_name,
             )+
         }
 
         impl ComputedValues {
             $(
-                pub fn $field(&self) -> $name {
-                    self.$field.clone()
+                pub fn $long_field(&self) -> $long_name {
+                    self.$long_field.clone()
                 }
             )+
         }
@@ -504,53 +508,55 @@ macro_rules! make_properties {
 }
 
 make_properties! {
-    baseline_shift: BaselineShift,
-    clip_path: ClipPath,
-    clip_rule: ClipRule,
-    color: Color,
-    color_interpolation_filters: ColorInterpolationFilters,
-    direction: Direction,
-    display: Display,
-    enable_background: EnableBackground,
-    fill: Fill,
-    fill_opacity: FillOpacity,
-    fill_rule: FillRule,
-    filter: Filter,
-    flood_color: FloodColor,
-    flood_opacity: FloodOpacity,
-    font_family: FontFamily,
-    font_size: FontSize,
-    font_stretch: FontStretch,
-    font_style: FontStyle,
-    font_variant: FontVariant,
-    font_weight: FontWeight,
-    letter_spacing: LetterSpacing,
-    lighting_color: LightingColor,
-    marker_end: MarkerEnd,
-    marker_mid: MarkerMid,
-    marker_start: MarkerStart,
-    mask: Mask,
-    opacity: Opacity,
-    overflow: Overflow,
-    shape_rendering: ShapeRendering,
-    stop_color: StopColor,
-    stop_opacity: StopOpacity,
-    stroke: Stroke,
-    stroke_dasharray: StrokeDasharray,
-    stroke_dashoffset: StrokeDashoffset,
-    stroke_line_cap: StrokeLinecap,
-    stroke_line_join: StrokeLinejoin,
-    stroke_opacity: StrokeOpacity,
-    stroke_miterlimit: StrokeMiterlimit,
-    stroke_width: StrokeWidth,
-    text_anchor: TextAnchor,
-    text_decoration: TextDecoration,
-    text_rendering: TextRendering,
-    unicode_bidi: UnicodeBidi,
-    visibility: Visibility,
-    writing_mode: WritingMode,
-    xml_lang: XmlLang,   // not a property, but a non-presentation attribute
-    xml_space: XmlSpace, // not a property, but a non-presentation attribute
+    longhands: {
+        baseline_shift: BaselineShift,
+        clip_path: ClipPath,
+        clip_rule: ClipRule,
+        color: Color,
+        color_interpolation_filters: ColorInterpolationFilters,
+        direction: Direction,
+        display: Display,
+        enable_background: EnableBackground,
+        fill: Fill,
+        fill_opacity: FillOpacity,
+        fill_rule: FillRule,
+        filter: Filter,
+        flood_color: FloodColor,
+        flood_opacity: FloodOpacity,
+        font_family: FontFamily,
+        font_size: FontSize,
+        font_stretch: FontStretch,
+        font_style: FontStyle,
+        font_variant: FontVariant,
+        font_weight: FontWeight,
+        letter_spacing: LetterSpacing,
+        lighting_color: LightingColor,
+        marker_end: MarkerEnd,
+        marker_mid: MarkerMid,
+        marker_start: MarkerStart,
+        mask: Mask,
+        opacity: Opacity,
+        overflow: Overflow,
+        shape_rendering: ShapeRendering,
+        stop_color: StopColor,
+        stop_opacity: StopOpacity,
+        stroke: Stroke,
+        stroke_dasharray: StrokeDasharray,
+        stroke_dashoffset: StrokeDashoffset,
+        stroke_line_cap: StrokeLinecap,
+        stroke_line_join: StrokeLinejoin,
+        stroke_opacity: StrokeOpacity,
+        stroke_miterlimit: StrokeMiterlimit,
+        stroke_width: StrokeWidth,
+        text_anchor: TextAnchor,
+        text_decoration: TextDecoration,
+        text_rendering: TextRendering,
+        unicode_bidi: UnicodeBidi,
+        visibility: Visibility,
+        writing_mode: WritingMode,
+        xml_lang: XmlLang,   // not a property, but a non-presentation attribute
+        xml_space: XmlSpace, // not a property, but a non-presentation attribute
+    }
 }
 
 impl SpecifiedValues {
