@@ -333,13 +333,29 @@ macro_rules! make_properties {
         impl ComputedValues {
             $(
                 pub fn $long_field(&self) -> $long_name {
-                    self.$long_field.clone()
+                    if let ComputedValue::$long_name(v) = self.get_value(PropertyId::$long_name) {
+                        v
+                    } else {
+                        unreachable!();
+                    }
                 }
             )+
 
             fn set_value(&mut self, computed: ComputedValue) {
                 match computed {
                     $(ComputedValue::$long_name(v) => self.$long_field = v,)+
+                }
+            }
+
+            fn get_value(&self, id: PropertyId) -> ComputedValue {
+                assert!(!id.is_shorthand());
+
+                match id {
+                    $(
+                        PropertyId::$long_name =>
+                            ComputedValue::$long_name(self.$long_field.clone()),
+                    )+
+                    _ => unreachable!(),
                 }
             }
         }
@@ -475,7 +491,9 @@ impl SpecifiedValues {
             ($name:ident, $field:ident) => {
                 let prop_val = self.get_property(PropertyId::$name);
                 if let ParsedProperty::$name(s) = prop_val {
-                    computed.set_value(ComputedValue::$name(s.compute(&computed.$field(), computed)));
+                    computed.set_value(ComputedValue::$name(
+                        s.compute(&computed.$field(), computed),
+                    ));
                 } else {
                     unreachable!();
                 }
