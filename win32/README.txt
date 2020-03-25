@@ -62,7 +62,9 @@ for all targets.
                   If `INTROSPECTION=1` is specified, this will also build
                   the introspection files (.gir/.typelib) for librsvg.
 -all: see (not specified).
--tests: Same as (not specified) but also builds the test programs in $(srcroot)\tests
+-tests: Same as (not specified) but also builds the test programs in $(srcroot)\tests.
+        You will need the FreeType and HarfBuzz headers, libraries and DLLs (if applicable)
+        to build and run this successfully, even if you are building without PangoFT2.
 -rsvg_rust_tests: Makes a build of the rust items into an executable to test the rust
                   bits.  You may need to make a copy of libxml2.lib (or so) to xml2.lib
                   in order to build this successfully.
