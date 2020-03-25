@@ -9,6 +9,9 @@
 #include <pango/pangocairo.h>
 #ifdef HAVE_PANGOFT2
 #include <pango/pangofc-fontmap.h>
+#else
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #endif
 
 /* Compare two buffers, returning the number of pixels that are
