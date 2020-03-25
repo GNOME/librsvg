@@ -280,6 +280,15 @@ macro_rules! make_properties {
             UnsetProperty,
         }
 
+        impl PropertyId {
+            fn is_shorthand(self) -> bool {
+                match self {
+                    $(PropertyId::$short_name => true,)+
+                    _ => false,
+                }
+            }
+        }
+
         /// Embodies "which property is this" plus the property's value
         #[derive(Clone)]
         pub enum ParsedProperty {
@@ -394,10 +403,7 @@ impl SpecifiedValues {
 
     fn set_property(&mut self, prop: &ParsedProperty, replace: bool) {
         let id = prop.get_property_id();
-
-        if id == PropertyId::Marker {
-            unreachable!("should have processed shorthands earlier");
-        }
+        assert!(!id.is_shorthand());
 
         if let Some(index) = self.property_index(id) {
             if replace {
@@ -411,9 +417,7 @@ impl SpecifiedValues {
     }
 
     fn get_property(&self, id: PropertyId) -> ParsedProperty {
-        if id == PropertyId::Marker {
-            unreachable!("should have processed shorthands earlier");
-        }
+        assert!(!id.is_shorthand());
 
         if let Some(index) = self.property_index(id) {
             self.props[index].clone()
