@@ -83,161 +83,6 @@ impl Default for SpecifiedValues {
     }
 }
 
-#[rustfmt::skip]
-pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
-    // please keep these sorted
-    match prop_name.expanded() {
-        expanded_name!("", "baseline-shift") =>
-            Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
-
-        expanded_name!("", "clip-path") =>
-            Ok(ParsedProperty::ClipPath(parse_input(input)?)),
-
-        expanded_name!("", "clip-rule") =>
-            Ok(ParsedProperty::ClipRule(parse_input(input)?)),
-
-        expanded_name!("", "color") =>
-            Ok(ParsedProperty::Color(parse_input(input)?)),
-
-        expanded_name!("", "color-interpolation-filters") =>
-            Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
-
-        expanded_name!("", "direction") =>
-            Ok(ParsedProperty::Direction(parse_input(input)?)),
-
-        expanded_name!("", "display") =>
-            Ok(ParsedProperty::Display(parse_input(input)?)),
-
-        expanded_name!("", "enable-background") =>
-            Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
-
-        expanded_name!("", "fill") =>
-            Ok(ParsedProperty::Fill(parse_input(input)?)),
-
-        expanded_name!("", "fill-opacity") =>
-            Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
-
-        expanded_name!("", "fill-rule") =>
-            Ok(ParsedProperty::FillRule(parse_input(input)?)),
-
-        expanded_name!("", "filter") =>
-            Ok(ParsedProperty::Filter(parse_input(input)?)),
-
-        expanded_name!("", "flood-color") =>
-            Ok(ParsedProperty::FloodColor(parse_input(input)?)),
-
-        expanded_name!("", "flood-opacity") =>
-            Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
-
-        expanded_name!("", "font-family") =>
-            Ok(ParsedProperty::FontFamily(parse_input(input)?)),
-
-        expanded_name!("", "font-size") =>
-            Ok(ParsedProperty::FontSize(parse_input(input)?)),
-
-        expanded_name!("", "font-stretch") =>
-            Ok(ParsedProperty::FontStretch(parse_input(input)?)),
-
-        expanded_name!("", "font-style") =>
-            Ok(ParsedProperty::FontStyle(parse_input(input)?)),
-
-        expanded_name!("", "font-variant") =>
-            Ok(ParsedProperty::FontVariant(parse_input(input)?)),
-
-        expanded_name!("", "font-weight") =>
-            Ok(ParsedProperty::FontWeight(parse_input(input)?)),
-
-        expanded_name!("", "letter-spacing") =>
-            Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
-
-        expanded_name!("", "lighting-color") =>
-            Ok(ParsedProperty::LightingColor(parse_input(input)?)),
-
-        expanded_name!("", "marker") => {
-            if accept_shorthands {
-                Ok(ParsedProperty::Marker(parse_input(input)?))
-            } else {
-                let loc = input.current_source_location();
-                Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
-            }
-        }
-
-        expanded_name!("", "marker-end") =>
-            Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
-
-        expanded_name!("", "marker-mid") =>
-            Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
-
-        expanded_name!("", "marker-start") =>
-            Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
-
-        expanded_name!("", "mask") =>
-            Ok(ParsedProperty::Mask(parse_input(input)?)),
-
-        expanded_name!("", "opacity") =>
-            Ok(ParsedProperty::Opacity(parse_input(input)?)),
-
-        expanded_name!("", "overflow") =>
-            Ok(ParsedProperty::Overflow(parse_input(input)?)),
-
-        expanded_name!("", "shape-rendering") =>
-            Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
-
-        expanded_name!("", "stop-color") =>
-            Ok(ParsedProperty::StopColor(parse_input(input)?)),
-
-        expanded_name!("", "stop-opacity") =>
-            Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
-
-        expanded_name!("", "stroke") =>
-            Ok(ParsedProperty::Stroke(parse_input(input)?)),
-
-        expanded_name!("", "stroke-dasharray") =>
-            Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
-
-        expanded_name!("", "stroke-dashoffset") =>
-            Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
-
-        expanded_name!("", "stroke-linecap") =>
-            Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
-
-        expanded_name!("", "stroke-linejoin") =>
-            Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
-
-        expanded_name!("", "stroke-miterlimit") =>
-            Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
-
-        expanded_name!("", "stroke-opacity") =>
-            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
-
-        expanded_name!("", "stroke-width") =>
-            Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
-
-        expanded_name!("", "text-anchor") =>
-            Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
-
-        expanded_name!("", "text-decoration") =>
-            Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
-
-        expanded_name!("", "text-rendering") =>
-            Ok(ParsedProperty::TextRendering(parse_input(input)?)),
-
-        expanded_name!("", "unicode-bidi") =>
-            Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
-
-        expanded_name!("", "visibility") =>
-            Ok(ParsedProperty::Visibility(parse_input(input)?)),
-
-        expanded_name!("", "writing-mode") =>
-            Ok(ParsedProperty::WritingMode(parse_input(input)?)),
-
-        _ => {
-            let loc = input.current_source_location();
-            Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
-        }
-    }
-}
-
 impl ComputedValues {
     pub fn is_overflow(&self) -> bool {
         match self.overflow() {
@@ -259,11 +104,15 @@ impl ComputedValues {
 macro_rules! make_properties {
     {
         shorthands: {
-            $($short_field:ident: $short_name:ident,)*
+            $($short_str:tt => $short_field:ident: $short_name:ident,)*
         }
 
         longhands: {
-            $($long_field:ident: $long_name:ident,)+
+            $($long_str:tt => $long_field:ident: $long_name:ident,)+
+        }
+
+        non_properties: {
+            $($nonprop_field:ident: $nonprop_name:ident,)+
         }
     }=> {
         /// Used to match `ParsedProperty` to their discriminant
@@ -276,6 +125,7 @@ macro_rules! make_properties {
         enum PropertyId {
             $($short_name,)+
             $($long_name,)+
+            $($nonprop_name,)+
 
             UnsetProperty,
         }
@@ -295,11 +145,16 @@ macro_rules! make_properties {
             // we put all the properties here; these are for SpecifiedValues
             $($short_name(SpecifiedValue<$short_name>),)+
             $($long_name(SpecifiedValue<$long_name>),)+
+            $($nonprop_name(SpecifiedValue<$nonprop_name>),)+
         }
 
         enum ComputedValue {
             $(
                 $long_name($long_name),
+            )+
+
+            $(
+                $nonprop_name($nonprop_name),
             )+
         }
 
@@ -308,13 +163,18 @@ macro_rules! make_properties {
             $(
                 $long_field: $long_name,
             )+
+
+            $(
+                $nonprop_field: $nonprop_name,
+            )+
         }
 
         impl ParsedProperty {
             fn get_property_id(&self) -> PropertyId {
                 match *self {
                     $(ParsedProperty::$long_name(_) => PropertyId::$long_name,)+
-                        $(ParsedProperty::$short_name(_) => PropertyId::$short_name,)+
+                    $(ParsedProperty::$short_name(_) => PropertyId::$short_name,)+
+                    $(ParsedProperty::$nonprop_name(_) => PropertyId::$nonprop_name,)+
                 }
             }
 
@@ -324,6 +184,7 @@ macro_rules! make_properties {
                 match id {
                     $(PropertyId::$long_name => ParsedProperty::$long_name(Unspecified),)+
                     $(PropertyId::$short_name => ParsedProperty::$short_name(Unspecified),)+
+                    $(PropertyId::$nonprop_name => ParsedProperty::$nonprop_name(Unspecified),)+
 
                     PropertyId::UnsetProperty => unreachable!(),
                 }
@@ -341,9 +202,20 @@ macro_rules! make_properties {
                 }
             )+
 
+            $(
+                pub fn $nonprop_field(&self) -> $nonprop_name {
+                    if let ComputedValue::$nonprop_name(v) = self.get_value(PropertyId::$nonprop_name) {
+                        v
+                    } else {
+                        unreachable!();
+                    }
+                }
+            )+
+
             fn set_value(&mut self, computed: ComputedValue) {
                 match computed {
                     $(ComputedValue::$long_name(v) => self.$long_field = v,)+
+                    $(ComputedValue::$nonprop_name(v) => self.$nonprop_field = v,)+
                 }
             }
 
@@ -355,66 +227,106 @@ macro_rules! make_properties {
                         PropertyId::$long_name =>
                             ComputedValue::$long_name(self.$long_field.clone()),
                     )+
+                    $(
+                        PropertyId::$nonprop_name =>
+                            ComputedValue::$nonprop_name(self.$nonprop_field.clone()),
+                    )+
                     _ => unreachable!(),
+                }
+            }
+        }
+
+        pub fn parse_property<'i>(
+            prop_name: &QualName,
+            input: &mut Parser<'i, '_>,
+            accept_shorthands: bool
+        ) -> Result<ParsedProperty, ParseError<'i>> {
+            match prop_name.expanded() {
+                $(
+                    expanded_name!("", $long_str) =>
+                        Ok(ParsedProperty::$long_name(parse_input(input)?)),
+                )+
+
+                $(
+                    expanded_name!("", $short_str) => {
+                        if accept_shorthands {
+                            Ok(ParsedProperty::$short_name(parse_input(input)?))
+                        } else {
+                            let loc = input.current_source_location();
+                            Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
+                        }
+                    }
+                )+
+
+                _ => {
+                    let loc = input.current_source_location();
+                    Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
                 }
             }
         }
     };
 }
 
+#[rustfmt::skip]
 make_properties! {
     shorthands: {
-        marker: Marker,
+        "marker" => marker: Marker,
     }
 
     longhands: {
-        baseline_shift: BaselineShift,
-        clip_path: ClipPath,
-        clip_rule: ClipRule,
-        color: Color,
-        color_interpolation_filters: ColorInterpolationFilters,
-        direction: Direction,
-        display: Display,
-        enable_background: EnableBackground,
-        fill: Fill,
-        fill_opacity: FillOpacity,
-        fill_rule: FillRule,
-        filter: Filter,
-        flood_color: FloodColor,
-        flood_opacity: FloodOpacity,
-        font_family: FontFamily,
-        font_size: FontSize,
-        font_stretch: FontStretch,
-        font_style: FontStyle,
-        font_variant: FontVariant,
-        font_weight: FontWeight,
-        letter_spacing: LetterSpacing,
-        lighting_color: LightingColor,
-        marker_end: MarkerEnd,
-        marker_mid: MarkerMid,
-        marker_start: MarkerStart,
-        mask: Mask,
-        opacity: Opacity,
-        overflow: Overflow,
-        shape_rendering: ShapeRendering,
-        stop_color: StopColor,
-        stop_opacity: StopOpacity,
-        stroke: Stroke,
-        stroke_dasharray: StrokeDasharray,
-        stroke_dashoffset: StrokeDashoffset,
-        stroke_line_cap: StrokeLinecap,
-        stroke_line_join: StrokeLinejoin,
-        stroke_opacity: StrokeOpacity,
-        stroke_miterlimit: StrokeMiterlimit,
-        stroke_width: StrokeWidth,
-        text_anchor: TextAnchor,
-        text_decoration: TextDecoration,
-        text_rendering: TextRendering,
-        unicode_bidi: UnicodeBidi,
-        visibility: Visibility,
-        writing_mode: WritingMode,
-        xml_lang: XmlLang,   // not a property, but a non-presentation attribute
-        xml_space: XmlSpace, // not a property, but a non-presentation attribute
+        "baseline-shift"              => baseline_shift              : BaselineShift,
+        "clip-path"                   => clip_path                   : ClipPath,
+        "clip-rule"                   => clip_rule                   : ClipRule,
+        "color"                       => color                       : Color,
+        "color-interpolation-filters" => color_interpolation_filters : ColorInterpolationFilters,
+        "direction"                   => direction                   : Direction,
+        "display"                     => display                     : Display,
+        "enable-background"           => enable_background           : EnableBackground,
+        "fill"                        => fill                        : Fill,
+        "fill-opacity"                => fill_opacity                : FillOpacity,
+        "fill-rule"                   => fill_rule                   : FillRule,
+        "filter"                      => filter                      : Filter,
+        "flood-color"                 => flood_color                 : FloodColor,
+        "flood-opacity"               => flood_opacity               : FloodOpacity,
+        "font-family"                 => font_family                 : FontFamily,
+        "font-size"                   => font_size                   : FontSize,
+        "font-stretch"                => font_stretch                : FontStretch,
+        "font-style"                  => font_style                  : FontStyle,
+        "font-variant"                => font_variant                : FontVariant,
+        "font-weight"                 => font_weight                 : FontWeight,
+        "letter-spacing"              => letter_spacing              : LetterSpacing,
+        "lighting-color"              => lighting_color              : LightingColor,
+        "marker-end"                  => marker_end                  : MarkerEnd,
+        "marker-mid"                  => marker_mid                  : MarkerMid,
+        "marker-start"                => marker_start                : MarkerStart,
+        "mask"                        => mask                        : Mask,
+        "opacity"                     => opacity                     : Opacity,
+        "overflow"                    => overflow                    : Overflow,
+        "shape-rendering"             => shape_rendering             : ShapeRendering,
+        "stop-color"                  => stop_color                  : StopColor,
+        "stop-opacity"                => stop_opacity                : StopOpacity,
+        "stroke"                      => stroke                      : Stroke,
+        "stroke-dasharray"            => stroke_dasharray            : StrokeDasharray,
+        "stroke-dashoffset"           => stroke_dashoffset           : StrokeDashoffset,
+        "stroke-linecap"              => stroke_line_cap             : StrokeLinecap,
+        "stroke-linejoin"             => stroke_line_join            : StrokeLinejoin,
+        "stroke-miterlimit"           => stroke_miterlimit           : StrokeMiterlimit,
+        "stroke-opacity"              => stroke_opacity              : StrokeOpacity,
+        "stroke-width"                => stroke_width                : StrokeWidth,
+        "text-anchor"                 => text_anchor                 : TextAnchor,
+        "text-decoration"             => text_decoration             : TextDecoration,
+        "text-rendering"              => text_rendering              : TextRendering,
+        "unicode-bidi"                => unicode_bidi                : UnicodeBidi,
+        "visibility"                  => visibility                  : Visibility,
+        "writing-mode"                => writing_mode                : WritingMode,
+    }
+
+    // These are not properties, but presentation attributes.  However,
+    // both xml:lang and xml:space *do* inherit.  We are abusing the
+    // property inheritance code for these XML-specific attributes.
+    non_properties: {
+        xml_lang: XmlLang,
+        xml_space: XmlSpace,
     }
 }
 
