@@ -75,7 +75,7 @@ LIBRSVG_INCLUDES =			\
 	/I$(INCLUDEDIR)\libxml2
 
 TEST_CFLAGS = $(BASE_CFLAGS)
-TEST_DEP_LIBS = $(TOOLS_DEP_LIBS)
+TEST_DEP_LIBS = pango-1.0.lib harfbuzz.lib freetype.lib $(TOOLS_DEP_LIBS)
 
 # Use PangoFT2 (for tests only)
 !ifdef USE_PANGOFT2
