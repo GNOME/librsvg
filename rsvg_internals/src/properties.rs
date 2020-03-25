@@ -486,6 +486,10 @@ impl ComputedValues {
 /// Macro to generate the ComputedValues struct
 macro_rules! make_properties {
     {
+        shorthands: {
+            $($short_field:ident: $short_name:ident,)*
+        }
+
         longhands: {
             $($long_field:ident: $long_name:ident,)+
         }
@@ -508,6 +512,9 @@ macro_rules! make_properties {
 }
 
 make_properties! {
+    shorthands: {
+    }
+
     longhands: {
         baseline_shift: BaselineShift,
         clip_path: ClipPath,
