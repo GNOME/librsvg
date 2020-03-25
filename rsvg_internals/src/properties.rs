@@ -434,12 +434,21 @@ impl ComputedValues {
     }
 }
 
+/// Macro to generate the ComputedValues struct
 macro_rules! make_computed_values {
     { $($field:ident: $ty:ident,)+ } => {
         #[derive(Debug, Default, Clone)]
         pub struct ComputedValues {
             $(
-                pub $field: $ty,
+                $field: $ty,
+            )+
+        }
+
+        impl ComputedValues {
+            $(
+                pub fn $field(&self) -> $ty {
+                    self.$field.clone()
+                }
             )+
         }
     };
@@ -524,16 +533,24 @@ impl SpecifiedValues {
         }
     }
 
-    #[rustfmt::skip]
     fn set_property_expanding_shorthands(&mut self, prop: &ParsedProperty, replace: bool) {
-        use crate::properties::ParsedProperty::*;
         use crate::properties as p;
+        use crate::properties::ParsedProperty::*;
 
         if let Marker(SpecifiedValue::Specified(p::Marker(ref v))) = *prop {
             // Since "marker" is a shorthand property, we'll just expand it here
-            self.set_property(&MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))), replace);
-            self.set_property(&MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))), replace);
-            self.set_property(&MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))), replace);
+            self.set_property(
+                &MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))),
+                replace,
+            );
+            self.set_property(
+                &MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))),
+                replace,
+            );
+            self.set_property(
+                &MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))),
+                replace,
+            );
         } else {
             self.set_property(prop, replace);
         }

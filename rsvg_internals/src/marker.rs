@@ -624,7 +624,7 @@ pub fn render_markers_for_path(
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
     let line_width = values
-        .stroke_width
+        .stroke_width()
         .0
         .normalize(values, &draw_ctx.get_view_params());
 
@@ -632,11 +632,11 @@ pub fn render_markers_for_path(
         return Ok(draw_ctx.empty_bbox());
     }
 
-    let marker_start = &values.marker_start.0;
-    let marker_mid = &values.marker_mid.0;
-    let marker_end = &values.marker_end.0;
+    let marker_start = values.marker_start().0;
+    let marker_mid = values.marker_mid().0;
+    let marker_end = values.marker_end().0;
 
-    if let (&IRI::None, &IRI::None, &IRI::None) = (marker_start, marker_mid, marker_end) {
+    if let (&IRI::None, &IRI::None, &IRI::None) = (&marker_start, &marker_mid, &marker_end) {
         return Ok(draw_ctx.empty_bbox());
     }
 
@@ -644,10 +644,10 @@ pub fn render_markers_for_path(
         path_commands,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
-            if let &IRI::Resource(ref marker) = match marker_type {
-                MarkerType::Start => &values.marker_start.0,
-                MarkerType::Middle => &values.marker_mid.0,
-                MarkerType::End => &values.marker_end.0,
+            if let IRI::Resource(ref marker) = match marker_type {
+                MarkerType::Start => &marker_start,
+                MarkerType::Middle => &marker_mid,
+                MarkerType::End => &marker_end,
             } {
                 emit_marker_by_name(
                     draw_ctx,
