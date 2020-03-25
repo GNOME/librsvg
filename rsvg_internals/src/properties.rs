@@ -100,7 +100,21 @@ impl ComputedValues {
     }
 }
 
-/// Macro to generate the ComputedValues struct
+/// Macro to generate all the machinery for properties.
+///
+/// This generates the following:
+///
+/// * `PropertyId`, an fieldless enum with simple values to identify all the properties.
+/// * `ParsedProperty`, a variant enum for all the specified property values.
+/// * `ComputedValue`, a variant enum for all the computed values.
+/// * `parse_property`, the main function to parse a property declaration from user input.
+///
+/// There is a lot of repetitive code, for example, because sometimes
+/// we need to operate on `PropertyId::Foo`, `ParsedProperty::Foo` and
+/// `ComputedValue::Foo` together.  This is why all this is done with a macro.
+///
+/// See the only invocation of this macro to see how it is used; it is just
+/// a declarative list of property names.
 macro_rules! make_properties {
     {
         shorthands: {
