@@ -976,7 +976,8 @@ mod tests {
         let mut builder = PathBuilder::new();
         let result = parse_path_into_builder(path_str, &mut builder);
 
-        let commands = builder.get_path_commands();
+        let path = builder.into_path();
+        let commands = path.get_path_commands();
 
         assert_eq!(expected_commands, commands);
         assert_eq!(expected_result, result);

@@ -19,7 +19,7 @@ use crate::iri::IRI;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
-use crate::path_builder::*;
+use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, PathCommand};
 use crate::properties::{ComputedValues, ParsedProperty, SpecifiedValue, SpecifiedValues};
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
@@ -337,8 +337,8 @@ impl Deref for Segments {
 // The tangent at the end point is given by the vector (P4 - P3).
 // The tangents also work if the segment refers to a lineto (they will
 // both just point in the same direction).
-impl<'a> From<&'a PathBuilder> for Segments {
-    fn from(builder: &PathBuilder) -> Segments {
+impl From<&[PathCommand]> for Segments {
+    fn from(path_commands: &[PathCommand]) -> Segments {
         let mut last_x: f64;
         let mut last_y: f64;
         let mut cur_x: f64;
@@ -356,7 +356,7 @@ impl<'a> From<&'a PathBuilder> for Segments {
         segments = Vec::new();
         state = SegmentState::Initial;
 
-        for path_command in builder.get_path_commands() {
+        for path_command in path_commands {
             last_x = cur_x;
             last_y = cur_y;
 
@@ -616,8 +616,8 @@ where
     emit_fn(marker_type, x, y, orient)
 }
 
-pub fn render_markers_for_path_builder(
-    builder: &PathBuilder,
+pub fn render_markers_for_path(
+    path_commands: &[PathCommand],
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes,
     values: &ComputedValues,
@@ -640,8 +640,8 @@ pub fn render_markers_for_path_builder(
         return Ok(draw_ctx.empty_bbox());
     }
 
-    emit_markers_for_path_builder(
-        builder,
+    emit_markers_for_path(
+        path_commands,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             if let &IRI::Resource(ref marker) = match marker_type {
@@ -666,8 +666,8 @@ pub fn render_markers_for_path_builder(
     )
 }
 
-fn emit_markers_for_path_builder<E>(
-    builder: &PathBuilder,
+fn emit_markers_for_path<E>(
+    path_commands: &[PathCommand],
     empty_bbox: BoundingBox,
     emit_fn: &mut E,
 ) -> Result<BoundingBox, RenderingError>
@@ -682,7 +682,7 @@ where
     let mut bbox = empty_bbox;
 
     // Convert the path to a list of segments and bare points
-    let segments = Segments::from(builder);
+    let segments = Segments::from(path_commands);
 
     let mut subpath_state = SubpathState::NoSubpath;
 
@@ -774,7 +774,7 @@ where
                 .unwrap_or_else(|| Angle::new(0.0));
 
             let angle = {
-                if let PathCommand::ClosePath = builder.get_path_commands()[segments.len()] {
+                if let PathCommand::ClosePath = path_commands[segments.len()] {
                     let outgoing = segments
                         .find_outgoing_angle_forwards(0)
                         .unwrap_or_else(|| Angle::new(0.0));
@@ -857,6 +857,7 @@ mod parser_tests {
 #[cfg(test)]
 mod directionality_tests {
     use super::*;
+    use crate::path_builder::PathBuilder;
 
     // Single open path; the easy case
     fn setup_open_path() -> Segments {
@@ -866,7 +867,7 @@ mod directionality_tests {
         builder.line_to(20.0, 10.0);
         builder.line_to(20.0, 20.0);
 
-        Segments::from(&builder)
+        Segments::from(builder.into_path().get_path_commands())
     }
 
     #[test]
@@ -891,7 +892,7 @@ mod directionality_tests {
         builder.curve_to(50.0, 35.0, 60.0, 60.0, 70.0, 70.0);
         builder.line_to(80.0, 90.0);
 
-        Segments::from(&builder)
+        Segments::from(builder.into_path().get_path_commands())
     }
 
     #[test]
@@ -916,7 +917,7 @@ mod directionality_tests {
         builder.line_to(20.0, 20.0);
         builder.close_path();
 
-        Segments::from(&builder)
+        Segments::from(builder.into_path().get_path_commands())
     }
 
     #[test]
@@ -946,7 +947,7 @@ mod directionality_tests {
         builder.line_to(80.0, 90.0);
         builder.close_path();
 
-        Segments::from(&builder)
+        Segments::from(builder.into_path().get_path_commands())
     }
 
     #[test]
@@ -976,7 +977,7 @@ mod directionality_tests {
 
         builder.line_to(40.0, 30.0);
 
-        Segments::from(&builder)
+        Segments::from(builder.into_path().get_path_commands())
     }
 
     #[test]
@@ -1010,7 +1011,7 @@ mod directionality_tests {
     // builder.move_to (30.0, 30.0);
     // builder.move_to (40.0, 40.0);
     //
-    // Segments::from(&builder)
+    // Segments::from(builder.into_path().get_path_commands())
     // }
     //
     // #[test]
@@ -1105,6 +1106,7 @@ mod directionality_tests {
 #[cfg(test)]
 mod marker_tests {
     use super::*;
+    use crate::path_builder::PathBuilder;
 
     #[test]
     fn emits_for_open_subpath() {
@@ -1116,8 +1118,8 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        assert!(emit_markers_for_path_builder(
-            &builder,
+        assert!(emit_markers_for_path(
+            builder.into_path().get_path_commands(),
             BoundingBox::new(),
             &mut |marker_type: MarkerType,
                   x: f64,
@@ -1152,8 +1154,8 @@ mod marker_tests {
 
         let mut v = Vec::new();
 
-        assert!(emit_markers_for_path_builder(
-            &builder,
+        assert!(emit_markers_for_path(
+            builder.into_path().get_path_commands(),
             BoundingBox::new(),
             &mut |marker_type: MarkerType,
                   x: f64,
