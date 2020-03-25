@@ -484,18 +484,18 @@ impl ComputedValues {
 }
 
 /// Macro to generate the ComputedValues struct
-macro_rules! make_computed_values {
-    { $($field:ident: $ty:ident,)+ } => {
+macro_rules! make_properties {
+    { $($field:ident: $name:ident,)+ } => {
         #[derive(Debug, Default, Clone)]
         pub struct ComputedValues {
             $(
-                $field: $ty,
+                $field: $name,
             )+
         }
 
         impl ComputedValues {
             $(
-                pub fn $field(&self) -> $ty {
+                pub fn $field(&self) -> $name {
                     self.$field.clone()
                 }
             )+
@@ -503,7 +503,7 @@ macro_rules! make_computed_values {
     };
 }
 
-make_computed_values! {
+make_properties! {
     baseline_shift: BaselineShift,
     clip_path: ClipPath,
     clip_rule: ClipRule,
