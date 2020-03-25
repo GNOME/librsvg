@@ -273,8 +273,8 @@ macro_rules! impl_lighting_filter {
 
                 let cascaded = CascadedValues::new_from_node(node);
                 let values = cascaded.get();
-                let lighting_color = match values.lighting_color.0 {
-                    cssparser::Color::CurrentColor => values.color.0,
+                let lighting_color = match values.lighting_color().0 {
+                    cssparser::Color::CurrentColor => values.color().0,
                     cssparser::Color::RGBA(rgba) => rgba,
                 };
 
@@ -304,7 +304,7 @@ macro_rules! impl_lighting_filter {
                 let values = cascaded.get();
                 // The generated color values are in the color space determined by
                 // color-interpolation-filters.
-                let surface_type = SurfaceType::from(values.color_interpolation_filters);
+                let surface_type = SurfaceType::from(values.color_interpolation_filters());
 
                 let mut surface = ExclusiveImageSurface::new(
                     input_surface.width(),

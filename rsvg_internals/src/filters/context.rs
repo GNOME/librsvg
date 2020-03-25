@@ -292,7 +292,7 @@ impl FilterContext {
                     paint_server,
                     opacity,
                     &self.node_bbox,
-                    self.computed_from_node_being_filtered.color.0,
+                    self.computed_from_node_being_filtered.color().0,
                 )
                 .and_then(|had_paint_server| {
                     if had_paint_server {
@@ -357,8 +357,8 @@ impl FilterContext {
                 .get_paint_server_surface(
                     draw_ctx,
                     acquired_nodes,
-                    &values.fill.0,
-                    values.fill_opacity.0,
+                    &values.fill().0,
+                    values.fill_opacity().0,
                 )
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
@@ -367,8 +367,8 @@ impl FilterContext {
                 .get_paint_server_surface(
                     draw_ctx,
                     acquired_nodes,
-                    &values.stroke.0,
-                    values.stroke_opacity.0,
+                    &values.stroke().0,
+                    values.stroke_opacity().0,
                 )
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),

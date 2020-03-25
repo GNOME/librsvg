@@ -34,7 +34,7 @@ impl FontSizeSpec {
     pub fn compute(&self, v: &ComputedValues) -> Self {
         let compute_points = |p| 12.0 * 1.2f64.powf(p) / POINTS_PER_INCH;
 
-        let parent = v.font_size.0.value();
+        let parent = v.font_size().0.value();
 
         // The parent must already have resolved to an absolute unit
         assert!(
@@ -231,6 +231,7 @@ impl Parse for SingleFontFamily {
 mod tests {
     use super::*;
 
+    use crate::properties::{ParsedProperty, SpecifiedValue, SpecifiedValues};
     use crate::property_defs::FontSize;
     use crate::property_macros::Property;
 
@@ -241,8 +242,13 @@ mod tests {
 
     #[test]
     fn computes_parent_relative_font_size() {
+        let mut specified = SpecifiedValues::default();
+        specified.set_parsed_property(&ParsedProperty::FontSize(SpecifiedValue::Specified(
+            FontSize::parse_str("10px").unwrap(),
+        )));
+
         let mut values = ComputedValues::default();
-        values.font_size = FontSize::parse_str("10px").unwrap();
+        specified.to_computed_values(&mut values);
 
         assert_eq!(
             FontSize::parse_str("150%").unwrap().compute(&values),

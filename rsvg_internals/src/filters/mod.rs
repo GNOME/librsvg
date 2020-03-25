@@ -295,7 +295,7 @@ pub fn render(
                 let cascaded = CascadedValues::new_from_node(&c);
                 let values = cascaded.get();
 
-                values.color_interpolation_filters == ColorInterpolationFilters::LinearRgb
+                values.color_interpolation_filters() == ColorInterpolationFilters::LinearRgb
             };
 
             (c, linear_rgb)
