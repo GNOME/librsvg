@@ -63,6 +63,9 @@ for all targets.
                   the introspection files (.gir/.typelib) for librsvg.
 -all: see (not specified).
 -tests: Same as (not specified) but also builds the test programs in $(srcroot)\tests
+-rsvg_rust_tests: Makes a build of the rust items into an executable to test the rust
+                  bits.  You may need to make a copy of libxml2.lib (or so) to xml2.lib
+                  in order to build this successfully.
 -clean: Removes all build files
 -install: Same as (not specified) and also copies the built DLLs, .lib's, headers,
           tools and possibly introspection files to appropriate locations under
