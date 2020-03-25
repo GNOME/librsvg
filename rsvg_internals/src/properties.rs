@@ -233,6 +233,64 @@ impl ParsedProperty {
             XmlSpace(_)                  => PropertyId::XmlSpace,
         }
     }
+
+    #[rustfmt::skip]
+    fn unspecified(id: PropertyId) -> Self {
+        use PropertyId::*;
+        use SpecifiedValue::Unspecified;
+
+        match id {
+            BaselineShift             => ParsedProperty::BaselineShift(Unspecified),
+            ClipPath                  => ParsedProperty::ClipPath(Unspecified),
+            ClipRule                  => ParsedProperty::ClipRule(Unspecified),
+            Color                     => ParsedProperty::Color(Unspecified),
+            ColorInterpolationFilters => ParsedProperty::ColorInterpolationFilters(Unspecified),
+            Direction                 => ParsedProperty::Direction(Unspecified),
+            Display                   => ParsedProperty::Display(Unspecified),
+            EnableBackground          => ParsedProperty::EnableBackground(Unspecified),
+            Fill                      => ParsedProperty::Fill(Unspecified),
+            FillOpacity               => ParsedProperty::FillOpacity(Unspecified),
+            FillRule                  => ParsedProperty::FillRule(Unspecified),
+            Filter                    => ParsedProperty::Filter(Unspecified),
+            FloodColor                => ParsedProperty::FloodColor(Unspecified),
+            FloodOpacity              => ParsedProperty::FloodOpacity(Unspecified),
+            FontFamily                => ParsedProperty::FontFamily(Unspecified),
+            FontSize                  => ParsedProperty::FontSize(Unspecified),
+            FontStretch               => ParsedProperty::FontStretch(Unspecified),
+            FontStyle                 => ParsedProperty::FontStyle(Unspecified),
+            FontVariant               => ParsedProperty::FontVariant(Unspecified),
+            FontWeight                => ParsedProperty::FontWeight(Unspecified),
+            LetterSpacing             => ParsedProperty::LetterSpacing(Unspecified),
+            LightingColor             => ParsedProperty::LightingColor(Unspecified),
+            Marker                    => ParsedProperty::Marker(Unspecified),
+            MarkerEnd                 => ParsedProperty::MarkerEnd(Unspecified),
+            MarkerMid                 => ParsedProperty::MarkerMid(Unspecified),
+            MarkerStart               => ParsedProperty::MarkerStart(Unspecified),
+            Mask                      => ParsedProperty::Mask(Unspecified),
+            Opacity                   => ParsedProperty::Opacity(Unspecified),
+            Overflow                  => ParsedProperty::Overflow(Unspecified),
+            ShapeRendering            => ParsedProperty::ShapeRendering(Unspecified),
+            StopColor                 => ParsedProperty::StopColor(Unspecified),
+            StopOpacity               => ParsedProperty::StopOpacity(Unspecified),
+            Stroke                    => ParsedProperty::Stroke(Unspecified),
+            StrokeDasharray           => ParsedProperty::StrokeDasharray(Unspecified),
+            StrokeDashoffset          => ParsedProperty::StrokeDashoffset(Unspecified),
+            StrokeLinecap             => ParsedProperty::StrokeLinecap(Unspecified),
+            StrokeLinejoin            => ParsedProperty::StrokeLinejoin(Unspecified),
+            StrokeOpacity             => ParsedProperty::StrokeOpacity(Unspecified),
+            StrokeMiterlimit          => ParsedProperty::StrokeMiterlimit(Unspecified),
+            StrokeWidth               => ParsedProperty::StrokeWidth(Unspecified),
+            TextAnchor                => ParsedProperty::TextAnchor(Unspecified),
+            TextDecoration            => ParsedProperty::TextDecoration(Unspecified),
+            TextRendering             => ParsedProperty::TextRendering(Unspecified),
+            UnicodeBidi               => ParsedProperty::UnicodeBidi(Unspecified),
+            Visibility                => ParsedProperty::Visibility(Unspecified),
+            WritingMode               => ParsedProperty::WritingMode(Unspecified),
+            XmlLang                   => ParsedProperty::XmlLang(Unspecified),
+            XmlSpace                  => ParsedProperty::XmlSpace(Unspecified),
+            UnsetProperty             => unreachable!(),
+        }
+    }
 }
 
 impl PropertyId {
@@ -533,6 +591,18 @@ impl SpecifiedValues {
         }
     }
 
+    fn get_property(&self, id: PropertyId) -> ParsedProperty {
+        if id == PropertyId::Marker {
+            unreachable!("should have processed shorthands earlier");
+        }
+
+        if let Some(index) = self.property_index(id) {
+            self.props[index].clone()
+        } else {
+            ParsedProperty::unspecified(id)
+        }
+    }
+
     fn set_property_expanding_shorthands(&mut self, prop: &ParsedProperty, replace: bool) {
         use crate::properties as p;
         use crate::properties::ParsedProperty::*;
@@ -568,15 +638,11 @@ impl SpecifiedValues {
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
         macro_rules! compute {
             ($name:ident, $field:ident) => {
-                if let Some(index) = self.property_index(PropertyId::$name) {
-                    if let &ParsedProperty::$name(ref s) = &self.props[index] {
-                        computed.$field = s.compute(&computed.$field, computed);
-                    } else {
-                        unreachable!();
-                    }
-                } else {
-                    let s = SpecifiedValue::<$name>::Unspecified;
+                let prop_val = self.get_property(PropertyId::$name);
+                if let ParsedProperty::$name(s) = prop_val {
                     computed.$field = s.compute(&computed.$field, computed);
+                } else {
+                    unreachable!();
                 }
             };
         }
