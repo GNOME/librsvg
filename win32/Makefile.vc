@@ -44,6 +44,17 @@ tests: all $(rsvg_tests)
 	set G_TEST_SRCDIR=$(MAKEDIR)\..\tests
 	@for %%x in ($(rsvg_tests)) do %%x
 
+rsvg_rust_tests:
+	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
+	@set CARGO_TARGET_DIR=..\win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
+	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
+	$(RUSTUP_CMD)
+	@cd ..\rsvg_internals
+	$(CARGO_CMD:build=test) --verbose
+	@cd ..\win32
+	@set GTK_LIB_DIR=
+	@set CARGO_TARGET_DIR=
+
 # Include the rules for build directory creation and code generation
 !include generate-msvc.mak
 
