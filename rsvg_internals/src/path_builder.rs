@@ -420,4 +420,65 @@ impl<'a> Iterator for PathIter<'a> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn empty_builder() {
+        let builder = PathBuilder::new();
+        let path = builder.into_path();
+        assert!(path.is_empty());
+        assert_eq!(path.iter().count(), 0);
+    }
+
+    #[test]
+    fn arc() {
+        let mut builder = PathBuilder::new();
+        builder.arc(42.0, 43.0, 44.0, 45.0, 46.0, LargeArc(true), Sweep::Positive, 47.0, 48.0);
+        let path = builder.into_path();
+        assert!(path.iter().eq(vec![PathCommand::Arc(
+            EllipticalArc {
+                from: (42.0, 43.0),
+                r: (44.0, 45.0),
+                to: (47.0, 48.0),
+                x_axis_rotation: 46.0,
+                large_arc: LargeArc(true),
+                sweep: Sweep::Positive,
+            }
+        )]));
+    }
+
+    #[test]
+    fn close_path() {
+        let mut builder = PathBuilder::new();
+        builder.close_path();
+        let path = builder.into_path();
+        assert!(path.iter().eq(vec![PathCommand::ClosePath]));
+    }
+
+    #[test]
+    fn all_commands() {
+        let mut builder = PathBuilder::new();
+        builder.move_to(42.0, 43.0);
+        builder.line_to(42.0, 43.0);
+        builder.curve_to(42.0, 43.0, 44.0, 45.0, 46.0, 47.0);
+        builder.arc(42.0, 43.0, 44.0, 45.0, 46.0, LargeArc(true), Sweep::Positive, 47.0, 48.0);
+        builder.close_path();
+        let path = builder.into_path();
+        assert!(path.iter().eq(vec![
+            PathCommand::MoveTo(42.0, 43.0),
+            PathCommand::LineTo(42.0, 43.0),
+            PathCommand::CurveTo(CubicBezierCurve {
+                pt1: (42.0, 43.0),
+                pt2: (44.0, 45.0),
+                to: (46.0, 47.0),
+            }),
+            PathCommand::Arc(EllipticalArc {
+                from: (42.0, 43.0),
+                r: (44.0, 45.0),
+                to: (47.0, 48.0),
+                x_axis_rotation: 46.0,
+                large_arc: LargeArc(true),
+                sweep: Sweep::Positive,
+            }),
+            PathCommand::ClosePath,
+        ]));
+    }
 }
