@@ -56,185 +56,6 @@ where
     }
 }
 
-impl<T> Default for SpecifiedValue<T>
-where
-    T: Property<ComputedValues> + Clone + Default,
-{
-    fn default() -> SpecifiedValue<T> {
-        SpecifiedValue::Unspecified
-    }
-}
-
-/// Embodies "which property is this" plus the property's value
-#[derive(Clone)]
-pub enum ParsedProperty {
-    BaselineShift(SpecifiedValue<BaselineShift>),
-    ClipPath(SpecifiedValue<ClipPath>),
-    ClipRule(SpecifiedValue<ClipRule>),
-    Color(SpecifiedValue<Color>),
-    ColorInterpolationFilters(SpecifiedValue<ColorInterpolationFilters>),
-    Direction(SpecifiedValue<Direction>),
-    Display(SpecifiedValue<Display>),
-    EnableBackground(SpecifiedValue<EnableBackground>),
-    Fill(SpecifiedValue<Fill>),
-    FillOpacity(SpecifiedValue<FillOpacity>),
-    FillRule(SpecifiedValue<FillRule>),
-    Filter(SpecifiedValue<Filter>),
-    FloodColor(SpecifiedValue<FloodColor>),
-    FloodOpacity(SpecifiedValue<FloodOpacity>),
-    FontFamily(SpecifiedValue<FontFamily>),
-    FontSize(SpecifiedValue<FontSize>),
-    FontStretch(SpecifiedValue<FontStretch>),
-    FontStyle(SpecifiedValue<FontStyle>),
-    FontVariant(SpecifiedValue<FontVariant>),
-    FontWeight(SpecifiedValue<FontWeight>),
-    LetterSpacing(SpecifiedValue<LetterSpacing>),
-    LightingColor(SpecifiedValue<LightingColor>),
-    Marker(SpecifiedValue<Marker>), // this is a shorthand property
-    MarkerEnd(SpecifiedValue<MarkerEnd>),
-    MarkerMid(SpecifiedValue<MarkerMid>),
-    MarkerStart(SpecifiedValue<MarkerStart>),
-    Mask(SpecifiedValue<Mask>),
-    Opacity(SpecifiedValue<Opacity>),
-    Overflow(SpecifiedValue<Overflow>),
-    ShapeRendering(SpecifiedValue<ShapeRendering>),
-    StopColor(SpecifiedValue<StopColor>),
-    StopOpacity(SpecifiedValue<StopOpacity>),
-    Stroke(SpecifiedValue<Stroke>),
-    StrokeDasharray(SpecifiedValue<StrokeDasharray>),
-    StrokeDashoffset(SpecifiedValue<StrokeDashoffset>),
-    StrokeLinecap(SpecifiedValue<StrokeLinecap>),
-    StrokeLinejoin(SpecifiedValue<StrokeLinejoin>),
-    StrokeOpacity(SpecifiedValue<StrokeOpacity>),
-    StrokeMiterlimit(SpecifiedValue<StrokeMiterlimit>),
-    StrokeWidth(SpecifiedValue<StrokeWidth>),
-    TextAnchor(SpecifiedValue<TextAnchor>),
-    TextDecoration(SpecifiedValue<TextDecoration>),
-    TextRendering(SpecifiedValue<TextRendering>),
-    UnicodeBidi(SpecifiedValue<UnicodeBidi>),
-    Visibility(SpecifiedValue<Visibility>),
-    WritingMode(SpecifiedValue<WritingMode>),
-    XmlLang(SpecifiedValue<XmlLang>), // not a property, but a non-presentation attribute
-    XmlSpace(SpecifiedValue<XmlSpace>), // not a property, but a non-presentation attribute
-}
-
-/// Used to match `ParsedProperty` to their discriminant
-///
-/// The `PropertyId::UnsetProperty` can be used as a sentinel value, as
-/// it does not match any `ParsedProperty` discriminant; it is really the
-/// number of valid values in this enum.
-#[repr(u8)]
-#[derive(Copy, Clone, PartialEq)]
-enum PropertyId {
-    BaselineShift,
-    ClipPath,
-    ClipRule,
-    Color,
-    ColorInterpolationFilters,
-    Direction,
-    Display,
-    EnableBackground,
-    Fill,
-    FillOpacity,
-    FillRule,
-    Filter,
-    FloodColor,
-    FloodOpacity,
-    FontFamily,
-    FontSize,
-    FontStretch,
-    FontStyle,
-    FontVariant,
-    FontWeight,
-    LetterSpacing,
-    LightingColor,
-    Marker,
-    MarkerEnd,
-    MarkerMid,
-    MarkerStart,
-    Mask,
-    Opacity,
-    Overflow,
-    ShapeRendering,
-    StopColor,
-    StopOpacity,
-    Stroke,
-    StrokeDasharray,
-    StrokeDashoffset,
-    StrokeLinecap,
-    StrokeLinejoin,
-    StrokeOpacity,
-    StrokeMiterlimit,
-    StrokeWidth,
-    TextAnchor,
-    TextDecoration,
-    TextRendering,
-    UnicodeBidi,
-    Visibility,
-    WritingMode,
-    XmlLang,
-    XmlSpace,
-    UnsetProperty,
-}
-
-impl ParsedProperty {
-    #[rustfmt::skip]
-    fn get_property_id(&self) -> PropertyId {
-        use ParsedProperty::*;
-
-        match *self {
-            BaselineShift(_)             => PropertyId::BaselineShift,
-            ClipPath(_)                  => PropertyId::ClipPath,
-            ClipRule(_)                  => PropertyId::ClipRule,
-            Color(_)                     => PropertyId::Color,
-            ColorInterpolationFilters(_) => PropertyId::ColorInterpolationFilters,
-            Direction(_)                 => PropertyId::Direction,
-            Display(_)                   => PropertyId::Display,
-            EnableBackground(_)          => PropertyId::EnableBackground,
-            Fill(_)                      => PropertyId::Fill,
-            FillOpacity(_)               => PropertyId::FillOpacity,
-            FillRule(_)                  => PropertyId::FillRule,
-            Filter(_)                    => PropertyId::Filter,
-            FloodColor(_)                => PropertyId::FloodColor,
-            FloodOpacity(_)              => PropertyId::FloodOpacity,
-            FontFamily(_)                => PropertyId::FontFamily,
-            FontSize(_)                  => PropertyId::FontSize,
-            FontStretch(_)               => PropertyId::FontStretch,
-            FontStyle(_)                 => PropertyId::FontStyle,
-            FontVariant(_)               => PropertyId::FontVariant,
-            FontWeight(_)                => PropertyId::FontWeight,
-            LetterSpacing(_)             => PropertyId::LetterSpacing,
-            LightingColor(_)             => PropertyId::LightingColor,
-            Marker(_)                    => PropertyId::Marker,
-            MarkerEnd(_)                 => PropertyId::MarkerEnd,
-            MarkerMid(_)                 => PropertyId::MarkerMid,
-            MarkerStart(_)               => PropertyId::MarkerStart,
-            Mask(_)                      => PropertyId::Mask,
-            Opacity(_)                   => PropertyId::Opacity,
-            Overflow(_)                  => PropertyId::Overflow,
-            ShapeRendering(_)            => PropertyId::ShapeRendering,
-            StopColor(_)                 => PropertyId::StopColor,
-            StopOpacity(_)               => PropertyId::StopOpacity,
-            Stroke(_)                    => PropertyId::Stroke,
-            StrokeDasharray(_)           => PropertyId::StrokeDasharray,
-            StrokeDashoffset(_)          => PropertyId::StrokeDashoffset,
-            StrokeLinecap(_)             => PropertyId::StrokeLinecap,
-            StrokeLinejoin(_)            => PropertyId::StrokeLinejoin,
-            StrokeOpacity(_)             => PropertyId::StrokeOpacity,
-            StrokeMiterlimit(_)          => PropertyId::StrokeMiterlimit,
-            StrokeWidth(_)               => PropertyId::StrokeWidth,
-            TextAnchor(_)                => PropertyId::TextAnchor,
-            TextDecoration(_)            => PropertyId::TextDecoration,
-            TextRendering(_)             => PropertyId::TextRendering,
-            UnicodeBidi(_)               => PropertyId::UnicodeBidi,
-            Visibility(_)                => PropertyId::Visibility,
-            WritingMode(_)               => PropertyId::WritingMode,
-            XmlLang(_)                   => PropertyId::XmlLang,
-            XmlSpace(_)                  => PropertyId::XmlSpace,
-        }
-    }
-}
-
 impl PropertyId {
     fn as_u8(&self) -> u8 {
         *self as u8
@@ -262,226 +83,264 @@ impl Default for SpecifiedValues {
     }
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct ComputedValues {
-    pub baseline_shift: BaselineShift,
-    pub clip_path: ClipPath,
-    pub clip_rule: ClipRule,
-    pub color: Color,
-    pub color_interpolation_filters: ColorInterpolationFilters,
-    pub direction: Direction,
-    pub display: Display,
-    pub enable_background: EnableBackground,
-    pub fill: Fill,
-    pub fill_opacity: FillOpacity,
-    pub fill_rule: FillRule,
-    pub filter: Filter,
-    pub flood_color: FloodColor,
-    pub flood_opacity: FloodOpacity,
-    pub font_family: FontFamily,
-    pub font_size: FontSize,
-    pub font_stretch: FontStretch,
-    pub font_style: FontStyle,
-    pub font_variant: FontVariant,
-    pub font_weight: FontWeight,
-    pub letter_spacing: LetterSpacing,
-    pub lighting_color: LightingColor,
-    pub marker_end: MarkerEnd,
-    pub marker_mid: MarkerMid,
-    pub marker_start: MarkerStart,
-    pub mask: Mask,
-    pub opacity: Opacity,
-    pub overflow: Overflow,
-    pub shape_rendering: ShapeRendering,
-    pub stop_color: StopColor,
-    pub stop_opacity: StopOpacity,
-    pub stroke: Stroke,
-    pub stroke_dasharray: StrokeDasharray,
-    pub stroke_dashoffset: StrokeDashoffset,
-    pub stroke_line_cap: StrokeLinecap,
-    pub stroke_line_join: StrokeLinejoin,
-    pub stroke_opacity: StrokeOpacity,
-    pub stroke_miterlimit: StrokeMiterlimit,
-    pub stroke_width: StrokeWidth,
-    pub text_anchor: TextAnchor,
-    pub text_decoration: TextDecoration,
-    pub text_rendering: TextRendering,
-    pub unicode_bidi: UnicodeBidi,
-    pub visibility: Visibility,
-    pub writing_mode: WritingMode,
-    pub xml_lang: XmlLang,   // not a property, but a non-presentation attribute
-    pub xml_space: XmlSpace, // not a property, but a non-presentation attribute
-}
-
-#[rustfmt::skip]
-pub fn parse_property<'i>(prop_name: &QualName, input: &mut Parser<'i, '_>, accept_shorthands: bool) -> Result<ParsedProperty, ParseError<'i>> {
-    // please keep these sorted
-    match prop_name.expanded() {
-        expanded_name!("", "baseline-shift") =>
-            Ok(ParsedProperty::BaselineShift(parse_input(input)?)),
-
-        expanded_name!("", "clip-path") =>
-            Ok(ParsedProperty::ClipPath(parse_input(input)?)),
-
-        expanded_name!("", "clip-rule") =>
-            Ok(ParsedProperty::ClipRule(parse_input(input)?)),
-
-        expanded_name!("", "color") =>
-            Ok(ParsedProperty::Color(parse_input(input)?)),
-
-        expanded_name!("", "color-interpolation-filters") =>
-            Ok(ParsedProperty::ColorInterpolationFilters(parse_input(input)?)),
-
-        expanded_name!("", "direction") =>
-            Ok(ParsedProperty::Direction(parse_input(input)?)),
-
-        expanded_name!("", "display") =>
-            Ok(ParsedProperty::Display(parse_input(input)?)),
-
-        expanded_name!("", "enable-background") =>
-            Ok(ParsedProperty::EnableBackground(parse_input(input)?)),
-
-        expanded_name!("", "fill") =>
-            Ok(ParsedProperty::Fill(parse_input(input)?)),
-
-        expanded_name!("", "fill-opacity") =>
-            Ok(ParsedProperty::FillOpacity(parse_input(input)?)),
-
-        expanded_name!("", "fill-rule") =>
-            Ok(ParsedProperty::FillRule(parse_input(input)?)),
-
-        expanded_name!("", "filter") =>
-            Ok(ParsedProperty::Filter(parse_input(input)?)),
-
-        expanded_name!("", "flood-color") =>
-            Ok(ParsedProperty::FloodColor(parse_input(input)?)),
-
-        expanded_name!("", "flood-opacity") =>
-            Ok(ParsedProperty::FloodOpacity(parse_input(input)?)),
-
-        expanded_name!("", "font-family") =>
-            Ok(ParsedProperty::FontFamily(parse_input(input)?)),
-
-        expanded_name!("", "font-size") =>
-            Ok(ParsedProperty::FontSize(parse_input(input)?)),
-
-        expanded_name!("", "font-stretch") =>
-            Ok(ParsedProperty::FontStretch(parse_input(input)?)),
-
-        expanded_name!("", "font-style") =>
-            Ok(ParsedProperty::FontStyle(parse_input(input)?)),
-
-        expanded_name!("", "font-variant") =>
-            Ok(ParsedProperty::FontVariant(parse_input(input)?)),
-
-        expanded_name!("", "font-weight") =>
-            Ok(ParsedProperty::FontWeight(parse_input(input)?)),
-
-        expanded_name!("", "letter-spacing") =>
-            Ok(ParsedProperty::LetterSpacing(parse_input(input)?)),
-
-        expanded_name!("", "lighting-color") =>
-            Ok(ParsedProperty::LightingColor(parse_input(input)?)),
-
-        expanded_name!("", "marker") => {
-            if accept_shorthands {
-                Ok(ParsedProperty::Marker(parse_input(input)?))
-            } else {
-                let loc = input.current_source_location();
-                Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
-            }
-        }
-
-        expanded_name!("", "marker-end") =>
-            Ok(ParsedProperty::MarkerEnd(parse_input(input)?)),
-
-        expanded_name!("", "marker-mid") =>
-            Ok(ParsedProperty::MarkerMid(parse_input(input)?)),
-
-        expanded_name!("", "marker-start") =>
-            Ok(ParsedProperty::MarkerStart(parse_input(input)?)),
-
-        expanded_name!("", "mask") =>
-            Ok(ParsedProperty::Mask(parse_input(input)?)),
-
-        expanded_name!("", "opacity") =>
-            Ok(ParsedProperty::Opacity(parse_input(input)?)),
-
-        expanded_name!("", "overflow") =>
-            Ok(ParsedProperty::Overflow(parse_input(input)?)),
-
-        expanded_name!("", "shape-rendering") =>
-            Ok(ParsedProperty::ShapeRendering(parse_input(input)?)),
-
-        expanded_name!("", "stop-color") =>
-            Ok(ParsedProperty::StopColor(parse_input(input)?)),
-
-        expanded_name!("", "stop-opacity") =>
-            Ok(ParsedProperty::StopOpacity(parse_input(input)?)),
-
-        expanded_name!("", "stroke") =>
-            Ok(ParsedProperty::Stroke(parse_input(input)?)),
-
-        expanded_name!("", "stroke-dasharray") =>
-            Ok(ParsedProperty::StrokeDasharray(parse_input(input)?)),
-
-        expanded_name!("", "stroke-dashoffset") =>
-            Ok(ParsedProperty::StrokeDashoffset(parse_input(input)?)),
-
-        expanded_name!("", "stroke-linecap") =>
-            Ok(ParsedProperty::StrokeLinecap(parse_input(input)?)),
-
-        expanded_name!("", "stroke-linejoin") =>
-            Ok(ParsedProperty::StrokeLinejoin(parse_input(input)?)),
-
-        expanded_name!("", "stroke-miterlimit") =>
-            Ok(ParsedProperty::StrokeMiterlimit(parse_input(input)?)),
-
-        expanded_name!("", "stroke-opacity") =>
-            Ok(ParsedProperty::StrokeOpacity(parse_input(input)?)),
-
-        expanded_name!("", "stroke-width") =>
-            Ok(ParsedProperty::StrokeWidth(parse_input(input)?)),
-
-        expanded_name!("", "text-anchor") =>
-            Ok(ParsedProperty::TextAnchor(parse_input(input)?)),
-
-        expanded_name!("", "text-decoration") =>
-            Ok(ParsedProperty::TextDecoration(parse_input(input)?)),
-
-        expanded_name!("", "text-rendering") =>
-            Ok(ParsedProperty::TextRendering(parse_input(input)?)),
-
-        expanded_name!("", "unicode-bidi") =>
-            Ok(ParsedProperty::UnicodeBidi(parse_input(input)?)),
-
-        expanded_name!("", "visibility") =>
-            Ok(ParsedProperty::Visibility(parse_input(input)?)),
-
-        expanded_name!("", "writing-mode") =>
-            Ok(ParsedProperty::WritingMode(parse_input(input)?)),
-
-        _ => {
-            let loc = input.current_source_location();
-            Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
-        }
-    }
-}
-
 impl ComputedValues {
     pub fn is_overflow(&self) -> bool {
-        match self.overflow {
+        match self.overflow() {
             Overflow::Auto | Overflow::Visible => true,
             _ => false,
         }
     }
 
     pub fn is_visible(&self) -> bool {
-        match (self.display, self.visibility) {
+        match (self.display(), self.visibility()) {
             (Display::None, _) => false,
             (_, Visibility::Visible) => true,
             _ => false,
         }
+    }
+}
+
+/// Macro to generate all the machinery for properties.
+///
+/// This generates the following:
+///
+/// * `PropertyId`, an fieldless enum with simple values to identify all the properties.
+/// * `ParsedProperty`, a variant enum for all the specified property values.
+/// * `ComputedValue`, a variant enum for all the computed values.
+/// * `parse_property`, the main function to parse a property declaration from user input.
+///
+/// There is a lot of repetitive code, for example, because sometimes
+/// we need to operate on `PropertyId::Foo`, `ParsedProperty::Foo` and
+/// `ComputedValue::Foo` together.  This is why all this is done with a macro.
+///
+/// See the only invocation of this macro to see how it is used; it is just
+/// a declarative list of property names.
+macro_rules! make_properties {
+    {
+        shorthands: {
+            $($short_str:tt => $short_field:ident: $short_name:ident,)*
+        }
+
+        longhands: {
+            $($long_str:tt => $long_field:ident: $long_name:ident,)+
+        }
+
+        non_properties: {
+            $($nonprop_field:ident: $nonprop_name:ident,)+
+        }
+    }=> {
+        /// Used to match `ParsedProperty` to their discriminant
+        ///
+        /// The `PropertyId::UnsetProperty` can be used as a sentinel value, as
+        /// it does not match any `ParsedProperty` discriminant; it is really the
+        /// number of valid values in this enum.
+        #[repr(u8)]
+        #[derive(Copy, Clone, PartialEq)]
+        enum PropertyId {
+            $($short_name,)+
+            $($long_name,)+
+            $($nonprop_name,)+
+
+            UnsetProperty,
+        }
+
+        impl PropertyId {
+            fn is_shorthand(self) -> bool {
+                match self {
+                    $(PropertyId::$short_name => true,)+
+                    _ => false,
+                }
+            }
+        }
+
+        /// Embodies "which property is this" plus the property's value
+        #[derive(Clone)]
+        pub enum ParsedProperty {
+            // we put all the properties here; these are for SpecifiedValues
+            $($short_name(SpecifiedValue<$short_name>),)+
+            $($long_name(SpecifiedValue<$long_name>),)+
+            $($nonprop_name(SpecifiedValue<$nonprop_name>),)+
+        }
+
+        enum ComputedValue {
+            $(
+                $long_name($long_name),
+            )+
+
+            $(
+                $nonprop_name($nonprop_name),
+            )+
+        }
+
+        #[derive(Debug, Default, Clone)]
+        pub struct ComputedValues {
+            $(
+                $long_field: $long_name,
+            )+
+
+            $(
+                $nonprop_field: $nonprop_name,
+            )+
+        }
+
+        impl ParsedProperty {
+            fn get_property_id(&self) -> PropertyId {
+                match *self {
+                    $(ParsedProperty::$long_name(_) => PropertyId::$long_name,)+
+                    $(ParsedProperty::$short_name(_) => PropertyId::$short_name,)+
+                    $(ParsedProperty::$nonprop_name(_) => PropertyId::$nonprop_name,)+
+                }
+            }
+
+            fn unspecified(id: PropertyId) -> Self {
+                use SpecifiedValue::Unspecified;
+
+                match id {
+                    $(PropertyId::$long_name => ParsedProperty::$long_name(Unspecified),)+
+                    $(PropertyId::$short_name => ParsedProperty::$short_name(Unspecified),)+
+                    $(PropertyId::$nonprop_name => ParsedProperty::$nonprop_name(Unspecified),)+
+
+                    PropertyId::UnsetProperty => unreachable!(),
+                }
+            }
+        }
+
+        impl ComputedValues {
+            $(
+                pub fn $long_field(&self) -> $long_name {
+                    if let ComputedValue::$long_name(v) = self.get_value(PropertyId::$long_name) {
+                        v
+                    } else {
+                        unreachable!();
+                    }
+                }
+            )+
+
+            $(
+                pub fn $nonprop_field(&self) -> $nonprop_name {
+                    if let ComputedValue::$nonprop_name(v) = self.get_value(PropertyId::$nonprop_name) {
+                        v
+                    } else {
+                        unreachable!();
+                    }
+                }
+            )+
+
+            fn set_value(&mut self, computed: ComputedValue) {
+                match computed {
+                    $(ComputedValue::$long_name(v) => self.$long_field = v,)+
+                    $(ComputedValue::$nonprop_name(v) => self.$nonprop_field = v,)+
+                }
+            }
+
+            fn get_value(&self, id: PropertyId) -> ComputedValue {
+                assert!(!id.is_shorthand());
+
+                match id {
+                    $(
+                        PropertyId::$long_name =>
+                            ComputedValue::$long_name(self.$long_field.clone()),
+                    )+
+                    $(
+                        PropertyId::$nonprop_name =>
+                            ComputedValue::$nonprop_name(self.$nonprop_field.clone()),
+                    )+
+                    _ => unreachable!(),
+                }
+            }
+        }
+
+        pub fn parse_property<'i>(
+            prop_name: &QualName,
+            input: &mut Parser<'i, '_>,
+            accept_shorthands: bool
+        ) -> Result<ParsedProperty, ParseError<'i>> {
+            match prop_name.expanded() {
+                $(
+                    expanded_name!("", $long_str) =>
+                        Ok(ParsedProperty::$long_name(parse_input(input)?)),
+                )+
+
+                $(
+                    expanded_name!("", $short_str) => {
+                        if accept_shorthands {
+                            Ok(ParsedProperty::$short_name(parse_input(input)?))
+                        } else {
+                            let loc = input.current_source_location();
+                            Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
+                        }
+                    }
+                )+
+
+                _ => {
+                    let loc = input.current_source_location();
+                    Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
+                }
+            }
+        }
+    };
+}
+
+#[rustfmt::skip]
+make_properties! {
+    shorthands: {
+        "marker" => marker: Marker,
+    }
+
+    longhands: {
+        "baseline-shift"              => baseline_shift              : BaselineShift,
+        "clip-path"                   => clip_path                   : ClipPath,
+        "clip-rule"                   => clip_rule                   : ClipRule,
+        "color"                       => color                       : Color,
+        "color-interpolation-filters" => color_interpolation_filters : ColorInterpolationFilters,
+        "direction"                   => direction                   : Direction,
+        "display"                     => display                     : Display,
+        "enable-background"           => enable_background           : EnableBackground,
+        "fill"                        => fill                        : Fill,
+        "fill-opacity"                => fill_opacity                : FillOpacity,
+        "fill-rule"                   => fill_rule                   : FillRule,
+        "filter"                      => filter                      : Filter,
+        "flood-color"                 => flood_color                 : FloodColor,
+        "flood-opacity"               => flood_opacity               : FloodOpacity,
+        "font-family"                 => font_family                 : FontFamily,
+        "font-size"                   => font_size                   : FontSize,
+        "font-stretch"                => font_stretch                : FontStretch,
+        "font-style"                  => font_style                  : FontStyle,
+        "font-variant"                => font_variant                : FontVariant,
+        "font-weight"                 => font_weight                 : FontWeight,
+        "letter-spacing"              => letter_spacing              : LetterSpacing,
+        "lighting-color"              => lighting_color              : LightingColor,
+        "marker-end"                  => marker_end                  : MarkerEnd,
+        "marker-mid"                  => marker_mid                  : MarkerMid,
+        "marker-start"                => marker_start                : MarkerStart,
+        "mask"                        => mask                        : Mask,
+        "opacity"                     => opacity                     : Opacity,
+        "overflow"                    => overflow                    : Overflow,
+        "shape-rendering"             => shape_rendering             : ShapeRendering,
+        "stop-color"                  => stop_color                  : StopColor,
+        "stop-opacity"                => stop_opacity                : StopOpacity,
+        "stroke"                      => stroke                      : Stroke,
+        "stroke-dasharray"            => stroke_dasharray            : StrokeDasharray,
+        "stroke-dashoffset"           => stroke_dashoffset           : StrokeDashoffset,
+        "stroke-linecap"              => stroke_line_cap             : StrokeLinecap,
+        "stroke-linejoin"             => stroke_line_join            : StrokeLinejoin,
+        "stroke-miterlimit"           => stroke_miterlimit           : StrokeMiterlimit,
+        "stroke-opacity"              => stroke_opacity              : StrokeOpacity,
+        "stroke-width"                => stroke_width                : StrokeWidth,
+        "text-anchor"                 => text_anchor                 : TextAnchor,
+        "text-decoration"             => text_decoration             : TextDecoration,
+        "text-rendering"              => text_rendering              : TextRendering,
+        "unicode-bidi"                => unicode_bidi                : UnicodeBidi,
+        "visibility"                  => visibility                  : Visibility,
+        "writing-mode"                => writing_mode                : WritingMode,
+    }
+
+    // These are not properties, but presentation attributes.  However,
+    // both xml:lang and xml:space *do* inherit.  We are abusing the
+    // property inheritance code for these XML-specific attributes.
+    non_properties: {
+        xml_lang: XmlLang,
+        xml_space: XmlSpace,
     }
 }
 
@@ -498,10 +357,7 @@ impl SpecifiedValues {
 
     fn set_property(&mut self, prop: &ParsedProperty, replace: bool) {
         let id = prop.get_property_id();
-
-        if id == PropertyId::Marker {
-            unreachable!("should have processed shorthands earlier");
-        }
+        assert!(!id.is_shorthand());
 
         if let Some(index) = self.property_index(id) {
             if replace {
@@ -514,16 +370,34 @@ impl SpecifiedValues {
         }
     }
 
-    #[rustfmt::skip]
+    fn get_property(&self, id: PropertyId) -> ParsedProperty {
+        assert!(!id.is_shorthand());
+
+        if let Some(index) = self.property_index(id) {
+            self.props[index].clone()
+        } else {
+            ParsedProperty::unspecified(id)
+        }
+    }
+
     fn set_property_expanding_shorthands(&mut self, prop: &ParsedProperty, replace: bool) {
-        use crate::properties::ParsedProperty::*;
         use crate::properties as p;
+        use crate::properties::ParsedProperty::*;
 
         if let Marker(SpecifiedValue::Specified(p::Marker(ref v))) = *prop {
             // Since "marker" is a shorthand property, we'll just expand it here
-            self.set_property(&MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))), replace);
-            self.set_property(&MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))), replace);
-            self.set_property(&MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))), replace);
+            self.set_property(
+                &MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))),
+                replace,
+            );
+            self.set_property(
+                &MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))),
+                replace,
+            );
+            self.set_property(
+                &MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))),
+                replace,
+            );
         } else {
             self.set_property(prop, replace);
         }
@@ -541,15 +415,13 @@ impl SpecifiedValues {
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
         macro_rules! compute {
             ($name:ident, $field:ident) => {
-                if let Some(index) = self.property_index(PropertyId::$name) {
-                    if let &ParsedProperty::$name(ref s) = &self.props[index] {
-                        computed.$field = s.compute(&computed.$field, computed);
-                    } else {
-                        unreachable!();
-                    }
+                let prop_val = self.get_property(PropertyId::$name);
+                if let ParsedProperty::$name(s) = prop_val {
+                    computed.set_value(ComputedValue::$name(
+                        s.compute(&computed.$field(), computed),
+                    ));
                 } else {
-                    let s = SpecifiedValue::<$name>::Unspecified;
-                    computed.$field = s.compute(&computed.$field, computed);
+                    unreachable!();
                 }
             };
         }
@@ -806,7 +678,7 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.stroke_width, StrokeWidth::default());
+        assert_eq!(computed.stroke_width(), StrokeWidth::default());
     }
 
     #[test]
@@ -821,7 +693,7 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.stroke_width, StrokeWidth(length));
+        assert_eq!(computed.stroke_width(), StrokeWidth(length));
     }
 
     #[test]
@@ -842,7 +714,7 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.stroke_width, StrokeWidth(length2));
+        assert_eq!(computed.stroke_width(), StrokeWidth(length2));
     }
 
     #[test]
@@ -856,9 +728,9 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.marker_start, MarkerStart(iri.clone()));
-        assert_eq!(computed.marker_mid, MarkerMid(iri.clone()));
-        assert_eq!(computed.marker_end, MarkerEnd(iri.clone()));
+        assert_eq!(computed.marker_start(), MarkerStart(iri.clone()));
+        assert_eq!(computed.marker_mid(), MarkerMid(iri.clone()));
+        assert_eq!(computed.marker_end(), MarkerEnd(iri.clone()));
     }
 
     #[test]
@@ -876,9 +748,9 @@ mod tests {
         let mut computed = ComputedValues::default();
         specified.to_computed_values(&mut computed);
 
-        assert_eq!(computed.marker_start, MarkerStart(iri2.clone()));
-        assert_eq!(computed.marker_mid, MarkerMid(iri2.clone()));
-        assert_eq!(computed.marker_end, MarkerEnd(iri2.clone()));
+        assert_eq!(computed.marker_start(), MarkerStart(iri2.clone()));
+        assert_eq!(computed.marker_mid(), MarkerMid(iri2.clone()));
+        assert_eq!(computed.marker_end(), MarkerEnd(iri2.clone()));
     }
 
     #[test]
@@ -900,7 +772,7 @@ mod tests {
         let mut computed_0_5 = ComputedValues::default();
         with_opacity.to_computed_values(&mut computed_0_5);
 
-        assert_eq!(computed_0_5.opacity, half_opacity.clone());
+        assert_eq!(computed_0_5.opacity(), half_opacity.clone());
 
         // second level, no opacity specified, and it doesn't inherit
 
@@ -909,7 +781,7 @@ mod tests {
         let mut computed = computed_0_5.clone();
         without_opacity.to_computed_values(&mut computed);
 
-        assert_eq!(computed.opacity, Opacity::default());
+        assert_eq!(computed.opacity(), Opacity::default());
 
         // another at second level, opacity set to explicitly inherit
 
@@ -919,6 +791,6 @@ mod tests {
         let mut computed = computed_0_5.clone();
         with_inherit_opacity.to_computed_values(&mut computed);
 
-        assert_eq!(computed.opacity, half_opacity.clone());
+        assert_eq!(computed.opacity(), half_opacity.clone());
     }
 }

@@ -483,12 +483,12 @@ impl UnresolvedGradient {
             } else {
                 let cascaded = CascadedValues::new_from_node(&child_node);
                 let values = cascaded.get();
-                let rgba = match values.stop_color {
-                    StopColor(cssparser::Color::CurrentColor) => values.color.0,
+                let rgba = match values.stop_color() {
+                    StopColor(cssparser::Color::CurrentColor) => values.color().0,
                     StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
                 };
 
-                self.add_color_stop(stop.offset, rgba, values.stop_opacity.0);
+                self.add_color_stop(stop.offset, rgba, values.stop_opacity().0);
             }
         }
     }

@@ -134,8 +134,8 @@ impl PositionedChunk {
         // Adjust the specified coordinates with the text_anchor
 
         let adjusted_advance = text_anchor_advance(
-            measured.values.text_anchor,
-            measured.values.writing_mode,
+            measured.values.text_anchor(),
+            measured.values.writing_mode(),
             measured.advance,
         );
 
@@ -209,7 +209,7 @@ impl MeasuredSpan {
         let w = f64::from(w) / f64::from(pango::SCALE);
         let h = f64::from(h) / f64::from(pango::SCALE);
 
-        let advance = if values.writing_mode.is_vertical() {
+        let advance = if values.writing_mode().is_vertical() {
             (0.0, w)
         } else {
             (w, 0.0)
@@ -239,7 +239,7 @@ impl PositionedSpan {
         let params = draw_ctx.get_view_params();
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let baseline_shift = values.baseline_shift.0.normalize(&values, &params);
+        let baseline_shift = values.baseline_shift().0.normalize(&values, &params);
         let offset = baseline + baseline_shift;
 
         let dx = measured
@@ -251,7 +251,7 @@ impl PositionedSpan {
             .map(|l| l.normalize(&values, &params))
             .unwrap_or(0.0);
 
-        let (render_x, render_y) = if values.writing_mode.is_vertical() {
+        let (render_x, render_y) = if values.writing_mode().is_vertical() {
             (x + offset + dx, y + dy)
         } else {
             (x + dx, y - offset + dy)
@@ -289,7 +289,7 @@ impl PositionedSpan {
             };
 
             let cr = dc.get_cairo_context();
-            cr.set_antialias(cairo::Antialias::from(self.values.text_rendering));
+            cr.set_antialias(cairo::Antialias::from(self.values.text_rendering()));
             dc.setup_cr_for_stroke(&cr, &self.values);
             cr.move_to(self.rendered_position.0, self.rendered_position.1);
 
@@ -298,13 +298,13 @@ impl PositionedSpan {
                 cr.rotate(-rotation);
             }
 
-            let current_color = self.values.color.0;
+            let current_color = self.values.color().0;
 
             let res = if !clipping {
                 dc.set_source_paint_server(
                     acquired_nodes,
-                    &self.values.fill.0,
-                    self.values.fill_opacity.0,
+                    &self.values.fill().0,
+                    self.values.fill_opacity().0,
                     &bbox,
                     current_color,
                 )
@@ -325,8 +325,8 @@ impl PositionedSpan {
                 let res = if !clipping {
                     dc.set_source_paint_server(
                         acquired_nodes,
-                        &self.values.stroke.0,
-                        self.values.stroke_opacity.0,
+                        &self.values.stroke().0,
+                        self.values.stroke_opacity().0,
                         &bbox,
                         current_color,
                     )
@@ -518,7 +518,7 @@ impl Chars {
         let mut normalized = self.space_normalized.borrow_mut();
 
         if (*normalized).is_none() {
-            let mode = match values.xml_space {
+            let mode = match values.xml_space() {
                 XmlSpace::Default => XmlSpaceNormalize::Default(NormalizeDefault {
                     has_element_before: node.previous_sibling().is_some(),
                     has_element_after: node.next_sibling().is_some(),
@@ -956,15 +956,15 @@ fn create_pango_layout(
     // See the construction of the XmlLang property
     // We use "" there as the default value; this means that the language is not set.
     // If the language *is* set, we can use it here.
-    if !values.xml_lang.0.is_empty() {
-        pango_context.set_language(&pango::Language::from(&values.xml_lang));
+    if !values.xml_lang().0.is_empty() {
+        pango_context.set_language(&pango::Language::from(&values.xml_lang()));
     }
 
-    pango_context.set_base_gravity(pango::Gravity::from(values.writing_mode));
+    pango_context.set_base_gravity(pango::Gravity::from(values.writing_mode()));
 
-    match (values.unicode_bidi, values.direction) {
+    match (values.unicode_bidi(), values.direction()) {
         (UnicodeBidi::Override, _) | (UnicodeBidi::Embed, _) => {
-            pango_context.set_base_dir(pango::Direction::from(values.direction));
+            pango_context.set_base_dir(pango::Direction::from(values.direction()));
         }
 
         (_, direction) if direction != Direction::Ltr => {
@@ -972,21 +972,21 @@ fn create_pango_layout(
         }
 
         (_, _) => {
-            pango_context.set_base_dir(pango::Direction::from(values.writing_mode));
+            pango_context.set_base_dir(pango::Direction::from(values.writing_mode()));
         }
     }
 
     let mut font_desc = pango_context.get_font_description().unwrap();
-    font_desc.set_family(&(values.font_family.0).0);
-    font_desc.set_style(pango::Style::from(values.font_style));
-    font_desc.set_variant(pango::Variant::from(values.font_variant));
-    font_desc.set_weight(pango::Weight::from(values.font_weight.0));
-    font_desc.set_stretch(pango::Stretch::from(values.font_stretch));
+    font_desc.set_family(&(values.font_family().0).0);
+    font_desc.set_style(pango::Style::from(values.font_style()));
+    font_desc.set_variant(pango::Variant::from(values.font_variant()));
+    font_desc.set_weight(pango::Weight::from(values.font_weight().0));
+    font_desc.set_stretch(pango::Stretch::from(values.font_stretch()));
 
     let params = draw_ctx.get_view_params();
 
     font_desc.set_size(to_pango_units(
-        values.font_size.0.normalize(values, &params),
+        values.font_size().0.normalize(values, &params),
     ));
 
     let layout = pango::Layout::new(&pango_context);
@@ -997,21 +997,21 @@ fn create_pango_layout(
 
     attr_list.insert(
         pango::Attribute::new_letter_spacing(to_pango_units(
-            values.letter_spacing.0.normalize(values, &params),
+            values.letter_spacing().0.normalize(values, &params),
         ))
         .unwrap(),
     );
 
-    if values.text_decoration.underline {
+    if values.text_decoration().underline {
         attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
     }
 
-    if values.text_decoration.strike {
+    if values.text_decoration().strike {
         attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
     }
 
     layout.set_attributes(Some(&attr_list));
-    layout.set_alignment(pango::Alignment::from(values.direction));
+    layout.set_alignment(pango::Alignment::from(values.direction()));
     layout.set_text(text);
 
     layout
