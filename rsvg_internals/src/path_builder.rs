@@ -420,21 +420,4 @@ impl<'a> Iterator for PathIter<'a> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn survives_degenerate_arcs() {
-        let mut builder = PathBuilder::new();
-        builder.move_to(0.0, 0.0);
-        // Deliberately close to 0 to try to trigger division by 0.
-        builder.arc(
-            0.0,
-            0.0,
-            f64::EPSILON,
-            f64::EPSILON,
-            0.0,
-            LargeArc(true),
-            Sweep::Positive,
-            1.0,
-            1.0,
-        );
-    }
 }
