@@ -4,6 +4,7 @@ use smallvec::SmallVec;
 
 use std::f64;
 use std::f64::consts::*;
+use std::slice;
 
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::util::clamp;
@@ -308,6 +309,11 @@ pub struct Path {
     path_commands: Box<[PathCommand]>,
 }
 
+/// Iterator over a path's commands
+pub struct PathIter<'a> {
+    commands: slice::Iter<'a, PathCommand>,
+}
+
 impl PathBuilder {
     pub fn new() -> PathBuilder {
         PathBuilder {
@@ -367,18 +373,20 @@ impl PathBuilder {
 }
 
 impl Path {
-    pub fn get_path_commands(&self) -> &[PathCommand] {
-        &self.path_commands
+    pub fn iter(&self) -> PathIter {
+        PathIter {
+            commands: self.path_commands.iter(),
+        }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.path_commands.is_empty()
+        self.iter().nth(0).is_none()
     }
 
     pub fn to_cairo(&self, cr: &cairo::Context) -> Result<(), cairo::Status> {
         assert!(!self.is_empty());
 
-        for s in self.path_commands.iter() {
+        for s in self.iter() {
             s.to_cairo(cr);
         }
 
@@ -397,6 +405,14 @@ impl Path {
         } else {
             Err(status)
         }
+    }
+}
+
+impl<'a> Iterator for PathIter<'a> {
+    type Item = PathCommand;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.commands.next().map(Clone::clone)
     }
 }
 

@@ -997,13 +997,7 @@ impl DrawingCtx {
                 })?;
 
             if markers == Markers::Yes {
-                marker::render_markers_for_path(
-                    path.get_path_commands(),
-                    self,
-                    acquired_nodes,
-                    values,
-                    clipping,
-                )?;
+                marker::render_markers_for_path(path, self, acquired_nodes, values, clipping)?;
             }
 
             Ok(bbox)
