@@ -33,6 +33,24 @@ impl CubicBezierCurve {
         let Self { pt1, pt2, to } = self;
         cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
     }
+
+    fn from_coords(coords: &[f64]) -> CubicBezierCurve {
+        let pt1 = (coords[0], coords[1]);
+        let pt2 = (coords[2], coords[3]);
+        let to = (coords[4], coords[5]);
+
+        CubicBezierCurve { pt1, pt2, to }
+    }
+
+    fn to_packed_and_coords(&self, coords: &mut [f64]) -> PackedCommand {
+        coords[0] = self.pt1.0;
+        coords[1] = self.pt1.1;
+        coords[2] = self.pt2.0;
+        coords[3] = self.pt2.1;
+        coords[4] = self.to.0;
+        coords[5] = self.to.1;
+        PackedCommand::CurveTo
+    }
 }
 
 /// When attempting to compute the center parameterization of the arc,
@@ -226,6 +244,39 @@ impl EllipticalArc {
             ArcParameterization::Omit => {}
         }
     }
+
+    fn from_coords(large_arc: LargeArc, sweep: Sweep, coords: &[f64]) -> EllipticalArc {
+        let r = (coords[0], coords[1]);
+        let x_axis_rotation = coords[2];
+        let from = (coords[3], coords[4]);
+        let to = (coords[5], coords[6]);
+
+        EllipticalArc {
+            r,
+            x_axis_rotation,
+            large_arc,
+            sweep,
+            from,
+            to,
+        }
+    }
+
+    fn to_packed_and_coords(&self, coords: &mut [f64]) -> PackedCommand {
+        coords[0] = self.r.0;
+        coords[1] = self.r.1;
+        coords[2] = self.x_axis_rotation;
+        coords[3] = self.from.0;
+        coords[4] = self.from.1;
+        coords[5] = self.to.0;
+        coords[6] = self.to.1;
+
+        match (self.large_arc, self.sweep) {
+            (LargeArc(false), Sweep::Negative) => PackedCommand::ArcSmallNegative,
+            (LargeArc(false), Sweep::Positive) => PackedCommand::ArcSmallPositive,
+            (LargeArc(true), Sweep::Negative) => PackedCommand::ArcLargeNegative,
+            (LargeArc(true), Sweep::Positive) => PackedCommand::ArcLargePositive,
+        }
+    }
 }
 
 /// Turns an arc segment into a cubic bezier curve.
@@ -291,9 +342,86 @@ impl PathCommand {
             PathCommand::ClosePath => cr.close_path(),
         }
     }
+
+    // Returns the number of coordinate values that this command will generate in a `Path`.
+    fn num_coordinates(&self) -> usize {
+        match *self {
+            PathCommand::MoveTo(..) => 2,
+            PathCommand::LineTo(..) => 2,
+            PathCommand::CurveTo(_) => 6,
+            PathCommand::Arc(_) => 7,
+            PathCommand::ClosePath => 0,
+        }
+    }
+
+    fn to_packed(&self, coords: &mut [f64]) -> PackedCommand {
+        match *self {
+            PathCommand::MoveTo(x, y) => {
+                coords[0] = x;
+                coords[1] = y;
+                PackedCommand::MoveTo
+            }
+
+            PathCommand::LineTo(x, y) => {
+                coords[0] = x;
+                coords[1] = y;
+                PackedCommand::LineTo
+            }
+
+            PathCommand::CurveTo(ref c) => c.to_packed_and_coords(coords),
+
+            PathCommand::Arc(ref a) => a.to_packed_and_coords(coords),
+
+            PathCommand::ClosePath => PackedCommand::ClosePath,
+        }
+    }
+
+    fn from_packed(packed: &PackedCommand, coords: &[f64]) -> PathCommand {
+        match *packed {
+            PackedCommand::MoveTo => {
+                let x = coords[0];
+                let y = coords[1];
+                PathCommand::MoveTo(x, y)
+            }
+
+            PackedCommand::LineTo => {
+                let x = coords[0];
+                let y = coords[1];
+                PathCommand::LineTo(x, y)
+            }
+
+            PackedCommand::CurveTo => PathCommand::CurveTo(CubicBezierCurve::from_coords(coords)),
+
+            PackedCommand::ClosePath => PathCommand::ClosePath,
+
+            PackedCommand::ArcSmallNegative => PathCommand::Arc(EllipticalArc::from_coords(
+                LargeArc(false),
+                Sweep::Negative,
+                coords,
+            )),
+
+            PackedCommand::ArcSmallPositive => PathCommand::Arc(EllipticalArc::from_coords(
+                LargeArc(false),
+                Sweep::Positive,
+                coords,
+            )),
+
+            PackedCommand::ArcLargeNegative => PathCommand::Arc(EllipticalArc::from_coords(
+                LargeArc(true),
+                Sweep::Negative,
+                coords,
+            )),
+
+            PackedCommand::ArcLargePositive => PathCommand::Arc(EllipticalArc::from_coords(
+                LargeArc(true),
+                Sweep::Positive,
+                coords,
+            )),
+        }
+    }
 }
 
-/// Constructs a path out of commands
+/// Constructs a path out of commands.
 ///
 /// When you are finished constructing a path builder, turn it into
 /// a `Path` with `into_path`.
@@ -302,16 +430,42 @@ pub struct PathBuilder {
     path_commands: SmallVec<[PathCommand; 32]>,
 }
 
-/// An immutable path
+/// An immutable path with a compact representation.
 ///
-/// This is constructed from a `PathBuilder` once it is finished.
+/// This is constructed from a `PathBuilder` once it is finished.  You
+/// can get an iterator for the path's commands with the `iter`
+/// function.
+///
+/// Most `PathCommand` variants only have a few coordinates, but `PathCommand::Arc`
+/// has two extra booleans.  We separate the commands from their coordinates so
+/// we can have two dense arrays: one with a compact representation of commands,
+/// and another with a linear list of the coordinates for each command.
+///
+/// Each `PathCommand` knows how many coordinates it ought to produce, with
+/// its `num_coordinates` method.
 pub struct Path {
-    path_commands: Box<[PathCommand]>,
+    commands: Box<[PackedCommand]>,
+    coords: Box<[f64]>,
 }
 
-/// Iterator over a path's commands
+/// Iterator over a `Path`'s commands, from `Path::iter`.
 pub struct PathIter<'a> {
-    commands: slice::Iter<'a, PathCommand>,
+    commands: slice::Iter<'a, PackedCommand>,
+    coords: &'a [f64],
+}
+
+/// Packed version of a `PathCommand`, used in `Path`.
+#[repr(u8)]
+#[derive(Debug)]
+enum PackedCommand {
+    MoveTo,
+    LineTo,
+    CurveTo,
+    ArcSmallNegative,
+    ArcSmallPositive,
+    ArcLargeNegative,
+    ArcLargePositive,
+    ClosePath,
 }
 
 impl PathBuilder {
@@ -322,8 +476,26 @@ impl PathBuilder {
     }
 
     pub fn into_path(self) -> Path {
+        let num_commands = self.path_commands.len();
+        let num_coords = self
+            .path_commands
+            .iter()
+            .fold(0, |acc, cmd| acc + cmd.num_coordinates());
+
+        let mut packed_commands = Vec::with_capacity(num_commands);
+        let mut coords = vec![0.0; num_coords];
+
+        let mut coords_slice = coords.as_mut_slice();
+
+        for c in self.path_commands {
+            let n = c.num_coordinates();
+            packed_commands.push(c.to_packed(coords_slice.get_mut(0..n).unwrap()));
+            coords_slice = &mut coords_slice[n..];
+        }
+
         Path {
-            path_commands: self.path_commands.into_boxed_slice(),
+            commands: packed_commands.into_boxed_slice(),
+            coords: coords.into_boxed_slice(),
         }
     }
 
@@ -375,12 +547,13 @@ impl PathBuilder {
 impl Path {
     pub fn iter(&self) -> PathIter {
         PathIter {
-            commands: self.path_commands.iter(),
+            commands: self.commands.iter(),
+            coords: &self.coords[..],
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.iter().nth(0).is_none()
+        self.commands.is_empty()
     }
 
     pub fn to_cairo(&self, cr: &cairo::Context) -> Result<(), cairo::Status> {
@@ -412,7 +585,14 @@ impl<'a> Iterator for PathIter<'a> {
     type Item = PathCommand;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.commands.next().map(Clone::clone)
+        if let Some(cmd) = self.commands.next() {
+            let cmd = PathCommand::from_packed(cmd, self.coords);
+            let num_coords = cmd.num_coordinates();
+            self.coords = &self.coords[num_coords..];
+            Some(cmd)
+        } else {
+            None
+        }
     }
 }
 
@@ -429,37 +609,22 @@ mod tests {
     }
 
     #[test]
-    fn arc() {
-        let mut builder = PathBuilder::new();
-        builder.arc(42.0, 43.0, 44.0, 45.0, 46.0, LargeArc(true), Sweep::Positive, 47.0, 48.0);
-        let path = builder.into_path();
-        assert!(path.iter().eq(vec![PathCommand::Arc(
-            EllipticalArc {
-                from: (42.0, 43.0),
-                r: (44.0, 45.0),
-                to: (47.0, 48.0),
-                x_axis_rotation: 46.0,
-                large_arc: LargeArc(true),
-                sweep: Sweep::Positive,
-            }
-        )]));
-    }
-
-    #[test]
-    fn close_path() {
-        let mut builder = PathBuilder::new();
-        builder.close_path();
-        let path = builder.into_path();
-        assert!(path.iter().eq(vec![PathCommand::ClosePath]));
-    }
-
-    #[test]
     fn all_commands() {
         let mut builder = PathBuilder::new();
         builder.move_to(42.0, 43.0);
         builder.line_to(42.0, 43.0);
         builder.curve_to(42.0, 43.0, 44.0, 45.0, 46.0, 47.0);
-        builder.arc(42.0, 43.0, 44.0, 45.0, 46.0, LargeArc(true), Sweep::Positive, 47.0, 48.0);
+        builder.arc(
+            42.0,
+            43.0,
+            44.0,
+            45.0,
+            46.0,
+            LargeArc(true),
+            Sweep::Positive,
+            47.0,
+            48.0,
+        );
         builder.close_path();
         let path = builder.into_path();
         assert!(path.iter().eq(vec![
