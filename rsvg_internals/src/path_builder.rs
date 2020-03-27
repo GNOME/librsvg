@@ -480,7 +480,8 @@ impl PathBuilder {
         let num_coords = self
             .path_commands
             .iter()
-            .fold(0, |acc, cmd| acc + cmd.num_coordinates());
+            .map(PathCommand::num_coordinates)
+            .sum();
 
         let mut packed_commands = Vec::with_capacity(num_commands);
         let mut coords = vec![0.0; num_coords];
