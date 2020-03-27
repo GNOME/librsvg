@@ -977,9 +977,9 @@ mod tests {
         let result = parse_path_into_builder(path_str, &mut builder);
 
         let path = builder.into_path();
-        let commands = path.get_path_commands();
+        let commands = path.iter().collect::<Vec<_>>();
 
-        assert_eq!(expected_commands, commands);
+        assert_eq!(expected_commands, commands.as_slice());
         assert_eq!(expected_result, result);
     }
 
