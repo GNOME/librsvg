@@ -490,7 +490,7 @@ impl PathBuilder {
 
         for c in self.path_commands {
             let n = c.num_coordinates();
-            packed_commands.push(c.to_packed(coords_slice.get_mut(0..n).unwrap()));
+            packed_commands.push(c.to_packed(&mut coords_slice[..n]));
             coords_slice = &mut coords_slice[n..];
         }
 
