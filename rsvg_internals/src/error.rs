@@ -1,6 +1,6 @@
 //! Error types.
 
-use std::error::{self, Error};
+use std::error;
 use std::fmt;
 
 use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
@@ -110,6 +110,22 @@ pub enum RenderingError {
     InvalidHref,
     OutOfMemory,
     HandleIsNotLoaded,
+}
+
+impl error::Error for RenderingError {}
+
+impl fmt::Display for RenderingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            RenderingError::CircularReference => write!(f, "circular reference"),
+            RenderingError::InstancingLimit => write!(f, "instancing limit"),
+            RenderingError::InvalidHref => write!(f, "invalid href"),
+            RenderingError::OutOfMemory => write!(f, "out of memory"),
+            RenderingError::HandleIsNotLoaded => write!(f, "SVG data is not loaded into handle"),
+            RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
+            RenderingError::InvalidId(ref id) => write!(f, "invalid id: {:?}", id),
+        }
+    }
 }
 
 impl From<cairo::Status> for RenderingError {
@@ -267,73 +283,28 @@ pub enum LoadingError {
     Unknown,
 }
 
-impl error::Error for LoadingError {
-    fn description(&self) -> &str {
-        match *self {
-            LoadingError::NoDataPassedToParser => "no data passed to parser",
-            LoadingError::CouldNotCreateXmlParser => "could not create XML parser",
-            LoadingError::XmlParseError(_) => "XML parse error",
-            LoadingError::BadUrl => "invalid URL",
-            LoadingError::BadDataUrl => "invalid data: URL",
-            LoadingError::BadStylesheet => "invalid stylesheet",
-            LoadingError::BadCss => "invalid CSS",
-            LoadingError::Cairo(_) => "cairo error",
-            LoadingError::EmptyData => "empty data",
-            LoadingError::SvgHasNoElements => "SVG has no elements",
-            LoadingError::RootElementIsNotSvg => "root element is not <svg>",
-            LoadingError::Glib(ref e) => e.description(),
-            LoadingError::Unknown => "unknown error",
-        }
-    }
-}
+impl error::Error for LoadingError {}
 
 impl fmt::Display for LoadingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            LoadingError::Cairo(status) => write!(f, "cairo error: {:?}", status),
+            LoadingError::NoDataPassedToParser => write!(f, "no data passed to parser"),
             LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
-            LoadingError::NoDataPassedToParser
-            | LoadingError::CouldNotCreateXmlParser
-            | LoadingError::BadUrl
-            | LoadingError::BadDataUrl
-            | LoadingError::BadStylesheet
-            | LoadingError::BadCss
-            | LoadingError::EmptyData
-            | LoadingError::SvgHasNoElements
-            | LoadingError::RootElementIsNotSvg
-            | LoadingError::Glib(_)
-            | LoadingError::Unknown => write!(f, "{}", self.description()),
+            LoadingError::CouldNotCreateXmlParser => write!(f, "could not create XML parser"),
+            LoadingError::BadUrl => write!(f, "invalid URL"),
+            LoadingError::BadDataUrl => write!(f, "invalid data: URL"),
+            LoadingError::BadStylesheet => write!(f, "invalid stylesheet"),
+            LoadingError::BadCss => write!(f, "invalid CSS"),
+            LoadingError::Cairo(status) => write!(f, "cairo error: {:?}", status),
+            LoadingError::EmptyData => write!(f, "empty data"),
+            LoadingError::SvgHasNoElements => write!(f, "SVG has no elements"),
+            LoadingError::RootElementIsNotSvg => write!(f, "root element is not <svg>"),
+            LoadingError::Glib(ref e) => e.fmt(f),
+            LoadingError::Unknown => write!(f, "unknown error"),
         }
     }
 }
 
-impl error::Error for RenderingError {
-    fn description(&self) -> &str {
-        match *self {
-            RenderingError::Cairo(_) => "cairo error",
-            RenderingError::CircularReference => "circular reference",
-            RenderingError::InstancingLimit => "instancing limit",
-            RenderingError::InvalidId(_) => "invalid id",
-            RenderingError::InvalidHref => "invalid href",
-            RenderingError::OutOfMemory => "out of memory",
-            RenderingError::HandleIsNotLoaded => "SVG data is not loaded into handle",
-        }
-    }
-}
-
-impl fmt::Display for RenderingError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
-            RenderingError::InvalidId(ref id) => write!(f, "invalid id: {:?}", id),
-            RenderingError::CircularReference
-            | RenderingError::InstancingLimit
-            | RenderingError::InvalidHref
-            | RenderingError::OutOfMemory
-            | RenderingError::HandleIsNotLoaded => write!(f, "{}", self.description()),
-        }
-    }
-}
 
 impl From<cairo::Status> for LoadingError {
     fn from(e: cairo::Status) -> LoadingError {

@@ -1,6 +1,6 @@
 //! Determine which URLs are allowed for loading.
 
-use std::error::{self, Error};
+use std::error;
 use std::fmt;
 use std::io;
 use std::ops::Deref;
@@ -125,26 +125,19 @@ impl fmt::Display for AllowedUrl {
     }
 }
 
-impl error::Error for AllowedUrlError {
-    fn description(&self) -> &str {
-        match *self {
-            AllowedUrlError::HrefParseError(_) => "href parse error",
-            AllowedUrlError::BaseRequired => "base required",
-            AllowedUrlError::DifferentURISchemes => "different URI schemes",
-            AllowedUrlError::DisallowedScheme => "disallowed scheme",
-            AllowedUrlError::NotSiblingOrChildOfBaseFile => "not sibling or child of base file",
-            AllowedUrlError::InvalidPath => "invalid path",
-            AllowedUrlError::BaseIsRoot => "base is root",
-            AllowedUrlError::CanonicalizationError => "canonicalization error",
-        }
-    }
-}
+impl error::Error for AllowedUrlError {}
 
 impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            AllowedUrlError::HrefParseError(e) => write!(f, "{}: {}", self.description(), e),
-            _ => write!(f, "{}", self.description()),
+            AllowedUrlError::HrefParseError(e) => write!(f, "href parse error: {}", e),
+            AllowedUrlError::BaseRequired => write!(f, "base required"),
+            AllowedUrlError::DifferentURISchemes => write!(f, "different URI schemes"),
+            AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
+            AllowedUrlError::NotSiblingOrChildOfBaseFile => write!(f, "not sibling or child of base file"),
+            AllowedUrlError::InvalidPath => write!(f, "invalid path"),
+            AllowedUrlError::BaseIsRoot => write!(f, "base is root"),
+            AllowedUrlError::CanonicalizationError => write!(f, "canonicalization error"),
         }
     }
 }

@@ -23,35 +23,17 @@ pub enum FilterError {
     ChildNodeInError,
 }
 
-impl Error for FilterError {
-    #[inline]
-    fn description(&self) -> &str {
-        match *self {
-            FilterError::InvalidInput => "invalid value of the `in` attribute",
-            FilterError::BadInputSurfaceStatus(_) => "invalid status of the input surface",
-            FilterError::CairoError(_) => "Cairo error",
-            FilterError::InvalidLightSourceCount => "invalid light source count",
-            FilterError::LightingInputTooSmall => {
-                "lighting filter input surface is too small (less than 2×2 pixels)"
-            }
-            FilterError::ChildNodeInError => "child node was in error",
-        }
-    }
-
-    #[inline]
-    fn cause(&self) -> Option<&dyn Error> {
-        None
-    }
-}
+impl Error for FilterError {}
 
 impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            FilterError::BadInputSurfaceStatus(ref status)
-            | FilterError::CairoError(ref status) => {
-                write!(f, "{}: {:?}", self.description(), status)
-            }
-            _ => write!(f, "{}", self.description()),
+            FilterError::InvalidInput => write!(f, "invalid value of the `in` attribute"),
+            FilterError::BadInputSurfaceStatus(ref status) => write!(f, "invalid status of the input surface: {}", status),
+            FilterError::CairoError(ref status) => write!(f, "Cairo error: {}", status),
+            FilterError::InvalidLightSourceCount => write!(f, "invalid light source count"),
+            FilterError::LightingInputTooSmall => write!(f, "lighting filter input surface is too small (less than 2×2 pixels)"),
+            FilterError::ChildNodeInError => write!(f, "child node was in error"),
         }
     }
 }
