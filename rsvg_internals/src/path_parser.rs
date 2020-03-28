@@ -912,23 +912,15 @@ pub struct ParseError {
     pub kind: ErrorKind,
 }
 
-impl Error for ParseError {
-    fn description(&self) -> &str {
-        match self.kind {
-            ErrorKind::UnexpectedToken => "unexpected token",
-            ErrorKind::UnexpectedEof => "unexpected end of data",
-        }
-    }
-}
+impl Error for ParseError {}
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "error at position {}: {}",
-            self.position,
-            self.description()
-        )
+        let description = match self.kind {
+            ErrorKind::UnexpectedToken => "unexpected token",
+            ErrorKind::UnexpectedEof => "unexpected end of data",
+        };
+        write!(f, "error at position {}: {}", self.position, description)
     }
 }
 
