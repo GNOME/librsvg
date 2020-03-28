@@ -579,7 +579,7 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
 ///
 /// [`Element`]: type.Element.html
 /// [`NonRendering`]: ../structure/struct.NonRendering.html
-pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
+pub fn create_element(name: &QualName, pbag: &PropertyBag, locale: &Locale) -> Element {
     let mut id = None;
     let mut class = None;
 
@@ -617,7 +617,11 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
 
     //    sizes::print_sizes();
 
-    create_fn(name, id, class)
+    let mut element = create_fn(name, id, class);
+
+    element.set_atts(pbag, locale);
+
+    element
 }
 
 #[cfg(ignore)]

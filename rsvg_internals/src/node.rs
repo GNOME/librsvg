@@ -11,6 +11,7 @@
 //! [`Node`]: ../../rctree/struct.Node.html
 //! [`NodeData`]: struct.NodeData.html
 
+use locale_config::Locale;
 use markup5ever::QualName;
 use std::cell::{Ref, RefMut};
 use std::fmt;
@@ -74,8 +75,8 @@ pub enum NodeData {
 }
 
 impl NodeData {
-    pub fn new_element(name: &QualName, pbag: &PropertyBag) -> NodeData {
-        NodeData::Element(Box::new(create_element(name, pbag)))
+    pub fn new_element(name: &QualName, pbag: &PropertyBag, locale: &Locale) -> NodeData {
+        NodeData::Element(Box::new(create_element(name, pbag, locale)))
     }
 
     pub fn new_chars() -> NodeData {
