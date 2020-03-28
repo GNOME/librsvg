@@ -27,17 +27,29 @@ make_property!(
 
             fn compute(&self, v: &ComputedValues) -> Self {
                 let font_size = v.font_size().0.value();
-                let baseline_shift = v.baseline_shift();
+                let parent = v.baseline_shift();
 
-                // FIXME: this implementation has limitations:
-                // 1) we only handle 'percent' shifts, but it could also be an absolute offset
-                // 2) we should be able to normalize the lengths and add even if they have
-                //    different units, but at the moment that requires access to the draw_ctx
-                if self.0.unit != LengthUnit::Percent || baseline_shift.0.unit != font_size.unit {
-                    return BaselineShift(Length::<Both>::new(baseline_shift.0.length, baseline_shift.0.unit));
+                match (self.0.unit, parent.0.unit) {
+                    (LengthUnit::Percent, _) => {
+                        BaselineShift(Length::<Both>::new(self.0.length * font_size.length + parent.0.length, font_size.unit))
+                    }
+
+                    (x, y) if x == y || parent.0.length == 0.0 => {
+                        BaselineShift(Length::<Both>::new(self.0.length + parent.0.length, self.0.unit))
+                    }
+
+                    _ => {
+                        // FIXME: the limitation here is that the parent's baseline_shift
+                        // and ours have different units.  We should be able to normalize
+                        // the lengths and add them even if they have different units, but
+                        // at the moment that requires access to the draw_ctx, which we
+                        // don't have here.
+                        //
+                        // So for now we won't add to the parent's baseline_shift.
+
+                        parent
+                    }
                 }
-
-                BaselineShift(Length::<Both>::new(self.0.length * font_size.length + baseline_shift.0.length, font_size.unit))
             }
         }
     },
