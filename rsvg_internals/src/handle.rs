@@ -5,8 +5,6 @@
 use std::cell::Cell;
 use std::ptr;
 
-use locale_config::{LanguageRange, Locale};
-
 use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
@@ -30,10 +28,6 @@ pub struct LoadOptions {
 
     /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces.
     pub keep_image_data: bool,
-
-    /// The environment's locale, used for the `<switch>` element and the `systemLanguage`
-    /// attribute.
-    locale: Locale,
 }
 
 impl LoadOptions {
@@ -43,7 +37,6 @@ impl LoadOptions {
             base_url,
             unlimited_size: false,
             keep_image_data: false,
-            locale: locale_from_environment(),
         }
     }
 
@@ -74,12 +67,7 @@ impl LoadOptions {
             base_url: Some((**base_url).clone()),
             unlimited_size: self.unlimited_size,
             keep_image_data: self.keep_image_data,
-            locale: self.locale.clone(),
         }
-    }
-
-    pub fn locale(&self) -> &Locale {
-        &self.locale
     }
 }
 
@@ -591,27 +579,6 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     } else {
         Err(RenderingError::Cairo(status))
     }
-}
-
-/// Gets the user's preferred locale from the environment and
-/// translates it to a `Locale` with `LanguageRange` fallbacks.
-///
-/// The `Locale::current()` call only contemplates a single language,
-/// but glib is smarter, and `g_get_langauge_names()` can provide
-/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
-/// English and German).  This function converts the output of
-/// `g_get_language_names()` into a `Locale` with appropriate
-/// fallbacks.
-fn locale_from_environment() -> Locale {
-    let mut locale = Locale::invariant();
-
-    for name in glib::get_language_names() {
-        if let Ok(range) = LanguageRange::from_unix(&name) {
-            locale.add(&range);
-        }
-    }
-
-    locale
 }
 
 fn unit_rectangle() -> Rect {

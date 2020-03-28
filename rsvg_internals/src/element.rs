@@ -6,7 +6,7 @@
 //! [`create_element`]: fn.create_element.html
 
 use downcast_rs::*;
-use locale_config::Locale;
+use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
@@ -579,7 +579,7 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
 ///
 /// [`Element`]: type.Element.html
 /// [`NonRendering`]: ../structure/struct.NonRendering.html
-pub fn create_element(name: &QualName, pbag: &PropertyBag, locale: &Locale) -> Element {
+pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
     let mut id = None;
     let mut class = None;
 
@@ -619,9 +619,30 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag, locale: &Locale) -> E
 
     let mut element = create_fn(name, id, class);
 
-    element.set_atts(pbag, locale);
+    element.set_atts(pbag, &locale_from_environment());
 
     element
+}
+
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+///
+/// The `Locale::current()` call only contemplates a single language,
+/// but glib is smarter, and `g_get_langauge_names()` can provide
+/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
+/// English and German).  This function converts the output of
+/// `g_get_language_names()` into a `Locale` with appropriate
+/// fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::get_language_names() {
+        if let Ok(range) = LanguageRange::from_unix(&name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
 }
 
 #[cfg(ignore)]
