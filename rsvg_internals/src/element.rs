@@ -229,22 +229,6 @@ impl Element {
         self.transform
     }
 
-    pub fn set_atts(&mut self, pbag: &PropertyBag<'_>, locale: &Locale) {
-        self.save_style_attribute(pbag);
-
-        if let Err(e) = self
-            .set_transform_attribute(pbag)
-            .and_then(|_| self.set_conditional_processing_attributes(pbag, locale))
-            .and_then(|_| self.element_impl.set_atts(pbag))
-            .and_then(|_| self.set_presentation_attributes(pbag))
-        {
-            self.set_error(e);
-        }
-
-        self.element_impl
-            .set_overridden_properties(&mut self.specified_values);
-    }
-
     fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -619,7 +603,22 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
 
     let mut element = create_fn(name, id, class);
 
-    element.set_atts(pbag, &locale_from_environment());
+    element.save_style_attribute(pbag);
+
+    if let Err(e) = element
+        .set_transform_attribute(pbag)
+        .and_then(|_| {
+            element.set_conditional_processing_attributes(pbag, &locale_from_environment())
+        })
+        .and_then(|_| element.element_impl.set_atts(pbag))
+        .and_then(|_| element.set_presentation_attributes(pbag))
+    {
+        element.set_error(e);
+    }
+
+    element
+        .element_impl
+        .set_overridden_properties(&mut element.specified_values);
 
     element
 }
