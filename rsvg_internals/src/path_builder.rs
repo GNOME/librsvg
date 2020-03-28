@@ -1,7 +1,5 @@
 //! Representation of Bézier paths.
 
-use tinyvec::TinyVec;
-
 use std::f64;
 use std::f64::consts::*;
 use std::slice;
@@ -386,8 +384,8 @@ impl PathCommand {
         }
     }
 
-    fn from_packed<'a>(packed: &PackedCommand, coords: &mut slice::Iter<'a, f64>) -> PathCommand {
-        match *packed {
+    fn from_packed<'a>(packed: PackedCommand, coords: &mut slice::Iter<'a, f64>) -> PathCommand {
+        match packed {
             PackedCommand::MoveTo => {
                 let x = take_one(coords);
                 let y = take_one(coords);
@@ -437,7 +435,8 @@ impl PathCommand {
 /// a `Path` with `into_path`.
 #[derive(Clone)]
 pub struct PathBuilder {
-    path_commands: TinyVec<[PathCommand; 32]>,
+    commands: Vec<PackedCommand>,
+    coords: Vec<f64>,
 }
 
 /// An immutable path with a compact representation.
@@ -460,7 +459,7 @@ pub struct Path {
 
 /// Packed version of a `PathCommand`, used in `Path`.
 #[repr(u8)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum PackedCommand {
     MoveTo,
     LineTo,
@@ -472,39 +471,38 @@ enum PackedCommand {
     ClosePath,
 }
 
+impl Default for PackedCommand {
+    fn default() -> Self {
+        PackedCommand::MoveTo
+    }
+}
+
 impl PathBuilder {
     pub fn new() -> PathBuilder {
         PathBuilder {
-            path_commands: TinyVec::new(),
+            commands: Vec::new(),
+            coords: Vec::new(),
         }
     }
 
     pub fn into_path(self) -> Path {
-        let num_coords = self
-            .path_commands
-            .iter()
-            .map(PathCommand::num_coordinates)
-            .sum();
-
-        let mut coords = Vec::with_capacity(num_coords);
-        let packed_commands: Vec<_> = self
-            .path_commands
-            .iter()
-            .map(|cmd| cmd.to_packed(&mut coords))
-            .collect();
-
         Path {
-            commands: packed_commands.into_boxed_slice(),
-            coords: coords.into_boxed_slice(),
+            commands: self.commands.into_boxed_slice(),
+            coords: self.coords.into_boxed_slice(),
         }
     }
 
+    fn push_cmd(&mut self, cmd: PathCommand) {
+        self.coords.reserve(cmd.num_coordinates());
+        self.commands.push(cmd.to_packed(&mut self.coords));
+    }
+
     pub fn move_to(&mut self, x: f64, y: f64) {
-        self.path_commands.push(PathCommand::MoveTo(x, y));
+        self.push_cmd(PathCommand::MoveTo(x, y));
     }
 
     pub fn line_to(&mut self, x: f64, y: f64) {
-        self.path_commands.push(PathCommand::LineTo(x, y));
+        self.push_cmd(PathCommand::LineTo(x, y));
     }
 
     pub fn curve_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
@@ -513,7 +511,7 @@ impl PathBuilder {
             pt2: (x3, y3),
             to: (x4, y4),
         };
-        self.path_commands.push(PathCommand::CurveTo(curve));
+        self.push_cmd(PathCommand::CurveTo(curve));
     }
 
     pub fn arc(
@@ -536,11 +534,11 @@ impl PathBuilder {
             from: (x1, y1),
             to: (x2, y2),
         };
-        self.path_commands.push(PathCommand::Arc(arc));
+        self.push_cmd(PathCommand::Arc(arc));
     }
 
     pub fn close_path(&mut self) {
-        self.path_commands.push(PathCommand::ClosePath);
+        self.push_cmd(PathCommand::ClosePath);
     }
 }
 
