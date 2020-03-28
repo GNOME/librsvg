@@ -200,11 +200,20 @@ fn load_image(
 ) -> Result<SharedImageSurface, LoadingError> {
     let BinaryData {
         data: bytes,
-        content_type,
+        mut content_type,
     } = io::acquire_data(&aurl, None)?;
 
     if bytes.is_empty() {
         return Err(LoadingError::EmptyData);
+    }
+
+    // See issue #548 - data: URLs without a MIME-type automatically
+    // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
+    // Adobe Illustrator generate data: URLs without MIME-type for image
+    // data.  We'll catch this and fall back to sniffing by unsetting the
+    // content_type.
+    if content_type.as_ref().map(String::as_str) == Some("text/plain;charset=US-ASCII") {
+        content_type = None;
     }
 
     let loader = if let Some(ref content_type) = content_type {
