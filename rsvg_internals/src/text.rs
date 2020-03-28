@@ -758,11 +758,8 @@ impl TSpan {
         chunks: &mut Vec<Chunk>,
         depth: usize,
     ) {
-        if self.x.is_some() || self.y.is_some() {
-            // Any absolute position creates a new chunk
-            let values = cascaded.get();
-            chunks.push(Chunk::new(values, self.x, self.y));
-        }
+        let values = cascaded.get();
+        chunks.push(Chunk::new(values, self.x, self.y));
 
         children_to_chunks(
             chunks,
