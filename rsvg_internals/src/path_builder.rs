@@ -18,7 +18,7 @@ pub enum Sweep {
     Positive,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct CubicBezierCurve {
     /// The (x, y) coordinates of the first control point.
     pub pt1: (f64, f64),
@@ -334,7 +334,7 @@ pub enum PathCommand {
 
 impl Default for PathCommand {
     fn default() -> Self {
-        PathCommand::ClosePath
+        PathCommand::CurveTo(CubicBezierCurve::default())
     }
 }
 
