@@ -6,7 +6,7 @@
 //! [`create_element`]: fn.create_element.html
 
 use downcast_rs::*;
-use locale_config::Locale;
+use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
@@ -138,7 +138,9 @@ pub trait ElementTrait: Downcast {
     /// Sets per-element attributes from the `pbag`
     ///
     /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult;
+    fn set_atts(&mut self, _pbag: &PropertyBag<'_>) -> ElementResult {
+        Ok(())
+    }
 
     /// Sets any special-cased properties that the element may have, that are different
     /// from defaults in the element's `SpecifiedValues`.
@@ -227,22 +229,6 @@ impl Element {
 
     pub fn get_transform(&self) -> Transform {
         self.transform
-    }
-
-    pub fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>, locale: &Locale) {
-        self.save_style_attribute(pbag);
-
-        if let Err(e) = self
-            .set_transform_attribute(pbag)
-            .and_then(|_| self.set_conditional_processing_attributes(pbag, locale))
-            .and_then(|_| self.element_impl.set_atts(parent, pbag))
-            .and_then(|_| self.set_presentation_attributes(pbag))
-        {
-            self.set_error(e);
-        }
-
-        self.element_impl
-            .set_overridden_properties(&mut self.specified_values);
     }
 
     fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
@@ -617,7 +603,47 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
 
     //    sizes::print_sizes();
 
-    create_fn(name, id, class)
+    let mut element = create_fn(name, id, class);
+
+    element.save_style_attribute(pbag);
+
+    if let Err(e) = element
+        .set_transform_attribute(pbag)
+        .and_then(|_| {
+            element.set_conditional_processing_attributes(pbag, &locale_from_environment())
+        })
+        .and_then(|_| element.element_impl.set_atts(pbag))
+        .and_then(|_| element.set_presentation_attributes(pbag))
+    {
+        element.set_error(e);
+    }
+
+    element
+        .element_impl
+        .set_overridden_properties(&mut element.specified_values);
+
+    element
+}
+
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+///
+/// The `Locale::current()` call only contemplates a single language,
+/// but glib is smarter, and `g_get_langauge_names()` can provide
+/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
+/// English and German).  This function converts the output of
+/// `g_get_language_names()` into a `Locale` with appropriate
+/// fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::get_language_names() {
+        if let Ok(range) = LanguageRange::from_unix(&name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
 }
 
 #[cfg(ignore)]

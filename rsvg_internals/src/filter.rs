@@ -8,7 +8,6 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, ElementTrait};
 use crate::error::ValueErrorKind;
 use crate::length::*;
-use crate::node::Node;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -112,7 +111,7 @@ impl Filter {
 }
 
 impl ElementTrait for Filter {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

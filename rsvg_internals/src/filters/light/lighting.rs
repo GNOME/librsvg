@@ -49,8 +49,8 @@ impl Common {
         }
     }
 
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -96,8 +96,8 @@ impl Default for FeDiffuseLighting {
 impl ElementTrait for FeDiffuseLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.common.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -165,8 +165,8 @@ impl Default for FeSpecularLighting {
 impl ElementTrait for FeSpecularLighting {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.common.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -261,7 +261,7 @@ macro_rules! impl_lighting_filter {
                 let mut bounds = self
                     .common()
                     .base
-                    .get_bounds(ctx)
+                    .get_bounds(ctx, node.parent().as_ref())?
                     .add_input(&input)
                     .into_irect(draw_ctx);
                 let original_bounds = bounds;

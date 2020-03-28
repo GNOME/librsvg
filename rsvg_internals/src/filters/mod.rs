@@ -10,7 +10,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, ElementTrait, ElementType};
-use crate::error::{RenderingError, ValueErrorKind};
+use crate::error::RenderingError;
 use crate::filter::Filter;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -106,16 +106,13 @@ impl Primitive {
         }
     }
 
-    /// Returns the `BoundsBuilder` for bounds computation.
+    /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
-    fn get_bounds<'a>(&self, ctx: &'a FilterContext) -> BoundsBuilder<'a> {
-        BoundsBuilder::new(ctx, self.x, self.y, self.width, self.height)
-    }
-}
-
-impl ElementTrait for Primitive {
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        // With ObjectBoundingBox, only fractions and percents are allowed.
+    fn get_bounds<'a>(
+        &self,
+        ctx: &'a FilterContext,
+        parent: Option<&Node>,
+    ) -> Result<BoundsBuilder<'a>, FilterError> {
         let primitiveunits = parent
             .and_then(|parent| {
                 assert!(parent.is_element());
@@ -129,6 +126,7 @@ impl ElementTrait for Primitive {
             })
             .unwrap_or(CoordUnits::UserSpaceOnUse);
 
+        // With ObjectBoundingBox, only fractions and percents are allowed.
         let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
 
         let check_units_horizontal = |length: Length<Horizontal>| {
@@ -138,9 +136,7 @@ impl ElementTrait for Primitive {
 
             match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::parse_error(
-                    "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
-                )),
+                _ => Err(FilterError::InvalidUnits),
             }
         };
 
@@ -151,41 +147,50 @@ impl ElementTrait for Primitive {
 
             match length.unit {
                 LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::parse_error(
-                    "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox",
-                )),
+                _ => Err(FilterError::InvalidUnits),
             }
         };
 
-        let check_units_horizontal_and_ensure_nonnegative = |length: Length<Horizontal>| {
-            check_units_horizontal(length).and_then(Length::<Horizontal>::check_nonnegative)
-        };
+        if let Some(x) = self.x {
+            check_units_horizontal(x)?;
+        }
 
-        let check_units_vertical_and_ensure_nonnegative = |length: Length<Vertical>| {
-            check_units_vertical(length).and_then(Length::<Vertical>::check_nonnegative)
-        };
+        if let Some(y) = self.y {
+            check_units_vertical(y)?;
+        }
 
+        if let Some(w) = self.width {
+            check_units_horizontal(w)?;
+        }
+
+        if let Some(h) = self.height {
+            check_units_vertical(h)?;
+        }
+
+        Ok(BoundsBuilder::new(
+            ctx,
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+        ))
+    }
+}
+
+impl ElementTrait for Primitive {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => {
-                    self.x = Some(attr.parse_and_validate(value, check_units_horizontal)?)
-                }
-                expanded_name!("", "y") => {
-                    self.y = Some(attr.parse_and_validate(value, check_units_vertical)?)
-                }
+                expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
+                expanded_name!("", "y") => self.y = Some(attr.parse(value)?),
                 expanded_name!("", "width") => {
-                    self.width =
-                        Some(attr.parse_and_validate(
-                            value,
-                            check_units_horizontal_and_ensure_nonnegative,
-                        )?)
+                    self.width = Some(
+                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
+                    )
                 }
                 expanded_name!("", "height") => {
                     self.height =
-                        Some(attr.parse_and_validate(
-                            value,
-                            check_units_vertical_and_ensure_nonnegative,
-                        )?)
+                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
                 }
                 expanded_name!("", "result") => self.result = Some(attr.parse(value)?),
                 _ => (),
@@ -219,8 +224,8 @@ impl PrimitiveWithInput {
 }
 
 impl ElementTrait for PrimitiveWithInput {
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
