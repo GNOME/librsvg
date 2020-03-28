@@ -23,10 +23,6 @@ use crate::viewbox::*;
 pub struct Group();
 
 impl ElementTrait for Group {
-    fn set_atts(&mut self, _: &PropertyBag<'_>) -> ElementResult {
-        Ok(())
-    }
-
     fn draw(
         &self,
         node: &Node,
@@ -50,20 +46,12 @@ impl ElementTrait for Group {
 #[derive(Default)]
 pub struct NonRendering;
 
-impl ElementTrait for NonRendering {
-    fn set_atts(&mut self, _: &PropertyBag<'_>) -> ElementResult {
-        Ok(())
-    }
-}
+impl ElementTrait for NonRendering {}
 
 #[derive(Default)]
 pub struct Switch();
 
 impl ElementTrait for Switch {
-    fn set_atts(&mut self, _: &PropertyBag<'_>) -> ElementResult {
-        Ok(())
-    }
-
     fn draw(
         &self,
         node: &Node,

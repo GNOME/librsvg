@@ -138,7 +138,9 @@ pub trait ElementTrait: Downcast {
     /// Sets per-element attributes from the `pbag`
     ///
     /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult;
+    fn set_atts(&mut self, _pbag: &PropertyBag<'_>) -> ElementResult {
+        Ok(())
+    }
 
     /// Sets any special-cased properties that the element may have, that are different
     /// from defaults in the element's `SpecifiedValues`.
