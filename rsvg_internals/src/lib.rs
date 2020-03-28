@@ -21,7 +21,7 @@
 //! * [The `node` module](node/index.html) provides the [`Node`] struct and
 //! helper traits used to operate on nodes.
 //!
-//! * [The `element` module](node/index.html) provides the [`Element`] struct and
+//! * [The `element` module](element/index.html) provides the [`Element`] struct and
 //! [`ElementTrait`] which is implemented by all SVG elements.
 //!
 //! * [The `xml` module](xml/index.html) receives events from the XML parser, and builds a
