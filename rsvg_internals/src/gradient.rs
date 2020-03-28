@@ -93,7 +93,7 @@ fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind>
 }
 
 impl ElementTrait for Stop {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "offset") => {
@@ -614,7 +614,7 @@ impl Common {
 }
 
 impl ElementTrait for LinearGradient {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
@@ -633,7 +633,7 @@ impl ElementTrait for LinearGradient {
 }
 
 impl ElementTrait for RadialGradient {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
         // Create a local expanded name for "fr" because markup5ever doesn't have built-in
         let expanded_name_fr = ExpandedName {

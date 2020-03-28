@@ -462,11 +462,8 @@ impl DocumentBuilder {
                 .or_insert_with(|| node.clone());
         }
 
-        node.borrow_element_mut().set_atts(
-            parent.as_ref().clone(),
-            pbag,
-            self.load_options.locale(),
-        );
+        node.borrow_element_mut()
+            .set_atts(pbag, self.load_options.locale());
 
         if let Some(mut parent) = parent {
             parent.append(node.clone());

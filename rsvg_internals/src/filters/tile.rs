@@ -25,8 +25,8 @@ impl Default for FeTile {
 impl ElementTrait for FeTile {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)
     }
 }
 

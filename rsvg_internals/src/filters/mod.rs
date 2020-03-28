@@ -178,7 +178,7 @@ impl Primitive {
 }
 
 impl ElementTrait for Primitive {
-    fn set_atts(&mut self, _parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
@@ -224,8 +224,8 @@ impl PrimitiveWithInput {
 }
 
 impl ElementTrait for PrimitiveWithInput {
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

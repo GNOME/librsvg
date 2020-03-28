@@ -54,8 +54,8 @@ impl Default for FeColorMatrix {
 impl ElementTrait for FeColorMatrix {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)?;
 
         // First, determine the operation type.
         let mut operation_type = Default::default();

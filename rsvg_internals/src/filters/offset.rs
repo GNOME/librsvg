@@ -32,8 +32,8 @@ impl Default for FeOffset {
 impl ElementTrait for FeOffset {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

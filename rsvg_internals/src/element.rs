@@ -138,7 +138,7 @@ pub trait ElementTrait: Downcast {
     /// Sets per-element attributes from the `pbag`
     ///
     /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult;
 
     /// Sets any special-cased properties that the element may have, that are different
     /// from defaults in the element's `SpecifiedValues`.
@@ -229,13 +229,13 @@ impl Element {
         self.transform
     }
 
-    pub fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>, locale: &Locale) {
+    pub fn set_atts(&mut self, pbag: &PropertyBag<'_>, locale: &Locale) {
         self.save_style_attribute(pbag);
 
         if let Err(e) = self
             .set_transform_attribute(pbag)
             .and_then(|_| self.set_conditional_processing_attributes(pbag, locale))
-            .and_then(|_| self.element_impl.set_atts(parent, pbag))
+            .and_then(|_| self.element_impl.set_atts(pbag))
             .and_then(|_| self.set_presentation_attributes(pbag))
         {
             self.set_error(e);

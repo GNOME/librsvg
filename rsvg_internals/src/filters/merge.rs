@@ -38,14 +38,14 @@ impl ElementTrait for FeMerge {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)
     }
 }
 
 impl ElementTrait for FeMergeNode {
     #[inline]
-    fn set_atts(&mut self, _parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "in") => self.in_ = Some(attr.parse(value)?),

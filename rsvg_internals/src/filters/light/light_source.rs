@@ -4,7 +4,6 @@ use nalgebra::Vector3;
 
 use crate::element::{ElementResult, ElementTrait};
 use crate::filters::context::FilterContext;
-use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::util::clamp;
@@ -104,7 +103,7 @@ impl FeDistantLight {
 }
 
 impl ElementTrait for FeDistantLight {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
@@ -136,7 +135,7 @@ impl FePointLight {
 }
 
 impl ElementTrait for FePointLight {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -185,7 +184,7 @@ impl FeSpotLight {
 }
 
 impl ElementTrait for FeSpotLight {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
