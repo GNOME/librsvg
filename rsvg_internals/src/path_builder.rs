@@ -1,6 +1,6 @@
 //! Representation of Bézier paths.
 
-use smallvec::SmallVec;
+use tinyvec::TinyVec;
 
 use std::f64;
 use std::f64::consts::*;
@@ -332,6 +332,12 @@ pub enum PathCommand {
     ClosePath,
 }
 
+impl Default for PathCommand {
+    fn default() -> Self {
+        PathCommand::ClosePath
+    }
+}
+
 impl PathCommand {
     fn to_cairo(&self, cr: &cairo::Context) {
         match *self {
@@ -427,7 +433,7 @@ impl PathCommand {
 /// a `Path` with `into_path`.
 #[derive(Clone)]
 pub struct PathBuilder {
-    path_commands: SmallVec<[PathCommand; 32]>,
+    path_commands: TinyVec<[PathCommand; 32]>,
 }
 
 /// An immutable path with a compact representation.
@@ -471,7 +477,7 @@ enum PackedCommand {
 impl PathBuilder {
     pub fn new() -> PathBuilder {
         PathBuilder {
-            path_commands: SmallVec::new(),
+            path_commands: TinyVec::new(),
         }
     }
 
