@@ -74,7 +74,7 @@ impl ElementTrait for FeDisplacementMap {
 impl FilterEffect for FeDisplacementMap {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -83,7 +83,7 @@ impl FilterEffect for FeDisplacementMap {
         let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
-            .get_bounds(ctx)
+            .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .add_input(&displacement_input)
             .into_irect(draw_ctx);

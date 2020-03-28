@@ -140,12 +140,12 @@ impl ElementTrait for FeImage {
 impl FilterEffect for FeImage {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds_builder = self.base.get_bounds(ctx);
+        let bounds_builder = self.base.get_bounds(ctx, node.parent().as_ref())?;
         let bounds = bounds_builder.into_rect(draw_ctx);
 
         match self.href.as_ref() {

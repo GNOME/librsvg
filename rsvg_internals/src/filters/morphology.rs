@@ -77,7 +77,7 @@ impl ElementTrait for FeMorphology {
 impl FilterEffect for FeMorphology {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -85,7 +85,7 @@ impl FilterEffect for FeMorphology {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
-            .get_bounds(ctx)
+            .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .into_irect(draw_ctx);
 

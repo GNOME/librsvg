@@ -33,7 +33,7 @@ impl ElementTrait for FeTile {
 impl FilterEffect for FeTile {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -41,7 +41,10 @@ impl FilterEffect for FeTile {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
-        let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
+        let bounds = self
+            .base
+            .get_bounds(ctx, node.parent().as_ref())?
+            .into_irect(draw_ctx);
 
         let surface = match input {
             FilterInput::StandardInput(input_surface) => input_surface,

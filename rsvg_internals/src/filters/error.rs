@@ -6,6 +6,8 @@ use crate::error::RenderingError;
 /// An enumeration of errors that can occur during filter primitive rendering.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum FilterError {
+    /// The units on the filter bounds are invalid
+    InvalidUnits,
     /// The filter was passed invalid input (the `in` attribute).
     InvalidInput,
     /// The filter input surface has an unsuccessful status.
@@ -27,6 +29,9 @@ impl Error for FilterError {
     #[inline]
     fn description(&self) -> &str {
         match *self {
+            FilterError::InvalidUnits => {
+                "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox"
+            }
             FilterError::InvalidInput => "invalid value of the `in` attribute",
             FilterError::BadInputSurfaceStatus(_) => "invalid status of the input surface",
             FilterError::CairoError(_) => "Cairo error",

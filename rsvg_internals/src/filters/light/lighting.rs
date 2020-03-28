@@ -261,7 +261,7 @@ macro_rules! impl_lighting_filter {
                 let mut bounds = self
                     .common()
                     .base
-                    .get_bounds(ctx)
+                    .get_bounds(ctx, node.parent().as_ref())?
                     .add_input(&input)
                     .into_irect(draw_ctx);
                 let original_bounds = bounds;

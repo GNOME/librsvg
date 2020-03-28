@@ -198,7 +198,7 @@ impl ElementTrait for FeConvolveMatrix {
 impl FilterEffect for FeConvolveMatrix {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -206,7 +206,7 @@ impl FilterEffect for FeConvolveMatrix {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let mut bounds = self
             .base
-            .get_bounds(ctx)
+            .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .into_irect(draw_ctx);
         let original_bounds = bounds;

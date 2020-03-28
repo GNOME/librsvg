@@ -76,7 +76,7 @@ impl ElementTrait for FeBlend {
 impl FilterEffect for FeBlend {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -85,7 +85,7 @@ impl FilterEffect for FeBlend {
         let input_2 = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
-            .get_bounds(ctx)
+            .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .add_input(&input_2)
             .into_irect(draw_ctx);

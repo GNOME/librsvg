@@ -88,7 +88,7 @@ impl FilterEffect for FeMerge {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.
-        let mut bounds = self.base.get_bounds(ctx);
+        let mut bounds = self.base.get_bounds(ctx, node.parent().as_ref())?;
         for child in node
             .children()
             .filter(|c| c.is_element() && c.borrow_element().get_type() == ElementType::FeMergeNode)
