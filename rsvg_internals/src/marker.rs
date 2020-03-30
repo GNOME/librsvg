@@ -176,7 +176,7 @@ impl Marker {
 }
 
 impl ElementTrait for Marker {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,

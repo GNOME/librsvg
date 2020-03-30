@@ -116,7 +116,7 @@ pub struct Path {
 }
 
 impl ElementTrait for Path {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "d") {
                 let mut builder = PathBuilder::new();
@@ -220,7 +220,7 @@ pub struct Polygon {
 }
 
 impl ElementTrait for Polygon {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value).map(Some)?;
@@ -255,7 +255,7 @@ pub struct Polyline {
 }
 
 impl ElementTrait for Polyline {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value).map(Some)?;
@@ -291,7 +291,7 @@ pub struct Line {
 }
 
 impl ElementTrait for Line {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x1") => self.x1 = attr.parse(value)?,
@@ -355,7 +355,7 @@ pub struct Rect {
 }
 
 impl ElementTrait for Rect {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -585,7 +585,7 @@ pub struct Circle {
 }
 
 impl ElementTrait for Circle {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,
@@ -640,7 +640,7 @@ pub struct Ellipse {
 }
 
 impl ElementTrait for Ellipse {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,

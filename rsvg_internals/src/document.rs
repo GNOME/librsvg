@@ -453,7 +453,7 @@ impl DocumentBuilder {
         pbag: &PropertyBag,
         parent: Option<Node>,
     ) -> Node {
-        let mut node = Node::new(NodeData::new_element(name, pbag));
+        let node = Node::new(NodeData::new_element(name, pbag));
 
         if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id
@@ -461,12 +461,6 @@ impl DocumentBuilder {
                 .entry(id.to_string())
                 .or_insert_with(|| node.clone());
         }
-
-        node.borrow_element_mut().set_atts(
-            parent.as_ref().clone(),
-            pbag,
-            self.load_options.locale(),
-        );
 
         if let Some(mut parent) = parent {
             parent.append(node.clone());

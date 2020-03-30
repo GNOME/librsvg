@@ -48,8 +48,8 @@ impl Default for FeMorphology {
 impl ElementTrait for FeMorphology {
     impl_node_as_filter_effect!();
 
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)?;
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -77,7 +77,7 @@ impl ElementTrait for FeMorphology {
 impl FilterEffect for FeMorphology {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
@@ -85,7 +85,7 @@ impl FilterEffect for FeMorphology {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
-            .get_bounds(ctx)
+            .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .into_irect(draw_ctx);
 

@@ -23,10 +23,6 @@ use crate::viewbox::*;
 pub struct Group();
 
 impl ElementTrait for Group {
-    fn set_atts(&mut self, _: Option<&Node>, _: &PropertyBag<'_>) -> ElementResult {
-        Ok(())
-    }
-
     fn draw(
         &self,
         node: &Node,
@@ -50,20 +46,12 @@ impl ElementTrait for Group {
 #[derive(Default)]
 pub struct NonRendering;
 
-impl ElementTrait for NonRendering {
-    fn set_atts(&mut self, _: Option<&Node>, _: &PropertyBag<'_>) -> ElementResult {
-        Ok(())
-    }
-}
+impl ElementTrait for NonRendering {}
 
 #[derive(Default)]
 pub struct Switch();
 
 impl ElementTrait for Switch {
-    fn set_atts(&mut self, _: Option<&Node>, _: &PropertyBag<'_>) -> ElementResult {
-        Ok(())
-    }
-
     fn draw(
         &self,
         node: &Node,
@@ -187,7 +175,7 @@ impl Svg {
 }
 
 impl ElementTrait for Svg {
-    fn set_atts(&mut self, _parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -304,7 +292,7 @@ impl Use {
 }
 
 impl ElementTrait for Use {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => {
@@ -358,7 +346,7 @@ impl Symbol {
 }
 
 impl ElementTrait for Symbol {
-    fn set_atts(&mut self, _parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -387,7 +375,7 @@ impl ClipPath {
 }
 
 impl ElementTrait for ClipPath {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "clipPathUnits") => self.units = attr.parse(value)?,
@@ -447,7 +435,7 @@ impl Mask {
 }
 
 impl ElementTrait for Mask {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -476,7 +464,7 @@ pub struct Link {
 }
 
 impl ElementTrait for Link {
-    fn set_atts(&mut self, _: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => self.link = Some(value.to_owned()),

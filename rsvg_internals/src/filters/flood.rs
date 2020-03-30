@@ -26,8 +26,8 @@ impl ElementTrait for FeFlood {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)
     }
 }
 
@@ -39,7 +39,10 @@ impl FilterEffect for FeFlood {
         _acquired_nodes: &mut AcquiredNodes,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds = self.base.get_bounds(ctx).into_irect(draw_ctx);
+        let bounds = self
+            .base
+            .get_bounds(ctx, node.parent().as_ref())?
+            .into_irect(draw_ctx);
 
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();

@@ -38,8 +38,8 @@ impl ElementTrait for FeComponentTransfer {
     impl_node_as_filter_effect!();
 
     #[inline]
-    fn set_atts(&mut self, parent: Option<&Node>, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(parent, pbag)
+    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_atts(pbag)
     }
 }
 
@@ -201,11 +201,7 @@ macro_rules! func_x {
 
         impl ElementTrait for $func_name {
             #[inline]
-            fn set_atts(
-                &mut self,
-                _parent: Option<&Node>,
-                pbag: &PropertyBag<'_>,
-            ) -> ElementResult {
+            fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
                         expanded_name!("", "type") => self.function_type = attr.parse(value)?,
@@ -277,7 +273,7 @@ impl FilterEffect for FeComponentTransfer {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
-            .get_bounds(ctx)
+            .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .into_irect(draw_ctx);
 
