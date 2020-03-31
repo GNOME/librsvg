@@ -1,3 +1,7 @@
+Version 2.48.2
+
+- Fix linking of the test suite against Harfbuzz.
+
 Version 2.48.1
 
 - #129 - Fix baseline-shift for simple subscripts/superscripts and
