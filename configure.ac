@@ -74,6 +74,7 @@ FREETYPE2_REQUIRED=20.0.14
 GDK_PIXBUF_REQUIRED=2.20
 GIO_REQUIRED=2.24.0
 GLIB_REQUIRED=2.48.0
+HARFBUZZ_REQUIRED=2.0.0
 LIBXML_REQUIRED=2.9.0
 PANGO_REQUIRED=1.38.0
 
@@ -165,6 +166,7 @@ PKG_CHECK_MODULES(LIBRSVG,                     \
 	gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED \
 	gio-2.0 >= $GIO_REQUIRED               \
 	glib-2.0 >= $GLIB_REQUIRED             \
+	harfbuzz >= $HARFBUZZ_REQUIRED         \
 	libxml-2.0 >= $LIBXML_REQUIRED         \
 	pangocairo >= $PANGO_REQUIRED          \
 	pangoft2 >= $PANGO_REQUIRED	       \
