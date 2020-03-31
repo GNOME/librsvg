@@ -382,5 +382,9 @@ test_utils_print_dependency_versions (void)
     g_test_message ("Cairo version:    %s", cairo_version_string ());
     g_test_message ("Pango version:    %s", pango_version_string ());
     g_test_message ("Freetype version: %d.%d.%d", ft_major, ft_minor, ft_patch);
+#if PANGO_VERSION_CHECK (1, 44, 0)
     g_test_message ("Harfbuzz version: %s", hb_version_string ());
+#else
+    g_test_message ("Not printing Harfbuzz version since Pango is older than 1.44");
+#endif
 }
