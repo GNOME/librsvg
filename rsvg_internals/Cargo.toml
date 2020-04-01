@@ -35,7 +35,7 @@ rayon = "1"
 rctree = "0.3.3"
 regex = "1"
 selectors = "0.22.0"
-smallvec = "1.2.0"
+tinyvec = {version = "0.3.2", features = ["alloc"]}
 url = "2"
 xml-rs = "0.8.0"
 
