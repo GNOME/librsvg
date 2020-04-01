@@ -4,12 +4,16 @@ use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use libc;
 use markup5ever::{
-    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
+    buffer_queue::BufferQueue, expanded_name, local_name, namespace_url, ns, ExpandedName,
+    LocalName, Namespace, QualName,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::str;
+use std::string::ToString;
+use xml5ever::tendril::format_tendril;
+use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
 use crate::allowed_url::AllowedUrl;
 use crate::document::{Document, DocumentBuilder};
@@ -21,7 +25,6 @@ use crate::property_bag::PropertyBag;
 use crate::style::{Style, StyleType};
 use crate::text::NodeChars;
 use crate::xml2_load::Xml2Parser;
-use crate::xml_rs::{reader::XmlEvent, ParserConfig};
 
 #[derive(Clone)]
 enum Context {
@@ -620,6 +623,36 @@ impl Drop for XmlState {
     }
 }
 
+/// Temporary holding space for data in an XML processing instruction
+#[derive(Default)]
+struct ProcessingInstructionData {
+    attributes: Vec<(String, String)>,
+    error: bool,
+}
+
+struct ProcessingInstructionSink(Rc<RefCell<ProcessingInstructionData>>);
+
+impl TokenSink for ProcessingInstructionSink {
+    fn process_token(&mut self, token: Token) {
+        let mut data = self.0.borrow_mut();
+
+        match token {
+            Token::TagToken(tag) if tag.kind == TagKind::EmptyTag => {
+                for a in &tag.attrs {
+                    let name = a.name.local.as_ref().to_string();
+                    let value = a.value.to_string();
+
+                    data.attributes.push((name, value));
+                }
+            }
+
+            Token::ParseError(_) => data.error = true,
+
+            _ => (),
+        }
+    }
+}
+
 // https://www.w3.org/TR/xml-stylesheet/
 //
 // The syntax for the xml-stylesheet processing instruction we support
@@ -631,26 +664,26 @@ impl Drop for XmlState {
 // ("xml-stylesheet"), so we'll create a mini-parser with a hackish
 // element just to extract the data as attributes.
 fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String, String)>, ()> {
-    let xml_str = format!("<rsvg-hack {} />\n", data);
+    let pi_data = Rc::new(RefCell::new(ProcessingInstructionData {
+        attributes: Vec::new(),
+        error: false,
+    }));
 
-    let mut buf = xml_str.as_bytes();
+    let mut queue = BufferQueue::new();
+    queue.push_back(format_tendril!("<rsvg-hack {} />", data));
 
-    let reader = ParserConfig::new().create_reader(&mut buf);
+    let sink = ProcessingInstructionSink(pi_data.clone());
 
-    for event in reader {
-        match event {
-            Ok(XmlEvent::StartElement { attributes, .. }) => {
-                return Ok(attributes
-                    .iter()
-                    .map(|att| (att.name.local_name.clone(), att.value.clone()))
-                    .collect());
-            }
-            Err(_) => return Err(()),
-            _ => (),
-        }
+    let mut tokenizer = XmlTokenizer::new(sink, XmlTokenizerOpts::default());
+    tokenizer.run(&mut queue);
+
+    let pi_data = pi_data.borrow();
+
+    if pi_data.error {
+        return Err(());
+    } else {
+        return Ok(pi_data.attributes.clone());
     }
-
-    unreachable!();
 }
 
 pub fn xml_load_from_possibly_compressed_stream(
@@ -666,4 +699,24 @@ pub fn xml_load_from_possibly_compressed_stream(
     let stream = get_input_stream_for_loading(stream, cancellable)?;
 
     state.build_document(&stream, cancellable)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_processing_instruction_data() {
+        let mut r =
+            parse_xml_stylesheet_processing_instruction("foo=\"bar\" baz=\"beep\"").unwrap();
+        r.sort_by(|a, b| a.0.cmp(&b.0));
+
+        assert_eq!(
+            r,
+            vec![
+                ("baz".to_string(), "beep".to_string()),
+                ("foo".to_string(), "bar".to_string())
+            ]
+        );
+    }
 }

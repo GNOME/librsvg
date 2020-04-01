@@ -36,7 +36,7 @@ rctree = "0.3.3"
 regex = "1"
 selectors = "0.22.0"
 url = "2"
-xml-rs = "0.8.0"
+xml5ever = "0.16.1"
 
 [dev-dependencies]
 criterion = "0.2"

@@ -38,7 +38,6 @@
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::too_many_arguments)]
 #![warn(unused)]
-use ::xml as xml_rs;
 
 pub use crate::color::Color;
 
