@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::node::{Node, NodeBorrow};
 use crate::number_list::{NumberList, NumberListLength};
@@ -35,9 +35,6 @@ impl Default for FeComponentTransfer {
 }
 
 impl ElementTrait for FeComponentTransfer {
-    impl_node_as_filter_effect!();
-
-    #[inline]
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(pbag)
     }
@@ -251,14 +248,30 @@ func_x!(FeFuncB, Channel::B);
 func_x!(FeFuncA, Channel::A);
 
 macro_rules! func_or_default {
-    ($func_node:ident, $func_type:ty, $func_data:ident, $func_default:ident) => {
+    ($func_node:ident, $func_type:ident, $func_data:ident, $func_default:ident) => {
         match $func_node {
             Some(ref f) => {
                 $func_data = f.borrow_element();
-                $func_data.get_impl::<$func_type>()
+                match *$func_data {
+                    Element::$func_type(ref e) => &*e,
+                    _ => unreachable!(),
+                }
             }
             _ => &$func_default,
         };
+    };
+}
+
+macro_rules! get_func_x_node {
+    ($func_node:ident, $func_type:ident, $channel:expr) => {
+        $func_node
+            .children()
+            .rev()
+            .filter(|c| c.is_element())
+            .find(|c| match *c.borrow_element() {
+                Element::$func_type(ref f) => f.channel() == $channel,
+                _ => false,
+            })
     };
 }
 
@@ -284,21 +297,10 @@ impl FilterEffect for FeComponentTransfer {
             input.surface().surface_type(),
         )?;
 
-        // Get a node for every pixel component.
-        fn get_node<F>(node: &Node, element_type: ElementType, channel: Channel) -> Option<Node>
-        where
-            F: FeComponentTransferFunc + ElementTrait,
-        {
-            node.children()
-                .rev()
-                .filter(|c| c.is_element() && c.borrow_element().get_type() == element_type)
-                .find(|c| c.borrow_element().get_impl::<F>().channel() == channel)
-        };
-
-        let func_r_node = get_node::<FeFuncR>(node, ElementType::FeFuncR, Channel::R);
-        let func_g_node = get_node::<FeFuncG>(node, ElementType::FeFuncG, Channel::G);
-        let func_b_node = get_node::<FeFuncB>(node, ElementType::FeFuncB, Channel::B);
-        let func_a_node = get_node::<FeFuncA>(node, ElementType::FeFuncA, Channel::A);
+        let func_r_node = get_func_x_node!(node, FeFuncR, Channel::R);
+        let func_g_node = get_func_x_node!(node, FeFuncG, Channel::G);
+        let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
+        let func_a_node = get_func_x_node!(node, FeFuncA, Channel::A);
 
         for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
             .iter()
