@@ -6,7 +6,6 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::filter::Filter;
 use crate::node::{Node, NodeBorrow};
 use crate::paint_server::PaintServer;
 use crate::parsers::CustomIdent;
@@ -112,8 +111,7 @@ impl FilterContext {
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();
 
-        let elt = filter_node.borrow_element();
-        let filter = elt.get_impl::<Filter>();
+        let filter = borrow_element_as!(filter_node, Filter);
 
         let affine = match filter.get_filter_units() {
             CoordUnits::UserSpaceOnUse => draw_transform,
@@ -257,11 +255,9 @@ impl FilterContext {
 
     /// Pushes the viewport size based on the value of `primitiveUnits`.
     pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
-        let elt = self.node.borrow_element();
-        let filter = elt.get_impl::<Filter>();
-
         // See comments in compute_effects_region() for how this works.
-        if filter.get_primitive_units() == CoordUnits::ObjectBoundingBox {
+        let units = borrow_element_as!(self.node, Filter).get_primitive_units();
+        if units == CoordUnits::ObjectBoundingBox {
             draw_ctx.push_view_box(1.0, 1.0)
         } else {
             draw_ctx.get_view_params()

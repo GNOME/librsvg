@@ -14,15 +14,13 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
-use crate::element::ElementType;
+use crate::element::Element;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
-use crate::gradient::{LinearGradient, RadialGradient};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::path_builder::*;
-use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, Opacity, Overflow, ShapeRendering, StrokeDasharray, StrokeLinecap,
@@ -30,7 +28,7 @@ use crate::property_defs::{
 };
 use crate::rect::Rect;
 use crate::shapes::Markers;
-use crate::structure::{ClipPath, Mask, Symbol, Use};
+use crate::structure::Mask;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -323,7 +321,7 @@ impl DrawingCtx {
         }
 
         let node = clip_node.as_ref().unwrap();
-        let units = node.borrow_element().get_impl::<ClipPath>().get_units();
+        let units = borrow_element_as!(node, ClipPath).get_units();
 
         if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
             // The node being clipped is empty / doesn't have a
@@ -480,12 +478,14 @@ impl DrawingCtx {
                 let mask = mask_value.0.get();
 
                 // The `filter` property does not apply to masks.
-                let filter =
-                    if node.is_element() && node.borrow_element().get_type() == ElementType::Mask {
-                        None
-                    } else {
-                        values.filter().0.get().cloned()
-                    };
+                let filter = if node.is_element() {
+                    match *node.borrow_element() {
+                        Element::Mask(_) => None,
+                        _ => values.filter().0.get().cloned(),
+                    }
+                } else {
+                    values.filter().0.get().cloned()
+                };
 
                 let UnitInterval(opacity) = values.opacity().0;
 
@@ -580,11 +580,11 @@ impl DrawingCtx {
                         if let Ok(acquired) = acquired_nodes.acquire(fragment) {
                             let mask_node = acquired.get();
 
-                            match mask_node.borrow_element().get_type() {
-                                ElementType::Mask => {
+                            match *mask_node.borrow_element() {
+                                Element::Mask(ref m) => {
                                     res = res.and_then(|bbox| {
                                         dc.generate_cairo_mask(
-                                            &mask_node.borrow_element().get_impl::<Mask>(),
+                                            &m,
                                             &mask_node,
                                             affines.for_temporary_surface,
                                             &bbox,
@@ -760,8 +760,8 @@ impl DrawingCtx {
                 let filter_node = acquired.get();
                 let filter_elt = filter_node.borrow_element();
 
-                match filter_elt.get_type() {
-                    ElementType::Filter => {
+                match *filter_elt {
+                    Element::Filter(_) => {
                         if filter_elt.is_in_error() {
                             return Ok(child_surface);
                         }
@@ -842,37 +842,28 @@ impl DrawingCtx {
 
                         assert!(node.is_element());
 
-                        had_paint_server = match node.borrow_element().get_type() {
-                            ElementType::LinearGradient => node
-                                .borrow_element()
-                                .get_impl::<LinearGradient>()
-                                .resolve_fallbacks_and_set_pattern(
-                                    &node,
-                                    acquired_nodes,
-                                    self,
-                                    opacity,
-                                    bbox,
-                                )?,
-                            ElementType::RadialGradient => node
-                                .borrow_element()
-                                .get_impl::<RadialGradient>()
-                                .resolve_fallbacks_and_set_pattern(
-                                    &node,
-                                    acquired_nodes,
-                                    self,
-                                    opacity,
-                                    bbox,
-                                )?,
-                            ElementType::Pattern => node
-                                .borrow_element()
-                                .get_impl::<Pattern>()
-                                .resolve_fallbacks_and_set_pattern(
-                                    &node,
-                                    acquired_nodes,
-                                    self,
-                                    opacity,
-                                    bbox,
-                                )?,
+                        had_paint_server = match *node.borrow_element() {
+                            Element::LinearGradient(ref g) => g.resolve_fallbacks_and_set_pattern(
+                                &node,
+                                acquired_nodes,
+                                self,
+                                opacity,
+                                bbox,
+                            )?,
+                            Element::RadialGradient(ref g) => g.resolve_fallbacks_and_set_pattern(
+                                &node,
+                                acquired_nodes,
+                                self,
+                                opacity,
+                                bbox,
+                            )?,
+                            Element::Pattern(ref p) => p.resolve_fallbacks_and_set_pattern(
+                                &node,
+                                acquired_nodes,
+                                self,
+                                opacity,
+                                bbox,
+                            )?,
                             _ => false,
                         }
                     }
@@ -1150,8 +1141,7 @@ impl DrawingCtx {
             }
         })?;
 
-        let elt = node.borrow_element();
-        let use_ = elt.get_impl::<Use>();
+        let use_ = borrow_element_as!(node, Use);
         let link = use_.get_link();
 
         if link.is_none() {
@@ -1191,41 +1181,42 @@ impl DrawingCtx {
         let child = acquired.get();
 
         // if it is a symbol
-        if child.is_element() && child.borrow_element().get_type() == ElementType::Symbol {
+        if child.is_element() {
             let elt = child.borrow_element();
-            let symbol = elt.get_impl::<Symbol>();
 
-            let clip_mode = if !values.is_overflow()
-                || (values.overflow() == Overflow::Visible
-                    && child.borrow_element().get_specified_values().is_overflow())
-            {
-                Some(ClipMode::ClipToVbox)
-            } else {
-                None
-            };
+            if let Element::Symbol(ref symbol) = *elt {
+                let clip_mode = if !values.is_overflow()
+                    || (values.overflow() == Overflow::Visible
+                        && elt.get_specified_values().is_overflow())
+                {
+                    Some(ClipMode::ClipToVbox)
+                } else {
+                    None
+                };
 
-            return self.with_discrete_layer(
-                node,
-                acquired_nodes,
-                values,
-                clipping,
-                &mut |an, dc| {
-                    let _params = dc.push_new_viewport(
-                        symbol.get_viewbox(),
-                        use_rect,
-                        symbol.get_preserve_aspect_ratio(),
-                        clip_mode,
-                    );
+                return self.with_discrete_layer(
+                    node,
+                    acquired_nodes,
+                    values,
+                    clipping,
+                    &mut |an, dc| {
+                        let _params = dc.push_new_viewport(
+                            symbol.get_viewbox(),
+                            use_rect,
+                            symbol.get_preserve_aspect_ratio(),
+                            clip_mode,
+                        );
 
-                    child.draw_children(
-                        an,
-                        &CascadedValues::new_from_values(&child, values),
-                        dc,
-                        clipping,
-                    )
-                },
-            );
-        }
+                        child.draw_children(
+                            an,
+                            &CascadedValues::new_from_values(&child, values),
+                            dc,
+                            clipping,
+                        )
+                    },
+                );
+            }
+        };
 
         // all other nodes
         let cr = self.get_cairo_context();
@@ -1301,15 +1292,12 @@ fn get_clip_in_user_and_object_space(
             acquired_nodes
                 .acquire(fragment)
                 .ok()
-                .filter(|a| a.get().borrow_element().get_type() == ElementType::ClipPath)
+                .filter(|a| is_element_of_type!(*a.get(), ClipPath))
         })
         .and_then(|acquired| {
             let clip_node = acquired.get().clone();
 
-            let units = clip_node
-                .borrow_element()
-                .get_impl::<ClipPath>()
-                .get_units();
+            let units = borrow_element_as!(clip_node, ClipPath).get_units();
 
             match units {
                 CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),
