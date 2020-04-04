@@ -90,7 +90,7 @@ use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use url::Url;
 
 use crate::allowed_url::AllowedUrl;
-use crate::element::ElementType;
+use crate::element::Element;
 use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
@@ -499,7 +499,7 @@ impl selectors::Element for RsvgElement {
     /// Whether this element is a `link`.
     fn is_link(&self) -> bool {
         // FIXME: is this correct for SVG <a>, not HTML <a>?
-        self.0.is_element() && self.0.borrow_element().get_type() == ElementType::Link
+        self.0.is_element() && matches!(*self.0.borrow_element(), Element::Link(_))
     }
 
     /// Returns whether the element is an HTML <slot> element.
@@ -823,11 +823,14 @@ mod tests {
             .unwrap();
 
         // Node types
+        {
+            use crate::element::Element::*;
 
-        assert!(a.borrow_element().get_type() == ElementType::Svg);
-        assert!(b.borrow_element().get_type() == ElementType::Rect);
-        assert!(c.borrow_element().get_type() == ElementType::Circle);
-        assert!(d.borrow_element().get_type() == ElementType::Rect);
+            assert!(matches!(*a.borrow_element(), Svg(_)));
+            assert!(matches!(*b.borrow_element(), Rect(_)));
+            assert!(matches!(*c.borrow_element(), Circle(_)));
+            assert!(matches!(*d.borrow_element(), Rect(_)));
+        }
 
         let a = RsvgElement(a);
         let b = RsvgElement(b);
