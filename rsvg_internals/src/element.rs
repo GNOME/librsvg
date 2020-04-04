@@ -313,6 +313,18 @@ impl Element {
         }
     }
 
+    fn set_element_specific_attributes(
+        &mut self,
+        pbag: &PropertyBag<'_>,
+    ) -> Result<(), ElementError> {
+        self.element_impl.set_atts(pbag)
+    }
+
+    fn set_overridden_properties(&mut self) {
+        self.element_impl
+            .set_overridden_properties(&mut self.specified_values);
+    }
+
     // Applies a style declaration to the node's specified_values
     pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
         self.specified_values.set_property_from_declaration(
@@ -633,15 +645,13 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
         .and_then(|_| {
             element.set_conditional_processing_attributes(pbag, &locale_from_environment())
         })
-        .and_then(|_| element.element_impl.set_atts(pbag))
+        .and_then(|_| element.set_element_specific_attributes(pbag))
         .and_then(|_| element.set_presentation_attributes(pbag))
     {
         element.set_error(e);
     }
 
-    element
-        .element_impl
-        .set_overridden_properties(&mut element.specified_values);
+    element.set_overridden_properties();
 
     element
 }
