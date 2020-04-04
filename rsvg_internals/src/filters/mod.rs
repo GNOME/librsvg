@@ -288,12 +288,7 @@ pub fn render(
             !in_error
         })
         // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| {
-            c.borrow_element()
-                .get_element_trait()
-                .as_filter_effect()
-                .is_some()
-        })
+        .filter(|c| c.borrow_element().as_filter_effect().is_some())
         // Check if the node wants linear RGB.
         .map(|c| {
             let linear_rgb = {
@@ -308,7 +303,7 @@ pub fn render(
 
     for (c, linear_rgb) in primitives {
         let elt = c.borrow_element();
-        let filter = elt.get_element_trait().as_filter_effect().unwrap();
+        let filter = elt.as_filter_effect().unwrap();
 
         let mut render = |filter_ctx: &mut FilterContext| {
             if let Err(err) = filter

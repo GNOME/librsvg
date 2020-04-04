@@ -187,10 +187,6 @@ impl Element {
         self.element_type
     }
 
-    pub fn get_element_trait(&self) -> &dyn ElementTrait {
-        self.element_impl.as_ref()
-    }
-
     pub fn get_impl<T: ElementTrait>(&self) -> &T {
         if let Some(t) = (&self.element_impl).downcast_ref::<T>() {
             t
@@ -370,6 +366,10 @@ impl Element {
             // maybe we should actually return a RenderingError::ElementIsInError here?
             Ok(draw_ctx.empty_bbox())
         }
+    }
+
+    pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
+        self.element_impl.as_filter_effect()
     }
 }
 
