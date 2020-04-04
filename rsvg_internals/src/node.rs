@@ -56,12 +56,6 @@ pub type WeakNode = rctree::WeakNode<NodeData>;
 /// spaces), and a single text node with "`Hello`" in it from the
 /// `<text>` element.
 ///
-/// This enum uses `Box<Element>` instead of embedding the `Element`
-/// struct directly in its variant, in order to make text nodes as
-/// small as possible, i.e. without all the baggage in an `Element`.
-/// With the Box, the `Element` variant is the size of a pointer,
-/// which is smaller than the `Text` variant.
-///
 /// ## Accessing the node's contents
 ///
 /// Code that traverses the DOM tree needs to find out at runtime what
@@ -69,13 +63,13 @@ pub type WeakNode = rctree::WeakNode<NodeData>;
 /// methods from the `NodeBorrow` trait to see if you can then call
 /// `borrow_chars`, `borrow_element`, or `borrow_element_mut`.
 pub enum NodeData {
-    Element(Box<Element>),
+    Element(Element),
     Text(Chars),
 }
 
 impl NodeData {
     pub fn new_element(name: &QualName, pbag: &PropertyBag) -> NodeData {
-        NodeData::Element(Box::new(create_element(name, pbag)))
+        NodeData::Element(create_element(name, pbag))
     }
 
     pub fn new_chars() -> NodeData {
@@ -220,14 +214,14 @@ impl NodeBorrow for Node {
 
     fn borrow_element(&self) -> Ref<Element> {
         Ref::map(self.borrow(), |n| match *n {
-            NodeData::Element(ref e) => e.as_ref(),
+            NodeData::Element(ref e) => e,
             _ => panic!("tried to borrow_element for a non-element node"),
         })
     }
 
     fn borrow_element_mut(&mut self) -> RefMut<Element> {
         RefMut::map(self.borrow_mut(), |n| match *n {
-            NodeData::Element(ref mut e) => e.as_mut(),
+            NodeData::Element(ref mut e) => e,
             _ => panic!("tried to borrow_element_mut for a non-element node"),
         })
     }

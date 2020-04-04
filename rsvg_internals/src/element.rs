@@ -5,7 +5,6 @@
 //!
 //! [`create_element`]: fn.create_element.html
 
-use downcast_rs::*;
 use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
@@ -54,63 +53,6 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 use crate::transform::Transform;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub enum ElementType {
-    Circle,
-    ClipPath,
-    Ellipse,
-    Filter,
-    Group,
-    Image,
-    Line,
-    LinearGradient,
-    Link,
-    Marker,
-    Mask,
-    NonRendering,
-    Path,
-    Pattern,
-    Polygon,
-    Polyline,
-    RadialGradient,
-    Rect,
-    Stop,
-    Style,
-    Svg,
-    Switch,
-    Symbol,
-    Text,
-    TRef,
-    TSpan,
-    Use,
-
-    // Filter primitives, these start with "Fe" as element names are e.g. "feBlend"
-    FeBlend,
-    FeColorMatrix,
-    FeComponentTransfer,
-    FeComposite,
-    FeConvolveMatrix,
-    FeDiffuseLighting,
-    FeDisplacementMap,
-    FeDistantLight,
-    FeFlood,
-    FeFuncA,
-    FeFuncB,
-    FeFuncG,
-    FeFuncR,
-    FeGaussianBlur,
-    FeImage,
-    FeMerge,
-    FeMergeNode,
-    FeMorphology,
-    FeOffset,
-    FePointLight,
-    FeSpecularLighting,
-    FeSpotLight,
-    FeTile,
-    FeTurbulence,
-}
-
 // After creating/parsing a Element, it will be in a success or an error state.
 // We represent this with a Result, aliased as a ElementResult.  There is no
 // extra information for the Ok case; all the interesting stuff is in the
@@ -134,7 +76,7 @@ pub enum ElementType {
 pub type ElementResult = Result<(), ElementError>;
 
 /// The basic trait that all elements must implement
-pub trait ElementTrait: Downcast {
+pub trait ElementTrait {
     /// Sets per-element attributes from the `pbag`
     ///
     /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
@@ -157,18 +99,9 @@ pub trait ElementTrait: Downcast {
         // by default elements don't draw themselves
         Ok(draw_ctx.empty_bbox())
     }
-
-    /// Returns the FilterEffect trait if this element is a filter primitive
-    fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
-        None
-    }
 }
 
-impl_downcast!(ElementTrait);
-
-/// Contents of an element node in the DOM
-pub struct Element {
-    element_type: ElementType,
+pub struct ElementInner<T: ElementTrait> {
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
@@ -179,51 +112,39 @@ pub struct Element {
     values: ComputedValues,
     cond: bool,
     style_attr: String,
-    element_impl: Box<dyn ElementTrait>,
+    pub element_impl: T,
 }
 
-impl Element {
-    pub fn get_type(&self) -> ElementType {
-        self.element_type
-    }
-
-    pub fn get_impl<T: ElementTrait>(&self) -> &T {
-        if let Some(t) = (&self.element_impl).downcast_ref::<T>() {
-            t
-        } else {
-            panic!("could not downcast");
-        }
-    }
-
-    pub fn element_name(&self) -> &QualName {
+impl<T: ElementTrait> ElementInner<T> {
+    fn element_name(&self) -> &QualName {
         &self.element_name
     }
 
-    pub fn get_id(&self) -> Option<&str> {
+    fn get_id(&self) -> Option<&str> {
         self.id.as_ref().map(String::as_str)
     }
 
-    pub fn get_class(&self) -> Option<&str> {
+    fn get_class(&self) -> Option<&str> {
         self.class.as_ref().map(String::as_str)
     }
 
-    pub fn get_specified_values(&self) -> &SpecifiedValues {
+    fn get_specified_values(&self) -> &SpecifiedValues {
         &self.specified_values
     }
 
-    pub fn get_computed_values(&self) -> &ComputedValues {
+    fn get_computed_values(&self) -> &ComputedValues {
         &self.values
     }
 
-    pub fn set_computed_values(&mut self, values: &ComputedValues) {
+    fn set_computed_values(&mut self, values: &ComputedValues) {
         self.values = values.clone();
     }
 
-    pub fn get_cond(&self) -> bool {
+    fn get_cond(&self) -> bool {
         self.cond
     }
 
-    pub fn get_transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         self.transform
     }
 
@@ -257,9 +178,9 @@ impl Element {
     fn set_conditional_processing_attributes(
         &mut self,
         pbag: &PropertyBag<'_>,
-        locale: &Locale,
     ) -> Result<(), ElementError> {
         let mut cond = self.cond;
+        let locale = locale_from_environment();
 
         for (attr, value) in pbag.iter() {
             let mut parse = || -> Result<_, ValueErrorKind> {
@@ -275,7 +196,7 @@ impl Element {
                     }
 
                     expanded_name!("", "systemLanguage") if cond => {
-                        cond = SystemLanguage::from_attribute(value, locale)
+                        cond = SystemLanguage::from_attribute(value, &locale)
                             .map(|SystemLanguage(res)| res)?;
                     }
 
@@ -326,16 +247,18 @@ impl Element {
     }
 
     // Applies a style declaration to the node's specified_values
-    pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
-        self.specified_values.set_property_from_declaration(
-            declaration,
-            origin,
-            &mut self.important_styles,
-        );
-    }
+    /*
+        fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
+            self.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut self.important_styles,
+            );
+        }
+    */
 
     /// Applies CSS styles from the saved value of the "style" attribute
-    pub fn set_style_attribute(&mut self) {
+    fn set_style_attribute(&mut self) {
         if !self.style_attr.is_empty() {
             if let Err(e) = self.specified_values.parse_style_declarations(
                 self.style_attr.as_str(),
@@ -355,10 +278,549 @@ impl Element {
         self.result = Err(error);
     }
 
-    pub fn is_in_error(&self) -> bool {
+    fn is_in_error(&self) -> bool {
         self.result.is_err()
     }
 
+    fn as_element_trait(&self) -> &dyn ElementTrait {
+        &self.element_impl as &dyn ElementTrait
+    }
+}
+
+impl<T: ElementTrait> fmt::Display for ElementInner<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.element_name().local)?;
+        write!(f, " id={}", self.get_id().unwrap_or("None"))?;
+        Ok(())
+    }
+}
+
+/// Contents of an element node in the DOM
+/// This enum uses `Box<ElementInner>` in order to make each `Element`
+/// the size of a pointer.
+
+pub enum Element {
+    Circle(Box<ElementInner<Circle>>),
+    ClipPath(Box<ElementInner<ClipPath>>),
+    Ellipse(Box<ElementInner<Ellipse>>),
+    Filter(Box<ElementInner<Filter>>),
+    Group(Box<ElementInner<Group>>),
+    Image(Box<ElementInner<Image>>),
+    Line(Box<ElementInner<Line>>),
+    LinearGradient(Box<ElementInner<LinearGradient>>),
+    Link(Box<ElementInner<Link>>),
+    Marker(Box<ElementInner<Marker>>),
+    Mask(Box<ElementInner<Mask>>),
+    NonRendering(Box<ElementInner<NonRendering>>),
+    Path(Box<ElementInner<Path>>),
+    Pattern(Box<ElementInner<Pattern>>),
+    Polygon(Box<ElementInner<Polygon>>),
+    Polyline(Box<ElementInner<Polyline>>),
+    RadialGradient(Box<ElementInner<RadialGradient>>),
+    Rect(Box<ElementInner<Rect>>),
+    Stop(Box<ElementInner<Stop>>),
+    Style(Box<ElementInner<Style>>),
+    Svg(Box<ElementInner<Svg>>),
+    Switch(Box<ElementInner<Switch>>),
+    Symbol(Box<ElementInner<Symbol>>),
+    Text(Box<ElementInner<Text>>),
+    TRef(Box<ElementInner<TRef>>),
+    TSpan(Box<ElementInner<TSpan>>),
+    Use(Box<ElementInner<Use>>),
+
+    // Filter primitives, these start with "Fe" as element names are e.g. "feBlend"
+    FeBlend(Box<ElementInner<FeBlend>>),
+    FeColorMatrix(Box<ElementInner<FeColorMatrix>>),
+    FeComponentTransfer(Box<ElementInner<FeComponentTransfer>>),
+    FeComposite(Box<ElementInner<FeComposite>>),
+    FeConvolveMatrix(Box<ElementInner<FeConvolveMatrix>>),
+    FeDiffuseLighting(Box<ElementInner<FeDiffuseLighting>>),
+    FeDisplacementMap(Box<ElementInner<FeDisplacementMap>>),
+    FeDistantLight(Box<ElementInner<FeDistantLight>>),
+    FeFlood(Box<ElementInner<FeFlood>>),
+    FeFuncA(Box<ElementInner<FeFuncA>>),
+    FeFuncB(Box<ElementInner<FeFuncB>>),
+    FeFuncG(Box<ElementInner<FeFuncG>>),
+    FeFuncR(Box<ElementInner<FeFuncR>>),
+    FeGaussianBlur(Box<ElementInner<FeGaussianBlur>>),
+    FeImage(Box<ElementInner<FeImage>>),
+    FeMerge(Box<ElementInner<FeMerge>>),
+    FeMergeNode(Box<ElementInner<FeMergeNode>>),
+    FeMorphology(Box<ElementInner<FeMorphology>>),
+    FeOffset(Box<ElementInner<FeOffset>>),
+    FePointLight(Box<ElementInner<FePointLight>>),
+    FeSpecularLighting(Box<ElementInner<FeSpecularLighting>>),
+    FeSpotLight(Box<ElementInner<FeSpotLight>>),
+    FeTile(Box<ElementInner<FeTile>>),
+    FeTurbulence(Box<ElementInner<FeTurbulence>>),
+}
+
+macro_rules! call_inner {
+    ($element:ident, $method:ident) => {
+        match $element {
+            Element::Circle(i) => i.$method(),
+            Element::ClipPath(i) => i.$method(),
+            Element::Ellipse(i) => i.$method(),
+            Element::Filter(i) => i.$method(),
+            Element::Group(i) => i.$method(),
+            Element::Image(i) => i.$method(),
+            Element::Line(i) => i.$method(),
+            Element::LinearGradient(i) => i.$method(),
+            Element::Link(i) => i.$method(),
+            Element::Marker(i) => i.$method(),
+            Element::Mask(i) => i.$method(),
+            Element::NonRendering(i) => i.$method(),
+            Element::Path(i) => i.$method(),
+            Element::Pattern(i) => i.$method(),
+            Element::Polygon(i) => i.$method(),
+            Element::Polyline(i) => i.$method(),
+            Element::RadialGradient(i) => i.$method(),
+            Element::Rect(i) => i.$method(),
+            Element::Stop(i) => i.$method(),
+            Element::Style(i) => i.$method(),
+            Element::Svg(i) => i.$method(),
+            Element::Switch(i) => i.$method(),
+            Element::Symbol(i) => i.$method(),
+            Element::Text(i) => i.$method(),
+            Element::TRef(i) => i.$method(),
+            Element::TSpan(i) => i.$method(),
+            Element::Use(i) => i.$method(),
+            Element::FeBlend(i) => i.$method(),
+            Element::FeColorMatrix(i) => i.$method(),
+            Element::FeComponentTransfer(i) => i.$method(),
+            Element::FeComposite(i) => i.$method(),
+            Element::FeConvolveMatrix(i) => i.$method(),
+            Element::FeDiffuseLighting(i) => i.$method(),
+            Element::FeDisplacementMap(i) => i.$method(),
+            Element::FeDistantLight(i) => i.$method(),
+            Element::FeFlood(i) => i.$method(),
+            Element::FeFuncA(i) => i.$method(),
+            Element::FeFuncB(i) => i.$method(),
+            Element::FeFuncG(i) => i.$method(),
+            Element::FeFuncR(i) => i.$method(),
+            Element::FeGaussianBlur(i) => i.$method(),
+            Element::FeImage(i) => i.$method(),
+            Element::FeMerge(i) => i.$method(),
+            Element::FeMergeNode(i) => i.$method(),
+            Element::FeMorphology(i) => i.$method(),
+            Element::FeOffset(i) => i.$method(),
+            Element::FePointLight(i) => i.$method(),
+            Element::FeSpecularLighting(i) => i.$method(),
+            Element::FeSpotLight(i) => i.$method(),
+            Element::FeTile(i) => i.$method(),
+            Element::FeTurbulence(i) => i.$method(),
+        }
+    };
+
+    ($element:ident, $method:ident, $arg:ident) => {
+        match $element {
+            Element::Circle(i) => i.$method($arg),
+            Element::ClipPath(i) => i.$method($arg),
+            Element::Ellipse(i) => i.$method($arg),
+            Element::Filter(i) => i.$method($arg),
+            Element::Group(i) => i.$method($arg),
+            Element::Image(i) => i.$method($arg),
+            Element::Line(i) => i.$method($arg),
+            Element::LinearGradient(i) => i.$method($arg),
+            Element::Link(i) => i.$method($arg),
+            Element::Marker(i) => i.$method($arg),
+            Element::Mask(i) => i.$method($arg),
+            Element::NonRendering(i) => i.$method($arg),
+            Element::Path(i) => i.$method($arg),
+            Element::Pattern(i) => i.$method($arg),
+            Element::Polygon(i) => i.$method($arg),
+            Element::Polyline(i) => i.$method($arg),
+            Element::RadialGradient(i) => i.$method($arg),
+            Element::Rect(i) => i.$method($arg),
+            Element::Stop(i) => i.$method($arg),
+            Element::Style(i) => i.$method($arg),
+            Element::Svg(i) => i.$method($arg),
+            Element::Switch(i) => i.$method($arg),
+            Element::Symbol(i) => i.$method($arg),
+            Element::Text(i) => i.$method($arg),
+            Element::TRef(i) => i.$method($arg),
+            Element::TSpan(i) => i.$method($arg),
+            Element::Use(i) => i.$method($arg),
+            Element::FeBlend(i) => i.$method($arg),
+            Element::FeColorMatrix(i) => i.$method($arg),
+            Element::FeComponentTransfer(i) => i.$method($arg),
+            Element::FeComposite(i) => i.$method($arg),
+            Element::FeConvolveMatrix(i) => i.$method($arg),
+            Element::FeDiffuseLighting(i) => i.$method($arg),
+            Element::FeDisplacementMap(i) => i.$method($arg),
+            Element::FeDistantLight(i) => i.$method($arg),
+            Element::FeFlood(i) => i.$method($arg),
+            Element::FeFuncA(i) => i.$method($arg),
+            Element::FeFuncB(i) => i.$method($arg),
+            Element::FeFuncG(i) => i.$method($arg),
+            Element::FeFuncR(i) => i.$method($arg),
+            Element::FeGaussianBlur(i) => i.$method($arg),
+            Element::FeImage(i) => i.$method($arg),
+            Element::FeMerge(i) => i.$method($arg),
+            Element::FeMergeNode(i) => i.$method($arg),
+            Element::FeMorphology(i) => i.$method($arg),
+            Element::FeOffset(i) => i.$method($arg),
+            Element::FePointLight(i) => i.$method($arg),
+            Element::FeSpecularLighting(i) => i.$method($arg),
+            Element::FeSpotLight(i) => i.$method($arg),
+            Element::FeTile(i) => i.$method($arg),
+            Element::FeTurbulence(i) => i.$method($arg),
+        }
+    };
+}
+
+// FIXME: find better name
+#[macro_export]
+macro_rules! get_element_impl {
+    ($element:expr, $element_type:ident) => {
+        match $element {
+            Element::$element_type(ref e) => &e.element_impl,
+            _ => unreachable!(),
+        }
+    };
+}
+
+impl Element {
+    pub fn element_name(&self) -> &QualName {
+        call_inner!(self, element_name)
+    }
+
+    pub fn get_id(&self) -> Option<&str> {
+        call_inner!(self, get_id)
+    }
+
+    pub fn get_class(&self) -> Option<&str> {
+        call_inner!(self, get_class)
+    }
+
+    pub fn get_specified_values(&self) -> &SpecifiedValues {
+        call_inner!(self, get_specified_values)
+    }
+
+    pub fn get_computed_values(&self) -> &ComputedValues {
+        call_inner!(self, get_computed_values)
+    }
+
+    pub fn set_computed_values(&mut self, values: &ComputedValues) {
+        call_inner!(self, set_computed_values, values);
+    }
+
+    pub fn get_cond(&self) -> bool {
+        call_inner!(self, get_cond)
+    }
+
+    pub fn get_transform(&self) -> Transform {
+        call_inner!(self, get_transform)
+    }
+
+    fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
+        call_inner!(self, save_style_attribute, pbag);
+    }
+
+    fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
+        call_inner!(self, set_transform_attribute, pbag)
+    }
+
+    fn set_conditional_processing_attributes(
+        &mut self,
+        pbag: &PropertyBag<'_>,
+    ) -> Result<(), ElementError> {
+        call_inner!(self, set_conditional_processing_attributes, pbag)
+    }
+
+    fn set_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
+        call_inner!(self, set_presentation_attributes, pbag)
+    }
+
+    fn set_element_specific_attributes(
+        &mut self,
+        pbag: &PropertyBag<'_>,
+    ) -> Result<(), ElementError> {
+        call_inner!(self, set_element_specific_attributes, pbag)
+    }
+
+    fn set_overridden_properties(&mut self) {
+        call_inner!(self, set_overridden_properties)
+    }
+
+    // Applies a style declaration to the node's specified_values
+    // FIXME: done here inline because I do not know how to generalize the
+    // call_inner macro for n args
+    pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
+        match self {
+            Element::Circle(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::ClipPath(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Ellipse(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Filter(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Group(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Image(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Line(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::LinearGradient(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Link(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Marker(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Mask(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::NonRendering(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Path(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Pattern(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Polygon(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Polyline(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::RadialGradient(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Rect(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Stop(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Style(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Svg(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Switch(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Symbol(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Text(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::TRef(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::TSpan(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::Use(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeBlend(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeColorMatrix(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeComponentTransfer(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeComposite(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeConvolveMatrix(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeDiffuseLighting(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeDisplacementMap(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeDistantLight(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeFlood(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeFuncA(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeFuncB(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeFuncG(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeFuncR(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeGaussianBlur(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeImage(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeMerge(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeMergeNode(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeMorphology(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeOffset(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FePointLight(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeSpecularLighting(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeSpotLight(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeTile(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+            Element::FeTurbulence(i) => i.specified_values.set_property_from_declaration(
+                declaration,
+                origin,
+                &mut i.important_styles,
+            ),
+        }
+    }
+
+    /// Applies CSS styles from the saved value of the "style" attribute
+    pub fn set_style_attribute(&mut self) {
+        call_inner!(self, set_style_attribute);
+    }
+
+    fn set_error(&mut self, error: ElementError) {
+        call_inner!(self, set_error, error);
+    }
+
+    pub fn is_in_error(&self) -> bool {
+        call_inner!(self, is_in_error)
+    }
+
+    // FIXME: done here inline because I do not know how to generalize
+    // call_inner macro for n args. If we do that we can remove as_element_trait
     pub fn draw(
         &self,
         node: &Node,
@@ -368,9 +830,14 @@ impl Element {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if !self.is_in_error() {
-            draw_ctx.with_saved_transform(Some(self.transform), &mut |dc| {
-                self.element_impl
-                    .draw(node, acquired_nodes, cascaded, dc, clipping)
+            draw_ctx.with_saved_transform(Some(self.get_transform()), &mut |dc| {
+                call_inner!(self, as_element_trait).draw(
+                    node,
+                    acquired_nodes,
+                    cascaded,
+                    dc,
+                    clipping,
+                )
             })
         } else {
             rsvg_log!("(not rendering element {} because it is in error)", self);
@@ -381,35 +848,54 @@ impl Element {
     }
 
     pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
-        self.element_impl.as_filter_effect()
+        match self {
+            Element::FeBlend(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeColorMatrix(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeComponentTransfer(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeComposite(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeConvolveMatrix(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeDiffuseLighting(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeDisplacementMap(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeFlood(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeGaussianBlur(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeImage(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeMerge(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeMorphology(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeOffset(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeSpecularLighting(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeTile(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeTurbulence(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            _ => None,
+        }
     }
 
     /// Returns whether an element of a particular type is only accessed by reference
     // from other elements' attributes.  The element could in turn cause other nodes
     // to get referenced, potentially causing reference cycles.
     pub fn is_accessed_by_reference(&self) -> bool {
-        use ElementType::*;
-
-        match self.element_type {
-            ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Element::ClipPath(_) |
+            Element::Filter(_) |
+            Element::LinearGradient(_) |
+            Element::Marker(_) |
+            Element::Mask(_) |
+            Element::Pattern(_) |
+            Element::RadialGradient(_)
+        )
     }
 }
 
 impl fmt::Display for Element {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.get_type())?;
-        write!(f, " id={}", self.get_id().unwrap_or("None"))?;
-        Ok(())
+        call_inner!(self, fmt, f)
     }
 }
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
         pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element {
-            Element {
-                element_type: ElementType::$element_type,
+            Element::$element_type(Box::new(ElementInner {
                 element_name: element_name.clone(),
                 id: id.map(str::to_string),
                 class: class.map(str::to_string),
@@ -420,8 +906,8 @@ macro_rules! e {
                 values: ComputedValues::default(),
                 cond: true,
                 style_attr: String::new(),
-                element_impl: Box::new(<$element_type>::default()),
-            }
+                element_impl: <$element_type>::default(),
+            }))
         }
     };
 }
@@ -654,9 +1140,7 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
 
     if let Err(e) = element
         .set_transform_attribute(pbag)
-        .and_then(|_| {
-            element.set_conditional_processing_attributes(pbag, &locale_from_environment())
-        })
+        .and_then(|_| element.set_conditional_processing_attributes(pbag))
         .and_then(|_| element.set_element_specific_attributes(pbag))
         .and_then(|_| element.set_presentation_attributes(pbag))
     {
