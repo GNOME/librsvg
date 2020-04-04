@@ -65,7 +65,7 @@ pub type WeakNode = rctree::WeakNode<NodeData>;
 /// ## Accessing the node's contents
 ///
 /// Code that traverses the DOM tree needs to find out at runtime what
-/// each node stands for.  First, use the `get_type` or `is_element`
+/// each node stands for.  First, use the `is_chars` or `is_element`
 /// methods from the `NodeBorrow` trait to see if you can then call
 /// `borrow_chars`, `borrow_element`, or `borrow_element_mut`.
 pub enum NodeData {
