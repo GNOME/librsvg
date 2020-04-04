@@ -11,7 +11,7 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -462,33 +462,33 @@ impl UnresolvedGradient {
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
     fn add_color_stops_from_node(&mut self, node: &Node) {
-        let element_type = node.borrow_element().get_type();
-
         assert!(
-            element_type == ElementType::LinearGradient
-                || element_type == ElementType::RadialGradient
+            matches!(*node.borrow_element(), Element::LinearGradient(_) | Element::RadialGradient(_))
         );
 
-        for child_node in node.children().filter(|c| c.is_element()) {
-            let child = child_node.borrow_element();
+        for child in node.children().filter(|c| c.is_element()) {
+            let elt = child.borrow_element();
 
-            if child.get_type() != ElementType::Stop {
-                continue;
-            }
+            match *elt {
+                Element::Stop(ref stop) => {
+                    if elt.is_in_error() {
+                        rsvg_log!("(not using gradient stop {} because it is in error)", child);
+                    } else {
+                        let cascaded = CascadedValues::new_from_node(&child);
+                        let values = cascaded.get();
+                        let rgba = match values.stop_color() {
+                            StopColor(cssparser::Color::CurrentColor) => values.color().0,
+                            StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
+                        };
 
-            let stop = child.get_impl::<Stop>();
-
-            if child.is_in_error() {
-                rsvg_log!("(not using gradient stop {} because it is in error)", child);
-            } else {
-                let cascaded = CascadedValues::new_from_node(&child_node);
-                let values = cascaded.get();
-                let rgba = match values.stop_color() {
-                    StopColor(cssparser::Color::CurrentColor) => values.color().0,
-                    StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
-                };
-
-                self.add_color_stop(stop.offset, rgba, values.stop_opacity().0);
+                        self.add_color_stop(
+                            stop.element_impl.offset,
+                            rgba,
+                            values.stop_opacity().0,
+                        );
+                    }
+                }
+                _ => (),
             }
         }
     }
@@ -694,13 +694,12 @@ macro_rules! impl_paint_source {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let elt = acquired_node.borrow_element();
-                        let unresolved = match acquired_node.borrow_element().get_type() {
-                            ElementType::$gradient_type => elt
-                                .get_impl::<$gradient_type>()
-                                .get_unresolved(&acquired_node),
-                            ElementType::$other_type => {
-                                elt.get_impl::<$other_type>().get_unresolved(&acquired_node)
+                        let unresolved = match *acquired_node.borrow_element() {
+                            Element::$gradient_type(ref g) => {
+                                g.element_impl.get_unresolved(&acquired_node)
+                            }
+                            Element::$other_type(ref g) => {
+                                g.element_impl.get_unresolved(&acquired_node)
                             }
                             _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
                         };
@@ -841,10 +840,9 @@ mod tests {
             &bag,
         ));
 
-        let borrow = node.borrow_element();
-        let g = borrow.get_impl::<LinearGradient>();
-        let Unresolved { gradient, .. } = g.get_unresolved(&node);
-        let gradient = gradient.resolve_from_defaults();
+        let unresolved =
+            get_element_impl!(*node.borrow_element(), LinearGradient).get_unresolved(&node);
+        let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
         let node = Node::new(NodeData::new_element(
@@ -852,10 +850,9 @@ mod tests {
             &bag,
         ));
 
-        let borrow = node.borrow_element();
-        let g = borrow.get_impl::<RadialGradient>();
-        let Unresolved { gradient, .. } = g.get_unresolved(&node);
-        let gradient = gradient.resolve_from_defaults();
+        let unresolved =
+            get_element_impl!(*node.borrow_element(), RadialGradient).get_unresolved(&node);
+        let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
     }
 }

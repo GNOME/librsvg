@@ -11,14 +11,14 @@ use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::css::{self, Origin, Stylesheet};
-use crate::element::ElementType;
+use crate::element::Element;
 use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
 use crate::property_bag::PropertyBag;
-use crate::structure::{IntrinsicDimensions, Svg};
+use crate::structure::IntrinsicDimensions;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
@@ -100,11 +100,7 @@ impl Document {
 
     /// Gets the dimension parameters of the toplevel `<svg>`.
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let root = self.root();
-        let elt = root.borrow_element();
-
-        assert!(elt.get_type() == ElementType::Svg);
-        elt.get_impl::<Svg>().get_intrinsic_dimensions()
+        get_element_impl!(*self.root().borrow_element(), Svg).get_intrinsic_dimensions()
     }
 
     /// Runs the CSS cascade on the document tree
@@ -477,7 +473,7 @@ impl DocumentBuilder {
 
         match tree {
             Some(root) if root.is_element() => {
-                if root.borrow_element().get_type() == ElementType::Svg {
+                if matches!(*root.borrow_element(), Element::Svg(_)) {
                     let mut document = Document {
                         tree: root,
                         ids,

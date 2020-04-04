@@ -54,8 +54,6 @@ impl Default for FeBlend {
 }
 
 impl ElementTrait for FeBlend {
-    impl_node_as_filter_effect!();
-
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(pbag)?;
 
