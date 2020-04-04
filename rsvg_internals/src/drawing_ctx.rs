@@ -14,15 +14,13 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNode, AcquiredNodes};
 use crate::dpi::Dpi;
-use crate::element::ElementType;
+use crate::element::{Element, ElementType};
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
-use crate::gradient::{LinearGradient, RadialGradient};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::path_builder::*;
-use crate::pattern::Pattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, Opacity, Overflow, ShapeRendering, StrokeDasharray, StrokeLinecap,
@@ -30,7 +28,7 @@ use crate::property_defs::{
 };
 use crate::rect::Rect;
 use crate::shapes::Markers;
-use crate::structure::{ClipPath, Mask, Symbol, Use};
+use crate::structure::Mask;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -323,7 +321,7 @@ impl DrawingCtx {
         }
 
         let node = clip_node.as_ref().unwrap();
-        let units = node.borrow_element().get_impl::<ClipPath>().get_units();
+        let units = get_element_impl!(*node.borrow_element(), ClipPath).get_units();
 
         if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
             // The node being clipped is empty / doesn't have a
@@ -480,12 +478,14 @@ impl DrawingCtx {
                 let mask = mask_value.0.get();
 
                 // The `filter` property does not apply to masks.
-                let filter =
-                    if node.is_element() && node.borrow_element().get_type() == ElementType::Mask {
-                        None
-                    } else {
-                        values.filter().0.get().cloned()
-                    };
+                let filter = if node.is_element() {
+                    match *node.borrow_element() {
+                        Element::Mask(_) => None,
+                        _ => values.filter().0.get().cloned(),
+                    }
+                } else {
+                    values.filter().0.get().cloned()
+                };
 
                 let UnitInterval(opacity) = values.opacity().0;
 
@@ -580,10 +580,11 @@ impl DrawingCtx {
                         if let Ok(acquired) = acquired_nodes.acquire(fragment, &[ElementType::Mask])
                         {
                             let mask_node = acquired.get();
+                            let mask_elt = mask_node.borrow_element();
 
                             res = res.and_then(|bbox| {
                                 dc.generate_cairo_mask(
-                                    &mask_node.borrow_element().get_impl::<Mask>(),
+                                    get_element_impl!(*mask_elt, Mask),
                                     &mask_node,
                                     affines.for_temporary_surface,
                                     &bbox,
@@ -823,37 +824,34 @@ impl DrawingCtx {
 
                         assert!(node.is_element());
 
-                        had_paint_server = match node.borrow_element().get_type() {
-                            ElementType::LinearGradient => node
-                                .borrow_element()
-                                .get_impl::<LinearGradient>()
-                                .resolve_fallbacks_and_set_pattern(
+                        had_paint_server = match *node.borrow_element() {
+                            Element::LinearGradient(ref g) => {
+                                g.element_impl.resolve_fallbacks_and_set_pattern(
                                     &node,
                                     acquired_nodes,
                                     self,
                                     opacity,
                                     bbox,
-                                )?,
-                            ElementType::RadialGradient => node
-                                .borrow_element()
-                                .get_impl::<RadialGradient>()
-                                .resolve_fallbacks_and_set_pattern(
+                                )?
+                            }
+                            Element::RadialGradient(ref g) => {
+                                g.element_impl.resolve_fallbacks_and_set_pattern(
                                     &node,
                                     acquired_nodes,
                                     self,
                                     opacity,
                                     bbox,
-                                )?,
-                            ElementType::Pattern => node
-                                .borrow_element()
-                                .get_impl::<Pattern>()
-                                .resolve_fallbacks_and_set_pattern(
+                                )?
+                            }
+                            Element::Pattern(ref p) => {
+                                p.element_impl.resolve_fallbacks_and_set_pattern(
                                     &node,
                                     acquired_nodes,
                                     self,
                                     opacity,
                                     bbox,
-                                )?,
+                                )?
+                            }
                             _ => unreachable!(),
                         }
                     }
@@ -1115,9 +1113,6 @@ impl DrawingCtx {
         cascaded: &CascadedValues<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let elt = node.borrow_element();
-        let use_ = elt.get_impl::<Use>();
-
         // <use> is an element that is used directly, unlike
         // <pattern>, which is used through a fill="url(#...)"
         // reference.  However, <use> will always reference another
@@ -1134,7 +1129,10 @@ impl DrawingCtx {
             }
         })?;
 
+        let elt = node.borrow_element();
+        let use_ = get_element_impl!(*elt, Use);
         let link = use_.get_link();
+
         if link.is_none() {
             return Ok(self.empty_bbox());
         }
@@ -1171,47 +1169,56 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
-        if child.is_element() && child.borrow_element().get_type() == ElementType::Symbol {
+        // if it is a symbol
+        if child.is_element() {
             let elt = child.borrow_element();
-            let symbol = elt.get_impl::<Symbol>();
 
-            let clip_mode = if !values.is_overflow()
-                || (values.overflow() == Overflow::Visible
-                    && child.borrow_element().get_specified_values().is_overflow())
-            {
-                Some(ClipMode::ClipToVbox)
-            } else {
-                None
-            };
+            if let Element::Symbol(ref symbol) = *elt {
+                let clip_mode = if !values.is_overflow()
+                    || (values.overflow() == Overflow::Visible
+                        && elt.get_specified_values().is_overflow())
+                {
+                    Some(ClipMode::ClipToVbox)
+                } else {
+                    None
+                };
 
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                let _params = dc.push_new_viewport(
-                    symbol.get_viewbox(),
-                    use_rect,
-                    symbol.get_preserve_aspect_ratio(),
-                    clip_mode,
+                return self.with_discrete_layer(
+                    node,
+                    acquired_nodes,
+                    values,
+                    clipping,
+                    &mut |an, dc| {
+                        let _params = dc.push_new_viewport(
+                            symbol.element_impl.get_viewbox(),
+                            use_rect,
+                            symbol.element_impl.get_preserve_aspect_ratio(),
+                            clip_mode,
+                        );
+
+                        child.draw_children(
+                            an,
+                            &CascadedValues::new_from_values(&child, values),
+                            dc,
+                            clipping,
+                        )
+                    },
                 );
+            }
+        };
 
-                child.draw_children(
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    dc,
-                    clipping,
-                )
-            })
-        } else {
-            let cr = self.get_cairo_context();
-            cr.translate(use_rect.x0, use_rect.y0);
+        // all other nodes
+        let cr = self.get_cairo_context();
+        cr.translate(use_rect.x0, use_rect.y0);
 
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                dc.draw_node_from_stack(
-                    &child,
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    clipping,
-                )
-            })
-        }
+        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+            dc.draw_node_from_stack(
+                &child,
+                an,
+                &CascadedValues::new_from_values(&child, values),
+                clipping,
+            )
+        })
     }
 }
 
@@ -1278,10 +1285,7 @@ fn get_clip_in_user_and_object_space(
         .and_then(|acquired| {
             let clip_node = acquired.get().clone();
 
-            let units = clip_node
-                .borrow_element()
-                .get_impl::<ClipPath>()
-                .get_units();
+            let units = get_element_impl!(*clip_node.borrow_element(), ClipPath).get_units();
 
             match units {
                 CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),

@@ -9,9 +9,8 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::RenderingError;
-use crate::filter::Filter;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -52,14 +51,6 @@ pub trait FilterEffect: ElementTrait {
     /// Primitives that do color blending (like `feComposite` or `feBlend`) should return `true`
     /// here, whereas primitives that don't (like `feOffset`) should return `false`.
     fn is_affected_by_color_interpolation_filters(&self) -> bool;
-}
-
-macro_rules! impl_node_as_filter_effect {
-    () => (
-        fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
-            Some(self)
-        }
-    )
 }
 
 pub mod blend;
@@ -116,12 +107,9 @@ impl Primitive {
         let primitiveunits = parent
             .and_then(|parent| {
                 assert!(parent.is_element());
-                let parent_elt = parent.borrow_element();
-
-                if parent_elt.get_type() == ElementType::Filter {
-                    Some(parent_elt.get_impl::<Filter>().get_primitive_units())
-                } else {
-                    None
+                match *parent.borrow_element() {
+                    Element::Filter(ref f) => Some(f.element_impl.get_primitive_units()),
+                    _ => None,
                 }
             })
             .unwrap_or(CoordUnits::UserSpaceOnUse);
@@ -257,7 +245,7 @@ pub fn render(
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
     let filter_node = &*filter_node;
-    assert_eq!(filter_node.borrow_element().get_type(), ElementType::Filter);
+    assert!(matches!(*filter_node.borrow_element(), Element::Filter(_)));
     assert!(!filter_node.borrow_element().is_in_error());
 
     let mut filter_ctx = FilterContext::new(

@@ -12,7 +12,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait, ElementType};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
@@ -572,7 +572,7 @@ fn emit_marker_by_name(
     if let Ok(acquired) = acquired_nodes.acquire(name, &[ElementType::Marker]) {
         let node = acquired.get();
 
-        node.borrow_element().get_impl::<Marker>().render(
+        get_element_impl!(*node.borrow_element(), Marker).render(
             &node,
             acquired_nodes,
             draw_ctx,

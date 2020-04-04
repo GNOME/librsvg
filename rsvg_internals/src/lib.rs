@@ -81,6 +81,9 @@ mod parsers;
 mod coord_units;
 
 #[macro_use]
+mod element;
+
+#[macro_use]
 mod float_eq_cairo;
 
 #[macro_use]
@@ -97,7 +100,6 @@ mod dasharray;
 mod document;
 mod dpi;
 mod drawing_ctx;
-mod element;
 mod error;
 mod filter;
 pub mod filters;
