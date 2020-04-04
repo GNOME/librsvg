@@ -283,21 +283,7 @@ impl NodeDraw for Node {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         match *self.borrow() {
-            NodeData::Element(ref e) => {
-                if !e.is_in_error() {
-                    let transform = e.get_transform();
-                    draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
-                        e.get_element_trait()
-                            .draw(self, acquired_nodes, cascaded, dc, clipping)
-                    })
-                } else {
-                    rsvg_log!("(not rendering element {} because it is in error)", self);
-
-                    // maybe we should actually return a RenderingError::NodeIsInError here?
-                    Ok(draw_ctx.empty_bbox())
-                }
-            }
-
+            NodeData::Element(ref e) => e.draw(self, acquired_nodes, cascaded, draw_ctx, clipping),
             _ => Ok(draw_ctx.empty_bbox()),
         }
     }

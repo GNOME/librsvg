@@ -350,6 +350,27 @@ impl Element {
     pub fn is_in_error(&self) -> bool {
         self.result.is_err()
     }
+
+    pub fn draw(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        if !self.is_in_error() {
+            draw_ctx.with_saved_transform(Some(self.transform), &mut |dc| {
+                self.element_impl
+                    .draw(node, acquired_nodes, cascaded, dc, clipping)
+            })
+        } else {
+            rsvg_log!("(not rendering element {} because it is in error)", self);
+
+            // maybe we should actually return a RenderingError::ElementIsInError here?
+            Ok(draw_ctx.empty_bbox())
+        }
+    }
 }
 
 impl fmt::Display for Element {
