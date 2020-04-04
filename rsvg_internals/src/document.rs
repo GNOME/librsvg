@@ -289,7 +289,7 @@ impl<'i> AcquiredNodes<'i> {
         }
     }
 
-    pub fn lookup_node(
+    fn lookup_node(
         &self,
         fragment: &Fragment,
         element_types: &[ElementType],
