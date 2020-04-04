@@ -1,20 +1,19 @@
-use std::cmp::max;
-
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use matches::matches;
 use nalgebra::Vector3;
 use num_traits::identities::Zero;
 use rayon::prelude::*;
+use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     light::{
         bottom_left_normal, bottom_right_normal, bottom_row_normal, interior_normal,
-        left_column_normal, light_source::FeDistantLight, light_source::FePointLight,
-        light_source::FeSpotLight, light_source::LightSource, right_column_normal, top_left_normal,
+        left_column_normal, light_source::LightSource, right_column_normal, top_left_normal,
         top_right_normal, top_row_normal, Normal,
     },
     FilterEffect, FilterError, PrimitiveWithInput,
@@ -94,8 +93,6 @@ impl Default for FeDiffuseLighting {
 }
 
 impl ElementTrait for FeDiffuseLighting {
-    impl_node_as_filter_effect!();
-
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
@@ -163,8 +160,6 @@ impl Default for FeSpecularLighting {
 }
 
 impl ElementTrait for FeSpecularLighting {
-    impl_node_as_filter_effect!();
-
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_atts(pbag)?;
 
@@ -492,13 +487,7 @@ impl_lighting_filter!(FeSpecularLighting, specular_alpha);
 
 fn find_light_source(node: &Node, ctx: &FilterContext) -> Result<LightSource, FilterError> {
     let mut light_sources = node.children().rev().filter(|c| {
-        c.is_element()
-            && match c.borrow_element().get_type() {
-                ElementType::FeDistantLight
-                | ElementType::FePointLight
-                | ElementType::FeSpotLight => true,
-                _ => false,
-            }
+        c.is_element() && matches!(*c.borrow_element(), Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_))
     });
 
     let node = light_sources.next();
@@ -513,10 +502,10 @@ fn find_light_source(node: &Node, ctx: &FilterContext) -> Result<LightSource, Fi
         return Err(FilterError::ChildNodeInError);
     }
 
-    let light_source = match elt.get_type() {
-        ElementType::FeDistantLight => elt.get_impl::<FeDistantLight>().transform(ctx),
-        ElementType::FePointLight => elt.get_impl::<FePointLight>().transform(ctx),
-        ElementType::FeSpotLight => elt.get_impl::<FeSpotLight>().transform(ctx),
+    let light_source = match *elt {
+        Element::FeDistantLight(ref l) => l.transform(ctx),
+        Element::FePointLight(ref l) => l.transform(ctx),
+        Element::FeSpotLight(ref l) => l.transform(ctx),
         _ => unreachable!(),
     };
 

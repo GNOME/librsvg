@@ -84,6 +84,9 @@ mod coord_units;
 mod float_eq_cairo;
 
 #[macro_use]
+mod node;
+
+#[macro_use]
 mod property_macros;
 
 mod allowed_url;
@@ -110,7 +113,6 @@ mod iri;
 mod length;
 mod limits;
 mod marker;
-mod node;
 mod number_list;
 mod paint_server;
 mod path_builder;
