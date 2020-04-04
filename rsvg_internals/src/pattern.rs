@@ -10,7 +10,7 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
@@ -185,11 +185,9 @@ impl PaintSource for Pattern {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let elt = acquired_node.borrow_element();
-                        match elt.get_type() {
-                            ElementType::Pattern => {
-                                let unresolved =
-                                    elt.get_impl::<Pattern>().get_unresolved(&acquired_node);
+                        match *acquired_node.borrow_element() {
+                            Element::Pattern(ref p) => {
+                                let unresolved = p.element_impl.get_unresolved(&acquired_node);
                                 pattern = pattern.resolve_from_fallback(&unresolved.pattern);
                                 fallback = unresolved.fallback;
 
@@ -576,10 +574,8 @@ mod tests {
             &bag,
         ));
 
-        let borrow = node.borrow_element();
-        let p = borrow.get_impl::<Pattern>();
-        let Unresolved { pattern, .. } = p.get_unresolved(&node);
-        let pattern = pattern.resolve_from_defaults();
+        let unresolved = borrow_element_as!(node, Pattern).get_unresolved(&node);
+        let pattern = unresolved.pattern.resolve_from_defaults();
         assert!(pattern.is_resolved());
     }
 }
