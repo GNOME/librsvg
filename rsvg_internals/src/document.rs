@@ -343,7 +343,7 @@ impl<'i> AcquiredNodes<'i> {
 
         let node = self.lookup_node(fragment, element_types)?;
 
-        if node_is_accessed_by_reference(&node) {
+        if node.is_element() && node.borrow_element().is_accessed_by_reference() {
             self.acquire_ref(&node)
         } else {
             Ok(AcquiredNode {
@@ -363,23 +363,6 @@ impl<'i> AcquiredNodes<'i> {
                 node: node.clone(),
             })
         }
-    }
-}
-
-// Returns whether a node of a particular type is only accessed by reference
-// from other nodes' atributes.  The node could in turn cause other nodes
-// to get referenced, potentially causing reference cycles.
-fn node_is_accessed_by_reference(node: &Node) -> bool {
-    use ElementType::*;
-
-    if !node.is_element() {
-        return false;
-    }
-
-    match node.borrow_element().get_type() {
-        ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
-
-        _ => false,
     }
 }
 

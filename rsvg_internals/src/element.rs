@@ -383,6 +383,18 @@ impl Element {
     pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
         self.element_impl.as_filter_effect()
     }
+
+    /// Returns whether an element of a particular type is only accessed by reference
+    // from other elements' attributes.  The element could in turn cause other nodes
+    // to get referenced, potentially causing reference cycles.
+    pub fn is_accessed_by_reference(&self) -> bool {
+        use ElementType::*;
+
+        match self.element_type {
+            ClipPath | Filter | LinearGradient | Marker | Mask | Pattern | RadialGradient => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for Element {
