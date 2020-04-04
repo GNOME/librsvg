@@ -52,8 +52,6 @@ impl Default for FeColorMatrix {
 
 #[rustfmt::skip]
 impl ElementTrait for FeColorMatrix {
-    impl_node_as_filter_effect!();
-
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(pbag)?;
 

@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::node::{Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
@@ -35,9 +35,6 @@ impl Default for FeMerge {
 }
 
 impl ElementTrait for FeMerge {
-    impl_node_as_filter_effect!();
-
-    #[inline]
     fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_atts(pbag)
     }
@@ -89,38 +86,39 @@ impl FilterEffect for FeMerge {
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.
         let mut bounds = self.base.get_bounds(ctx, node.parent().as_ref())?;
-        for child in node
-            .children()
-            .filter(|c| c.is_element() && c.borrow_element().get_type() == ElementType::FeMergeNode)
-        {
+        for child in node.children().filter(|c| c.is_element()) {
             let elt = child.borrow_element();
 
             if elt.is_in_error() {
                 return Err(FilterError::ChildNodeInError);
             }
 
-            let input = ctx.get_input(
-                acquired_nodes,
-                draw_ctx,
-                elt.get_impl::<FeMergeNode>().in_.as_ref(),
-            )?;
-            bounds = bounds.add_input(&input);
+            match *elt {
+                Element::FeMergeNode(ref merge_node) => {
+                    let input = ctx.get_input(acquired_nodes, draw_ctx, merge_node.in_.as_ref())?;
+                    bounds = bounds.add_input(&input);
+                }
+                _ => (),
+            }
         }
+
         let bounds = bounds.into_irect(draw_ctx);
 
         // Now merge them all.
         let mut output_surface = None;
-        for child in node
-            .children()
-            .filter(|c| c.is_element() && c.borrow_element().get_type() == ElementType::FeMergeNode)
-        {
-            output_surface = Some(child.borrow_element().get_impl::<FeMergeNode>().render(
-                ctx,
-                acquired_nodes,
-                draw_ctx,
-                bounds,
-                output_surface,
-            )?);
+        for child in node.children().filter(|c| c.is_element()) {
+            match *child.borrow_element() {
+                Element::FeMergeNode(ref merge_node) => {
+                    output_surface = Some(merge_node.render(
+                        ctx,
+                        acquired_nodes,
+                        draw_ctx,
+                        bounds,
+                        output_surface,
+                    )?);
+                }
+                _ => (),
+            }
         }
 
         let surface = match output_surface {
