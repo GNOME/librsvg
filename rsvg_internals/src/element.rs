@@ -53,63 +53,6 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 use crate::transform::Transform;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub enum ElementType {
-    Circle,
-    ClipPath,
-    Ellipse,
-    Filter,
-    Group,
-    Image,
-    Line,
-    LinearGradient,
-    Link,
-    Marker,
-    Mask,
-    NonRendering,
-    Path,
-    Pattern,
-    Polygon,
-    Polyline,
-    RadialGradient,
-    Rect,
-    Stop,
-    Style,
-    Svg,
-    Switch,
-    Symbol,
-    Text,
-    TRef,
-    TSpan,
-    Use,
-
-    // Filter primitives, these start with "Fe" as element names are e.g. "feBlend"
-    FeBlend,
-    FeColorMatrix,
-    FeComponentTransfer,
-    FeComposite,
-    FeConvolveMatrix,
-    FeDiffuseLighting,
-    FeDisplacementMap,
-    FeDistantLight,
-    FeFlood,
-    FeFuncA,
-    FeFuncB,
-    FeFuncG,
-    FeFuncR,
-    FeGaussianBlur,
-    FeImage,
-    FeMerge,
-    FeMergeNode,
-    FeMorphology,
-    FeOffset,
-    FePointLight,
-    FeSpecularLighting,
-    FeSpotLight,
-    FeTile,
-    FeTurbulence,
-}
-
 // After creating/parsing a Element, it will be in a success or an error state.
 // We represent this with a Result, aliased as a ElementResult.  There is no
 // extra information for the Ok case; all the interesting stuff is in the
@@ -159,7 +102,6 @@ pub trait ElementTrait {
 }
 
 pub struct ElementInner<T: ElementTrait> {
-    element_type: ElementType,
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
@@ -174,10 +116,6 @@ pub struct ElementInner<T: ElementTrait> {
 }
 
 impl<T: ElementTrait> ElementInner<T> {
-    fn get_type(&self) -> ElementType {
-        self.element_type
-    }
-
     fn element_name(&self) -> &QualName {
         &self.element_name
     }
@@ -543,10 +481,6 @@ macro_rules! get_element_impl {
 }
 
 impl Element {
-    pub fn get_type(&self) -> ElementType {
-        call_inner!(self, get_type)
-    }
-
     pub fn element_name(&self) -> &QualName {
         call_inner!(self, element_name)
     }
@@ -962,7 +896,6 @@ macro_rules! e {
     ($name:ident, $element_type:ident) => {
         pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element {
             Element::$element_type(Box::new(ElementInner {
-                element_type: ElementType::$element_type,
                 element_name: element_name.clone(),
                 id: id.map(str::to_string),
                 class: class.map(str::to_string),
