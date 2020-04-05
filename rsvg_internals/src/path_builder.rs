@@ -386,8 +386,8 @@ impl PathCommand {
         }
     }
 
-    fn from_packed<'a>(packed: &PackedCommand, coords: &mut slice::Iter<'a, f64>) -> PathCommand {
-        match *packed {
+    fn from_packed<'a>(packed: PackedCommand, coords: &mut slice::Iter<'a, f64>) -> PathCommand {
+        match packed {
             PackedCommand::MoveTo => {
                 let x = take_one(coords);
                 let y = take_one(coords);
@@ -460,7 +460,7 @@ pub struct Path {
 
 /// Packed version of a `PathCommand`, used in `Path`.
 #[repr(u8)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum PackedCommand {
     MoveTo,
     LineTo,
@@ -549,7 +549,7 @@ impl Path {
         let commands = self.commands.iter();
         let mut coords = self.coords.iter();
 
-        commands.map(move |cmd| PathCommand::from_packed(cmd, &mut coords))
+        commands.map(move |cmd| PathCommand::from_packed(*cmd, &mut coords))
     }
 
     pub fn is_empty(&self) -> bool {
