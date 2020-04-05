@@ -664,8 +664,8 @@ impl ElementTrait for RadialGradient {
 }
 
 macro_rules! impl_paint_source {
-    ($gradient:ty, $element_type:pat, $other_gradient:ty, $other_type:pat,) => {
-        impl PaintSource for $gradient {
+    ($gradient_type:ident, $other_type:ident) => {
+        impl PaintSource for $gradient_type {
             type Resolved = Gradient;
 
             fn resolve(
@@ -696,16 +696,14 @@ macro_rules! impl_paint_source {
 
                         let borrowed_node = acquired_node.borrow_element();
                         let unresolved = match borrowed_node.get_type() {
-                            $element_type => {
-                                let a_gradient = borrowed_node.get_impl::<$gradient>();
+                            ElementType::$gradient_type => {
+                                let a_gradient = borrowed_node.get_impl::<$gradient_type>();
                                 a_gradient.get_unresolved(&acquired_node)
                             }
-
-                            $other_type => {
-                                let a_gradient = borrowed_node.get_impl::<$other_gradient>();
+                            ElementType::$other_type => {
+                                let a_gradient = borrowed_node.get_impl::<$other_type>();
                                 a_gradient.get_unresolved(&acquired_node)
                             }
-
                             _ => unreachable!(),
                         };
 
@@ -729,19 +727,9 @@ macro_rules! impl_paint_source {
     };
 }
 
-impl_paint_source!(
-    LinearGradient,
-    ElementType::LinearGradient,
-    RadialGradient,
-    ElementType::RadialGradient,
-);
+impl_paint_source!(LinearGradient, RadialGradient);
 
-impl_paint_source!(
-    RadialGradient,
-    ElementType::RadialGradient,
-    LinearGradient,
-    ElementType::LinearGradient,
-);
+impl_paint_source!(RadialGradient, LinearGradient);
 
 impl AsPaintSource for Gradient {
     fn set_as_paint_source(
