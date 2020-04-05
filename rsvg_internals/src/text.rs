@@ -691,7 +691,7 @@ impl TRef {
         let link = self.link.as_ref().unwrap();
         let values = cascaded.get();
 
-        if let Ok(acquired) = acquired_nodes.acquire(link, &[]) {
+        if let Ok(acquired) = acquired_nodes.acquire(link) {
             let c = acquired.get();
             extract_chars_children_to_chunks_recursively(chunks, &c, values, depth);
         } else {

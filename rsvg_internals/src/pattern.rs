@@ -10,7 +10,7 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{Element, ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
@@ -177,7 +177,7 @@ impl PaintSource for Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                match acquired_nodes.acquire(&fragment, &[ElementType::Pattern]) {
+                match acquired_nodes.acquire(&fragment) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -185,13 +185,16 @@ impl PaintSource for Pattern {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let unresolved =
-                            get_element_impl!(*acquired_node.borrow_element(), Pattern)
-                                .get_unresolved(&acquired_node);
-                        pattern = pattern.resolve_from_fallback(&unresolved.pattern);
-                        fallback = unresolved.fallback;
+                        match *acquired_node.borrow_element() {
+                            Element::Pattern(ref p) => {
+                                let unresolved = p.element_impl.get_unresolved(&acquired_node);
+                                pattern = pattern.resolve_from_fallback(&unresolved.pattern);
+                                fallback = unresolved.fallback;
 
-                        stack.push(acquired_node);
+                                stack.push(acquired_node);
+                            }
+                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
+                        }
                     }
 
                     Err(AcquireError::MaxReferencesExceeded) => {

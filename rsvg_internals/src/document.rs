@@ -11,7 +11,7 @@ use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::css::{self, Origin, Stylesheet};
-use crate::element::{Element, ElementType};
+use crate::element::Element;
 use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
@@ -285,11 +285,21 @@ impl<'i> AcquiredNodes<'i> {
         }
     }
 
-    fn lookup_node(
-        &self,
-        fragment: &Fragment,
-        element_types: &[ElementType],
-    ) -> Result<Node, AcquireError> {
+    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
+        self.document.lookup_image(href)
+    }
+
+    /// Acquires a node.
+    /// Nodes acquired by this function must be released in reverse acquiring order.
+    pub fn acquire(&mut self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+        self.num_elements_acquired += 1;
+
+        // This is a mitigation for SVG files that try to instance a huge number of
+        // elements via <use>, recursive patterns, etc.  See limits.rs for details.
+        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
+            return Err(AcquireError::MaxReferencesExceeded);
+        }
+
         let node = self.document.lookup(fragment).map_err(|_| {
             // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
             // Maybe we should have the following stages:
@@ -302,44 +312,11 @@ impl<'i> AcquiredNodes<'i> {
             AcquireError::LinkNotFound(fragment.clone())
         })?;
 
-        if element_types.is_empty() {
-            Ok(node)
-        } else if node.is_element() {
-            let element_type = node.borrow_element().get_type();
-            if element_types.iter().find(|&&t| t == element_type).is_some() {
-                Ok(node)
-            } else {
-                Err(AcquireError::InvalidLinkType(fragment.clone()))
-            }
-        } else {
-            Err(AcquireError::InvalidLinkType(fragment.clone()))
-        }
-    }
-
-    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
-        self.document.lookup_image(href)
-    }
-
-    /// Acquires a node.
-    /// Specify `element_types` when expecting the node to be of a particular type,
-    /// or use an empty slice for `element_types` if you want a node of any type.
-    /// Nodes acquired by this function must be released in reverse acquiring order.
-    pub fn acquire(
-        &mut self,
-        fragment: &Fragment,
-        element_types: &[ElementType],
-    ) -> Result<AcquiredNode, AcquireError> {
-        self.num_elements_acquired += 1;
-
-        // This is a mitigation for SVG files that try to instance a huge number of
-        // elements via <use>, recursive patterns, etc.  See limits.rs for details.
-        if self.num_elements_acquired > limits::MAX_REFERENCED_ELEMENTS {
-            return Err(AcquireError::MaxReferencesExceeded);
+        if !node.is_element() {
+            return Err(AcquireError::InvalidLinkType(fragment.clone()));
         }
 
-        let node = self.lookup_node(fragment, element_types)?;
-
-        if node.is_element() && node.borrow_element().is_accessed_by_reference() {
+        if node.borrow_element().is_accessed_by_reference() {
             self.acquire_ref(&node)
         } else {
             Ok(AcquiredNode {

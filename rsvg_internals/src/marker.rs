@@ -12,7 +12,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
@@ -569,19 +569,25 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Ok(acquired) = acquired_nodes.acquire(name, &[ElementType::Marker]) {
+    if let Ok(acquired) = acquired_nodes.acquire(name) {
         let node = acquired.get();
 
-        get_element_impl!(*node.borrow_element(), Marker).render(
-            &node,
-            acquired_nodes,
-            draw_ctx,
-            xpos,
-            ypos,
-            computed_angle,
-            line_width,
-            clipping,
-        )
+        match *node.borrow_element() {
+            Element::Marker(ref m) => m.element_impl.render(
+                &node,
+                acquired_nodes,
+                draw_ctx,
+                xpos,
+                ypos,
+                computed_angle,
+                line_width,
+                clipping,
+            ),
+            _ => {
+                rsvg_log!("\"{}\" is not marker", name);
+                Ok(draw_ctx.empty_bbox())
+            }
+        }
     } else {
         rsvg_log!("marker \"{}\" not found", name);
         Ok(draw_ctx.empty_bbox())

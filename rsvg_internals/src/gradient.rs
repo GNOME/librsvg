@@ -9,9 +9,9 @@ use std::cell::RefCell;
 use crate::allowed_url::Fragment;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNode, AcquiredNodes, NodeStack};
+use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{Element, ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -687,7 +687,7 @@ macro_rules! impl_paint_source {
 
                 while !gradient.is_resolved() {
                     if let Some(fragment) = fallback {
-                        let acquired = acquire_gradient(acquired_nodes, &fragment)?;
+                        let acquired = acquired_nodes.acquire(&fragment)?;
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
@@ -701,7 +701,7 @@ macro_rules! impl_paint_source {
                             Element::$other_type(ref g) => {
                                 g.element_impl.get_unresolved(&acquired_node)
                             }
-                            _ => unreachable!(),
+                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
                         };
 
                         gradient = gradient.resolve_from_fallback(&unresolved.gradient);
@@ -811,17 +811,6 @@ impl Gradient {
             );
         }
     }
-}
-
-/// Acquires a node of linearGradient or radialGradient type
-fn acquire_gradient(
-    acquired_nodes: &mut AcquiredNodes,
-    fragment: &Fragment,
-) -> Result<AcquiredNode, AcquireError> {
-    acquired_nodes.acquire(
-        fragment,
-        &[ElementType::LinearGradient, ElementType::RadialGradient],
-    )
 }
 
 #[cfg(test)]

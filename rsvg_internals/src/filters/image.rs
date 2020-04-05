@@ -45,7 +45,7 @@ impl FeImage {
         fragment: &Fragment,
     ) -> Result<FilterResult, FilterError> {
         let acquired_drawable = acquired_nodes
-            .acquire(fragment, &[])
+            .acquire(fragment)
             .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
