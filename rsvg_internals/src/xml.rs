@@ -680,9 +680,9 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
     let pi_data = pi_data.borrow();
 
     if pi_data.error {
-        return Err(());
+        Err(())
     } else {
-        return Ok(pi_data.attributes.clone());
+        Ok(pi_data.attributes.clone())
     }
 }
 
