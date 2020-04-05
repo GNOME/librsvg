@@ -87,7 +87,7 @@ impl fmt::Display for NodeData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             NodeData::Element(ref e) => {
-                write!(f, "{:?} id={}", e.get_type(), e.get_id().unwrap_or("None"))?;
+                write!(f, "{}", e)?;
             }
             NodeData::Text(_) => {
                 write!(f, "Chars")?;
