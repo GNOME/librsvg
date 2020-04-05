@@ -34,10 +34,10 @@ impl CubicBezierCurve {
         cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
     }
 
-    fn from_coords(coords: &[f64]) -> CubicBezierCurve {
-        let pt1 = (coords[0], coords[1]);
-        let pt2 = (coords[2], coords[3]);
-        let to = (coords[4], coords[5]);
+    fn from_coords<'a>(coords: &mut slice::Iter<'a, f64>) -> CubicBezierCurve {
+        let pt1 = take_two(coords);
+        let pt2 = take_two(coords);
+        let to = take_two(coords);
 
         CubicBezierCurve { pt1, pt2, to }
     }
@@ -245,11 +245,15 @@ impl EllipticalArc {
         }
     }
 
-    fn from_coords(large_arc: LargeArc, sweep: Sweep, coords: &[f64]) -> EllipticalArc {
-        let r = (coords[0], coords[1]);
-        let x_axis_rotation = coords[2];
-        let from = (coords[3], coords[4]);
-        let to = (coords[5], coords[6]);
+    fn from_coords<'a>(
+        large_arc: LargeArc,
+        sweep: Sweep,
+        coords: &mut slice::Iter<'a, f64>,
+    ) -> EllipticalArc {
+        let r = take_two(coords);
+        let x_axis_rotation = take_one(coords);
+        let from = take_two(coords);
+        let to = take_two(coords);
 
         EllipticalArc {
             r,
@@ -382,17 +386,17 @@ impl PathCommand {
         }
     }
 
-    fn from_packed(packed: &PackedCommand, coords: &[f64]) -> PathCommand {
+    fn from_packed<'a>(packed: &PackedCommand, coords: &mut slice::Iter<'a, f64>) -> PathCommand {
         match *packed {
             PackedCommand::MoveTo => {
-                let x = coords[0];
-                let y = coords[1];
+                let x = take_one(coords);
+                let y = take_one(coords);
                 PathCommand::MoveTo(x, y)
             }
 
             PackedCommand::LineTo => {
-                let x = coords[0];
-                let y = coords[1];
+                let x = take_one(coords);
+                let y = take_one(coords);
                 PathCommand::LineTo(x, y)
             }
 
@@ -452,12 +456,6 @@ pub struct PathBuilder {
 pub struct Path {
     commands: Box<[PackedCommand]>,
     coords: Box<[f64]>,
-}
-
-/// Iterator over a `Path`'s commands, from `Path::iter`.
-pub struct PathIter<'a> {
-    commands: slice::Iter<'a, PackedCommand>,
-    coords: &'a [f64],
 }
 
 /// Packed version of a `PathCommand`, used in `Path`.
@@ -552,11 +550,11 @@ impl PathBuilder {
 }
 
 impl Path {
-    pub fn iter(&self) -> PathIter {
-        PathIter {
-            commands: self.commands.iter(),
-            coords: &self.coords[..],
-        }
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = PathCommand> + 'a {
+        let commands = self.commands.iter();
+        let mut coords = self.coords.iter();
+
+        commands.map(move |cmd| PathCommand::from_packed(*cmd, &mut coords))
     }
 
     pub fn is_empty(&self) -> bool {
@@ -588,19 +586,12 @@ impl Path {
     }
 }
 
-impl<'a> Iterator for PathIter<'a> {
-    type Item = PathCommand;
+fn take_one<'a>(iter: &mut slice::Iter<'a, f64>) -> f64 {
+    *iter.next().unwrap()
+}
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(cmd) = self.commands.next() {
-            let cmd = PathCommand::from_packed(cmd, self.coords);
-            let num_coords = cmd.num_coordinates();
-            self.coords = &self.coords[num_coords..];
-            Some(cmd)
-        } else {
-            None
-        }
-    }
+fn take_two<'a>(iter: &mut slice::Iter<'a, f64>) -> (f64, f64) {
+    (take_one(iter), take_one(iter))
 }
 
 #[cfg(test)]
