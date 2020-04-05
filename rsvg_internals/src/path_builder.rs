@@ -42,13 +42,13 @@ impl CubicBezierCurve {
         CubicBezierCurve { pt1, pt2, to }
     }
 
-    fn to_packed_and_coords(&self, coords: &mut [f64]) -> PackedCommand {
-        coords[0] = self.pt1.0;
-        coords[1] = self.pt1.1;
-        coords[2] = self.pt2.0;
-        coords[3] = self.pt2.1;
-        coords[4] = self.to.0;
-        coords[5] = self.to.1;
+    fn to_packed_and_coords(&self, coords: &mut Vec<f64>) -> PackedCommand {
+        coords.push(self.pt1.0);
+        coords.push(self.pt1.1);
+        coords.push(self.pt2.0);
+        coords.push(self.pt2.1);
+        coords.push(self.to.0);
+        coords.push(self.to.1);
         PackedCommand::CurveTo
     }
 }
@@ -265,14 +265,14 @@ impl EllipticalArc {
         }
     }
 
-    fn to_packed_and_coords(&self, coords: &mut [f64]) -> PackedCommand {
-        coords[0] = self.r.0;
-        coords[1] = self.r.1;
-        coords[2] = self.x_axis_rotation;
-        coords[3] = self.from.0;
-        coords[4] = self.from.1;
-        coords[5] = self.to.0;
-        coords[6] = self.to.1;
+    fn to_packed_and_coords(&self, coords: &mut Vec<f64>) -> PackedCommand {
+        coords.push(self.r.0);
+        coords.push(self.r.1);
+        coords.push(self.x_axis_rotation);
+        coords.push(self.from.0);
+        coords.push(self.from.1);
+        coords.push(self.to.0);
+        coords.push(self.to.1);
 
         match (self.large_arc, self.sweep) {
             (LargeArc(false), Sweep::Negative) => PackedCommand::ArcSmallNegative,
@@ -364,17 +364,17 @@ impl PathCommand {
         }
     }
 
-    fn to_packed(&self, coords: &mut [f64]) -> PackedCommand {
+    fn to_packed(&self, coords: &mut Vec<f64>) -> PackedCommand {
         match *self {
             PathCommand::MoveTo(x, y) => {
-                coords[0] = x;
-                coords[1] = y;
+                coords.push(x);
+                coords.push(y);
                 PackedCommand::MoveTo
             }
 
             PathCommand::LineTo(x, y) => {
-                coords[0] = x;
-                coords[1] = y;
+                coords.push(x);
+                coords.push(y);
                 PackedCommand::LineTo
             }
 
@@ -480,23 +480,18 @@ impl PathBuilder {
     }
 
     pub fn into_path(self) -> Path {
-        let num_commands = self.path_commands.len();
         let num_coords = self
             .path_commands
             .iter()
             .map(PathCommand::num_coordinates)
             .sum();
 
-        let mut packed_commands = Vec::with_capacity(num_commands);
-        let mut coords = vec![0.0; num_coords];
-
-        let mut coords_slice = coords.as_mut_slice();
-
-        for c in self.path_commands {
-            let n = c.num_coordinates();
-            packed_commands.push(c.to_packed(&mut coords_slice[..n]));
-            coords_slice = &mut coords_slice[n..];
-        }
+        let mut coords = Vec::with_capacity(num_coords);
+        let packed_commands: Vec<_> = self
+            .path_commands
+            .iter()
+            .map(|cmd| cmd.to_packed(&mut coords))
+            .collect();
 
         Path {
             commands: packed_commands.into_boxed_slice(),
@@ -554,7 +549,7 @@ impl Path {
         let commands = self.commands.iter();
         let mut coords = self.coords.iter();
 
-        commands.map(move |cmd| PathCommand::from_packed(*cmd, &mut coords))
+        commands.map(move |cmd| PathCommand::from_packed(cmd, &mut coords))
     }
 
     pub fn is_empty(&self) -> bool {
