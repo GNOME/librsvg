@@ -318,50 +318,51 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
-        if let Some(node) = clip_node {
-            let units = node.borrow_element().get_impl::<ClipPath>().get_units();
-
-            if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
-                // The node being clipped is empty / doesn't have a
-                // bounding box, so there's nothing to clip!
-                return Ok(());
-            }
-
-            let cascaded = CascadedValues::new_from_node(node);
-
-            let transform = if units == CoordUnits::ObjectBoundingBox {
-                let bbox_rect = bbox.rect.as_ref().unwrap();
-
-                Some(Transform::new(
-                    bbox_rect.width(),
-                    0.0,
-                    0.0,
-                    bbox_rect.height(),
-                    bbox_rect.x0,
-                    bbox_rect.y0,
-                ))
-            } else {
-                None
-            };
-
-            self.with_saved_transform(transform, &mut |dc| {
-                let cr = dc.get_cairo_context();
-
-                // here we don't push a layer because we are clipping
-                let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
-
-                cr.clip();
-
-                res
-            })
-            .and_then(|_bbox|
-                // Clipping paths do not contribute to bounding boxes (they should,
-                // but we need Real Computational Geometry(tm), so ignore the
-                // bbox from the clip path.
-                Ok(()))
-        } else {
-            Ok(())
+        if clip_node.is_none() {
+            return Ok(());
         }
+
+        let node = clip_node.as_ref().unwrap();
+        let units = node.borrow_element().get_impl::<ClipPath>().get_units();
+
+        if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
+            // The node being clipped is empty / doesn't have a
+            // bounding box, so there's nothing to clip!
+            return Ok(());
+        }
+
+        let cascaded = CascadedValues::new_from_node(node);
+
+        let transform = if units == CoordUnits::ObjectBoundingBox {
+            let bbox_rect = bbox.rect.as_ref().unwrap();
+
+            Some(Transform::new(
+                bbox_rect.width(),
+                0.0,
+                0.0,
+                bbox_rect.height(),
+                bbox_rect.x0,
+                bbox_rect.y0,
+            ))
+        } else {
+            None
+        };
+
+        self.with_saved_transform(transform, &mut |dc| {
+            let cr = dc.get_cairo_context();
+
+            // here we don't push a layer because we are clipping
+            let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
+
+            cr.clip();
+
+            res
+        })
+        .and_then(|_bbox|
+            // Clipping paths do not contribute to bounding boxes (they should,
+            // but we need Real Computational Geometry(tm), so ignore the
+            // bbox from the clip path.
+            Ok(()))
     }
 
     fn generate_cairo_mask(
