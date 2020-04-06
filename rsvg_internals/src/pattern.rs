@@ -177,7 +177,7 @@ impl PaintSource for Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref fragment) = fallback {
-                match acquired_nodes.acquire(&fragment, &[ElementType::Pattern]) {
+                match acquired_nodes.acquire(&fragment) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -185,14 +185,18 @@ impl PaintSource for Pattern {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let borrowed_node = acquired_node.borrow_element();
-                        let borrowed_pattern = borrowed_node.get_impl::<Pattern>();
-                        let unresolved = borrowed_pattern.get_unresolved(&acquired_node);
+                        let elt = acquired_node.borrow_element();
+                        match elt.get_type() {
+                            ElementType::Pattern => {
+                                let unresolved =
+                                    elt.get_impl::<Pattern>().get_unresolved(&acquired_node);
+                                pattern = pattern.resolve_from_fallback(&unresolved.pattern);
+                                fallback = unresolved.fallback;
 
-                        pattern = pattern.resolve_from_fallback(&unresolved.pattern);
-                        fallback = unresolved.fallback;
-
-                        stack.push(acquired_node);
+                                stack.push(acquired_node);
+                            }
+                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
+                        }
                     }
 
                     Err(AcquireError::MaxReferencesExceeded) => {
