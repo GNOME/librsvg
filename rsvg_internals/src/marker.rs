@@ -569,19 +569,26 @@ fn emit_marker_by_name(
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Ok(acquired) = acquired_nodes.acquire(name, &[ElementType::Marker]) {
+    if let Ok(acquired) = acquired_nodes.acquire(name) {
         let node = acquired.get();
+        let elt = node.borrow_element();
 
-        node.borrow_element().get_impl::<Marker>().render(
-            &node,
-            acquired_nodes,
-            draw_ctx,
-            xpos,
-            ypos,
-            computed_angle,
-            line_width,
-            clipping,
-        )
+        match elt.get_type() {
+            ElementType::Marker => elt.get_impl::<Marker>().render(
+                &node,
+                acquired_nodes,
+                draw_ctx,
+                xpos,
+                ypos,
+                computed_angle,
+                line_width,
+                clipping,
+            ),
+            _ => {
+                rsvg_log!("\"{}\" is not marker", name);
+                Ok(draw_ctx.empty_bbox())
+            }
+        }
     } else {
         rsvg_log!("marker \"{}\" not found", name);
         Ok(draw_ctx.empty_bbox())

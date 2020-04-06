@@ -12,7 +12,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
-use crate::document::{AcquiredNode, AcquiredNodes};
+use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
 use crate::element::ElementType;
 use crate::error::{AcquireError, RenderingError};
@@ -577,27 +577,37 @@ impl DrawingCtx {
                     // Mask
 
                     if let Some(fragment) = mask {
-                        if let Ok(acquired) = acquired_nodes.acquire(fragment, &[ElementType::Mask])
-                        {
+                        if let Ok(acquired) = acquired_nodes.acquire(fragment) {
                             let mask_node = acquired.get();
 
-                            res = res.and_then(|bbox| {
-                                dc.generate_cairo_mask(
-                                    &mask_node.borrow_element().get_impl::<Mask>(),
-                                    &mask_node,
-                                    affines.for_temporary_surface,
-                                    &bbox,
-                                    acquired_nodes,
-                                )
-                                .and_then(|mask_surf| {
-                                    if let Some(surf) = mask_surf {
-                                        dc.cr.set_matrix(affines.compositing.into());
-                                        dc.cr.mask_surface(&surf, 0.0, 0.0);
-                                    }
-                                    Ok(())
-                                })
-                                .map(|_: ()| bbox)
-                            });
+                            match mask_node.borrow_element().get_type() {
+                                ElementType::Mask => {
+                                    res = res.and_then(|bbox| {
+                                        dc.generate_cairo_mask(
+                                            &mask_node.borrow_element().get_impl::<Mask>(),
+                                            &mask_node,
+                                            affines.for_temporary_surface,
+                                            &bbox,
+                                            acquired_nodes,
+                                        )
+                                        .and_then(|mask_surf| {
+                                            if let Some(surf) = mask_surf {
+                                                dc.cr.set_matrix(affines.compositing.into());
+                                                dc.cr.mask_surface(&surf, 0.0, 0.0);
+                                            }
+                                            Ok(())
+                                        })
+                                        .map(|_: ()| bbox)
+                                    });
+                                }
+                                _ => {
+                                    rsvg_log!(
+                                        "element {} references \"{}\" which is not a mask",
+                                        node,
+                                        fragment
+                                    );
+                                }
+                            }
                         } else {
                             rsvg_log!(
                                 "element {} references nonexistent mask \"{}\"",
@@ -745,41 +755,52 @@ impl DrawingCtx {
         child_surface: SharedImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
-        match acquired_nodes.acquire(filter_uri, &[ElementType::Filter]) {
+        match acquired_nodes.acquire(filter_uri) {
             Ok(acquired) => {
                 let filter_node = acquired.get();
+                let filter_elt = filter_node.borrow_element();
 
-                if !filter_node.borrow_element().is_in_error() {
-                    // FIXME: deal with out of memory here
-                    filters::render(
-                        &filter_node,
-                        values,
-                        child_surface,
-                        acquired_nodes,
-                        self,
-                        node_bbox,
-                    )
-                } else {
-                    Ok(child_surface)
+                match filter_elt.get_type() {
+                    ElementType::Filter => {
+                        if !filter_elt.is_in_error() {
+                            // FIXME: deal with out of memory here
+                            return filters::render(
+                                &filter_node,
+                                values,
+                                child_surface,
+                                acquired_nodes,
+                                self,
+                                node_bbox,
+                            );
+                        } else {
+                            return Ok(child_surface);
+                        }
+                    }
+                    _ => {
+                        rsvg_log!(
+                            "element {} will not be rendered since \"{}\" is not a filter",
+                            node,
+                            filter_uri,
+                        );
+                    }
                 }
             }
-
-            Err(_) => {
+            _ => {
                 rsvg_log!(
                     "element {} will not be rendered since its filter \"{}\" was not found",
                     node,
                     filter_uri,
                 );
-
-                // Non-existing filters must act as null filters (that is, an
-                // empty surface is returned).
-                Ok(SharedImageSurface::empty(
-                    child_surface.width(),
-                    child_surface.height(),
-                    child_surface.surface_type(),
-                )?)
             }
         }
+
+        // Non-existing filters must act as null filters (that is, an
+        // empty surface is returned).
+        Ok(SharedImageSurface::empty(
+            child_surface.width(),
+            child_surface.height(),
+            child_surface.surface_type(),
+        )?)
     }
 
     fn set_color(
@@ -817,7 +838,7 @@ impl DrawingCtx {
             } => {
                 let mut had_paint_server = false;
 
-                match acquire_paint_server(acquired_nodes, iri) {
+                match acquired_nodes.acquire(iri) {
                     Ok(acquired) => {
                         let node = acquired.get();
 
@@ -854,7 +875,7 @@ impl DrawingCtx {
                                     opacity,
                                     bbox,
                                 )?,
-                            _ => unreachable!(),
+                            _ => false,
                         }
                     }
 
@@ -1115,9 +1136,6 @@ impl DrawingCtx {
         cascaded: &CascadedValues<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let elt = node.borrow_element();
-        let use_ = elt.get_impl::<Use>();
-
         // <use> is an element that is used directly, unlike
         // <pattern>, which is used through a fill="url(#...)"
         // reference.  However, <use> will always reference another
@@ -1134,12 +1152,15 @@ impl DrawingCtx {
             }
         })?;
 
+        let elt = node.borrow_element();
+        let use_ = elt.get_impl::<Use>();
         let link = use_.get_link();
+
         if link.is_none() {
             return Ok(self.empty_bbox());
         }
 
-        let acquired = match acquired_nodes.acquire(link.unwrap(), &[]) {
+        let acquired = match acquired_nodes.acquire(link.unwrap()) {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(node)) => {
@@ -1171,6 +1192,7 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
+        // if it is a symbol
         if child.is_element() && child.borrow_element().get_type() == ElementType::Symbol {
             let elt = child.borrow_element();
             let symbol = elt.get_impl::<Symbol>();
@@ -1184,34 +1206,41 @@ impl DrawingCtx {
                 None
             };
 
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                let _params = dc.push_new_viewport(
-                    symbol.get_viewbox(),
-                    use_rect,
-                    symbol.get_preserve_aspect_ratio(),
-                    clip_mode,
-                );
+            return self.with_discrete_layer(
+                node,
+                acquired_nodes,
+                values,
+                clipping,
+                &mut |an, dc| {
+                    let _params = dc.push_new_viewport(
+                        symbol.get_viewbox(),
+                        use_rect,
+                        symbol.get_preserve_aspect_ratio(),
+                        clip_mode,
+                    );
 
-                child.draw_children(
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    dc,
-                    clipping,
-                )
-            })
-        } else {
-            let cr = self.get_cairo_context();
-            cr.translate(use_rect.x0, use_rect.y0);
-
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                dc.draw_node_from_stack(
-                    &child,
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    clipping,
-                )
-            })
+                    child.draw_children(
+                        an,
+                        &CascadedValues::new_from_values(&child, values),
+                        dc,
+                        clipping,
+                    )
+                },
+            );
         }
+
+        // all other nodes
+        let cr = self.get_cairo_context();
+        cr.translate(use_rect.x0, use_rect.y0);
+
+        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+            dc.draw_node_from_stack(
+                &child,
+                an,
+                &CascadedValues::new_from_values(&child, values),
+                clipping,
+            )
+        })
     }
 }
 
@@ -1272,8 +1301,9 @@ fn get_clip_in_user_and_object_space(
     clip_uri
         .and_then(|fragment| {
             acquired_nodes
-                .acquire(fragment, &[ElementType::ClipPath])
+                .acquire(fragment)
                 .ok()
+                .filter(|a| a.get().borrow_element().get_type() == ElementType::ClipPath)
         })
         .and_then(|acquired| {
             let clip_node = acquired.get().clone();
@@ -1289,20 +1319,6 @@ fn get_clip_in_user_and_object_space(
             }
         })
         .unwrap_or((None, None))
-}
-
-fn acquire_paint_server(
-    acquired_nodes: &mut AcquiredNodes,
-    fragment: &Fragment,
-) -> Result<AcquiredNode, AcquireError> {
-    acquired_nodes.acquire(
-        fragment,
-        &[
-            ElementType::LinearGradient,
-            ElementType::RadialGradient,
-            ElementType::Pattern,
-        ],
-    )
 }
 
 fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> BoundingBox {

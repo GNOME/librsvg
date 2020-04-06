@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use crate::allowed_url::Fragment;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNode, AcquiredNodes, NodeStack};
+use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{ElementResult, ElementTrait, ElementType};
 use crate::error::*;
@@ -687,24 +687,22 @@ macro_rules! impl_paint_source {
 
                 while !gradient.is_resolved() {
                     if let Some(fragment) = fallback {
-                        let acquired = acquire_gradient(acquired_nodes, &fragment)?;
+                        let acquired = acquired_nodes.acquire(&fragment)?;
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let borrowed_node = acquired_node.borrow_element();
-                        let unresolved = match borrowed_node.get_type() {
-                            ElementType::$gradient_type => {
-                                let a_gradient = borrowed_node.get_impl::<$gradient_type>();
-                                a_gradient.get_unresolved(&acquired_node)
-                            }
+                        let elt = acquired_node.borrow_element();
+                        let unresolved = match acquired_node.borrow_element().get_type() {
+                            ElementType::$gradient_type => elt
+                                .get_impl::<$gradient_type>()
+                                .get_unresolved(&acquired_node),
                             ElementType::$other_type => {
-                                let a_gradient = borrowed_node.get_impl::<$other_type>();
-                                a_gradient.get_unresolved(&acquired_node)
+                                elt.get_impl::<$other_type>().get_unresolved(&acquired_node)
                             }
-                            _ => unreachable!(),
+                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
                         };
 
                         gradient = gradient.resolve_from_fallback(&unresolved.gradient);
@@ -814,17 +812,6 @@ impl Gradient {
             );
         }
     }
-}
-
-/// Acquires a node of linearGradient or radialGradient type
-fn acquire_gradient(
-    acquired_nodes: &mut AcquiredNodes,
-    fragment: &Fragment,
-) -> Result<AcquiredNode, AcquireError> {
-    acquired_nodes.acquire(
-        fragment,
-        &[ElementType::LinearGradient, ElementType::RadialGradient],
-    )
 }
 
 #[cfg(test)]
