@@ -44,10 +44,42 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
             (pixel.r, pixel.g, pixel.b, pixel.a)
         };
 
-        pixbuf.put_pixel(x as i32, y as i32, r, g, b, a);
+        // FIXME: Use pixbuf.put_pixel when
+        // https://github.com/gtk-rs/gdk-pixbuf/issues/147
+        // is integrated
+        my_put_pixel(&pixbuf, x as i32, y as i32, r, g, b, a);
     }
 
     Ok(pixbuf)
+}
+
+// Copied from gtk-rs/gdk-pixbuf
+//
+// See the following:
+//   https://gitlab.gnome.org/GNOME/librsvg/-/issues/584
+//   https://github.com/gtk-rs/gdk-pixbuf/issues/147
+//
+// Arithmetic can overflow in the computation of `pos` if it is not done with usize
+// values (everything coming out of a Pixbuf is i32).
+//
+// When this fix appears in a gtk-rs release, we can remove this.
+fn my_put_pixel(pixbuf: &Pixbuf, x: i32, y: i32, red: u8, green: u8, blue: u8, alpha: u8) {
+    unsafe {
+        let x = x as usize;
+        let y = y as usize;
+        let n_channels = pixbuf.get_n_channels() as usize;
+        assert!(n_channels == 3 || n_channels == 4);
+        let rowstride = pixbuf.get_rowstride() as usize;
+        let pixels = pixbuf.get_pixels();
+        let pos = y * rowstride + x * n_channels;
+
+        pixels[pos] = red;
+        pixels[pos + 1] = green;
+        pixels[pos + 2] = blue;
+        if n_channels == 4 {
+            pixels[pos + 3] = alpha;
+        }
+    }
 }
 
 enum SizeKind {
