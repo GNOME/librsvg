@@ -1,3 +1,9 @@
+Version 2.48.3
+
+- #582 - Make librsvg build with Rust 1.39 again.
+
+- #584 - Fix arithmetic overflow when rendering to large GdkPixbufs.
+
 Version 2.48.2
 
 - Fix linking of the test suite against Harfbuzz.
