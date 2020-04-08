@@ -1,8 +1,12 @@
 Version 2.48.3
 
-- #582 - Make librsvg build with Rust 1.39 again.
+- Librsvg now requires glib 2.50.0 or later.
 
 - #584 - Fix arithmetic overflow when rendering to large GdkPixbufs.
+
+- #582 - Make librsvg build with Rust 1.39 again.
+
+- #581 - Don't require upcalls into C code for Debian powerpc.
 
 Version 2.48.2
 

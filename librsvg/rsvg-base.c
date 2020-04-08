@@ -134,24 +134,3 @@ rsvg_css_parse_color_ (const char *str)
 {
     return rsvg_css_parse_color (str);
 }
-
-/* These functions exist just so that we can effectively call g_warning() or
- * g_critical() from Rust, since glib-rs doesn't bind the g_log functions yet.
- */
-G_GNUC_INTERNAL
-void rsvg_g_warning_from_c(const char *msg);
-
-G_GNUC_INTERNAL
-void rsvg_g_critical_from_c(const char *msg);
-
-void
-rsvg_g_warning_from_c(const char *msg)
-{
-    g_warning ("%s", msg);
-}
-
-void
-rsvg_g_critical_from_c(const char *msg)
-{
-    g_critical ("%s", msg);
-}
