@@ -152,7 +152,7 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
  * 
  * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
  * from the size indicated to the new size indicated by @width and @height.  If
- * either of these are -1, then the default size of the image being loaded is
+ * both of these are -1, then the default size of the image being loaded is
  * used.  The caller must assume the reference to the returned pixbuf. If an
  * error occurred, @error is set and %NULL is returned.
  * 
