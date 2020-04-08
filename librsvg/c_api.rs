@@ -1016,6 +1016,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_read_stream_sync(
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_read_stream_sync => false.to_glib();
+
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
     let stream = gio::InputStream::from_glib_none(stream);
@@ -1036,10 +1042,20 @@ pub unsafe extern "C" fn rsvg_rust_handle_write(
     handle: *const RsvgHandle,
     buf: *const u8,
     count: usize,
-) {
+    error: *mut *mut glib_sys::GError,
+) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_write => false.to_glib();
+
+        error.is_null() || (*error).is_null(),
+        (!buf.is_null() && count != 0) || (count == 0),
+    }
+
     let rhandle = get_rust_handle(handle);
     let buffer = slice::from_raw_parts(buf, count);
     rhandle.write(buffer);
+
+    true.to_glib()
 }
 
 #[no_mangle]
@@ -1047,6 +1063,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_close(
     handle: *const RsvgHandle,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_close => false.to_glib();
+
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
     match rhandle.close() {
@@ -1079,6 +1101,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     cr: *mut cairo_sys::cairo_t,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_render_cairo_sub => false.to_glib();
+
+        !cr.is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
@@ -1115,6 +1143,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
 ) {
+    rsvg_return_if_fail! {
+        rsvg_handle_get_dimensions;
+        !dimension_data.is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
     *dimension_data = rhandle
         .get_dimensions()
@@ -1127,6 +1160,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
     dimension_data: *mut RsvgDimensionData,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_dimensions_sub => false.to_glib();
+
+        !dimension_data.is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
     let id: Option<String> = from_glib_none(id);
@@ -1151,6 +1190,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
     position_data: *mut RsvgPositionData,
     id: *const libc::c_char,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_position_sub => false.to_glib();
+
+        !position_data.is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
     let id: Option<String> = from_glib_none(id);
@@ -1188,6 +1233,13 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_file(
     filename: *const libc::c_char,
     error: *mut *mut glib_sys::GError,
 ) -> *const RsvgHandle {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_new_from_file => ptr::null();
+
+        !filename.is_null(),
+        error.is_null() || (*error).is_null(),
+    }
+
     let file = match PathOrUrl::new(filename) {
         Ok(PathOrUrl::Path(path)) => gio::File::new_for_path(path),
 
@@ -1209,6 +1261,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> *const RsvgHandle {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_new_from_gfile_sync => ptr::null();
+
+        error.is_null() || (*error).is_null(),
+    }
+
     let raw_handle = rsvg_rust_handle_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
@@ -1242,6 +1300,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> *const RsvgHandle {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_new_from_stream_sync => ptr::null();
+
+        error.is_null() || (*error).is_null(),
+    }
+
     let raw_handle = rsvg_rust_handle_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
@@ -1268,9 +1332,17 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_stream_sync(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_new_from_data(
     data: *mut u8,
-    len: usize,
+    data_len: usize,
     error: *mut *mut glib_sys::GError,
 ) -> *const RsvgHandle {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_new_from_data => ptr::null();
+
+        (!data.is_null() && data_len != 0) || (data_len == 0),
+        data_len <= std::isize::MAX as usize,
+        error.is_null() || (*error).is_null(),
+    }
+
     // We create the MemoryInputStream without the gtk-rs binding because of this:
     //
     // - The binding doesn't provide _new_from_data().  All of the binding's ways to
@@ -1281,10 +1353,10 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_data(
     // - For now, we are using the other C-visible constructor, so we need a raw pointer to the
     //   stream, anyway.
 
-    assert!(len <= std::isize::MAX as usize);
-    let len = len as isize;
+    assert!(data_len <= std::isize::MAX as usize);
+    let data_len = data_len as isize;
 
-    let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data, len, None);
+    let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data, data_len, None);
 
     let ret = rsvg_rust_handle_new_from_stream_sync(
         raw_stream as *mut _,
@@ -1325,6 +1397,13 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_stylesheet(
     css_len: usize,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_set_stylesheet => false.to_glib();
+
+        !css.is_null() || (css.is_null() && css_len == 0),
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
     let css = match (css, css_len) {
@@ -1382,6 +1461,14 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_document(
     viewport: *const RsvgRectangle,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_render_document => false.to_glib();
+
+        !cr.is_null(),
+        !viewport.is_null(),
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
     let cr = from_glib_none(cr);
 
@@ -1404,6 +1491,13 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_layer(
     out_logical_rect: *mut RsvgRectangle,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_geometry_for_layer => false.to_glib();
+
+        !viewport.is_null(),
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
     let id: Option<String> = from_glib_none(id);
@@ -1436,6 +1530,14 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_layer(
     viewport: *const RsvgRectangle,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_render_layer => false.to_glib();
+
+        !cr.is_null(),
+        !viewport.is_null(),
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
@@ -1458,6 +1560,12 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
     out_logical_rect: *mut RsvgRectangle,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_geometry_for_element => false.to_glib();
+
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
     let id: Option<String> = from_glib_none(id);
@@ -1490,6 +1598,14 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_element(
     element_viewport: *const RsvgRectangle,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_render_element => false.to_glib();
+
+        !cr.is_null(),
+        !element_viewport.is_null(),
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);

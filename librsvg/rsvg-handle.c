@@ -335,7 +335,7 @@ extern gboolean rsvg_rust_handle_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
                                                    GCancellable *cancellable,
                                                    GError **error);
-extern void rsvg_rust_handle_write (RsvgHandle *handle, const guchar *buf, gsize count);
+extern gboolean rsvg_rust_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error);
 extern gboolean rsvg_rust_handle_close (RsvgHandle *handle, GError **error);
 extern gboolean rsvg_rust_handle_has_sub (RsvgHandle *handle, const char *id);
 extern gboolean rsvg_rust_handle_render_cairo_sub (RsvgHandle *handle,
@@ -484,10 +484,6 @@ rsvg_handle_new (void)
 RsvgHandle *
 rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
 {
-    g_return_val_if_fail ((data != NULL && data_len != 0) || (data_len == 0), NULL);
-    g_return_val_if_fail (data_len <= G_MAXSSIZE, NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
-
     return rsvg_rust_handle_new_from_data (data, data_len, error);
 }
 
@@ -507,9 +503,6 @@ rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
 RsvgHandle *
 rsvg_handle_new_from_file (const gchar *filename, GError **error)
 {
-    g_return_val_if_fail (filename != NULL, NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
-
     return rsvg_rust_handle_new_from_file (filename, error);
 }
 
@@ -561,7 +554,6 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
 {
     g_return_val_if_fail (G_IS_FILE (file), NULL);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
     return rsvg_rust_handle_new_from_gfile_sync (file, flags, cancellable, error);
 }
@@ -599,7 +591,6 @@ rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
     g_return_val_if_fail (G_IS_INPUT_STREAM (input_stream), NULL);
     g_return_val_if_fail (base_file == NULL || G_IS_FILE (base_file), NULL);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
 
     return rsvg_rust_handle_new_from_stream_sync (input_stream,
                                                   base_file,
@@ -636,11 +627,8 @@ gboolean
 rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
-    g_return_val_if_fail ((buf != NULL && count != 0) || (count == 0), FALSE);
 
-    rsvg_rust_handle_write (handle, buf, count);
-    return TRUE;
+    return rsvg_rust_handle_write (handle, buf, count, error);
 }
 
 /**
@@ -663,7 +651,6 @@ gboolean
 rsvg_handle_close (RsvgHandle *handle, GError **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_close(handle, error);
 }
@@ -702,7 +689,6 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
     g_return_val_if_fail (G_IS_INPUT_STREAM (stream), FALSE);
     g_return_val_if_fail (cancellable == NULL || G_IS_CANCELLABLE (cancellable), FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_read_stream_sync (handle,
                                               stream,
@@ -797,8 +783,6 @@ rsvg_handle_set_stylesheet (RsvgHandle  *handle,
                             GError     **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail ((css != NULL && css_len >= 0) || (css == NULL && css_len == 0), FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_set_stylesheet (handle, css, css_len, error);
 }
@@ -892,7 +876,6 @@ gboolean
 rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (cr != NULL, FALSE);
 
     return rsvg_rust_handle_render_cairo_sub (handle, cr, id);
 }
@@ -941,7 +924,6 @@ void
 rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
-    g_return_if_fail (dimension_data != NULL);
 
     rsvg_rust_handle_get_dimensions (handle, dimension_data);
 }
@@ -974,7 +956,6 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
                                 const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (dimension_data, FALSE);
 
     return rsvg_rust_handle_get_dimensions_sub (handle, dimension_data, id);
 }
@@ -1007,7 +988,6 @@ rsvg_handle_get_position_sub (RsvgHandle *handle,
                               const char *id)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (position_data != NULL, FALSE);
 
     return rsvg_rust_handle_get_position_sub (handle, position_data, id);
 }
@@ -1304,9 +1284,6 @@ rsvg_handle_render_document (RsvgHandle           *handle,
                              GError              **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (cr != NULL, FALSE);
-    g_return_val_if_fail (viewport != NULL, FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_render_document (handle, cr, viewport, error);
 }
@@ -1362,8 +1339,6 @@ rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
                                     GError        **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (viewport != NULL, FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_get_geometry_for_layer (handle,
                                                     id,
@@ -1415,9 +1390,6 @@ rsvg_handle_render_layer (RsvgHandle           *handle,
                           GError              **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (cr != NULL, FALSE);
-    g_return_val_if_fail (viewport != NULL, FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_render_layer (handle, cr, id, viewport, error);
 }
@@ -1477,7 +1449,6 @@ rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
                                       GError        **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_get_geometry_for_element (handle,
                                                       id,
@@ -1529,9 +1500,6 @@ rsvg_handle_render_element (RsvgHandle           *handle,
                             GError              **error)
 {
     g_return_val_if_fail (RSVG_IS_HANDLE (handle), FALSE);
-    g_return_val_if_fail (cr != NULL, FALSE);
-    g_return_val_if_fail (element_viewport != NULL, FALSE);
-    g_return_val_if_fail (error == NULL || *error == NULL, FALSE);
 
     return rsvg_rust_handle_render_element (handle, cr, id, element_viewport, error);
 }
