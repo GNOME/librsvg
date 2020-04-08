@@ -48,7 +48,9 @@ pub use crate::pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_zoom_with_max,
 };
 
+#[macro_use]
+mod messages;
+
 mod c_api;
 mod color_utils;
-mod messages;
 mod pixbuf_utils;

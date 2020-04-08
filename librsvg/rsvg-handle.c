@@ -726,7 +726,6 @@ void
 rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri)
 {
     g_return_if_fail (RSVG_IS_HANDLE (handle));
-    g_return_if_fail (base_uri != NULL);
 
     rsvg_rust_handle_set_base_url (handle, base_uri);
 }

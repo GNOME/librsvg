@@ -926,6 +926,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_base_url(
     raw_handle: *const RsvgHandle,
     uri: *const libc::c_char,
 ) {
+    rsvg_return_if_fail! {
+        rsvg_handle_set_base_uri;
+        !uri.is_null(),
+    }
+
     let rhandle = get_rust_handle(raw_handle);
 
     assert!(!uri.is_null());
