@@ -1336,6 +1336,25 @@ property_deprecated (void)
     g_object_unref (handle);
 }
 
+static void
+return_if_fail (void)
+{
+    if (g_test_subprocess ()) {
+        RsvgHandle *handle;
+
+        handle = rsvg_handle_new();
+        g_assert_nonnull (handle);
+
+        /* NULL is an invalid argument... */
+        rsvg_handle_set_base_uri (handle, NULL);
+        g_object_unref (handle);
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    /* ... and here we catch that it was validated */
+    g_test_trap_assert_stderr ("*rsvg_handle_set_base_uri*assertion*failed*");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1384,6 +1403,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/property_base_uri", property_base_uri);
     g_test_add_func ("/api/property_dimensions", property_dimensions);
     g_test_add_func ("/api/property_deprecated", property_deprecated);
+    g_test_add_func ("/api/return_if_fail", return_if_fail);
 
     return g_test_run ();
 }

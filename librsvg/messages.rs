@@ -1,4 +1,4 @@
-use glib_sys::{G_LOG_LEVEL_WARNING, G_LOG_LEVEL_CRITICAL, GLogField, g_log_structured_array};
+use glib_sys::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
 
 /*
   G_LOG_LEVEL_CRITICAL          = 1 << 3,
@@ -48,13 +48,11 @@ fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
             value: priority as *const u8 as *const _,
             length: -1,
         },
-
         GLogField {
             key: b"MESSAGE\0" as *const u8 as *const _,
             value: msg.as_ptr() as *const _,
             length: msg.len() as _,
         },
-
         // This is the G_LOG_DOMAIN set from the Makefile
         GLogField {
             key: b"GLIB_DOMAIN\0" as *const u8 as *const _,
@@ -74,4 +72,44 @@ pub fn rsvg_g_warning(msg: &str) {
 
 pub fn rsvg_g_critical(msg: &str) {
     rsvg_g_log(glib_sys::G_LOG_LEVEL_CRITICAL, msg);
+}
+
+// Once Rust has a function! macro that gives us the current function name, we
+// can remove the $func_name argument.
+#[macro_export]
+macro_rules! rsvg_return_if_fail {
+    {
+        $func_name:ident;
+        $($condition:expr,)+
+    } => {
+        $(
+            if !$condition {
+                glib_sys::g_return_if_fail_warning(
+                    b"librsvg\0" as *const u8 as *const _,
+                    concat!(stringify!($func_name), "\0").as_ptr() as *const _,
+                    concat!(stringify!($condition), "\0").as_ptr() as *const _,
+                );
+                return;
+            }
+        )+
+    }
+}
+
+#[macro_export]
+macro_rules! rsvg_return_val_if_fail {
+    {
+        $func_name:ident => $retval:expr;
+        $($condition:expr,)+
+    } => {
+        $(
+            if !$condition {
+                glib_sys::g_return_if_fail_warning(
+                    b"librsvg\0" as *const u8 as *const _,
+                    concat!(stringify!($func_name), "\0").as_ptr() as *const _,
+                    concat!(stringify!($condition), "\0").as_ptr() as *const _,
+                );
+                return $retval;
+            }
+        )+
+    }
 }
