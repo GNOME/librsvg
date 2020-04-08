@@ -50,4 +50,5 @@ pub use crate::pixbuf_utils::{
 
 mod c_api;
 mod color_utils;
+mod messages;
 mod pixbuf_utils;
