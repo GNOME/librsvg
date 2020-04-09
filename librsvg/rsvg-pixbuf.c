@@ -52,12 +52,12 @@ extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_zoom (const char *filename,
 extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_zoom_with_max (const char *filename,
                                                                double x_zoom,
                                                                double y_zoom,
-                                                               int width,
-                                                               int height,
+                                                               int max_width,
+                                                               int max_height,
                                                                GError **error);
 extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_max_size (const char *filename,
-                                                          int width,
-                                                          int height,
+                                                          int max_width,
+                                                          int max_height,
                                                           GError **error);
 
 /**
@@ -75,9 +75,6 @@ extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_max_size (const char *filename,
 GdkPixbuf *
 rsvg_pixbuf_from_file (const gchar *filename, GError **error)
 {
-    g_return_val_if_fail (filename != NULL, NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
-
     return rsvg_rust_pixbuf_from_file_at_size (filename, -1, -1, error);
 }
 
@@ -102,10 +99,6 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
                                double y_zoom,
                                GError **error)
 {
-    g_return_val_if_fail (filename != NULL, NULL);
-    g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
-
     return rsvg_rust_pixbuf_from_file_at_zoom (filename, x_zoom, y_zoom, error);
 }
 
@@ -135,11 +128,6 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
                                         gint max_height,
                                         GError **error)
 {
-    g_return_val_if_fail (filename != NULL, NULL);
-    g_return_val_if_fail (x_zoom > 0.0 && y_zoom > 0.0, NULL);
-    g_return_val_if_fail (max_width >= 1 && max_height >= 1, NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
-
     return rsvg_rust_pixbuf_from_file_at_zoom_with_max (filename, x_zoom, y_zoom, max_width, max_height, error);
 }
 
@@ -152,7 +140,7 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
  * 
  * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
  * from the size indicated to the new size indicated by @width and @height.  If
- * either of these are -1, then the default size of the image being loaded is
+ * both of these are -1, then the default size of the image being loaded is
  * used.  The caller must assume the reference to the returned pixbuf. If an
  * error occurred, @error is set and %NULL is returned.
  * 
@@ -165,10 +153,6 @@ rsvg_pixbuf_from_file_at_size (const gchar *filename,
                                gint height,
                                GError **error)
 {
-    g_return_val_if_fail (filename != NULL, NULL);
-    g_return_val_if_fail ((width >= 1 && height >= 1) || (width == -1 && height == -1), NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
-
     return rsvg_rust_pixbuf_from_file_at_size (filename, width, height, error);
 }
 
@@ -193,9 +177,5 @@ rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
                                    gint max_height,
                                    GError **error)
 {
-    g_return_val_if_fail (filename != NULL, NULL);
-    g_return_val_if_fail (max_width >= 1 && max_height >= 1, NULL);
-    g_return_val_if_fail (error == NULL || *error == NULL, NULL);
-
     return rsvg_rust_pixbuf_from_file_at_max_size(filename, max_width, max_height, error);
 }
