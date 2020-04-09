@@ -1003,7 +1003,11 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_base_url(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x(handle: *const RsvgHandle, dpi_x: f64) {
+pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x_y(
+    handle: *const RsvgHandle,
+    dpi_x: f64,
+    dpi_y: f64,
+) {
     rsvg_return_if_fail! {
         rsvg_handle_set_dpi_x_y;
 
@@ -1012,24 +1016,13 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x(handle: *const RsvgHandle, d
 
     let rhandle = get_rust_handle(handle);
     rhandle.set_dpi_x(dpi_x);
+    rhandle.set_dpi_y(dpi_y);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
     let rhandle = get_rust_handle(raw_handle);
     rhandle.get_dpi_x()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_y(handle: *const RsvgHandle, dpi_y: f64) {
-    rsvg_return_if_fail! {
-        rsvg_handle_set_dpi_x_y;
-
-        is_rsvg_handle(handle),
-    }
-
-    let rhandle = get_rust_handle(handle);
-    rhandle.set_dpi_y(dpi_y);
 }
 
 #[no_mangle]
