@@ -11,8 +11,6 @@ pub use crate::c_api::{
     rsvg_rust_handle_get_base_url,
     rsvg_rust_handle_get_dimensions,
     rsvg_rust_handle_get_dimensions_sub,
-    rsvg_rust_handle_get_dpi_x,
-    rsvg_rust_handle_get_dpi_y,
     rsvg_rust_handle_get_geometry_for_element,
     rsvg_rust_handle_get_geometry_for_layer,
     rsvg_rust_handle_get_intrinsic_dimensions,
@@ -31,8 +29,7 @@ pub use crate::c_api::{
     rsvg_rust_handle_render_layer,
     rsvg_rust_handle_set_base_gfile,
     rsvg_rust_handle_set_base_url,
-    rsvg_rust_handle_set_dpi_x,
-    rsvg_rust_handle_set_dpi_y,
+    rsvg_rust_handle_set_dpi_x_y,
     rsvg_rust_handle_set_size_callback,
     rsvg_rust_handle_set_testing,
     rsvg_rust_handle_write,
@@ -47,6 +44,9 @@ pub use crate::pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_zoom,
     rsvg_rust_pixbuf_from_file_at_zoom_with_max,
 };
+
+#[macro_use]
+mod messages;
 
 mod c_api;
 mod color_utils;

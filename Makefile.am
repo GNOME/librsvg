@@ -119,6 +119,7 @@ LIBRSVG_C_API_SRC =						\
 	librsvg/c_api.rs					\
 	librsvg/color_utils.rs					\
 	librsvg/lib.rs						\
+	librsvg/messages.rs					\
 	librsvg/pixbuf_utils.rs					\
 	$(NULL)
 

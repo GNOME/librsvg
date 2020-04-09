@@ -1338,6 +1338,56 @@ property_deprecated (void)
     g_object_unref (handle);
 }
 
+static void
+return_if_fail (void)
+{
+    if (g_test_subprocess ()) {
+        RsvgHandle *handle;
+
+        handle = rsvg_handle_new();
+        g_assert_nonnull (handle);
+
+        /* NULL is an invalid argument... */
+        rsvg_handle_set_base_uri (handle, NULL);
+        g_object_unref (handle);
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    /* ... and here we catch that it was validated */
+    g_test_trap_assert_stderr ("*rsvg_handle_set_base_uri*assertion*failed*");
+}
+
+static void
+return_if_fail_null_check (void)
+{
+    if (g_test_subprocess ()) {
+        /* Pass NULL as an argument, incorrectly... */
+        g_assert_null (rsvg_handle_get_base_uri (NULL));
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    /* ... and here we catch that it was validated */
+    g_test_trap_assert_stderr ("*rsvg_handle_get_base_uri*assertion*handle*failed*");
+}
+
+static void
+return_if_fail_type_check (void)
+{
+    if (g_test_subprocess ()) {
+        /* Create a random GObject that is not an RsvgHandle... */
+        GInputStream *stream = g_memory_input_stream_new();
+
+        /* Feed it to an RsvgHandle function so it will bail out */
+        g_assert_null (rsvg_handle_get_base_uri ((RsvgHandle *) stream));
+
+        g_object_unref (stream);
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    /* ... and here we catch that it was validated */
+    g_test_trap_assert_stderr ("*rsvg_handle_get_base_uri*assertion*handle*failed*");
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1386,6 +1436,9 @@ main (int argc, char **argv)
     g_test_add_func ("/api/property_base_uri", property_base_uri);
     g_test_add_func ("/api/property_dimensions", property_dimensions);
     g_test_add_func ("/api/property_deprecated", property_deprecated);
+    g_test_add_func ("/api/return_if_fail", return_if_fail);
+    g_test_add_func ("/api/return_if_fail_null_check", return_if_fail_null_check);
+    g_test_add_func ("/api/return_if_fail_type_check", return_if_fail_type_check);
 
     return g_test_run ();
 }
