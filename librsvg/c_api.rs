@@ -1020,18 +1020,6 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x_y(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_x(raw_handle: *const RsvgHandle) -> f64 {
-    let rhandle = get_rust_handle(raw_handle);
-    rhandle.get_dpi_x()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_handle_get_dpi_y(raw_handle: *const RsvgHandle) -> f64 {
-    let rhandle = get_rust_handle(raw_handle);
-    rhandle.get_dpi_y()
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_size_callback(
     handle: *const RsvgHandle,
     size_func: RsvgSizeFunc,

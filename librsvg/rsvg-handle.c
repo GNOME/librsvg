@@ -323,8 +323,6 @@
 #include "rsvg.h"
 
 /* Implemented in rsvg_internals/src/handle.rs */
-extern double rsvg_rust_handle_get_dpi_x (RsvgHandle *raw_handle);
-extern double rsvg_rust_handle_get_dpi_y (RsvgHandle *raw_handle);
 extern void rsvg_rust_handle_set_dpi_x_y (RsvgHandle *raw_handle, double dpi_x, double dpi_y);
 extern void rsvg_rust_handle_set_base_url (RsvgHandle *raw_handle, const char *uri);
 extern void rsvg_rust_handle_set_base_gfile (RsvgHandle *raw_handle, GFile *file);
