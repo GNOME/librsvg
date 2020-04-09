@@ -577,11 +577,12 @@ main (int argc, char **argv)
                 exit (1);
             }
 
-            cairo_set_source_rgb (
+            cairo_set_source_rgba (
                 cr, 
                 ((background_color >> 16) & 0xff) / 255.0, 
                 ((background_color >> 8) & 0xff) / 255.0, 
-                ((background_color >> 0) & 0xff) / 255.0);
+                ((background_color >> 0) & 0xff) / 255.0,
+                ((background_color >> 24) & 0xff) / 255.0);
             cairo_rectangle (cr, 0, 0, unscaled_width, unscaled_height);
             cairo_fill (cr);
         }
