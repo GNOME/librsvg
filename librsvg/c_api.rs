@@ -27,7 +27,7 @@ use glib::{
     ToValue, Type, Value,
 };
 
-use glib_sys::{G_LOG_LEVEL_WARNING, G_LOG_LEVEL_CRITICAL, GLogField, g_log_structured_array};
+use glib_sys::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
 
 use gobject_sys::{GEnumValue, GFlagsValue};
 
@@ -1605,13 +1605,11 @@ fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
             value: priority as *const u8 as *const _,
             length: -1,
         },
-
         GLogField {
             key: b"MESSAGE\0" as *const u8 as *const _,
             value: msg.as_ptr() as *const _,
             length: msg.len() as _,
         },
-
         // This is the G_LOG_DOMAIN set from the Makefile
         GLogField {
             key: b"GLIB_DOMAIN\0" as *const u8 as *const _,
