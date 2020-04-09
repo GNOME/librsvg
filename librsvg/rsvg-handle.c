@@ -325,8 +325,7 @@
 /* Implemented in rsvg_internals/src/handle.rs */
 extern double rsvg_rust_handle_get_dpi_x (RsvgHandle *raw_handle);
 extern double rsvg_rust_handle_get_dpi_y (RsvgHandle *raw_handle);
-extern void rsvg_rust_handle_set_dpi_x (RsvgHandle *raw_handle, double dpi_x);
-extern void rsvg_rust_handle_set_dpi_y (RsvgHandle *raw_handle, double dpi_y);
+extern void rsvg_rust_handle_set_dpi_x_y (RsvgHandle *raw_handle, double dpi_x, double dpi_y);
 extern void rsvg_rust_handle_set_base_url (RsvgHandle *raw_handle, const char *uri);
 extern void rsvg_rust_handle_set_base_gfile (RsvgHandle *raw_handle, GFile *file);
 extern const char *rsvg_rust_handle_get_base_url (RsvgHandle *raw_handle);
@@ -1078,8 +1077,7 @@ rsvg_handle_set_dpi (RsvgHandle *handle, double dpi)
 void
 rsvg_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y)
 {
-    rsvg_rust_handle_set_dpi_x (handle, dpi_x);
-    rsvg_rust_handle_set_dpi_y (handle, dpi_y);
+    rsvg_rust_handle_set_dpi_x_y (handle, dpi_x, dpi_y);
 }
 
 /**
