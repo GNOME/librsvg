@@ -766,7 +766,6 @@ impl DrawingCtx {
                             return Ok(child_surface);
                         }
 
-                        // FIXME: deal with out of memory here
                         return filters::render(
                             &filter_node,
                             values,
