@@ -55,7 +55,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/filters/merge.rs			\
 	rsvg_internals/src/filters/morphology.rs		\
 	rsvg_internals/src/filters/mod.rs			\
-	rsvg_internals/src/filters/input.rs			\
 	rsvg_internals/src/filters/offset.rs			\
 	rsvg_internals/src/filters/tile.rs			\
 	rsvg_internals/src/filters/turbulence.rs		\

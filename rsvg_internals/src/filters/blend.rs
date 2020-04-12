@@ -10,8 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::input::Input;
-use super::{FilterEffect, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
 
 /// Enumeration of the possible blending modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]

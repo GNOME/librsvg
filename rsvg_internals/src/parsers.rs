@@ -1,8 +1,7 @@
 //! The `Parse` trait for CSS properties, and utilities for parsers.
 
-use cssparser::{Parser, ParserInput};
+use cssparser::{Parser, ParserInput, Token};
 use markup5ever::QualName;
-
 use std::str;
 
 use crate::error::*;
@@ -147,6 +146,33 @@ macro_rules! parse_identifiers {
     };
 }
 
+/// https://www.w3.org/TR/css-values-4/#custom-idents
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CustomIdent(String);
+
+impl Parse for CustomIdent {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let token = parser.next()?;
+
+        match token {
+            // CSS-wide keywords and "default" are errors here
+            // https://www.w3.org/TR/css-values-4/#css-wide-keywords
+            Token::Ident(ref cow) => {
+                for s in &["initial", "inherit", "unset", "default"] {
+                    if cow.eq_ignore_ascii_case(s) {
+                        Err(loc.new_basic_unexpected_token_error(token.clone()))?
+                    }
+                }
+
+                Ok(CustomIdent(cow.as_ref().to_string()))
+            }
+
+            _ => Err(loc.new_basic_unexpected_token_error(token.clone()))?,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -245,5 +271,22 @@ mod tests {
         assert!(NumberOptionalNumber::<i32>::parse_str("1.5").is_err());
         assert!(NumberOptionalNumber::<i32>::parse_str("1 2.5").is_err());
         assert!(NumberOptionalNumber::<i32>::parse_str("1, 2.5").is_err());
+    }
+
+    #[test]
+    fn parses_custom_ident() {
+        assert_eq!(
+            CustomIdent::parse_str("hello"),
+            Ok(CustomIdent("hello".to_string()))
+        );
+    }
+
+    #[test]
+    fn invalid_custom_ident_yields_error() {
+        assert!(CustomIdent::parse_str("initial").is_err());
+        assert!(CustomIdent::parse_str("inherit").is_err());
+        assert!(CustomIdent::parse_str("unset").is_err());
+        assert!(CustomIdent::parse_str("default").is_err());
+        assert!(CustomIdent::parse_str("").is_err());
     }
 }

@@ -9,6 +9,7 @@ use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::filter::Filter;
 use crate::node::{Node, NodeBorrow};
 use crate::paint_server::PaintServer;
+use crate::parsers::CustomIdent;
 use crate::properties::ComputedValues;
 use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{
@@ -18,7 +19,7 @@ use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
-use super::input::{CustomIdent, Input};
+use super::Input;
 
 /// A filter primitive output.
 #[derive(Debug, Clone)]

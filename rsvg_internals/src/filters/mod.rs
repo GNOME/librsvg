@@ -1,20 +1,20 @@
 //! Entry point for the CSS filters infrastructure.
 
+use cssparser::{BasicParseError, Parser};
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::time::Instant;
-
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, ElementTrait, ElementType};
-use crate::error::RenderingError;
+use crate::error::{ParseError, RenderingError};
 use crate::filter::Filter;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::parsers::ParseValue;
+use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
@@ -28,9 +28,6 @@ use self::context::{FilterContext, FilterInput, FilterResult};
 
 mod error;
 use self::error::FilterError;
-
-mod input;
-use self::input::{CustomIdent, Input};
 
 /// A filter primitive interface.
 pub trait FilterEffect: ElementTrait {
@@ -85,6 +82,39 @@ struct Primitive {
     width: Option<Length<Horizontal>>,
     height: Option<Length<Vertical>>,
     result: Option<CustomIdent>,
+}
+
+/// An enumeration of possible inputs for a filter primitive.
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum Input {
+    SourceGraphic,
+    SourceAlpha,
+    BackgroundImage,
+    BackgroundAlpha,
+    FillPaint,
+    StrokePaint,
+    FilterOutput(CustomIdent),
+}
+
+impl Parse for Input {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        parser
+            .try_parse(|p| {
+                Ok(parse_identifiers!(
+                    p,
+                    "SourceGraphic" => Input::SourceGraphic,
+                    "SourceAlpha" => Input::SourceAlpha,
+                    "BackgroundImage" => Input::BackgroundImage,
+                    "BackgroundAlpha" => Input::BackgroundAlpha,
+                    "FillPaint" => Input::FillPaint,
+                    "StrokePaint" => Input::StrokePaint,
+                )?)
+            })
+            .or_else(|_: BasicParseError| {
+                let ident = CustomIdent::parse(parser)?;
+                Ok(Input::FilterOutput(ident))
+            })
+    }
 }
 
 /// The base node for filter primitives which accept input.

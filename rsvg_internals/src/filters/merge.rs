@@ -10,8 +10,7 @@ use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::input::Input;
-use super::{FilterEffect, FilterError, Primitive};
+use super::{FilterEffect, FilterError, Input, Primitive};
 
 /// The `feMerge` filter primitive.
 pub struct FeMerge {

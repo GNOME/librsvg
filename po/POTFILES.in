@@ -37,7 +37,6 @@ rsvg_internals/src/filters/error.rs
 rsvg_internals/src/filters/flood.rs
 rsvg_internals/src/filters/gaussian_blur.rs
 rsvg_internals/src/filters/image.rs
-rsvg_internals/src/filters/input.rs
 rsvg_internals/src/filters/light/light_source.rs
 rsvg_internals/src/filters/light/lighting.rs
 rsvg_internals/src/filters/light/mod.rs
