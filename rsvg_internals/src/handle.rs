@@ -11,10 +11,11 @@ use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::DrawingCtx;
+use crate::element::Element;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::{IRect, Rect};
-use crate::structure::{IntrinsicDimensions, Svg};
+use crate::structure::IntrinsicDimensions;
 use url::Url;
 
 /// Loading options for SVG documents.
@@ -322,14 +323,15 @@ impl Handle {
             let cascaded = CascadedValues::new_from_node(&node);
             let values = cascaded.get();
 
-            if let Some((root_width, root_height)) = node
-                .borrow_element()
-                .get_impl::<Svg>()
-                .get_size(&values, dpi)
-            {
-                let rect = IRect::from_size(root_width, root_height);
+            match *node.borrow_element() {
+                Element::Svg(ref svg) => {
+                    if let Some((w, h)) = svg.get_size(&values, dpi) {
+                        let rect = IRect::from_size(w, h);
 
-                return Ok((cairo::Rectangle::from(rect), cairo::Rectangle::from(rect)));
+                        return Ok((cairo::Rectangle::from(rect), cairo::Rectangle::from(rect)));
+                    }
+                }
+                _ => (),
             }
         }
 
@@ -561,7 +563,7 @@ impl Handle {
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        self.document.get_intrinsic_dimensions()
+        borrow_element_as!(self.document.root(), Svg).get_intrinsic_dimensions()
     }
 
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
