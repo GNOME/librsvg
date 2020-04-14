@@ -140,6 +140,7 @@ case "$host" in
 esac
 AC_MSG_RESULT([$platform_win32])
 AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
+AM_CONDITIONAL(LIB_NAME_WORKAROUND, test "$platform_win32" = "yes" -a \( "$major" -lt 1 -o "$minor" -lt 44 \))
 
 AC_MSG_CHECKING([for native Win32])
 case "$host" in
