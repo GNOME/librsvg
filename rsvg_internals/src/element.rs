@@ -236,13 +236,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         }
     }
 
-    fn set_element_specific_attributes(
-        &mut self,
-        pbag: &PropertyBag<'_>,
-    ) -> Result<(), ElementError> {
-        self.element_impl.set_attributes(pbag)
-    }
-
     // Applies a style declaration to the node's specified_values
     fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
         self.specified_values.set_property_from_declaration(
@@ -276,7 +269,20 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     fn is_in_error(&self) -> bool {
         self.result.is_err()
     }
+}
 
+impl<T: SetAttributes + Draw> SetAttributes for ElementInner<T> {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.save_style_attribute(pbag);
+
+        self.set_transform_attribute(pbag)
+            .and_then(|_| self.set_conditional_processing_attributes(pbag))
+            .and_then(|_| self.element_impl.set_attributes(pbag))
+            .and_then(|_| self.set_presentation_attributes(pbag))
+    }
+}
+
+impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
     fn draw(
         &self,
         node: &Node,
@@ -488,32 +494,6 @@ impl Element {
         call_inner!(self, get_transform)
     }
 
-    fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
-        call_inner!(self, save_style_attribute, pbag);
-    }
-
-    fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
-        call_inner!(self, set_transform_attribute, pbag)
-    }
-
-    fn set_conditional_processing_attributes(
-        &mut self,
-        pbag: &PropertyBag<'_>,
-    ) -> Result<(), ElementError> {
-        call_inner!(self, set_conditional_processing_attributes, pbag)
-    }
-
-    fn set_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
-        call_inner!(self, set_presentation_attributes, pbag)
-    }
-
-    fn set_element_specific_attributes(
-        &mut self,
-        pbag: &PropertyBag<'_>,
-    ) -> Result<(), ElementError> {
-        call_inner!(self, set_element_specific_attributes, pbag)
-    }
-
     pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
         call_inner!(self, apply_style_declaration, declaration, origin)
     }
@@ -528,25 +508,6 @@ impl Element {
 
     pub fn is_in_error(&self) -> bool {
         call_inner!(self, is_in_error)
-    }
-
-    pub fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        call_inner!(
-            self,
-            draw,
-            node,
-            acquired_nodes,
-            cascaded,
-            draw_ctx,
-            clipping
-        )
     }
 
     pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
@@ -584,6 +545,33 @@ impl Element {
             Element::Mask(_) |
             Element::Pattern(_) |
             Element::RadialGradient(_)
+        )
+    }
+}
+
+impl SetAttributes for Element {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        call_inner!(self, set_attributes, pbag)
+    }
+}
+
+impl Draw for Element {
+    fn draw(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        call_inner!(
+            self,
+            draw,
+            node,
+            acquired_nodes,
+            cascaded,
+            draw_ctx,
+            clipping
         )
     }
 }
@@ -838,14 +826,7 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
 
     let mut element = create_fn(name, id, class);
 
-    element.save_style_attribute(pbag);
-
-    if let Err(e) = element
-        .set_transform_attribute(pbag)
-        .and_then(|_| element.set_conditional_processing_attributes(pbag))
-        .and_then(|_| element.set_element_specific_attributes(pbag))
-        .and_then(|_| element.set_presentation_attributes(pbag))
-    {
+    if let Err(e) = element.set_attributes(pbag) {
         element.set_error(e);
     }
 
