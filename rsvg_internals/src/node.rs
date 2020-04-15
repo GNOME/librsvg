@@ -156,7 +156,7 @@ impl<'a> CascadedValues<'a> {
 
     /// Returns the cascaded `ComputedValues`.
     ///
-    /// Nodes should use this from their `ElementTrait::draw()` implementation to get the
+    /// Nodes should use this from their `SetAttributes::draw()` implementation to get the
     /// `ComputedValues` from the `CascadedValues` that got passed to `draw()`.
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {

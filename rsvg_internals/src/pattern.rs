@@ -10,7 +10,7 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::length::*;
@@ -118,8 +118,8 @@ pub struct Pattern {
     resolved: RefCell<Option<ResolvedPattern>>,
 }
 
-impl ElementTrait for Pattern {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Pattern {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "patternUnits") => self.common.units = Some(attr.parse(value)?),
@@ -154,6 +154,8 @@ impl ElementTrait for Pattern {
         Ok(())
     }
 }
+
+impl Draw for Pattern {}
 
 impl PaintSource for Pattern {
     type Resolved = ResolvedPattern;
