@@ -7,7 +7,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, Node};
@@ -27,8 +27,8 @@ pub struct Image {
     href: Option<Href>,
 }
 
-impl ElementTrait for Image {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Image {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -56,7 +56,9 @@ impl ElementTrait for Image {
 
         Ok(())
     }
+}
 
+impl Draw for Image {
     fn draw(
         &self,
         node: &Node,

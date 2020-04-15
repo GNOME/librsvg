@@ -7,7 +7,7 @@ use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
@@ -47,9 +47,11 @@ impl Common {
             kernel_unit_length: None,
         }
     }
+}
 
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)?;
+impl SetAttributes for Common {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -92,9 +94,9 @@ impl Default for FeDiffuseLighting {
     }
 }
 
-impl ElementTrait for FeDiffuseLighting {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_atts(pbag)?;
+impl SetAttributes for FeDiffuseLighting {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.common.set_attributes(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -159,9 +161,9 @@ impl Default for FeSpecularLighting {
     }
 }
 
-impl ElementTrait for FeSpecularLighting {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_atts(pbag)?;
+impl SetAttributes for FeSpecularLighting {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.common.set_attributes(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

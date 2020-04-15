@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
 use crate::length::*;
 use crate::parsers::{Parse, ParseValue};
@@ -110,8 +110,8 @@ impl Filter {
     }
 }
 
-impl ElementTrait for Filter {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Filter {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -182,3 +182,5 @@ impl ElementTrait for Filter {
         Ok(())
     }
 }
+
+impl Draw for Filter {}

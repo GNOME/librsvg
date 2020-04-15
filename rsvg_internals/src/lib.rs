@@ -22,7 +22,7 @@
 //! helper traits used to operate on nodes.
 //!
 //! * [The `element` module](element/index.html) provides the [`Element`] struct and
-//! [`ElementTrait`] which is implemented by all SVG elements.
+//! [`SetAttributes`] which is implemented by all SVG elements.
 //!
 //! * [The `xml` module](xml/index.html) receives events from the XML parser, and builds a
 //! [`Document`] as a tree of [`Node`].
@@ -39,7 +39,7 @@
 //! [`Document`]: document/struct.Document.html
 //! [`Node`]: node/type.Node.html
 //! [`Element`]: element/struct.Element.html
-//! [`ElementTrait`]: element/trait.ElementTrait.html
+//! [`SetAttributes`]: element/trait.SetAttributes.html
 
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]

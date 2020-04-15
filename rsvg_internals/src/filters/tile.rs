@@ -1,6 +1,6 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::property_bag::PropertyBag;
 
@@ -22,9 +22,9 @@ impl Default for FeTile {
     }
 }
 
-impl ElementTrait for FeTile {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)
+impl SetAttributes for FeTile {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)
     }
 }
 
