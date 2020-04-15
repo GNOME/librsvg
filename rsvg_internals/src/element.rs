@@ -77,15 +77,19 @@ use crate::transform::Transform;
 // validator, not a renderer like librsvg is.
 pub type ElementResult = Result<(), ElementError>;
 
-/// The basic trait that all elements must implement
-pub trait ElementTrait {
+pub trait SetAttributes {
     /// Sets per-element attributes from the `pbag`
     ///
     /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&mut self, _pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_attributes(&mut self, _pbag: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
+}
 
+pub trait Draw {
+    /// Draw an element
+    ///
+    /// Each element is supposed to draw itself as needed.
     fn draw(
         &self,
         _node: &Node,
@@ -99,7 +103,7 @@ pub trait ElementTrait {
     }
 }
 
-pub struct ElementInner<T: ElementTrait> {
+pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
@@ -113,7 +117,7 @@ pub struct ElementInner<T: ElementTrait> {
     pub element_impl: T,
 }
 
-impl<T: ElementTrait> ElementInner<T> {
+impl<T: SetAttributes + Draw> ElementInner<T> {
     fn element_name(&self) -> &QualName {
         &self.element_name
     }
@@ -236,7 +240,7 @@ impl<T: ElementTrait> ElementInner<T> {
         &mut self,
         pbag: &PropertyBag<'_>,
     ) -> Result<(), ElementError> {
-        self.element_impl.set_atts(pbag)
+        self.element_impl.set_attributes(pbag)
     }
 
     // Applies a style declaration to the node's specified_values
@@ -295,7 +299,7 @@ impl<T: ElementTrait> ElementInner<T> {
     }
 }
 
-impl<T: ElementTrait> fmt::Display for ElementInner<T> {
+impl<T: SetAttributes + Draw> fmt::Display for ElementInner<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.element_name().local)?;
         write!(f, " id={}", self.get_id().unwrap_or("None"))?;
@@ -303,7 +307,7 @@ impl<T: ElementTrait> fmt::Display for ElementInner<T> {
     }
 }
 
-impl<T: ElementTrait> Deref for ElementInner<T> {
+impl<T: SetAttributes + Draw> Deref for ElementInner<T> {
     type Target = T;
 
     #[inline]

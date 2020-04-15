@@ -8,7 +8,7 @@ use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
@@ -596,8 +596,8 @@ impl Text {
     }
 }
 
-impl ElementTrait for Text {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Text {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -610,7 +610,9 @@ impl ElementTrait for Text {
 
         Ok(())
     }
+}
 
+impl Draw for Text {
     fn draw(
         &self,
         node: &Node,
@@ -715,8 +717,8 @@ fn extract_chars_children_to_chunks_recursively(
     }
 }
 
-impl ElementTrait for TRef {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for TRef {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => {
@@ -729,6 +731,8 @@ impl ElementTrait for TRef {
         Ok(())
     }
 }
+
+impl Draw for TRef {}
 
 #[derive(Default)]
 pub struct TSpan {
@@ -764,8 +768,8 @@ impl TSpan {
     }
 }
 
-impl ElementTrait for TSpan {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for TSpan {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value).map(Some)?,
@@ -779,6 +783,8 @@ impl ElementTrait for TSpan {
         Ok(())
     }
 }
+
+impl Draw for TSpan {}
 
 fn to_pango_units(v: f64) -> i32 {
     (v * f64::from(pango::SCALE) + 0.5) as i32

@@ -1,6 +1,6 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
 use crate::property_bag::PropertyBag;
 
@@ -22,9 +22,9 @@ impl Default for FeFlood {
     }
 }
 
-impl ElementTrait for FeFlood {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)
+impl SetAttributes for FeFlood {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)
     }
 }
 

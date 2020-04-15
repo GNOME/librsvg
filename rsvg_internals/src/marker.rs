@@ -12,7 +12,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::IRI;
@@ -175,8 +175,8 @@ impl Marker {
     }
 }
 
-impl ElementTrait for Marker {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Marker {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,
@@ -200,6 +200,8 @@ impl ElementTrait for Marker {
         Ok(())
     }
 }
+
+impl Draw for Marker {}
 
 // Machinery to figure out marker orientations
 #[derive(Debug, PartialEq)]

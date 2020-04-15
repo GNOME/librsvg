@@ -4,7 +4,7 @@ use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::number_list::{NumberList, NumberListLength};
@@ -51,9 +51,9 @@ impl Default for FeColorMatrix {
 }
 
 #[rustfmt::skip]
-impl ElementTrait for FeColorMatrix {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)?;
+impl SetAttributes for FeColorMatrix {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)?;
 
         // First, determine the operation type.
         let mut operation_type = Default::default();
