@@ -86,10 +86,6 @@ pub trait ElementTrait {
         Ok(())
     }
 
-    /// Sets any special-cased properties that the element may have, that are different
-    /// from defaults in the element's `SpecifiedValues`.
-    fn set_overridden_properties(&self, _values: &mut SpecifiedValues) {}
-
     fn draw(
         &self,
         _node: &Node,
@@ -241,11 +237,6 @@ impl<T: ElementTrait> ElementInner<T> {
         pbag: &PropertyBag<'_>,
     ) -> Result<(), ElementError> {
         self.element_impl.set_atts(pbag)
-    }
-
-    fn set_overridden_properties(&mut self) {
-        self.element_impl
-            .set_overridden_properties(&mut self.specified_values);
     }
 
     // Applies a style declaration to the node's specified_values
@@ -517,10 +508,6 @@ impl Element {
         pbag: &PropertyBag<'_>,
     ) -> Result<(), ElementError> {
         call_inner!(self, set_element_specific_attributes, pbag)
-    }
-
-    fn set_overridden_properties(&mut self) {
-        call_inner!(self, set_overridden_properties)
     }
 
     pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
@@ -857,8 +844,6 @@ pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
     {
         element.set_error(e);
     }
-
-    element.set_overridden_properties();
 
     element
 }
