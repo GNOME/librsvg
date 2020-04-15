@@ -17,13 +17,12 @@ use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerO
 
 use crate::allowed_url::AllowedUrl;
 use crate::document::{Document, DocumentBuilder};
-use crate::element::ElementType;
 use crate::error::LoadingError;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
 use crate::property_bag::PropertyBag;
-use crate::style::{Style, StyleType};
+use crate::style::StyleType;
 use crate::xml2_load::Xml2Parser;
 
 #[derive(Clone)]
@@ -362,11 +361,7 @@ impl XmlState {
         let mut inner = self.inner.borrow_mut();
         let current_node = inner.current_node.as_ref().unwrap();
 
-        assert!(current_node.borrow_element().get_type() == ElementType::Style);
-
-        let style_type = current_node
-            .borrow_element()
-            .get_impl::<Style>()
+        let style_type = borrow_element_as!(current_node, Style)
             .style_type()
             .unwrap_or(StyleType::TextCss);
 

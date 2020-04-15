@@ -78,19 +78,16 @@ use cssparser::{
     CowRcStr, DeclarationListParser, DeclarationParser, Parser, ParserInput, QualifiedRuleParser,
     RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
 };
+use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{OpaqueElement, SelectorImpl, SelectorList};
-
 use std::cmp::Ordering;
 use std::fmt;
 use std::str;
-
-use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use url::Url;
 
 use crate::allowed_url::AllowedUrl;
-use crate::element::ElementType;
 use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
@@ -499,7 +496,7 @@ impl selectors::Element for RsvgElement {
     /// Whether this element is a `link`.
     fn is_link(&self) -> bool {
         // FIXME: is this correct for SVG <a>, not HTML <a>?
-        self.0.is_element() && self.0.borrow_element().get_type() == ElementType::Link
+        self.0.is_element() && is_element_of_type!(self.0, Link)
     }
 
     /// Returns whether the element is an HTML <slot> element.
@@ -823,11 +820,10 @@ mod tests {
             .unwrap();
 
         // Node types
-
-        assert!(a.borrow_element().get_type() == ElementType::Svg);
-        assert!(b.borrow_element().get_type() == ElementType::Rect);
-        assert!(c.borrow_element().get_type() == ElementType::Circle);
-        assert!(d.borrow_element().get_type() == ElementType::Rect);
+        assert!(is_element_of_type!(a, Svg));
+        assert!(is_element_of_type!(b, Rect));
+        assert!(is_element_of_type!(c, Circle));
+        assert!(is_element_of_type!(d, Rect));
 
         let a = RsvgElement(a);
         let b = RsvgElement(b);

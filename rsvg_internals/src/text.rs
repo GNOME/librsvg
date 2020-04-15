@@ -8,7 +8,7 @@ use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait, ElementType};
+use crate::element::{Element, ElementResult, ElementTrait};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeightSpec;
@@ -437,12 +437,10 @@ fn children_to_chunks(
         } else {
             assert!(child.is_element());
 
-            let elt = child.borrow_element();
-
-            match elt.get_type() {
-                ElementType::TSpan => {
+            match *child.borrow_element() {
+                Element::TSpan(ref tspan) => {
                     let cascaded = CascadedValues::new(cascaded, &child);
-                    elt.get_impl::<TSpan>().to_chunks(
+                    tspan.to_chunks(
                         &child,
                         acquired_nodes,
                         &cascaded,
@@ -452,15 +450,9 @@ fn children_to_chunks(
                     );
                 }
 
-                ElementType::TRef => {
+                Element::TRef(ref tref) => {
                     let cascaded = CascadedValues::new(cascaded, &child);
-                    elt.get_impl::<TRef>().to_chunks(
-                        &child,
-                        acquired_nodes,
-                        &cascaded,
-                        chunks,
-                        depth + 1,
-                    );
+                    tref.to_chunks(&child, acquired_nodes, &cascaded, chunks, depth + 1);
                 }
 
                 _ => (),
