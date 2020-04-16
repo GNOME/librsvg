@@ -652,9 +652,11 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
  *
  * Before calling this function, you may need to call rsvg_handle_set_base_uri()
  * or rsvg_handle_set_base_gfile() to set the "base file" for resolving
- * references to external resources.  SVG elements like
+ * references to external resources. SVG elements like
  * <literal>&lt;image&gt;</literal> which reference external resources will be
  * resolved relative to the location you specify with those functions.
+ * If the loading policy prevents to load external resources, the error
+ * %G_IO_ERROR_PERMISSION_DENIED will be returned.
  *
  * If @cancellable is not %NULL, then the operation can be cancelled by
  * triggering the cancellable object from another thread. If the
@@ -713,6 +715,25 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
                             GFile      *base_file)
 {
     rsvg_rust_handle_set_base_gfile (handle, base_file);
+}
+
+/**
+ * rsvg_handle_set_loading_policy:
+ * @handle: a #RsvgHandle
+ * @policy: a #RsvgLoadingPolicy
+ *
+ * Set the loading policy for @handle from @policy.
+ *
+ * Note: This function may only be called before
+ * rsvg_handle_read_stream_sync() have been called.
+ *
+ * Since: 2.48
+ */
+void
+rsvg_handle_set_loading_policy (RsvgHandle        *handle,
+                                RsvgLoadingPolicy *policy)
+{
+    rsvg_rust_handle_set_loading_policy (handle, policy);
 }
 
 /**
