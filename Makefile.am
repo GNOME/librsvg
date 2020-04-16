@@ -5,10 +5,18 @@ NULL =
 lib_LTLIBRARIES = librsvg-@RSVG_API_MAJOR_VERSION@.la
 noinst_LTLIBRARIES = librsvg_c_api.la
 
+# Some systems, reportedly OpenBSD and Mac OS X, refuse
+# to create libraries without any object files. Compiling
+# this file, and adding its object file to the library,
+# will prevent the library from being empty.
+BUILT_SOURCES = _rsvg_dummy.c
+_rsvg_dummy.c:
+	echo "static int __attribute__((unused)) __rsvg_dummy;" > _rsvg_dummy.c
+
 # Automake wants to have a C sources list for LTLIBRARIES.
 # See LIBRSVG_INTERNALS_SRC below for the real list of Rust
 # sources.
-librsvg_c_api_la_SOURCES = librsvg/dummy.c
+librsvg_c_api_la_SOURCES = _rsvg_dummy.c
 
 bin_PROGRAMS = rsvg-convert
 
@@ -151,8 +159,9 @@ cargo_verbose_1 = --verbose
 LIBRSVG_BUILD_DIR=@abs_top_builddir@
 CARGO_TARGET_DIR=$(LIBRSVG_BUILD_DIR)/target
 
-if PLATFORM_WIN32
-# https://github.com/rust-lang/rust/issues/43749
+if LIB_NAME_WORKAROUND
+# Workaround for https://github.com/rust-lang/rust/issues/69904
+# can be removed when our minimum Rust version is at least 1.44.
 RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/rsvg_c_api.lib
 else
 RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/librsvg_c_api.a
@@ -316,7 +325,7 @@ nodist_gir_DATA = $(INTROSPECTION_GIRS)
 typelibsdir = $(libdir)/girepository-1.0
 nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 
-CLEANFILES = $(nodist_gir_DATA) $(nodist_typelibs_DATA)
+CLEANFILES = $(BUILT_SOURCES) $(nodist_gir_DATA) $(nodist_typelibs_DATA)
 
 if ENABLE_VAPIGEN
 include $(VAPIGEN_MAKEFILE)
