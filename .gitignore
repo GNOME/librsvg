@@ -78,3 +78,4 @@ librsvg-2.0.vapi
 librsvg-*.tar.xz
 librsvg-*.tar.bz2
 rust/target
+_rsvg_dummy.c
