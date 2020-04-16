@@ -69,7 +69,7 @@ pub enum NodeData {
 
 impl NodeData {
     pub fn new_element(name: &QualName, pbag: &PropertyBag) -> NodeData {
-        NodeData::Element(create_element(name, pbag))
+        NodeData::Element(Element::new(name, pbag))
     }
 
     pub fn new_chars() -> NodeData {

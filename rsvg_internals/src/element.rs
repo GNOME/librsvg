@@ -1,9 +1,4 @@
 //! SVG Elements.
-//!
-//! The [`create_element`] function takes an XML element name, and
-//! creates an [`Element`] for it.
-//!
-//! [`create_element`]: fn.create_element.html
 
 use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
@@ -462,6 +457,60 @@ macro_rules! call_inner {
 }
 
 impl Element {
+    /// Takes an XML element name and a list of attribute/value pairs and creates an [`Element`].
+    ///
+    /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
+    /// element.
+    ///
+    /// [`Element`]: type.Element.html
+    /// [`NonRendering`]: ../structure/struct.NonRendering.html
+    pub fn new(name: &QualName, pbag: &PropertyBag) -> Element {
+        let mut id = None;
+        let mut class = None;
+
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!("", "id") => id = Some(value),
+                expanded_name!("", "class") => class = Some(value),
+                _ => (),
+            }
+        }
+
+        let (create_fn, flags) = if name.ns == ns!(svg) {
+            match ELEMENT_CREATORS.get(name.local.as_ref()) {
+                // hack in the SVG namespace for supported element names
+                Some(&(create_fn, flags)) => (create_fn, flags),
+
+                // Whenever we encounter a element name we don't understand, represent it as a
+                // non-rendering element.  This is like a group, but it doesn't do any rendering
+                // of children.  The effect is that we will ignore all children of unknown elements.
+                None => (
+                    create_non_rendering as ElementCreateFn,
+                    ElementCreateFlags::Default,
+                ),
+            }
+        } else {
+            (
+                create_non_rendering as ElementCreateFn,
+                ElementCreateFlags::Default,
+            )
+        };
+
+        if flags == ElementCreateFlags::IgnoreClass {
+            class = None;
+        };
+
+        //    sizes::print_sizes();
+
+        let mut element = create_fn(name, id, class);
+
+        if let Err(e) = element.set_attributes(pbag) {
+            element.set_error(e);
+        }
+
+        element
+    }
+
     pub fn element_name(&self) -> &QualName {
         call_inner!(self, element_name)
     }
@@ -778,60 +827,6 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
 
     creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
 });
-
-/// Takes an XML element name and a list of attribute/value pairs and creates an [`Element`].
-///
-/// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
-/// element.
-///
-/// [`Element`]: type.Element.html
-/// [`NonRendering`]: ../structure/struct.NonRendering.html
-pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
-    let mut id = None;
-    let mut class = None;
-
-    for (attr, value) in pbag.iter() {
-        match attr.expanded() {
-            expanded_name!("", "id") => id = Some(value),
-            expanded_name!("", "class") => class = Some(value),
-            _ => (),
-        }
-    }
-
-    let (create_fn, flags) = if name.ns == ns!(svg) {
-        match ELEMENT_CREATORS.get(name.local.as_ref()) {
-            // hack in the SVG namespace for supported element names
-            Some(&(create_fn, flags)) => (create_fn, flags),
-
-            // Whenever we encounter a element name we don't understand, represent it as a
-            // non-rendering element.  This is like a group, but it doesn't do any rendering
-            // of children.  The effect is that we will ignore all children of unknown elements.
-            None => (
-                create_non_rendering as ElementCreateFn,
-                ElementCreateFlags::Default,
-            ),
-        }
-    } else {
-        (
-            create_non_rendering as ElementCreateFn,
-            ElementCreateFlags::Default,
-        )
-    };
-
-    if flags == ElementCreateFlags::IgnoreClass {
-        class = None;
-    };
-
-    //    sizes::print_sizes();
-
-    let mut element = create_fn(name, id, class);
-
-    if let Err(e) = element.set_attributes(pbag) {
-        element.set_error(e);
-    }
-
-    element
-}
 
 /// Gets the user's preferred locale from the environment and
 /// translates it to a `Locale` with `LanguageRange` fallbacks.
