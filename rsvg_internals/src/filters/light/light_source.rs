@@ -2,7 +2,7 @@ use cssparser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::Vector3;
 
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::filters::context::FilterContext;
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
@@ -102,8 +102,8 @@ impl FeDistantLight {
     }
 }
 
-impl ElementTrait for FeDistantLight {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for FeDistantLight {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
@@ -115,6 +115,8 @@ impl ElementTrait for FeDistantLight {
         Ok(())
     }
 }
+
+impl Draw for FeDistantLight {}
 
 #[derive(Default)]
 pub struct FePointLight {
@@ -134,8 +136,8 @@ impl FePointLight {
     }
 }
 
-impl ElementTrait for FePointLight {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for FePointLight {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -148,6 +150,8 @@ impl ElementTrait for FePointLight {
         Ok(())
     }
 }
+
+impl Draw for FePointLight {}
 
 #[derive(Default)]
 pub struct FeSpotLight {
@@ -183,8 +187,8 @@ impl FeSpotLight {
     }
 }
 
-impl ElementTrait for FeSpotLight {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for FeSpotLight {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -209,3 +213,5 @@ impl ElementTrait for FeSpotLight {
         Ok(())
     }
 }
+
+impl Draw for FeSpotLight {}

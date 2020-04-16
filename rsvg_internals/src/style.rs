@@ -2,7 +2,7 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::property_bag::PropertyBag;
 
@@ -50,8 +50,8 @@ impl Style {
     }
 }
 
-impl ElementTrait for Style {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Style {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "type") {
                 self.type_ = Some(StyleType::parse(value).attribute(attr)?);
@@ -61,6 +61,8 @@ impl ElementTrait for Style {
         Ok(())
     }
 }
+
+impl Draw for Style {}
 
 #[cfg(test)]
 mod tests {

@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::node::{Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
@@ -33,15 +33,15 @@ impl Default for FeMerge {
     }
 }
 
-impl ElementTrait for FeMerge {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)
+impl SetAttributes for FeMerge {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)
     }
 }
 
-impl ElementTrait for FeMergeNode {
+impl SetAttributes for FeMergeNode {
     #[inline]
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "in") => self.in_ = Some(attr.parse(value)?),
@@ -52,6 +52,8 @@ impl ElementTrait for FeMergeNode {
         Ok(())
     }
 }
+
+impl Draw for FeMergeNode {}
 
 impl FeMergeNode {
     fn render(

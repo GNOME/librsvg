@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::parsers::{Parse, ParseValue};
@@ -50,9 +50,9 @@ impl Default for FeComposite {
     }
 }
 
-impl ElementTrait for FeComposite {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)?;
+impl SetAttributes for FeComposite {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

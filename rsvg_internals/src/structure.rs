@@ -9,7 +9,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::{ElementResult, ElementTrait};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -22,7 +22,9 @@ use crate::viewbox::*;
 #[derive(Default)]
 pub struct Group();
 
-impl ElementTrait for Group {
+impl SetAttributes for Group {}
+
+impl Draw for Group {
     fn draw(
         &self,
         node: &Node,
@@ -46,12 +48,16 @@ impl ElementTrait for Group {
 #[derive(Default)]
 pub struct NonRendering;
 
-impl ElementTrait for NonRendering {}
+impl SetAttributes for NonRendering {}
+
+impl Draw for NonRendering {}
 
 #[derive(Default)]
 pub struct Switch();
 
-impl ElementTrait for Switch {
+impl SetAttributes for Switch {}
+
+impl Draw for Switch {
     fn draw(
         &self,
         node: &Node,
@@ -174,8 +180,8 @@ impl Svg {
     }
 }
 
-impl ElementTrait for Svg {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Svg {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -199,7 +205,9 @@ impl ElementTrait for Svg {
 
         Ok(())
     }
+}
 
+impl Draw for Svg {
     fn draw(
         &self,
         node: &Node,
@@ -291,8 +299,8 @@ impl Use {
     }
 }
 
-impl ElementTrait for Use {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Use {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => {
@@ -316,7 +324,9 @@ impl ElementTrait for Use {
 
         Ok(())
     }
+}
 
+impl Draw for Use {
     fn draw(
         &self,
         node: &Node,
@@ -345,8 +355,8 @@ impl Symbol {
     }
 }
 
-impl ElementTrait for Symbol {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Symbol {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -361,6 +371,8 @@ impl ElementTrait for Symbol {
     }
 }
 
+impl Draw for Symbol {}
+
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
 #[derive(Default)]
@@ -374,8 +386,8 @@ impl ClipPath {
     }
 }
 
-impl ElementTrait for ClipPath {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for ClipPath {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "clipPathUnits") => self.units = attr.parse(value)?,
@@ -386,6 +398,8 @@ impl ElementTrait for ClipPath {
         Ok(())
     }
 }
+
+impl Draw for ClipPath {}
 
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
@@ -434,8 +448,8 @@ impl Mask {
     }
 }
 
-impl ElementTrait for Mask {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Mask {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -458,13 +472,15 @@ impl ElementTrait for Mask {
     }
 }
 
+impl Draw for Mask {}
+
 #[derive(Default)]
 pub struct Link {
     link: Option<String>,
 }
 
-impl ElementTrait for Link {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Link {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!(xlink "href") => self.link = Some(value.to_owned()),
@@ -474,7 +490,9 @@ impl ElementTrait for Link {
 
         Ok(())
     }
+}
 
+impl Draw for Link {
     fn draw(
         &self,
         node: &Node,
