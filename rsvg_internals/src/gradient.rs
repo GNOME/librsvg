@@ -12,7 +12,7 @@ use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -93,8 +93,8 @@ fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind>
     }
 }
 
-impl ElementTrait for Stop {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Stop {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "offset") => {
@@ -109,6 +109,8 @@ impl ElementTrait for Stop {
         Ok(())
     }
 }
+
+impl Draw for Stop {}
 
 /// Parameters specific to each gradient type, before being resolved.
 /// These will be composed together with UnreseolvedVariant from fallback
@@ -587,8 +589,8 @@ macro_rules! impl_get_unresolved {
 impl_get_unresolved!(LinearGradient);
 impl_get_unresolved!(RadialGradient);
 
-impl Common {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Common {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => self.units = Some(attr.parse(value)?),
@@ -607,9 +609,9 @@ impl Common {
     }
 }
 
-impl ElementTrait for LinearGradient {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_atts(pbag)?;
+impl SetAttributes for LinearGradient {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.common.set_attributes(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
@@ -626,9 +628,11 @@ impl ElementTrait for LinearGradient {
     }
 }
 
-impl ElementTrait for RadialGradient {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_atts(pbag)?;
+impl Draw for LinearGradient {}
+
+impl SetAttributes for RadialGradient {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.common.set_attributes(pbag)?;
         // Create a local expanded name for "fr" because markup5ever doesn't have built-in
         let expanded_name_fr = ExpandedName {
             ns: &Namespace::from(""),
@@ -656,6 +660,8 @@ impl ElementTrait for RadialGradient {
         Ok(())
     }
 }
+
+impl Draw for RadialGradient {}
 
 macro_rules! impl_paint_source {
     ($gradient_type:ident, $other_type:ident) => {

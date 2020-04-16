@@ -9,7 +9,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::{ParseError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -29,7 +29,7 @@ mod error;
 use self::error::FilterError;
 
 /// A filter primitive interface.
-pub trait FilterEffect: ElementTrait {
+pub trait FilterEffect: SetAttributes + Draw {
     /// Renders this filter primitive.
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
@@ -49,6 +49,9 @@ pub trait FilterEffect: ElementTrait {
     /// here, whereas primitives that don't (like `feOffset`) should return `false`.
     fn is_affected_by_color_interpolation_filters(&self) -> bool;
 }
+
+// Filter Effects do not need to draw themselves
+impl<T: FilterEffect> Draw for T {}
 
 pub mod blend;
 pub mod color_matrix;
@@ -195,8 +198,8 @@ impl Primitive {
     }
 }
 
-impl ElementTrait for Primitive {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+impl SetAttributes for Primitive {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
@@ -241,9 +244,9 @@ impl PrimitiveWithInput {
     }
 }
 
-impl ElementTrait for PrimitiveWithInput {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)?;
+impl SetAttributes for PrimitiveWithInput {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)?;
 
         for (attr, value) in pbag.iter() {
             match attr.expanded() {

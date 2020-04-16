@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, ElementTrait};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{Node, NodeBorrow};
 use crate::number_list::{NumberList, NumberListLength};
@@ -34,9 +34,9 @@ impl Default for FeComponentTransfer {
     }
 }
 
-impl ElementTrait for FeComponentTransfer {
-    fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_atts(pbag)
+impl SetAttributes for FeComponentTransfer {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.base.set_attributes(pbag)
     }
 }
 
@@ -196,9 +196,9 @@ macro_rules! func_x {
             }
         }
 
-        impl ElementTrait for $func_name {
+        impl SetAttributes for $func_name {
             #[inline]
-            fn set_atts(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+            fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
                 for (attr, value) in pbag.iter() {
                     match attr.expanded() {
                         expanded_name!("", "type") => self.function_type = attr.parse(value)?,
@@ -232,6 +232,8 @@ macro_rules! func_x {
                 Ok(())
             }
         }
+
+        impl Draw for $func_name {}
     };
 }
 

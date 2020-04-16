@@ -1,9 +1,4 @@
 //! SVG Elements.
-//!
-//! The [`create_element`] function takes an XML element name, and
-//! creates an [`Element`] for it.
-//!
-//! [`create_element`]: fn.create_element.html
 
 use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
@@ -77,15 +72,19 @@ use crate::transform::Transform;
 // validator, not a renderer like librsvg is.
 pub type ElementResult = Result<(), ElementError>;
 
-/// The basic trait that all elements must implement
-pub trait ElementTrait {
+pub trait SetAttributes {
     /// Sets per-element attributes from the `pbag`
     ///
     /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_atts(&mut self, _pbag: &PropertyBag<'_>) -> ElementResult {
+    fn set_attributes(&mut self, _pbag: &PropertyBag<'_>) -> ElementResult {
         Ok(())
     }
+}
 
+pub trait Draw {
+    /// Draw an element
+    ///
+    /// Each element is supposed to draw itself as needed.
     fn draw(
         &self,
         _node: &Node,
@@ -99,7 +98,7 @@ pub trait ElementTrait {
     }
 }
 
-pub struct ElementInner<T: ElementTrait> {
+pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
@@ -113,7 +112,7 @@ pub struct ElementInner<T: ElementTrait> {
     pub element_impl: T,
 }
 
-impl<T: ElementTrait> ElementInner<T> {
+impl<T: SetAttributes + Draw> ElementInner<T> {
     fn element_name(&self) -> &QualName {
         &self.element_name
     }
@@ -232,13 +231,6 @@ impl<T: ElementTrait> ElementInner<T> {
         }
     }
 
-    fn set_element_specific_attributes(
-        &mut self,
-        pbag: &PropertyBag<'_>,
-    ) -> Result<(), ElementError> {
-        self.element_impl.set_atts(pbag)
-    }
-
     // Applies a style declaration to the node's specified_values
     fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
         self.specified_values.set_property_from_declaration(
@@ -272,7 +264,20 @@ impl<T: ElementTrait> ElementInner<T> {
     fn is_in_error(&self) -> bool {
         self.result.is_err()
     }
+}
 
+impl<T: SetAttributes + Draw> SetAttributes for ElementInner<T> {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.save_style_attribute(pbag);
+
+        self.set_transform_attribute(pbag)
+            .and_then(|_| self.set_conditional_processing_attributes(pbag))
+            .and_then(|_| self.element_impl.set_attributes(pbag))
+            .and_then(|_| self.set_presentation_attributes(pbag))
+    }
+}
+
+impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
     fn draw(
         &self,
         node: &Node,
@@ -295,7 +300,7 @@ impl<T: ElementTrait> ElementInner<T> {
     }
 }
 
-impl<T: ElementTrait> fmt::Display for ElementInner<T> {
+impl<T: SetAttributes + Draw> fmt::Display for ElementInner<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.element_name().local)?;
         write!(f, " id={}", self.get_id().unwrap_or("None"))?;
@@ -303,7 +308,7 @@ impl<T: ElementTrait> fmt::Display for ElementInner<T> {
     }
 }
 
-impl<T: ElementTrait> Deref for ElementInner<T> {
+impl<T: SetAttributes + Draw> Deref for ElementInner<T> {
     type Target = T;
 
     #[inline]
@@ -452,6 +457,60 @@ macro_rules! call_inner {
 }
 
 impl Element {
+    /// Takes an XML element name and a list of attribute/value pairs and creates an [`Element`].
+    ///
+    /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
+    /// element.
+    ///
+    /// [`Element`]: type.Element.html
+    /// [`NonRendering`]: ../structure/struct.NonRendering.html
+    pub fn new(name: &QualName, pbag: &PropertyBag) -> Element {
+        let mut id = None;
+        let mut class = None;
+
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!("", "id") => id = Some(value),
+                expanded_name!("", "class") => class = Some(value),
+                _ => (),
+            }
+        }
+
+        let (create_fn, flags) = if name.ns == ns!(svg) {
+            match ELEMENT_CREATORS.get(name.local.as_ref()) {
+                // hack in the SVG namespace for supported element names
+                Some(&(create_fn, flags)) => (create_fn, flags),
+
+                // Whenever we encounter a element name we don't understand, represent it as a
+                // non-rendering element.  This is like a group, but it doesn't do any rendering
+                // of children.  The effect is that we will ignore all children of unknown elements.
+                None => (
+                    create_non_rendering as ElementCreateFn,
+                    ElementCreateFlags::Default,
+                ),
+            }
+        } else {
+            (
+                create_non_rendering as ElementCreateFn,
+                ElementCreateFlags::Default,
+            )
+        };
+
+        if flags == ElementCreateFlags::IgnoreClass {
+            class = None;
+        };
+
+        //    sizes::print_sizes();
+
+        let mut element = create_fn(name, id, class);
+
+        if let Err(e) = element.set_attributes(pbag) {
+            element.set_error(e);
+        }
+
+        element
+    }
+
     pub fn element_name(&self) -> &QualName {
         call_inner!(self, element_name)
     }
@@ -484,32 +543,6 @@ impl Element {
         call_inner!(self, get_transform)
     }
 
-    fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
-        call_inner!(self, save_style_attribute, pbag);
-    }
-
-    fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
-        call_inner!(self, set_transform_attribute, pbag)
-    }
-
-    fn set_conditional_processing_attributes(
-        &mut self,
-        pbag: &PropertyBag<'_>,
-    ) -> Result<(), ElementError> {
-        call_inner!(self, set_conditional_processing_attributes, pbag)
-    }
-
-    fn set_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
-        call_inner!(self, set_presentation_attributes, pbag)
-    }
-
-    fn set_element_specific_attributes(
-        &mut self,
-        pbag: &PropertyBag<'_>,
-    ) -> Result<(), ElementError> {
-        call_inner!(self, set_element_specific_attributes, pbag)
-    }
-
     pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
         call_inner!(self, apply_style_declaration, declaration, origin)
     }
@@ -524,25 +557,6 @@ impl Element {
 
     pub fn is_in_error(&self) -> bool {
         call_inner!(self, is_in_error)
-    }
-
-    pub fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        call_inner!(
-            self,
-            draw,
-            node,
-            acquired_nodes,
-            cascaded,
-            draw_ctx,
-            clipping
-        )
     }
 
     pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
@@ -580,6 +594,33 @@ impl Element {
             Element::Mask(_) |
             Element::Pattern(_) |
             Element::RadialGradient(_)
+        )
+    }
+}
+
+impl SetAttributes for Element {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        call_inner!(self, set_attributes, pbag)
+    }
+}
+
+impl Draw for Element {
+    fn draw(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        call_inner!(
+            self,
+            draw,
+            node,
+            acquired_nodes,
+            cascaded,
+            draw_ctx,
+            clipping
         )
     }
 }
@@ -786,67 +827,6 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
 
     creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
 });
-
-/// Takes an XML element name and a list of attribute/value pairs and creates an [`Element`].
-///
-/// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
-/// element.
-///
-/// [`Element`]: type.Element.html
-/// [`NonRendering`]: ../structure/struct.NonRendering.html
-pub fn create_element(name: &QualName, pbag: &PropertyBag) -> Element {
-    let mut id = None;
-    let mut class = None;
-
-    for (attr, value) in pbag.iter() {
-        match attr.expanded() {
-            expanded_name!("", "id") => id = Some(value),
-            expanded_name!("", "class") => class = Some(value),
-            _ => (),
-        }
-    }
-
-    let (create_fn, flags) = if name.ns == ns!(svg) {
-        match ELEMENT_CREATORS.get(name.local.as_ref()) {
-            // hack in the SVG namespace for supported element names
-            Some(&(create_fn, flags)) => (create_fn, flags),
-
-            // Whenever we encounter a element name we don't understand, represent it as a
-            // non-rendering element.  This is like a group, but it doesn't do any rendering
-            // of children.  The effect is that we will ignore all children of unknown elements.
-            None => (
-                create_non_rendering as ElementCreateFn,
-                ElementCreateFlags::Default,
-            ),
-        }
-    } else {
-        (
-            create_non_rendering as ElementCreateFn,
-            ElementCreateFlags::Default,
-        )
-    };
-
-    if flags == ElementCreateFlags::IgnoreClass {
-        class = None;
-    };
-
-    //    sizes::print_sizes();
-
-    let mut element = create_fn(name, id, class);
-
-    element.save_style_attribute(pbag);
-
-    if let Err(e) = element
-        .set_transform_attribute(pbag)
-        .and_then(|_| element.set_conditional_processing_attributes(pbag))
-        .and_then(|_| element.set_element_specific_attributes(pbag))
-        .and_then(|_| element.set_presentation_attributes(pbag))
-    {
-        element.set_error(e);
-    }
-
-    element
-}
 
 /// Gets the user's preferred locale from the environment and
 /// translates it to a `Locale` with `LanguageRange` fallbacks.
