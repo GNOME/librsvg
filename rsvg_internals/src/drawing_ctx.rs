@@ -758,14 +758,9 @@ impl DrawingCtx {
         match acquired_nodes.acquire(filter_uri) {
             Ok(acquired) => {
                 let filter_node = acquired.get();
-                let filter_elt = filter_node.borrow_element();
 
-                match *filter_elt {
+                match *filter_node.borrow_element() {
                     Element::Filter(_) => {
-                        if filter_elt.is_in_error() {
-                            return Ok(child_surface);
-                        }
-
                         return filters::render(
                             &filter_node,
                             values,

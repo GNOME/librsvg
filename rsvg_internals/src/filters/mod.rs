@@ -279,7 +279,10 @@ pub fn render(
 ) -> Result<SharedImageSurface, RenderingError> {
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
-    assert!(!filter_node.borrow_element().is_in_error());
+
+    if filter_node.borrow_element().is_in_error() {
+        return Ok(source_surface);
+    }
 
     let mut filter_ctx = FilterContext::new(
         filter_node,
