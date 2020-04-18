@@ -121,7 +121,7 @@ impl SetAttributes for FeImage {
                 // "path" is used by some older Adobe Illustrator versions
                 expanded_name!(xlink "href") | expanded_name!("", "path") => {
                     let href = Href::parse(value)
-                        .map_err(|e| ValueErrorKind::from(e))
+                        .map_err(ValueErrorKind::from)
                         .attribute(attr)?;
 
                     self.href = Some(href);
