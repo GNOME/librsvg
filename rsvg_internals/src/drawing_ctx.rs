@@ -1118,6 +1118,7 @@ impl DrawingCtx {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
+        link: Option<&Fragment>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         // <use> is an element that is used directly, unlike
@@ -1135,9 +1136,6 @@ impl DrawingCtx {
                 unreachable!();
             }
         })?;
-
-        let use_ = borrow_element_as!(node, Use);
-        let link = use_.get_link();
 
         if link.is_none() {
             return Ok(self.empty_bbox());
@@ -1165,7 +1163,7 @@ impl DrawingCtx {
 
         let values = cascaded.get();
         let params = self.get_view_params();
-        let use_rect = use_.get_rect(values, &params);
+        let use_rect = borrow_element_as!(node, Use).get_rect(values, &params);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute

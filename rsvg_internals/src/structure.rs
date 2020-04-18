@@ -273,10 +273,6 @@ pub struct Use {
 }
 
 impl Use {
-    pub fn get_link(&self) -> Option<&Fragment> {
-        self.link.as_ref()
-    }
-
     pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         let x = self.x.normalize(values, &params);
         let y = self.y.normalize(values, &params);
@@ -335,7 +331,7 @@ impl Draw for Use {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, clipping)
+        draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, self.link.as_ref(), clipping)
     }
 }
 
