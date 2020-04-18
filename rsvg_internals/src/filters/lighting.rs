@@ -1,31 +1,237 @@
+//! Lighting filters and light nodes.
+
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use matches::matches;
-use nalgebra::Vector3;
+use nalgebra::{Vector2, Vector3};
 use num_traits::identities::Zero;
 use rayon::prelude::*;
 use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Element, ElementResult, SetAttributes};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    light::{
-        bottom_left_normal, bottom_right_normal, bottom_row_normal, interior_normal,
-        left_column_normal, light_source::LightSource, right_column_normal, top_left_normal,
-        top_right_normal, top_row_normal, Normal,
-    },
     FilterEffect, FilterError, PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::property_bag::PropertyBag;
+use crate::rect::IRect;
 use crate::surface_utils::{
-    shared_surface::{ExclusiveImageSurface, SurfaceType},
+    shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
+
+/// A light source with affine transformations applied.
+pub enum LightSource {
+    Distant {
+        azimuth: f64,
+        elevation: f64,
+    },
+    Point {
+        origin: Vector3<f64>,
+    },
+    Spot {
+        origin: Vector3<f64>,
+        direction: Vector3<f64>,
+        specular_exponent: f64,
+        limiting_cone_angle: Option<f64>,
+    },
+}
+
+impl LightSource {
+    /// Returns the unit (or null) vector from the image sample to the light.
+    #[inline]
+    pub fn vector(&self, x: f64, y: f64, z: f64) -> Vector3<f64> {
+        match self {
+            LightSource::Distant { azimuth, elevation } => {
+                let azimuth = azimuth.to_radians();
+                let elevation = elevation.to_radians();
+                Vector3::new(
+                    azimuth.cos() * elevation.cos(),
+                    azimuth.sin() * elevation.cos(),
+                    elevation.sin(),
+                )
+            }
+            LightSource::Point { origin } | LightSource::Spot { origin, .. } => {
+                let mut v = origin - Vector3::new(x, y, z);
+                let _ = v.try_normalize_mut(0.0);
+                v
+            }
+        }
+    }
+
+    /// Returns the color of the light.
+    #[inline]
+    pub fn color(
+        &self,
+        lighting_color: cssparser::RGBA,
+        light_vector: Vector3<f64>,
+    ) -> cssparser::RGBA {
+        match self {
+            LightSource::Spot {
+                direction,
+                specular_exponent,
+                limiting_cone_angle,
+                ..
+            } => {
+                let minus_l_dot_s = -light_vector.dot(&direction);
+                if minus_l_dot_s <= 0.0 {
+                    return cssparser::RGBA::transparent();
+                }
+
+                if let Some(limiting_cone_angle) = limiting_cone_angle {
+                    if minus_l_dot_s < limiting_cone_angle.to_radians().cos() {
+                        return cssparser::RGBA::transparent();
+                    }
+                }
+
+                let factor = minus_l_dot_s.powf(*specular_exponent);
+                let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
+
+                cssparser::RGBA {
+                    red: compute(lighting_color.red),
+                    green: compute(lighting_color.green),
+                    blue: compute(lighting_color.blue),
+                    alpha: 255,
+                }
+            }
+            _ => lighting_color,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct FeDistantLight {
+    azimuth: f64,
+    elevation: f64,
+}
+
+impl FeDistantLight {
+    pub fn transform(&self, _ctx: &FilterContext) -> LightSource {
+        LightSource::Distant {
+            azimuth: self.azimuth,
+            elevation: self.elevation,
+        }
+    }
+}
+
+impl SetAttributes for FeDistantLight {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
+                expanded_name!("", "elevation") => self.elevation = attr.parse(value)?,
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl Draw for FeDistantLight {}
+
+#[derive(Default)]
+pub struct FePointLight {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+impl FePointLight {
+    pub fn transform(&self, ctx: &FilterContext) -> LightSource {
+        let (x, y) = ctx.paffine().transform_point(self.x, self.y);
+        let z = ctx.transform_dist(self.z);
+
+        LightSource::Point {
+            origin: Vector3::new(x, y, z),
+        }
+    }
+}
+
+impl SetAttributes for FePointLight {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "z") => self.z = attr.parse(value)?,
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl Draw for FePointLight {}
+
+#[derive(Default)]
+pub struct FeSpotLight {
+    x: f64,
+    y: f64,
+    z: f64,
+    points_at_x: f64,
+    points_at_y: f64,
+    points_at_z: f64,
+    specular_exponent: f64,
+    limiting_cone_angle: Option<f64>,
+}
+
+impl FeSpotLight {
+    pub fn transform(&self, ctx: &FilterContext) -> LightSource {
+        let (x, y) = ctx.paffine().transform_point(self.x, self.y);
+        let z = ctx.transform_dist(self.z);
+        let (points_at_x, points_at_y) = ctx
+            .paffine()
+            .transform_point(self.points_at_x, self.points_at_y);
+        let points_at_z = ctx.transform_dist(self.points_at_z);
+
+        let origin = Vector3::new(x, y, z);
+        let mut direction = Vector3::new(points_at_x, points_at_y, points_at_z) - origin;
+        let _ = direction.try_normalize_mut(0.0);
+
+        LightSource::Spot {
+            origin,
+            direction,
+            specular_exponent: self.specular_exponent,
+            limiting_cone_angle: self.limiting_cone_angle,
+        }
+    }
+}
+
+impl SetAttributes for FeSpotLight {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        for (attr, value) in pbag.iter() {
+            match attr.expanded() {
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "z") => self.z = attr.parse(value)?,
+                expanded_name!("", "pointsAtX") => self.points_at_x = attr.parse(value)?,
+                expanded_name!("", "pointsAtY") => self.points_at_y = attr.parse(value)?,
+                expanded_name!("", "pointsAtZ") => self.points_at_z = attr.parse(value)?,
+
+                expanded_name!("", "specularExponent") => {
+                    self.specular_exponent = attr.parse(value)?
+                }
+
+                expanded_name!("", "limitingConeAngle") => {
+                    self.limiting_cone_angle = Some(attr.parse(value)?)
+                }
+
+                _ => (),
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl Draw for FeSpotLight {}
 
 trait Lighting {
     fn common(&self) -> &Common;
@@ -345,7 +551,7 @@ macro_rules! impl_lighting_filter {
                         0,
                         bounds.x0 as u32,
                         bounds.y0 as u32,
-                        top_left_normal(&input_surface, bounds),
+                        Normal::top_left(&input_surface, bounds),
                     );
 
                     // Top right.
@@ -354,7 +560,7 @@ macro_rules! impl_lighting_filter {
                         0,
                         bounds.x1 as u32 - 1,
                         bounds.y0 as u32,
-                        top_right_normal(&input_surface, bounds),
+                        Normal::top_right(&input_surface, bounds),
                     );
 
                     // Bottom left.
@@ -363,7 +569,7 @@ macro_rules! impl_lighting_filter {
                         0,
                         bounds.x0 as u32,
                         bounds.y1 as u32 - 1,
-                        bottom_left_normal(&input_surface, bounds),
+                        Normal::bottom_left(&input_surface, bounds),
                     );
 
                     // Bottom right.
@@ -372,7 +578,7 @@ macro_rules! impl_lighting_filter {
                         0,
                         bounds.x1 as u32 - 1,
                         bounds.y1 as u32 - 1,
-                        bottom_right_normal(&input_surface, bounds),
+                        Normal::bottom_right(&input_surface, bounds),
                     );
 
                     if bounds_w >= 3 {
@@ -383,7 +589,7 @@ macro_rules! impl_lighting_filter {
                                 0,
                                 x,
                                 bounds.y0 as u32,
-                                top_row_normal(&input_surface, bounds, x),
+                                Normal::top_row(&input_surface, bounds, x),
                             );
                         }
 
@@ -394,7 +600,7 @@ macro_rules! impl_lighting_filter {
                                 0,
                                 x,
                                 bounds.y1 as u32 - 1,
-                                bottom_row_normal(&input_surface, bounds, x),
+                                Normal::bottom_row(&input_surface, bounds, x),
                             );
                         }
                     }
@@ -407,7 +613,7 @@ macro_rules! impl_lighting_filter {
                                 0,
                                 bounds.x0 as u32,
                                 y,
-                                left_column_normal(&input_surface, bounds, y),
+                                Normal::left_column(&input_surface, bounds, y),
                             );
                         }
 
@@ -418,7 +624,7 @@ macro_rules! impl_lighting_filter {
                                 0,
                                 bounds.x1 as u32 - 1,
                                 y,
-                                right_column_normal(&input_surface, bounds, y),
+                                Normal::right_column(&input_surface, bounds, y),
                             );
                         }
                     }
@@ -440,7 +646,7 @@ macro_rules! impl_lighting_filter {
                                         y,
                                         x,
                                         y,
-                                        interior_normal(&input_surface, bounds, x, y),
+                                        Normal::interior(&input_surface, bounds, x, y),
                                     );
                                 }
                             });
@@ -512,4 +718,245 @@ fn find_light_source(node: &Node, ctx: &FilterContext) -> Result<LightSource, Fi
     };
 
     Ok(light_source)
+}
+
+/// 2D normal and factor stored separately.
+///
+/// The normal needs to be multiplied by `surface_scale * factor / 255` and
+/// normalized with 1 as the z component.
+/// pub for the purpose of accessing this from benchmarks.
+#[derive(Debug, Clone, Copy)]
+pub struct Normal {
+    pub factor: Vector2<f64>,
+    pub normal: Vector2<i16>,
+}
+
+impl Normal {
+    #[inline]
+    fn new(factor_x: f64, nx: i16, factor_y: f64, ny: i16) -> Normal {
+        // Negative nx and ny to account for the different coordinate system.
+        Normal {
+            factor: Vector2::new(factor_x, factor_y),
+            normal: Vector2::new(-nx, -ny),
+        }
+    }
+
+    /// Computes and returns the normal vector for the top left pixel for light filters.
+    #[inline]
+    pub fn top_left(surface: &SharedImageSurface, bounds: IRect) -> Normal {
+        // Surface needs to be at least 2×2.
+        assert!(bounds.width() >= 2);
+        assert!(bounds.height() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let (x, y) = (bounds.x0 as u32,  bounds.y0 as u32);
+
+        let center = get(x, y);
+        let right = get(x + 1, y);
+        let bottom = get(x, y + 1);
+        let bottom_right = get(x + 1, y + 1);
+
+        Self::new(
+            2. / 3.,
+            -2 * center + 2 * right - bottom + bottom_right,
+            2. / 3.,
+            -2 * center - right + 2 * bottom + bottom_right,
+        )
+    }
+
+    /// Computes and returns the normal vector for the top row pixels for light filters.
+    #[inline]
+    pub fn top_row(surface: &SharedImageSurface, bounds: IRect, x: u32) -> Normal {
+        assert!(x as i32 > bounds.x0);
+        assert!((x as i32) + 1 < bounds.x1);
+        assert!(bounds.height() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let y = bounds.y0 as u32;
+
+        let left = get(x - 1, y);
+        let center = get(x, y);
+        let right = get(x + 1, y);
+        let bottom_left = get(x - 1, y + 1);
+        let bottom = get(x, y + 1);
+        let bottom_right = get(x + 1, y + 1);
+
+        Self::new(
+            1. / 3.,
+            -2 * left + 2 * right - bottom_left + bottom_right,
+            1. / 2.,
+            -left - 2 * center - right + bottom_left + 2 * bottom + bottom_right,
+        )
+    }
+
+    /// Computes and returns the normal vector for the top right pixel for light filters.
+    #[inline]
+    pub fn top_right(surface: &SharedImageSurface, bounds: IRect) -> Normal {
+        // Surface needs to be at least 2×2.
+        assert!(bounds.width() >= 2);
+        assert!(bounds.height() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let (x, y) = (bounds.x1 as u32 - 1,  bounds.y0 as u32);
+
+        let left = get(x - 1, y);
+        let center = get(x, y);
+        let bottom_left = get(x - 1, y + 1);
+        let bottom = get(x, y + 1);
+
+        Self::new(
+            2. / 3.,
+            -2 * left + 2 * center - bottom_left + bottom,
+            2. / 3.,
+            -left - 2 * center + bottom_left + 2 * bottom,
+        )
+    }
+
+    /// Computes and returns the normal vector for the left column pixels for light filters.
+    #[inline]
+    pub fn left_column(surface: &SharedImageSurface, bounds: IRect, y: u32) -> Normal {
+        assert!(y as i32 > bounds.y0);
+        assert!((y as i32) + 1 < bounds.y1);
+        assert!(bounds.width() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let x = bounds.x0 as u32;
+
+        let top = get(x, y - 1);
+        let top_right = get(x + 1, y - 1);
+        let center = get(x, y);
+        let right = get(x + 1, y);
+        let bottom = get(x, y + 1);
+        let bottom_right = get(x + 1, y + 1);
+
+        Self::new(
+            1. / 2.,
+            -top + top_right - 2 * center + 2 * right - bottom + bottom_right,
+            1. / 3.,
+            -2 * top - top_right + 2 * bottom + bottom_right,
+        )
+    }
+
+    /// Computes and returns the normal vector for the interior pixels for light filters.
+    #[inline]
+    pub fn interior(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal {
+        assert!(x as i32 > bounds.x0);
+        assert!((x as i32) + 1 < bounds.x1);
+        assert!(y as i32 > bounds.y0);
+        assert!((y as i32) + 1 < bounds.y1);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+
+        let top_left = get(x - 1, y - 1);
+        let top = get(x, y - 1);
+        let top_right = get(x + 1, y - 1);
+        let left = get(x - 1, y);
+        let right = get(x + 1, y);
+        let bottom_left = get(x - 1, y + 1);
+        let bottom = get(x, y + 1);
+        let bottom_right = get(x + 1, y + 1);
+
+        Self::new(
+            1. / 4.,
+            -top_left + top_right - 2 * left + 2 * right - bottom_left + bottom_right,
+            1. / 4.,
+            -top_left - 2 * top - top_right + bottom_left + 2 * bottom + bottom_right,
+        )
+    }
+
+    /// Computes and returns the normal vector for the right column pixels for light filters.
+    #[inline]
+    pub fn right_column(surface: &SharedImageSurface, bounds: IRect, y: u32) -> Normal {
+        assert!(y as i32 > bounds.y0);
+        assert!((y as i32) + 1 < bounds.y1);
+        assert!(bounds.width() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let x = bounds.x1 as u32 - 1;
+
+        let top_left = get(x - 1, y - 1);
+        let top = get(x, y - 1);
+        let left = get(x - 1, y);
+        let center = get(x, y);
+        let bottom_left = get(x - 1, y + 1);
+        let bottom = get(x, y + 1);
+
+        Self::new(
+            1. / 2.,
+            -top_left + top - 2 * left + 2 * center - bottom_left + bottom,
+            1. / 3.,
+            -top_left - 2 * top + bottom_left + 2 * bottom,
+        )
+    }
+
+    /// Computes and returns the normal vector for the bottom left pixel for light filters.
+    #[inline]
+    pub fn bottom_left(surface: &SharedImageSurface, bounds: IRect) -> Normal {
+        // Surface needs to be at least 2×2.
+        assert!(bounds.width() >= 2);
+        assert!(bounds.height() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let (x, y) = (bounds.x0 as u32,  bounds.y1 as u32 - 1);
+
+        let top = get(x, y - 1);
+        let top_right = get(x + 1, y - 1);
+        let center = get(x, y);
+        let right = get(x + 1, y);
+
+        Self::new(
+            2. / 3.,
+            -top + top_right - 2 * center + 2 * right,
+            2. / 3.,
+            -2 * top - top_right + 2 * center + right,
+        )
+    }
+
+    /// Computes and returns the normal vector for the bottom row pixels for light filters.
+    #[inline]
+    pub fn bottom_row(surface: &SharedImageSurface, bounds: IRect, x: u32) -> Normal {
+        assert!(x as i32 > bounds.x0);
+        assert!((x as i32) + 1 < bounds.x1);
+        assert!(bounds.height() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let y = bounds.y1 as u32 - 1;
+
+        let top_left = get(x - 1, y - 1);
+        let top = get(x, y - 1);
+        let top_right = get(x + 1, y - 1);
+        let left = get(x - 1, y);
+        let center = get(x, y);
+        let right = get(x + 1, y);
+
+        Self::new(
+            1. / 3.,
+            -top_left + top_right - 2 * left + 2 * right,
+            1. / 2.,
+            -top_left - 2 * top - top_right + left + 2 * center + right,
+        )
+    }
+
+    /// Computes and returns the normal vector for the bottom right pixel for light filters.
+    #[inline]
+    pub fn bottom_right(surface: &SharedImageSurface, bounds: IRect) -> Normal {
+        // Surface needs to be at least 2×2.
+        assert!(bounds.width() >= 2);
+        assert!(bounds.height() >= 2);
+
+        let get = |x, y| i16::from(surface.get_pixel(x, y).a);
+        let (x, y) = (bounds.x1 as u32 - 1,  bounds.y1 as u32 - 1);
+
+        let top_left = get(x - 1, y - 1);
+        let top = get(x, y - 1);
+        let left = get(x - 1, y);
+        let center = get(x, y);
+
+        Self::new(
+            2. / 3.,
+            -top_left + top - 2 * left + 2 * center,
+            2. / 3.,
+            -top_left - 2 * top + left + 2 * center,
+        )
+    }
 }

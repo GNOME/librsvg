@@ -57,9 +57,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/filters/flood.rs			\
 	rsvg_internals/src/filters/gaussian_blur.rs		\
 	rsvg_internals/src/filters/image.rs			\
-	rsvg_internals/src/filters/light/light_source.rs	\
-	rsvg_internals/src/filters/light/lighting.rs		\
-	rsvg_internals/src/filters/light/mod.rs			\
+	rsvg_internals/src/filters/lighting.rs			\
 	rsvg_internals/src/filters/merge.rs			\
 	rsvg_internals/src/filters/morphology.rs		\
 	rsvg_internals/src/filters/mod.rs			\

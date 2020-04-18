@@ -62,7 +62,7 @@ pub mod displacement_map;
 pub mod flood;
 pub mod gaussian_blur;
 pub mod image;
-pub mod light;
+pub mod lighting;
 pub mod merge;
 pub mod morphology;
 pub mod offset;
