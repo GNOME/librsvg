@@ -749,7 +749,7 @@ impl Normal {
         assert!(bounds.height() >= 2);
 
         let get = |x, y| i16::from(surface.get_pixel(x, y).a);
-        let (x, y) = (bounds.x0 as u32,  bounds.y0 as u32);
+        let (x, y) = (bounds.x0 as u32, bounds.y0 as u32);
 
         let center = get(x, y);
         let right = get(x + 1, y);
@@ -797,7 +797,7 @@ impl Normal {
         assert!(bounds.height() >= 2);
 
         let get = |x, y| i16::from(surface.get_pixel(x, y).a);
-        let (x, y) = (bounds.x1 as u32 - 1,  bounds.y0 as u32);
+        let (x, y) = (bounds.x1 as u32 - 1, bounds.y0 as u32);
 
         let left = get(x - 1, y);
         let center = get(x, y);
@@ -897,7 +897,7 @@ impl Normal {
         assert!(bounds.height() >= 2);
 
         let get = |x, y| i16::from(surface.get_pixel(x, y).a);
-        let (x, y) = (bounds.x0 as u32,  bounds.y1 as u32 - 1);
+        let (x, y) = (bounds.x0 as u32, bounds.y1 as u32 - 1);
 
         let top = get(x, y - 1);
         let top_right = get(x + 1, y - 1);
@@ -945,7 +945,7 @@ impl Normal {
         assert!(bounds.height() >= 2);
 
         let get = |x, y| i16::from(surface.get_pixel(x, y).a);
-        let (x, y) = (bounds.x1 as u32 - 1,  bounds.y1 as u32 - 1);
+        let (x, y) = (bounds.x1 as u32 - 1, bounds.y1 as u32 - 1);
 
         let top_left = get(x - 1, y - 1);
         let top = get(x, y - 1);
