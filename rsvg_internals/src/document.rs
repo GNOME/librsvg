@@ -90,7 +90,7 @@ impl Document {
 
     /// Loads an image by URL, or returns a pre-loaded one.
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
-        let aurl = AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
+        let aurl = AllowedUrl::from_href(href, &self.load_options)
             .map_err(|_| LoadingError::BadUrl)?;
 
         self.images.borrow_mut().lookup(&self.load_options, &aurl)
@@ -137,7 +137,7 @@ impl Resources {
         load_options: &LoadOptions,
         href: &str,
     ) -> Result<Rc<Document>, LoadingError> {
-        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref())
+        let aurl = AllowedUrl::from_href(href, load_options)
             .map_err(|_| LoadingError::BadUrl)?;
 
         match self.resources.entry(aurl) {
@@ -452,7 +452,7 @@ impl DocumentBuilder {
     }
 
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
-        AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
+        AllowedUrl::from_href(href, &self.load_options)
     }
 
     pub fn build(self) -> Result<Document, LoadingError> {

@@ -89,6 +89,7 @@ use url::Url;
 
 use crate::allowed_url::AllowedUrl;
 use crate::error::*;
+use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
@@ -671,7 +672,11 @@ impl Stylesheet {
 
     /// Parses a stylesheet referenced by an URL
     fn load(&mut self, href: &str, base_url: Option<&Url>) -> Result<(), LoadingError> {
-        let aurl = AllowedUrl::from_href(href, base_url).map_err(|_| LoadingError::BadUrl)?;
+        let options = match base_url {
+            Some(url) => LoadOptions::new(Some(url.clone())),
+            None => LoadOptions::new(None),
+        };
+        let aurl = AllowedUrl::from_href(href, &options).map_err(|_| LoadingError::BadUrl)?;
 
         io::acquire_data(&aurl, None)
             .and_then(|data| {

@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::error::HrefError;
+use crate::handle::LoadOptions;
 
 /// Wrapper for URLs which are allowed to be loaded
 ///
@@ -48,9 +49,9 @@ pub enum AllowedUrlError {
 }
 
 impl AllowedUrl {
-    pub fn from_href(href: &str, base_url: Option<&Url>) -> Result<AllowedUrl, AllowedUrlError> {
+    pub fn from_href(href: &str, options: &LoadOptions) -> Result<AllowedUrl, AllowedUrlError> {
         let url = Url::options()
-            .base_url(base_url)
+            .base_url(options.base_url.as_ref())
             .parse(href)
             .map_err(AllowedUrlError::HrefParseError)?;
 
@@ -60,11 +61,11 @@ impl AllowedUrl {
         }
 
         // All other sources require a base url
-        if base_url.is_none() {
+        if options.base_url.is_none() {
             return Err(AllowedUrlError::BaseRequired);
         }
 
-        let base_url = base_url.unwrap();
+        let base_url = options.base_url.as_ref().unwrap();
 
         // Deny loads from differing URI schemes
         if url.scheme() != base_url.scheme() {
@@ -242,7 +243,7 @@ mod tests {
     #[test]
     fn disallows_relative_file_with_no_base_file() {
         assert_eq!(
-            AllowedUrl::from_href("foo.svg", None),
+            AllowedUrl::from_href("foo.svg", &LoadOptions::new(None)),
             Err(AllowedUrlError::HrefParseError(
                 url::ParseError::RelativeUrlWithoutBase
             ))
@@ -254,7 +255,7 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href(
                 "file:///etc/passwd",
-                Some(Url::parse("http://example.com/malicious.svg").unwrap()).as_ref()
+                &LoadOptions::new(Some(Url::parse("http://example.com/malicious.svg").unwrap()))
             ),
             Err(AllowedUrlError::DifferentURISchemes)
         );
@@ -263,7 +264,10 @@ mod tests {
     #[test]
     fn disallows_base_is_root() {
         assert_eq!(
-            AllowedUrl::from_href("foo.svg", Some(Url::parse("file:///").unwrap()).as_ref()),
+            AllowedUrl::from_href(
+                "foo.svg",
+                &LoadOptions::new(Some(Url::parse("file:///").unwrap()))
+            ),
             Err(AllowedUrlError::BaseIsRoot)
         );
     }
@@ -273,7 +277,7 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href(
                 "foo.svg",
-                Some(Url::parse("http://foo.bar/baz.svg").unwrap()).as_ref()
+                &LoadOptions::new(Some(Url::parse("http://foo.bar/baz.svg").unwrap()))
             ),
             Err(AllowedUrlError::DisallowedScheme)
         );
@@ -282,9 +286,12 @@ mod tests {
     #[test]
     fn allows_data_url_with_no_base_file() {
         assert_eq!(
-            AllowedUrl::from_href("data:image/jpeg;base64,xxyyzz", None)
-                .unwrap()
-                .as_ref(),
+            AllowedUrl::from_href(
+                "data:image/jpeg;base64,xxyyzz",
+                &LoadOptions::new(None)
+            )
+            .unwrap()
+            .as_ref(),
             "data:image/jpeg;base64,xxyyzz",
         );
     }
@@ -294,7 +301,7 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href(
                 "foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
+                &LoadOptions::new(Some(Url::parse("file:///example/bar.svg").unwrap()))
             )
             .unwrap()
             .as_ref(),
@@ -307,7 +314,7 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href(
                 "file:///example/foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
+                &LoadOptions::new(Some(Url::parse("file:///example/bar.svg").unwrap()))
             )
             .unwrap()
             .as_ref(),
@@ -320,7 +327,7 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href(
                 "file:///example/subdir/foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
+                &LoadOptions::new(Some(Url::parse("file:///example/bar.svg").unwrap()))
             )
             .unwrap()
             .as_ref(),
@@ -333,7 +340,7 @@ mod tests {
         assert_eq!(
             AllowedUrl::from_href(
                 "file:///etc/passwd",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
+                &LoadOptions::new(Some(Url::parse("file:///example/bar.svg").unwrap()))
             ),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         );
