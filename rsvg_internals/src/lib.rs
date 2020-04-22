@@ -90,7 +90,6 @@ mod node;
 #[macro_use]
 mod property_macros;
 
-mod allowed_url;
 mod angle;
 mod aspect_ratio;
 mod bbox;
@@ -131,6 +130,7 @@ pub mod surface_utils;
 mod text;
 mod transform;
 mod unit_interval;
+mod url_resolver;
 mod util;
 mod viewbox;
 mod xml;

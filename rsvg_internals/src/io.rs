@@ -8,8 +8,8 @@ use gio::{
 };
 use glib::{Bytes as GBytes, Cast};
 
-use crate::allowed_url::AllowedUrl;
 use crate::error::LoadingError;
+use crate::url_resolver::AllowedUrl;
 
 pub struct BinaryData {
     pub data: Vec<u8>,

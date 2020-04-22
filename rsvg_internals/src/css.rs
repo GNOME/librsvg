@@ -87,11 +87,11 @@ use std::fmt;
 use std::str;
 use url::Url;
 
-use crate::allowed_url::AllowedUrl;
 use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
+use crate::url_resolver::AllowedUrl;
 
 /// A parsed CSS declaration
 ///
@@ -778,9 +778,9 @@ mod tests {
     use glib::{self, prelude::*};
     use selectors::Element;
 
-    use crate::allowed_url::Fragment;
     use crate::document::Document;
     use crate::handle::LoadOptions;
+    use crate::url_resolver::Fragment;
 
     fn load_document(input: &'static [u8]) -> Document {
         let bytes = glib::Bytes::from_static(input);

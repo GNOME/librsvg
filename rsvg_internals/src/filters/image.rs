@@ -1,6 +1,5 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -10,6 +9,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
+use crate::url_resolver::{Fragment, Href};
 use crate::viewbox::ViewBox;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};

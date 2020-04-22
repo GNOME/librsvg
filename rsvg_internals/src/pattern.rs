@@ -4,7 +4,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 use std::f64;
 
-use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::bbox::*;
 use crate::coord_units::CoordUnits;
@@ -22,6 +21,7 @@ use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::url_resolver::Fragment;
 use crate::viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);

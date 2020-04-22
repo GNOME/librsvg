@@ -30,7 +30,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	Cargo.toml						\
 	rsvg_internals/Cargo.toml				\
 	rsvg_internals/build.rs					\
-	rsvg_internals/src/allowed_url.rs			\
+	rsvg_internals/src/url_resolver.rs			\
 	rsvg_internals/src/angle.rs				\
 	rsvg_internals/src/aspect_ratio.rs			\
 	rsvg_internals/src/bbox.rs				\

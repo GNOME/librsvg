@@ -5,7 +5,6 @@
 use std::cell::Cell;
 use std::ptr;
 
-use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
@@ -16,6 +15,7 @@ use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::{IRect, Rect};
 use crate::structure::IntrinsicDimensions;
+use crate::url_resolver::{AllowedUrl, Href};
 use url::Url;
 
 /// Loading options for SVG documents.

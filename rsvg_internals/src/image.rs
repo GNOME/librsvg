@@ -2,7 +2,6 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
@@ -15,6 +14,7 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
+use crate::url_resolver::Href;
 use crate::viewbox::ViewBox;
 
 #[derive(Default)]
