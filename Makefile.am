@@ -31,7 +31,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	Cargo.toml						\
 	rsvg_internals/Cargo.toml				\
 	rsvg_internals/build.rs					\
-	rsvg_internals/src/allowed_url.rs			\
 	rsvg_internals/src/angle.rs				\
 	rsvg_internals/src/aspect_ratio.rs			\
 	rsvg_internals/src/attributes.rs			\
@@ -101,6 +100,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/text.rs				\
 	rsvg_internals/src/transform.rs				\
 	rsvg_internals/src/unit_interval.rs			\
+	rsvg_internals/src/url_resolver.rs			\
 	rsvg_internals/src/util.rs				\
 	rsvg_internals/src/viewbox.rs				\
 	rsvg_internals/src/xml.rs				\

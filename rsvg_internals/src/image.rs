@@ -2,7 +2,6 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
@@ -15,6 +14,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::url_resolver::Href;
 
 #[derive(Default)]
 pub struct Image {

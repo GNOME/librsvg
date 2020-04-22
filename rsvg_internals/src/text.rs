@@ -3,7 +3,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 
-use crate::allowed_url::Fragment;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
@@ -20,6 +19,7 @@ use crate::property_defs::{
     XmlSpace,
 };
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
+use crate::url_resolver::Fragment;
 
 /// An absolutely-positioned array of `Span`s
 ///

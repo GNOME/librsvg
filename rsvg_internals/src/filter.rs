@@ -4,7 +4,6 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::slice::Iter;
 
-use crate::allowed_url::Fragment;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -19,6 +18,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
+use crate::url_resolver::Fragment;
 
 /// The <filter> node.
 pub struct Filter {

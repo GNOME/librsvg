@@ -2,7 +2,6 @@
 
 use cssparser::Parser;
 
-use crate::allowed_url::Fragment;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
 use crate::error::*;
@@ -10,6 +9,7 @@ use crate::gradient::Gradient;
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::ResolvedPattern;
+use crate::url_resolver::Fragment;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {

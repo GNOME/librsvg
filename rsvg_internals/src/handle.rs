@@ -2,7 +2,6 @@
 //!
 //! This module provides the primitives on which the public APIs are implemented.
 
-use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
@@ -14,6 +13,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
+use crate::url_resolver::{AllowedUrl, Href};
 use url::Url;
 
 /// Loading options for SVG documents.
