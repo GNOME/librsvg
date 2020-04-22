@@ -150,13 +150,23 @@ impl AspectRatio {
         }
     }
 
-    // Computes the viewport to viewbox transformation, or returns None
-    // if the vbox has 0 width or height.
+    /// Computes the viewport to viewbox transformation.
+    ///
+    /// Given a viewport, returns a transformation that will create a coordinate
+    /// space inside it.  The `(vbox.x0, vbox.y0)` will be mapped to the viewport's
+    /// upper-left corner, and the `(vbox.x1, vbox.y1)` will be mapped to the viewport's
+    /// lower-right corner.
+    ///
+    /// If the vbox or viewport are empty, returns `Ok(None)`.  Per the SVG spec, either
+    /// of those mean that the corresponding element should not be rendered.
+    ///
+    /// If the vbox would create an invalid transform (say, a vbox with huge numbers that
+    /// leads to a near-zero scaling transform), returns an `Err(())`.
     pub fn viewport_to_viewbox_transform(
         &self,
         vbox: Option<ViewBox>,
         viewport: &Rect,
-    ) -> Option<Transform> {
+    ) -> Result<Option<Transform>, ()> {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -164,25 +174,30 @@ impl AspectRatio {
         // https://www.w3.org/TR/SVG/painting.html#MarkerWidthAttribute
 
         if viewport.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         // the preserveAspectRatio attribute is only used if viewBox is specified
         // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
-        if let Some(vbox) = vbox {
+        let transform = if let Some(vbox) = vbox {
             if vbox.0.is_empty() {
                 // Width or height of 0 for the viewBox disables rendering of the element
                 // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
-                None
+                return Ok(None);
             } else {
                 let r = self.compute(&vbox, viewport);
-                let t = Transform::new_translate(r.x0, r.y0)
+                Transform::new_translate(r.x0, r.y0)
                     .pre_scale(r.width() / vbox.0.width(), r.height() / vbox.0.height())
-                    .pre_translate(-vbox.0.x0, -vbox.0.y0);
-                Some(t)
+                    .pre_translate(-vbox.0.x0, -vbox.0.y0)
             }
         } else {
-            Some(Transform::new_translate(viewport.x0, viewport.y0))
+            Transform::new_translate(viewport.x0, viewport.y0)
+        };
+
+        if transform.is_invertible() {
+            Ok(Some(transform))
+        } else {
+            Err(())
         }
     }
 }
@@ -403,5 +418,57 @@ mod tests {
         let foo = AspectRatio::parse_str("xMaxYMax slice").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
         assert_rect_equal(&foo, &Rect::new(0.0, -99.0, 10.0, 1.0));
+    }
+
+    #[test]
+    fn empty_viewport() {
+        let a = AspectRatio::default();
+        let t = a.viewport_to_viewbox_transform(
+            Some(ViewBox::parse_str("10 10 40 40").unwrap()),
+            &Rect::from_size(0.0, 0.0),
+        );
+
+        assert_eq!(t, Ok(None));
+    }
+
+    #[test]
+    fn empty_viewbox() {
+        let a = AspectRatio::default();
+        let t = a.viewport_to_viewbox_transform(
+            Some(ViewBox::parse_str("10 10 0 0").unwrap()),
+            &Rect::from_size(10.0, 10.0),
+        );
+
+        assert_eq!(t, Ok(None));
+    }
+
+    #[test]
+    fn valid_viewport_and_viewbox() {
+        let a = AspectRatio::default();
+        let t = a.viewport_to_viewbox_transform(
+            Some(ViewBox::parse_str("10 10 40 40").unwrap()),
+            &Rect::new(1.0, 1.0, 2.0, 2.0),
+        );
+
+        assert_eq!(
+            t,
+            Ok(Some(
+                Transform::identity()
+                    .pre_translate(1.0, 1.0)
+                    .pre_scale(0.025, 0.025)
+                    .pre_translate(-10.0, -10.0)
+            ))
+        );
+    }
+
+    #[test]
+    fn invalid_viewbox() {
+        let a = AspectRatio::default();
+        let t = a.viewport_to_viewbox_transform(
+            Some(ViewBox::parse_str("0 0 6E20 540").unwrap()),
+            &Rect::new(1.0, 1.0, 2.0, 2.0),
+        );
+
+        assert_eq!(t, Err(()));
     }
 }
