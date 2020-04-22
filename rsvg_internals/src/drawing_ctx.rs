@@ -294,6 +294,23 @@ impl DrawingCtx {
 
         preserve_aspect_ratio
             .viewport_to_viewbox_transform(vbox, &viewport)
+            .unwrap_or_else(|_e: ()| {
+                match vbox {
+                    None => unreachable!(
+                        "viewport_to_viewbox_transform only returns errors when vbox != None"
+                    ),
+                    Some(v) => {
+                        rsvg_log!(
+                            "ignoring viewBox ({}, {}, {}, {}) since it is not usable",
+                            v.0.x0,
+                            v.0.y0,
+                            v.0.width(),
+                            v.0.height()
+                        );
+                    }
+                }
+                None // so that the following and_then() won't run
+            })
             .and_then(|t| {
                 self.cr.transform(t.into());
 
