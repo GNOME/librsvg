@@ -1,4 +1,6 @@
+use glib::translate::*;
 use glib_sys::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
+use libc;
 
 /*
   G_LOG_LEVEL_CRITICAL          = 1 << 3,
@@ -39,6 +41,9 @@ fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
         _ => unreachable!("please add another log level priority to rsvg_g_log()"),
     };
 
+    let c_msg = msg.to_glib_none();
+    let c_char_msg: *const libc::c_char = c_msg.0;
+
     // Glib's g_log_structured_standard() adds a few more fields for the source
     // file, line number, etc., but those are not terribly useful without a stack
     // trace.  So, we'll omit them.
@@ -50,7 +55,7 @@ fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
         },
         GLogField {
             key: b"MESSAGE\0" as *const u8 as *const _,
-            value: msg.as_ptr() as *const _,
+            value: c_char_msg as *const _,
             length: msg.len() as _,
         },
         // This is the G_LOG_DOMAIN set from the Makefile
