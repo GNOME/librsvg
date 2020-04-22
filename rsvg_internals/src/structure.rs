@@ -111,26 +111,20 @@ pub struct Svg {
 }
 
 impl Svg {
-    pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(i32, i32)> {
+    pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(f64, f64)> {
         let (_, _, w, h) = self.get_unnormalized_viewport();
 
         match (w, h, self.vbox) {
             (w, h, Some(vbox)) => {
                 let params = ViewParams::new(dpi.x(), dpi.y(), vbox.0.width(), vbox.0.height());
 
-                Some((
-                    w.normalize(values, &params).round() as i32,
-                    h.normalize(values, &params).round() as i32,
-                ))
+                Some((w.normalize(values, &params), h.normalize(values, &params)))
             }
 
             (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
                 let params = ViewParams::new(dpi.x(), dpi.y(), 0.0, 0.0);
 
-                Some((
-                    w.normalize(values, &params).round() as i32,
-                    h.normalize(values, &params).round() as i32,
-                ))
+                Some((w.normalize(values, &params), h.normalize(values, &params)))
             }
             (_, _, _) => None,
         }
