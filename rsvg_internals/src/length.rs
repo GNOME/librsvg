@@ -360,10 +360,9 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
 
         LengthUnit::Px => v.length,
 
-        // This is the same default as used in Svg::get_size()
+        // The following implies that our default font size is 12, which
+        // matches the default from the FontSize property.
         LengthUnit::Em => v.length * 12.0,
-
-        // This is the same default as used in Svg::get_size()
         LengthUnit::Ex => v.length * 12.0 / 2.0,
 
         // FontSize always is a Both, per properties.rs
