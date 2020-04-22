@@ -17,11 +17,16 @@ use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
 use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::url_resolver::{AllowedUrl, AllowedUrlError, Fragment};
+use crate::url_resolver::{AllowedUrl, AllowedUrlError, Fragment, LoadPolicy};
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
 static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
-    vec![Stylesheet::from_data(include_str!("ua.css"), None, Origin::UserAgent).unwrap()]
+    vec![Stylesheet::from_data(
+        include_str!("ua.css"),
+        &LoadPolicy::new(None),
+        Origin::UserAgent,
+    )
+    .unwrap()]
 });
 
 /// A loaded SVG file and its derived data.
@@ -90,7 +95,10 @@ impl Document {
 
     /// Loads an image by URL, or returns a pre-loaded one.
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
-        let aurl = AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
+        let aurl = self
+            .load_options
+            .policy
+            .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
         self.images.borrow_mut().lookup(&self.load_options, &aurl)
@@ -137,7 +145,9 @@ impl Resources {
         load_options: &LoadOptions,
         href: &str,
     ) -> Result<Rc<Document>, LoadingError> {
-        let aurl = AllowedUrl::from_href(href, load_options.base_url.as_ref())
+        let aurl = load_options
+            .policy
+            .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
         match self.resources.entry(aurl) {
@@ -388,7 +398,7 @@ impl DocumentBuilder {
 
         // FIXME: handle CSS errors
         if let Ok(stylesheet) =
-            Stylesheet::from_href(href, self.load_options.base_url.as_ref(), Origin::Author)
+            Stylesheet::from_href(href, &self.load_options.policy, Origin::Author)
         {
             self.stylesheets.push(stylesheet);
         }
@@ -425,7 +435,7 @@ impl DocumentBuilder {
     pub fn append_stylesheet_from_text(&mut self, text: &str) {
         // FIXME: handle CSS errors
         if let Ok(stylesheet) =
-            Stylesheet::from_data(text, self.load_options.base_url.as_ref(), Origin::Author)
+            Stylesheet::from_data(text, &self.load_options.policy, Origin::Author)
         {
             self.stylesheets.push(stylesheet);
         }
@@ -452,7 +462,7 @@ impl DocumentBuilder {
     }
 
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
-        AllowedUrl::from_href(href, self.load_options.base_url.as_ref())
+        self.load_options.policy.resolve_href(href)
     }
 
     pub fn build(self) -> Result<Document, LoadingError> {

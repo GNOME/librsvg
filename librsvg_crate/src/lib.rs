@@ -160,7 +160,7 @@ use gio::{Cancellable, FileExt};
 use rsvg_internals::{Dpi, Handle, LoadOptions};
 
 pub use rsvg_internals::{
-    DefsLookupErrorKind, HrefError, Length as InternalLength, LengthUnit, LoadingError,
+    DefsLookupErrorKind, HrefError, Length as InternalLength, LengthUnit, LoadPolicy, LoadingError,
     RenderingError, RsvgLength as Length,
 };
 
@@ -339,7 +339,7 @@ impl Loader {
             None
         };
 
-        let load_options = LoadOptions::new(base_url)
+        let load_options = LoadOptions::new(LoadPolicy::new(base_url))
             .with_unlimited_size(self.unlimited_size)
             .keep_image_data(self.keep_image_data);
 

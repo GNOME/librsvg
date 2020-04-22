@@ -85,13 +85,12 @@ use selectors::{OpaqueElement, SelectorImpl, SelectorList};
 use std::cmp::Ordering;
 use std::fmt;
 use std::str;
-use url::Url;
 
 use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_property, ComputedValues, ParsedProperty};
-use crate::url_resolver::AllowedUrl;
+use crate::url_resolver::LoadPolicy;
 
 /// A parsed CSS declaration
 ///
@@ -622,23 +621,19 @@ impl Stylesheet {
         }
     }
 
-    pub fn from_data(
-        buf: &str,
-        base_url: Option<&Url>,
-        origin: Origin,
-    ) -> Result<Self, LoadingError> {
+    pub fn from_data(buf: &str, policy: &LoadPolicy, origin: Origin) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::new(origin);
-        stylesheet.parse(buf, base_url)?;
+        stylesheet.parse(buf, policy)?;
         Ok(stylesheet)
     }
 
     pub fn from_href(
         href: &str,
-        base_url: Option<&Url>,
+        policy: &LoadPolicy,
         origin: Origin,
     ) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::new(origin);
-        stylesheet.load(href, base_url)?;
+        stylesheet.load(href, policy)?;
         Ok(stylesheet)
     }
 
@@ -646,7 +641,7 @@ impl Stylesheet {
     ///
     /// The `base_url` is required for `@import` rules, so that librsvg
     /// can determine if the requested path is allowed.
-    pub fn parse(&mut self, buf: &str, base_url: Option<&Url>) -> Result<(), LoadingError> {
+    pub fn parse(&mut self, buf: &str, policy: &LoadPolicy) -> Result<(), LoadingError> {
         let mut input = ParserInput::new(buf);
         let mut parser = Parser::new(&mut input);
 
@@ -661,7 +656,7 @@ impl Stylesheet {
             .for_each(|rule| match rule {
                 Rule::AtRule(AtRule::Import(url)) => {
                     // ignore invalid imports
-                    let _ = self.load(&url, base_url);
+                    let _ = self.load(&url, &policy);
                 }
                 Rule::QualifiedRule(qr) => self.qualified_rules.push(qr),
             });
@@ -670,8 +665,10 @@ impl Stylesheet {
     }
 
     /// Parses a stylesheet referenced by an URL
-    fn load(&mut self, href: &str, base_url: Option<&Url>) -> Result<(), LoadingError> {
-        let aurl = AllowedUrl::from_href(href, base_url).map_err(|_| LoadingError::BadUrl)?;
+    fn load(&mut self, href: &str, policy: &LoadPolicy) -> Result<(), LoadingError> {
+        let aurl = policy
+            .resolve_href(href)
+            .map_err(|_| LoadingError::BadUrl)?;
 
         io::acquire_data(&aurl, None)
             .and_then(|data| {
@@ -696,7 +693,7 @@ impl Stylesheet {
                     LoadingError::BadCss
                 })
             })
-            .and_then(|utf8| self.parse(&utf8, base_url))
+            .and_then(|utf8| self.parse(&utf8, &policy))
     }
 
     /// Appends the style declarations that match a specified node to a given vector
@@ -787,7 +784,7 @@ mod tests {
         let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
         Document::load_from_stream(
-            &LoadOptions::new(None),
+            &LoadOptions::new(LoadPolicy::new(None)),
             &stream.upcast(),
             None::<&gio::Cancellable>,
         )
