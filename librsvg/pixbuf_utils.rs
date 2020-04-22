@@ -11,6 +11,7 @@ use crate::c_api::checked_i32;
 
 use rsvg_internals::{
     Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError, SharedImageSurface, SurfaceType,
+    UrlResolver,
 };
 
 use crate::c_api::set_gerror;
@@ -229,7 +230,7 @@ fn pixbuf_from_file_with_size_mode(
             }
         };
 
-        let load_options = LoadOptions::new(Some(base_url));
+        let load_options = LoadOptions::new(UrlResolver::new(Some(base_url)));
 
         let cancellable: Option<&gio::Cancellable> = None;
         let handle = match file
