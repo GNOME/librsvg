@@ -70,6 +70,8 @@ pub use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},
 };
 
+pub use crate::url_resolver::LoadPolicy;
+
 pub use crate::viewbox::ViewBox;
 
 #[macro_use]
