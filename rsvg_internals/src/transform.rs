@@ -156,7 +156,7 @@ impl Transform {
     }
 
     pub fn transform_rect(&self, rect: &Rect) -> Rect {
-        let points = vec![
+        let points = [
             self.transform_point(rect.x0, rect.y0),
             self.transform_point(rect.x1, rect.y0),
             self.transform_point(rect.x0, rect.y1),
@@ -169,7 +169,7 @@ impl Transform {
             (x, y, x, y)
         };
 
-        for &(x, y) in points.iter().take(4).skip(1) {
+        for &(x, y) in points.iter().skip(1) {
             if x < xmin {
                 xmin = x;
             }
