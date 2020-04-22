@@ -174,7 +174,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         pbag: &PropertyBag<'_>,
     ) -> Result<(), ElementError> {
         let mut cond = self.cond;
-        let locale = locale_from_environment();
 
         for (attr, value) in pbag.iter() {
             let mut parse = || -> Result<_, ValueErrorKind> {
@@ -190,6 +189,13 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                     }
 
                     expanded_name!("", "systemLanguage") if cond => {
+                        // In reality this could be computed only once, at the beginning
+                        // of loading... maybe if we end up having a LoadContext again.
+                        //
+                        // (This call has a lot of memory churn internally with many
+                        // short-lived allocations.)
+                        let locale = locale_from_environment();
+
                         cond = SystemLanguage::from_attribute(value, &locale)
                             .map(|SystemLanguage(res)| res)?;
                     }
