@@ -98,6 +98,10 @@ struct SizeMode {
 }
 
 fn get_final_size(dimensions: &RsvgDimensionData, size_mode: &SizeMode) -> (i32, i32) {
+    if dimensions.width == 0 || dimensions.height == 0 {
+        return (0, 0);
+    }
+
     let in_width = dimensions.width;
     let in_height = dimensions.height;
 
@@ -159,7 +163,7 @@ fn render_to_pixbuf_at_size(
     height: i32,
     dpi: Dpi,
 ) -> Result<Pixbuf, RenderingError> {
-    if width == 0 || height == 0 {
+    if width == 0 || height == 0 || dimensions.width == 0 || dimensions.height == 0 {
         return empty_pixbuf();
     }
 
@@ -172,17 +176,14 @@ fn render_to_pixbuf_at_size(
             f64::from(height) / f64::from(dimensions.height),
         );
 
-        let dimensions = handle.get_dimensions_sub(None, dpi, &SizeCallback::default(), false)?;
-        if !(dimensions.width == 0 || dimensions.height == 0) {
-            let viewport = cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: f64::from(dimensions.width),
-                height: f64::from(dimensions.height),
-            };
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: f64::from(dimensions.width),
+            height: f64::from(dimensions.height),
+        };
 
-            handle.render_document(&cr, &viewport, dpi, false)?;
-        }
+        handle.render_document(&cr, &viewport, dpi, false)?;
     }
 
     let shared_surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
@@ -239,7 +240,7 @@ fn pixbuf_from_file_with_size_mode(
         };
 
         handle
-            .get_dimensions(dpi, &SizeCallback::default(), false)
+            .get_dimensions_sub(None, dpi, &SizeCallback::default(), false)
             .and_then(|dimensions| {
                 let (width, height) = get_final_size(&dimensions, size_mode);
 
