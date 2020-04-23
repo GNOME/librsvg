@@ -390,32 +390,6 @@ impl Handle {
         }
     }
 
-    pub fn render_cairo_sub(
-        &self,
-        cr: &cairo::Context,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
-
-        let dimensions = self.get_dimensions_sub(None, dpi, size_callback, is_testing)?;
-        if dimensions.width == 0 || dimensions.height == 0 {
-            // nothing to render
-            return Ok(());
-        }
-
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: f64::from(dimensions.width),
-            height: f64::from(dimensions.height),
-        };
-
-        self.render_layer(cr, id, &viewport, dpi, is_testing)
-    }
-
     pub fn render_document(
         &self,
         cr: &cairo::Context,

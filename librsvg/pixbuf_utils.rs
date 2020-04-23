@@ -171,7 +171,18 @@ fn render_to_pixbuf_at_size(
             f64::from(width) / f64::from(dimensions.width),
             f64::from(height) / f64::from(dimensions.height),
         );
-        handle.render_cairo_sub(&cr, None, dpi, &SizeCallback::default(), false)?;
+
+        let dimensions = handle.get_dimensions_sub(None, dpi, &SizeCallback::default(), false)?;
+        if !(dimensions.width == 0 || dimensions.height == 0) {
+            let viewport = cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: f64::from(dimensions.width),
+                height: f64::from(dimensions.height),
+            };
+
+            handle.render_document(&cr, &viewport, dpi, false)?;
+        }
     }
 
     let shared_surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
