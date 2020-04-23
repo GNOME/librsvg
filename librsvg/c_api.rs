@@ -1198,24 +1198,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
 ) {
-    rsvg_return_if_fail! {
-        rsvg_handle_get_dimensions;
-
-        is_rsvg_handle(handle),
-        !dimension_data.is_null(),
-    }
-
-    let rhandle = get_rust_handle(handle);
-    match rhandle.get_dimensions_sub(None) {
-        Ok(dimensions) => {
-            *dimension_data = dimensions;
-        }
-
-        Err(e) => {
-            rsvg_log!("could not get dimensions: {}", e);
-            *dimension_data = RsvgDimensionData::empty();
-        }
-    }
+    rsvg_rust_handle_get_dimensions_sub(handle, dimension_data, ptr::null());
 }
 
 #[no_mangle]
