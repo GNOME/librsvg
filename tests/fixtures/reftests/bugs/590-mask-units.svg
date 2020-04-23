@@ -1,0 +1,26 @@
+<svg preserveAspectRatio="xMidYMid" viewBox="-70 -100 140 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <!-- A square mask -->
+    <mask id="square-mask">
+      <rect fill="#ffffff" height="49" stroke="none" width="49" x="-49" y="24.5"/>
+    </mask>
+  </defs>
+  <g fill="none" stroke="#292d2f" stroke-width="0.14">
+    <!-- Black background rectangle -->
+    <rect fill="#292d2f" height="200" stroke="#292d2f" width="140" x="-70" y="-100"/>
+    
+    <!-- Draw a filled white circle and apply a square mask to only show the bottom left 90 degree arc -->
+    <g mask="url(#square-mask)">
+      <g fill="#ffffff" stroke="none" transform="matrix(-1.8369701987210297e-16 -1 1 -1.8369701987210297e-16 -24.5 49)">
+        <circle cx="24.5" cy="24.5" r="49"/>
+      </g>
+    </g>
+    
+    <!-- Magenta outline of the square mask -->
+    <rect stroke="#ff00ff" height="49" fill="none" width="49" x="-49" y="24.5"/>
+    <!-- Yellow outline of the entire circle to mask -->
+    <g fill="none" stroke="#ffff00" transform="matrix(-1.8369701987210297e-16 -1 1 -1.8369701987210297e-16 -24.5 49)">
+      <circle cx="24.5" cy="24.5" r="49" />
+    </g>
+  </g>
+</svg>
