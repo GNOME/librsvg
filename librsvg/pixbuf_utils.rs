@@ -33,7 +33,7 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     let width = surface.width();
     let height = surface.height();
 
-    let pixbuf = pixbuf_new(width as i32, height as i32)?;
+    let pixbuf = pixbuf_new(width, height)?;
     let bounds = IRect::from_size(width, height);
 
     for (x, y, pixel) in Pixels::within(&surface, bounds) {
