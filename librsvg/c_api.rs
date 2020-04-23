@@ -716,11 +716,20 @@ impl CHandle {
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle
-            .render_cairo_sub(cr, id, inner.dpi, &inner.size_callback, inner.is_testing)
-            .map_err(warn_on_invalid_id)
+        let dimensions = self.get_dimensions_sub(None)?;
+        if dimensions.width == 0 || dimensions.height == 0 {
+            // nothing to render
+            return Ok(());
+        }
+
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: f64::from(dimensions.width),
+            height: f64::from(dimensions.height),
+        };
+        
+        self.render_layer(cr, id, &viewport)
     }
 
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
@@ -744,9 +753,7 @@ impl CHandle {
 
         {
             let cr = cairo::Context::new(&surface);
-            handle
-                .render_cairo_sub(&cr, id, dpi, &inner.size_callback, is_testing)
-                .map_err(warn_on_invalid_id)?;
+            self.render_cairo_sub(&cr, id)?;
         }
 
         let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
