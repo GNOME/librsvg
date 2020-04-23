@@ -9,48 +9,21 @@ use url::Url;
 
 use crate::error::HrefError;
 
-/// Wrapper for URLs which are allowed to be loaded
-///
-/// SVG files can reference other files (PNG/JPEG images, other SVGs,
-/// CSS files, etc.).  This object is constructed by checking whether
-/// a specified `href` (a possibly-relative filename, for example)
-/// should be allowed to be loaded, given the base URL of the SVG
-/// being loaded.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AllowedUrl(Url);
-
-#[derive(Debug, PartialEq)]
-pub enum AllowedUrlError {
-    /// parsing error from `Url::parse()`
-    HrefParseError(url::ParseError),
-
-    /// A base file/uri was not set
-    BaseRequired,
-
-    /// Cannot reference a file with a different URI scheme from the base file
-    DifferentURISchemes,
-
-    /// Some scheme we don't allow loading
-    DisallowedScheme,
-
-    /// The requested file is not in the same directory as the base file,
-    /// or in one directory below the base file.
-    NotSiblingOrChildOfBaseFile,
-
-    /// Error when obtaining the file path or the base file path
-    InvalidPath,
-
-    /// The base file cannot be the root of the file system
-    BaseIsRoot,
-
-    /// Error when canonicalizing either the file path or the base file path
-    CanonicalizationError,
+#[derive(Clone)]
+pub struct LoadPolicy {
+    /// Base URL; all relative references will be resolved with respect to this.
+    pub base_url: Option<Url>,
 }
 
-impl AllowedUrl {
-    pub fn from_href(href: &str, base_url: Option<&Url>) -> Result<AllowedUrl, AllowedUrlError> {
+impl LoadPolicy {
+    /// Creates a `LoadPolicy` with defaults, and sets the `base_url`.
+    pub fn new(base_url: Option<Url>) -> Self {
+        LoadPolicy { base_url }
+    }
+
+    pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
         let url = Url::options()
-            .base_url(base_url)
+            .base_url(self.base_url.as_ref())
             .parse(href)
             .map_err(AllowedUrlError::HrefParseError)?;
 
@@ -60,11 +33,11 @@ impl AllowedUrl {
         }
 
         // All other sources require a base url
-        if base_url.is_none() {
+        if self.base_url.is_none() {
             return Err(AllowedUrlError::BaseRequired);
         }
 
-        let base_url = base_url.unwrap();
+        let base_url = self.base_url.as_ref().unwrap();
 
         // Deny loads from differing URI schemes
         if url.scheme() != base_url.scheme() {
@@ -109,6 +82,44 @@ impl AllowedUrl {
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         }
     }
+}
+
+/// Wrapper for URLs which are allowed to be loaded
+///
+/// SVG files can reference other files (PNG/JPEG images, other SVGs,
+/// CSS files, etc.).  This object is constructed by checking whether
+/// a specified `href` (a possibly-relative filename, for example)
+/// should be allowed to be loaded, given the base URL of the SVG
+/// being loaded.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AllowedUrl(Url);
+
+#[derive(Debug, PartialEq)]
+pub enum AllowedUrlError {
+    /// parsing error from `Url::parse()`
+    HrefParseError(url::ParseError),
+
+    /// A base file/uri was not set
+    BaseRequired,
+
+    /// Cannot reference a file with a different URI scheme from the base file
+    DifferentURISchemes,
+
+    /// Some scheme we don't allow loading
+    DisallowedScheme,
+
+    /// The requested file is not in the same directory as the base file,
+    /// or in one directory below the base file.
+    NotSiblingOrChildOfBaseFile,
+
+    /// Error when obtaining the file path or the base file path
+    InvalidPath,
+
+    /// The base file cannot be the root of the file system
+    BaseIsRoot,
+
+    /// Error when canonicalizing either the file path or the base file path
+    CanonicalizationError,
 }
 
 impl Deref for AllowedUrl {
@@ -241,8 +252,9 @@ mod tests {
 
     #[test]
     fn disallows_relative_file_with_no_base_file() {
+        let policy = LoadPolicy::new(None);
         assert_eq!(
-            AllowedUrl::from_href("foo.svg", None),
+            policy.resolve_href("foo.svg"),
             Err(AllowedUrlError::HrefParseError(
                 url::ParseError::RelativeUrlWithoutBase
             ))
@@ -251,38 +263,39 @@ mod tests {
 
     #[test]
     fn disallows_different_schemes() {
+        let policy = LoadPolicy::new(Some(
+            Url::parse("http://example.com/malicious.svg").unwrap(),
+        ));
         assert_eq!(
-            AllowedUrl::from_href(
-                "file:///etc/passwd",
-                Some(Url::parse("http://example.com/malicious.svg").unwrap()).as_ref()
-            ),
+            policy.resolve_href("file:///etc/passwd"),
             Err(AllowedUrlError::DifferentURISchemes)
         );
     }
 
     #[test]
     fn disallows_base_is_root() {
+        let policy = LoadPolicy::new(Some(Url::parse("file:///").unwrap()));
         assert_eq!(
-            AllowedUrl::from_href("foo.svg", Some(Url::parse("file:///").unwrap()).as_ref()),
+            policy.resolve_href("foo.svg"),
             Err(AllowedUrlError::BaseIsRoot)
         );
     }
 
     #[test]
     fn disallows_non_file_scheme() {
+        let policy = LoadPolicy::new(Some(Url::parse("http://foo.bar/baz.svg").unwrap()));
         assert_eq!(
-            AllowedUrl::from_href(
-                "foo.svg",
-                Some(Url::parse("http://foo.bar/baz.svg").unwrap()).as_ref()
-            ),
+            policy.resolve_href("foo.svg"),
             Err(AllowedUrlError::DisallowedScheme)
         );
     }
 
     #[test]
     fn allows_data_url_with_no_base_file() {
+        let policy = LoadPolicy::new(None);
         assert_eq!(
-            AllowedUrl::from_href("data:image/jpeg;base64,xxyyzz", None)
+            policy
+                .resolve_href("data:image/jpeg;base64,xxyyzz")
                 .unwrap()
                 .as_ref(),
             "data:image/jpeg;base64,xxyyzz",
@@ -291,50 +304,42 @@ mod tests {
 
     #[test]
     fn allows_relative() {
+        let policy = LoadPolicy::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
         assert_eq!(
-            AllowedUrl::from_href(
-                "foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
-            )
-            .unwrap()
-            .as_ref(),
+            policy.resolve_href("foo.svg").unwrap().as_ref(),
             "file:///example/foo.svg",
         );
     }
 
     #[test]
     fn allows_sibling() {
+        let policy = LoadPolicy::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
         assert_eq!(
-            AllowedUrl::from_href(
-                "file:///example/foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
-            )
-            .unwrap()
-            .as_ref(),
+            policy
+                .resolve_href("file:///example/foo.svg")
+                .unwrap()
+                .as_ref(),
             "file:///example/foo.svg",
         );
     }
 
     #[test]
     fn allows_child_of_sibling() {
+        let policy = LoadPolicy::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
         assert_eq!(
-            AllowedUrl::from_href(
-                "file:///example/subdir/foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
-            )
-            .unwrap()
-            .as_ref(),
+            policy
+                .resolve_href("file:///example/subdir/foo.svg")
+                .unwrap()
+                .as_ref(),
             "file:///example/subdir/foo.svg",
         );
     }
 
     #[test]
     fn disallows_non_sibling() {
+        let policy = LoadPolicy::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
         assert_eq!(
-            AllowedUrl::from_href(
-                "file:///etc/passwd",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
-            ),
+            policy.resolve_href("file:///etc/passwd"),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         );
     }

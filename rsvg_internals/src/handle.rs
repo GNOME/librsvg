@@ -5,7 +5,6 @@
 use std::cell::Cell;
 use std::ptr;
 
-use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
@@ -16,13 +15,13 @@ use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::{IRect, Rect};
 use crate::structure::IntrinsicDimensions;
-use url::Url;
+use crate::url_resolver::{AllowedUrl, Href, LoadPolicy};
 
 /// Loading options for SVG documents.
 #[derive(Clone)]
 pub struct LoadOptions {
-    /// Base URL; all relative references will be resolved with respect to this.
-    pub base_url: Option<Url>,
+    /// Load policy; all references will be resolved with respect to this.
+    pub policy: LoadPolicy,
 
     /// Whether to turn off size limits in libxml2.
     pub unlimited_size: bool,
@@ -32,10 +31,10 @@ pub struct LoadOptions {
 }
 
 impl LoadOptions {
-    /// Creates a `LoadOptions` with defaults, and sets the `base_url`.
-    pub fn new(base_url: Option<Url>) -> Self {
+    /// Creates a `LoadOptions` with defaults, and sets the `policy`.
+    pub fn new(policy: LoadPolicy) -> Self {
         LoadOptions {
-            base_url,
+            policy,
             unlimited_size: false,
             keep_image_data: false,
         }
@@ -59,13 +58,16 @@ impl LoadOptions {
         self
     }
 
-    /// Creates a new `LoadOptions` with a different `base_url`.
+    /// Creates a new `LoadOptions` with a different `policy`.
     ///
     /// This is used when loading a referenced file that may in turn cause other files
     /// to be loaded, for example `<image xlink:href="subimage.svg"/>`
     pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> Self {
+        let mut policy = self.policy.clone();
+        policy.base_url = Some((**base_url).clone());
+
         LoadOptions {
-            base_url: Some((**base_url).clone()),
+            policy: policy,
             unlimited_size: self.unlimited_size,
             keep_image_data: self.keep_image_data,
         }
@@ -568,7 +570,7 @@ impl Handle {
 
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
         let mut stylesheet = Stylesheet::new(Origin::User);
-        stylesheet.parse(css, None)?;
+        stylesheet.parse(css, &LoadPolicy::new(None))?;
         self.document.cascade(&[stylesheet]);
         Ok(())
     }

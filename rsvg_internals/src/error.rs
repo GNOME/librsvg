@@ -6,8 +6,8 @@ use std::fmt;
 use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
-use crate::allowed_url::Fragment;
 use crate::node::Node;
+use crate::url_resolver::Fragment;
 
 /// A short-lived error.
 ///

@@ -7,8 +7,8 @@ use glib::translate::*;
 use url::Url;
 
 use rsvg_internals::{
-    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, RsvgDimensionData,
-    SharedImageSurface, SizeCallback, SurfaceType,
+    Dpi, Handle, IRect, LoadOptions, LoadPolicy, LoadingError, Pixels, RenderingError,
+    RsvgDimensionData, SharedImageSurface, SizeCallback, SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -212,7 +212,7 @@ fn pixbuf_from_file_with_size_mode(
             }
         };
 
-        let load_options = LoadOptions::new(Some(base_url));
+        let load_options = LoadOptions::new(LoadPolicy::new(Some(base_url)));
 
         let cancellable: Option<&gio::Cancellable> = None;
         let handle = match file

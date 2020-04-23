@@ -7,7 +7,6 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::{Rc, Weak};
 
-use crate::allowed_url::Fragment;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -35,6 +34,7 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::url_resolver::Fragment;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.

@@ -4,7 +4,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use pango::FontMapExt;
 use std::cell::RefCell;
 
-use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -24,6 +23,7 @@ use crate::property_defs::{
 use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use crate::transform::Transform;
+use crate::url_resolver::Fragment;
 
 /// An absolutely-positioned array of `Span`s
 ///

@@ -32,8 +32,8 @@ use glib::types::instance_of;
 use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
-    RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgSizeFunc,
+    rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions, LoadPolicy,
+    LoadingError, RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgSizeFunc,
     SharedImageSurface, SizeCallback, SurfaceType, ViewBox,
 };
 
@@ -543,7 +543,7 @@ impl CHandle {
     fn load_options(&self) -> LoadOptions {
         let inner = self.inner.borrow();
 
-        LoadOptions::new(inner.base_url.get().map(|u| (*u).clone()))
+        LoadOptions::new(LoadPolicy::new(inner.base_url.get().map(|u| (*u).clone())))
             .with_unlimited_size(inner.load_flags.unlimited_size)
             .keep_image_data(inner.load_flags.keep_image_data)
     }

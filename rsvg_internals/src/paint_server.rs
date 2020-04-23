@@ -2,7 +2,6 @@
 
 use cssparser::Parser;
 
-use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -11,6 +10,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::unit_interval::UnitInterval;
+use crate::url_resolver::Fragment;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {

@@ -6,7 +6,6 @@ use std::ops::Deref;
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::allowed_url::Fragment;
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
@@ -24,6 +23,7 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::transform::Transform;
+use crate::url_resolver::Fragment;
 use crate::viewbox::*;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
