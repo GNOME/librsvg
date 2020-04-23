@@ -675,14 +675,8 @@ impl CHandle {
     }
 
     fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
-        self.get_dimensions()
+        self.get_dimensions_sub(None)
             .unwrap_or_else(|_| RsvgDimensionData::empty())
-    }
-
-    fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle.get_dimensions(inner.dpi, &inner.size_callback, inner.is_testing)
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
@@ -736,7 +730,7 @@ impl CHandle {
         let dpi = inner.dpi;
         let is_testing = inner.is_testing;
 
-        let dimensions = handle.get_dimensions(dpi, &inner.size_callback, is_testing)?;
+        let dimensions = handle.get_dimensions_sub(None, dpi, &inner.size_callback, is_testing)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return empty_pixbuf();
@@ -1213,7 +1207,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     }
 
     let rhandle = get_rust_handle(handle);
-    match rhandle.get_dimensions() {
+    match rhandle.get_dimensions_sub(None) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
         }
