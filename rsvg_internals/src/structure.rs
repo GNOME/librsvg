@@ -437,7 +437,7 @@ impl Default for Mask {
 
 impl Mask {
     pub fn get_units(&self) -> CoordUnits {
-        CoordUnits::from(self.content_units)
+        CoordUnits::from(self.units)
     }
 
     pub fn get_content_units(&self) -> CoordUnits {
