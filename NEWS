@@ -1,3 +1,11 @@
+Version 2.48.4
+
+- #590 - Fix regression when rendering masks.
+
+- #588 - Fix panic when a big viewBox creates an invalid transform.
+
+- #592 - Fix invalid argument to g_log_structured_array()
+
 Version 2.48.3
 
 - Librsvg now requires glib 2.50.0 or later.
