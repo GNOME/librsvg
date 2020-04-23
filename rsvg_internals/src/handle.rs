@@ -206,8 +206,9 @@ impl Handle {
         }
     }
 
-    pub fn get_dimensions(
+    pub fn get_dimensions_sub(
         &self,
+        id: Option<&str>,
         dpi: Dpi,
         size_callback: &SizeCallback,
         is_testing: bool,
@@ -227,33 +228,25 @@ impl Handle {
 
         size_callback.start_loop();
 
-        let res = self.get_dimensions_sub(None, dpi, size_callback, is_testing);
+        let res = self
+            .get_geometry_sub(id, dpi, is_testing)
+            .and_then(|(ink_r, _)| {
+                let width = ink_r.width().round() as libc::c_int;
+                let height = ink_r.height().round() as libc::c_int;
+
+                let (w, h) = size_callback.call(width, height);
+
+                Ok(RsvgDimensionData {
+                    width: w,
+                    height: h,
+                    em: ink_r.width(),
+                    ex: ink_r.height(),
+                })
+            });
 
         size_callback.end_loop();
 
         res
-    }
-
-    pub fn get_dimensions_sub(
-        &self,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<RsvgDimensionData, RenderingError> {
-        let (ink_r, _) = self.get_geometry_sub(id, dpi, is_testing)?;
-
-        let width = ink_r.width().round() as libc::c_int;
-        let height = ink_r.height().round() as libc::c_int;
-
-        let (w, h) = size_callback.call(width, height);
-
-        Ok(RsvgDimensionData {
-            width: w,
-            height: h,
-            em: ink_r.width(),
-            ex: ink_r.height(),
-        })
     }
 
     pub fn get_position_sub(
