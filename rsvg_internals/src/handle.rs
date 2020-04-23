@@ -400,7 +400,7 @@ impl Handle {
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
-        let dimensions = self.get_dimensions(dpi, size_callback, is_testing)?;
+        let dimensions = self.get_dimensions_sub(None, dpi, size_callback, is_testing)?;
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
             return Ok(());
