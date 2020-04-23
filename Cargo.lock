@@ -593,7 +593,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "librsvg"
-version = "2.48.3"
+version = "2.48.4"
 dependencies = [
  "cairo-rs 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gio 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
