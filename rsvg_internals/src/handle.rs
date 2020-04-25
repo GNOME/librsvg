@@ -206,30 +206,6 @@ impl Handle {
         }
     }
 
-    pub fn get_position_sub(
-        &self,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<RsvgPositionData, RenderingError> {
-        if id.is_none() {
-            return Ok(RsvgPositionData { x: 0, y: 0 });
-        }
-
-        let (ink_r, _) = self.get_geometry_sub(id, dpi, is_testing)?;
-
-        let width = ink_r.width().round() as libc::c_int;
-        let height = ink_r.height().round() as libc::c_int;
-
-        size_callback.call(width, height);
-
-        Ok(RsvgPositionData {
-            x: ink_r.x0 as libc::c_int,
-            y: ink_r.y0 as libc::c_int,
-        })
-    }
-
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry_with_viewport(
         &self,
