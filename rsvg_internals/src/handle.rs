@@ -217,49 +217,6 @@ impl Handle {
         }
     }
 
-    pub fn get_dimensions_sub(
-        &self,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<RsvgDimensionData, RenderingError> {
-        // This function is probably called from the cairo_render functions,
-        // or is being erroneously called within the size_func.
-        // To prevent an infinite loop we are saving the state, and
-        // returning a meaningless size.
-        if size_callback.get_in_loop() {
-            return Ok(RsvgDimensionData {
-                width: 1,
-                height: 1,
-                em: 1.0,
-                ex: 1.0,
-            });
-        }
-
-        size_callback.start_loop();
-
-        let res = self
-            .get_geometry_sub(id, dpi, is_testing)
-            .and_then(|(ink_r, _)| {
-                let width = ink_r.width().round() as libc::c_int;
-                let height = ink_r.height().round() as libc::c_int;
-
-                let (w, h) = size_callback.call(width, height);
-
-                Ok(RsvgDimensionData {
-                    width: w,
-                    height: h,
-                    em: ink_r.width(),
-                    ex: ink_r.height(),
-                })
-            });
-
-        size_callback.end_loop();
-
-        res
-    }
-
     pub fn get_position_sub(
         &self,
         id: Option<&str>,
