@@ -8,7 +8,7 @@ use url::Url;
 
 use rsvg_internals::{
     Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, SharedImageSurface,
-    SizeCallback, SurfaceType,
+    SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -240,9 +240,12 @@ fn pixbuf_from_file_with_size_mode(
         };
 
         handle
-            .get_dimensions_sub(None, dpi, &SizeCallback::default(), false)
-            .and_then(|dimensions| {
-                let (document_width, document_height) = (dimensions.width, dimensions.height);
+            .get_geometry_sub(None, dpi, false)
+            .and_then(|(ink_r, _)| {
+                let (document_width, document_height) = (
+                    ink_r.width().round() as libc::c_int,
+                    ink_r.height().round() as libc::c_int,
+                );
                 let (desired_width, desired_height) =
                     get_final_size(document_width, document_height, size_mode);
 
