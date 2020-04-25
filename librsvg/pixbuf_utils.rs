@@ -6,6 +6,8 @@ use gio::prelude::*;
 use glib::translate::*;
 use url::Url;
 
+use crate::c_api::checked_i32;
+
 use rsvg_internals::{
     Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, SharedImageSurface,
     SurfaceType,
@@ -97,9 +99,9 @@ struct SizeMode {
     height: i32,
 }
 
-fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (i32, i32) {
+fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (f64, f64) {
     if in_width == 0.0 || in_height == 0.0 {
-        return (0, 0);
+        return (0.0, 0.0);
     }
 
     let mut out_width;
@@ -107,21 +109,21 @@ fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (i32, 
 
     match size_mode.kind {
         SizeKind::Zoom => {
-            out_width = (size_mode.x_zoom * in_width + 0.5).floor() as i32;
-            out_height = (size_mode.y_zoom * in_height + 0.5).floor() as i32;
+            out_width = size_mode.x_zoom * in_width;
+            out_height = size_mode.y_zoom * in_height;
         }
 
         SizeKind::ZoomMax => {
-            out_width = (size_mode.x_zoom * in_width + 0.5).floor() as i32;
-            out_height = (size_mode.y_zoom * in_height + 0.5).floor() as i32;
+            out_width = size_mode.x_zoom * in_width;
+            out_height = size_mode.y_zoom * in_height;
 
-            if out_width > size_mode.width || out_height > size_mode.height {
-                let zoom_x = f64::from(size_mode.width) / f64::from(out_width);
-                let zoom_y = f64::from(size_mode.height) / f64::from(out_height);
+            if out_width > f64::from(size_mode.width) || out_height > f64::from(size_mode.height) {
+                let zoom_x = f64::from(size_mode.width) / out_width;
+                let zoom_y = f64::from(size_mode.height) / out_height;
                 let zoom = zoom_x.min(zoom_y);
 
-                out_width = (zoom * f64::from(out_width) + 0.5) as i32;
-                out_height = (zoom * f64::from(out_height) + 0.5) as i32;
+                out_width = zoom * out_width;
+                out_height = zoom * out_height;
             }
         }
 
@@ -131,21 +133,21 @@ fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (i32, 
 
             let zoom = zoom_x.min(zoom_y);
 
-            out_width = (zoom * in_width + 0.5) as i32;
-            out_height = (zoom * in_height + 0.5) as i32;
+            out_width = zoom * in_width;
+            out_height = zoom * in_height;
         }
 
         SizeKind::WidthHeight => {
             if size_mode.width != -1 {
-                out_width = size_mode.width;
+                out_width = f64::from(size_mode.width);
             } else {
-                out_width = in_width as i32;
+                out_width = in_width;
             }
 
             if size_mode.height != -1 {
-                out_height = size_mode.height;
+                out_height = f64::from(size_mode.height);
             } else {
-                out_height = in_height as i32;
+                out_height = in_height;
             }
         }
     }
@@ -157,22 +159,29 @@ fn render_to_pixbuf_at_size(
     handle: &Handle,
     document_width: f64,
     document_height: f64,
-    desired_width: i32,
-    desired_height: i32,
+    desired_width: f64,
+    desired_height: f64,
     dpi: Dpi,
 ) -> Result<Pixbuf, RenderingError> {
-    if desired_width == 0 || desired_height == 0 || document_width == 0.0 || document_height == 0.0 {
+    if desired_width == 0.0
+        || desired_height == 0.0
+        || document_width == 0.0
+        || document_height == 0.0
+    {
         return empty_pixbuf();
     }
 
-    let surface =
-        cairo::ImageSurface::create(cairo::Format::ARgb32, desired_width, desired_height)?;
+    let surface = cairo::ImageSurface::create(
+        cairo::Format::ARgb32,
+        checked_i32(desired_width.round())?,
+        checked_i32(desired_height.round())?,
+    )?;
 
     {
         let cr = cairo::Context::new(&surface);
         cr.scale(
-            f64::from(desired_width) / document_width,
-            f64::from(desired_height) / document_height,
+            desired_width / document_width,
+            desired_height / document_height,
         );
 
         let viewport = cairo::Rectangle {
