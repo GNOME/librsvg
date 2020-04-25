@@ -465,7 +465,7 @@ impl ObjectImpl for CHandle {
     }
 }
 
-fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
+pub fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
     cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
 }
 
