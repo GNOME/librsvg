@@ -7,8 +7,8 @@ use glib::translate::*;
 use url::Url;
 
 use rsvg_internals::{
-    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, RsvgDimensionData,
-    SharedImageSurface, SizeCallback, SurfaceType,
+    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, SharedImageSurface,
+    SizeCallback, SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -97,13 +97,10 @@ struct SizeMode {
     height: i32,
 }
 
-fn get_final_size(dimensions: &RsvgDimensionData, size_mode: &SizeMode) -> (i32, i32) {
-    if dimensions.width == 0 || dimensions.height == 0 {
+fn get_final_size(in_width: i32, in_height: i32, size_mode: &SizeMode) -> (i32, i32) {
+    if in_width == 0 || in_height == 0 {
         return (0, 0);
     }
-
-    let in_width = dimensions.width;
-    let in_height = dimensions.height;
 
     let mut out_width;
     let mut out_height;
@@ -158,31 +155,34 @@ fn get_final_size(dimensions: &RsvgDimensionData, size_mode: &SizeMode) -> (i32,
 
 fn render_to_pixbuf_at_size(
     handle: &Handle,
-    dimensions: &RsvgDimensionData,
-    width: i32,
-    height: i32,
+    document_width: i32,
+    document_height: i32,
+    desired_width: i32,
+    desired_height: i32,
     dpi: Dpi,
 ) -> Result<Pixbuf, RenderingError> {
-    if width == 0 || height == 0 || dimensions.width == 0 || dimensions.height == 0 {
+    if desired_width == 0 || desired_height == 0 || document_width == 0 || document_height == 0 {
         return empty_pixbuf();
     }
 
-    let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+    let surface =
+        cairo::ImageSurface::create(cairo::Format::ARgb32, desired_width, desired_height)?;
 
     {
         let cr = cairo::Context::new(&surface);
         cr.scale(
-            f64::from(width) / f64::from(dimensions.width),
-            f64::from(height) / f64::from(dimensions.height),
+            f64::from(desired_width) / f64::from(document_width),
+            f64::from(desired_height) / f64::from(document_height),
         );
 
         let viewport = cairo::Rectangle {
             x: 0.0,
             y: 0.0,
-            width: f64::from(dimensions.width),
-            height: f64::from(dimensions.height),
+            width: f64::from(document_width),
+            height: f64::from(document_height),
         };
 
+        // We do it with a cr transform so we can scale non-proportionally.
         handle.render_document(&cr, &viewport, dpi, false)?;
     }
 
@@ -242,9 +242,18 @@ fn pixbuf_from_file_with_size_mode(
         handle
             .get_dimensions_sub(None, dpi, &SizeCallback::default(), false)
             .and_then(|dimensions| {
-                let (width, height) = get_final_size(&dimensions, size_mode);
+                let (document_width, document_height) = (dimensions.width, dimensions.height);
+                let (desired_width, desired_height) =
+                    get_final_size(document_width, document_height, size_mode);
 
-                render_to_pixbuf_at_size(&handle, &dimensions, width, height, dpi)
+                render_to_pixbuf_at_size(
+                    &handle,
+                    document_width,
+                    document_height,
+                    desired_width,
+                    desired_height,
+                    dpi,
+                )
             })
             .and_then(|pixbuf| Ok(pixbuf.to_glib_full()))
             .unwrap_or_else(|e| {
