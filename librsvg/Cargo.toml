@@ -14,6 +14,7 @@ crate-type = [ "staticlib" ]
 bitflags = "1.0"
 cairo-rs = { version="0.8.0", features=["v1_16"] }
 cairo-sys-rs = "0.9.0"
+cast = "0.2.3"
 gdk-pixbuf = "0.8.0"
 gdk-pixbuf-sys = "0.9.0"
 glib = "0.9.0"

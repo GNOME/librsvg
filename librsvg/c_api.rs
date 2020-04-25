@@ -8,6 +8,7 @@ use std::str;
 use std::sync::Once;
 use std::{f64, i32};
 
+use cast;
 use gdk_pixbuf::Pixbuf;
 use glib::error::ErrorDomain;
 use url::Url;
@@ -463,6 +464,10 @@ impl ObjectImpl for CHandle {
     }
 }
 
+fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
+    cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+}
+
 impl CHandle {
     fn set_base_url(&self, url: &str) {
         let state = self.load_state.borrow();
@@ -700,9 +705,12 @@ impl CHandle {
         let res = handle
             .get_geometry_sub(id, inner.dpi, inner.is_testing)
             .and_then(|(ink_r, _)| {
-                let width = ink_r.width().round() as libc::c_int;
-                let height = ink_r.height().round() as libc::c_int;
+                let width = checked_i32(ink_r.width().round())?;
+                let height = checked_i32(ink_r.height().round())?;
 
+                Ok((ink_r, width, height))
+            })
+            .and_then(|(ink_r, width, height)| {
                 let (w, h) = inner.size_callback.call(width, height);
 
                 Ok(RsvgDimensionData {
@@ -729,14 +737,17 @@ impl CHandle {
         handle
             .get_geometry_sub(id, inner.dpi, inner.is_testing)
             .and_then(|(ink_r, _)| {
-                let width = ink_r.width().round() as libc::c_int;
-                let height = ink_r.height().round() as libc::c_int;
+                let width = checked_i32(ink_r.width().round())?;
+                let height = checked_i32(ink_r.height().round())?;
 
+                Ok((ink_r, width, height))
+            })
+            .and_then(|(ink_r, width, height)| {
                 inner.size_callback.call(width, height);
 
                 Ok(RsvgPositionData {
-                    x: ink_r.x0 as libc::c_int,
-                    y: ink_r.y0 as libc::c_int,
+                    x: checked_i32(ink_r.x0)?,
+                    y: checked_i32(ink_r.y0)?,
                 })
             })
             .map_err(warn_on_invalid_id)
