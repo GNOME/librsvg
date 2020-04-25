@@ -189,14 +189,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                     }
 
                     expanded_name!("", "systemLanguage") if cond => {
-                        // In reality this could be computed only once, at the beginning
-                        // of loading... maybe if we end up having a LoadContext again.
-                        //
-                        // (This call has a lot of memory churn internally with many
-                        // short-lived allocations.)
-                        let locale = locale_from_environment();
-
-                        cond = SystemLanguage::from_attribute(value, &locale)
+                        cond = SystemLanguage::from_attribute(value, &LOCALE)
                             .map(|SystemLanguage(res)| res)?;
                     }
 
@@ -840,9 +833,11 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
 /// English and German).  This function converts the output of
 /// `g_get_language_names()` into a `Locale` with appropriate
 /// fallbacks.
-fn locale_from_environment() -> Locale {
+static LOCALE: Lazy<Locale> = Lazy::new(|| {
     let mut locale = Locale::invariant();
 
+    // This call has a lot of memory churn internally with many
+    // short-lived allocations, so we do this only once.
     for name in glib::get_language_names() {
         if let Ok(range) = LanguageRange::from_unix(&name) {
             locale.add(&range);
@@ -850,7 +845,7 @@ fn locale_from_environment() -> Locale {
     }
 
     locale
-}
+});
 
 #[cfg(ignore)]
 mod sizes {
