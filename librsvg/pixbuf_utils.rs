@@ -97,8 +97,8 @@ struct SizeMode {
     height: i32,
 }
 
-fn get_final_size(in_width: i32, in_height: i32, size_mode: &SizeMode) -> (i32, i32) {
-    if in_width == 0 || in_height == 0 {
+fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (i32, i32) {
+    if in_width == 0.0 || in_height == 0.0 {
         return (0, 0);
     }
 
@@ -107,13 +107,13 @@ fn get_final_size(in_width: i32, in_height: i32, size_mode: &SizeMode) -> (i32, 
 
     match size_mode.kind {
         SizeKind::Zoom => {
-            out_width = (size_mode.x_zoom * f64::from(in_width) + 0.5).floor() as i32;
-            out_height = (size_mode.y_zoom * f64::from(in_height) + 0.5).floor() as i32;
+            out_width = (size_mode.x_zoom * in_width + 0.5).floor() as i32;
+            out_height = (size_mode.y_zoom * in_height + 0.5).floor() as i32;
         }
 
         SizeKind::ZoomMax => {
-            out_width = (size_mode.x_zoom * f64::from(in_width) + 0.5).floor() as i32;
-            out_height = (size_mode.y_zoom * f64::from(in_height) + 0.5).floor() as i32;
+            out_width = (size_mode.x_zoom * in_width + 0.5).floor() as i32;
+            out_height = (size_mode.y_zoom * in_height + 0.5).floor() as i32;
 
             if out_width > size_mode.width || out_height > size_mode.height {
                 let zoom_x = f64::from(size_mode.width) / f64::from(out_width);
@@ -126,26 +126,26 @@ fn get_final_size(in_width: i32, in_height: i32, size_mode: &SizeMode) -> (i32, 
         }
 
         SizeKind::WidthHeightMax => {
-            let zoom_x = f64::from(size_mode.width) / f64::from(in_width);
-            let zoom_y = f64::from(size_mode.height) / f64::from(in_height);
+            let zoom_x = f64::from(size_mode.width) / in_width;
+            let zoom_y = f64::from(size_mode.height) / in_height;
 
             let zoom = zoom_x.min(zoom_y);
 
-            out_width = (zoom * f64::from(in_width) + 0.5) as i32;
-            out_height = (zoom * f64::from(in_height) + 0.5) as i32;
+            out_width = (zoom * in_width + 0.5) as i32;
+            out_height = (zoom * in_height + 0.5) as i32;
         }
 
         SizeKind::WidthHeight => {
             if size_mode.width != -1 {
                 out_width = size_mode.width;
             } else {
-                out_width = in_width;
+                out_width = in_width as i32;
             }
 
             if size_mode.height != -1 {
                 out_height = size_mode.height;
             } else {
-                out_height = in_height;
+                out_height = in_height as i32;
             }
         }
     }
@@ -155,13 +155,13 @@ fn get_final_size(in_width: i32, in_height: i32, size_mode: &SizeMode) -> (i32, 
 
 fn render_to_pixbuf_at_size(
     handle: &Handle,
-    document_width: i32,
-    document_height: i32,
+    document_width: f64,
+    document_height: f64,
     desired_width: i32,
     desired_height: i32,
     dpi: Dpi,
 ) -> Result<Pixbuf, RenderingError> {
-    if desired_width == 0 || desired_height == 0 || document_width == 0 || document_height == 0 {
+    if desired_width == 0 || desired_height == 0 || document_width == 0.0 || document_height == 0.0 {
         return empty_pixbuf();
     }
 
@@ -171,15 +171,15 @@ fn render_to_pixbuf_at_size(
     {
         let cr = cairo::Context::new(&surface);
         cr.scale(
-            f64::from(desired_width) / f64::from(document_width),
-            f64::from(desired_height) / f64::from(document_height),
+            f64::from(desired_width) / document_width,
+            f64::from(desired_height) / document_height,
         );
 
         let viewport = cairo::Rectangle {
             x: 0.0,
             y: 0.0,
-            width: f64::from(document_width),
-            height: f64::from(document_height),
+            width: document_width,
+            height: document_height,
         };
 
         // We do it with a cr transform so we can scale non-proportionally.
@@ -242,10 +242,7 @@ fn pixbuf_from_file_with_size_mode(
         handle
             .get_geometry_sub(None, dpi, false)
             .and_then(|(ink_r, _)| {
-                let (document_width, document_height) = (
-                    ink_r.width().round() as libc::c_int,
-                    ink_r.height().round() as libc::c_int,
-                );
+                let (document_width, document_height) = (ink_r.width(), ink_r.height());
                 let (desired_width, desired_height) =
                     get_final_size(document_width, document_height, size_mode);
 
