@@ -722,8 +722,24 @@ impl CHandle {
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
+
+        if id.is_none() {
+            return Ok(RsvgPositionData { x: 0, y: 0 });
+        }
+
         handle
-            .get_position_sub(id, inner.dpi, &inner.size_callback, inner.is_testing)
+            .get_geometry_sub(id, inner.dpi, inner.is_testing)
+            .and_then(|(ink_r, _)| {
+                let width = ink_r.width().round() as libc::c_int;
+                let height = ink_r.height().round() as libc::c_int;
+
+                inner.size_callback.call(width, height);
+
+                Ok(RsvgPositionData {
+                    x: ink_r.x0 as libc::c_int,
+                    y: ink_r.y0 as libc::c_int,
+                })
+            })
             .map_err(warn_on_invalid_id)
     }
 
