@@ -681,9 +681,41 @@ impl CHandle {
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
-        handle
-            .get_dimensions_sub(id, inner.dpi, &inner.size_callback, inner.is_testing)
-            .map_err(warn_on_invalid_id)
+
+        // This function is probably called from the cairo_render functions,
+        // or is being erroneously called within the size_func.
+        // To prevent an infinite loop we are saving the state, and
+        // returning a meaningless size.
+        if inner.size_callback.get_in_loop() {
+            return Ok(RsvgDimensionData {
+                width: 1,
+                height: 1,
+                em: 1.0,
+                ex: 1.0,
+            });
+        }
+
+        inner.size_callback.start_loop();
+
+        let res = handle
+            .get_geometry_sub(id, inner.dpi, inner.is_testing)
+            .and_then(|(ink_r, _)| {
+                let width = ink_r.width().round() as libc::c_int;
+                let height = ink_r.height().round() as libc::c_int;
+
+                let (w, h) = inner.size_callback.call(width, height);
+
+                Ok(RsvgDimensionData {
+                    width: w,
+                    height: h,
+                    em: ink_r.width(),
+                    ex: ink_r.height(),
+                })
+            });
+
+        inner.size_callback.end_loop();
+
+        res.map_err(warn_on_invalid_id)
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
@@ -727,18 +759,12 @@ impl CHandle {
             width: f64::from(dimensions.width),
             height: f64::from(dimensions.height),
         };
-        
+
         self.render_layer(cr, id, &viewport)
     }
 
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-
-        let dpi = inner.dpi;
-        let is_testing = inner.is_testing;
-
-        let dimensions = handle.get_dimensions_sub(None, dpi, &inner.size_callback, is_testing)?;
+        let dimensions = self.get_dimensions_sub(None)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return empty_pixbuf();
