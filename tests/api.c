@@ -253,6 +253,18 @@ test_pixbuf (gconstpointer data) {
 }
 
 static void
+pixbuf_overflow (void)
+{
+    char *filename = get_test_filename ("example.svg");
+    GError *error = NULL;
+
+    g_assert (!rsvg_pixbuf_from_file_at_zoom (filename, 1000000.0, 1000000.0, &error));
+    g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
+    g_error_free (error);
+    g_free (filename);
+}
+
+static void
 noops (void)
 {
     /* Just to test that these functions are present in the binary, I guess */
@@ -1396,6 +1408,8 @@ main (int argc, char **argv)
     for (i = 0; i < G_N_ELEMENTS (pixbuf_tests); i++) {
         g_test_add_data_func (pixbuf_tests[i].test_name, &pixbuf_tests[i], test_pixbuf);
     }
+
+    g_test_add_func ("/api/pixbuf_overflow", pixbuf_overflow);
 
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
     g_test_add_func ("/api/flags_registration", flags_registration);
