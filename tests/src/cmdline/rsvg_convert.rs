@@ -678,6 +678,15 @@ fn keep_aspect_ratio_short_option() {
 }
 
 #[test]
+fn overflowing_size_is_detected() {
+    let input = Path::new("fixtures/render-crash/591-vbox-overflow.svg");
+    RsvgConvert::new_with_input(input)
+        .assert()
+        .failure()
+        .stderr(contains("Could not get dimensions").trim());
+}
+
+#[test]
 fn keep_image_data_option() {
     RsvgConvert::accepts_option("--keep-image-data");
 }
