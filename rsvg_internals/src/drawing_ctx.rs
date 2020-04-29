@@ -442,14 +442,14 @@ impl DrawingCtx {
             );
             mask_cr.clip();
 
-            self.push_cairo_context(mask_cr);
-
             let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                self.get_cairo_context().transform(bbtransform.into());
+                mask_cr.transform(bbtransform.into());
                 self.push_view_box(1.0, 1.0)
             } else {
                 self.get_view_params()
             };
+
+            self.push_cairo_context(mask_cr);
 
             let res = self.with_discrete_layer(
                 mask_node,
