@@ -61,7 +61,7 @@ pub use crate::length::{Length, LengthUnit, RsvgLength};
 
 pub use crate::parsers::Parse;
 
-pub use crate::rect::IRect;
+pub use crate::rect::{IRect, Rect};
 
 pub use crate::structure::IntrinsicDimensions;
 

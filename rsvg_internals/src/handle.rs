@@ -14,7 +14,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::rect::{IRect, Rect};
+use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
 use url::Url;
 
@@ -206,77 +206,6 @@ impl Handle {
         }
     }
 
-    pub fn get_dimensions(
-        &self,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<RsvgDimensionData, RenderingError> {
-        // This function is probably called from the cairo_render functions,
-        // or is being erroneously called within the size_func.
-        // To prevent an infinite loop we are saving the state, and
-        // returning a meaningless size.
-        if size_callback.get_in_loop() {
-            return Ok(RsvgDimensionData {
-                width: 1,
-                height: 1,
-                em: 1.0,
-                ex: 1.0,
-            });
-        }
-
-        size_callback.start_loop();
-
-        let res = self.get_dimensions_sub(None, dpi, size_callback, is_testing);
-
-        size_callback.end_loop();
-
-        res
-    }
-
-    pub fn get_dimensions_sub(
-        &self,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<RsvgDimensionData, RenderingError> {
-        let (ink_r, _) = self.get_geometry_sub(id, dpi, is_testing)?;
-
-        let (w, h) = size_callback.call(ink_r.width as libc::c_int, ink_r.height as libc::c_int);
-
-        Ok(RsvgDimensionData {
-            width: w,
-            height: h,
-            em: ink_r.width,
-            ex: ink_r.height,
-        })
-    }
-
-    pub fn get_position_sub(
-        &self,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<RsvgPositionData, RenderingError> {
-        if id.is_none() {
-            return Ok(RsvgPositionData { x: 0, y: 0 });
-        }
-
-        let (ink_r, _) = self.get_geometry_sub(id, dpi, is_testing)?;
-
-        let width = ink_r.width as libc::c_int;
-        let height = ink_r.height as libc::c_int;
-
-        size_callback.call(width, height);
-
-        Ok(RsvgPositionData {
-            x: ink_r.x as libc::c_int,
-            y: ink_r.y as libc::c_int,
-        })
-    }
-
     /// Returns (ink_rect, logical_rect)
     fn get_node_geometry_with_viewport(
         &self,
@@ -284,7 +213,7 @@ impl Handle {
         viewport: Rect,
         dpi: Dpi,
         is_testing: bool,
-    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+    ) -> Result<(Rect, Rect), RenderingError> {
         let root = self.document.root();
 
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
@@ -301,19 +230,16 @@ impl Handle {
         let ink_rect = bbox.ink_rect.unwrap_or_default();
         let logical_rect = bbox.rect.unwrap_or_default();
 
-        Ok((
-            cairo::Rectangle::from(ink_rect),
-            cairo::Rectangle::from(logical_rect),
-        ))
+        Ok((ink_rect, logical_rect))
     }
 
     /// Returns (ink_rect, logical_rect)
-    fn get_geometry_sub(
+    pub fn get_geometry_sub(
         &self,
         id: Option<&str>,
         dpi: Dpi,
         is_testing: bool,
-    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+    ) -> Result<(Rect, Rect), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
         let root = self.document.root();
@@ -326,9 +252,8 @@ impl Handle {
             match *node.borrow_element() {
                 Element::Svg(ref svg) => {
                     if let Some((w, h)) = svg.get_size(&values, dpi) {
-                        let rect = IRect::from_size(w, h);
-
-                        return Ok((cairo::Rectangle::from(rect), cairo::Rectangle::from(rect)));
+                        let rect = Rect::from_size(w, h);
+                        return Ok((rect, rect));
                     }
                 }
                 _ => (),
@@ -355,7 +280,14 @@ impl Handle {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
         let viewport = Rect::from(*viewport);
-        self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)
+
+        let (ink_rect, logical_rect) =
+            self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)?;
+
+        Ok((
+            cairo::Rectangle::from(ink_rect),
+            cairo::Rectangle::from(logical_rect),
+        ))
     }
 
     fn lookup_node(&self, id: &str) -> Result<Node, DefsLookupErrorKind> {
@@ -389,32 +321,6 @@ impl Handle {
                 }
             }
         }
-    }
-
-    pub fn render_cairo_sub(
-        &self,
-        cr: &cairo::Context,
-        id: Option<&str>,
-        dpi: Dpi,
-        size_callback: &SizeCallback,
-        is_testing: bool,
-    ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
-
-        let dimensions = self.get_dimensions(dpi, size_callback, is_testing)?;
-        if dimensions.width == 0 || dimensions.height == 0 {
-            // nothing to render
-            return Ok(());
-        }
-
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: f64::from(dimensions.width),
-            height: f64::from(dimensions.height),
-        };
-
-        self.render_layer(cr, id, &viewport, dpi, is_testing)
     }
 
     pub fn render_document(

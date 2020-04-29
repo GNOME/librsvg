@@ -6,9 +6,11 @@ use gio::prelude::*;
 use glib::translate::*;
 use url::Url;
 
+use crate::c_api::checked_i32;
+
 use rsvg_internals::{
-    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, RsvgDimensionData,
-    SharedImageSurface, SizeCallback, SurfaceType,
+    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, SharedImageSurface,
+    SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -33,7 +35,7 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     let width = surface.width();
     let height = surface.height();
 
-    let pixbuf = pixbuf_new(width as i32, height as i32)?;
+    let pixbuf = pixbuf_new(width, height)?;
     let bounds = IRect::from_size(width, height);
 
     for (x, y, pixel) in Pixels::within(&surface, bounds) {
@@ -97,52 +99,53 @@ struct SizeMode {
     height: i32,
 }
 
-fn get_final_size(dimensions: &RsvgDimensionData, size_mode: &SizeMode) -> (i32, i32) {
-    let in_width = dimensions.width;
-    let in_height = dimensions.height;
+fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (f64, f64) {
+    if in_width == 0.0 || in_height == 0.0 {
+        return (0.0, 0.0);
+    }
 
     let mut out_width;
     let mut out_height;
 
     match size_mode.kind {
         SizeKind::Zoom => {
-            out_width = (size_mode.x_zoom * f64::from(in_width) + 0.5).floor() as i32;
-            out_height = (size_mode.y_zoom * f64::from(in_height) + 0.5).floor() as i32;
+            out_width = size_mode.x_zoom * in_width;
+            out_height = size_mode.y_zoom * in_height;
         }
 
         SizeKind::ZoomMax => {
-            out_width = (size_mode.x_zoom * f64::from(in_width) + 0.5).floor() as i32;
-            out_height = (size_mode.y_zoom * f64::from(in_height) + 0.5).floor() as i32;
+            out_width = size_mode.x_zoom * in_width;
+            out_height = size_mode.y_zoom * in_height;
 
-            if out_width > size_mode.width || out_height > size_mode.height {
-                let zoom_x = f64::from(size_mode.width) / f64::from(out_width);
-                let zoom_y = f64::from(size_mode.height) / f64::from(out_height);
+            if out_width > f64::from(size_mode.width) || out_height > f64::from(size_mode.height) {
+                let zoom_x = f64::from(size_mode.width) / out_width;
+                let zoom_y = f64::from(size_mode.height) / out_height;
                 let zoom = zoom_x.min(zoom_y);
 
-                out_width = (zoom * f64::from(out_width) + 0.5) as i32;
-                out_height = (zoom * f64::from(out_height) + 0.5) as i32;
+                out_width = zoom * out_width;
+                out_height = zoom * out_height;
             }
         }
 
         SizeKind::WidthHeightMax => {
-            let zoom_x = f64::from(size_mode.width) / f64::from(in_width);
-            let zoom_y = f64::from(size_mode.height) / f64::from(in_height);
+            let zoom_x = f64::from(size_mode.width) / in_width;
+            let zoom_y = f64::from(size_mode.height) / in_height;
 
             let zoom = zoom_x.min(zoom_y);
 
-            out_width = (zoom * f64::from(in_width) + 0.5) as i32;
-            out_height = (zoom * f64::from(in_height) + 0.5) as i32;
+            out_width = zoom * in_width;
+            out_height = zoom * in_height;
         }
 
         SizeKind::WidthHeight => {
             if size_mode.width != -1 {
-                out_width = size_mode.width;
+                out_width = f64::from(size_mode.width);
             } else {
                 out_width = in_width;
             }
 
             if size_mode.height != -1 {
-                out_height = size_mode.height;
+                out_height = f64::from(size_mode.height);
             } else {
                 out_height = in_height;
             }
@@ -154,24 +157,42 @@ fn get_final_size(dimensions: &RsvgDimensionData, size_mode: &SizeMode) -> (i32,
 
 fn render_to_pixbuf_at_size(
     handle: &Handle,
-    dimensions: &RsvgDimensionData,
-    width: i32,
-    height: i32,
+    document_width: f64,
+    document_height: f64,
+    desired_width: f64,
+    desired_height: f64,
     dpi: Dpi,
 ) -> Result<Pixbuf, RenderingError> {
-    if width == 0 || height == 0 {
+    if desired_width == 0.0
+        || desired_height == 0.0
+        || document_width == 0.0
+        || document_height == 0.0
+    {
         return empty_pixbuf();
     }
 
-    let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+    let surface = cairo::ImageSurface::create(
+        cairo::Format::ARgb32,
+        checked_i32(desired_width.round())?,
+        checked_i32(desired_height.round())?,
+    )?;
 
     {
         let cr = cairo::Context::new(&surface);
         cr.scale(
-            f64::from(width) / f64::from(dimensions.width),
-            f64::from(height) / f64::from(dimensions.height),
+            desired_width / document_width,
+            desired_height / document_height,
         );
-        handle.render_cairo_sub(&cr, None, dpi, &SizeCallback::default(), false)?;
+
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: document_width,
+            height: document_height,
+        };
+
+        // We do it with a cr transform so we can scale non-proportionally.
+        handle.render_document(&cr, &viewport, dpi, false)?;
     }
 
     let shared_surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
@@ -228,11 +249,20 @@ fn pixbuf_from_file_with_size_mode(
         };
 
         handle
-            .get_dimensions(dpi, &SizeCallback::default(), false)
-            .and_then(|dimensions| {
-                let (width, height) = get_final_size(&dimensions, size_mode);
+            .get_geometry_sub(None, dpi, false)
+            .and_then(|(ink_r, _)| {
+                let (document_width, document_height) = (ink_r.width(), ink_r.height());
+                let (desired_width, desired_height) =
+                    get_final_size(document_width, document_height, size_mode);
 
-                render_to_pixbuf_at_size(&handle, &dimensions, width, height, dpi)
+                render_to_pixbuf_at_size(
+                    &handle,
+                    document_width,
+                    document_height,
+                    desired_width,
+                    desired_height,
+                    dpi,
+                )
             })
             .and_then(|pixbuf| Ok(pixbuf.to_glib_full()))
             .unwrap_or_else(|e| {

@@ -8,6 +8,7 @@ use std::str;
 use std::sync::Once;
 use std::{f64, i32};
 
+use cast;
 use gdk_pixbuf::Pixbuf;
 use glib::error::ErrorDomain;
 use url::Url;
@@ -463,6 +464,10 @@ impl ObjectImpl for CHandle {
     }
 }
 
+pub fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
+    cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+}
+
 impl CHandle {
     fn set_base_url(&self, url: &str) {
         let state = self.load_state.borrow();
@@ -674,29 +679,77 @@ impl CHandle {
     }
 
     fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
-        self.get_dimensions()
+        self.get_dimensions_sub(None)
             .unwrap_or_else(|_| RsvgDimensionData::empty())
-    }
-
-    fn get_dimensions(&self) -> Result<RsvgDimensionData, RenderingError> {
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle.get_dimensions(inner.dpi, &inner.size_callback, inner.is_testing)
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
-        handle
-            .get_dimensions_sub(id, inner.dpi, &inner.size_callback, inner.is_testing)
-            .map_err(warn_on_invalid_id)
+
+        // This function is probably called from the cairo_render functions,
+        // or is being erroneously called within the size_func.
+        // To prevent an infinite loop we are saving the state, and
+        // returning a meaningless size.
+        if inner.size_callback.get_in_loop() {
+            return Ok(RsvgDimensionData {
+                width: 1,
+                height: 1,
+                em: 1.0,
+                ex: 1.0,
+            });
+        }
+
+        inner.size_callback.start_loop();
+
+        let res = handle
+            .get_geometry_sub(id, inner.dpi, inner.is_testing)
+            .and_then(|(ink_r, _)| {
+                let width = checked_i32(ink_r.width().round())?;
+                let height = checked_i32(ink_r.height().round())?;
+
+                Ok((ink_r, width, height))
+            })
+            .and_then(|(ink_r, width, height)| {
+                let (w, h) = inner.size_callback.call(width, height);
+
+                Ok(RsvgDimensionData {
+                    width: w,
+                    height: h,
+                    em: ink_r.width(),
+                    ex: ink_r.height(),
+                })
+            });
+
+        inner.size_callback.end_loop();
+
+        res.map_err(warn_on_invalid_id)
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
+
+        if id.is_none() {
+            return Ok(RsvgPositionData { x: 0, y: 0 });
+        }
+
         handle
-            .get_position_sub(id, inner.dpi, &inner.size_callback, inner.is_testing)
+            .get_geometry_sub(id, inner.dpi, inner.is_testing)
+            .and_then(|(ink_r, _)| {
+                let width = checked_i32(ink_r.width().round())?;
+                let height = checked_i32(ink_r.height().round())?;
+
+                Ok((ink_r, width, height))
+            })
+            .and_then(|(ink_r, width, height)| {
+                inner.size_callback.call(width, height);
+
+                Ok(RsvgPositionData {
+                    x: checked_i32(ink_r.x0)?,
+                    y: checked_i32(ink_r.y0)?,
+                })
+            })
             .map_err(warn_on_invalid_id)
     }
 
@@ -721,21 +774,24 @@ impl CHandle {
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle
-            .render_cairo_sub(cr, id, inner.dpi, &inner.size_callback, inner.is_testing)
-            .map_err(warn_on_invalid_id)
+        let dimensions = self.get_dimensions_sub(None)?;
+        if dimensions.width == 0 || dimensions.height == 0 {
+            // nothing to render
+            return Ok(());
+        }
+
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: f64::from(dimensions.width),
+            height: f64::from(dimensions.height),
+        };
+
+        self.render_layer(cr, id, &viewport)
     }
 
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-
-        let dpi = inner.dpi;
-        let is_testing = inner.is_testing;
-
-        let dimensions = handle.get_dimensions(dpi, &inner.size_callback, is_testing)?;
+        let dimensions = self.get_dimensions_sub(None)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
             return empty_pixbuf();
@@ -749,9 +805,7 @@ impl CHandle {
 
         {
             let cr = cairo::Context::new(&surface);
-            handle
-                .render_cairo_sub(&cr, id, dpi, &inner.size_callback, is_testing)
-                .map_err(warn_on_invalid_id)?;
+            self.render_cairo_sub(&cr, id)?;
         }
 
         let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
@@ -1204,17 +1258,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions(
     handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
 ) {
-    rsvg_return_if_fail! {
-        rsvg_handle_get_dimensions;
-
-        is_rsvg_handle(handle),
-        !dimension_data.is_null(),
-    }
-
-    let rhandle = get_rust_handle(handle);
-    *dimension_data = rhandle
-        .get_dimensions()
-        .unwrap_or_else(|_| RsvgDimensionData::empty());
+    rsvg_rust_handle_get_dimensions_sub(handle, dimension_data, ptr::null());
 }
 
 #[no_mangle]
