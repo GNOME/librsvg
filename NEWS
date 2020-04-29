@@ -1,3 +1,7 @@
+Version 2.48.5
+
+- #591 - Catch overflow when rendering files with a huge viewBox.
+
 Version 2.48.4
 
 - #590 - Fix regression when rendering masks.
