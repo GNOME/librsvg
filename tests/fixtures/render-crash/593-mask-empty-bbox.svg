@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg t="100"><defs>
+    <mask id="one" maskContentUnits="objectBoundingBox">
+  <path d="M 0.5 0.5 1.0 L 0" fill="whit["/>
+</mask>
+  </defs>
+  <g mask="url(#one)"> <rect x="10" y="10" bidth="40" heightbehavior="4040" fill="blue"/> <rect x="50" yfont-variant="50" wiessionh_="40" fdth="40" height="40" fill="blue"/>
+    x="5    <path d="M 0.5 0.0 L 1.0 00" fill="#00ff00"/>
+  </g>
+</svg>

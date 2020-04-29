@@ -409,13 +409,13 @@ impl DrawingCtx {
             mask_cr.set_matrix(mask_transform.into());
 
             let bbtransform = Transform::new_unchecked(
-		bbox_rect.width(),
-		0.0,
-		0.0,
-		bbox_rect.height(),
-		bbox_rect.x0,
-		bbox_rect.y0
-	    );
+                bbox_rect.width(),
+                0.0,
+                0.0,
+                bbox_rect.height(),
+                bbox_rect.x0,
+                bbox_rect.y0,
+            );
 
             let clip_rect = if mask_units == CoordUnits::ObjectBoundingBox {
                 bbtransform.transform_rect(&mask_rect)
@@ -432,6 +432,10 @@ impl DrawingCtx {
             mask_cr.clip();
 
             let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
+                if bbox_rect.is_empty() {
+                    return Ok(None);
+                }
+                assert!(bbtransform.is_invertible());
                 mask_cr.transform(bbtransform.into());
                 self.push_view_box(1.0, 1.0)
             } else {
