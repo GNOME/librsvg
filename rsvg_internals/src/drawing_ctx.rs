@@ -395,8 +395,6 @@ impl DrawingCtx {
         }
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
-        let (bb_x, bb_y) = (bbox_rect.x0, bbox_rect.y0);
-        let (bb_w, bb_h) = bbox_rect.size();
 
         let cascaded = CascadedValues::new_from_node(mask_node);
         let values = cascaded.get();
@@ -426,7 +424,14 @@ impl DrawingCtx {
             let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(mask_transform.into());
 
-            let bbtransform = Transform::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
+            let bbtransform = Transform::new(
+		bbox_rect.width(),
+		0.0,
+		0.0,
+		bbox_rect.height(),
+		bbox_rect.x0,
+		bbox_rect.y0
+	    );
 
             let clip_rect = if mask_units == CoordUnits::ObjectBoundingBox {
                 bbtransform.transform_rect(&mask_rect)
