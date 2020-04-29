@@ -61,6 +61,14 @@ impl BoundingBox {
     pub fn clip(&mut self, src: &BoundingBox) {
         self.combine(src, true);
     }
+
+    pub fn rect_is_empty(&self) -> bool {
+        self.rect.map(|r| r.is_empty()).unwrap_or(true)
+    }
+
+    pub fn ink_rect_is_empty(&self) -> bool {
+        self.ink_rect.map(|r| r.is_empty()).unwrap_or(true)
+    }
 }
 
 fn combine_rects(
