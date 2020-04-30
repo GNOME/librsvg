@@ -87,7 +87,6 @@ impl FeImage {
             .lookup_image(url)
             .map_err(|_| FilterError::InvalidInput)?;
 
-        // TODO: this goes through a f64->i32->f64 conversion.
         let rect = self.aspect.compute(
             &ViewBox(Rect::from_size(
                 f64::from(image.width()),
