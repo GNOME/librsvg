@@ -115,7 +115,7 @@ impl FilterContext {
 
         let affine = match filter.get_filter_units() {
             CoordUnits::UserSpaceOnUse => draw_transform,
-            CoordUnits::ObjectBoundingBox => Transform::new(
+            CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
                 0.0,
@@ -128,7 +128,7 @@ impl FilterContext {
 
         let paffine = match filter.get_primitive_units() {
             CoordUnits::UserSpaceOnUse => draw_transform,
-            CoordUnits::ObjectBoundingBox => Transform::new(
+            CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
                 0.0,

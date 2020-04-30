@@ -340,44 +340,27 @@ impl DrawingCtx {
         let node = clip_node.as_ref().unwrap();
         let units = borrow_element_as!(node, ClipPath).get_units();
 
-        if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
-            // The node being clipped is empty / doesn't have a
-            // bounding box, so there's nothing to clip!
-            return Ok(());
-        }
+        if let Ok(transform) = bbox.rect_to_transform(units) {
+            let cascaded = CascadedValues::new_from_node(node);
 
-        let cascaded = CascadedValues::new_from_node(node);
+            self.with_saved_transform(Some(transform), &mut |dc| {
+                let cr = dc.get_cairo_context();
 
-        let transform = if units == CoordUnits::ObjectBoundingBox {
-            let bbox_rect = bbox.rect.as_ref().unwrap();
+                // here we don't push a layer because we are clipping
+                let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
 
-            Some(Transform::new(
-                bbox_rect.width(),
-                0.0,
-                0.0,
-                bbox_rect.height(),
-                bbox_rect.x0,
-                bbox_rect.y0,
-            ))
+                cr.clip();
+
+                res
+            })
+            .and_then(|_bbox|
+			  // Clipping paths do not contribute to bounding boxes (they should,
+			  // but we need Real Computational Geometry(tm), so ignore the
+			  // bbox from the clip path.
+			  Ok(()))
         } else {
-            None
-        };
-
-        self.with_saved_transform(transform, &mut |dc| {
-            let cr = dc.get_cairo_context();
-
-            // here we don't push a layer because we are clipping
-            let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
-
-            cr.clip();
-
-            res
-        })
-        .and_then(|_bbox|
-            // Clipping paths do not contribute to bounding boxes (they should,
-            // but we need Real Computational Geometry(tm), so ignore the
-            // bbox from the clip path.
-            Ok(()))
+            Ok(())
+        }
     }
 
     fn generate_cairo_mask(
@@ -395,8 +378,6 @@ impl DrawingCtx {
         }
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
-        let (bb_x, bb_y) = (bbox_rect.x0, bbox_rect.y0);
-        let (bb_w, bb_h) = bbox_rect.size();
 
         let cascaded = CascadedValues::new_from_node(mask_node);
         let values = cascaded.get();
@@ -426,7 +407,14 @@ impl DrawingCtx {
             let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(mask_transform.into());
 
-            let bbtransform = Transform::new(bb_w, 0.0, 0.0, bb_h, bb_x, bb_y);
+            let bbtransform = Transform::new_unchecked(
+                bbox_rect.width(),
+                0.0,
+                0.0,
+                bbox_rect.height(),
+                bbox_rect.x0,
+                bbox_rect.y0,
+            );
 
             let clip_rect = if mask_units == CoordUnits::ObjectBoundingBox {
                 bbtransform.transform_rect(&mask_rect)
@@ -442,14 +430,18 @@ impl DrawingCtx {
             );
             mask_cr.clip();
 
-            self.push_cairo_context(mask_cr);
-
             let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                self.get_cairo_context().transform(bbtransform.into());
+                if bbox_rect.is_empty() {
+                    return Ok(None);
+                }
+                assert!(bbtransform.is_invertible());
+                mask_cr.transform(bbtransform.into());
                 self.push_view_box(1.0, 1.0)
             } else {
                 self.get_view_params()
             };
+
+            self.push_cairo_context(mask_cr);
 
             let res = self.with_discrete_layer(
                 mask_node,
