@@ -2,6 +2,8 @@ Version 2.48.5
 
 - #591 - Catch overflow when rendering files with a huge viewBox.
 
+- #593 - Don't panic with an empty objectBoundingBox for a mask.
+
 Version 2.48.4
 
 - #590 - Fix regression when rendering masks.
