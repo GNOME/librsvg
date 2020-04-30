@@ -348,7 +348,7 @@ impl DrawingCtx {
             let transform = if units == CoordUnits::ObjectBoundingBox {
                 let bbox_rect = bbox.rect.as_ref().unwrap();
 
-                Some(Transform::new(
+                Some(Transform::new_unchecked(
                     bbox_rect.width(),
                     0.0,
                     0.0,
@@ -424,7 +424,7 @@ impl DrawingCtx {
             let mask_cr = cairo::Context::new(&mask_content_surface);
             mask_cr.set_matrix(mask_transform.into());
 
-            let bbtransform = Transform::new(
+            let bbtransform = Transform::new_unchecked(
 		bbox_rect.width(),
 		0.0,
 		0.0,
