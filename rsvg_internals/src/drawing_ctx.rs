@@ -357,7 +357,7 @@ impl DrawingCtx {
                     bbox_rect.y0,
                 ))
             } else {
-                None
+                Transform::identity()
             };
 
             self.with_saved_transform(transform, &mut |dc| {
