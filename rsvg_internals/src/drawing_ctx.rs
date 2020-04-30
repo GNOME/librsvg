@@ -340,44 +340,27 @@ impl DrawingCtx {
         let node = clip_node.as_ref().unwrap();
         let units = borrow_element_as!(node, ClipPath).get_units();
 
-        if units == CoordUnits::ObjectBoundingBox && bbox.rect.is_none() {
-            // The node being clipped is empty / doesn't have a
-            // bounding box, so there's nothing to clip!
-            return Ok(());
-        }
+        if let Ok(transform) = bbox.rect_to_transform(units) {
+            let cascaded = CascadedValues::new_from_node(node);
 
-        let cascaded = CascadedValues::new_from_node(node);
+            self.with_saved_transform(Some(transform), &mut |dc| {
+                let cr = dc.get_cairo_context();
 
-        let transform = if units == CoordUnits::ObjectBoundingBox {
-            let bbox_rect = bbox.rect.as_ref().unwrap();
+                // here we don't push a layer because we are clipping
+                let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
 
-            Transform::new_unchecked(
-                bbox_rect.width(),
-                0.0,
-                0.0,
-                bbox_rect.height(),
-                bbox_rect.x0,
-                bbox_rect.y0,
-            )
+                cr.clip();
+
+                res
+            })
+            .and_then(|_bbox|
+			  // Clipping paths do not contribute to bounding boxes (they should,
+			  // but we need Real Computational Geometry(tm), so ignore the
+			  // bbox from the clip path.
+			  Ok(()))
         } else {
-            Transform::identity()
-        };
-
-        self.with_saved_transform(Some(transform), &mut |dc| {
-            let cr = dc.get_cairo_context();
-
-            // here we don't push a layer because we are clipping
-            let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
-
-            cr.clip();
-
-            res
-        })
-        .and_then(|_bbox|
-            // Clipping paths do not contribute to bounding boxes (they should,
-            // but we need Real Computational Geometry(tm), so ignore the
-            // bbox from the clip path.
-            Ok(()))
+            Ok(())
+        }
     }
 
     fn generate_cairo_mask(
