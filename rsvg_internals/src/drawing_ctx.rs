@@ -351,19 +351,19 @@ impl DrawingCtx {
         let transform = if units == CoordUnits::ObjectBoundingBox {
             let bbox_rect = bbox.rect.as_ref().unwrap();
 
-            Some(Transform::new_unchecked(
+            Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
                 0.0,
                 bbox_rect.height(),
                 bbox_rect.x0,
                 bbox_rect.y0,
-            ))
+            )
         } else {
-            None
+            Transform::identity()
         };
 
-        self.with_saved_transform(transform, &mut |dc| {
+        self.with_saved_transform(Some(transform), &mut |dc| {
             let cr = dc.get_cairo_context();
 
             // here we don't push a layer because we are clipping
