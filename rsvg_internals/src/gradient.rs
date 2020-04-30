@@ -733,35 +733,34 @@ impl AsPaintSource for Gradient {
         opacity: UnitInterval,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let params = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            if bbox.rect.map_or(true, |r| r.is_empty()) {
-                // objectBoundingBox requires a non-empty bbox, see issues #187, #373
-                return Ok(false);
-            }
+        if let Ok(transform) = bbox.rect_to_transform(self.units.0) {
+            let params = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+                draw_ctx.push_view_box(1.0, 1.0)
+            } else {
+                draw_ctx.get_view_params()
+            };
 
-            draw_ctx.push_view_box(1.0, 1.0)
+            let p = match self.variant {
+                Variant::Linear { .. } => {
+                    let g = self.variant.to_cairo_gradient(values, &params);
+                    cairo::Gradient::clone(&g)
+                }
+
+                Variant::Radial { .. } => {
+                    let g = self.variant.to_cairo_gradient(values, &params);
+                    cairo::Gradient::clone(&g)
+                }
+            };
+
+            self.set_on_cairo_pattern(&p, &transform, opacity);
+
+            let cr = draw_ctx.get_cairo_context();
+            cr.set_source(&p);
+
+            Ok(true)
         } else {
-            draw_ctx.get_view_params()
-        };
-
-        let p = match self.variant {
-            Variant::Linear { .. } => {
-                let g = self.variant.to_cairo_gradient(values, &params);
-                cairo::Gradient::clone(&g)
-            }
-
-            Variant::Radial { .. } => {
-                let g = self.variant.to_cairo_gradient(values, &params);
-                cairo::Gradient::clone(&g)
-            }
-        };
-
-        self.set_on_cairo_pattern(&p, bbox, opacity);
-
-        let cr = draw_ctx.get_cairo_context();
-        cr.set_source(&p);
-
-        Ok(true)
+            Ok(false)
+        }
     }
 }
 
@@ -769,23 +768,10 @@ impl Gradient {
     fn set_on_cairo_pattern(
         &self,
         pattern: &cairo::Gradient,
-        bbox: &BoundingBox,
+        transform: &Transform,
         opacity: UnitInterval,
     ) {
-        let transform = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            let bbox_rect = bbox.rect.unwrap();
-            Transform::new(
-                bbox_rect.width(),
-                0.0,
-                0.0,
-                bbox_rect.height(),
-                bbox_rect.x0,
-                bbox_rect.y0,
-            )
-            .pre_transform(&self.transform)
-        } else {
-            self.transform
-        };
+        let transform = transform.pre_transform(&self.transform);
 
         transform.invert().map(|m| pattern.set_matrix(m.into()));
         pattern.set_extend(cairo::Extend::from(self.spread));

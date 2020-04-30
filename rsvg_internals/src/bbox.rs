@@ -1,5 +1,6 @@
 //! Bounding boxes that know their coordinate space.
 
+use crate::coord_units::CoordUnits;
 use crate::rect::Rect;
 use crate::transform::Transform;
 
@@ -61,6 +62,44 @@ impl BoundingBox {
     pub fn clip(&mut self, src: &BoundingBox) {
         self.combine(src, true);
     }
+
+    pub fn rect_is_empty(&self) -> bool {
+        self.rect.map(|r| r.is_empty()).unwrap_or(true)
+    }
+
+    pub fn ink_rect_is_empty(&self) -> bool {
+        self.ink_rect.map(|r| r.is_empty()).unwrap_or(true)
+    }
+
+    /// Creates a transform to map to the `self.rect`.
+    ///
+    /// This depends on a `CoordUnits` parameter.  When this is
+    /// `CoordUnits::ObjectBoundingBox`, the bounding box must not be
+    /// empty, since the calling code would then not have a usable
+    /// size to work with.  In that case, if the bbox is empty, this
+    /// function returns `Err(())`.
+    ///
+    /// Usually calling code can simply ignore the action it was about
+    /// to take if this function returns an error.
+    pub fn rect_to_transform(&self, units: CoordUnits) -> Result<Transform, ()> {
+        match units {
+            CoordUnits::UserSpaceOnUse => Ok(Transform::identity()),
+            CoordUnits::ObjectBoundingBox => {
+                if self.rect_is_empty() {
+                    Err(())
+                } else {
+                    let r = self.rect.as_ref().unwrap();
+                    let t = Transform::new_unchecked(r.width(), 0.0, 0.0, r.height(), r.x0, r.y0);
+
+                    if t.is_invertible() {
+                        Ok(t)
+                    } else {
+                        Err(())
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn combine_rects(
@@ -89,7 +128,7 @@ mod tests {
         let r1 = Rect::new(1.0, 2.0, 3.0, 4.0);
         let r2 = Rect::new(1.5, 2.5, 3.5, 4.5);
         let r3 = Rect::new(10.0, 11.0, 12.0, 13.0);
-        let t = Transform::new(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
+        let t = Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
 
         let res = combine_rects(None, None, &t, true);
         assert_eq!(res, None);
