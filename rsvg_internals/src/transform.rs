@@ -23,7 +23,7 @@ pub struct Transform {
 
 impl Transform {
     #[inline]
-    pub fn new(xx: f64, yx: f64, xy: f64, yy: f64, x0: f64, y0: f64) -> Self {
+    pub fn new_unchecked(xx: f64, yx: f64, xy: f64, yy: f64, x0: f64, y0: f64) -> Self {
         Self {
             xx,
             xy,
@@ -36,28 +36,28 @@ impl Transform {
 
     #[inline]
     pub fn identity() -> Self {
-        Self::new(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+        Self::new_unchecked(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
     }
 
     #[inline]
     pub fn new_translate(tx: f64, ty: f64) -> Self {
-        Self::new(1.0, 0.0, 0.0, 1.0, tx, ty)
+        Self::new_unchecked(1.0, 0.0, 0.0, 1.0, tx, ty)
     }
 
     #[inline]
     pub fn new_scale(sx: f64, sy: f64) -> Self {
-        Self::new(sx, 0.0, 0.0, sy, 0.0, 0.0)
+        Self::new_unchecked(sx, 0.0, 0.0, sy, 0.0, 0.0)
     }
 
     #[inline]
     pub fn new_rotate(a: Angle) -> Self {
         let (s, c) = a.radians().sin_cos();
-        Self::new(c, s, -s, c, 0.0, 0.0)
+        Self::new_unchecked(c, s, -s, c, 0.0, 0.0)
     }
 
     #[inline]
     pub fn new_skew(ax: Angle, ay: Angle) -> Self {
-        Self::new(1.0, ay.radians().tan(), ax.radians().tan(), 1.0, 0.0, 0.0)
+        Self::new_unchecked(1.0, ay.radians().tan(), ax.radians().tan(), 1.0, 0.0, 0.0)
     }
 
     #[must_use]
@@ -134,7 +134,7 @@ impl Transform {
 
         let inv_det = 1.0 / det;
 
-        Some(Transform::new(
+        Some(Transform::new_unchecked(
             inv_det * self.yy,
             inv_det * (-self.yx),
             inv_det * (-self.xy),
@@ -222,7 +222,7 @@ impl Parse for Transform {
 impl From<cairo::Matrix> for Transform {
     #[inline]
     fn from(m: cairo::Matrix) -> Self {
-        Self::new(m.xx, m.yx, m.xy, m.yy, m.x0, m.y0)
+        Self::new_unchecked(m.xx, m.yx, m.xy, m.yy, m.x0, m.y0)
     }
 }
 
@@ -301,7 +301,7 @@ fn parse_matrix_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Parse
 
         let y0 = f64::parse(p)?;
 
-        Ok(Transform::new(xx, yx, xy, yy, x0, y0))
+        Ok(Transform::new_unchecked(xx, yx, xy, yy, x0, y0))
     })
 }
 
@@ -401,27 +401,27 @@ mod tests {
     #[test]
     fn test_multiply() {
         let t1 = Transform::identity();
-        let t2 = Transform::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+        let t2 = Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
         assert_transform_eq(&Transform::multiply(&t1, &t2), &t2);
         assert_transform_eq(&Transform::multiply(&t2, &t1), &t2);
 
-        let t1 = Transform::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
-        let t2 = Transform::new(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        let r = Transform::new(0.0, 0.0, 0.0, 0.0, 5.0, 6.0);
+        let t1 = Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+        let t2 = Transform::new_unchecked(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let r = Transform::new_unchecked(0.0, 0.0, 0.0, 0.0, 5.0, 6.0);
         assert_transform_eq(&Transform::multiply(&t1, &t2), &t2);
         assert_transform_eq(&Transform::multiply(&t2, &t1), &r);
 
-        let t1 = Transform::new(0.5, 0.0, 0.0, 0.5, 10.0, 10.0);
-        let t2 = Transform::new(1.0, 0.0, 0.0, 1.0, -10.0, -10.0);
-        let r1 = Transform::new(0.5, 0.0, 0.0, 0.5, 0.0, 0.0);
-        let r2 = Transform::new(0.5, 0.0, 0.0, 0.5, 5.0, 5.0);
+        let t1 = Transform::new_unchecked(0.5, 0.0, 0.0, 0.5, 10.0, 10.0);
+        let t2 = Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, -10.0, -10.0);
+        let r1 = Transform::new_unchecked(0.5, 0.0, 0.0, 0.5, 0.0, 0.0);
+        let r2 = Transform::new_unchecked(0.5, 0.0, 0.0, 0.5, 5.0, 5.0);
         assert_transform_eq(&Transform::multiply(&t1, &t2), &r1);
         assert_transform_eq(&Transform::multiply(&t2, &t1), &r2);
     }
 
     #[test]
     fn test_invert() {
-        let t = Transform::new(2.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let t = Transform::new_unchecked(2.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         assert!(!t.is_invertible());
         assert!(t.invert().is_none());
 
@@ -431,7 +431,7 @@ mod tests {
         let i = t.invert().unwrap();
         assert_transform_eq(&i, &Transform::identity());
 
-        let t = Transform::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+        let t = Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
         assert!(t.is_invertible());
         assert!(t.invert().is_some());
         let i = t.invert().unwrap();
@@ -453,8 +453,8 @@ mod tests {
 
     #[test]
     fn parses_valid_transform() {
-        let t = Transform::new(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
-        let s = Transform::new(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
+        let t = Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
+        let s = Transform::new_unchecked(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
         let r = rotation_transform(30.0, 10.0, 10.0);
 
         let a = Transform::multiply(&s, &t);
@@ -491,17 +491,17 @@ mod tests {
     fn parses_matrix() {
         assert_transform_eq(
             &parse_transform("matrix (1 2 3 4 5 6)").unwrap(),
-            &Transform::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
+            &Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
         );
 
         assert_transform_eq(
             &parse_transform("matrix(1,2,3,4 5 6)").unwrap(),
-            &Transform::new(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
+            &Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
         );
 
         assert_transform_eq(
             &parse_transform("matrix (1,2.25,-3.25e2,4 5 6)").unwrap(),
-            &Transform::new(1.0, 2.25, -325.0, 4.0, 5.0, 6.0),
+            &Transform::new_unchecked(1.0, 2.25, -325.0, 4.0, 5.0, 6.0),
         );
     }
 
@@ -509,17 +509,17 @@ mod tests {
     fn parses_translate() {
         assert_transform_eq(
             &parse_transform("translate(-1 -2)").unwrap(),
-            &Transform::new(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
+            &Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
         );
 
         assert_transform_eq(
             &parse_transform("translate(-1, -2)").unwrap(),
-            &Transform::new(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
+            &Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, -1.0, -2.0),
         );
 
         assert_transform_eq(
             &parse_transform("translate(-1)").unwrap(),
-            &Transform::new(1.0, 0.0, 0.0, 1.0, -1.0, 0.0),
+            &Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, -1.0, 0.0),
         );
     }
 
@@ -527,17 +527,17 @@ mod tests {
     fn parses_scale() {
         assert_transform_eq(
             &parse_transform("scale (-1)").unwrap(),
-            &Transform::new(-1.0, 0.0, 0.0, -1.0, 0.0, 0.0),
+            &Transform::new_unchecked(-1.0, 0.0, 0.0, -1.0, 0.0, 0.0),
         );
 
         assert_transform_eq(
             &parse_transform("scale(-1 -2)").unwrap(),
-            &Transform::new(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
+            &Transform::new_unchecked(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
         );
 
         assert_transform_eq(
             &parse_transform("scale(-1, -2)").unwrap(),
-            &Transform::new(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
+            &Transform::new_unchecked(-1.0, 0.0, 0.0, -2.0, 0.0, 0.0),
         );
     }
 
@@ -575,8 +575,8 @@ mod tests {
 
     #[test]
     fn parses_transform_list() {
-        let t = Transform::new(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
-        let s = Transform::new(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
+        let t = Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, 20.0, 30.0);
+        let s = Transform::new_unchecked(10.0, 0.0, 0.0, 10.0, 0.0, 0.0);
         let r = rotation_transform(30.0, 10.0, 10.0);
 
         assert_transform_eq(

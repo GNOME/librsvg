@@ -97,7 +97,7 @@ mod tests {
         let r1 = Rect::new(1.0, 2.0, 3.0, 4.0);
         let r2 = Rect::new(1.5, 2.5, 3.5, 4.5);
         let r3 = Rect::new(10.0, 11.0, 12.0, 13.0);
-        let t = Transform::new(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
+        let t = Transform::new_unchecked(1.0, 0.0, 0.0, 1.0, 0.5, 0.5);
 
         let res = combine_rects(None, None, &t, true);
         assert_eq!(res, None);

@@ -774,7 +774,7 @@ impl Gradient {
     ) {
         let transform = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
             let bbox_rect = bbox.rect.unwrap();
-            Transform::new(
+            Transform::new_unchecked(
                 bbox_rect.width(),
                 0.0,
                 0.0,
