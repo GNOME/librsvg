@@ -544,7 +544,89 @@ impl PathBuilder {
     }
 }
 
+/// An iterator over `SubPath` from a Path.
+struct SubPathIter<'a> {
+    path: &'a Path,
+    next_start: usize,
+}
+
+/// A slice of `PackedCommand` representing a subpath in a `Path`.
+/// A subpath is a list of `PackedCommand` starting with a `MoveTo` and ending if it encounters
+/// another `MoveTo` or the end of the `Path`.
+struct SubPath<'a>(pub &'a [PackedCommand]);
+
+impl<'a> Iterator for SubPathIter<'a> {
+    type Item = SubPath<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // If we ended on our last command in the previous iteration, we're done here
+        if self.next_start >= self.path.commands.len() {
+            return None;
+        }
+
+        // Otherwise we have at least one command left, we setup the slice to be all the remaining
+        // commands.
+        let slice = &self.path.commands[self.next_start..];
+
+        // Since the first command of the current subpath will always be a move or a close, skip
+        // it so we don't end our subpath immediately as that would be wrong.
+        for (i, cmd) in slice.iter().enumerate().skip(1) {
+            // If we encounter a MoveTo , we ended our current subpath, we
+            // return the slice until this command and set next_start to be the index of the
+            // next command
+            if let PackedCommand::MoveTo = cmd {
+                self.next_start += i;
+                return Some(SubPath(&slice[..i]));
+            }
+        }
+
+        // If we didn't find any MoveTo, we're done here. We return the rest of the path
+        // and set next_start so next iteration will return None
+        self.next_start = self.path.commands.len();
+        Some(SubPath(slice))
+    }
+}
+
+/// This function will return the origin of a subpath and whether it is a zero length one.
+fn is_subpath_zero_length(mut subpath: impl Iterator<Item = PathCommand>) -> ((f64, f64), bool) {
+    let (cur_x, cur_y) = if let Some(PathCommand::MoveTo(x, y)) = subpath.next() {
+        (x, y)
+    } else {
+        unreachable!("Subpaths must start with a MoveTo.");
+    };
+
+    let orig = (cur_x, cur_y);
+
+    for cmd in subpath {
+        let (end_x, end_y) = match cmd {
+            PathCommand::MoveTo(_, _) => {
+                unreachable!("A MoveTo cannot appear in a subpath if it's not the first element")
+            }
+            PathCommand::LineTo(x, y) => (x, y),
+            PathCommand::CurveTo(curve) => curve.to,
+            PathCommand::Arc(arc) => arc.to,
+            // If we get a `ClosePath and haven't returned yet then we haven't moved at all making
+            // it an empty subpath`
+            PathCommand::ClosePath => return (orig, true),
+        };
+
+        if !end_x.approx_eq_cairo(cur_x) || !end_y.approx_eq_cairo(cur_y) {
+            return (orig, false);
+        }
+    }
+
+    (orig, true)
+}
+
 impl Path {
+    /// Get an iterator over a path `Subpath`s.
+    fn iter_subpath<'a>(&'a self) -> SubPathIter<'a> {
+        SubPathIter {
+            path: &self,
+            next_start: 0,
+        }
+    }
+
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = PathCommand> + 'a {
         let commands = self.commands.iter();
         let mut coords = self.coords.iter();
@@ -556,11 +638,44 @@ impl Path {
         self.commands.is_empty()
     }
 
-    pub fn to_cairo(&self, cr: &cairo::Context) -> Result<(), cairo::Status> {
+    pub fn to_cairo(
+        &self,
+        cr: &cairo::Context,
+        is_square_linecap: bool,
+    ) -> Result<(), cairo::Status> {
         assert!(!self.is_empty());
 
-        for s in self.iter() {
-            s.to_cairo(cr);
+        let mut coords = self.coords.iter();
+
+        for subpath in self.iter_subpath() {
+            // If a subpath is empty and the linecap is a square, then draw a square centered on
+            // the origin of the subpath. See #165.
+            if is_square_linecap {
+                let mut coords = self.coords.iter();
+                let commands = subpath
+                    .0
+                    .iter()
+                    .map(|cmd| PathCommand::from_packed(*cmd, &mut coords));
+                let (orig, is_empty) = is_subpath_zero_length(commands);
+
+                if is_empty {
+                    let (x, y) = orig;
+                    let stroke_size = 0.002;
+
+                    cr.move_to(x - stroke_size / 2., y - stroke_size / 2.);
+                    cr.line_to(x + stroke_size / 2., y - stroke_size / 2.);
+                    cr.line_to(x + stroke_size / 2., y + stroke_size / 2.);
+                    cr.line_to(x - stroke_size / 2., y + stroke_size / 2.);
+                }
+            }
+
+            let commands = subpath
+                .0
+                .iter()
+                .map(|cmd| PathCommand::from_packed(*cmd, &mut coords));
+            for cmd in commands {
+                cmd.to_cairo(cr);
+            }
         }
 
         // We check the cr's status right after feeding it a new path for a few reasons:
