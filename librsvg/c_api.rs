@@ -35,8 +35,8 @@ use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
     rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
-    RenderingError, RsvgLength, RsvgPositionData, RsvgSizeFunc, SharedImageSurface, SizeCallback,
-    SurfaceType, ViewBox,
+    RenderingError, RsvgLength, RsvgSizeFunc, SharedImageSurface, SizeCallback, SurfaceType,
+    ViewBox,
 };
 
 use crate::messages::{rsvg_g_critical, rsvg_g_warning};
@@ -467,6 +467,13 @@ impl ObjectImpl for CHandle {
 
 pub fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
     cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+}
+
+// Keep in sync with rsvg.h:RsvgPositionData
+#[repr(C)]
+pub struct RsvgPositionData {
+    pub x: libc::c_int,
+    pub y: libc::c_int,
 }
 
 // Keep in sync with rsvg.h:RsvgDimensionData

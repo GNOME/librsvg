@@ -83,13 +83,6 @@ impl LoadOptions {
     }
 }
 
-// Keep in sync with rsvg.h:RsvgPositionData
-#[repr(C)]
-pub struct RsvgPositionData {
-    pub x: libc::c_int,
-    pub y: libc::c_int,
-}
-
 // Keep in sync with rsvg.h:RsvgSizeFunc
 pub type RsvgSizeFunc = Option<
     unsafe extern "C" fn(
