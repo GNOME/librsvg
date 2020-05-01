@@ -1008,7 +1008,8 @@ impl DrawingCtx {
                 self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
                     let cr = dc.get_cairo_context();
 
-                    path.to_cairo(&cr)?;
+                    let is_square_linecap = values.stroke_line_cap() == StrokeLinecap::Square;
+                    path.to_cairo(&cr, is_square_linecap)?;
 
                     if clipping {
                         cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
