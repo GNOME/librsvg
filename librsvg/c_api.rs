@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::ffi::{CStr, CString};
 use std::ops;
 use std::path::PathBuf;
@@ -34,8 +34,7 @@ use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
     rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
-    RenderingError, RsvgDimensionData, RsvgLength, RsvgPositionData, RsvgSizeFunc,
-    SharedImageSurface, SizeCallback, SurfaceType, ViewBox,
+    RenderingError, RsvgLength, SharedImageSurface, SurfaceType, ViewBox,
 };
 
 use crate::messages::{rsvg_g_critical, rsvg_g_warning};
@@ -466,6 +465,115 @@ impl ObjectImpl for CHandle {
 
 pub fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
     cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+}
+
+// Keep in sync with rsvg.h:RsvgPositionData
+#[repr(C)]
+pub struct RsvgPositionData {
+    pub x: libc::c_int,
+    pub y: libc::c_int,
+}
+
+// Keep in sync with rsvg.h:RsvgDimensionData
+#[repr(C)]
+pub struct RsvgDimensionData {
+    pub width: libc::c_int,
+    pub height: libc::c_int,
+    pub em: f64,
+    pub ex: f64,
+}
+
+impl RsvgDimensionData {
+    // This is not #[derive(Default)] to make it clear that it
+    // shouldn't be the default value for anything; it is actually a
+    // special case we use to indicate an error to the public API.
+    pub fn empty() -> RsvgDimensionData {
+        RsvgDimensionData {
+            width: 0,
+            height: 0,
+            em: 0.0,
+            ex: 0.0,
+        }
+    }
+}
+
+// Keep in sync with rsvg.h:RsvgSizeFunc
+pub type RsvgSizeFunc = Option<
+    unsafe extern "C" fn(
+        inout_width: *mut libc::c_int,
+        inout_height: *mut libc::c_int,
+        user_data: glib_sys::gpointer,
+    ),
+>;
+
+pub struct SizeCallback {
+    pub size_func: RsvgSizeFunc,
+    pub user_data: glib_sys::gpointer,
+    pub destroy_notify: glib_sys::GDestroyNotify,
+    pub in_loop: Cell<bool>,
+}
+
+impl SizeCallback {
+    pub fn new(
+        size_func: RsvgSizeFunc,
+        user_data: glib_sys::gpointer,
+        destroy_notify: glib_sys::GDestroyNotify,
+    ) -> Self {
+        SizeCallback {
+            size_func,
+            user_data,
+            destroy_notify,
+            in_loop: Cell::new(false),
+        }
+    }
+
+    pub fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
+        unsafe {
+            let mut w = width;
+            let mut h = height;
+
+            if let Some(ref f) = self.size_func {
+                f(&mut w, &mut h, self.user_data);
+            };
+
+            (w, h)
+        }
+    }
+
+    pub fn start_loop(&self) {
+        assert!(!self.in_loop.get());
+        self.in_loop.set(true);
+    }
+
+    pub fn end_loop(&self) {
+        assert!(self.in_loop.get());
+        self.in_loop.set(false);
+    }
+
+    pub fn get_in_loop(&self) -> bool {
+        self.in_loop.get()
+    }
+}
+
+impl Default for SizeCallback {
+    fn default() -> SizeCallback {
+        SizeCallback {
+            size_func: None,
+            user_data: ptr::null_mut(),
+            destroy_notify: None,
+            in_loop: Cell::new(false),
+        }
+    }
+}
+
+impl Drop for SizeCallback {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(ref f) = self.destroy_notify {
+                f(self.user_data);
+            };
+        }
+    }
 }
 
 impl CHandle {
