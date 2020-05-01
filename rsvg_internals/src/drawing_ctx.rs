@@ -273,6 +273,12 @@ impl DrawingCtx {
         }
     }
 
+    /// Creates a new coordinate space inside a viewport.
+    ///
+    /// Note that this actually changes the `draw_ctx.cr`'s transformation to match
+    /// the new coordinate space, but the old one is not restored after the
+    /// result's `ViewParams` is dropped.  Thus, this function must be called
+    /// inside `draw_ctx.with_saved_cr` or `draw_ctx.with_discrete_layer`.
     pub fn push_new_viewport(
         &self,
         vbox: Option<ViewBox>,
