@@ -72,29 +72,6 @@ impl LoadOptions {
     }
 }
 
-// Keep in sync with rsvg.h:RsvgDimensionData
-#[repr(C)]
-pub struct RsvgDimensionData {
-    pub width: libc::c_int,
-    pub height: libc::c_int,
-    pub em: f64,
-    pub ex: f64,
-}
-
-impl RsvgDimensionData {
-    // This is not #[derive(Default)] to make it clear that it
-    // shouldn't be the default value for anything; it is actually a
-    // special case we use to indicate an error to the public API.
-    pub fn empty() -> RsvgDimensionData {
-        RsvgDimensionData {
-            width: 0,
-            height: 0,
-            em: 0.0,
-            ex: 0.0,
-        }
-    }
-}
-
 // Keep in sync with rsvg.h:RsvgPositionData
 #[repr(C)]
 pub struct RsvgPositionData {
