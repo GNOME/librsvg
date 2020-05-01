@@ -2,9 +2,6 @@
 //!
 //! This module provides the primitives on which the public APIs are implemented.
 
-use std::cell::Cell;
-use std::ptr;
-
 use locale_config::{LanguageRange, Locale};
 
 use crate::allowed_url::{AllowedUrl, Href};
@@ -80,85 +77,6 @@ impl LoadOptions {
 
     pub fn locale(&self) -> &Locale {
         &self.locale
-    }
-}
-
-// Keep in sync with rsvg.h:RsvgSizeFunc
-pub type RsvgSizeFunc = Option<
-    unsafe extern "C" fn(
-        inout_width: *mut libc::c_int,
-        inout_height: *mut libc::c_int,
-        user_data: glib_sys::gpointer,
-    ),
->;
-
-pub struct SizeCallback {
-    pub size_func: RsvgSizeFunc,
-    pub user_data: glib_sys::gpointer,
-    pub destroy_notify: glib_sys::GDestroyNotify,
-    pub in_loop: Cell<bool>,
-}
-
-impl SizeCallback {
-    pub fn new(
-        size_func: RsvgSizeFunc,
-        user_data: glib_sys::gpointer,
-        destroy_notify: glib_sys::GDestroyNotify,
-    ) -> Self {
-        SizeCallback {
-            size_func,
-            user_data,
-            destroy_notify,
-            in_loop: Cell::new(false),
-        }
-    }
-
-    pub fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
-        unsafe {
-            let mut w = width;
-            let mut h = height;
-
-            if let Some(ref f) = self.size_func {
-                f(&mut w, &mut h, self.user_data);
-            };
-
-            (w, h)
-        }
-    }
-
-    pub fn start_loop(&self) {
-        assert!(!self.in_loop.get());
-        self.in_loop.set(true);
-    }
-
-    pub fn end_loop(&self) {
-        assert!(self.in_loop.get());
-        self.in_loop.set(false);
-    }
-
-    pub fn get_in_loop(&self) -> bool {
-        self.in_loop.get()
-    }
-}
-
-impl Default for SizeCallback {
-    fn default() -> SizeCallback {
-        SizeCallback {
-            size_func: None,
-            user_data: ptr::null_mut(),
-            destroy_notify: None,
-            in_loop: Cell::new(false),
-        }
-    }
-}
-
-impl Drop for SizeCallback {
-    fn drop(&mut self) {
-        unsafe {
-            if let Some(ref f) = self.destroy_notify {
-                f(self.user_data);
-            };
-        }
     }
 }
 
