@@ -101,14 +101,33 @@ pub enum DefsLookupErrorKind {
     NotFound,
 }
 
+/// Errors that can happen while rendering or measuring an SVG document.
 #[derive(Debug, Clone, PartialEq)]
 pub enum RenderingError {
+    /// A Cairo error happened during rendering.
     Cairo(cairo::Status),
+
+    /// There is a circular reference between elements.
+    // FIXME: should be internal only.
     CircularReference,
+
+    /// The maximum number of rendered objects was reached.
+    ///
+    /// Librsvg has a limit on the number of rendered objects, so that malicious
+    /// files cannot consume CPU time arbitrarily.
     InstancingLimit,
+
+    /// Tried to reference an SVG element from a fragment identifier that is incorrect.
     InvalidId(DefsLookupErrorKind),
+
+    // FIXME: unused.
     InvalidHref,
+
+    /// Not enough memory was available for rendering.
+    // FIXME: right now this is only returned from pixbuf_utils.rs
     OutOfMemory,
+
+    /// Cannot occur from librsvg_crate; this is just for the C API.
     HandleIsNotLoaded,
 }
 
