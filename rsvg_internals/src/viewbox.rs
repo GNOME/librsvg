@@ -7,6 +7,9 @@ use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::Parse;
 use crate::rect::Rect;
 
+/// Newtype around a [`Rect`], used to represent the `viewBox` attribute.
+///
+/// [`Rect`]: rect/type.Rect.html
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox(pub Rect);
 
