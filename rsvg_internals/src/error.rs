@@ -265,21 +265,55 @@ impl From<HrefError> for ValueErrorKind {
     }
 }
 
+/// Errors that can happen while loading an SVG document.
+///
+/// All of these codes are for unrecoverable errors that keep an SVG document from being
+/// fully loaded and parsed.  Note that SVG is very lenient with respect to document
+/// structure and the syntax of CSS property values; most errors there will not lead to a
+/// `LoadingError`.  To see those errors, you may want to set the `RSVG_LOG=1` environment
+/// variable.
+///
+/// I/O errors get reported in the `Glib` variant, since librsvg uses GIO internally for
+/// all input/output.
 #[derive(Debug, Clone)]
 pub enum LoadingError {
+    // FIXME: C API only
     NoDataPassedToParser,
+
+    /// XML syntax error.
     XmlParseError(String),
-    // Could not parse data: URL
+
+    // FIXME: this is OOM in libxml2; we shouldn't expose it.
     CouldNotCreateXmlParser,
+
+    /// A malformed or disallowed URL was used.
     BadUrl,
+
+    /// A `data:` URL could not be decoded.
     BadDataUrl,
+
+    // FIXME: used only if XML processing instruction cannot find the stylesheet.
     BadStylesheet,
+
+    /// An invalid stylesheet was used.
     BadCss,
+
+    /// A Cairo error happened during loading.
     Cairo(cairo::Status),
+
+    // FIXME: only used in load_image()
     EmptyData,
+
+    /// There are no SVG elements in the document.
     SvgHasNoElements,
+
+    /// The outermost element in the document is not `<svg>`.
     RootElementIsNotSvg,
+
+    /// Generally an I/O error, or another error from GIO.
     Glib(glib::Error),
+
+    // FIXME: only used internally when loading pixbufs, and temporarily in c_api.
     Unknown,
 }
 
