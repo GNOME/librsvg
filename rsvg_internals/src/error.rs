@@ -94,10 +94,25 @@ impl fmt::Display for ElementError {
     }
 }
 
+/// Errors returned when looking up a resource by URL reference.
 #[derive(Debug, Clone, PartialEq)]
 pub enum DefsLookupErrorKind {
+    /// Error when parsing an [`Href`].
+    ///
+    /// [`Href`]: allowed_url/enum.Href.html
     HrefError(HrefError),
+
+    /// Used when the public API tries to look up an external URL, which is not allowed.
+    ///
+    /// This catches the case where a public API wants to be misused to access an external
+    /// resource.  For example, `SvgHandle.has_sub("https://evil.com/phone_home#element_id") will
+    /// fail with this error.
     CannotLookupExternalReferences,
+
+    /// For internal use only.
+    ///
+    // FIXME: this is returned internally from Handle.lookup_node(), and gets translated
+    // to Ok(false).  Don't expose this internal code in the public API.
     NotFound,
 }
 
