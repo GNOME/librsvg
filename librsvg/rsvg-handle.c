@@ -734,7 +734,7 @@ rsvg_handle_get_base_uri (RsvgHandle *handle)
  * rsvg_handle_set_stylesheet:
  * @handle: A #RsvgHandle.
  * @css: (array length=css_len): String with CSS data; must be valid UTF-8.
- * @css_len: Length of the @css string in bytes.
+ * @css_len: Length of the @css data in bytes.
  * @error: (optional): return location for errors.
  *
  * Sets a CSS stylesheet to use for an SVG document.
@@ -752,10 +752,10 @@ rsvg_handle_get_base_uri (RsvgHandle *handle)
  * Since: 2.48
  */
 gboolean
-rsvg_handle_set_stylesheet (RsvgHandle  *handle,
-                            const char  *css,
-                            gsize        css_len,
-                            GError     **error)
+rsvg_handle_set_stylesheet (RsvgHandle   *handle,
+                            const guint8 *css,
+                            gsize         css_len,
+                            GError      **error)
 {
     return rsvg_rust_handle_set_stylesheet (handle, css, css_len, error);
 }
