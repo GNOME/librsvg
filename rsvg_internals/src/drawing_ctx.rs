@@ -47,18 +47,16 @@ use crate::viewbox::ViewBox;
 /// returned `ViewParams` is dropped; at that point, the `DrawingCtx` will resume using its
 /// previous viewport.
 pub struct ViewParams {
-    pub dpi_x: f64,
-    pub dpi_y: f64,
+    pub dpi: Dpi,
     pub view_box_width: f64,
     pub view_box_height: f64,
     view_box_stack: Option<Weak<RefCell<Vec<ViewBox>>>>,
 }
 
 impl ViewParams {
-    pub fn new(dpi_x: f64, dpi_y: f64, view_box_width: f64, view_box_height: f64) -> ViewParams {
+    pub fn new(dpi: Dpi, view_box_width: f64, view_box_height: f64) -> ViewParams {
         ViewParams {
-            dpi_x,
-            dpi_y,
+            dpi,
             view_box_width,
             view_box_height,
             view_box_stack: None,
@@ -244,8 +242,7 @@ impl DrawingCtx {
         let top_rect = &view_box_stack[last].0;
 
         ViewParams {
-            dpi_x: self.dpi.x,
-            dpi_y: self.dpi.y,
+            dpi: self.dpi,
             view_box_width: top_rect.width(),
             view_box_height: top_rect.height(),
             view_box_stack: None,
@@ -265,8 +262,7 @@ impl DrawingCtx {
             .push(ViewBox(Rect::from_size(width, height)));
 
         ViewParams {
-            dpi_x: self.dpi.x,
-            dpi_y: self.dpi.y,
+            dpi: self.dpi,
             view_box_width: width,
             view_box_height: height,
             view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),

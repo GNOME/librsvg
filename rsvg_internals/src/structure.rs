@@ -127,13 +127,13 @@ impl Svg {
 
         match (w, h, self.vbox) {
             (w, h, Some(vbox)) => {
-                let params = ViewParams::new(dpi.x, dpi.y, vbox.0.width(), vbox.0.height());
+                let params = ViewParams::new(dpi, vbox.0.width(), vbox.0.height());
 
                 Some((w.normalize(values, &params), h.normalize(values, &params)))
             }
 
             (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
-                let params = ViewParams::new(dpi.x, dpi.y, 0.0, 0.0);
+                let params = ViewParams::new(dpi, 0.0, 0.0);
 
                 Some((w.normalize(values, &params), h.normalize(values, &params)))
             }
