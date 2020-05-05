@@ -344,10 +344,10 @@ RSVG_API
 RsvgHandle *rsvg_handle_new_from_file (const gchar *filename, GError **error);
 
 RSVG_API
-gboolean rsvg_handle_set_stylesheet (RsvgHandle  *handle,
-                                     const char  *css,
-                                     gsize        css_len,
-                                     GError     **error);
+gboolean rsvg_handle_set_stylesheet (RsvgHandle   *handle,
+                                     const guint8 *css,
+                                     gsize         css_len,
+                                     GError      **error);
 
 #ifndef __GTK_DOC_IGNORE__
 RSVG_API
