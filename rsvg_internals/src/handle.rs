@@ -69,11 +69,18 @@ impl LoadOptions {
     }
 }
 
+/// Main handle to an SVG document.
+///
+/// This is the main object in librsvg.  It gets created with the [`from_stream`] method
+/// and then provides access to all the primitives needed to implement the public APIs.
+///
+/// [`from_stream`]: #method.from_stream
 pub struct Handle {
     document: Document,
 }
 
 impl Handle {
+    /// Loads an SVG document into a `Handle`.
     pub fn from_stream(
         load_options: &LoadOptions,
         stream: &gio::InputStream,
@@ -84,6 +91,10 @@ impl Handle {
         })
     }
 
+    /// Queries whether a document has a certain element `#foo`.
+    ///
+    /// The `id` must be an URL fragment identifier, i.e. something
+    /// like `#element_id`.
     pub fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         match self.lookup_node(id) {
             Ok(_) => Ok(true),
