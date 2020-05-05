@@ -244,8 +244,8 @@ impl DrawingCtx {
         let top_rect = &view_box_stack[last].0;
 
         ViewParams {
-            dpi_x: self.dpi.x(),
-            dpi_y: self.dpi.y(),
+            dpi_x: self.dpi.x,
+            dpi_y: self.dpi.y,
             view_box_width: top_rect.width(),
             view_box_height: top_rect.height(),
             view_box_stack: None,
@@ -265,8 +265,8 @@ impl DrawingCtx {
             .push(ViewBox(Rect::from_size(width, height)));
 
         ViewParams {
-            dpi_x: self.dpi.x(),
-            dpi_y: self.dpi.y(),
+            dpi_x: self.dpi.x,
+            dpi_y: self.dpi.y,
             view_box_width: width,
             view_box_height: height,
             view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
