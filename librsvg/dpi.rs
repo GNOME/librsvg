@@ -10,7 +10,6 @@
 //! This module encapsulates that behavior so that the `rsvg_internals` crate
 //! can always have immutable DPI values as intended.
 
-
 use rsvg_internals;
 
 // This is configurable at runtime
@@ -68,4 +67,3 @@ pub unsafe extern "C" fn rsvg_rust_set_default_dpi_x_y(dpi_x: f64, dpi_y: f64) {
         DPI_Y = dpi_y;
     }
 }
-
