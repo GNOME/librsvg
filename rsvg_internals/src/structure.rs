@@ -87,11 +87,20 @@ impl Draw for Switch {
     }
 }
 
-/// Intrinsic dimensions of an SVG document fragment
+/// Intrinsic dimensions of an SVG document fragment: its `width`, `height`, `viewBox` attributes.
+///
+/// Note that either of those attributes can be omitted, so they are all `Option<T>`.
+/// For example, an element like `<svg viewBox="0 0 100 100">` will have `vbox=Some(...)`,
+/// and the other two fields set to `None`.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IntrinsicDimensions {
+    /// Contents of the `width` attribute.
     pub width: Option<Length<Horizontal>>,
+
+    /// Contents of the `height` attribute.
     pub height: Option<Length<Vertical>>,
+
+    /// Contents of the `viewBox` attribute.
     pub vbox: Option<ViewBox>,
 }
 
