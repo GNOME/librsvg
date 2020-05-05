@@ -1615,7 +1615,7 @@ unsafe fn set_out_param<T: Copy>(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_stylesheet(
     handle: *const RsvgHandle,
-    css: *const libc::c_char,
+    css: *const u8,
     css_len: usize,
     error: *mut *mut glib_sys::GError,
 ) -> glib_sys::gboolean {
@@ -1632,7 +1632,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_set_stylesheet(
     let css = match (css, css_len) {
         (p, 0) if p.is_null() => "",
         (_, _) => {
-            let s = slice::from_raw_parts(css as *const u8, css_len);
+            let s = slice::from_raw_parts(css, css_len);
             match str::from_utf8(s) {
                 Ok(s) => s,
                 Err(e) => {
