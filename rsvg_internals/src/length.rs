@@ -329,23 +329,23 @@ impl<N: Normalize> Length<N> {
 
             LengthUnit::Ex => self.length * font_size_from_values(values, params) / 2.0,
 
-            LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y),
+            LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 
             LengthUnit::Cm => {
-                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y) / CM_PER_INCH
+                self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y) / CM_PER_INCH
             }
 
             LengthUnit::Mm => {
-                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y) / MM_PER_INCH
+                self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y) / MM_PER_INCH
             }
 
             LengthUnit::Pt => {
-                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y)
                     / POINTS_PER_INCH
             }
 
             LengthUnit::Pc => {
-                self.length * <N as Normalize>::normalize(params.dpi_x, params.dpi_y)
+                self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y)
                     / PICA_PER_INCH
             }
         }
@@ -366,11 +366,11 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
         LengthUnit::Ex => v.length * 12.0 / 2.0,
 
         // FontSize always is a Both, per properties.rs
-        LengthUnit::In => v.length * Both::normalize(params.dpi_x, params.dpi_y),
-        LengthUnit::Cm => v.length * Both::normalize(params.dpi_x, params.dpi_y) / CM_PER_INCH,
-        LengthUnit::Mm => v.length * Both::normalize(params.dpi_x, params.dpi_y) / MM_PER_INCH,
-        LengthUnit::Pt => v.length * Both::normalize(params.dpi_x, params.dpi_y) / POINTS_PER_INCH,
-        LengthUnit::Pc => v.length * Both::normalize(params.dpi_x, params.dpi_y) / PICA_PER_INCH,
+        LengthUnit::In => v.length * Both::normalize(params.dpi.x, params.dpi.y),
+        LengthUnit::Cm => v.length * Both::normalize(params.dpi.x, params.dpi.y) / CM_PER_INCH,
+        LengthUnit::Mm => v.length * Both::normalize(params.dpi.x, params.dpi.y) / MM_PER_INCH,
+        LengthUnit::Pt => v.length * Both::normalize(params.dpi.x, params.dpi.y) / POINTS_PER_INCH,
+        LengthUnit::Pc => v.length * Both::normalize(params.dpi.x, params.dpi.y) / PICA_PER_INCH,
     }
 }
 
@@ -386,6 +386,7 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
 mod tests {
     use super::*;
 
+    use crate::dpi::Dpi;
     use crate::float_eq_cairo::ApproxEqCairo;
 
     #[test]
@@ -480,7 +481,7 @@ mod tests {
 
     #[test]
     fn normalize_default_works() {
-        let params = ViewParams::new(40.0, 40.0, 100.0, 100.0);
+        let params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 100.0);
 
         let values = ComputedValues::default();
 
@@ -492,7 +493,7 @@ mod tests {
 
     #[test]
     fn normalize_absolute_units_works() {
-        let params = ViewParams::new(40.0, 50.0, 100.0, 100.0);
+        let params = ViewParams::new(Dpi::new(40.0, 50.0), 100.0, 100.0);
 
         let values = ComputedValues::default();
 
@@ -525,7 +526,7 @@ mod tests {
 
     #[test]
     fn normalize_percent_works() {
-        let params = ViewParams::new(40.0, 40.0, 100.0, 200.0);
+        let params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
 
         let values = ComputedValues::default();
 
@@ -541,7 +542,7 @@ mod tests {
 
     #[test]
     fn normalize_font_em_ex_works() {
-        let params = ViewParams::new(40.0, 40.0, 100.0, 200.0);
+        let params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
 
         let values = ComputedValues::default();
 

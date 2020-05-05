@@ -123,6 +123,7 @@ LIBRSVG_C_API_SRC =						\
 	librsvg/Cargo.toml					\
 	librsvg/c_api.rs					\
 	librsvg/color_utils.rs					\
+	librsvg/dpi.rs						\
 	librsvg/lib.rs						\
 	librsvg/messages.rs					\
 	librsvg/pixbuf_utils.rs					\

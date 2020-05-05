@@ -49,7 +49,7 @@
 
 pub use crate::color::Color;
 
-pub use crate::dpi::{rsvg_rust_set_default_dpi_x_y, Dpi};
+pub use crate::dpi::Dpi;
 
 pub use crate::error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError};
 
