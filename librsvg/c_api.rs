@@ -33,10 +33,11 @@ use glib::types::instance_of;
 use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, DefsLookupErrorKind, Dpi, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
+    rsvg_log, DefsLookupErrorKind, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
     RenderingError, RsvgLength, SharedImageSurface, SurfaceType, ViewBox,
 };
 
+use crate::dpi::Dpi;
 use crate::messages::{rsvg_g_critical, rsvg_g_warning};
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 
@@ -811,7 +812,7 @@ impl CHandle {
         inner.size_callback.start_loop();
 
         let res = handle
-            .get_geometry_sub(id, inner.dpi, inner.is_testing)
+            .get_geometry_sub(id, inner.dpi.into(), inner.is_testing)
             .and_then(|(ink_r, _)| {
                 let width = checked_i32(ink_r.width().round())?;
                 let height = checked_i32(ink_r.height().round())?;
@@ -843,7 +844,7 @@ impl CHandle {
         }
 
         handle
-            .get_geometry_sub(id, inner.dpi, inner.is_testing)
+            .get_geometry_sub(id, inner.dpi.into(), inner.is_testing)
             .and_then(|(ink_r, _)| {
                 let width = checked_i32(ink_r.width().round())?;
                 let height = checked_i32(ink_r.height().round())?;
@@ -930,7 +931,7 @@ impl CHandle {
 
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
-        handle.render_document(cr, viewport, inner.dpi, inner.is_testing)
+        handle.render_document(cr, viewport, inner.dpi.into(), inner.is_testing)
     }
 
     fn get_geometry_for_layer(
@@ -941,7 +942,7 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
         handle
-            .get_geometry_for_layer(id, viewport, inner.dpi, inner.is_testing)
+            .get_geometry_for_layer(id, viewport, inner.dpi.into(), inner.is_testing)
             .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
             .map_err(warn_on_invalid_id)
     }
@@ -957,7 +958,7 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
         handle
-            .render_layer(cr, id, viewport, inner.dpi, inner.is_testing)
+            .render_layer(cr, id, viewport, inner.dpi.into(), inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 
@@ -968,7 +969,7 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
         handle
-            .get_geometry_for_element(id, inner.dpi, inner.is_testing)
+            .get_geometry_for_element(id, inner.dpi.into(), inner.is_testing)
             .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
             .map_err(warn_on_invalid_id)
     }
@@ -984,7 +985,7 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
         handle
-            .render_element(cr, id, element_viewport, inner.dpi, inner.is_testing)
+            .render_element(cr, id, element_viewport, inner.dpi.into(), inner.is_testing)
             .map_err(warn_on_invalid_id)
     }
 

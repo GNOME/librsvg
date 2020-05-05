@@ -37,6 +37,8 @@ pub use crate::c_api::{
 
 pub use crate::color_utils::rsvg_css_parse_color;
 
+pub use crate::dpi::rsvg_rust_set_default_dpi_x_y;
+
 #[rustfmt::skip]
 pub use crate::pixbuf_utils::{
     rsvg_rust_pixbuf_from_file_at_max_size,
@@ -50,4 +52,5 @@ mod messages;
 
 mod c_api;
 mod color_utils;
+mod dpi;
 mod pixbuf_utils;
