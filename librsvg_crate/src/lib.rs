@@ -21,9 +21,9 @@
 //! ```toml
 //! [dependencies]
 //! librsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
-//! cairo-rs = "0.7.0"
-//! glib = "0.8.0"                                    # only if you need streams
-//! gio = { version="0.7.0", features=["v2_48"] }     # likewise
+//! cairo-rs = "0.8.0"
+//! glib = "0.9.0"
+//! gio = { version="0.8.0", features=["v2_50"] } # per configure.ac
 //! ```
 //!
 //! # Example
