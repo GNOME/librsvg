@@ -2,7 +2,7 @@
 <svg
     xmlns:xi="http://www.w3.org/2001/XInclude"
     width="320" height="240">
-  <text x="10" y="100">
+  <text font-family="sans" x="10" y="100">
     <xi:include href="nonexistent.txt" parse="text" encoding="UTF-8">
       <xi:fallback>Hello fallback!</xi:fallback>
     </xi:include>

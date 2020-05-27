@@ -230,9 +230,7 @@ test_utils_get_test_data_path (void)
     if (data_path)
         return data_path;
 
-    data_path = g_build_filename (g_test_get_dir (G_TEST_DIST),
-                                  "fixtures",
-                                  NULL);
+    data_path = g_test_build_filename (G_TEST_DIST, "fixtures", NULL);
 
     return data_path;
 }
@@ -325,10 +323,12 @@ create_font_config_for_testing (void)
 {
     const char *font_paths[] =
     {
-        "resources/Roboto-Regular.ttf",
-        "resources/Roboto-Italic.ttf",
-        "resources/Roboto-Bold.ttf",
-        "resources/Roboto-BoldItalic.ttf",
+        "NotoSerifItalic-2Y8w.ttf",
+        "NotoSerif-rpn9.ttf",
+        "Roboto-Regular.ttf",
+        "Roboto-Italic.ttf",
+        "Roboto-Bold.ttf",
+        "Roboto-BoldItalic.ttf",
     };
 
     FcConfig *config = FcConfigCreate ();
@@ -336,7 +336,7 @@ create_font_config_for_testing (void)
 
     for (i = 0; i < G_N_ELEMENTS(font_paths); i++)
     {
-        char *font_path = g_test_build_filename (G_TEST_DIST, font_paths[i], NULL);
+        char *font_path = g_test_build_filename (G_TEST_DIST, "resources", font_paths[i], NULL);
 
         if (!FcConfigAppFontAddFile (config, (const FcChar8 *) font_path))
         {

@@ -20,6 +20,10 @@
    fill : black;
 }
 
+text {
+   font-family: sans;
+}
+
 .text {
    stroke-width : 0;
    stroke : none;
