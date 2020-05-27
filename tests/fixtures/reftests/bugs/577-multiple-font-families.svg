@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500">
+  <rect x="0" y="0" width="500" height="500" fill="white"/>
+  <text font-family="Nonexistent Family, serif, sans" x="100" y="100" font-size="30">
+    Hello
+  </text>
+</svg>

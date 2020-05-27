@@ -198,32 +198,34 @@ impl Parse for LetterSpacingSpec {
 
 /// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
 #[derive(Debug, Clone, PartialEq)]
-pub struct SingleFontFamily(pub String);
+pub struct MultiFontFamily(pub String);
 
-impl Parse for SingleFontFamily {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SingleFontFamily, ParseError<'i>> {
+impl Parse for MultiFontFamily {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MultiFontFamily, ParseError<'i>> {
         let loc = parser.current_source_location();
 
-        if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
-            if cow == "" {
-                return Err(loc.new_custom_error(ValueErrorKind::value_error(
-                    "empty string is not a valid font family name",
-                )));
+        let fonts = parser.parse_comma_separated(|parser| {
+            if let Ok(cow) = parser.try_parse(|p| p.expect_string_cloned()) {
+                if cow == "" {
+                    return Err(loc.new_custom_error(ValueErrorKind::value_error(
+                        "empty string is not a valid font family name",
+                    )));
+                }
+
+                return Ok(cow);
             }
 
-            return Ok(SingleFontFamily((*cow).to_owned()));
-        }
+            let first_ident = parser.expect_ident()?.clone();
+            let mut value = first_ident.as_ref().to_owned();
 
-        let first_ident = parser.expect_ident()?.clone();
+            while let Ok(cow) = parser.try_parse(|p| p.expect_ident_cloned()) {
+                value.push(' ');
+                value.push_str(&cow);
+            }
+            Ok(cssparser::CowRcStr::from(value))
+        })?;
 
-        let mut value = first_ident.as_ref().to_owned();
-
-        while let Ok(cow) = parser.try_parse(|p| p.expect_ident_cloned()) {
-            value.push(' ');
-            value.push_str(&cow);
-        }
-
-        Ok(SingleFontFamily(value))
+        Ok(MultiFontFamily(fonts.join(",")))
     }
 }
 
@@ -347,30 +349,43 @@ mod tests {
     #[test]
     fn parses_font_family() {
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("'Hello world'"),
-            Ok(SingleFontFamily("Hello world".to_owned()))
+            <MultiFontFamily as Parse>::parse_str("'Hello world'"),
+            Ok(MultiFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("\"Hello world\""),
-            Ok(SingleFontFamily("Hello world".to_owned()))
+            <MultiFontFamily as Parse>::parse_str("\"Hello world\""),
+            Ok(MultiFontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("  Hello  world  "),
-            Ok(SingleFontFamily("Hello world".to_owned()))
+            <MultiFontFamily as Parse>::parse_str("\"Hello world  with  spaces\""),
+            Ok(MultiFontFamily("Hello world  with  spaces".to_owned()))
         );
 
         assert_eq!(
-            <SingleFontFamily as Parse>::parse_str("Plonk"),
-            Ok(SingleFontFamily("Plonk".to_owned()))
+            <MultiFontFamily as Parse>::parse_str("  Hello  world  "),
+            Ok(MultiFontFamily("Hello world".to_owned()))
+        );
+
+        assert_eq!(
+            <MultiFontFamily as Parse>::parse_str("Plonk"),
+            Ok(MultiFontFamily("Plonk".to_owned()))
+        );
+    }
+
+    #[test]
+    fn parses_multiple_font_family() {
+        assert_eq!(
+            <MultiFontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
+            Ok(MultiFontFamily("serif,monospace,Hello world,with spaces".to_owned()))
         );
     }
 
     #[test]
     fn detects_invalid_font_family() {
-        assert!(<SingleFontFamily as Parse>::parse_str("").is_err());
-        assert!(<SingleFontFamily as Parse>::parse_str("''").is_err());
-        assert!(<SingleFontFamily as Parse>::parse_str("42").is_err());
+        assert!(<MultiFontFamily as Parse>::parse_str("").is_err());
+        assert!(<MultiFontFamily as Parse>::parse_str("''").is_err());
+        assert!(<MultiFontFamily as Parse>::parse_str("42").is_err());
     }
 }
