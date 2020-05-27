@@ -1,8 +1,15 @@
 Version 2.48.5
 
+- #577 - Support multiple fonts in the font-family property (Bastien Orivel).
+  Previously in font-family="Foo, Bar, Baz" only Foo would get used.
+
 - #591 - Catch overflow when rendering files with a huge viewBox.
 
 - #593 - Don't panic with an empty objectBoundingBox for a mask.
+
+- #596 - Fix introspection data for rsvg_handle_set_stylesheet (Sutou Kouhei).
+
+- Fixes to the librsvg_crate documentation (Abraham Toriz).
 
 Version 2.48.4
 
