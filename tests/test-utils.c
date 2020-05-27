@@ -316,6 +316,8 @@ create_font_config_for_testing (void)
 {
     const char *font_paths[] =
     {
+        "NotoSerifItalic-2Y8w.ttf",
+        "NotoSerif-rpn9.ttf",
         "Roboto-Regular.ttf",
         "Roboto-Italic.ttf",
         "Roboto-Bold.ttf",
