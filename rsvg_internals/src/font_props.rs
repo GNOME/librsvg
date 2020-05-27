@@ -353,6 +353,11 @@ mod tests {
         );
 
         assert_eq!(
+            <MultiFontFamily as Parse>::parse_str("\"Hello world  with  spaces\""),
+            Ok(MultiFontFamily("Hello world  with  spaces".to_owned()))
+        );
+
+        assert_eq!(
             <MultiFontFamily as Parse>::parse_str("  Hello  world  "),
             Ok(MultiFontFamily("Hello world".to_owned()))
         );
@@ -366,8 +371,8 @@ mod tests {
     #[test]
     fn parses_multiple_font_family() {
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("serif,monospace,\"Hello world\""),
-            Ok(MultiFontFamily("serif,monospace,Hello world".to_owned()))
+            <MultiFontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
+            Ok(MultiFontFamily("serif,monospace,Hello world,with spaces".to_owned()))
         );
     }
 
