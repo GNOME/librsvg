@@ -53,4 +53,4 @@ mod messages;
 mod c_api;
 mod color_utils;
 mod dpi;
-mod pixbuf_utils;
+pub mod pixbuf_utils;
