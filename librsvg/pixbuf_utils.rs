@@ -9,7 +9,7 @@ use url::Url;
 use crate::c_api::checked_i32;
 
 use rsvg_internals::{
-    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, SharedImageSurface,
+    Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError, SharedImageSurface,
     SurfaceType,
 };
 
@@ -36,20 +36,27 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     let height = surface.height();
 
     let pixbuf = pixbuf_new(width, height)?;
-    let bounds = IRect::from_size(width, height);
 
-    for (x, y, pixel) in Pixels::within(&surface, bounds) {
-        let (r, g, b, a) = if pixel.a == 0 {
-            (0, 0, 0, 0)
-        } else {
-            let pixel = pixel.unpremultiply();
-            (pixel.r, pixel.g, pixel.b, pixel.a)
-        };
+    for (y, row) in surface.rows().enumerate() {
+        for (x, pixel) in row.iter().enumerate() {
+            let (r, g, b, a) = if pixel.a == 0 {
+                (0, 0, 0, 0)
+            } else {
+                let pixel = Pixel {
+                    r: pixel.r,
+                    g: pixel.g,
+                    b: pixel.b,
+                    a: pixel.a,
+                }.unpremultiply();
 
-        // FIXME: Use pixbuf.put_pixel when
-        // https://github.com/gtk-rs/gdk-pixbuf/issues/147
-        // is integrated
-        my_put_pixel(&pixbuf, x as i32, y as i32, r, g, b, a);
+                (pixel.r, pixel.g, pixel.b, pixel.a)
+            };
+
+            // FIXME: Use pixbuf.put_pixel when
+            // https://github.com/gtk-rs/gdk-pixbuf/issues/147
+            // is integrated
+            my_put_pixel(&pixbuf, x as i32, y as i32, r, g, b, a);
+        }
     }
 
     Ok(pixbuf)
