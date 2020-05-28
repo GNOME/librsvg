@@ -2,9 +2,11 @@
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
+use std::slice;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
+use rgb::AsPixels;
 
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
@@ -13,7 +15,7 @@ use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},
-    EdgeMode, ImageSurfaceDataExt, Pixel,
+    CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 /// Types of pixel data in a `ImageSurface`.
@@ -116,6 +118,12 @@ pub trait IsAlphaOnly {
 pub enum AlphaOnly {}
 /// Not alpha-only.
 pub enum NotAlphaOnly {}
+
+/// Iterator over the rows of a `SharedImageSurface`.
+pub struct Rows<'a> {
+    surface: &'a SharedImageSurface,
+    next_row: i32,
+}
 
 impl IsAlphaOnly for AlphaOnly {
     const IS_ALPHA_ONLY: bool = true;
@@ -1144,6 +1152,35 @@ impl ImageSurface<Shared> {
         composite_arithmetic(self, other, &mut output_surface, bounds, k1, k2, k3, k4);
 
         output_surface.share()
+    }
+
+    pub fn rows(&self) -> Rows {
+        Rows {
+            surface: &self,
+            next_row: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for Rows<'a> {
+    type Item = &'a [CairoARGB];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_row == self.surface.height {
+            return None;
+        }
+
+        let row = self.next_row;
+
+        self.next_row += 1;
+
+        unsafe {
+            let row_ptr = self.surface.data_ptr.as_ptr().offset(row as isize * self.surface.stride);
+            let row_of_bytes = slice::from_raw_parts(row_ptr, self.surface.width as usize * 4);
+            let pixels = row_of_bytes.as_pixels();
+            assert!(pixels.len() == self.surface.width as usize);
+            Some(pixels)
+        }
     }
 }
 
