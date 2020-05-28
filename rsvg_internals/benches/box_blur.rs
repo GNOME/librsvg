@@ -1,6 +1,4 @@
-#[macro_use]
-extern crate criterion;
-use criterion::Criterion;
+use criterion::{criterion_group, criterion_main, Criterion};
 
 use rsvg_internals::rect::IRect;
 use rsvg_internals::surface_utils::shared_surface::{

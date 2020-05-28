@@ -42,7 +42,7 @@ url = "2"
 xml5ever = "0.16.1"
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.3"
 
 [build-dependencies]
 pkg-config = "0.3.14"
