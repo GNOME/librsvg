@@ -1239,6 +1239,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
+name = "rgb"
+version = "0.8.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a85b83fd629b0ce765f45316774fa6aaa95947fd74c8e4bbf3c6d1e349701d95"
+
+[[package]]
 name = "rsvg_internals"
 version = "0.0.1"
 dependencies = [
@@ -1271,6 +1277,7 @@ dependencies = [
  "rayon",
  "rctree",
  "regex",
+ "rgb",
  "selectors",
  "url",
  "xml5ever",
