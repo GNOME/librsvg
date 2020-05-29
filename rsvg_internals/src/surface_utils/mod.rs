@@ -6,6 +6,18 @@ pub mod iterators;
 pub mod shared_surface;
 pub mod srgb;
 
+// These two are for Cairo's platform-endian 0xaarrggbb pixels
+
+#[cfg(target_endian = "little")]
+use rgb::alt::BGRA8;
+#[cfg(target_endian = "little")]
+pub type CairoARGB = BGRA8;
+
+#[cfg(target_endian = "big")]
+use rgb::alt::ARGB8;
+#[cfg(target_endian = "big")]
+pub type CairoARGB = ARGB8;
+
 /// A pixel consisting of R, G, B and A values.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Pixel {
