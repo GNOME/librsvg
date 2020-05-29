@@ -48,7 +48,10 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     let width_in_bytes = width * 4;
     assert!(width_in_bytes <= stride);
 
-    let pixbuf_rows = pixels.chunks_exact_mut(stride).take(height);
+    // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
+    // to make the last row *not* have the full stride (i.e. it is
+    // only as wide as the pixels in that row).
+    let pixbuf_rows = pixels.chunks_mut(stride).take(height);
 
     for (src_row, dest_row) in surface.rows().zip(pixbuf_rows) {
         let row: &mut [RGBA8] = dest_row[..width_in_bytes].as_pixels_mut();
