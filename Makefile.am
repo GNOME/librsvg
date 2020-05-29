@@ -121,6 +121,7 @@ LIBRSVG_C_API_SRC =						\
 	librsvg/lib.rs						\
 	librsvg/messages.rs					\
 	librsvg/pixbuf_utils.rs					\
+	librsvg/benches/pixbuf_from_surface.rs			\
 	$(NULL)
 
 RUST_EXTRA = 						\
