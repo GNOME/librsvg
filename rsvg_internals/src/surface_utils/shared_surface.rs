@@ -127,8 +127,14 @@ pub struct Rows<'a> {
 
 /// Iterator over the mutable rows of an `ExclusiveImageSurface`.
 pub struct RowsMut<'a> {
-    surface: &'a mut ExclusiveImageSurface,
-    data_ptr: *mut u8,
+    // Keep an ImageSurfaceData here instead of a raw mutable pointer to the bytes,
+    // so that the ImageSurfaceData will mark the surface as dirty when it is dropped.
+    data: cairo::ImageSurfaceData<'a>,
+
+    width: i32,
+    height: i32,
+    stride: i32,
+
     next_row: i32,
 }
 
@@ -1202,7 +1208,7 @@ impl<'a> Iterator for RowsMut<'a> {
     type Item = &'a mut [CairoARGB];
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next_row == self.surface.height {
+        if self.next_row == self.height {
             return None;
         }
 
@@ -1211,10 +1217,15 @@ impl<'a> Iterator for RowsMut<'a> {
         self.next_row += 1;
 
         unsafe {
-            let row_ptr = self.data_ptr.offset(row as isize * self.surface.stride);
-            let row_of_bytes = slice::from_raw_parts_mut(row_ptr, self.surface.width as usize * 4);
+            // We do this with raw pointers, instead of re-slicing the &mut self.data[....],
+            // because with the latter we can't synthesize an appropriate lifetime for
+            // the return value.
+
+            let data_ptr = self.data.as_mut_ptr();
+            let row_ptr = data_ptr.offset(row as isize * self.stride as isize);
+            let row_of_bytes = slice::from_raw_parts_mut(row_ptr, self.width as usize * 4);
             let pixels = row_of_bytes.as_pixels_mut();
-            assert!(pixels.len() == self.surface.width as usize);
+            assert!(pixels.len() == self.width as usize);
             Some(pixels)
         }
     }
@@ -1331,11 +1342,17 @@ impl ImageSurface<Exclusive> {
     }
 
     pub fn rows_mut(&mut self) -> RowsMut {
-        let data_ptr = self.surface.get_data().unwrap().as_mut_ptr();
+        let width = self.surface.get_width();
+        let height = self.surface.get_height();
+        let stride = self.surface.get_stride();
+
+        let data = self.surface.get_data().unwrap();
 
         RowsMut {
-            surface: self,
-            data_ptr,
+            width,
+            height,
+            stride,
+            data,
             next_row: 0,
         }
     }
