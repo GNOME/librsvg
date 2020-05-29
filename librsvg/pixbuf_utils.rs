@@ -4,12 +4,13 @@ use std::ptr;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gio::prelude::*;
 use glib::translate::*;
+use rgb::{AsPixels, RGBA8};
 use url::Url;
 
 use crate::c_api::checked_i32;
 
 use rsvg_internals::{
-    Dpi, Handle, IRect, LoadOptions, LoadingError, Pixels, RenderingError, SharedImageSurface,
+    Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError, SharedImageSurface,
     SurfaceType,
 };
 
@@ -36,52 +37,47 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     let height = surface.height();
 
     let pixbuf = pixbuf_new(width, height)?;
-    let bounds = IRect::from_size(width, height);
+    assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
+    assert!(pixbuf.get_bits_per_sample() == 8);
+    assert!(pixbuf.get_n_channels() == 4);
 
-    for (x, y, pixel) in Pixels::within(&surface, bounds) {
-        let (r, g, b, a) = if pixel.a == 0 {
-            (0, 0, 0, 0)
-        } else {
-            let pixel = pixel.unpremultiply();
-            (pixel.r, pixel.g, pixel.b, pixel.a)
-        };
+    let pixels = unsafe { pixbuf.get_pixels() };
+    let width = width as usize;
+    let height = height as usize;
+    let stride = pixbuf.get_rowstride() as usize;
+    let width_in_bytes = width * 4;
+    assert!(width_in_bytes <= stride);
 
-        // FIXME: Use pixbuf.put_pixel when
-        // https://github.com/gtk-rs/gdk-pixbuf/issues/147
-        // is integrated
-        my_put_pixel(&pixbuf, x as i32, y as i32, r, g, b, a);
+    // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
+    // to make the last row *not* have the full stride (i.e. it is
+    // only as wide as the pixels in that row).
+    let pixbuf_rows = pixels.chunks_mut(stride).take(height);
+
+    for (src_row, dest_row) in surface.rows().zip(pixbuf_rows) {
+        let row: &mut [RGBA8] = dest_row[..width_in_bytes].as_pixels_mut();
+
+        for (src, dest) in src_row.iter().zip(row.iter_mut()) {
+            let (r, g, b, a) = if src.a == 0 {
+                (0, 0, 0, 0)
+            } else {
+                let pixel = Pixel {
+                    r: src.r,
+                    g: src.g,
+                    b: src.b,
+                    a: src.a,
+                }.unpremultiply();
+
+                (pixel.r, pixel.g, pixel.b, pixel.a)
+            };
+
+            dest.r = r;
+            dest.g = g;
+            dest.b = b;
+            dest.a = a;
+        }
     }
 
     Ok(pixbuf)
-}
-
-// Copied from gtk-rs/gdk-pixbuf
-//
-// See the following:
-//   https://gitlab.gnome.org/GNOME/librsvg/-/issues/584
-//   https://github.com/gtk-rs/gdk-pixbuf/issues/147
-//
-// Arithmetic can overflow in the computation of `pos` if it is not done with usize
-// values (everything coming out of a Pixbuf is i32).
-//
-// When this fix appears in a gtk-rs release, we can remove this.
-fn my_put_pixel(pixbuf: &Pixbuf, x: i32, y: i32, red: u8, green: u8, blue: u8, alpha: u8) {
-    unsafe {
-        let x = x as usize;
-        let y = y as usize;
-        let n_channels = pixbuf.get_n_channels() as usize;
-        assert!(n_channels == 3 || n_channels == 4);
-        let rowstride = pixbuf.get_rowstride() as usize;
-        let pixels = pixbuf.get_pixels();
-        let pos = y * rowstride + x * n_channels;
-
-        pixels[pos] = red;
-        pixels[pos + 1] = green;
-        pixels[pos + 2] = blue;
-        if n_channels == 4 {
-            pixels[pos + 3] = alpha;
-        }
-    }
 }
 
 enum SizeKind {

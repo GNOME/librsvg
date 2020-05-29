@@ -2,9 +2,11 @@
 use std::cmp::min;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
+use std::slice;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
+use rgb::{AsPixels, RGB8, RGBA8};
 
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
@@ -13,7 +15,7 @@ use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},
-    EdgeMode, ImageSurfaceDataExt, Pixel,
+    CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 /// Types of pixel data in a `ImageSurface`.
@@ -116,6 +118,25 @@ pub trait IsAlphaOnly {
 pub enum AlphaOnly {}
 /// Not alpha-only.
 pub enum NotAlphaOnly {}
+
+/// Iterator over the rows of a `SharedImageSurface`.
+pub struct Rows<'a> {
+    surface: &'a SharedImageSurface,
+    next_row: i32,
+}
+
+/// Iterator over the mutable rows of an `ExclusiveImageSurface`.
+pub struct RowsMut<'a> {
+    // Keep an ImageSurfaceData here instead of a raw mutable pointer to the bytes,
+    // so that the ImageSurfaceData will mark the surface as dirty when it is dropped.
+    data: cairo::ImageSurfaceData<'a>,
+
+    width: i32,
+    height: i32,
+    stride: i32,
+
+    next_row: i32,
+}
 
 impl IsAlphaOnly for AlphaOnly {
     const IS_ALPHA_ONLY: bool = true;
@@ -243,59 +264,66 @@ impl ImageSurface<Shared> {
         content_type: Option<&str>,
     ) -> Result<SharedImageSurface, cairo::Status> {
         assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
+        assert!(pixbuf.get_bits_per_sample() == 8);
 
         let n_channels = pixbuf.get_n_channels();
         assert!(n_channels == 3 || n_channels == 4);
         let has_alpha = n_channels == 4;
 
-        let (width, height) = (pixbuf.get_width(), pixbuf.get_height());
+        let width = pixbuf.get_width();
+        let height = pixbuf.get_height();
         assert!(width > 0 && height > 0);
 
-        let pixbuf_stride = pixbuf.get_rowstride();
+        let pixbuf_stride = pixbuf.get_rowstride() as usize;
         assert!(pixbuf_stride > 0);
 
         let pixbuf_data = unsafe { pixbuf.get_pixels() };
 
-        let mut surf = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
+        let mut surf = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        let (width, height) = (width as usize, height as usize);
-        let pixbuf_stride = pixbuf_stride as usize;
+        let width = width as usize;
+        let height = height as usize;
 
         {
-            let surf_stride = surf.get_stride() as usize;
+            // We use chunks(), not chunks_exact(), because gdk-pixbuf tends
+            // to make the last row *not* have the full stride (i.e. it is
+            // only as wide as the pixels in that row).
+            let pixbuf_rows = pixbuf_data.chunks(pixbuf_stride).take(height);
 
-            let mut surf_data = surf.get_data().unwrap();
+            let surf_rows = surf.rows_mut();
 
             if has_alpha {
-                for y in 0..height {
-                    for x in 0..width {
-                        let ofs = pixbuf_stride * y + 4 * x;
+                let width_in_bytes = width * 4;
 
+                for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
+                    let pixbuf_row: &[RGBA8] = pixbuf_row[..width_in_bytes].as_pixels();
+
+                    for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
                         let pixel = Pixel {
-                            r: pixbuf_data[ofs],
-                            g: pixbuf_data[ofs + 1],
-                            b: pixbuf_data[ofs + 2],
-                            a: pixbuf_data[ofs + 3],
+                            r: src.r,
+                            g: src.g,
+                            b: src.b,
+                            a: src.a,
                         };
 
                         let pixel = pixel.premultiply();
-
-                        surf_data.set_pixel(surf_stride, pixel, x as u32, y as u32);
+                        dest.r = pixel.r;
+                        dest.g = pixel.g;
+                        dest.b = pixel.b;
+                        dest.a = pixel.a;
                     }
                 }
             } else {
-                for y in 0..height {
-                    for x in 0..width {
-                        let ofs = pixbuf_stride * y + 3 * x;
+                let width_in_bytes = width * 3;
 
-                        let pixel = Pixel {
-                            r: pixbuf_data[ofs],
-                            g: pixbuf_data[ofs + 1],
-                            b: pixbuf_data[ofs + 2],
-                            a: 0xff,
-                        };
+                for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
+                    let pixbuf_row: &[RGB8] = pixbuf_row[..width_in_bytes].as_pixels();
 
-                        surf_data.set_pixel(surf_stride, pixel, x as u32, y as u32);
+                    for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
+                        dest.r = src.r;
+                        dest.g = src.g;
+                        dest.b = src.b;
+                        dest.a = 0xff;
                     }
                 }
             }
@@ -303,13 +331,13 @@ impl ImageSurface<Shared> {
 
         match (data, content_type) {
             (Some(bytes), Some(content_type)) => {
-                surf.set_mime_data(content_type, bytes)?;
+                surf.surface.set_mime_data(content_type, bytes)?;
             }
 
             (_, _) => (),
         }
 
-        Self::wrap(surf, SurfaceType::SRgb)
+        surf.share()
     }
 
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.
@@ -1145,6 +1173,62 @@ impl ImageSurface<Shared> {
 
         output_surface.share()
     }
+
+    pub fn rows(&self) -> Rows {
+        Rows {
+            surface: &self,
+            next_row: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for Rows<'a> {
+    type Item = &'a [CairoARGB];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_row == self.surface.height {
+            return None;
+        }
+
+        let row = self.next_row;
+
+        self.next_row += 1;
+
+        unsafe {
+            let row_ptr = self.surface.data_ptr.as_ptr().offset(row as isize * self.surface.stride);
+            let row_of_bytes = slice::from_raw_parts(row_ptr, self.surface.width as usize * 4);
+            let pixels = row_of_bytes.as_pixels();
+            assert!(pixels.len() == self.surface.width as usize);
+            Some(pixels)
+        }
+    }
+}
+
+impl<'a> Iterator for RowsMut<'a> {
+    type Item = &'a mut [CairoARGB];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next_row == self.height {
+            return None;
+        }
+
+        let row = self.next_row as usize;
+
+        self.next_row += 1;
+
+        unsafe {
+            // We do this with raw pointers, instead of re-slicing the &mut self.data[....],
+            // because with the latter we can't synthesize an appropriate lifetime for
+            // the return value.
+
+            let data_ptr = self.data.as_mut_ptr();
+            let row_ptr = data_ptr.offset(row as isize * self.stride as isize);
+            let row_of_bytes = slice::from_raw_parts_mut(row_ptr, self.width as usize * 4);
+            let pixels = row_of_bytes.as_pixels_mut();
+            assert!(pixels.len() == self.width as usize);
+            Some(pixels)
+        }
+    }
 }
 
 /// Performs the arithmetic composite operation. Public for benchmarking.
@@ -1255,6 +1339,22 @@ impl ImageSurface<Exclusive> {
     ) -> Result<(), cairo::Status> {
         let cr = cairo::Context::new(&self.surface);
         draw_fn(&cr)
+    }
+
+    pub fn rows_mut(&mut self) -> RowsMut {
+        let width = self.surface.get_width();
+        let height = self.surface.get_height();
+        let stride = self.surface.get_stride();
+
+        let data = self.surface.get_data().unwrap();
+
+        RowsMut {
+            width,
+            height,
+            stride,
+            data,
+            next_row: 0,
+        }
     }
 }
 
