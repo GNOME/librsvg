@@ -66,7 +66,7 @@ pub use crate::structure::IntrinsicDimensions;
 pub use crate::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
-    Pixel,
+    CairoARGB, Pixel,
 };
 
 pub use crate::viewbox::ViewBox;
