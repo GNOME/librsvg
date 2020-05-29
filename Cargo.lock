@@ -695,6 +695,7 @@ dependencies = [
  "glib-sys",
  "gobject-sys",
  "libc",
+ "rgb",
  "rsvg_internals",
  "url",
 ]
