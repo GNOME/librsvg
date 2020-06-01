@@ -6,7 +6,7 @@ use std::slice;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
-use rgb::{AsPixels, RGB8, RGBA8};
+use rgb::{FromSlice, RGB8, RGBA8};
 
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
@@ -15,7 +15,7 @@ use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},
-    CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel,
+    AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 
 /// Types of pixel data in a `ImageSurface`.
@@ -296,7 +296,7 @@ impl ImageSurface<Shared> {
                 let width_in_bytes = width * 4;
 
                 for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
-                    let pixbuf_row: &[RGBA8] = pixbuf_row[..width_in_bytes].as_pixels();
+                    let pixbuf_row: &[RGBA8] = pixbuf_row[..width_in_bytes].as_rgba();
 
                     for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
                         let pixel = Pixel {
@@ -317,7 +317,7 @@ impl ImageSurface<Shared> {
                 let width_in_bytes = width * 3;
 
                 for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
-                    let pixbuf_row: &[RGB8] = pixbuf_row[..width_in_bytes].as_pixels();
+                    let pixbuf_row: &[RGB8] = pixbuf_row[..width_in_bytes].as_rgb();
 
                     for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
                         dest.r = src.r;
@@ -1197,7 +1197,7 @@ impl<'a> Iterator for Rows<'a> {
         unsafe {
             let row_ptr = self.surface.data_ptr.as_ptr().offset(row as isize * self.surface.stride);
             let row_of_bytes = slice::from_raw_parts(row_ptr, self.surface.width as usize * 4);
-            let pixels = row_of_bytes.as_pixels();
+            let pixels = row_of_bytes.as_cairo_argb();
             assert!(pixels.len() == self.surface.width as usize);
             Some(pixels)
         }
@@ -1224,7 +1224,7 @@ impl<'a> Iterator for RowsMut<'a> {
             let data_ptr = self.data.as_mut_ptr();
             let row_ptr = data_ptr.offset(row as isize * self.stride as isize);
             let row_of_bytes = slice::from_raw_parts_mut(row_ptr, self.width as usize * 4);
-            let pixels = row_of_bytes.as_pixels_mut();
+            let pixels = row_of_bytes.as_cairo_argb_mut();
             assert!(pixels.len() == self.width as usize);
             Some(pixels)
         }
