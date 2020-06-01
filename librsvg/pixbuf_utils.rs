@@ -4,7 +4,7 @@ use std::ptr;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gio::prelude::*;
 use glib::translate::*;
-use rgb::{AsPixels, RGBA8};
+use rgb::{FromSlice, RGBA8};
 use url::Url;
 
 use crate::c_api::checked_i32;
@@ -54,7 +54,7 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     let pixbuf_rows = pixels.chunks_mut(stride).take(height);
 
     for (src_row, dest_row) in surface.rows().zip(pixbuf_rows) {
-        let row: &mut [RGBA8] = dest_row[..width_in_bytes].as_pixels_mut();
+        let row: &mut [RGBA8] = dest_row[..width_in_bytes].as_rgba_mut();
 
         for (src, dest) in src_row.iter().zip(row.iter_mut()) {
             let (r, g, b, a) = if src.a == 0 {

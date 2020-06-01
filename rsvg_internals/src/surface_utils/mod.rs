@@ -1,6 +1,8 @@
 //! Various utilities for working with Cairo image surfaces.
 
+use std::mem;
 use std::ops::DerefMut;
+use std::slice;
 
 pub mod iterators;
 pub mod shared_surface;
@@ -17,6 +19,31 @@ pub type CairoARGB = BGRA8;
 use rgb::alt::ARGB8;
 #[cfg(target_endian = "big")]
 pub type CairoARGB = ARGB8;
+
+/// Analogous to `rgb::FromSlice`, to convert from `[T]` to `[CairoARGB]`
+pub trait AsCairoARGB<T: Copy> {
+    /// Reinterpret slice as `CairoARGB` pixels.
+    fn as_cairo_argb(&self) -> &[CairoARGB];
+
+    /// Reinterpret mutable slice as `CairoARGB` pixels.
+    fn as_cairo_argb_mut(&mut self) -> &mut [CairoARGB];
+}
+
+impl<T: Copy> AsCairoARGB<T> for [T] {
+    fn as_cairo_argb(&self) -> &[CairoARGB] {
+        debug_assert_eq!(4, mem::size_of::<CairoARGB>() / mem::size_of::<T>());
+        unsafe {
+            slice::from_raw_parts(self.as_ptr() as *const _, self.len() / 4)
+        }
+    }
+
+    fn as_cairo_argb_mut(&mut self) -> &mut [CairoARGB] {
+        debug_assert_eq!(4, mem::size_of::<CairoARGB>() / mem::size_of::<T>());
+        unsafe {
+            slice::from_raw_parts_mut(self.as_ptr() as *mut _, self.len() / 4)
+        }
+    }
+}
 
 /// A pixel consisting of R, G, B and A values.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
