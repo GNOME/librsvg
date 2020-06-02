@@ -1,3 +1,8 @@
+Version 2.48.6
+
+- (#604) - Fix build on big-endian machines.  Thanks to Daniel Kolesa
+  for testing this repeatedly.
+
 Version 2.48.5
 
 - #577 - Support multiple fonts in the font-family property (Bastien Orivel).
