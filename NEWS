@@ -1,3 +1,8 @@
+Version 2.49.1
+
+- (#604) - Fix build on big-endian machines.  Thanks to Daniel Kolesa
+  for testing this repeatedly.
+
 Version 2.49.0
 
 - Memory consumption of parsed SVG data is greatly reduced.  Property
