@@ -46,13 +46,10 @@ stages:
     - make check
 
   artifacts:
-    when: on_failure
+    when: 'on_failure'
     paths:
       - _build/tests/*.log
       - _build/tests/output/
-
-  artifacts:
-    paths:
       - _build/*.gir
       - _build/*.la
       - _build/*.pc
