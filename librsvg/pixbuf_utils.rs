@@ -10,8 +10,7 @@ use url::Url;
 use crate::c_api::checked_i32;
 
 use rsvg_internals::{
-    Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError, SharedImageSurface,
-    SurfaceType,
+    Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError, SharedImageSurface, SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -65,7 +64,8 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
                     g: src.g,
                     b: src.b,
                     a: src.a,
-                }.unpremultiply();
+                }
+                .unpremultiply();
 
                 (pixel.r, pixel.g, pixel.b, pixel.a)
             };

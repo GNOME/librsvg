@@ -372,7 +372,9 @@ mod tests {
     fn parses_multiple_font_family() {
         assert_eq!(
             <MultiFontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
-            Ok(MultiFontFamily("serif,monospace,Hello world,with spaces".to_owned()))
+            Ok(MultiFontFamily(
+                "serif,monospace,Hello world,with spaces".to_owned()
+            ))
         );
     }
 

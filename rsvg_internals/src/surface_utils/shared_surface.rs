@@ -1195,7 +1195,11 @@ impl<'a> Iterator for Rows<'a> {
         self.next_row += 1;
 
         unsafe {
-            let row_ptr = self.surface.data_ptr.as_ptr().offset(row as isize * self.surface.stride);
+            let row_ptr = self
+                .surface
+                .data_ptr
+                .as_ptr()
+                .offset(row as isize * self.surface.stride);
             let row_of_bytes = slice::from_raw_parts(row_ptr, self.surface.width as usize * 4);
             let pixels = row_of_bytes.as_cairo_argb();
             assert!(pixels.len() == self.surface.width as usize);

@@ -54,11 +54,11 @@ pub trait FilterEffect: NodeTrait {
 }
 
 macro_rules! impl_node_as_filter_effect {
-    () => (
+    () => {
         fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
             Some(self)
         }
-    )
+    };
 }
 
 pub mod blend;

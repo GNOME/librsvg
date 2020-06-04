@@ -32,16 +32,12 @@ pub trait AsCairoARGB<T: Copy> {
 impl<T: Copy> AsCairoARGB<T> for [T] {
     fn as_cairo_argb(&self) -> &[CairoARGB] {
         debug_assert_eq!(4, mem::size_of::<CairoARGB>() / mem::size_of::<T>());
-        unsafe {
-            slice::from_raw_parts(self.as_ptr() as *const _, self.len() / 4)
-        }
+        unsafe { slice::from_raw_parts(self.as_ptr() as *const _, self.len() / 4) }
     }
 
     fn as_cairo_argb_mut(&mut self) -> &mut [CairoARGB] {
         debug_assert_eq!(4, mem::size_of::<CairoARGB>() / mem::size_of::<T>());
-        unsafe {
-            slice::from_raw_parts_mut(self.as_ptr() as *mut _, self.len() / 4)
-        }
+        unsafe { slice::from_raw_parts_mut(self.as_ptr() as *mut _, self.len() / 4) }
     }
 }
 
