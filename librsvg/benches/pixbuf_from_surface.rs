@@ -18,8 +18,7 @@ const BOUNDS: IRect = IRect {
 
 fn bench_pixbuf_from_surface(c: &mut Criterion) {
     c.bench_function("pixbuf_from_surface", |b| {
-        let mut surface =
-            ExclusiveImageSurface::new(256, 256, SurfaceType::SRgb).unwrap();
+        let mut surface = ExclusiveImageSurface::new(256, 256, SurfaceType::SRgb).unwrap();
 
         // Fill the surface with interesting data
         surface.modify(&mut |data, stride| {
@@ -44,7 +43,6 @@ fn bench_pixbuf_from_surface(c: &mut Criterion) {
         })
     });
 }
-    
 
 criterion_group!(
     name = benches;
