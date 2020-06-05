@@ -41,7 +41,7 @@ stages:
     - rustc --version && cargo --version
     - mkdir -p _build
     - cd _build
-    - ../autogen.sh --enable-gtk-doc --enable-vala
+    - sudo ../autogen.sh --enable-gtk-doc --enable-vala
     - make
     - make check
 
