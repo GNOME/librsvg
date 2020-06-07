@@ -135,6 +135,7 @@ RUST_EXTRA = 						\
 	rsvg_internals/benches/box_blur.rs		\
 	rsvg_internals/benches/composite.rs		\
 	rsvg_internals/benches/lighting.rs		\
+	rsvg_internals/benches/path_parser.rs           \
 	rsvg_internals/benches/pixel_iterators.rs	\
 	rsvg_internals/benches/srgb.rs			\
 	rsvg_internals/src/ua.css			\

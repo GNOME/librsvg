@@ -114,8 +114,8 @@ mod limits;
 mod marker;
 mod number_list;
 mod paint_server;
-mod path_builder;
-mod path_parser;
+pub mod path_builder; // pub for benchmarking
+pub mod path_parser; // pub for benchmarking
 mod pattern;
 mod properties;
 mod property_bag;

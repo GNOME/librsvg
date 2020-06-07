@@ -70,3 +70,7 @@ harness = false
 [[bench]]
 name = "srgb"
 harness = false
+
+[[bench]]
+name = "path_parser"
+harness = false
