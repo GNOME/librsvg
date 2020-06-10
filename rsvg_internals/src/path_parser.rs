@@ -12,11 +12,12 @@ use crate::path_builder::*;
 pub enum Token {
     // pub to allow benchmarking
     Number(f64),
+    Flag(bool),
     Command(u8),
     Comma,
 }
 
-use crate::path_parser::Token::{Comma, Command, Number};
+use crate::path_parser::Token::{Comma, Command, Flag, Number};
 
 #[derive(Debug)]
 pub struct Lexer<'a> {
@@ -24,6 +25,7 @@ pub struct Lexer<'a> {
     input: &'a [u8],
     ci: Enumerate<Bytes<'a>>,
     current: Option<(usize, u8)>,
+    flags_required: u8,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -43,7 +45,21 @@ impl<'a> Lexer<'_> {
             input: input.as_bytes(),
             ci: ci,
             current: current,
+            flags_required: 0,
         }
+    }
+
+    // The way Flag tokens work is a little annoying. We don't have
+    // any way to distinguish between numbers and flags without context
+    // from the parser. The only time we need to return flags is within the
+    // argument sequence of an elliptical arc, and then we need 2 in a row
+    // or it's an error. So, when the parser gets to that point, it calls
+    // this method and we switch from our usual mode of handling digits as
+    // numbers to looking for two 'flag' characters (either 0 or 1) in a row
+    // (with optional intervening whitespace, and possibly comma tokens.)
+    // Every time we find a flag we decrement flags_required.
+    pub fn require_flags(&mut self) {
+        self.flags_required = 2;
     }
 
     fn current_pos(&mut self) -> usize {
@@ -159,6 +175,20 @@ impl Iterator for Lexer<'_> {
                 self.advance();
                 Some((pos, Ok(token)))
             }
+
+            Some((pos, c)) if self.flags_required > 0 && c.is_ascii_digit() => match c {
+                b'0' => {
+                    self.flags_required -= 1;
+                    self.advance();
+                    Some((pos, Ok(Flag(false))))
+                }
+                b'1' => {
+                    self.flags_required -= 1;
+                    self.advance();
+                    Some((pos, Ok(Flag(true))))
+                }
+                _ => Some((pos, Err(LexError::UnexpectedByte(c)))),
+            },
 
             Some((pos, c)) if c.is_ascii_digit() || c == b'-' || c == b'+' || c == b'.' => {
                 Some((pos, self.match_number()))
@@ -280,6 +310,34 @@ impl<'b> PathParser<'b> {
         result
     }
 
+    fn match_number_and_flags(&mut self) -> Result<(f64, bool, bool), ParseError> {
+        // We can't just do self.match_number() here, because we have to
+        // tell the lexer, if we do find a number, to switch to looking for flags
+        // before we advance it to the next token. Otherwise it will treat the flag
+        // characters as numbers.
+        //
+        // So, first we do the guts of match_number...
+        let n = match &self.current_pos_and_token {
+            Some((_, Ok(Number(n)))) => Ok(*n),
+            Some((pos, Ok(t))) => Err(ParseError::new(*pos, UnexpectedToken(*t))),
+            Some((pos, Err(e))) => Err(ParseError::new(*pos, LexError(*e))),
+            None => Err(ParseError::new(self.tokens.input.len(), UnexpectedEof)),
+        }?;
+
+        // Then we tell the lexer that we're going to need to find Flag tokens,
+        // *then* we can advance the token stream.
+        self.tokens.require_flags();
+        self.current_pos_and_token = self.tokens.next();
+
+        self.eat_optional_comma();
+        let f1 = self.match_flag()?;
+
+        self.eat_optional_comma();
+        let f2 = self.match_flag()?;
+
+        Ok((n, f1, f2))
+    }
+
     fn match_comma(&mut self) -> Result<(), ParseError> {
         let result = match &self.current_pos_and_token {
             Some((_, Ok(Comma))) => Ok(()),
@@ -304,15 +362,16 @@ impl<'b> PathParser<'b> {
     }
 
     fn match_flag(&mut self) -> Result<bool, ParseError> {
-        let pos = match self.current_pos_and_token {
-            Some((pos, _)) => pos,
-            _ => self.tokens.input.len(),
+        let result = match self.current_pos_and_token {
+            Some((_, Ok(Flag(f)))) => Ok(f),
+            Some((pos, Ok(t))) => Err(ParseError::new(pos, UnexpectedToken(t))),
+            Some((pos, Err(e))) => Err(ParseError::new(pos, LexError(e))),
+            None => Err(ParseError::new(self.tokens.input.len(), UnexpectedEof)),
         };
-        match self.match_number()? {
-            n if n == 1.0 => Ok(true),
-            n if n == 0.0 => Ok(false),
-            n => Err(ParseError::new(pos, ErrorKind::UnexpectedToken(Number(n)))),
+        if result.is_ok() {
+            self.current_pos_and_token = self.tokens.next();
         }
+        result
     }
 
     // peek_* methods are the twins of match_*, but don't consume the token, and so
@@ -769,19 +828,13 @@ impl<'b> PathParser<'b> {
         loop {
             let rx = self.match_number()?.abs();
             let ry = self.match_comma_number()?.abs();
-            let x_axis_rotation = self.match_comma_number()?;
 
             self.eat_optional_comma();
+            let (x_axis_rotation, f1, f2) = self.match_number_and_flags()?;
 
-            let large_arc = LargeArc(self.match_flag()?);
+            let large_arc = LargeArc(f1);
 
-            self.eat_optional_comma();
-
-            let sweep = if self.match_flag()? {
-                Sweep::Positive
-            } else {
-                Sweep::Negative
-            };
+            let sweep = if f2 { Sweep::Positive } else { Sweep::Negative };
 
             self.eat_optional_comma();
 
@@ -905,6 +958,21 @@ mod tests {
         PathCommand::CurveTo(CubicBezierCurve {
             pt1: (x2, y2),
             pt2: (x3, y3),
+            to: (x4, y4),
+        })
+    }
+
+    fn arc(x2: f64, y2: f64, xr: f64, large_arc: bool, sweep: bool,
+           x3: f64, y3: f64, x4: f64, y4: f64) -> PathCommand {
+        PathCommand::Arc(EllipticalArc {
+            r: (x2, y2),
+            x_axis_rotation: xr,
+            large_arc: LargeArc(large_arc),
+            sweep: match sweep {
+                true => Sweep::Positive,
+                false => Sweep::Negative,
+            },
+            from: (x3, y3),
             to: (x4, y4),
         })
     }
@@ -1199,6 +1267,18 @@ mod tests {
             "m10 20 30 40",
             "",
             &vec![moveto(10.0, 20.0), lineto(40.0, 60.0)],
+            None,
+        );
+    }
+
+    #[test]
+    fn handles_relative_moveto_with_relative_lineto_sequence() {
+        test_parser(
+            //          1     2    3    4   5
+            "m 46,447 l 0,0.5 -1,0 -1,0 0,1 0,12",
+            "",
+            &vec![moveto(46.0, 447.0), lineto(46.0, 447.5), lineto(45.0, 447.5),
+                  lineto(44.0, 447.5), lineto(44.0, 448.5), lineto(44.0, 460.5)],
             None,
         );
     }
@@ -1569,6 +1649,48 @@ mod tests {
             ],
             None,
         );
+    }
+
+    #[test]
+    fn handles_elliptical_arc() {
+        // no space required between arc flags
+        test_parser("M 1 2 A 1 2 3 00 6 7",
+                    "",
+                    &vec![moveto(1.0, 2.0),
+                          arc(1.0, 2.0, 3.0, false, false, 1.0, 2.0, 6.0, 7.0)],
+                    None);
+        // or after...
+        test_parser("M 1 2 A 1 2 3 016 7",
+                    "",
+                    &vec![moveto(1.0, 2.0),
+                          arc(1.0, 2.0, 3.0, false, true, 1.0, 2.0, 6.0, 7.0)],
+                    None);
+        // commas and whitespace are optionally allowed
+        test_parser("M 1 2 A 1 2 3 10,6 7",
+                    "",
+                    &vec![moveto(1.0, 2.0),
+                          arc(1.0, 2.0, 3.0, true, false, 1.0, 2.0, 6.0, 7.0)],
+                    None);
+        test_parser("M 1 2 A 1 2 3 1,16, 7",
+                    "",
+                    &vec![moveto(1.0, 2.0),
+                          arc(1.0, 2.0, 3.0, true, true, 1.0, 2.0, 6.0, 7.0)],
+                    None);
+        test_parser("M 1 2 A 1 2 3 1,1 6 7",
+                    "",
+                    &vec![moveto(1.0, 2.0),
+                          arc(1.0, 2.0, 3.0, true, true, 1.0, 2.0, 6.0, 7.0)],
+                    None);
+        test_parser("M 1 2 A 1 2 3 1 1 6 7",
+                    "",
+                    &vec![moveto(1.0, 2.0),
+                          arc(1.0, 2.0, 3.0, true, true, 1.0, 2.0, 6.0, 7.0)],
+                    None);
+        test_parser("M 1 2 A 1 2 3 1 16 7",
+                    "",
+                    &vec![moveto(1.0, 2.0),
+                          arc(1.0, 2.0, 3.0, true, true, 1.0, 2.0, 6.0, 7.0)],
+                    None);
     }
 
     #[test]
@@ -2045,7 +2167,7 @@ mod tests {
             "M10-20A1 2 3 4",
             "             ^",
             &vec![moveto(10.0, -20.0)],
-            Some(ErrorKind::UnexpectedToken(Number(4.0))),
+            Some(ErrorKind::LexError(LexError::UnexpectedByte(b'4'))),
         );
 
         test_parser(
@@ -2065,7 +2187,7 @@ mod tests {
             "M10-20A1 2 3 1 5",
             "               ^",
             &vec![moveto(10.0, -20.0)],
-            Some(ErrorKind::UnexpectedToken(Number(5.0))),
+            Some(ErrorKind::LexError(LexError::UnexpectedByte(b'5'))),
         );
 
         test_parser(
@@ -2094,13 +2216,17 @@ mod tests {
             Some(ErrorKind::UnexpectedEof),
         );
 
-        // FIXME: we need tests for arcs
-        //
-        // test_parser("M10-20A1 2 3,1,1,6,7,",
-        //             "                     ^",
-        //             &vec![moveto(10.0, -20.0)
-        //                   arc(...)],
-        //             Some(ErrorKind::UnexpectedEof));
+        // no non 0|1 chars allowed for flags
+        test_parser("M 1 2 A 1 2 3 1.0 0.0 6 7",
+                    "               ^",
+                    &vec![moveto(1.0, 2.0)],
+                    Some(ErrorKind::UnexpectedToken(Number(0.0))));
+
+        test_parser("M10-20A1 2 3,1,1,6,7,",
+                    "                     ^",
+                    &vec![moveto(10.0, -20.0),
+                          arc(1.0, 2.0, 3.0, true, true, 10.0, -20.0, 6.0, 7.0)],
+                    Some(ErrorKind::UnexpectedEof));
     }
 
     #[test]
