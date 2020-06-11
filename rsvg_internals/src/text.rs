@@ -846,21 +846,7 @@ impl From<FontStretch> for pango::Stretch {
 
 impl From<FontWeightSpec> for pango::Weight {
     fn from(w: FontWeightSpec) -> pango::Weight {
-        match w {
-            FontWeightSpec::Normal => pango::Weight::Normal,
-            FontWeightSpec::Bold => pango::Weight::Bold,
-            FontWeightSpec::Bolder => pango::Weight::Ultrabold,
-            FontWeightSpec::Lighter => pango::Weight::Light,
-            FontWeightSpec::W100 => pango::Weight::Thin,
-            FontWeightSpec::W200 => pango::Weight::Ultralight,
-            FontWeightSpec::W300 => pango::Weight::Semilight,
-            FontWeightSpec::W400 => pango::Weight::Normal,
-            FontWeightSpec::W500 => pango::Weight::Medium,
-            FontWeightSpec::W600 => pango::Weight::Semibold,
-            FontWeightSpec::W700 => pango::Weight::Bold,
-            FontWeightSpec::W800 => pango::Weight::Ultrabold,
-            FontWeightSpec::W900 => pango::Weight::Heavy,
-        }
+        pango::Weight::__Unknown(w.numeric_weight().into())
     }
 }
 
