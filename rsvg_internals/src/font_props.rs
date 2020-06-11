@@ -1,5 +1,6 @@
 //! CSS font properties.
 
+use cast::u16;
 use cssparser::Parser;
 
 use crate::drawing_ctx::ViewParams;
@@ -104,22 +105,14 @@ impl Parse for FontSizeSpec {
     }
 }
 
-// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-weight
+// https://drafts.csswg.org/css-fonts-4/#font-weight-prop
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FontWeightSpec {
     Normal,
     Bold,
     Bolder,
     Lighter,
-    W100,
-    W200,
-    W300,
-    W400,
-    W500,
-    W600,
-    W700,
-    W800,
-    W900,
+    Weight(u16),
 }
 
 impl Parse for FontWeightSpec {
@@ -137,19 +130,66 @@ impl Parse for FontWeightSpec {
             .or_else(|_: ParseError| {
                 let loc = parser.current_source_location();
                 let i = parser.expect_integer()?;
-                match i {
-                    100 => Ok(FontWeightSpec::W100),
-                    200 => Ok(FontWeightSpec::W200),
-                    300 => Ok(FontWeightSpec::W300),
-                    400 => Ok(FontWeightSpec::W400),
-                    500 => Ok(FontWeightSpec::W500),
-                    600 => Ok(FontWeightSpec::W600),
-                    700 => Ok(FontWeightSpec::W700),
-                    800 => Ok(FontWeightSpec::W800),
-                    900 => Ok(FontWeightSpec::W900),
-                    _ => Err(loc.new_custom_error(ValueErrorKind::parse_error("parse error"))),
+                if (1..=1000).contains(&i) {
+                    Ok(FontWeightSpec::Weight(u16(i).unwrap()))
+                } else {
+                    Err(loc.new_custom_error(ValueErrorKind::value_error(
+                        "value must be between 1 and 1000 inclusive",
+                    )))
                 }
             })
+    }
+}
+
+impl FontWeightSpec {
+    #[rustfmt::skip]
+    pub fn compute(&self, v: &Self) -> Self {
+        use FontWeightSpec::*;
+
+        // Here, note that we assume that Normal=W400 and Bold=W700, per the spec.  Also,
+        // this must match `impl From<FontWeightSpec> for pango::Weight`.
+        //
+        // See the table at https://drafts.csswg.org/css-fonts-4/#relative-weights
+
+        match *self {
+            Bolder => match v.numeric_weight() {
+                w if (  1..100).contains(&w) => Weight(400),
+                w if (100..350).contains(&w) => Weight(400),
+                w if (350..550).contains(&w) => Weight(700),
+                w if (550..750).contains(&w) => Weight(900),
+                w if (750..900).contains(&w) => Weight(900),
+                w if 900 <= w                => Weight(w),
+
+                _ => unreachable!(),
+            }
+
+            Lighter => match v.numeric_weight() {
+                w if (  1..100).contains(&w) => Weight(w),
+                w if (100..350).contains(&w) => Weight(100),
+                w if (350..550).contains(&w) => Weight(100),
+                w if (550..750).contains(&w) => Weight(400),
+                w if (750..900).contains(&w) => Weight(700),
+                w if 900 <= w                => Weight(700),
+
+                _ => unreachable!(),
+            }
+
+            _ => *self,
+        }
+    }
+
+    // Converts the symbolic weights to numeric weights.  Will panic on `Bolder` or `Lighter`.
+    pub fn numeric_weight(self) -> u16 {
+        use FontWeightSpec::*;
+
+        // Here, note that we assume that Normal=W400 and Bold=W700, per the spec.  Also,
+        // this must match `impl From<FontWeightSpec> for pango::Weight`.
+        match self {
+            Normal => 400,
+            Bold => 700,
+            Bolder | Lighter => unreachable!(),
+            Weight(w) => w,
+        }
     }
 }
 
@@ -290,7 +330,7 @@ mod tests {
         );
         assert_eq!(
             <FontWeightSpec as Parse>::parse_str("100"),
-            Ok(FontWeightSpec::W100)
+            Ok(FontWeightSpec::Weight(100))
         );
     }
 
@@ -298,7 +338,9 @@ mod tests {
     fn detects_invalid_font_weight() {
         assert!(<FontWeightSpec as Parse>::parse_str("").is_err());
         assert!(<FontWeightSpec as Parse>::parse_str("strange").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("314").is_err());
+        assert!(<FontWeightSpec as Parse>::parse_str("0").is_err());
+        assert!(<FontWeightSpec as Parse>::parse_str("-1").is_err());
+        assert!(<FontWeightSpec as Parse>::parse_str("1001").is_err());
         assert!(<FontWeightSpec as Parse>::parse_str("3.14").is_err());
     }
 
