@@ -236,7 +236,7 @@ pages:
   stage: test
   script:
     - mkdir -p public/doc
-    - cargo doc --document-private-items --no-deps
+    - sudo cargo doc --document-private-items --no-deps
     - cp -r target/doc/* public/doc
 
   artifacts:
