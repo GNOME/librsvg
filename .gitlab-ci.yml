@@ -158,7 +158,7 @@ rustfmt:
   script:
     - rustc --version && cargo --version
     - cargo fmt --version
-    - cargo fmt --all -- --check
+    - sudo cargo fmt --all -- --check
 
 # Configure and run clippy on nightly
 # Only fails on errors atm.
@@ -180,7 +180,7 @@ tarball:
     LIBRSVG_DEBUG: "yes"
   script:
     - cd _build
-    - make distcheck DESTDIR=/tmp/distcheck
+    - sudo make distcheck DESTDIR=/tmp/distcheck
 
 # STAGE 3 CROSS DISTRO TESTS
 #######################################################################
