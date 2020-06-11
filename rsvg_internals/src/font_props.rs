@@ -153,6 +153,62 @@ impl Parse for FontWeightSpec {
     }
 }
 
+impl FontWeightSpec {
+    pub fn compute(&self, v: &Self) -> Self {
+        use FontWeightSpec::*;
+
+        // Here, note that we assume that Normal=W400 and Bold=W700, per the spec.  Also,
+        // this must match `impl From<FontWeightSpec> for pango::Weight`.
+        //
+
+        // See the table at https://drafts.csswg.org/css-fonts-4/#relative-weights
+        // We don't support intermediate weights like 350; maybe we should?
+        match *self {
+            Bolder => match v.numeric_weight() {
+                W100 => W400,
+                W200 => W400,
+                W300 => W400,
+                W400 => W700,
+                W500 => W700,
+                W600 => W900,
+                W700 => W900,
+                W800 => W900,
+                W900 => W900,
+                _ => unreachable!(),
+            }
+
+            Lighter => match v.numeric_weight() {
+                W100 => W100,
+                W200 => W100,
+                W300 => W100,
+                W400 => W100,
+                W500 => W100,
+                W600 => W400,
+                W700 => W400,
+                W800 => W700,
+                W900 => W700,
+                _ => unreachable!(),
+            }
+
+            _ => *self,
+        }
+    }
+
+    // Converts the symbolic weights to numeric weights.  Will panic on `Bolder` or `Lighter`.
+    pub fn numeric_weight(self) -> Self {
+        use FontWeightSpec::*;
+
+        // Here, note that we assume that Normal=W400 and Bold=W700, per the spec.  Also,
+        // this must match `impl From<FontWeightSpec> for pango::Weight`.
+        match self {
+            Normal => W400,
+            Bold => W700,
+            Bolder | Lighter => unreachable!(),
+            _ => self
+        }
+    }
+}
+
 // https://www.w3.org/TR/css-text-3/#letter-spacing-property
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum LetterSpacingSpec {
