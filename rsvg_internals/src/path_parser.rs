@@ -32,7 +32,6 @@ pub struct Lexer<'a> {
 pub enum LexError {
     // pub to allow benchmarking
     ParseFloatError,
-    ParseIntError,
     UnexpectedByte(u8),
     UnexpectedEof,
 }
@@ -104,53 +103,43 @@ impl<'a> Lexer<'_> {
         return found_some;
     }
 
-    fn advance_over_simple_number(&mut self, is_float: &mut bool) -> bool {
+    fn advance_over_simple_number(&mut self) -> bool {
         let _ = self.advance_over_optional(b'-') || self.advance_over_optional(b'+');
         let found_digit = self.advance_over_digits();
-        if self.advance_over_optional(b'.') {
-            *is_float = true;
-        }
+        let _ = self.advance_over_optional(b'.');
         self.advance_over_digits() || found_digit
     }
 
     fn match_number(&mut self) -> Result<Token, LexError> {
         // remember the beginning
         let (start_pos, _) = self.current.unwrap();
-        let mut is_float = false;
-        if !self.advance_over_simple_number(&mut is_float) && start_pos != self.current_pos() {
+        if !self.advance_over_simple_number() && start_pos != self.current_pos() {
             match self.current {
                 None => return Err(LexError::UnexpectedEof),
                 Some((_pos, c)) => return Err(LexError::UnexpectedByte(c)),
             }
         }
         if self.advance_over_optional(b'e') || self.advance_over_optional(b'E') {
-            is_float = true;
-            self.advance_over_simple_number(&mut is_float);
+            let _ = self.advance_over_optional(b'-') || self.advance_over_optional(b'+');
+            let _ = self.advance_over_digits();
         }
         let end_pos = match self.current {
             None => self.input.len(),
             Some((i, _)) => i,
         };
-        unsafe {
-            // This is OK because we have personally checked every character of
-            // the slice we're about to use as a utf8 string so we know it's all legal.
-            let num_str = std::str::from_utf8_unchecked(&self.input[start_pos..end_pos]);
 
-            // using std::str::parse::<f64> causes quite a hit relative to
-            // the old mixed-lexing-parsing code which did it's own number parsing.
-            // Using parse::<i32> is, annoyingly, about 3-4x faster than the parse::<i64>
-            // call. So do that if we don't have a '.' or a 'e' in the number.
-            if is_float {
-                match num_str.parse::<f64>() {
-                    Ok(n) => Ok(Number(n)),
-                    Err(_e) => Err(LexError::ParseFloatError),
-                }
-            } else {
-                match num_str.parse::<i32>() {
-                    Ok(n) => Ok(Number(n as f64)),
-                    Err(_e) => Err(LexError::ParseIntError),
-                }
-            }
+        // If you need path parsing to be faster, you can do from_utf8_unchecked to
+        // avoid re-validating all the chars, and std::str::parse<i*> calls are
+        // faster than std::str::parse<f64> for numbers that are not floats.
+
+        // bare unwrap here should be safe since we've already checked all the bytes
+        // in the range
+        match std::str::from_utf8(&self.input[start_pos..end_pos])
+            .unwrap()
+            .parse::<f64>()
+        {
+            Ok(n) => Ok(Number(n)),
+            Err(_e) => Err(LexError::ParseFloatError),
         }
     }
 }
@@ -1067,6 +1056,27 @@ mod tests {
             "M-10.10E2-0.20e-3",
             "",
             &vec![moveto(-1010.0, -0.00020)],
+            None,
+        );
+
+        test_parser(
+            "M1e2.5", // a decimal after exponent start the next number
+            "",
+            &vec![moveto(100.0, 0.5)],
+            None,
+        );
+
+        test_parser(
+            "M1e-2.5", // but we are allowed a sign after exponent
+            "",
+            &vec![moveto(0.01, 0.5)],
+            None,
+        );
+
+        test_parser(
+            "M1e+2.5", // but we are allowed a sign after exponent
+            "",
+            &vec![moveto(100.0, 0.5)],
             None,
         );
     }

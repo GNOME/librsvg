@@ -6,10 +6,8 @@ use rsvg_internals::path_builder::PathBuilder;
 use rsvg_internals::path_parser::{parse_path_into_builder, Lexer};
 
 static INPUT: &'static str = "M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
-//                                  0    .    1    .    2    .    3    .    4    .
 
 static BYTES: &'static [u8; 49] = b"M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
-//                                  0    .    1    .    2    .    3    .    4    .
 
 static SLICE_EDGES: [(usize, usize); 14] = [
     (1, 3),
@@ -32,7 +30,7 @@ fn lex_path(input: &str) {
     let lexer = Lexer::new(black_box(INPUT));
 
     for (_pos, _token) in lexer {
-        //
+        // no-op
     }
 }
 
