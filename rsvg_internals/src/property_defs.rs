@@ -309,8 +309,18 @@ make_property!(
     ComputedValues,
     FontWeight,
     default: FontWeightSpec::Normal,
-    inherits_automatically: true,
     newtype_parse: FontWeightSpec,
+    property_impl: {
+        impl Property<ComputedValues> for FontWeight {
+            fn inherits_automatically() -> bool {
+                true
+            }
+
+            fn compute(&self, v: &ComputedValues) -> Self {
+                FontWeight(self.0.compute(&v.font_weight().0))
+            }
+        }
+    }
 );
 
 // https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
