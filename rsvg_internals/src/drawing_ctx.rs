@@ -160,7 +160,6 @@ pub fn draw_tree(
     cascaded: &CascadedValues<'_>,
 ) -> Result<BoundingBox, RenderingError> {
     let mut draw_ctx = DrawingCtx::new(
-        limit_to_stack,
         cr,
         viewport,
         dpi,
@@ -168,12 +167,17 @@ pub fn draw_tree(
         testing,
     );
 
+    if let Some(limit_to_stack) = limit_to_stack {
+        for n in limit_to_stack.ancestors() {
+            draw_ctx.drawsub_stack.push(n.clone());
+        }
+    }
+
     draw_ctx.draw_node_from_stack(node, acquired_nodes, cascaded, false)
 }
 
 impl DrawingCtx {
     fn new(
-        limit_to_stack: Option<&Node>,
         cr: &cairo::Context,
         viewport: Rect,
         dpi: Dpi,
@@ -209,7 +213,7 @@ impl DrawingCtx {
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
 
-        let mut draw_ctx = DrawingCtx {
+        DrawingCtx {
             initial_transform,
             rect,
             dpi,
@@ -219,15 +223,7 @@ impl DrawingCtx {
             drawsub_stack: Vec::new(),
             measuring,
             testing,
-        };
-
-        if let Some(limit_to_stack) = limit_to_stack {
-            for n in limit_to_stack.ancestors() {
-                draw_ctx.drawsub_stack.push(n.clone());
-            }
         }
-
-        draw_ctx
     }
 
     pub fn toplevel_viewport(&self) -> Rect {
