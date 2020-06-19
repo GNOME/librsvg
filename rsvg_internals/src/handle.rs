@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::draw_tree;
+use crate::drawing_ctx::{DrawingMode, draw_tree};
 use crate::element::Element;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -113,21 +113,20 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(Rect, Rect), RenderingError> {
+        let node = node.clone();
         let root = self.document.root();
 
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
 
         let bbox = draw_tree(
-            Some(node),
+            DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
             dpi,
             true,
             is_testing,
-            &root,
             &mut AcquiredNodes::new(&self.document),
-            &CascadedValues::new_from_node(&root),
         )?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
@@ -243,26 +242,26 @@ impl Handle {
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
-        let node = if let Some(id) = id {
-            Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
-        } else {
-            None
-        };
-
         let root = self.document.root();
+
+        let mode = if let Some(id) = id {
+            let node = self.lookup_node(id).map_err(RenderingError::InvalidId)?;
+
+            DrawingMode::LimitToStack { node, root }
+        } else {
+            DrawingMode::OnlyNode(root)
+        };
 
         cr.save();
 
         let res = draw_tree(
-            node.as_ref(),
+            mode,
             cr,
             Rect::from(*viewport),
             dpi,
             false,
             is_testing,
-            &root,
             &mut AcquiredNodes::new(&self.document),
-            &CascadedValues::new_from_node(&root),
         );
 
         cr.restore();
@@ -279,16 +278,16 @@ impl Handle {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
 
+        let node = node.clone();
+
         draw_tree(
-            None,
+            DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
             dpi,
             true,
             is_testing,
-            node,
             &mut AcquiredNodes::new(&self.document),
-            &CascadedValues::new_from_node(node),
         )
     }
 
@@ -352,15 +351,13 @@ impl Handle {
         cr.translate(-ink_r.x0, -ink_r.y0);
 
         let res = draw_tree(
-            None,
+            DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
             dpi,
             false,
             is_testing,
-            &node,
             &mut AcquiredNodes::new(&self.document),
-            &CascadedValues::new_from_node(&node),
         );
 
         cr.restore();
