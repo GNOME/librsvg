@@ -142,7 +142,7 @@ impl<'a> CascadedValues<'a> {
     /// `values`
     ///
     /// This is for the `<use>` element, which draws the element which it references with the
-    /// `<use>`'s own cascade, not wih the element's original cascade.
+    /// `<use>`'s own cascade, not with the element's original cascade.
     pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
         let mut v = values.clone();
         node.borrow_element()

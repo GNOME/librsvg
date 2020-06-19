@@ -54,7 +54,7 @@ impl CubicBezierCurve {
 }
 
 /// When attempting to compute the center parameterization of the arc,
-/// out of range parameters may see an arc omited or treated as a line.
+/// out of range parameters may see an arc omitted or treated as a line.
 pub enum ArcParameterization {
     /// Center parameterization of the arc.
     CenterParameters {

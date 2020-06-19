@@ -98,7 +98,7 @@ impl Document {
 
     /// Runs the CSS cascade on the document tree
     ///
-    /// This uses the deafault UserAgent stylesheet, the document's internal stylesheets,
+    /// This uses the default UserAgent stylesheet, the document's internal stylesheets,
     /// plus an extra set of stylesheets supplied by the caller.
     pub fn cascade(&mut self, extra: &[Stylesheet]) {
         css::cascade(&mut self.tree, &UA_STYLESHEETS, &self.stylesheets, extra);

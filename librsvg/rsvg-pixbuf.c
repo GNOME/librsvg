@@ -108,7 +108,7 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
  * @x_zoom: The horizontal zoom factor
  * @y_zoom: The vertical zoom factor
  * @max_width: The requested max width
- * @max_height: The requested max heigh
+ * @max_height: The requested max height
  * @error: return location for errors
  * 
  * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
@@ -160,7 +160,7 @@ rsvg_pixbuf_from_file_at_size (const gchar *filename,
  * rsvg_pixbuf_from_file_at_max_size:
  * @filename: A file name
  * @max_width: The requested max width
- * @max_height: The requested max heigh
+ * @max_height: The requested max height
  * @error: return location for errors
  * 
  * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is uniformly

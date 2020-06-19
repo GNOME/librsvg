@@ -284,7 +284,7 @@ public APIs should get tested here.
 ## Loading tests for `loading.c`
 
 These test the code that decompresses compressed SVGs and feeds the
-XML reader, by tring to load SVG data one or two bytes at a time.  The
+XML reader, by trying to load SVG data one or two bytes at a time.  The
 SVG and SVGZ images are in the `fixtures/loading` directory.
 
 ## Crash tests for `crash.c`
