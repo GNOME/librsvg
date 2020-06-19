@@ -106,36 +106,6 @@ impl Handle {
     }
 
     /// Returns (ink_rect, logical_rect)
-    fn get_node_geometry_with_viewport(
-        &self,
-        node: &Node,
-        viewport: Rect,
-        dpi: Dpi,
-        is_testing: bool,
-    ) -> Result<(Rect, Rect), RenderingError> {
-        let node = node.clone();
-        let root = self.document.root();
-
-        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
-
-        let bbox = draw_tree(
-            DrawingMode::LimitToStack { node, root },
-            &cr,
-            viewport,
-            dpi,
-            true,
-            is_testing,
-            &mut AcquiredNodes::new(&self.document),
-        )?;
-
-        let ink_rect = bbox.ink_rect.unwrap_or_default();
-        let logical_rect = bbox.rect.unwrap_or_default();
-
-        Ok((ink_rect, logical_rect))
-    }
-
-    /// Returns (ink_rect, logical_rect)
     pub fn get_geometry_sub(
         &self,
         id: Option<&str>,
@@ -143,7 +113,6 @@ impl Handle {
         is_testing: bool,
     ) -> Result<(Rect, Rect), RenderingError> {
         let node = self.get_node_or_root(id)?;
-
         let root = self.document.root();
         let is_root = node == root;
 
@@ -159,7 +128,23 @@ impl Handle {
             }
         }
 
-        self.get_node_geometry_with_viewport(&node, unit_rectangle(), dpi, is_testing)
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target);
+
+        let bbox = draw_tree(
+            DrawingMode::LimitToStack { node, root },
+            &cr,
+            unit_rectangle(),
+            dpi,
+            true,
+            is_testing,
+            &mut AcquiredNodes::new(&self.document),
+        )?;
+
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
+
+        Ok((ink_rect, logical_rect))
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
@@ -178,10 +163,25 @@ impl Handle {
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
+        let root = self.document.root();
+
         let viewport = Rect::from(*viewport);
 
-        let (ink_rect, logical_rect) =
-            self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)?;
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target);
+
+        let bbox = draw_tree(
+            DrawingMode::LimitToStack { node, root },
+            &cr,
+            viewport,
+            dpi,
+            true,
+            is_testing,
+            &mut AcquiredNodes::new(&self.document),
+        )?;
+
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
 
         Ok((
             cairo::Rectangle::from(ink_rect),
