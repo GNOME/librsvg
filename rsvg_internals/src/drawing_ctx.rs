@@ -145,28 +145,41 @@ pub struct DrawingCtx {
     testing: bool,
 }
 
+pub enum DrawingMode {
+    LimitToStack {
+        node: Node,
+        root: Node,
+    },
+
+    OnlyNode(Node),
+}
+
 /// The toplevel drawing routine.
 ///
 /// This creates a DrawingCtx internally and starts drawing at the specified `node`.
 pub fn draw_tree(
-    limit_to_stack: Option<&Node>,
+    mode: DrawingMode,
     cr: &cairo::Context,
     viewport: Rect,
     dpi: Dpi,
     measuring: bool,
     testing: bool,
-    node: &Node,
     acquired_nodes: &mut AcquiredNodes,
-    cascaded: &CascadedValues<'_>,
 ) -> Result<BoundingBox, RenderingError> {
-    let drawsub_stack = if let Some(limit_to_stack) = limit_to_stack {
-        limit_to_stack
-            .ancestors()
-            .map(|n| n.clone())
-            .collect()
-    } else {
-        Vec::new()
+    let (drawsub_stack, node) = match mode {
+        DrawingMode::LimitToStack { node, root } => {
+            (node
+             .ancestors()
+             .map(|n| n.clone())
+             .collect(),
+             root,
+            )
+        }
+
+        DrawingMode::OnlyNode(node) => (Vec::new(), node),
     };
+
+    let cascaded = CascadedValues::new_from_node(&node);
 
     let mut draw_ctx = DrawingCtx::new(
         cr,
@@ -177,7 +190,7 @@ pub fn draw_tree(
         drawsub_stack,
     );
 
-    draw_ctx.draw_node_from_stack(node, acquired_nodes, cascaded, false)
+    draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)
 }
 
 impl DrawingCtx {
