@@ -159,19 +159,23 @@ pub fn draw_tree(
     acquired_nodes: &mut AcquiredNodes,
     cascaded: &CascadedValues<'_>,
 ) -> Result<BoundingBox, RenderingError> {
+    let drawsub_stack = if let Some(limit_to_stack) = limit_to_stack {
+        limit_to_stack
+            .ancestors()
+            .map(|n| n.clone())
+            .collect()
+    } else {
+        Vec::new()
+    };
+
     let mut draw_ctx = DrawingCtx::new(
         cr,
         viewport,
         dpi,
         measuring,
         testing,
+        drawsub_stack,
     );
-
-    if let Some(limit_to_stack) = limit_to_stack {
-        for n in limit_to_stack.ancestors() {
-            draw_ctx.drawsub_stack.push(n.clone());
-        }
-    }
 
     draw_ctx.draw_node_from_stack(node, acquired_nodes, cascaded, false)
 }
@@ -183,6 +187,7 @@ impl DrawingCtx {
         dpi: Dpi,
         measuring: bool,
         testing: bool,
+        drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
         let initial_transform = Transform::from(cr.get_matrix());
 
@@ -220,7 +225,7 @@ impl DrawingCtx {
             cr_stack: Vec::new(),
             cr: cr.clone(),
             view_box_stack: Rc::new(RefCell::new(view_box_stack)),
-            drawsub_stack: Vec::new(),
+            drawsub_stack,
             measuring,
             testing,
         }
