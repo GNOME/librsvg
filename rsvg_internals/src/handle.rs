@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::draw_tree;
 use crate::element::Element;
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -117,13 +117,17 @@ impl Handle {
 
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = DrawingCtx::new(Some(node), &cr, viewport, dpi, true, is_testing);
 
-        let bbox = draw_ctx.draw_node_from_stack(
+        let bbox = draw_tree(
+            Some(node),
+            &cr,
+            viewport,
+            dpi,
+            true,
+            is_testing,
             &root,
             &mut AcquiredNodes::new(&self.document),
             &CascadedValues::new_from_node(&root),
-            false,
         )?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
@@ -248,27 +252,22 @@ impl Handle {
         let root = self.document.root();
 
         cr.save();
-        let mut draw_ctx = DrawingCtx::new(
+
+        let res = draw_tree(
             node.as_ref(),
             cr,
             Rect::from(*viewport),
             dpi,
             false,
             is_testing,
+            &root,
+            &mut AcquiredNodes::new(&self.document),
+            &CascadedValues::new_from_node(&root),
         );
-
-        let res = draw_ctx
-            .draw_node_from_stack(
-                &root,
-                &mut AcquiredNodes::new(&self.document),
-                &CascadedValues::new_from_node(&root),
-                false,
-            )
-            .map(|_bbox| ());
 
         cr.restore();
 
-        res
+        res.map(|_bbox| ())
     }
 
     fn get_bbox_for_element(
@@ -279,13 +278,17 @@ impl Handle {
     ) -> Result<BoundingBox, RenderingError> {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = DrawingCtx::new(None, &cr, unit_rectangle(), dpi, true, is_testing);
 
-        draw_ctx.draw_node_from_stack(
+        draw_tree(
+            None,
+            &cr,
+            unit_rectangle(),
+            dpi,
+            true,
+            is_testing,
             node,
             &mut AcquiredNodes::new(&self.document),
             &CascadedValues::new_from_node(node),
-            false,
         )
     }
 
@@ -348,20 +351,21 @@ impl Handle {
         cr.scale(factor, factor);
         cr.translate(-ink_r.x0, -ink_r.y0);
 
-        let mut draw_ctx = DrawingCtx::new(None, &cr, unit_rectangle(), dpi, false, is_testing);
-
-        let res = draw_ctx
-            .draw_node_from_stack(
-                &node,
-                &mut AcquiredNodes::new(&self.document),
-                &CascadedValues::new_from_node(&node),
-                false,
-            )
-            .map(|_bbox| ());
+        let res = draw_tree(
+            None,
+            &cr,
+            unit_rectangle(),
+            dpi,
+            false,
+            is_testing,
+            &node,
+            &mut AcquiredNodes::new(&self.document),
+            &CascadedValues::new_from_node(&node),
+        );
 
         cr.restore();
 
-        res
+        res.map(|_bbox| ())
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {

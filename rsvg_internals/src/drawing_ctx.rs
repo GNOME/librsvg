@@ -145,8 +145,34 @@ pub struct DrawingCtx {
     testing: bool,
 }
 
+/// The toplevel drawing routine.
+///
+/// This creates a DrawingCtx internally and starts drawing at the specified `node`.
+pub fn draw_tree(
+    limit_to_stack: Option<&Node>,
+    cr: &cairo::Context,
+    viewport: Rect,
+    dpi: Dpi,
+    measuring: bool,
+    testing: bool,
+    node: &Node,
+    acquired_nodes: &mut AcquiredNodes,
+    cascaded: &CascadedValues<'_>,
+) -> Result<BoundingBox, RenderingError> {
+    let mut draw_ctx = DrawingCtx::new(
+        limit_to_stack,
+        cr,
+        viewport,
+        dpi,
+        measuring,
+        testing,
+    );
+
+    draw_ctx.draw_node_from_stack(node, acquired_nodes, cascaded, false)
+}
+
 impl DrawingCtx {
-    pub fn new(
+    fn new(
         limit_to_stack: Option<&Node>,
         cr: &cairo::Context,
         viewport: Rect,
