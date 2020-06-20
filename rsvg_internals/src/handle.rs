@@ -7,10 +7,11 @@ use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{DrawingMode, draw_tree};
-use crate::element::Element;
+use crate::drawing_ctx::{DrawingMode, ViewParams, draw_tree};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
+use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
 use url::Url;
@@ -118,13 +119,10 @@ impl Handle {
 
         if is_root {
             let cascaded = CascadedValues::new_from_node(&node);
-            let values = cascaded.get();
 
-            if let Element::Svg(ref svg) = *node.borrow_element() {
-                if let Some((w, h)) = svg.get_size(&values, dpi) {
-                    let rect = Rect::from_size(w, h);
-                    return Ok((rect, rect));
-                }
+            if let Some((w, h)) = get_svg_size(&self.get_intrinsic_dimensions(), &cascaded, dpi) {
+                let rect = Rect::from_size(w, h);
+                return Ok((rect, rect));
             }
         }
 
@@ -388,4 +386,38 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
 
 fn unit_rectangle() -> Rect {
     Rect::from_size(1.0, 1.0)
+}
+
+/// Returns the SVG's size suitable for the legacy C API, or None
+/// if it must be computed by hand.
+///
+/// The legacy C API can compute an SVG document's size from the
+/// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
+/// element.  If these are not available, then the size must be computed
+/// by actually measuring the geometries of elements in the document.
+fn get_svg_size(dimensions: &IntrinsicDimensions, cascaded: &CascadedValues, dpi: Dpi) -> Option<(f64, f64)> {
+    let values = cascaded.get();
+
+    // these defaults are per the spec
+    let w = dimensions
+        .width
+        .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
+    let h = dimensions
+        .height
+        .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
+
+    match (w, h, dimensions.vbox) {
+        (w, h, Some(vbox)) => {
+            let params = ViewParams::new(dpi, vbox.0.width(), vbox.0.height());
+
+            Some((w.normalize(values, &params), h.normalize(values, &params)))
+        }
+
+        (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
+            let params = ViewParams::new(dpi, 0.0, 0.0);
+
+            Some((w.normalize(values, &params), h.normalize(values, &params)))
+        }
+        (_, _, _) => None,
+    }
 }

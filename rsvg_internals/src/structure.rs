@@ -8,7 +8,6 @@ use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
@@ -116,40 +115,6 @@ pub struct Svg {
 }
 
 impl Svg {
-    /// Returns the SVG's size suitable for the legacy C API, or None
-    /// if it must be computed by hand.
-    ///
-    /// The legacy C API can compute an SVG document's size from the
-    /// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
-    /// element.  If these are not available, then the size must be computed
-    /// by actually measuring the geometries of elements in the document.
-    pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(f64, f64)> {
-        let dimensions = self.get_intrinsic_dimensions();
-
-        // these defaults are per the spec
-        let w = dimensions
-            .width
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
-        let h = dimensions
-            .height
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
-
-        match (w, h, dimensions.vbox) {
-            (w, h, Some(vbox)) => {
-                let params = ViewParams::new(dpi, vbox.0.width(), vbox.0.height());
-
-                Some((w.normalize(values, &params), h.normalize(values, &params)))
-            }
-
-            (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
-                let params = ViewParams::new(dpi, 0.0, 0.0);
-
-                Some((w.normalize(values, &params), h.normalize(values, &params)))
-            }
-            (_, _, _) => None,
-        }
-    }
-
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         IntrinsicDimensions {
             width: self.w,
