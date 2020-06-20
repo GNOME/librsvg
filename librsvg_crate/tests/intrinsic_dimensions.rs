@@ -82,6 +82,37 @@ fn root_geometry_with_percent_viewport() {
 }
 
 #[test]
+fn root_geometry_with_percent_viewport_with_offset() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <rect x="10" y="20" width="30" height="40"/>
+</svg>
+"#,
+    );
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let viewport = cairo::Rectangle {
+        x: 100.0,
+        y: 100.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
+    let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
+
+    let rect = cairo::Rectangle {
+        x: 110.0,
+        y: 120.0,
+        width: 30.0,
+        height: 40.0,
+    };
+
+    assert_eq!((ink_r, logical_r), (rect, rect));
+}
+
+#[test]
 fn layer_geometry_with_percent_viewport() {
     let svg = load_svg(
         br#"<?xml version="1.0" encoding="UTF-8"?>
