@@ -124,9 +124,17 @@ impl Svg {
     /// element.  If these are not available, then the size must be computed
     /// by actually measuring the geometries of elements in the document.
     pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(f64, f64)> {
-        let (w, h) = self.get_unnormalized_size();
+        let dimensions = self.get_intrinsic_dimensions();
 
-        match (w, h, self.vbox) {
+        // these defaults are per the spec
+        let w = dimensions
+            .width
+            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
+        let h = dimensions
+            .height
+            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
+
+        match (w, h, dimensions.vbox) {
             (w, h, Some(vbox)) => {
                 let params = ViewParams::new(dpi, vbox.0.width(), vbox.0.height());
 
