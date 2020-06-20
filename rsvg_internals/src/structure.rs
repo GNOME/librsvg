@@ -144,8 +144,8 @@ impl Svg {
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         IntrinsicDimensions {
-            width: self.w.map(Into::into),
-            height: self.h.map(Into::into),
+            width: self.w,
+            height: self.h,
             vbox: self.vbox,
         }
     }
