@@ -4,7 +4,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
-use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, MultiFontFamily};
+use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, LineHeightSpec, MultiFontFamily};
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -340,6 +340,15 @@ make_property!(
             }
         }
     }
+);
+
+// https://drafts.csswg.org/css2/visudet.html#propdef-line-height
+make_property!(
+    ComputedValues,
+    LineHeight,
+    default: LineHeightSpec::Normal,
+    inherits_automatically: true,
+    newtype_parse: LineHeightSpec,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#LightingColorProperty

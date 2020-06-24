@@ -3,7 +3,7 @@
 use cssparser::{
     self, BasicParseErrorKind, DeclarationListParser, ParseErrorKind, Parser, ParserInput, ToCss,
 };
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName};
 use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration, Origin};
@@ -125,6 +125,12 @@ macro_rules! make_properties {
             $($long_str:tt => $long_field:ident: $long_name:ident,)+
         }
 
+        // These are for when expanded_name!("" "foo") is not defined yet
+        // in markup5ever.  We create an ExpandedName by hand in that case.
+        longhands_not_supported_by_markup5ever: {
+            $($long_m5e_str:tt => $long_m5e_field:ident: $long_m5e_name:ident,)+
+        }
+
         non_properties: {
             $($nonprop_field:ident: $nonprop_name:ident,)+
         }
@@ -139,6 +145,7 @@ macro_rules! make_properties {
         enum PropertyId {
             $($short_name,)+
             $($long_name,)+
+            $($long_m5e_name,)+
             $($nonprop_name,)+
 
             UnsetProperty,
@@ -159,12 +166,17 @@ macro_rules! make_properties {
             // we put all the properties here; these are for SpecifiedValues
             $($short_name(SpecifiedValue<$short_name>),)+
             $($long_name(SpecifiedValue<$long_name>),)+
+            $($long_m5e_name(SpecifiedValue<$long_m5e_name>),)+
             $($nonprop_name(SpecifiedValue<$nonprop_name>),)+
         }
 
         enum ComputedValue {
             $(
                 $long_name($long_name),
+            )+
+
+            $(
+                $long_m5e_name($long_m5e_name),
             )+
 
             $(
@@ -179,6 +191,10 @@ macro_rules! make_properties {
             )+
 
             $(
+                $long_m5e_field: $long_m5e_name,
+            )+
+
+            $(
                 $nonprop_field: $nonprop_name,
             )+
         }
@@ -187,6 +203,7 @@ macro_rules! make_properties {
             fn get_property_id(&self) -> PropertyId {
                 match *self {
                     $(ParsedProperty::$long_name(_) => PropertyId::$long_name,)+
+                    $(ParsedProperty::$long_m5e_name(_) => PropertyId::$long_m5e_name,)+
                     $(ParsedProperty::$short_name(_) => PropertyId::$short_name,)+
                     $(ParsedProperty::$nonprop_name(_) => PropertyId::$nonprop_name,)+
                 }
@@ -197,6 +214,7 @@ macro_rules! make_properties {
 
                 match id {
                     $(PropertyId::$long_name => ParsedProperty::$long_name(Unspecified),)+
+                    $(PropertyId::$long_m5e_name => ParsedProperty::$long_m5e_name(Unspecified),)+
                     $(PropertyId::$short_name => ParsedProperty::$short_name(Unspecified),)+
                     $(PropertyId::$nonprop_name => ParsedProperty::$nonprop_name(Unspecified),)+
 
@@ -217,6 +235,16 @@ macro_rules! make_properties {
             )+
 
             $(
+                pub fn $long_m5e_field(&self) -> $long_m5e_name {
+                    if let ComputedValue::$long_m5e_name(v) = self.get_value(PropertyId::$long_m5e_name) {
+                        v
+                    } else {
+                        unreachable!();
+                    }
+                }
+            )+
+
+            $(
                 pub fn $nonprop_field(&self) -> $nonprop_name {
                     if let ComputedValue::$nonprop_name(v) = self.get_value(PropertyId::$nonprop_name) {
                         v
@@ -229,6 +257,7 @@ macro_rules! make_properties {
             fn set_value(&mut self, computed: ComputedValue) {
                 match computed {
                     $(ComputedValue::$long_name(v) => self.$long_field = v,)+
+                    $(ComputedValue::$long_m5e_name(v) => self.$long_m5e_field = v,)+
                     $(ComputedValue::$nonprop_name(v) => self.$nonprop_field = v,)+
                 }
             }
@@ -240,6 +269,10 @@ macro_rules! make_properties {
                     $(
                         PropertyId::$long_name =>
                             ComputedValue::$long_name(self.$long_field.clone()),
+                    )+
+                    $(
+                        PropertyId::$long_m5e_name =>
+                            ComputedValue::$long_m5e_name(self.$long_m5e_field.clone()),
                     )+
                     $(
                         PropertyId::$nonprop_name =>
@@ -259,6 +292,14 @@ macro_rules! make_properties {
                 $(
                     expanded_name!("", $long_str) =>
                         Ok(ParsedProperty::$long_name(parse_input(input)?)),
+                )+
+
+                $(
+                    e if e == ExpandedName {
+                        ns: &ns!(),
+                        local: &LocalName::from($long_m5e_str),
+                    } =>
+                        Ok(ParsedProperty::$long_m5e_name(parse_input(input)?)),
                 )+
 
                 $(
@@ -333,6 +374,10 @@ make_properties! {
         "unicode-bidi"                => unicode_bidi                : UnicodeBidi,
         "visibility"                  => visibility                  : Visibility,
         "writing-mode"                => writing_mode                : WritingMode,
+    }
+
+    longhands_not_supported_by_markup5ever: {
+        "line-height"                 => line_height                 : LineHeight,
     }
 
     // These are not properties, but presentation attributes.  However,
