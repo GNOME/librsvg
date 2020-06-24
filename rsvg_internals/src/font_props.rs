@@ -1,12 +1,12 @@
 //! CSS font properties.
 
 use cast::u16;
-use cssparser::Parser;
+use cssparser::{Parser, Token};
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::length::*;
-use crate::parsers::Parse;
+use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
@@ -236,6 +236,47 @@ impl Parse for LetterSpacingSpec {
     }
 }
 
+// https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum LineHeightSpec {
+    Normal,
+    Number(f32),
+    Length(Length<Both>),
+    Percentage(f32),
+}
+
+impl Parse for LineHeightSpec {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LineHeightSpec, ParseError<'i>> {
+        let state = parser.state();
+        let loc = parser.current_source_location();
+
+        let token = parser.next()?.clone();
+
+        match token {
+            Token::Ident(ref cow) => {
+                if cow.eq_ignore_ascii_case("normal") {
+                    Ok(LineHeightSpec::Normal)
+                } else {
+                    Err(parser.new_basic_unexpected_token_error(token.clone()))?
+                }
+            }
+
+            Token::Number { value, .. } => Ok(LineHeightSpec::Number(finite_f32(value).map_err(|e| loc.new_custom_error(e))?)),
+
+            Token::Percentage { unit_value, .. } => Ok(LineHeightSpec::Percentage(unit_value)),
+
+            Token::Dimension { .. } => {
+                parser.reset(&state);
+                Ok(LineHeightSpec::Length(Length::<Both>::parse(parser)?))
+            }
+
+            _ => {
+                Err(parser.new_basic_unexpected_token_error(token))?
+            }
+        }
+    }
+}
+
 /// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultiFontFamily(pub String);
@@ -431,5 +472,35 @@ mod tests {
         assert!(<MultiFontFamily as Parse>::parse_str("").is_err());
         assert!(<MultiFontFamily as Parse>::parse_str("''").is_err());
         assert!(<MultiFontFamily as Parse>::parse_str("42").is_err());
+    }
+
+    #[test]
+    fn parses_line_height() {
+        assert_eq!(
+            <LineHeightSpec as Parse>::parse_str("normal"),
+            Ok(LineHeightSpec::Normal),
+        );
+
+        assert_eq!(
+            <LineHeightSpec as Parse>::parse_str("2"),
+            Ok(LineHeightSpec::Number(2.0)),
+        );
+
+        assert_eq!(
+            <LineHeightSpec as Parse>::parse_str("2cm"),
+            Ok(LineHeightSpec::Length(Length::new(2.0, LengthUnit::Cm))),
+        );
+
+        assert_eq!(
+            <LineHeightSpec as Parse>::parse_str("150%"),
+            Ok(LineHeightSpec::Percentage(1.5)),
+        );
+    }
+
+    #[test]
+    fn detects_invalid_line_height() {
+        assert!(<LineHeightSpec as Parse>::parse_str("").is_err());
+        assert!(<LineHeightSpec as Parse>::parse_str("florp").is_err());
+        assert!(<LineHeightSpec as Parse>::parse_str("3florp").is_err());
     }
 }
