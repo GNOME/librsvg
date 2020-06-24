@@ -1,6 +1,6 @@
 //! CSS font properties.
 
-use cast::u16;
+use cast::{f64, u16};
 use cssparser::{Parser, Token};
 
 use crate::drawing_ctx::ViewParams;
@@ -243,6 +243,32 @@ pub enum LineHeightSpec {
     Number(f32),
     Length(Length<Both>),
     Percentage(f32),
+}
+
+impl LineHeightSpec {
+    pub fn value(&self) -> Length<Both> {
+        match self {
+            LineHeightSpec::Length(l) => *l,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn compute(&self, values: &ComputedValues) -> Self {
+        let font_size = values.font_size().0.value();
+
+        match *self {
+            LineHeightSpec::Normal => LineHeightSpec::Length(font_size),
+
+            LineHeightSpec::Number(f) |
+            LineHeightSpec::Percentage(f) => LineHeightSpec::Length(Length::new(font_size.length * f64(f), font_size.unit)),
+
+            LineHeightSpec::Length(l) => LineHeightSpec::Length(l),
+        }
+    }
+
+    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+        self.value().normalize(values, params)
+    }
 }
 
 impl Parse for LineHeightSpec {
@@ -502,5 +528,36 @@ mod tests {
         assert!(<LineHeightSpec as Parse>::parse_str("").is_err());
         assert!(<LineHeightSpec as Parse>::parse_str("florp").is_err());
         assert!(<LineHeightSpec as Parse>::parse_str("3florp").is_err());
+    }
+
+    #[test]
+    fn computes_line_height() {
+        let mut specified = SpecifiedValues::default();
+        specified.set_parsed_property(&ParsedProperty::FontSize(SpecifiedValue::Specified(
+            FontSize::parse_str("10px").unwrap(),
+        )));
+
+        let mut values = ComputedValues::default();
+        specified.to_computed_values(&mut values);
+
+        assert_eq!(
+            LineHeightSpec::Normal.compute(&values),
+            LineHeightSpec::Length(Length::new(10.0, LengthUnit::Px)),
+        );
+
+        assert_eq!(
+            LineHeightSpec::Number(2.0).compute(&values),
+            LineHeightSpec::Length(Length::new(20.0, LengthUnit::Px)),
+        );
+
+        assert_eq!(
+            LineHeightSpec::Length(Length::new(3.0, LengthUnit::Cm)).compute(&values),
+            LineHeightSpec::Length(Length::new(3.0, LengthUnit::Cm)),
+        );
+
+        assert_eq!(
+            LineHeightSpec::parse_str("150%").unwrap().compute(&values),
+            LineHeightSpec::Length(Length::new(15.0, LengthUnit::Px)),
+        );
     }
 }
