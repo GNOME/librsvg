@@ -196,26 +196,26 @@ impl FontWeight {
 
 // https://www.w3.org/TR/css-text-3/#letter-spacing-property
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum LetterSpacingSpec {
+pub enum LetterSpacing {
     Normal,
     Value(Length<Horizontal>),
 }
 
-impl LetterSpacingSpec {
+impl LetterSpacing {
     pub fn value(&self) -> Length<Horizontal> {
         match self {
-            LetterSpacingSpec::Value(s) => *s,
+            LetterSpacing::Value(s) => *s,
             _ => unreachable!(),
         }
     }
 
     pub fn compute(&self) -> Self {
         let spacing = match self {
-            LetterSpacingSpec::Normal => Length::<Horizontal>::new(0.0, LengthUnit::Px),
-            LetterSpacingSpec::Value(s) => *s,
+            LetterSpacing::Normal => Length::<Horizontal>::new(0.0, LengthUnit::Px),
+            LetterSpacing::Value(s) => *s,
         };
 
-        LetterSpacingSpec::Value(spacing)
+        LetterSpacing::Value(spacing)
     }
 
     pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
@@ -223,15 +223,15 @@ impl LetterSpacingSpec {
     }
 }
 
-impl Parse for LetterSpacingSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacingSpec, ParseError<'i>> {
+impl Parse for LetterSpacing {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacing, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Horizontal>::parse(p))
-            .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
+            .and_then(|l| Ok(LetterSpacing::Value(l)))
             .or_else(|_| {
                 Ok(parse_identifiers!(
                     parser,
-                    "normal" => LetterSpacingSpec::Normal,
+                    "normal" => LetterSpacing::Normal,
                 )?)
             })
     }
@@ -419,12 +419,12 @@ mod tests {
     #[test]
     fn parses_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal"),
-            Ok(LetterSpacingSpec::Normal)
+            <LetterSpacing as Parse>::parse_str("normal"),
+            Ok(LetterSpacing::Normal)
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em"),
-            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
+            <LetterSpacing as Parse>::parse_str("10em"),
+            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
             )))
@@ -434,15 +434,15 @@ mod tests {
     #[test]
     fn computes_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal").map(|s| s.compute()),
-            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
+            <LetterSpacing as Parse>::parse_str("normal").map(|s| s.compute()),
+            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
                 0.0,
                 LengthUnit::Px,
             )))
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em").map(|s| s.compute()),
-            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
+            <LetterSpacing as Parse>::parse_str("10em").map(|s| s.compute()),
+            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
             )))
@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_letter_spacing() {
-        assert!(LetterSpacingSpec::parse_str("furlong").is_err());
+        assert!(LetterSpacing::parse_str("furlong").is_err());
     }
 
     #[test]

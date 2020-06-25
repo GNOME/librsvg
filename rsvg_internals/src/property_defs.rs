@@ -4,7 +4,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
-use crate::font_props::{FontSize, FontWeight, LetterSpacingSpec, LineHeightSpec, MultiFontFamily};
+use crate::font_props::{FontSize, FontWeight, LetterSpacing, LineHeightSpec, MultiFontFamily};
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -325,8 +325,7 @@ make_property!(
 make_property!(
     ComputedValues,
     LetterSpacing,
-    default: LetterSpacingSpec::Normal,
-    newtype_parse: LetterSpacingSpec,
+    default: LetterSpacing::Normal,
     property_impl: {
         impl Property<ComputedValues> for LetterSpacing {
             fn inherits_automatically() -> bool {
@@ -334,7 +333,7 @@ make_property!(
             }
 
             fn compute(&self, _v: &ComputedValues) -> Self {
-                LetterSpacing(self.0.compute())
+                self.compute()
             }
         }
     }
