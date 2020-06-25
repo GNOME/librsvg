@@ -78,26 +78,6 @@ macro_rules! make_property {
     ($computed_values_type: ty,
      $name: ident,
      default: $default: expr,
-     newtype_parse: $type: ty,
-     property_impl: { $prop: item }
-    ) => {
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct $name(pub $type);
-
-        impl_default!($name, $name($default));
-
-        $prop
-
-        impl crate::parsers::Parse for $name {
-            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
-                Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
-            }
-        }
-    };
-
-    ($computed_values_type: ty,
-     $name: ident,
-     default: $default: expr,
      property_impl: { $prop: item }
     ) => {
         impl_default!($name, $default);
@@ -188,7 +168,6 @@ mod tests {
     use super::*;
 
     use crate::parsers::Parse;
-    use cssparser::RGBA;
 
     #[test]
     fn check_identifiers_property() {
@@ -208,37 +187,5 @@ mod tests {
         assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
         assert!(<Foo as Parse>::parse_str("blargh").is_err());
         assert_eq!(<Foo as Parse>::parse_str("bar"), Ok(Foo::Bar));
-    }
-
-    #[test]
-    fn check_compute() {
-        make_property! {
-            RGBA,
-            AddColor,
-            default: RGBA::new(1, 1, 1, 1),
-            newtype_parse: RGBA,
-            property_impl: {
-                impl Property<RGBA> for AddColor {
-                    fn inherits_automatically() -> bool {
-                        true
-                    }
-
-                    fn compute(&self, v: &RGBA) -> Self {
-                        AddColor(RGBA::new(
-                            self.0.red + v.red,
-                            self.0.green + v.green,
-                            self.0.blue + v.blue,
-                            self.0.alpha + v.alpha
-                        ))
-                    }
-                }
-            }
-        }
-
-        let color = RGBA::new(1, 1, 1, 1);
-        let a = <AddColor as Parse>::parse_str("#02030405").unwrap();
-        let b = a.compute(&color);
-
-        assert_eq!(b, AddColor(RGBA::new(3, 4, 5, 6)));
     }
 }
