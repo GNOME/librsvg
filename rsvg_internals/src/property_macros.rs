@@ -98,6 +98,17 @@ macro_rules! make_property {
     ($computed_values_type: ty,
      $name: ident,
      default: $default: expr,
+     property_impl: { $prop: item }
+    ) => {
+        impl_default!($name, $default);
+
+        $prop
+    };
+
+    // pending - only BaselineShift
+    ($computed_values_type: ty,
+     $name: ident,
+     default: $default: expr,
      newtype: $type: ty,
      property_impl: { $prop: item },
      parse_impl: { $parse: item }

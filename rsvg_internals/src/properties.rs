@@ -8,6 +8,7 @@ use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
+use crate::font_props::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_bag::PropertyBag;
 use crate::property_defs::*;

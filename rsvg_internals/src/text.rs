@@ -967,7 +967,7 @@ fn create_pango_layout(
     let params = draw_ctx.get_view_params();
 
     font_desc.set_size(to_pango_units(
-        values.font_size().0.normalize(values, &params),
+        values.font_size().normalize(values, &params),
     ));
 
     let layout = pango::Layout::new(&pango_context);

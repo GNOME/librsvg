@@ -11,7 +11,7 @@ use crate::properties::ComputedValues;
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum FontSizeSpec {
+pub enum FontSize {
     Smaller,
     Larger,
     XXSmall,
@@ -24,10 +24,10 @@ pub enum FontSizeSpec {
     Value(Length<Both>),
 }
 
-impl FontSizeSpec {
+impl FontSize {
     pub fn value(&self) -> Length<Both> {
         match self {
-            FontSizeSpec::Value(s) => *s,
+            FontSize::Value(s) => *s,
             _ => unreachable!(),
         }
     }
@@ -35,7 +35,7 @@ impl FontSizeSpec {
     pub fn compute(&self, v: &ComputedValues) -> Self {
         let compute_points = |p| 12.0 * 1.2f64.powf(p) / POINTS_PER_INCH;
 
-        let parent = v.font_size().0.value();
+        let parent = v.font_size().value();
 
         // The parent must already have resolved to an absolute unit
         assert!(
@@ -44,7 +44,7 @@ impl FontSizeSpec {
                 && parent.unit != LengthUnit::Ex
         );
 
-        use FontSizeSpec::*;
+        use FontSize::*;
 
         #[rustfmt::skip]
         let new_size = match self {
@@ -75,7 +75,7 @@ impl FontSizeSpec {
             Value(s) => *s,
         };
 
-        FontSizeSpec::Value(new_size)
+        FontSize::Value(new_size)
     }
 
     pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
@@ -83,23 +83,24 @@ impl FontSizeSpec {
     }
 }
 
-impl Parse for FontSizeSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSizeSpec, ParseError<'i>> {
+impl Parse for FontSize {
+    #[rustfmt::skip]
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSize, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Both>::parse(p))
-            .and_then(|l| Ok(FontSizeSpec::Value(l)))
+            .and_then(|l| Ok(FontSize::Value(l)))
             .or_else(|_| {
                 Ok(parse_identifiers!(
                     parser,
-                    "smaller" => FontSizeSpec::Smaller,
-                    "larger" => FontSizeSpec::Larger,
-                    "xx-small" => FontSizeSpec::XXSmall,
-                    "x-small" => FontSizeSpec::XSmall,
-                    "small" => FontSizeSpec::Small,
-                    "medium" => FontSizeSpec::Medium,
-                    "large" => FontSizeSpec::Large,
-                    "x-large" => FontSizeSpec::XLarge,
-                    "xx-large" => FontSizeSpec::XXLarge,
+                    "smaller"  => FontSize::Smaller,
+                    "larger"   => FontSize::Larger,
+                    "xx-small" => FontSize::XXSmall,
+                    "x-small"  => FontSize::XSmall,
+                    "small"    => FontSize::Small,
+                    "medium"   => FontSize::Medium,
+                    "large"    => FontSize::Large,
+                    "x-large"  => FontSize::XLarge,
+                    "xx-large" => FontSize::XXLarge,
                 )?)
             })
     }
@@ -254,7 +255,7 @@ impl LineHeightSpec {
     }
 
     pub fn compute(&self, values: &ComputedValues) -> Self {
-        let font_size = values.font_size().0.value();
+        let font_size = values.font_size().value();
 
         match *self {
             LineHeightSpec::Normal => LineHeightSpec::Length(font_size),
@@ -341,12 +342,10 @@ mod tests {
     use super::*;
 
     use crate::properties::{ParsedProperty, SpecifiedValue, SpecifiedValues};
-    use crate::property_defs::FontSize;
-    use crate::property_macros::Property;
 
     #[test]
     fn detects_invalid_invalid_font_size() {
-        assert!(FontSizeSpec::parse_str("furlong").is_err());
+        assert!(FontSize::parse_str("furlong").is_err());
     }
 
     #[test]
@@ -374,16 +373,16 @@ mod tests {
             FontSize::parse_str("5px").unwrap()
         );
 
-        let smaller = FontSize::parse_str("smaller").unwrap().compute(&values).0;
-        if let FontSizeSpec::Value(v) = smaller {
+        let smaller = FontSize::parse_str("smaller").unwrap().compute(&values);
+        if let FontSize::Value(v) = smaller {
             assert!(v.length < 10.0);
             assert_eq!(v.unit, LengthUnit::Px);
         } else {
             unreachable!();
         }
 
-        let larger = FontSize::parse_str("larger").unwrap().compute(&values).0;
-        if let FontSizeSpec::Value(v) = larger {
+        let larger = FontSize::parse_str("larger").unwrap().compute(&values);
+        if let FontSize::Value(v) = larger {
             assert!(v.length > 10.0);
             assert_eq!(v.unit, LengthUnit::Px);
         } else {
