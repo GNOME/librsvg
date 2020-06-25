@@ -4,7 +4,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
-use crate::font_props::{FontSize, FontWeightSpec, LetterSpacingSpec, LineHeightSpec, MultiFontFamily};
+use crate::font_props::{FontSize, FontWeight, LetterSpacingSpec, LineHeightSpec, MultiFontFamily};
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -307,8 +307,7 @@ make_property!(
 make_property!(
     ComputedValues,
     FontWeight,
-    default: FontWeightSpec::Normal,
-    newtype_parse: FontWeightSpec,
+    default: FontWeight::Normal,
     property_impl: {
         impl Property<ComputedValues> for FontWeight {
             fn inherits_automatically() -> bool {
@@ -316,7 +315,7 @@ make_property!(
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {
-                FontWeight(self.0.compute(&v.font_weight().0))
+                self.compute(&v.font_weight())
             }
         }
     }

@@ -11,7 +11,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::font_props::FontWeightSpec;
+use crate::font_props::FontWeight;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -844,8 +844,8 @@ impl From<FontStretch> for pango::Stretch {
     }
 }
 
-impl From<FontWeightSpec> for pango::Weight {
-    fn from(w: FontWeightSpec) -> pango::Weight {
+impl From<FontWeight> for pango::Weight {
+    fn from(w: FontWeight) -> pango::Weight {
         pango::Weight::__Unknown(w.numeric_weight().into())
     }
 }
@@ -961,7 +961,7 @@ fn create_pango_layout(
     font_desc.set_family(&(values.font_family().0).0);
     font_desc.set_style(pango::Style::from(values.font_style()));
     font_desc.set_variant(pango::Variant::from(values.font_variant()));
-    font_desc.set_weight(pango::Weight::from(values.font_weight().0));
+    font_desc.set_weight(pango::Weight::from(values.font_weight()));
     font_desc.set_stretch(pango::Stretch::from(values.font_stretch()));
 
     let params = draw_ctx.get_view_params();
