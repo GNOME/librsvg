@@ -974,6 +974,18 @@ fn create_pango_layout(
     layout.set_auto_dir(false);
     layout.set_font_description(Some(&font_desc));
 
+    // FIXME: For now we ignore the `line-height` property, even though we parse it.
+    // We would need to do something like this:
+    //
+    // layout.set_line_spacing(0.0); // "actually use the spacing I'll give you"
+    // layout.set_spacing(to_pango_units(???));
+    //
+    // However, Layout::set_spacing() takes an inter-line spacing (from the baseline of
+    // one line to the top of the next line), not the line height (from baseline to
+    // baseline).
+    //
+    // Maybe we need to implement layout of individual lines by hand.
+
     let attr_list = pango::AttrList::new();
 
     attr_list.insert(
