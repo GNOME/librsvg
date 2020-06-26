@@ -337,6 +337,12 @@ impl Parse for FontFamily {
     }
 }
 
+impl FontFamily {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
