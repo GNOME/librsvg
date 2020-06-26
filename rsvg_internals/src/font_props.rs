@@ -306,10 +306,10 @@ impl Parse for LineHeightSpec {
 
 /// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
 #[derive(Debug, Clone, PartialEq)]
-pub struct MultiFontFamily(pub String);
+pub struct FontFamily(pub String);
 
-impl Parse for MultiFontFamily {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MultiFontFamily, ParseError<'i>> {
+impl Parse for FontFamily {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontFamily, ParseError<'i>> {
         let loc = parser.current_source_location();
 
         let fonts = parser.parse_comma_separated(|parser| {
@@ -333,7 +333,7 @@ impl Parse for MultiFontFamily {
             Ok(cssparser::CowRcStr::from(value))
         })?;
 
-        Ok(MultiFontFamily(fonts.join(",")))
+        Ok(FontFamily(fonts.join(",")))
     }
 }
 
@@ -457,36 +457,36 @@ mod tests {
     #[test]
     fn parses_font_family() {
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("'Hello world'"),
-            Ok(MultiFontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("'Hello world'"),
+            Ok(FontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("\"Hello world\""),
-            Ok(MultiFontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("\"Hello world\""),
+            Ok(FontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("\"Hello world  with  spaces\""),
-            Ok(MultiFontFamily("Hello world  with  spaces".to_owned()))
+            <FontFamily as Parse>::parse_str("\"Hello world  with  spaces\""),
+            Ok(FontFamily("Hello world  with  spaces".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("  Hello  world  "),
-            Ok(MultiFontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("  Hello  world  "),
+            Ok(FontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("Plonk"),
-            Ok(MultiFontFamily("Plonk".to_owned()))
+            <FontFamily as Parse>::parse_str("Plonk"),
+            Ok(FontFamily("Plonk".to_owned()))
         );
     }
 
     #[test]
     fn parses_multiple_font_family() {
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
-            Ok(MultiFontFamily(
+            <FontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
+            Ok(FontFamily(
                 "serif,monospace,Hello world,with spaces".to_owned()
             ))
         );
@@ -494,9 +494,9 @@ mod tests {
 
     #[test]
     fn detects_invalid_font_family() {
-        assert!(<MultiFontFamily as Parse>::parse_str("").is_err());
-        assert!(<MultiFontFamily as Parse>::parse_str("''").is_err());
-        assert!(<MultiFontFamily as Parse>::parse_str("42").is_err());
+        assert!(<FontFamily as Parse>::parse_str("").is_err());
+        assert!(<FontFamily as Parse>::parse_str("''").is_err());
+        assert!(<FontFamily as Parse>::parse_str("42").is_err());
     }
 
     #[test]

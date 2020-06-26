@@ -4,7 +4,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
-use crate::font_props::{FontSize, FontWeight, LetterSpacing, LineHeightSpec, MultiFontFamily};
+use crate::font_props::{FontFamily, FontSize, FontWeight, LetterSpacing, LineHeightSpec};
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -234,9 +234,8 @@ make_property!(
 make_property!(
     ComputedValues,
     FontFamily,
-    default: MultiFontFamily("Times New Roman".to_string()),
+    default: FontFamily("Times New Roman".to_string()),
     inherits_automatically: true,
-    newtype_parse: MultiFontFamily,
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontSizeProperty
