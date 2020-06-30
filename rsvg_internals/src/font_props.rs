@@ -21,15 +21,18 @@ pub enum Font {
     MessageBox,
     SmallCaption,
     StatusBar,
-    Spec {
-        style: FontStyle,
-        variant: FontVariant,
-        weight: FontWeight,
-        stretch: FontStretch,
-        size: FontSize,
-        line_height: LineHeight,
-        family: FontFamily,
-    }
+    Spec(FontSpec),
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct FontSpec {
+    pub style: FontStyle,
+    pub variant: FontVariant,
+    pub weight: FontWeight,
+    pub stretch: FontStretch,
+    pub size: FontSize,
+    pub line_height: LineHeight,
+    pub family: FontFamily,
 }
 
 impl Parse for Font {
@@ -102,7 +105,7 @@ impl Parse for Font {
 
         let family = FontFamily::parse(parser)?;
 
-        Ok(Font::Spec {
+        Ok(Font::Spec(FontSpec {
             style: style.unwrap_or_default(),
             variant: variant_caps.unwrap_or_default(),
             weight: weight.unwrap_or_default(),
@@ -110,7 +113,7 @@ impl Parse for Font {
             size,
             line_height: line_height.unwrap_or_default(),
             family,
-        })
+        }))
     }
 }
 
@@ -478,7 +481,7 @@ mod tests {
 
         assert_eq!(
             Font::parse_str("italic bold 12px sans").unwrap(),
-            Font::Spec {
+            Font::Spec(FontSpec {
                 style: FontStyle::Italic,
                 variant: Default::default(),
                 weight: FontWeight::Bold,
@@ -486,12 +489,12 @@ mod tests {
                 size: FontSize::Value(Length::new(12.0, LengthUnit::Px)),
                 line_height: Default::default(),
                 family: FontFamily("sans".to_string()),
-            },
+            }),
         );
 
         assert_eq!(
             Font::parse_str("bold 14cm/2 serif").unwrap(),
-            Font::Spec {
+            Font::Spec(FontSpec {
                 style: Default::default(),
                 variant: Default::default(),
                 weight: FontWeight::Bold,
@@ -499,7 +502,7 @@ mod tests {
                 size: FontSize::Value(Length::new(14.0, LengthUnit::Cm)),
                 line_height: LineHeight::Number(2.0),
                 family: FontFamily("serif".to_string()),
-            },
+            }),
         );
     }
 

@@ -234,15 +234,7 @@ make_property!(
 make_property!(
     ComputedValues,
     Font,
-    default: Font::Spec {
-        style: Default::default(),
-        variant: Default::default(),
-        weight: Default::default(),
-        stretch: Default::default(),
-        size: Default::default(),
-        line_height: Default::default(),
-        family: Default::default(),
-    },
+    default: Font::Spec(Default::default()),
     inherits_automatically: true,
 );
 
