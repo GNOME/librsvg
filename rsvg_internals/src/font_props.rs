@@ -470,6 +470,40 @@ mod tests {
     use crate::properties::{ParsedProperty, SpecifiedValue, SpecifiedValues};
 
     #[test]
+    fn parses_font_shorthand() {
+        assert_eq!(
+            Font::parse_str("small-caption").unwrap(),
+            Font::SmallCaption,
+        );
+
+        assert_eq!(
+            Font::parse_str("italic bold 12px sans").unwrap(),
+            Font::Spec {
+                style: FontStyle::Italic,
+                variant: Default::default(),
+                weight: FontWeight::Bold,
+                stretch: Default::default(),
+                size: FontSize::Value(Length::new(12.0, LengthUnit::Px)),
+                line_height: Default::default(),
+                family: FontFamily("sans".to_string()),
+            },
+        );
+
+        assert_eq!(
+            Font::parse_str("bold 14cm/2 serif").unwrap(),
+            Font::Spec {
+                style: Default::default(),
+                variant: Default::default(),
+                weight: FontWeight::Bold,
+                stretch: Default::default(),
+                size: FontSize::Value(Length::new(14.0, LengthUnit::Cm)),
+                line_height: LineHeight::Number(2.0),
+                family: FontFamily("serif".to_string()),
+            },
+        );
+    }
+
+    #[test]
     fn detects_invalid_invalid_font_size() {
         assert!(FontSize::parse_str("furlong").is_err());
     }
