@@ -54,36 +54,39 @@ impl Parse for Font {
             // Special-case 'normal' because it is valid in each of
             // font-style, font-weight, font-variant and font-stretch.
             // Leaves the values to None, 'normal' is the initial value for each of them.
-            if parser.try_parse(|input| input.expect_ident_matching("normal")).is_ok() {
+            if parser
+                .try_parse(|input| input.expect_ident_matching("normal"))
+                .is_ok()
+            {
                 nb_normals += 1;
                 continue;
             }
             if style.is_none() {
                 if let Ok(value) = parser.try_parse(FontStyle::parse) {
                     style = Some(value);
-                    continue
+                    continue;
                 }
             }
             if weight.is_none() {
                 if let Ok(value) = parser.try_parse(FontWeight::parse) {
                     weight = Some(value);
-                    continue
+                    continue;
                 }
             }
             if variant_caps.is_none() {
                 if let Ok(value) = parser.try_parse(FontVariant::parse) {
                     variant_caps = Some(value);
-                    continue
+                    continue;
                 }
             }
             if stretch.is_none() {
                 if let Ok(value) = parser.try_parse(FontStretch::parse) {
                     stretch = Some(value);
-                    continue
+                    continue;
                 }
             }
             size = FontSize::parse(parser)?;
-            break
+            break;
         }
 
         let line_height = if parser.try_parse(|input| input.expect_delim('/')).is_ok() {
@@ -94,13 +97,19 @@ impl Parse for Font {
 
         #[inline]
         fn count<T>(opt: &Option<T>) -> u8 {
-            if opt.is_some() { 1 } else { 0 }
+            if opt.is_some() {
+                1
+            } else {
+                0
+            }
         }
 
-        if (count(&style) + count(&weight) + count(&variant_caps) + count(&stretch) + nb_normals) > 4 {
+        if (count(&style) + count(&weight) + count(&variant_caps) + count(&stretch) + nb_normals)
+            > 4
+        {
             return Err(parser.new_custom_error(ValueErrorKind::parse_error(
-                "invalid syntax for 'font' property"
-            )))
+                "invalid syntax for 'font' property",
+            )));
         }
 
         let family = FontFamily::parse(parser)?;
@@ -401,8 +410,9 @@ impl LineHeight {
         match *self {
             LineHeight::Normal => LineHeight::Length(font_size),
 
-            LineHeight::Number(f) |
-            LineHeight::Percentage(f) => LineHeight::Length(Length::new(font_size.length * f64(f), font_size.unit)),
+            LineHeight::Number(f) | LineHeight::Percentage(f) => {
+                LineHeight::Length(Length::new(font_size.length * f64(f), font_size.unit))
+            }
 
             LineHeight::Length(l) => LineHeight::Length(l),
         }
@@ -429,7 +439,9 @@ impl Parse for LineHeight {
                 }
             }
 
-            Token::Number { value, .. } => Ok(LineHeight::Number(finite_f32(value).map_err(|e| loc.new_custom_error(e))?)),
+            Token::Number { value, .. } => Ok(LineHeight::Number(
+                finite_f32(value).map_err(|e| loc.new_custom_error(e))?,
+            )),
 
             Token::Percentage { unit_value, .. } => Ok(LineHeight::Percentage(unit_value)),
 
@@ -438,9 +450,7 @@ impl Parse for LineHeight {
                 Ok(LineHeight::Length(Length::<Both>::parse(parser)?))
             }
 
-            _ => {
-                Err(parser.new_basic_unexpected_token_error(token))?
-            }
+            _ => Err(parser.new_basic_unexpected_token_error(token))?,
         }
     }
 }

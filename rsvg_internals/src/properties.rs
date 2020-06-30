@@ -3,7 +3,9 @@
 use cssparser::{
     self, BasicParseErrorKind, DeclarationListParser, ParseErrorKind, Parser, ParserInput, ToCss,
 };
-use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName};
+use markup5ever::{
+    expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName,
+};
 use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration, Origin};
