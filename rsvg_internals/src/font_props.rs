@@ -8,6 +8,126 @@ use crate::error::*;
 use crate::length::*;
 use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
+use crate::property_defs::{FontStretch, FontStyle, FontVariant};
+
+// https://www.w3.org/TR/CSS2/fonts.html#font-shorthand
+// https://drafts.csswg.org/css-fonts-4/#font-prop
+// servo/components/style/properties/shorthands/font.mako.rs is a good reference for this
+#[derive(Debug, Clone, PartialEq)]
+pub enum Font {
+    Caption,
+    Icon,
+    Menu,
+    MessageBox,
+    SmallCaption,
+    StatusBar,
+    Spec {
+        style: FontStyle,
+        variant: FontVariant,
+        weight: FontWeight,
+        stretch: FontStretch,
+        size: FontSize,
+        line_height: LineHeight,
+        family: FontFamily,
+    }
+}
+
+impl Parse for Font {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, ParseError<'i>> {
+        if let Ok(f) = parse_font_spec_identifiers(parser) {
+            return Ok(f);
+        }
+
+        // The following is stolen from servo/components/style/properties/shorthands/font.mako.rs
+
+        let mut nb_normals = 0;
+        let mut style = None;
+        let mut variant_caps = None;
+        let mut weight = None;
+        let mut stretch = None;
+        let size;
+
+        loop {
+            // Special-case 'normal' because it is valid in each of
+            // font-style, font-weight, font-variant and font-stretch.
+            // Leaves the values to None, 'normal' is the initial value for each of them.
+            if parser.try_parse(|input| input.expect_ident_matching("normal")).is_ok() {
+                nb_normals += 1;
+                continue;
+            }
+            if style.is_none() {
+                if let Ok(value) = parser.try_parse(FontStyle::parse) {
+                    style = Some(value);
+                    continue
+                }
+            }
+            if weight.is_none() {
+                if let Ok(value) = parser.try_parse(FontWeight::parse) {
+                    weight = Some(value);
+                    continue
+                }
+            }
+            if variant_caps.is_none() {
+                if let Ok(value) = parser.try_parse(FontVariant::parse) {
+                    variant_caps = Some(value);
+                    continue
+                }
+            }
+            if stretch.is_none() {
+                if let Ok(value) = parser.try_parse(FontStretch::parse) {
+                    stretch = Some(value);
+                    continue
+                }
+            }
+            size = FontSize::parse(parser)?;
+            break
+        }
+
+        let line_height = if parser.try_parse(|input| input.expect_delim('/')).is_ok() {
+            Some(LineHeight::parse(parser)?)
+        } else {
+            None
+        };
+
+        #[inline]
+        fn count<T>(opt: &Option<T>) -> u8 {
+            if opt.is_some() { 1 } else { 0 }
+        }
+
+        if (count(&style) + count(&weight) + count(&variant_caps) + count(&stretch) + nb_normals) > 4 {
+            return Err(parser.new_custom_error(ValueErrorKind::parse_error(
+                "invalid syntax for 'font' property"
+            )))
+        }
+
+        let family = FontFamily::parse(parser)?;
+
+        Ok(Font::Spec {
+            style: style.unwrap_or_default(),
+            variant: variant_caps.unwrap_or_default(),
+            weight: weight.unwrap_or_default(),
+            stretch: stretch.unwrap_or_default(),
+            size,
+            line_height: line_height.unwrap_or_default(),
+            family,
+        })
+    }
+}
+
+#[rustfmt::skip]
+fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, ParseError<'i>> {
+    Ok(parser.try_parse(|p| {
+        parse_identifiers! {
+            p,
+            "caption"       => Font::Caption,
+            "icon"          => Font::Icon,
+            "menu"          => Font::Menu,
+            "message-box"   => Font::MessageBox,
+            "small-caption" => Font::SmallCaption,
+            "status-bar"    => Font::StatusBar,
+        }
+    })?)
+}
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
 #[derive(Debug, Copy, Clone, PartialEq)]

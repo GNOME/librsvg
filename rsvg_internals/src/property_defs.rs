@@ -4,7 +4,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
-use crate::font_props::{FontFamily, FontSize, FontWeight, LetterSpacing, LineHeight};
+use crate::font_props::{Font, FontFamily, FontSize, FontWeight, LetterSpacing, LineHeight};
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -228,6 +228,22 @@ make_property!(
     default: UnitInterval(1.0),
     inherits_automatically: false,
     newtype_parse: UnitInterval,
+);
+
+// https://drafts.csswg.org/css-fonts-4/#font-prop
+make_property!(
+    ComputedValues,
+    Font,
+    default: Font::Spec {
+        style: Default::default(),
+        variant: Default::default(),
+        weight: Default::default(),
+        stretch: Default::default(),
+        size: Default::default(),
+        line_height: Default::default(),
+        family: Default::default(),
+    },
+    inherits_automatically: true,
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
