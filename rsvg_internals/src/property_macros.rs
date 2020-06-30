@@ -5,29 +5,80 @@ pub trait Property<T> {
     fn compute(&self, _: &T) -> Self;
 }
 
-/// Generates a property definition that simply parses strings to enum variants
-/// or to a tuple struct of the given type.
+/// Generates a type for a CSS property.
 ///
-/// For example, the SVG spec defines the `stroke-linejoin` property
-/// to have possible values `miter | round | bevel | inherit`, with a default
-/// of `miter`.  We can define the property like this:
+/// Writing a property by hand takes a bit of boilerplate:
+///
+/// * Define a type to represent the property's values.
+///
+/// * A `Parse` implementation to parse the property.
+///
+/// * A `Default` implementation to define the property's *initial* value.
+///
+/// * A `Property` implementation to define whether the property
+/// inherits from the parent element, and how the property calculates
+/// its computed value.
+///
+/// When going from `SpecifiedValues` to `ComputedValues, properties
+/// which inherit automatically from the parent element will just have
+/// their values cloned.  Properties which do not inherit will be reset back
+/// to their initial value (i.e. their `Default`).
+///
+/// The default implementation of `Property::compute()` is to just
+/// clone the property's value.  Properties which need more
+/// sophisticated computation can override this.
+///
+/// This macro allows defining properties of different kinds; see the following
+/// sections for examples.
+///
+/// # Simple identifiers
+///
+/// Many properties are just sets of identifiers and can be represented
+/// by simple enums.  In this case, you can use the following:
 ///
 /// ```ignore
 /// make_property!(
-/// StrokeLinejoin,
-/// default: Miter,
+///   ComputedValues,
+///   StrokeLinejoin,
+///   default: Miter,
+///   inherits_automatically: true,
 ///
-/// "miter" => Miter,
-/// "round" => Round,
-/// "bevel" => Bevel,
+///   identifiers:
+///     "miter" => Miter,
+///     "round" => Round,
+///     "bevel" => Bevel,
 /// );
 /// ```
 ///
-/// The macro will generate a `StrokeLinejoin` enum with the provided
-/// variants.  It will generate an `impl Default for StrokeLinejoin`
-/// with the provided `default:` value.  Finally, it will generate an
-/// `impl Parse for StrokeLinejoin`, from `parsers::Parse`, with
-/// `type Err = ValueErrorKind`.
+/// This generates a simple enum like the following, with implementations of `Parse`,
+/// `Default`, and `Property`.
+///
+/// ```ignore
+/// pub enum StrokeLinejoin { Miter, Round, Bevel }
+/// ```
+///
+/// # Properties from an existing, general-purpose type
+///
+/// For example, both the `lightingColor` and `floodColor` properties can be represented
+/// with a `cssparser::Color`, but their intial values are different.  In this case, the macro
+/// can generate a newtype around `cssparser::Color` for each case:
+///
+/// ```ignore
+/// make_property!(
+///     ComputedValues,
+///     FloodColor,
+///     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+///     inherits_automatically: false,
+///     newtype_parse: cssparser::Color,
+/// );
+/// ```
+///
+/// # Properties from custom specific types
+///
+/// For example, font-related properties have custom, complex types that require an
+/// implentation of `Property::compute` that is more than a simple `clone`.  In this case,
+/// define the custom type separately, and use the macro to specify the default value and
+/// the `Property` implementation.
 #[macro_export]
 macro_rules! make_property {
     ($computed_values_type: ty,
@@ -78,23 +129,23 @@ macro_rules! make_property {
     ($computed_values_type: ty,
      $name: ident,
      default: $default: expr,
-     newtype_parse: $type: ty,
      property_impl: { $prop: item }
     ) => {
-        #[derive(Debug, Clone, PartialEq)]
-        pub struct $name(pub $type);
-
-        impl_default!($name, $name($default));
+        impl_default!($name, $default);
 
         $prop
-
-        impl crate::parsers::Parse for $name {
-            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
-                Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
-            }
-        }
     };
 
+    ($computed_values_type: ty,
+     $name: ident,
+     default: $default: expr,
+     inherits_automatically: $inherits_automatically: expr,
+    ) => {
+        impl_default!($name, $default);
+        impl_property!($computed_values_type, $name, $inherits_automatically);
+    };
+
+    // pending - only BaselineShift
     ($computed_values_type: ty,
      $name: ident,
      default: $default: expr,
@@ -112,6 +163,7 @@ macro_rules! make_property {
         $parse
     };
 
+    // pending - only XmlLang
     ($computed_values_type: ty,
      $name: ident,
      default: $default: expr,
@@ -177,7 +229,6 @@ mod tests {
     use super::*;
 
     use crate::parsers::Parse;
-    use cssparser::RGBA;
 
     #[test]
     fn check_identifiers_property() {
@@ -197,37 +248,5 @@ mod tests {
         assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
         assert!(<Foo as Parse>::parse_str("blargh").is_err());
         assert_eq!(<Foo as Parse>::parse_str("bar"), Ok(Foo::Bar));
-    }
-
-    #[test]
-    fn check_compute() {
-        make_property! {
-            RGBA,
-            AddColor,
-            default: RGBA::new(1, 1, 1, 1),
-            newtype_parse: RGBA,
-            property_impl: {
-                impl Property<RGBA> for AddColor {
-                    fn inherits_automatically() -> bool {
-                        true
-                    }
-
-                    fn compute(&self, v: &RGBA) -> Self {
-                        AddColor(RGBA::new(
-                            self.0.red + v.red,
-                            self.0.green + v.green,
-                            self.0.blue + v.blue,
-                            self.0.alpha + v.alpha
-                        ))
-                    }
-                }
-            }
-        }
-
-        let color = RGBA::new(1, 1, 1, 1);
-        let a = <AddColor as Parse>::parse_str("#02030405").unwrap();
-        let b = a.compute(&color);
-
-        assert_eq!(b, AddColor(RGBA::new(3, 4, 5, 6)));
     }
 }
