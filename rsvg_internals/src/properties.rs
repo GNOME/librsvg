@@ -10,6 +10,7 @@ use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::font_props::*;
 use crate::parsers::{Parse, ParseValue};
+use crate::properties;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::*;
 use crate::property_macros::Property;
@@ -427,26 +428,33 @@ impl SpecifiedValues {
     }
 
     fn set_property_expanding_shorthands(&mut self, prop: &ParsedProperty, replace: bool) {
-        use crate::properties as p;
         use crate::properties::ParsedProperty::*;
 
-        if let Marker(SpecifiedValue::Specified(p::Marker(ref v))) = *prop {
-            // Since "marker" is a shorthand property, we'll just expand it here
-            self.set_property(
-                &MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))),
-                replace,
-            );
-            self.set_property(
-                &MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))),
-                replace,
-            );
-            self.set_property(
-                &MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))),
-                replace,
-            );
+        if let Marker(SpecifiedValue::Specified(ref m)) = *prop {
+            self.expand_marker(m, replace);
         } else {
             self.set_property(prop, replace);
         }
+    }
+
+    fn expand_marker(&mut self, marker: &properties::Marker, replace: bool) {
+        use crate::properties as p;
+        use crate::properties::ParsedProperty::*;
+
+        let p::Marker(v) = marker;
+
+        self.set_property(
+            &MarkerStart(SpecifiedValue::Specified(p::MarkerStart(v.clone()))),
+            replace,
+        );
+        self.set_property(
+            &MarkerMid(SpecifiedValue::Specified(p::MarkerMid(v.clone()))),
+            replace,
+        );
+        self.set_property(
+            &MarkerEnd(SpecifiedValue::Specified(p::MarkerEnd(v.clone()))),
+            replace,
+        );
     }
 
     pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
