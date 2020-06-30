@@ -430,10 +430,10 @@ impl SpecifiedValues {
     fn set_property_expanding_shorthands(&mut self, prop: &ParsedProperty, replace: bool) {
         use crate::properties::ParsedProperty::*;
 
-        if let Marker(SpecifiedValue::Specified(ref m)) = *prop {
-            self.expand_marker(m, replace);
-        } else {
-            self.set_property(prop, replace);
+        match *prop {
+            Marker(SpecifiedValue::Specified(ref m)) => self.expand_marker(m, replace),
+
+            _ => self.set_property(prop, replace),
         }
     }
 
