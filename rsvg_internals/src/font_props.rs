@@ -117,6 +117,24 @@ impl Parse for Font {
     }
 }
 
+impl Font {
+    pub fn to_font_spec(&self) -> FontSpec {
+        match *self {
+            Font::Caption
+            | Font::Icon
+            | Font::Menu
+            | Font::MessageBox
+            | Font::SmallCaption
+            | Font::StatusBar => {
+                // We don't actually pick up the systme fonts, so reduce them to a default.
+                FontSpec::default()
+            }
+
+            Font::Spec(ref spec) => spec.clone(),
+        }
+    }
+}
+
 #[rustfmt::skip]
 fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, ParseError<'i>> {
     Ok(parser.try_parse(|p| {

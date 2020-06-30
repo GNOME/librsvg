@@ -326,7 +326,8 @@ macro_rules! make_properties {
 #[rustfmt::skip]
 make_properties! {
     shorthands: {
-        "marker" => marker: Marker,
+        "font"                        => font                        : Font,
+        "marker"                      => marker                      : Marker,
     }
 
     longhands: {
@@ -428,12 +429,57 @@ impl SpecifiedValues {
 
     fn set_property_expanding_shorthands(&mut self, prop: &ParsedProperty, replace: bool) {
         match *prop {
-            ParsedProperty::Marker(SpecifiedValue::Specified(ref m)) => self.expand_marker_shorthand(m, replace),
+            ParsedProperty::Font(SpecifiedValue::Specified(ref f)) => {
+                self.expand_font_shorthand(f, replace)
+            }
+            ParsedProperty::Marker(SpecifiedValue::Specified(ref m)) => {
+                self.expand_marker_shorthand(m, replace)
+            }
 
             _ => self.set_property(prop, replace),
         }
     }
 
+    fn expand_font_shorthand(&mut self, font: &Font, replace: bool) {
+        let FontSpec {
+            style,
+            variant,
+            weight,
+            stretch,
+            size,
+            line_height,
+            family,
+        } = font.to_font_spec();
+
+        self.set_property(
+            &ParsedProperty::FontStyle(SpecifiedValue::Specified(style)),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontVariant(SpecifiedValue::Specified(variant)),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontWeight(SpecifiedValue::Specified(weight)),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontStretch(SpecifiedValue::Specified(stretch)),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontSize(SpecifiedValue::Specified(size)),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::LineHeight(SpecifiedValue::Specified(line_height)),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontFamily(SpecifiedValue::Specified(family)),
+            replace,
+        );
+    }
 
     fn expand_marker_shorthand(&mut self, marker: &Marker, replace: bool) {
         let Marker(v) = marker;
