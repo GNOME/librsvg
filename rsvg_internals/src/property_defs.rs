@@ -4,7 +4,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
-use crate::font_props::{FontFamily, FontSize, FontWeight, LetterSpacing, LineHeightSpec};
+use crate::font_props::{FontFamily, FontSize, FontWeight, LetterSpacing, LineHeight};
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -342,9 +342,8 @@ make_property!(
 make_property!(
     ComputedValues,
     LineHeight,
-    default: LineHeightSpec::Normal,
+    default: LineHeight::Normal,
     inherits_automatically: true,
-    newtype_parse: LineHeightSpec,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#LightingColorProperty

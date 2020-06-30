@@ -239,17 +239,17 @@ impl Parse for LetterSpacing {
 
 // https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum LineHeightSpec {
+pub enum LineHeight {
     Normal,
     Number(f32),
     Length(Length<Both>),
     Percentage(f32),
 }
 
-impl LineHeightSpec {
+impl LineHeight {
     pub fn value(&self) -> Length<Both> {
         match self {
-            LineHeightSpec::Length(l) => *l,
+            LineHeight::Length(l) => *l,
             _ => unreachable!(),
         }
     }
@@ -258,12 +258,12 @@ impl LineHeightSpec {
         let font_size = values.font_size().value();
 
         match *self {
-            LineHeightSpec::Normal => LineHeightSpec::Length(font_size),
+            LineHeight::Normal => LineHeight::Length(font_size),
 
-            LineHeightSpec::Number(f) |
-            LineHeightSpec::Percentage(f) => LineHeightSpec::Length(Length::new(font_size.length * f64(f), font_size.unit)),
+            LineHeight::Number(f) |
+            LineHeight::Percentage(f) => LineHeight::Length(Length::new(font_size.length * f64(f), font_size.unit)),
 
-            LineHeightSpec::Length(l) => LineHeightSpec::Length(l),
+            LineHeight::Length(l) => LineHeight::Length(l),
         }
     }
 
@@ -272,8 +272,8 @@ impl LineHeightSpec {
     }
 }
 
-impl Parse for LineHeightSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LineHeightSpec, ParseError<'i>> {
+impl Parse for LineHeight {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LineHeight, ParseError<'i>> {
         let state = parser.state();
         let loc = parser.current_source_location();
 
@@ -282,19 +282,19 @@ impl Parse for LineHeightSpec {
         match token {
             Token::Ident(ref cow) => {
                 if cow.eq_ignore_ascii_case("normal") {
-                    Ok(LineHeightSpec::Normal)
+                    Ok(LineHeight::Normal)
                 } else {
                     Err(parser.new_basic_unexpected_token_error(token.clone()))?
                 }
             }
 
-            Token::Number { value, .. } => Ok(LineHeightSpec::Number(finite_f32(value).map_err(|e| loc.new_custom_error(e))?)),
+            Token::Number { value, .. } => Ok(LineHeight::Number(finite_f32(value).map_err(|e| loc.new_custom_error(e))?)),
 
-            Token::Percentage { unit_value, .. } => Ok(LineHeightSpec::Percentage(unit_value)),
+            Token::Percentage { unit_value, .. } => Ok(LineHeight::Percentage(unit_value)),
 
             Token::Dimension { .. } => {
                 parser.reset(&state);
-                Ok(LineHeightSpec::Length(Length::<Both>::parse(parser)?))
+                Ok(LineHeight::Length(Length::<Both>::parse(parser)?))
             }
 
             _ => {
@@ -508,31 +508,31 @@ mod tests {
     #[test]
     fn parses_line_height() {
         assert_eq!(
-            <LineHeightSpec as Parse>::parse_str("normal"),
-            Ok(LineHeightSpec::Normal),
+            <LineHeight as Parse>::parse_str("normal"),
+            Ok(LineHeight::Normal),
         );
 
         assert_eq!(
-            <LineHeightSpec as Parse>::parse_str("2"),
-            Ok(LineHeightSpec::Number(2.0)),
+            <LineHeight as Parse>::parse_str("2"),
+            Ok(LineHeight::Number(2.0)),
         );
 
         assert_eq!(
-            <LineHeightSpec as Parse>::parse_str("2cm"),
-            Ok(LineHeightSpec::Length(Length::new(2.0, LengthUnit::Cm))),
+            <LineHeight as Parse>::parse_str("2cm"),
+            Ok(LineHeight::Length(Length::new(2.0, LengthUnit::Cm))),
         );
 
         assert_eq!(
-            <LineHeightSpec as Parse>::parse_str("150%"),
-            Ok(LineHeightSpec::Percentage(1.5)),
+            <LineHeight as Parse>::parse_str("150%"),
+            Ok(LineHeight::Percentage(1.5)),
         );
     }
 
     #[test]
     fn detects_invalid_line_height() {
-        assert!(<LineHeightSpec as Parse>::parse_str("").is_err());
-        assert!(<LineHeightSpec as Parse>::parse_str("florp").is_err());
-        assert!(<LineHeightSpec as Parse>::parse_str("3florp").is_err());
+        assert!(<LineHeight as Parse>::parse_str("").is_err());
+        assert!(<LineHeight as Parse>::parse_str("florp").is_err());
+        assert!(<LineHeight as Parse>::parse_str("3florp").is_err());
     }
 
     #[test]
@@ -546,23 +546,23 @@ mod tests {
         specified.to_computed_values(&mut values);
 
         assert_eq!(
-            LineHeightSpec::Normal.compute(&values),
-            LineHeightSpec::Length(Length::new(10.0, LengthUnit::Px)),
+            LineHeight::Normal.compute(&values),
+            LineHeight::Length(Length::new(10.0, LengthUnit::Px)),
         );
 
         assert_eq!(
-            LineHeightSpec::Number(2.0).compute(&values),
-            LineHeightSpec::Length(Length::new(20.0, LengthUnit::Px)),
+            LineHeight::Number(2.0).compute(&values),
+            LineHeight::Length(Length::new(20.0, LengthUnit::Px)),
         );
 
         assert_eq!(
-            LineHeightSpec::Length(Length::new(3.0, LengthUnit::Cm)).compute(&values),
-            LineHeightSpec::Length(Length::new(3.0, LengthUnit::Cm)),
+            LineHeight::Length(Length::new(3.0, LengthUnit::Cm)).compute(&values),
+            LineHeight::Length(Length::new(3.0, LengthUnit::Cm)),
         );
 
         assert_eq!(
-            LineHeightSpec::parse_str("150%").unwrap().compute(&values),
-            LineHeightSpec::Length(Length::new(15.0, LengthUnit::Px)),
+            LineHeight::parse_str("150%").unwrap().compute(&values),
+            LineHeight::Length(Length::new(15.0, LengthUnit::Px)),
         );
     }
 }
