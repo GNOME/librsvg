@@ -11,7 +11,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::font_props::FontWeightSpec;
+use crate::font_props::FontWeight;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -844,8 +844,8 @@ impl From<FontStretch> for pango::Stretch {
     }
 }
 
-impl From<FontWeightSpec> for pango::Weight {
-    fn from(w: FontWeightSpec) -> pango::Weight {
+impl From<FontWeight> for pango::Weight {
+    fn from(w: FontWeight) -> pango::Weight {
         pango::Weight::__Unknown(w.numeric_weight().into())
     }
 }
@@ -958,27 +958,39 @@ fn create_pango_layout(
     }
 
     let mut font_desc = pango_context.get_font_description().unwrap();
-    font_desc.set_family(&(values.font_family().0).0);
+    font_desc.set_family(values.font_family().as_str());
     font_desc.set_style(pango::Style::from(values.font_style()));
     font_desc.set_variant(pango::Variant::from(values.font_variant()));
-    font_desc.set_weight(pango::Weight::from(values.font_weight().0));
+    font_desc.set_weight(pango::Weight::from(values.font_weight()));
     font_desc.set_stretch(pango::Stretch::from(values.font_stretch()));
 
     let params = draw_ctx.get_view_params();
 
     font_desc.set_size(to_pango_units(
-        values.font_size().0.normalize(values, &params),
+        values.font_size().normalize(values, &params),
     ));
 
     let layout = pango::Layout::new(&pango_context);
     layout.set_auto_dir(false);
     layout.set_font_description(Some(&font_desc));
 
+    // FIXME: For now we ignore the `line-height` property, even though we parse it.
+    // We would need to do something like this:
+    //
+    // layout.set_line_spacing(0.0); // "actually use the spacing I'll give you"
+    // layout.set_spacing(to_pango_units(???));
+    //
+    // However, Layout::set_spacing() takes an inter-line spacing (from the baseline of
+    // one line to the top of the next line), not the line height (from baseline to
+    // baseline).
+    //
+    // Maybe we need to implement layout of individual lines by hand.
+
     let attr_list = pango::AttrList::new();
 
     attr_list.insert(
         pango::Attribute::new_letter_spacing(to_pango_units(
-            values.letter_spacing().0.normalize(values, &params),
+            values.letter_spacing().normalize(values, &params),
         ))
         .unwrap(),
     );

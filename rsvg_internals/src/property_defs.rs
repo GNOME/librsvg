@@ -4,7 +4,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
-use crate::font_props::{FontSizeSpec, FontWeightSpec, LetterSpacingSpec, MultiFontFamily};
+use crate::font_props::{Font, FontFamily, FontSize, FontWeight, LetterSpacing, LineHeight};
 use crate::iri::IRI;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -26,7 +26,7 @@ make_property!(
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {
-                let font_size = v.font_size().0.value();
+                let font_size = v.font_size().value();
                 let parent = v.baseline_shift();
 
                 match (self.0.unit, parent.0.unit) {
@@ -230,21 +230,27 @@ make_property!(
     newtype_parse: UnitInterval,
 );
 
+// https://drafts.csswg.org/css-fonts-4/#font-prop
+make_property!(
+    ComputedValues,
+    Font,
+    default: Font::Spec(Default::default()),
+    inherits_automatically: true,
+);
+
 // https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
 make_property!(
     ComputedValues,
     FontFamily,
-    default: MultiFontFamily("Times New Roman".to_string()),
+    default: FontFamily("Times New Roman".to_string()),
     inherits_automatically: true,
-    newtype_parse: MultiFontFamily,
 );
 
 // https://www.w3.org/TR/SVG/text.html#FontSizeProperty
 make_property!(
     ComputedValues,
     FontSize,
-    default: FontSizeSpec::Value(Length::<Both>::parse_str("12.0").unwrap()),
-    newtype_parse: FontSizeSpec,
+    default: FontSize::Value(Length::<Both>::parse_str("12.0").unwrap()),
     property_impl: {
         impl Property<ComputedValues> for FontSize {
             fn inherits_automatically() -> bool {
@@ -252,7 +258,7 @@ make_property!(
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {
-                FontSize(self.0.compute(v))
+                self.compute(v)
             }
         }
     }
@@ -308,8 +314,7 @@ make_property!(
 make_property!(
     ComputedValues,
     FontWeight,
-    default: FontWeightSpec::Normal,
-    newtype_parse: FontWeightSpec,
+    default: FontWeight::Normal,
     property_impl: {
         impl Property<ComputedValues> for FontWeight {
             fn inherits_automatically() -> bool {
@@ -317,7 +322,7 @@ make_property!(
             }
 
             fn compute(&self, v: &ComputedValues) -> Self {
-                FontWeight(self.0.compute(&v.font_weight().0))
+                self.compute(&v.font_weight())
             }
         }
     }
@@ -327,8 +332,7 @@ make_property!(
 make_property!(
     ComputedValues,
     LetterSpacing,
-    default: LetterSpacingSpec::Normal,
-    newtype_parse: LetterSpacingSpec,
+    default: LetterSpacing::Normal,
     property_impl: {
         impl Property<ComputedValues> for LetterSpacing {
             fn inherits_automatically() -> bool {
@@ -336,10 +340,18 @@ make_property!(
             }
 
             fn compute(&self, _v: &ComputedValues) -> Self {
-                LetterSpacing(self.0.compute())
+                self.compute()
             }
         }
     }
+);
+
+// https://drafts.csswg.org/css2/visudet.html#propdef-line-height
+make_property!(
+    ComputedValues,
+    LineHeight,
+    default: LineHeight::Normal,
+    inherits_automatically: true,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#LightingColorProperty

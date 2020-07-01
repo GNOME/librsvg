@@ -1,17 +1,167 @@
 //! CSS font properties.
 
-use cast::u16;
-use cssparser::Parser;
+use cast::{f64, u16};
+use cssparser::{Parser, Token};
 
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::length::*;
-use crate::parsers::Parse;
+use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
+use crate::property_defs::{FontStretch, FontStyle, FontVariant};
+
+// https://www.w3.org/TR/CSS2/fonts.html#font-shorthand
+// https://drafts.csswg.org/css-fonts-4/#font-prop
+// servo/components/style/properties/shorthands/font.mako.rs is a good reference for this
+#[derive(Debug, Clone, PartialEq)]
+pub enum Font {
+    Caption,
+    Icon,
+    Menu,
+    MessageBox,
+    SmallCaption,
+    StatusBar,
+    Spec(FontSpec),
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct FontSpec {
+    pub style: FontStyle,
+    pub variant: FontVariant,
+    pub weight: FontWeight,
+    pub stretch: FontStretch,
+    pub size: FontSize,
+    pub line_height: LineHeight,
+    pub family: FontFamily,
+}
+
+impl Parse for Font {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, ParseError<'i>> {
+        if let Ok(f) = parse_font_spec_identifiers(parser) {
+            return Ok(f);
+        }
+
+        // The following is stolen from servo/components/style/properties/shorthands/font.mako.rs
+
+        let mut nb_normals = 0;
+        let mut style = None;
+        let mut variant_caps = None;
+        let mut weight = None;
+        let mut stretch = None;
+        let size;
+
+        loop {
+            // Special-case 'normal' because it is valid in each of
+            // font-style, font-weight, font-variant and font-stretch.
+            // Leaves the values to None, 'normal' is the initial value for each of them.
+            if parser
+                .try_parse(|input| input.expect_ident_matching("normal"))
+                .is_ok()
+            {
+                nb_normals += 1;
+                continue;
+            }
+            if style.is_none() {
+                if let Ok(value) = parser.try_parse(FontStyle::parse) {
+                    style = Some(value);
+                    continue;
+                }
+            }
+            if weight.is_none() {
+                if let Ok(value) = parser.try_parse(FontWeight::parse) {
+                    weight = Some(value);
+                    continue;
+                }
+            }
+            if variant_caps.is_none() {
+                if let Ok(value) = parser.try_parse(FontVariant::parse) {
+                    variant_caps = Some(value);
+                    continue;
+                }
+            }
+            if stretch.is_none() {
+                if let Ok(value) = parser.try_parse(FontStretch::parse) {
+                    stretch = Some(value);
+                    continue;
+                }
+            }
+            size = FontSize::parse(parser)?;
+            break;
+        }
+
+        let line_height = if parser.try_parse(|input| input.expect_delim('/')).is_ok() {
+            Some(LineHeight::parse(parser)?)
+        } else {
+            None
+        };
+
+        #[inline]
+        fn count<T>(opt: &Option<T>) -> u8 {
+            if opt.is_some() {
+                1
+            } else {
+                0
+            }
+        }
+
+        if (count(&style) + count(&weight) + count(&variant_caps) + count(&stretch) + nb_normals)
+            > 4
+        {
+            return Err(parser.new_custom_error(ValueErrorKind::parse_error(
+                "invalid syntax for 'font' property",
+            )));
+        }
+
+        let family = FontFamily::parse(parser)?;
+
+        Ok(Font::Spec(FontSpec {
+            style: style.unwrap_or_default(),
+            variant: variant_caps.unwrap_or_default(),
+            weight: weight.unwrap_or_default(),
+            stretch: stretch.unwrap_or_default(),
+            size,
+            line_height: line_height.unwrap_or_default(),
+            family,
+        }))
+    }
+}
+
+impl Font {
+    pub fn to_font_spec(&self) -> FontSpec {
+        match *self {
+            Font::Caption
+            | Font::Icon
+            | Font::Menu
+            | Font::MessageBox
+            | Font::SmallCaption
+            | Font::StatusBar => {
+                // We don't actually pick up the systme fonts, so reduce them to a default.
+                FontSpec::default()
+            }
+
+            Font::Spec(ref spec) => spec.clone(),
+        }
+    }
+}
+
+#[rustfmt::skip]
+fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, ParseError<'i>> {
+    Ok(parser.try_parse(|p| {
+        parse_identifiers! {
+            p,
+            "caption"       => Font::Caption,
+            "icon"          => Font::Icon,
+            "menu"          => Font::Menu,
+            "message-box"   => Font::MessageBox,
+            "small-caption" => Font::SmallCaption,
+            "status-bar"    => Font::StatusBar,
+        }
+    })?)
+}
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum FontSizeSpec {
+pub enum FontSize {
     Smaller,
     Larger,
     XXSmall,
@@ -24,10 +174,10 @@ pub enum FontSizeSpec {
     Value(Length<Both>),
 }
 
-impl FontSizeSpec {
+impl FontSize {
     pub fn value(&self) -> Length<Both> {
         match self {
-            FontSizeSpec::Value(s) => *s,
+            FontSize::Value(s) => *s,
             _ => unreachable!(),
         }
     }
@@ -35,7 +185,7 @@ impl FontSizeSpec {
     pub fn compute(&self, v: &ComputedValues) -> Self {
         let compute_points = |p| 12.0 * 1.2f64.powf(p) / POINTS_PER_INCH;
 
-        let parent = v.font_size().0.value();
+        let parent = v.font_size().value();
 
         // The parent must already have resolved to an absolute unit
         assert!(
@@ -44,7 +194,7 @@ impl FontSizeSpec {
                 && parent.unit != LengthUnit::Ex
         );
 
-        use FontSizeSpec::*;
+        use FontSize::*;
 
         #[rustfmt::skip]
         let new_size = match self {
@@ -75,7 +225,7 @@ impl FontSizeSpec {
             Value(s) => *s,
         };
 
-        FontSizeSpec::Value(new_size)
+        FontSize::Value(new_size)
     }
 
     pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
@@ -83,23 +233,24 @@ impl FontSizeSpec {
     }
 }
 
-impl Parse for FontSizeSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSizeSpec, ParseError<'i>> {
+impl Parse for FontSize {
+    #[rustfmt::skip]
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSize, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Both>::parse(p))
-            .and_then(|l| Ok(FontSizeSpec::Value(l)))
+            .and_then(|l| Ok(FontSize::Value(l)))
             .or_else(|_| {
                 Ok(parse_identifiers!(
                     parser,
-                    "smaller" => FontSizeSpec::Smaller,
-                    "larger" => FontSizeSpec::Larger,
-                    "xx-small" => FontSizeSpec::XXSmall,
-                    "x-small" => FontSizeSpec::XSmall,
-                    "small" => FontSizeSpec::Small,
-                    "medium" => FontSizeSpec::Medium,
-                    "large" => FontSizeSpec::Large,
-                    "x-large" => FontSizeSpec::XLarge,
-                    "xx-large" => FontSizeSpec::XXLarge,
+                    "smaller"  => FontSize::Smaller,
+                    "larger"   => FontSize::Larger,
+                    "xx-small" => FontSize::XXSmall,
+                    "x-small"  => FontSize::XSmall,
+                    "small"    => FontSize::Small,
+                    "medium"   => FontSize::Medium,
+                    "large"    => FontSize::Large,
+                    "x-large"  => FontSize::XLarge,
+                    "xx-large" => FontSize::XXLarge,
                 )?)
             })
     }
@@ -107,7 +258,7 @@ impl Parse for FontSizeSpec {
 
 // https://drafts.csswg.org/css-fonts-4/#font-weight-prop
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum FontWeightSpec {
+pub enum FontWeight {
     Normal,
     Bold,
     Bolder,
@@ -115,23 +266,23 @@ pub enum FontWeightSpec {
     Weight(u16),
 }
 
-impl Parse for FontWeightSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontWeightSpec, ParseError<'i>> {
+impl Parse for FontWeight {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontWeight, ParseError<'i>> {
         parser
             .try_parse(|p| {
                 Ok(parse_identifiers!(
                     p,
-                    "normal" => FontWeightSpec::Normal,
-                    "bold" => FontWeightSpec::Bold,
-                    "bolder" => FontWeightSpec::Bolder,
-                    "lighter" => FontWeightSpec::Lighter,
+                    "normal" => FontWeight::Normal,
+                    "bold" => FontWeight::Bold,
+                    "bolder" => FontWeight::Bolder,
+                    "lighter" => FontWeight::Lighter,
                 )?)
             })
             .or_else(|_: ParseError| {
                 let loc = parser.current_source_location();
                 let i = parser.expect_integer()?;
                 if (1..=1000).contains(&i) {
-                    Ok(FontWeightSpec::Weight(u16(i).unwrap()))
+                    Ok(FontWeight::Weight(u16(i).unwrap()))
                 } else {
                     Err(loc.new_custom_error(ValueErrorKind::value_error(
                         "value must be between 1 and 1000 inclusive",
@@ -141,13 +292,13 @@ impl Parse for FontWeightSpec {
     }
 }
 
-impl FontWeightSpec {
+impl FontWeight {
     #[rustfmt::skip]
     pub fn compute(&self, v: &Self) -> Self {
-        use FontWeightSpec::*;
+        use FontWeight::*;
 
         // Here, note that we assume that Normal=W400 and Bold=W700, per the spec.  Also,
-        // this must match `impl From<FontWeightSpec> for pango::Weight`.
+        // this must match `impl From<FontWeight> for pango::Weight`.
         //
         // See the table at https://drafts.csswg.org/css-fonts-4/#relative-weights
 
@@ -180,10 +331,10 @@ impl FontWeightSpec {
 
     // Converts the symbolic weights to numeric weights.  Will panic on `Bolder` or `Lighter`.
     pub fn numeric_weight(self) -> u16 {
-        use FontWeightSpec::*;
+        use FontWeight::*;
 
         // Here, note that we assume that Normal=W400 and Bold=W700, per the spec.  Also,
-        // this must match `impl From<FontWeightSpec> for pango::Weight`.
+        // this must match `impl From<FontWeight> for pango::Weight`.
         match self {
             Normal => 400,
             Bold => 700,
@@ -195,26 +346,26 @@ impl FontWeightSpec {
 
 // https://www.w3.org/TR/css-text-3/#letter-spacing-property
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum LetterSpacingSpec {
+pub enum LetterSpacing {
     Normal,
     Value(Length<Horizontal>),
 }
 
-impl LetterSpacingSpec {
+impl LetterSpacing {
     pub fn value(&self) -> Length<Horizontal> {
         match self {
-            LetterSpacingSpec::Value(s) => *s,
+            LetterSpacing::Value(s) => *s,
             _ => unreachable!(),
         }
     }
 
     pub fn compute(&self) -> Self {
         let spacing = match self {
-            LetterSpacingSpec::Normal => Length::<Horizontal>::new(0.0, LengthUnit::Px),
-            LetterSpacingSpec::Value(s) => *s,
+            LetterSpacing::Normal => Length::<Horizontal>::new(0.0, LengthUnit::Px),
+            LetterSpacing::Value(s) => *s,
         };
 
-        LetterSpacingSpec::Value(spacing)
+        LetterSpacing::Value(spacing)
     }
 
     pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
@@ -222,26 +373,94 @@ impl LetterSpacingSpec {
     }
 }
 
-impl Parse for LetterSpacingSpec {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacingSpec, ParseError<'i>> {
+impl Parse for LetterSpacing {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacing, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Horizontal>::parse(p))
-            .and_then(|l| Ok(LetterSpacingSpec::Value(l)))
+            .and_then(|l| Ok(LetterSpacing::Value(l)))
             .or_else(|_| {
                 Ok(parse_identifiers!(
                     parser,
-                    "normal" => LetterSpacingSpec::Normal,
+                    "normal" => LetterSpacing::Normal,
                 )?)
             })
     }
 }
 
+// https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum LineHeight {
+    Normal,
+    Number(f32),
+    Length(Length<Both>),
+    Percentage(f32),
+}
+
+impl LineHeight {
+    pub fn value(&self) -> Length<Both> {
+        match self {
+            LineHeight::Length(l) => *l,
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn compute(&self, values: &ComputedValues) -> Self {
+        let font_size = values.font_size().value();
+
+        match *self {
+            LineHeight::Normal => LineHeight::Length(font_size),
+
+            LineHeight::Number(f) | LineHeight::Percentage(f) => {
+                LineHeight::Length(Length::new(font_size.length * f64(f), font_size.unit))
+            }
+
+            LineHeight::Length(l) => LineHeight::Length(l),
+        }
+    }
+
+    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+        self.value().normalize(values, params)
+    }
+}
+
+impl Parse for LineHeight {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LineHeight, ParseError<'i>> {
+        let state = parser.state();
+        let loc = parser.current_source_location();
+
+        let token = parser.next()?.clone();
+
+        match token {
+            Token::Ident(ref cow) => {
+                if cow.eq_ignore_ascii_case("normal") {
+                    Ok(LineHeight::Normal)
+                } else {
+                    Err(parser.new_basic_unexpected_token_error(token.clone()))?
+                }
+            }
+
+            Token::Number { value, .. } => Ok(LineHeight::Number(
+                finite_f32(value).map_err(|e| loc.new_custom_error(e))?,
+            )),
+
+            Token::Percentage { unit_value, .. } => Ok(LineHeight::Percentage(unit_value)),
+
+            Token::Dimension { .. } => {
+                parser.reset(&state);
+                Ok(LineHeight::Length(Length::<Both>::parse(parser)?))
+            }
+
+            _ => Err(parser.new_basic_unexpected_token_error(token))?,
+        }
+    }
+}
+
 /// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
 #[derive(Debug, Clone, PartialEq)]
-pub struct MultiFontFamily(pub String);
+pub struct FontFamily(pub String);
 
-impl Parse for MultiFontFamily {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MultiFontFamily, ParseError<'i>> {
+impl Parse for FontFamily {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontFamily, ParseError<'i>> {
         let loc = parser.current_source_location();
 
         let fonts = parser.parse_comma_separated(|parser| {
@@ -265,7 +484,13 @@ impl Parse for MultiFontFamily {
             Ok(cssparser::CowRcStr::from(value))
         })?;
 
-        Ok(MultiFontFamily(fonts.join(",")))
+        Ok(FontFamily(fonts.join(",")))
+    }
+}
+
+impl FontFamily {
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 
@@ -274,12 +499,44 @@ mod tests {
     use super::*;
 
     use crate::properties::{ParsedProperty, SpecifiedValue, SpecifiedValues};
-    use crate::property_defs::FontSize;
-    use crate::property_macros::Property;
+
+    #[test]
+    fn parses_font_shorthand() {
+        assert_eq!(
+            Font::parse_str("small-caption").unwrap(),
+            Font::SmallCaption,
+        );
+
+        assert_eq!(
+            Font::parse_str("italic bold 12px sans").unwrap(),
+            Font::Spec(FontSpec {
+                style: FontStyle::Italic,
+                variant: Default::default(),
+                weight: FontWeight::Bold,
+                stretch: Default::default(),
+                size: FontSize::Value(Length::new(12.0, LengthUnit::Px)),
+                line_height: Default::default(),
+                family: FontFamily("sans".to_string()),
+            }),
+        );
+
+        assert_eq!(
+            Font::parse_str("bold 14cm/2 serif").unwrap(),
+            Font::Spec(FontSpec {
+                style: Default::default(),
+                variant: Default::default(),
+                weight: FontWeight::Bold,
+                stretch: Default::default(),
+                size: FontSize::Value(Length::new(14.0, LengthUnit::Cm)),
+                line_height: LineHeight::Number(2.0),
+                family: FontFamily("serif".to_string()),
+            }),
+        );
+    }
 
     #[test]
     fn detects_invalid_invalid_font_size() {
-        assert!(FontSizeSpec::parse_str("furlong").is_err());
+        assert!(FontSize::parse_str("furlong").is_err());
     }
 
     #[test]
@@ -307,16 +564,16 @@ mod tests {
             FontSize::parse_str("5px").unwrap()
         );
 
-        let smaller = FontSize::parse_str("smaller").unwrap().compute(&values).0;
-        if let FontSizeSpec::Value(v) = smaller {
+        let smaller = FontSize::parse_str("smaller").unwrap().compute(&values);
+        if let FontSize::Value(v) = smaller {
             assert!(v.length < 10.0);
             assert_eq!(v.unit, LengthUnit::Px);
         } else {
             unreachable!();
         }
 
-        let larger = FontSize::parse_str("larger").unwrap().compute(&values).0;
-        if let FontSizeSpec::Value(v) = larger {
+        let larger = FontSize::parse_str("larger").unwrap().compute(&values);
+        if let FontSize::Value(v) = larger {
             assert!(v.length > 10.0);
             assert_eq!(v.unit, LengthUnit::Px);
         } else {
@@ -327,38 +584,38 @@ mod tests {
     #[test]
     fn parses_font_weight() {
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("normal"),
-            Ok(FontWeightSpec::Normal)
+            <FontWeight as Parse>::parse_str("normal"),
+            Ok(FontWeight::Normal)
         );
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("bold"),
-            Ok(FontWeightSpec::Bold)
+            <FontWeight as Parse>::parse_str("bold"),
+            Ok(FontWeight::Bold)
         );
         assert_eq!(
-            <FontWeightSpec as Parse>::parse_str("100"),
-            Ok(FontWeightSpec::Weight(100))
+            <FontWeight as Parse>::parse_str("100"),
+            Ok(FontWeight::Weight(100))
         );
     }
 
     #[test]
     fn detects_invalid_font_weight() {
-        assert!(<FontWeightSpec as Parse>::parse_str("").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("strange").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("0").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("-1").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("1001").is_err());
-        assert!(<FontWeightSpec as Parse>::parse_str("3.14").is_err());
+        assert!(<FontWeight as Parse>::parse_str("").is_err());
+        assert!(<FontWeight as Parse>::parse_str("strange").is_err());
+        assert!(<FontWeight as Parse>::parse_str("0").is_err());
+        assert!(<FontWeight as Parse>::parse_str("-1").is_err());
+        assert!(<FontWeight as Parse>::parse_str("1001").is_err());
+        assert!(<FontWeight as Parse>::parse_str("3.14").is_err());
     }
 
     #[test]
     fn parses_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal"),
-            Ok(LetterSpacingSpec::Normal)
+            <LetterSpacing as Parse>::parse_str("normal"),
+            Ok(LetterSpacing::Normal)
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em"),
-            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
+            <LetterSpacing as Parse>::parse_str("10em"),
+            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
             )))
@@ -368,15 +625,15 @@ mod tests {
     #[test]
     fn computes_letter_spacing() {
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("normal").map(|s| s.compute()),
-            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
+            <LetterSpacing as Parse>::parse_str("normal").map(|s| s.compute()),
+            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
                 0.0,
                 LengthUnit::Px,
             )))
         );
         assert_eq!(
-            <LetterSpacingSpec as Parse>::parse_str("10em").map(|s| s.compute()),
-            Ok(LetterSpacingSpec::Value(Length::<Horizontal>::new(
+            <LetterSpacing as Parse>::parse_str("10em").map(|s| s.compute()),
+            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
                 10.0,
                 LengthUnit::Em,
             )))
@@ -385,42 +642,42 @@ mod tests {
 
     #[test]
     fn detects_invalid_invalid_letter_spacing() {
-        assert!(LetterSpacingSpec::parse_str("furlong").is_err());
+        assert!(LetterSpacing::parse_str("furlong").is_err());
     }
 
     #[test]
     fn parses_font_family() {
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("'Hello world'"),
-            Ok(MultiFontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("'Hello world'"),
+            Ok(FontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("\"Hello world\""),
-            Ok(MultiFontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("\"Hello world\""),
+            Ok(FontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("\"Hello world  with  spaces\""),
-            Ok(MultiFontFamily("Hello world  with  spaces".to_owned()))
+            <FontFamily as Parse>::parse_str("\"Hello world  with  spaces\""),
+            Ok(FontFamily("Hello world  with  spaces".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("  Hello  world  "),
-            Ok(MultiFontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("  Hello  world  "),
+            Ok(FontFamily("Hello world".to_owned()))
         );
 
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("Plonk"),
-            Ok(MultiFontFamily("Plonk".to_owned()))
+            <FontFamily as Parse>::parse_str("Plonk"),
+            Ok(FontFamily("Plonk".to_owned()))
         );
     }
 
     #[test]
     fn parses_multiple_font_family() {
         assert_eq!(
-            <MultiFontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
-            Ok(MultiFontFamily(
+            <FontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
+            Ok(FontFamily(
                 "serif,monospace,Hello world,with spaces".to_owned()
             ))
         );
@@ -428,8 +685,69 @@ mod tests {
 
     #[test]
     fn detects_invalid_font_family() {
-        assert!(<MultiFontFamily as Parse>::parse_str("").is_err());
-        assert!(<MultiFontFamily as Parse>::parse_str("''").is_err());
-        assert!(<MultiFontFamily as Parse>::parse_str("42").is_err());
+        assert!(<FontFamily as Parse>::parse_str("").is_err());
+        assert!(<FontFamily as Parse>::parse_str("''").is_err());
+        assert!(<FontFamily as Parse>::parse_str("42").is_err());
+    }
+
+    #[test]
+    fn parses_line_height() {
+        assert_eq!(
+            <LineHeight as Parse>::parse_str("normal"),
+            Ok(LineHeight::Normal),
+        );
+
+        assert_eq!(
+            <LineHeight as Parse>::parse_str("2"),
+            Ok(LineHeight::Number(2.0)),
+        );
+
+        assert_eq!(
+            <LineHeight as Parse>::parse_str("2cm"),
+            Ok(LineHeight::Length(Length::new(2.0, LengthUnit::Cm))),
+        );
+
+        assert_eq!(
+            <LineHeight as Parse>::parse_str("150%"),
+            Ok(LineHeight::Percentage(1.5)),
+        );
+    }
+
+    #[test]
+    fn detects_invalid_line_height() {
+        assert!(<LineHeight as Parse>::parse_str("").is_err());
+        assert!(<LineHeight as Parse>::parse_str("florp").is_err());
+        assert!(<LineHeight as Parse>::parse_str("3florp").is_err());
+    }
+
+    #[test]
+    fn computes_line_height() {
+        let mut specified = SpecifiedValues::default();
+        specified.set_parsed_property(&ParsedProperty::FontSize(SpecifiedValue::Specified(
+            FontSize::parse_str("10px").unwrap(),
+        )));
+
+        let mut values = ComputedValues::default();
+        specified.to_computed_values(&mut values);
+
+        assert_eq!(
+            LineHeight::Normal.compute(&values),
+            LineHeight::Length(Length::new(10.0, LengthUnit::Px)),
+        );
+
+        assert_eq!(
+            LineHeight::Number(2.0).compute(&values),
+            LineHeight::Length(Length::new(20.0, LengthUnit::Px)),
+        );
+
+        assert_eq!(
+            LineHeight::Length(Length::new(3.0, LengthUnit::Cm)).compute(&values),
+            LineHeight::Length(Length::new(3.0, LengthUnit::Cm)),
+        );
+
+        assert_eq!(
+            LineHeight::parse_str("150%").unwrap().compute(&values),
+            LineHeight::Length(Length::new(15.0, LengthUnit::Px)),
+        );
     }
 }

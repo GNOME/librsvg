@@ -353,7 +353,7 @@ impl<N: Normalize> Length<N> {
 }
 
 fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
-    let v = &values.font_size().0.value();
+    let v = &values.font_size().value();
 
     match v.unit {
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
