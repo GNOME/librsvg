@@ -609,8 +609,8 @@ rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
  * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
  * functions rsvg_handle_new_from_gfile_sync() or
  * rsvg_handle_new_from_stream_sync().  This function is deprecated because it
- * will accumlate data from the @buf in memory until rsvg_handle_close() gets
- * called.  To avoid a big temporary buffer, use the suggested funtions, which
+ * will accumulate data from the @buf in memory until rsvg_handle_close() gets
+ * called.  To avoid a big temporary buffer, use the suggested functions, which
  * take a #GFile or a #GInputStream and do not require a temporary buffer.
  **/
 gboolean
@@ -1353,7 +1353,7 @@ rsvg_handle_render_layer (RsvgHandle           *handle,
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
  * @error: (optional): a location to store a #GError, or %NULL
  *
- * Computes the ink rectangle and logical rectangle of a singe SVG element.
+ * Computes the ink rectangle and logical rectangle of a single SVG element.
  *
  * While `rsvg_handle_get_geometry_for_layer` computes the geometry of an SVG element subtree with
  * its transformation matrix, this other function will compute the element's geometry

@@ -36,7 +36,7 @@
 //! **declarations**, one for the `fill` **property** and one for the
 //! `stroke` property.
 //!
-//! After ther first qualified rule, we have a second qualified rule with
+//! After the first qualified rule, we have a second qualified rule with
 //! a single selector for the `#baz` id, with a single declaration for the
 //! `stroke-width` property.
 //!

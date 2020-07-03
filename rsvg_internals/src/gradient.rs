@@ -33,7 +33,7 @@ struct ColorStop {
     opacity: UnitInterval,
 }
 
-// gradientUnits attibute; its default is objectBoundingBox
+// gradientUnits attribute; its default is objectBoundingBox
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
 /// spreadMethod attribute for gradients

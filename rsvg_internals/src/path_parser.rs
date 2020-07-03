@@ -39,7 +39,7 @@ struct PathParser<'b> {
 // as specified in https://www.w3.org/TR/SVG/paths.html#PathDataBNF
 // Some peculiarities:
 //
-// - SVG allows optional commas inside coordiante pairs, and between
+// - SVG allows optional commas inside coordinate pairs, and between
 // coordinate pairs.  So, for example, these are equivalent:
 //
 //     M 10 20 30 40
