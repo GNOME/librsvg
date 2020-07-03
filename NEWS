@@ -1,3 +1,17 @@
+Version 2.49.3
+
+- #34 - The 'font' shorthand in is now supported in CSS.  Librsvg
+  ignores the 'line-height' sub-property because it cannot be done
+  easily with Pango, but everything else in 'font' should work now.
+
+- #605 - Compute 'bolder' and 'lighter' font-weight correctly.
+
+- #219 - Make the path parser have a tokenizer/parser (Emile Snyder).
+
+- Fixes for the CI after the gitlab.gnome.org changes (Jordan Petridis).
+
+- Fixed some typos in the documentation (codespell is awesome!).
+
 Version 2.49.2
 
 - Fix failing tests.
