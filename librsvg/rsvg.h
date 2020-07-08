@@ -318,6 +318,30 @@ RsvgHandle *rsvg_handle_new_with_flags (RsvgHandleFlags flags);
 RSVG_API
 void        rsvg_handle_set_base_gfile (RsvgHandle *handle,
                                         GFile      *base_file);
+                             
+/**
+ * RsvgLoadingPolicy:
+ * @base_only: Only allow to load content from the same base URL. By default
+     this restriction is enabled and requires to use rsvg_handle_set_base_uri().
+ * @include_xml: Allows to use xi:include with XML. Enabled by default.
+ * @include_text: Allows to use xi:include with text. Enabled by default.
+ * @local_only: Only allow to load content from the local filesystem.
+     Enabled by default.
+ *
+ * A data structure used in rsvg_handle_set_loading_policy().
+ *
+ * Since: 2.48
+ */
+typedef struct {
+    gboolean base_only;
+    gboolean include_xml;
+    gboolean include_text;
+    gboolean local_only;
+} RsvgLoadingPolicy;
+
+RSVG_API
+void rsvg_handle_set_loading_policy (RsvgHandle        *handle,
+                                     RsvgLoadingPolicy *policy);
 
 RSVG_API
 gboolean    rsvg_handle_read_stream_sync (RsvgHandle   *handle,
