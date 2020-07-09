@@ -45,9 +45,11 @@ BASE_CFLAGS =				\
 
 BASE_DEP_INCLUDES =			\
 	/I$(INCLUDEDIR)\gdk-pixbuf-2.0	\
+	/I$(INCLUDEDIR)\pango-1.0	\
 	/I$(INCLUDEDIR)\gio-win32-2.0	\
 	/I$(INCLUDEDIR)\glib-2.0	\
 	/I$(LIBDIR)\glib-2.0\include	\
+	/I$(INCLUDEDIR)\harfbuzz	\
 	/I$(INCLUDEDIR)
 
 BASE_DEP_LIBS =			\
@@ -70,7 +72,6 @@ LIBRSVG_CFLAGS =				\
 LIBRSVG_INCLUDES =			\
 	/I..				\
 	/I.\$(OUTDIR)\librsvg		\
-	/I$(INCLUDEDIR)\pango-1.0	\
 	$(BASE_DEP_INCLUDES)		\
 	/I$(INCLUDEDIR)\libxml2
 
