@@ -10,19 +10,19 @@ edition = "2018"
 # Keep these in sync with respect to the cairo-rs version:
 #   librsvg_crate/Cargo.toml
 #   librsvg_crate/src/lib.rs - toplevel example in the docs
-cairo-rs = { version="0.8.0", features=["v1_16"] }
-cairo-sys-rs = "0.9.0"
+cairo-rs = { version="0.9.0", features=["v1_16"] }
+cairo-sys-rs = "0.10.0"
 cast = "0.2.3"
 cssparser = "0.27.1"
 data-url = "0.1"
 encoding = "0.2.33"
 float-cmp = "0.6.0"
-gdk-pixbuf = "0.8.0"
-gdk-pixbuf-sys = "0.9.0"
-gio = { version="0.8.0", features=["v2_50"] } # per configure.ac
-gio-sys = "0.9.0"
-glib = "0.9.0"
-glib-sys = "0.9.0"
+gdk-pixbuf = "0.9.0"
+gdk-pixbuf-sys = "0.10.0"
+gio = { version="0.9.0", features=["v2_50"] } # per configure.ac
+gio-sys = "0.10.0"
+glib = "0.10.1"
+glib-sys = "0.10.0"
 itertools = "0.8"
 language-tags = "0.2.2"
 libc = "0.2"
@@ -32,9 +32,9 @@ matches = "0.1"
 nalgebra = "0.21.0"
 num-traits = "0.2"
 once_cell = "1.2.0"
-pango = "0.8.0"
-pango-sys = "0.9.0"
-pangocairo = "0.9.0"
+pango = "0.9.0"
+pango-sys = "0.10.0"
+pangocairo = "0.10.0"
 rayon = "1"
 rctree = "0.3.3"
 rgb = { version="0.8.17", features=["argb"] }

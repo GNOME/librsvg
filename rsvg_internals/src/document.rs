@@ -211,7 +211,7 @@ fn load_image(
     }
 
     let loader = if let Some(ref content_type) = content_type {
-        PixbufLoader::new_with_mime_type(content_type)?
+        PixbufLoader::with_mime_type(content_type)?
     } else {
         PixbufLoader::new()
     };

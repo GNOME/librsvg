@@ -464,8 +464,8 @@ impl ObjectImpl for CHandle {
     }
 }
 
-pub fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
-    cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+pub fn checked_i32(x: f64) -> Result<i32, cairo::Error> {
+    cast::i32(x).map_err(|_| cairo::Error::InvalidSize)
 }
 
 // Keep in sync with rsvg.h:RsvgPositionData

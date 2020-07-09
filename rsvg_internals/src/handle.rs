@@ -380,12 +380,7 @@ impl Handle {
 }
 
 fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
-    let status = cr.status();
-    if status == cairo::Status::Success {
-        Ok(())
-    } else {
-        Err(RenderingError::Cairo(status))
-    }
+    cr.status()
 }
 
 fn unit_rectangle() -> Rect {

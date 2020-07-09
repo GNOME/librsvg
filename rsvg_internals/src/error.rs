@@ -120,7 +120,7 @@ pub enum DefsLookupErrorKind {
 #[derive(Debug, Clone, PartialEq)]
 pub enum RenderingError {
     /// A Cairo error happened during rendering.
-    Cairo(cairo::Status),
+    Cairo(cairo::Error),
 
     /// There is a circular reference between elements.
     // FIXME: should be internal only.
@@ -162,10 +162,8 @@ impl fmt::Display for RenderingError {
     }
 }
 
-impl From<cairo::Status> for RenderingError {
-    fn from(e: cairo::Status) -> RenderingError {
-        assert!(e != cairo::Status::Success);
-
+impl From<cairo::Error> for RenderingError {
+    fn from(e: cairo::Error) -> RenderingError {
         RenderingError::Cairo(e)
     }
 }
@@ -333,7 +331,7 @@ pub enum LoadingError {
     BadCss,
 
     /// A Cairo error happened during loading.
-    Cairo(cairo::Status),
+    Cairo(cairo::Error),
 
     // FIXME: only used in load_image()
     EmptyData,
@@ -373,10 +371,8 @@ impl fmt::Display for LoadingError {
     }
 }
 
-impl From<cairo::Status> for LoadingError {
-    fn from(e: cairo::Status) -> LoadingError {
-        assert!(e != cairo::Status::Success);
-
+impl From<cairo::Error> for LoadingError {
+    fn from(e: cairo::Error) -> LoadingError {
         LoadingError::Cairo(e)
     }
 }
