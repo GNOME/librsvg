@@ -36,6 +36,12 @@ You will also need the following tools:
  if the pkg-config files cannot be found from the default locations that
  pkg-config will look for.
 
+It is now possible to cross-compile librsvg for ARM64 Windows using this set of
+NMake Makefiles.  You will need to ensure that the Visual Studio ARM64 cross
+compiler (either for x86 or for amd64) is installed, and you have installed the
+`aarch64-pc-windows-msvc` target (rust-std library) via `rustup`.  Such builds
+can be carried out on a normal x86/x86-64 Windows 7+ or on Windows 10 ARM64.
+
 It is recommended that the dependent libraries are built with the same version
 of Visual Studio that is being used to build librsvg, as far as possible.
 
