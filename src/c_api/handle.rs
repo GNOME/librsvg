@@ -546,8 +546,8 @@ impl ObjectImpl for CHandle {
 }
 
 // Keep in sync with tests/src/reference.rs
-pub(crate) fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
-    cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+pub(crate) fn checked_i32(x: f64) -> Result<i32, cairo::Error> {
+    cast::i32(x).map_err(|_| cairo::Error::InvalidSize)
 }
 
 // Keep in sync with rsvg.h:RsvgPositionData
@@ -794,7 +794,7 @@ impl CHandle {
 
             LoadState::Loading { ref buffer } => {
                 let bytes = Bytes::from(&*buffer);
-                let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+                let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
                 let base_file = inner.base_url.get_gfile();
                 self.read_stream(state, &stream.upcast(), base_file.as_ref(), None)
@@ -1956,8 +1956,6 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
             if !out_logical_rect.is_null() {
                 *out_logical_rect = logical_rect;
             }
-
-            ()
         })
         .into_gerror(error)
 }
@@ -2016,8 +2014,6 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
             if !out_logical_rect.is_null() {
                 *out_logical_rect = logical_rect;
             }
-
-            ()
         })
         .into_gerror(error)
 }
@@ -2168,7 +2164,7 @@ fn check_cairo_context(cr: *mut cairo_sys::cairo_t) -> Result<cairo::Context, Re
     if status == cairo_sys::STATUS_SUCCESS {
         Ok(unsafe { from_glib_none(cr) })
     } else {
-        let status: cairo::Status = status.into();
+        let status: cairo::Error = status.into();
 
         let msg = format!(
             "cannot render on a cairo_t with a failure status (status={:?})",

@@ -161,10 +161,8 @@ impl fmt::Display for RenderingError {
     }
 }
 
-impl From<cairo::Status> for RenderingError {
-    fn from(e: cairo::Status) -> RenderingError {
-        assert!(e != cairo::Status::Success);
-
+impl From<cairo::Error> for RenderingError {
+    fn from(e: cairo::Error) -> RenderingError {
         RenderingError::Rendering(format!("{:?}", e))
     }
 }

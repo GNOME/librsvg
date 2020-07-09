@@ -61,7 +61,7 @@
 //!             </svg>
 //!         "#
 //!     );
-//!     let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+//!     let stream = gio::MemoryInputStream::from_bytes(&bytes);
 //!
 //!     let handle = librsvg::Loader::new().read_stream(
 //!         &stream,

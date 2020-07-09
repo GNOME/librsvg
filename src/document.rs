@@ -112,7 +112,7 @@ impl Document {
         use glib::prelude::*;
 
         let bytes = glib::Bytes::from_static(input);
-        let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+        let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
         Document::load_from_stream(
             &LoadOptions::new(UrlResolver::new(None)),
@@ -260,7 +260,7 @@ fn load_image(
     let content_type = content_type_for_gdk_pixbuf(&mime_type);
 
     let loader = if let Some(ref content_type) = content_type {
-        PixbufLoader::new_with_mime_type(content_type)?
+        PixbufLoader::with_mime_type(content_type)?
     } else {
         PixbufLoader::new()
     };
@@ -308,12 +308,12 @@ fn human_readable_url(aurl: &AllowedUrl) -> &str {
     }
 }
 
-fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> LoadingError {
+fn image_loading_error_from_cairo(status: cairo::Error, aurl: &AllowedUrl) -> LoadingError {
     let url = human_readable_url(aurl);
 
     match status {
-        cairo::Status::NoMemory => LoadingError::OutOfMemory(format!("loading image: {}", url)),
-        cairo::Status::InvalidSize => LoadingError::Other(format!("image too big: {}", url)),
+        cairo::Error::NoMemory => LoadingError::OutOfMemory(format!("loading image: {}", url)),
+        cairo::Error::InvalidSize => LoadingError::Other(format!("image too big: {}", url)),
         _ => LoadingError::Other(format!("cairo error: {}", status)),
     }
 }

@@ -17,7 +17,7 @@ use librsvg::{
 
 pub fn load_svg(input: &'static [u8]) -> Result<SvgHandle, LoadingError> {
     let bytes = glib::Bytes::from_static(input);
-    let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+    let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
     Loader::new().read_stream(&stream, None::<&gio::File>, None::<&gio::Cancellable>)
 }

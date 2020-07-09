@@ -12,6 +12,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
+use crate::util::check_cairo_context;
 
 /// Loading options for SVG documents.
 #[derive(Clone)]
@@ -365,15 +366,6 @@ impl Handle {
         stylesheet.parse(css, &UrlResolver::new(None))?;
         self.document.cascade(&[stylesheet]);
         Ok(())
-    }
-}
-
-fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
-    let status = cr.status();
-    if status == cairo::Status::Success {
-        Ok(())
-    } else {
-        Err(RenderingError::from(status))
     }
 }
 

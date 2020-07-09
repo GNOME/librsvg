@@ -111,7 +111,7 @@ impl<'a> PathHelper<'a> {
         }
     }
 
-    pub fn set(&mut self) -> Result<(), cairo::Status> {
+    pub fn set(&mut self) -> Result<(), RenderingError> {
         match self.has_path {
             Some(false) | None => {
                 self.has_path = Some(true);
@@ -1145,7 +1145,7 @@ impl DrawingCtx {
         height: i32,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
@@ -1477,7 +1477,7 @@ impl DrawingCtx {
         &self,
         width: i32,
         height: i32,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.

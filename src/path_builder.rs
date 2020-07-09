@@ -6,8 +6,9 @@ use std::f64;
 use std::f64::consts::*;
 use std::slice;
 
+use crate::error::RenderingError;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::util::clamp;
+use crate::util::{check_cairo_context, clamp};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);
@@ -638,7 +639,7 @@ impl Path {
         &self,
         cr: &cairo::Context,
         is_square_linecap: bool,
-    ) -> Result<(), cairo::Status> {
+    ) -> Result<(), RenderingError> {
         assert!(!self.is_empty());
 
         let mut coords = self.coords.iter();
@@ -680,13 +681,7 @@ impl Path {
         // * The *next* call to the cr will probably be something that actually checks the status
         //   (i.e. in cairo-rs), and we don't want to panic there.
 
-        let status = cr.status();
-
-        if status == cairo::Status::Success {
-            Ok(())
-        } else {
-            Err(status)
-        }
+        check_cairo_context(&cr)
     }
 }
 
