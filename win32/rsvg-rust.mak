@@ -13,9 +13,18 @@ CARGO = cargo
 RUSTUP = rustup
 !endif
 
+# Use Rust's cross compiling capabilities?
+!ifndef FORCE_CROSS
+FORCE_CROSS = 0
+!endif
+
 !if "$(PLAT)" == "x64"
 RUST_TARGET = x86_64
+!if "$(PROCESSOR_ARCHITECTURE)" == "ARM64" || "$(PROCESSOR_ARCHITECTURE)" == "x86"
+FORCE_CROSS = 1
+!endif
 !elseif "$(PLAT)" == "arm64"
+FORCE_CROSS = 1
 RUST_TARGET = aarch64
 !else
 RUST_TARGET = i686
@@ -39,13 +48,14 @@ CARGO_CMD = $(CARGO) build $(CARGO_TARGET) --release
 CARGO_CMD = $(CARGO) build $(CARGO_TARGET)
 !endif
 
-# For building the Rust bits for ARM64 Windows, we need to use a cross compiler,
+# For building the Rust bits for ARM64 Windows, or when we are building on
+# ARM64 or 32-bit Windows for x64, we need to use a cross compiler,
 # and it requires us to set up a default cmd.exe environment without any of the
 # MSVC envvars, except the absolutely necessary ones.  So, we need to put those
 # and the calls to cargo and therefore rustc in a temporary .bat file and use
 # 'start /i ...' to call that .bat file
-!if "$(PLAT)" == "arm64"
-build-arm64-$(CFG).bat:
+!if $(FORCE_CROSS) > 0
+build-$(PLAT)-$(CFG).bat:
 	@echo @echo off>$@
 	@echo set CommandPromptType=>>$@
 	@echo set DevEnvDir=>>$@
@@ -86,14 +96,14 @@ build-arm64-$(CFG).bat:
 	@echo cd ..>>$@
 	@echo $(CARGO_CMD) --verbose>>$@
 
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg_c_api.lib: build-arm64-$(CFG).bat
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg_c_api.lib: build-$(PLAT)-$(CFG).bat
 	@echo Please do not manually close the command window that pops up...
 	@echo.
 	@echo If this fails due to LNK1112 or a linker executable cannot be found, run
 	@echo 'nmake /f Makefile CFG=$(CFG) PREFIX=$(PREFIX) $**',
 	@echo and then run 'start /i /wait cmd /c $**', and then continue
 	@echo the build with your original NMake command line.
-	@start "Building the Rust bits for ARM64 Windows MSVC Build, please do not close this console window..." /wait /i cmd /c $**
+	@start "Building the Rust bits for $(PLAT) Windows MSVC Build, please do not close this console window..." /wait /i cmd /c $**
 	@del /f/q $**
 
 !else
@@ -112,7 +122,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\r
 cargo-clean:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
-	@if exist build-arm64-$(CFG).bat del /f/q build-arm64-$(CFG).bat
+	@if exist build-$(PLAT)-$(CFG).bat del /f/q build-$(PLAT)-$(CFG).bat
 	@cd ..
 	@$(CARGO) clean
 	@cd win32
