@@ -11,12 +11,12 @@ pub enum FilterError {
     /// The filter was passed invalid input (the `in` attribute).
     InvalidInput,
     /// The filter input surface has an unsuccessful status.
-    BadInputSurfaceStatus(cairo::Status),
+    BadInputSurfaceStatus(cairo::Error),
     /// A Cairo error.
     ///
     /// This means that either a failed intermediate surface creation or bad intermediate surface
     /// status.
-    CairoError(cairo::Status),
+    CairoError(cairo::Error),
     /// A lighting filter has none or multiple light sources.
     InvalidLightSourceCount,
     /// A lighting filter input surface is too small.
@@ -49,9 +49,9 @@ impl fmt::Display for FilterError {
     }
 }
 
-impl From<cairo::Status> for FilterError {
+impl From<cairo::Error> for FilterError {
     #[inline]
-    fn from(x: cairo::Status) -> Self {
+    fn from(x: cairo::Error) -> Self {
         FilterError::CairoError(x)
     }
 }
@@ -64,7 +64,7 @@ impl From<RenderingError> for FilterError {
         } else {
             // FIXME: this is just a dummy value; we should probably have a way to indicate
             // an error in the underlying drawing process.
-            FilterError::CairoError(cairo::Status::InvalidStatus)
+            FilterError::CairoError(cairo::Error::InvalidStatus)
         }
     }
 }

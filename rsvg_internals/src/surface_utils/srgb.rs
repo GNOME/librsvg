@@ -64,7 +64,7 @@ fn map_unpremultiplied_components<F: Fn(u8) -> u8>(
     bounds: IRect,
     f: F,
     new_type: SurfaceType,
-) -> Result<SharedImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Error> {
     // This function doesn't affect the alpha channel.
     if surface.is_alpha_only() {
         return Ok(surface.clone());
@@ -82,7 +82,7 @@ fn map_unpremultiplied_components<F: Fn(u8) -> u8>(
 pub fn linearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
-) -> Result<SharedImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Error> {
     assert_ne!(surface.surface_type(), SurfaceType::LinearRgb);
 
     map_unpremultiplied_components(surface, bounds, linearize, SurfaceType::LinearRgb)
@@ -93,7 +93,7 @@ pub fn linearize_surface(
 pub fn unlinearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
-) -> Result<SharedImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Error> {
     assert_ne!(surface.surface_type(), SurfaceType::SRgb);
 
     map_unpremultiplied_components(surface, bounds, unlinearize, SurfaceType::SRgb)

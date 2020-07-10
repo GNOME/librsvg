@@ -215,7 +215,7 @@ impl FilterContext {
     /// The returned surface is in the sRGB color space.
     // TODO: sRGB conversion should probably be done by the caller.
     #[inline]
-    pub fn into_output(self) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn into_output(self) -> Result<SharedImageSurface, cairo::Error> {
         match self.last_result {
             Some(FilterOutput { surface, bounds }) => surface.to_srgb(bounds),
             None => SharedImageSurface::empty(
@@ -271,7 +271,7 @@ impl FilterContext {
         acquired_nodes: &mut AcquiredNodes,
         paint_server: &PaintServer,
         opacity: UnitInterval,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let mut surface = ExclusiveImageSurface::new(
             self.source_surface.width(),
             self.source_surface.height(),
