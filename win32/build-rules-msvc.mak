@@ -157,6 +157,7 @@ clean:
 	@-del /s /q $(OUTDIR)\librsvg\*.obj
 	@-del /s /q $(OUTDIR)\librsvg\*.pdb
 	@-rmdir /s /q $(OUTDIR)\output
+	@-rmdir /s /q output
 	@-rmdir /s /q $(OUTDIR)\rsvg-tests
 	@-rmdir /s /q $(OUTDIR)\rsvg-tools
 	@-rmdir /s /q $(OUTDIR)\rsvg-gdk-pixbuf-loader
