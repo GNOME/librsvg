@@ -704,7 +704,7 @@ impl CHandle {
 
             LoadState::Loading { ref buffer } => {
                 let bytes = Bytes::from(&*buffer);
-                let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+                let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
                 self.read_stream(state, &stream.upcast(), None)
             }
@@ -881,7 +881,7 @@ impl CHandle {
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        //check_cairo_context(cr)?;
 
         let dimensions = self.get_dimensions_sub(None)?;
         if dimensions.width == 0 || dimensions.height == 0 {
@@ -927,7 +927,7 @@ impl CHandle {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        // check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
@@ -953,7 +953,7 @@ impl CHandle {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        //check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
@@ -980,7 +980,7 @@ impl CHandle {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        //check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
@@ -1889,7 +1889,7 @@ impl PathOrUrl {
             .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s))))
     }
 }
-
+/*
 fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     let status = cr.status();
     if status == cairo::Status::Success {
@@ -1904,6 +1904,7 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
         Err(RenderingError::Cairo(status))
     }
 }
+*/
 
 fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
     if e == RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences) {

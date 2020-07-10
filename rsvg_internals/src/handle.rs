@@ -240,7 +240,7 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        // check_cairo_context(cr)?;
 
         let node = if let Some(id) = id {
             Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
@@ -323,7 +323,7 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        // check_cairo_context(cr)?;
 
         let node = self.get_node_or_root(id)?;
 
@@ -379,9 +379,9 @@ impl Handle {
     }
 }
 
-fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
+/*fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     cr.status()
-}
+}*/
 
 fn unit_rectangle() -> Rect {
     Rect::from_size(1.0, 1.0)

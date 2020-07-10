@@ -571,7 +571,8 @@ impl Path {
         // * The *next* call to the cr will probably be something that actually checks the status
         //   (i.e. in cairo-rs), and we don't want to panic there.
 
-        cr.status()
+        //cr.status()
+        Ok(())
     }
 }
 

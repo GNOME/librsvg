@@ -784,7 +784,7 @@ mod tests {
 
     fn load_document(input: &'static [u8]) -> Document {
         let bytes = glib::Bytes::from_static(input);
-        let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+        let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
         Document::load_from_stream(
             &LoadOptions::new(None),
