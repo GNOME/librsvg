@@ -29,18 +29,27 @@ You will also need the following tools:
  build the introspection files; if building the introspection files, the
  Python installation must match the version, architecture and configuration
  of the Python installation that was used to build your copy of
- GObject-Introspection).
+ GObject-Introspection).  Note that introspection files cannot be built in
+ for builds that produce binaries that are not compatible with the running
+ system where the build is being carried out.  This means, specifically,
+ introspection files for ARM64 builds are not currently supported also due to a
+ lack of an official native ARM64 Python build.
 -For introspection builds, the pkg-config (or compatible) tool is also needed
  and the introspection files and pkg-config files for the dependent libraries
  (if applicable) are also needed.  You will need to set PKG_CONFIG_PATH
  if the pkg-config files cannot be found from the default locations that
  pkg-config will look for.
 
-It is now possible to cross-compile librsvg for ARM64 Windows using this set of
-NMake Makefiles.  You will need to ensure that the Visual Studio ARM64 cross
-compiler (either for x86 or for amd64) is installed, and you have installed the
-`aarch64-pc-windows-msvc` target (rust-std library) via `rustup`.  Such builds
-can be carried out on a normal x86/x86-64 Windows 7+ or on Windows 10 ARM64.
+It is now possible to cross-compile librsvg for ARM64 Windows, as well as for
+x64 Windows on 32-bit or ARM64 Windows systems, using this set of NMake Makefiles.
+You will need to ensure that the Visual Studio ARM64 and/or x64 cross compiler
+appropriate for your system is installed, and you have installed the
+`aarch64-pc-windows-msvc` and/or 'x86_64-pc-windows-msvc' target (rust-std library)
+via `rustup` for your Rust toolchain.  Similarly, you may choose to use an x86-to-x64
+Visual Studio cross compiler, even on an x64 Windows system, so this will also require
+that you have installed the 'x86_64-pc-windows-msvc' target for your currently-active
+Rust toolchain (see 'rustup default').  Such builds can be carried out on a normal
+x86/x86-64 Windows 7+ or on Windows 10 ARM64.
 
 It is recommended that the dependent libraries are built with the same version
 of Visual Studio that is being used to build librsvg, as far as possible.
