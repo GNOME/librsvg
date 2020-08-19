@@ -9,6 +9,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
@@ -42,12 +43,12 @@ impl SetAttributes for Image {
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
-                expanded_name!(xlink "href") | expanded_name!("", "path") => {
+                ref a if is_href(a) || *a == expanded_name!("", "path") => {
                     let href = Href::parse(value)
                         .map_err(|_| ValueErrorKind::parse_error("could not parse href"))
-                        .attribute(attr)?;
+                        .attribute(attr.clone())?;
 
-                    self.href = Some(href);
+                    set_href(a, &mut self.href, href);
                 }
 
                 _ => (),
@@ -81,7 +82,7 @@ impl Draw for Image {
             Href::PlainUrl(ref url) => url,
             Href::WithFragment(_) => {
                 rsvg_log!(
-                    "not rendering {} because its xlink:href cannot contain a fragment identifier",
+                    "not rendering {} because its href cannot contain a fragment identifier",
                     node
                 );
 

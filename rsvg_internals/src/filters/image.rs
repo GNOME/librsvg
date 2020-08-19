@@ -6,6 +6,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
+use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::property_bag::PropertyBag;
@@ -118,12 +119,12 @@ impl SetAttributes for FeImage {
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
-                expanded_name!(xlink "href") | expanded_name!("", "path") => {
+                ref a if is_href(a) || *a == expanded_name!("", "path") => {
                     let href = Href::parse(value)
                         .map_err(ValueErrorKind::from)
-                        .attribute(attr)?;
+                        .attribute(attr.clone())?;
 
-                    self.href = Some(href);
+                    set_href(a, &mut self.href, href);
                 }
 
                 _ => (),

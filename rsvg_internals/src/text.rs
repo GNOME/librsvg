@@ -721,6 +721,9 @@ impl SetAttributes for TRef {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
+                // Unlike other elements which use `href` in SVG2 versus `xlink:href` in SVG1.1,
+                // the <tref> element got removed in SVG2.  So, here we still use a match
+                // against the full namespaced version of the attribute.
                 expanded_name!(xlink "href") => {
                     self.link = Some(Fragment::parse(value).attribute(attr)?)
                 }
