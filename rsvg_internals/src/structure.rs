@@ -11,6 +11,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -309,9 +310,12 @@ impl SetAttributes for Use {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(xlink "href") => {
-                    self.link = Some(Fragment::parse(value).attribute(attr)?)
-                }
+                ref a if is_href(a) => set_href(
+                    a,
+                    &mut self.link,
+                    Fragment::parse(value).attribute(attr.clone())?,
+                ),
+
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
                 expanded_name!("", "width") => {
@@ -489,7 +493,7 @@ impl SetAttributes for Link {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
-                expanded_name!(xlink "href") => self.link = Some(value.to_owned()),
+                ref a if is_href(a) => set_href(a, &mut self.link, value.to_owned()),
                 _ => (),
             }
         }

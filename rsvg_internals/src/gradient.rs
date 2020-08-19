@@ -14,6 +14,7 @@ use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::{AsPaintSource, PaintSource};
@@ -598,8 +599,12 @@ impl SetAttributes for Common {
                     self.transform = Some(attr.parse(value)?)
                 }
                 expanded_name!("", "spreadMethod") => self.spread = Some(attr.parse(value)?),
-                expanded_name!(xlink "href") => {
-                    self.fallback = Some(Fragment::parse(value).attribute(attr)?)
+                ref a if is_href(a) => {
+                    set_href(
+                        a,
+                        &mut self.fallback,
+                        Fragment::parse(value).attribute(attr.clone())?,
+                    );
                 }
                 _ => (),
             }

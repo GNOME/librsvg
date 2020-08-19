@@ -7,7 +7,7 @@
 //! If an element has both `xlink:href` and `href` attributes, the `href` overrides the
 //! other.  We implement that logic in this module.
 
-use markup5ever::{ExpandedName, expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 
 /// Returns whether the attribute is either of `xlink:href` or `href`.
 ///
@@ -33,8 +33,7 @@ use markup5ever::{ExpandedName, expanded_name, local_name, namespace_url, ns};
 /// ```
 pub fn is_href(name: &ExpandedName) -> bool {
     match *name {
-        expanded_name!(xlink "href")
-            | expanded_name!("", "href") => true,
+        expanded_name!(xlink "href") | expanded_name!("", "href") => true,
         _ => false,
     }
 }
