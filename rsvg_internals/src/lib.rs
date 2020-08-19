@@ -107,6 +107,7 @@ pub mod filters;
 mod font_props;
 mod gradient;
 mod handle;
+mod href;
 mod image;
 mod io;
 mod iri;

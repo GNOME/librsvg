@@ -68,6 +68,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/font_props.rs			\
 	rsvg_internals/src/gradient.rs				\
 	rsvg_internals/src/handle.rs				\
+	rsvg_internals/src/href.rs				\
 	rsvg_internals/src/image.rs				\
 	rsvg_internals/src/io.rs				\
 	rsvg_internals/src/iri.rs				\
