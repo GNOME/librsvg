@@ -421,7 +421,7 @@ impl Lighting for FeSpecularLighting {
         let k = if normal.normal.is_zero() {
             // Common case of (0, 0, 1) normal.
             let n_dot_h = h.z / h_norm;
-            if self.specular_exponent == 1.0 {
+            if (self.specular_exponent - 1.0).abs() < f64::EPSILON {
                 n_dot_h
             } else {
                 n_dot_h.powf(self.specular_exponent)
@@ -434,7 +434,7 @@ impl Lighting for FeSpecularLighting {
             let normal = Vector3::new(n.x, n.y, 1.0);
 
             let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
-            if self.specular_exponent == 1.0 {
+            if (self.specular_exponent - 1.0).abs() < f64::EPSILON {
                 n_dot_h
             } else {
                 n_dot_h.powf(self.specular_exponent)

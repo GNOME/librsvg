@@ -510,7 +510,8 @@ impl DrawingCtx {
                 // Here we are clipping in user space, so the bbox doesn't matter
                 dc.clip_to_node(&clip_in_user_space, acquired_nodes, &dc.empty_bbox())?;
 
-                let needs_temporary_surface = !(opacity == 1.0
+                let is_opaque = (opacity - 1.0).abs() < f64::EPSILON;
+                let needs_temporary_surface = !(is_opaque
                     && filter.is_none()
                     && mask.is_none()
                     && clip_in_object_space.is_none());
