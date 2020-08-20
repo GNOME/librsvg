@@ -42,8 +42,8 @@ impl<'a> Lexer<'_> {
         let current = ci.next();
         Lexer {
             input: input.as_bytes(),
-            ci: ci,
-            current: current,
+            ci,
+            current,
             flags_required: 0,
         }
     }
@@ -74,22 +74,20 @@ impl<'a> Lexer<'_> {
 
     fn advance_over_whitespace(&mut self) -> bool {
         let mut found_some = false;
-
         while self.current.is_some() && self.current.unwrap().1.is_ascii_whitespace() {
             found_some = true;
             self.current = self.ci.next();
         }
-
-        return found_some;
+        found_some
     }
 
     fn advance_over_optional(&mut self, needle: u8) -> bool {
         match self.current {
             Some((_, c)) if c == needle => {
                 self.advance();
-                return true;
+                true
             }
-            _ => return false,
+            _ => false,
         }
     }
 
@@ -99,8 +97,7 @@ impl<'a> Lexer<'_> {
             found_some = true;
             self.current = self.ci.next();
         }
-
-        return found_some;
+        found_some
     }
 
     fn advance_over_simple_number(&mut self) -> bool {
