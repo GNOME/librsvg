@@ -291,11 +291,10 @@ impl FilterContext {
                     &self.node_bbox,
                     self.computed_from_node_being_filtered.color().0,
                 )
-                .and_then(|had_paint_server| {
+                .map(|had_paint_server| {
                     if had_paint_server {
                         cr.paint();
                     }
-                    Ok(())
                 });
 
             draw_ctx.set_cairo_context(&cr_save);

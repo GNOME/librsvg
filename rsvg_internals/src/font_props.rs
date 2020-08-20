@@ -238,7 +238,7 @@ impl Parse for FontSize {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<FontSize, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Both>::parse(p))
-            .and_then(|l| Ok(FontSize::Value(l)))
+            .map(FontSize::Value)
             .or_else(|_| {
                 Ok(parse_identifiers!(
                     parser,
@@ -377,7 +377,7 @@ impl Parse for LetterSpacing {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LetterSpacing, ParseError<'i>> {
         parser
             .try_parse(|p| Length::<Horizontal>::parse(p))
-            .and_then(|l| Ok(LetterSpacing::Value(l)))
+            .map(LetterSpacing::Value)
             .or_else(|_| {
                 Ok(parse_identifiers!(
                     parser,

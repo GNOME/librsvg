@@ -308,12 +308,11 @@ impl PositionedSpan {
                     &bbox,
                     current_color,
                 )
-                .and_then(|had_paint_server| {
+                .map(|had_paint_server| {
                     if had_paint_server {
                         pangocairo::functions::update_layout(&cr, &self.layout);
                         pangocairo::functions::show_layout(&cr, &self.layout);
                     };
-                    Ok(())
                 })
             } else {
                 Ok(())
@@ -330,11 +329,10 @@ impl PositionedSpan {
                         &bbox,
                         current_color,
                     )
-                    .and_then(|had_paint_server| {
+                    .map(|had_paint_server| {
                         if had_paint_server {
                             need_layout_path = true;
                         }
-                        Ok(())
                     })
                 } else {
                     Ok(())
@@ -356,7 +354,7 @@ impl PositionedSpan {
                 }
             }
 
-            res.and_then(|_: ()| Ok(bbox))
+            res.map(|_: ()| bbox)
         })
     }
 

@@ -155,12 +155,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         for (attr, value) in pbag.iter() {
             match attr.expanded() {
                 expanded_name!("", "transform") => {
-                    return Transform::parse_str(value)
-                        .attribute(attr)
-                        .and_then(|affine| {
-                            self.transform = affine;
-                            Ok(())
-                        });
+                    return Transform::parse_str(value).attribute(attr).map(|affine| {
+                        self.transform = affine;
+                    });
                 }
                 _ => (),
             }

@@ -313,7 +313,7 @@ impl DrawingCtx {
                 }
                 None // so that the following and_then() won't run
             })
-            .and_then(|t| {
+            .map(|t| {
                 self.cr.transform(t.into());
 
                 if let Some(vbox) = vbox {
@@ -321,10 +321,9 @@ impl DrawingCtx {
                         cr.rectangle(vbox.0.x0, vbox.0.y0, vbox.0.width(), vbox.0.height());
                         cr.clip();
                     }
-
-                    Some(self.push_view_box(vbox.0.width(), vbox.0.height()))
+                    self.push_view_box(vbox.0.width(), vbox.0.height())
                 } else {
-                    Some(self.get_view_params())
+                    self.get_view_params()
                 }
             })
     }
@@ -360,11 +359,9 @@ impl DrawingCtx {
 
                 res
             })
-            .and_then(|_bbox|
-			  // Clipping paths do not contribute to bounding boxes (they should,
-			  // but we need Real Computational Geometry(tm), so ignore the
-			  // bbox from the clip path.
-			  Ok(()))
+            // Clipping paths do not contribute to bounding boxes (they should, but we
+            // need Real Computational Geometry(tm), so ignore the bbox from the clip path.
+            .map(|_bbox| ())
         } else {
             Ok(())
         }
@@ -606,12 +603,11 @@ impl DrawingCtx {
                                             &bbox,
                                             acquired_nodes,
                                         )
-                                        .and_then(|mask_surf| {
+                                        .map(|mask_surf| {
                                             if let Some(surf) = mask_surf {
                                                 dc.cr.set_matrix(affines.compositing.into());
                                                 dc.cr.mask_surface(&surf, 0.0, 0.0);
                                             }
-                                            Ok(())
                                         })
                                         .map(|_: ()| bbox)
                                     });
@@ -955,7 +951,7 @@ impl DrawingCtx {
                 &bbox,
                 current_color,
             )
-            .and_then(|had_paint_server| {
+            .map(|had_paint_server| {
                 if had_paint_server {
                     if values.stroke().0 == PaintServer::None {
                         cr.fill();
@@ -963,8 +959,6 @@ impl DrawingCtx {
                         cr.fill_preserve();
                     }
                 }
-
-                Ok(())
             })
             .and_then(|_| {
                 self.set_source_paint_server(
@@ -974,11 +968,10 @@ impl DrawingCtx {
                     &bbox,
                     current_color,
                 )
-                .and_then(|had_paint_server| {
+                .map(|had_paint_server| {
                     if had_paint_server {
                         cr.stroke();
                     }
-                    Ok(())
                 })
             });
 
@@ -986,7 +979,7 @@ impl DrawingCtx {
         // we leave it around from computing the bounding box
         cr.new_path();
 
-        res.and_then(|_: ()| Ok(bbox))
+        res.map(|_: ()| bbox)
     }
 
     pub fn draw_path(
@@ -1300,14 +1293,14 @@ fn get_clip_in_user_and_object_space(
                 .ok()
                 .filter(|a| is_element_of_type!(*a.get(), ClipPath))
         })
-        .and_then(|acquired| {
+        .map(|acquired| {
             let clip_node = acquired.get().clone();
 
             let units = borrow_element_as!(clip_node, ClipPath).get_units();
 
             match units {
-                CoordUnits::UserSpaceOnUse => Some((Some(clip_node), None)),
-                CoordUnits::ObjectBoundingBox => Some((None, Some(clip_node))),
+                CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
+                CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
             }
         })
         .unwrap_or((None, None))

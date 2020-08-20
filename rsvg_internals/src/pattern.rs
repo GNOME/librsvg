@@ -378,7 +378,7 @@ impl AsPaintSource for ResolvedPattern {
         pattern.set_filter(cairo::Filter::Best);
         cr_save.set_source(&pattern);
 
-        res.and_then(|_| Ok(true))
+        res.map(|_| true)
     }
 }
 
