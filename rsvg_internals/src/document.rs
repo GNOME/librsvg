@@ -311,10 +311,7 @@ impl<'i> AcquiredNodes<'i> {
         if node.borrow_element().is_accessed_by_reference() {
             self.acquire_ref(&node)
         } else {
-            Ok(AcquiredNode {
-                stack: None,
-                node: node.clone(),
-            })
+            Ok(AcquiredNode { stack: None, node })
         }
     }
 

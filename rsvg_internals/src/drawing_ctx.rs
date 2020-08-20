@@ -802,7 +802,7 @@ impl DrawingCtx {
         }
 
         // Non-existing filters must act as null filters (an empty surface is returned).
-        Ok(child_surface.clone())
+        Ok(child_surface)
     }
 
     fn set_color(
