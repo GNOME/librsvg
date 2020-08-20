@@ -586,7 +586,7 @@ make_property!(
                         Token::Ident(ref cow) if cow.eq_ignore_ascii_case("overline") => overline = true,
                         Token::Ident(ref cow) if cow.eq_ignore_ascii_case("underline") => underline = true,
                         Token::Ident(ref cow) if cow.eq_ignore_ascii_case("line-through") => strike = true,
-                        _ => Err(loc.new_basic_unexpected_token_error(token.clone()))?,
+                        _ => return Err(loc.new_basic_unexpected_token_error(token.clone()).into()),
                     }
                 }
 

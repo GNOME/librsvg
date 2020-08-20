@@ -435,7 +435,9 @@ impl Parse for LineHeight {
                 if cow.eq_ignore_ascii_case("normal") {
                     Ok(LineHeight::Normal)
                 } else {
-                    Err(parser.new_basic_unexpected_token_error(token.clone()))?
+                    Err(parser
+                        .new_basic_unexpected_token_error(token.clone())
+                        .into())
                 }
             }
 
@@ -450,7 +452,7 @@ impl Parse for LineHeight {
                 Ok(LineHeight::Length(Length::<Both>::parse(parser)?))
             }
 
-            _ => Err(parser.new_basic_unexpected_token_error(token))?,
+            _ => Err(parser.new_basic_unexpected_token_error(token).into()),
         }
     }
 }
