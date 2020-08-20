@@ -206,7 +206,7 @@ fn load_image(
     // Adobe Illustrator generate data: URLs without MIME-type for image
     // data.  We'll catch this and fall back to sniffing by unsetting the
     // content_type.
-    if content_type.as_ref().map(String::as_str) == Some("text/plain;charset=US-ASCII") {
+    if content_type.as_deref() == Some("text/plain;charset=US-ASCII") {
         content_type = None;
     }
 
@@ -227,8 +227,7 @@ fn load_image(
         None
     };
 
-    let surface =
-        SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_ref().map(String::as_str))?;
+    let surface = SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_deref())?;
 
     Ok(surface)
 }
@@ -380,8 +379,8 @@ impl DocumentBuilder {
         type_: Option<String>,
         href: &str,
     ) -> Result<(), LoadingError> {
-        if type_.as_ref().map(String::as_str) != Some("text/css")
-            || (alternate.is_some() && alternate.as_ref().map(String::as_str) != Some("no"))
+        if type_.as_deref() != Some("text/css")
+            || (alternate.is_some() && alternate.as_deref() != Some("no"))
         {
             return Err(LoadingError::BadStylesheet);
         }

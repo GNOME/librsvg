@@ -115,11 +115,11 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn get_id(&self) -> Option<&str> {
-        self.id.as_ref().map(String::as_str)
+        self.id.as_deref()
     }
 
     fn get_class(&self) -> Option<&str> {
-        self.class.as_ref().map(String::as_str)
+        self.class.as_deref()
     }
 
     fn get_specified_values(&self) -> &SpecifiedValues {

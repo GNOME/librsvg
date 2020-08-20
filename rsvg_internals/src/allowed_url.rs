@@ -187,7 +187,7 @@ impl Fragment {
     }
 
     pub fn uri(&self) -> Option<&str> {
-        self.0.as_ref().map(|s| s.as_str())
+        self.0.as_deref()
     }
 
     pub fn fragment(&self) -> &str {
@@ -197,12 +197,7 @@ impl Fragment {
 
 impl fmt::Display for Fragment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}#{}",
-            self.0.as_ref().map(String::as_str).unwrap_or(""),
-            self.1
-        )
+        write!(f, "{}#{}", self.uri().unwrap_or(""), self.fragment())
     }
 }
 
