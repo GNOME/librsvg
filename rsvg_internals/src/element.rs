@@ -143,24 +143,26 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "style") => self.style_attr.push_str(value),
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
+            .map(|(_, value)| value);
+        if let Some(value) = result {
+            self.style_attr.push_str(value);
         }
     }
 
     fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "transform") => {
-                    return Transform::parse_str(value).attribute(attr).map(|affine| {
-                        self.transform = affine;
-                    });
-                }
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
+            .map(|(attr, value)| {
+                Transform::parse_str(value).attribute(attr).map(|affine| {
+                    self.transform = affine;
+                })
+            });
+        if let Some(transform_result) = result {
+            return transform_result;
         }
 
         Ok(())

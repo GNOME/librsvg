@@ -303,22 +303,23 @@ impl Default for FeDiffuseLighting {
 impl SetAttributes for FeDiffuseLighting {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_attributes(pbag)?;
-
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "diffuseConstant") => {
-                    self.diffuse_constant = attr.parse_and_validate(value, |x| {
-                        if x >= 0.0 {
-                            Ok(x)
-                        } else {
-                            Err(ValueErrorKind::value_error(
-                                "diffuseConstant can't be negative",
-                            ))
-                        }
-                    })?;
-                }
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "diffuseConstant"))
+            .and_then(|(attr, value)| {
+                attr.parse_and_validate(value, |x| {
+                    if x >= 0.0 {
+                        Ok(x)
+                    } else {
+                        Err(ValueErrorKind::value_error(
+                            "diffuseConstant can't be negative",
+                        ))
+                    }
+                })
+                .ok()
+            });
+        if let Some(diffuse_constant) = result {
+            self.diffuse_constant = diffuse_constant;
         }
 
         Ok(())

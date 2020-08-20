@@ -396,11 +396,12 @@ impl ClipPath {
 
 impl SetAttributes for ClipPath {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "clipPathUnits") => self.units = attr.parse(value)?,
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "clipPathUnits"))
+            .and_then(|(attr, value)| attr.parse(value).ok());
+        if let Some(units) = result {
+            self.units = units
         }
 
         Ok(())

@@ -45,23 +45,21 @@ impl Default for FeGaussianBlur {
 impl SetAttributes for FeGaussianBlur {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.base.set_attributes(pbag)?;
-
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "stdDeviation") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                            if v.0 >= 0.0 && v.1 >= 0.0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error("values can't be negative"))
-                            }
-                        })?;
-
-                    self.std_deviation = (x, y);
-                }
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "stdDeviation"))
+            .and_then(|(attr, value)| {
+                attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
+                    if v.0 >= 0.0 && v.1 >= 0.0 {
+                        Ok(v)
+                    } else {
+                        Err(ValueErrorKind::value_error("values can't be negative"))
+                    }
+                })
+                .ok()
+            });
+        if let Some(tuple) = result {
+            self.std_deviation = (tuple.0, tuple.1);
         }
 
         Ok(())
