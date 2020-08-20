@@ -544,6 +544,12 @@ impl PathBuilder {
     }
 }
 
+impl Default for PathBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// An iterator over `SubPath` from a Path.
 struct SubPathIter<'a> {
     path: &'a Path,

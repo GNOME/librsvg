@@ -562,6 +562,12 @@ impl Chars {
     }
 }
 
+impl Default for Chars {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Default)]
 pub struct Text {
     x: Length<Horizontal>,
