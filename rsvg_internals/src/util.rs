@@ -1,7 +1,5 @@
 //! Miscellaneous utilities.
 
-use libc;
-
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::str;

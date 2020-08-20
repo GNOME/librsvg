@@ -1,7 +1,5 @@
 //! Iterate among libxml2's arrays of XML attribute/value.
 
-use libc;
-
 use std::mem;
 use std::slice;
 use std::str;
