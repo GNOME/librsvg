@@ -352,7 +352,7 @@ impl NodeStack {
     }
 
     pub fn contains(&self, node: &Node) -> bool {
-        self.0.iter().find(|n| **n == *node).is_some()
+        self.0.iter().any(|n| *n == *node)
     }
 }
 
