@@ -210,6 +210,8 @@ impl NoiseGenerator {
     }
 
     fn noise2(&self, color_channel: usize, vec: [f64; 2], stitch_info: Option<StitchInfo>) -> f64 {
+        #![allow(clippy::many_single_char_names)]
+
         const BM: usize = 0xff;
 
         let s_curve = |t| t * t * (3. - 2. * t);

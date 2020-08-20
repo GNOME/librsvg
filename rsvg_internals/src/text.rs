@@ -363,6 +363,8 @@ impl PositionedSpan {
         transform: Transform,
         gravity: pango::Gravity,
     ) -> Option<BoundingBox> {
+        #![allow(clippy::many_single_char_names)]
+
         let (ink, _) = self.layout.get_extents();
         if ink.width == 0 || ink.height == 0 {
             return None;
