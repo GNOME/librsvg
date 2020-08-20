@@ -635,12 +635,9 @@ impl<'b> PathParser<'b> {
             // if there is a comma (indicating we should continue to loop), eat the comma
             // so we're ready at the next start of the loop to process the next token.
             false
-        } else if !self.peek_number().is_some() {
-            // if the next token is not a number or a comma, we do want to break the loop
-            true
         } else {
-            // otherwise, continue to loop to process args in the sequence.
-            false
+            // continue to process args in the sequence unless the next token is a comma
+            self.peek_number().is_none()
         }
     }
 
