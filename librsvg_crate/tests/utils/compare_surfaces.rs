@@ -103,13 +103,15 @@ pub fn compare_surfaces(
                     pixel_diff.b = pixel_diff.a;
                 }
 
+                pixel_diff.a = 255;
+
                 diff_data.set_pixel(diff_stride, pixel_diff, xa, ya);
             } else {
                 let black = Pixel {
                     r: 0,
                     g: 0,
                     b: 0,
-                    a: 0,
+                    a: 255,
                 };
                 diff_data.set_pixel(diff_stride, black, xa, ya);
             }

@@ -783,7 +783,7 @@ impl DrawingCtx {
                     }
                     _ => {
                         rsvg_log!(
-                            "element {} will not be rendered since \"{}\" is not a filter",
+                            "element {} will not be filtered since \"{}\" is not a filter",
                             node,
                             filter_uri,
                         );
@@ -792,7 +792,7 @@ impl DrawingCtx {
             }
             _ => {
                 rsvg_log!(
-                    "element {} will not be rendered since its filter \"{}\" was not found",
+                    "element {} will not be filtered since its filter \"{}\" was not found",
                     node,
                     filter_uri,
                 );
@@ -800,11 +800,7 @@ impl DrawingCtx {
         }
 
         // Non-existing filters must act as null filters (an empty surface is returned).
-        Ok(SharedImageSurface::empty(
-            child_surface.width(),
-            child_surface.height(),
-            child_surface.surface_type(),
-        )?)
+        Ok(child_surface.clone())
     }
 
     fn set_color(
