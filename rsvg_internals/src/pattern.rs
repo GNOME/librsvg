@@ -373,7 +373,9 @@ impl AsPaintSource for ResolvedPattern {
         // Set the final surface as a Cairo pattern into the Cairo context
         let pattern = cairo::SurfacePattern::create(&surface);
 
-        affine.invert().map(|m| pattern.set_matrix(m.into()));
+        if let Some(m) = affine.invert() {
+            pattern.set_matrix(m.into())
+        }
         pattern.set_extend(cairo::Extend::Repeat);
         pattern.set_filter(cairo::Filter::Best);
         cr_save.set_source(&pattern);

@@ -776,7 +776,9 @@ impl Gradient {
     ) {
         let transform = transform.pre_transform(&self.transform);
 
-        transform.invert().map(|m| pattern.set_matrix(m.into()));
+        if let Some(m) = transform.invert() {
+            pattern.set_matrix(m.into())
+        }
         pattern.set_extend(cairo::Extend::from(self.spread));
         self.add_color_stops_to_pattern(pattern, opacity);
     }
