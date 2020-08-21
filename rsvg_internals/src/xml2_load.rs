@@ -3,7 +3,6 @@
 //! This file provides functions to create a libxml2 xmlParserCtxtPtr, configured
 //! to read from a gio::InputStream, and to maintain its loading data in an XmlState.
 
-use gio;
 use gio::prelude::*;
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};

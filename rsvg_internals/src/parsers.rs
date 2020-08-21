@@ -161,14 +161,14 @@ impl Parse for CustomIdent {
             Token::Ident(ref cow) => {
                 for s in &["initial", "inherit", "unset", "default"] {
                     if cow.eq_ignore_ascii_case(s) {
-                        Err(loc.new_basic_unexpected_token_error(token.clone()))?
+                        return Err(loc.new_basic_unexpected_token_error(token.clone()).into());
                     }
                 }
 
                 Ok(CustomIdent(cow.as_ref().to_string()))
             }
 
-            _ => Err(loc.new_basic_unexpected_token_error(token.clone()))?,
+            _ => Err(loc.new_basic_unexpected_token_error(token.clone()).into()),
         }
     }
 }

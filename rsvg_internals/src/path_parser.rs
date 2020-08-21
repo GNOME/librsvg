@@ -42,8 +42,8 @@ impl<'a> Lexer<'_> {
         let current = ci.next();
         Lexer {
             input: input.as_bytes(),
-            ci: ci,
-            current: current,
+            ci,
+            current,
             flags_required: 0,
         }
     }
@@ -74,22 +74,20 @@ impl<'a> Lexer<'_> {
 
     fn advance_over_whitespace(&mut self) -> bool {
         let mut found_some = false;
-
         while self.current.is_some() && self.current.unwrap().1.is_ascii_whitespace() {
             found_some = true;
             self.current = self.ci.next();
         }
-
-        return found_some;
+        found_some
     }
 
     fn advance_over_optional(&mut self, needle: u8) -> bool {
         match self.current {
             Some((_, c)) if c == needle => {
                 self.advance();
-                return true;
+                true
             }
-            _ => return false,
+            _ => false,
         }
     }
 
@@ -99,8 +97,7 @@ impl<'a> Lexer<'_> {
             found_some = true;
             self.current = self.ci.next();
         }
-
-        return found_some;
+        found_some
     }
 
     fn advance_over_simple_number(&mut self) -> bool {
@@ -638,12 +635,9 @@ impl<'b> PathParser<'b> {
             // if there is a comma (indicating we should continue to loop), eat the comma
             // so we're ready at the next start of the loop to process the next token.
             false
-        } else if !self.peek_number().is_some() {
-            // if the next token is not a number or a comma, we do want to break the loop
-            true
         } else {
-            // otherwise, continue to loop to process args in the sequence.
-            false
+            // continue to process args in the sequence unless the next token is a comma
+            self.peek_number().is_none()
         }
     }
 
@@ -925,7 +919,7 @@ mod tests {
     ) {
         let expected_result = make_parse_result(error_pos_str, expected_error_kind);
 
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
         let result = parse_path_into_builder(path_str, &mut builder);
 
         let path = builder.into_path();

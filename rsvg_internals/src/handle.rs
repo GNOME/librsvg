@@ -148,14 +148,11 @@ impl Handle {
             let cascaded = CascadedValues::new_from_node(&node);
             let values = cascaded.get();
 
-            match *node.borrow_element() {
-                Element::Svg(ref svg) => {
-                    if let Some((w, h)) = svg.get_size(&values, dpi) {
-                        let rect = Rect::from_size(w, h);
-                        return Ok((rect, rect));
-                    }
+            if let Element::Svg(ref svg) = *node.borrow_element() {
+                if let Some((w, h)) = svg.get_size(&values, dpi) {
+                    let rect = Rect::from_size(w, h);
+                    return Ok((rect, rect));
                 }
-                _ => (),
             }
         }
 

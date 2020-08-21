@@ -42,12 +42,10 @@ impl SetAttributes for FeMerge {
 impl SetAttributes for FeMergeNode {
     #[inline]
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "in") => self.in_ = Some(attr.parse(value)?),
-                _ => (),
-            }
-        }
+        self.in_ = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
+            .and_then(|(attr, value)| attr.parse(value).ok());
 
         Ok(())
     }

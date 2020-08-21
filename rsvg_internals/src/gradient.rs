@@ -96,15 +96,13 @@ fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind>
 
 impl SetAttributes for Stop {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "offset") => {
-                    self.offset = attr
-                        .parse_and_validate(value, validate_offset)
-                        .map(|l| UnitInterval::clamp(l.length))?
-                }
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "offset"))
+            .and_then(|(attr, value)| attr.parse_and_validate(value, validate_offset).ok())
+            .map(|l| UnitInterval::clamp(l.length));
+        if let Some(offset) = result {
+            self.offset = offset
         }
 
         Ok(())
@@ -778,7 +776,9 @@ impl Gradient {
     ) {
         let transform = transform.pre_transform(&self.transform);
 
-        transform.invert().map(|m| pattern.set_matrix(m.into()));
+        if let Some(m) = transform.invert() {
+            pattern.set_matrix(m.into())
+        }
         pattern.set_extend(cairo::Extend::from(self.spread));
         self.add_color_stops_to_pattern(pattern, opacity);
     }

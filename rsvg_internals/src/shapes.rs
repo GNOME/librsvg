@@ -55,7 +55,7 @@ impl Shape {
 }
 
 fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
-    let mut builder = PathBuilder::new();
+    let mut builder = PathBuilder::default();
 
     // Per the spec, rx and ry must be nonnegative
     if rx <= 0.0 || ry <= 0.0 {
@@ -119,7 +119,7 @@ impl SetAttributes for Path {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
             if attr.expanded() == expanded_name!("", "d") {
-                let mut builder = PathBuilder::new();
+                let mut builder = PathBuilder::default();
                 if let Err(e) = path_parser::parse_path_into_builder(value, &mut builder) {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
@@ -197,7 +197,7 @@ impl Parse for Points {
 }
 
 fn make_poly(points: Option<&Points>, closed: bool) -> SvgPath {
-    let mut builder = PathBuilder::new();
+    let mut builder = PathBuilder::default();
 
     if let Some(points) = points {
         for (i, &(x, y)) in points.iter().enumerate() {
@@ -334,7 +334,7 @@ impl Draw for Line {
 
 impl Line {
     fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         let params = draw_ctx.get_view_params();
 
@@ -448,7 +448,7 @@ impl Rect {
             }
         }
 
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {

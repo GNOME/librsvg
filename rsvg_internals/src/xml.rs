@@ -2,7 +2,6 @@
 
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
-use libc;
 use markup5ever::{
     buffer_queue::BufferQueue, expanded_name, local_name, namespace_url, ns, ExpandedName,
     LocalName, Namespace, QualName,

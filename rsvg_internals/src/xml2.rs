@@ -3,7 +3,6 @@
 #![allow(non_snake_case, non_camel_case_types)]
 
 use glib_sys::gpointer;
-use libc;
 
 pub const XML_CHAR_ENCODING_NONE: libc::c_int = 0;
 

@@ -113,11 +113,12 @@ impl Filter {
 impl SetAttributes for Filter {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         // Parse filterUnits first as it affects x, y, width, height checks.
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "filterUnits") => self.filterunits = attr.parse(value)?,
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "filterUnits"))
+            .and_then(|(attr, value)| attr.parse(value).ok());
+        if let Some(filter_units) = result {
+            self.filterunits = filter_units
         }
 
         // With ObjectBoundingBox, only fractions and percents are allowed.

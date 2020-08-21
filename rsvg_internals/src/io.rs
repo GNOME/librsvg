@@ -1,7 +1,5 @@
 //! Utilities to acquire streams and data from from URLs.
 
-use data_url;
-
 use gio::{
     BufferedInputStream, BufferedInputStreamExt, Cancellable, ConverterInputStream, File as GFile,
     FileExt, InputStream, MemoryInputStream, ZlibCompressorFormat, ZlibDecompressor,

@@ -243,12 +243,10 @@ impl Draw for Svg {
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
-        let (viewport, vbox) = if is_measuring_toplevel_svg {
+        let (viewport, vbox) = if is_measuring_toplevel_svg || has_parent {
             // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
             // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
             // it wants to extend.
-            (svg_viewport, self.vbox)
-        } else if has_parent {
             (svg_viewport, self.vbox)
         } else {
             (
@@ -398,11 +396,12 @@ impl ClipPath {
 
 impl SetAttributes for ClipPath {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "clipPathUnits") => self.units = attr.parse(value)?,
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "clipPathUnits"))
+            .and_then(|(attr, value)| attr.parse(value).ok());
+        if let Some(units) = result {
+            self.units = units
         }
 
         Ok(())

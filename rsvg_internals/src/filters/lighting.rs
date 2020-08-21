@@ -303,22 +303,23 @@ impl Default for FeDiffuseLighting {
 impl SetAttributes for FeDiffuseLighting {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         self.common.set_attributes(pbag)?;
-
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                expanded_name!("", "diffuseConstant") => {
-                    self.diffuse_constant = attr.parse_and_validate(value, |x| {
-                        if x >= 0.0 {
-                            Ok(x)
-                        } else {
-                            Err(ValueErrorKind::value_error(
-                                "diffuseConstant can't be negative",
-                            ))
-                        }
-                    })?;
-                }
-                _ => (),
-            }
+        let result = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "diffuseConstant"))
+            .and_then(|(attr, value)| {
+                attr.parse_and_validate(value, |x| {
+                    if x >= 0.0 {
+                        Ok(x)
+                    } else {
+                        Err(ValueErrorKind::value_error(
+                            "diffuseConstant can't be negative",
+                        ))
+                    }
+                })
+                .ok()
+            });
+        if let Some(diffuse_constant) = result {
+            self.diffuse_constant = diffuse_constant;
         }
 
         Ok(())
@@ -421,7 +422,7 @@ impl Lighting for FeSpecularLighting {
         let k = if normal.normal.is_zero() {
             // Common case of (0, 0, 1) normal.
             let n_dot_h = h.z / h_norm;
-            if self.specular_exponent == 1.0 {
+            if (self.specular_exponent - 1.0).abs() < f64::EPSILON {
                 n_dot_h
             } else {
                 n_dot_h.powf(self.specular_exponent)
@@ -434,7 +435,7 @@ impl Lighting for FeSpecularLighting {
             let normal = Vector3::new(n.x, n.y, 1.0);
 
             let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
-            if self.specular_exponent == 1.0 {
+            if (self.specular_exponent - 1.0).abs() < f64::EPSILON {
                 n_dot_h
             } else {
                 n_dot_h.powf(self.specular_exponent)

@@ -308,12 +308,11 @@ impl PositionedSpan {
                     &bbox,
                     current_color,
                 )
-                .and_then(|had_paint_server| {
+                .map(|had_paint_server| {
                     if had_paint_server {
                         pangocairo::functions::update_layout(&cr, &self.layout);
                         pangocairo::functions::show_layout(&cr, &self.layout);
                     };
-                    Ok(())
                 })
             } else {
                 Ok(())
@@ -330,11 +329,10 @@ impl PositionedSpan {
                         &bbox,
                         current_color,
                     )
-                    .and_then(|had_paint_server| {
+                    .map(|had_paint_server| {
                         if had_paint_server {
                             need_layout_path = true;
                         }
-                        Ok(())
                     })
                 } else {
                     Ok(())
@@ -356,7 +354,7 @@ impl PositionedSpan {
                 }
             }
 
-            res.and_then(|_: ()| Ok(bbox))
+            res.map(|_: ()| bbox)
         })
     }
 
@@ -365,6 +363,8 @@ impl PositionedSpan {
         transform: Transform,
         gravity: pango::Gravity,
     ) -> Option<BoundingBox> {
+        #![allow(clippy::many_single_char_names)]
+
         let (ink, _) = self.layout.get_extents();
         if ink.width == 0 || ink.height == 0 {
             return None;
@@ -564,6 +564,12 @@ impl Chars {
     }
 }
 
+impl Default for Chars {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Default)]
 pub struct Text {
     x: Length<Horizontal>,
@@ -719,17 +725,13 @@ fn extract_chars_children_to_chunks_recursively(
 
 impl SetAttributes for TRef {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
-            match attr.expanded() {
-                // Unlike other elements which use `href` in SVG2 versus `xlink:href` in SVG1.1,
-                // the <tref> element got removed in SVG2.  So, here we still use a match
-                // against the full namespaced version of the attribute.
-                expanded_name!(xlink "href") => {
-                    self.link = Some(Fragment::parse(value).attribute(attr)?)
-                }
-                _ => (),
-            }
-        }
+        self.link = pbag
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!(xlink "href"))
+            // Unlike other elements which use `href` in SVG2 versus `xlink:href` in SVG1.1,
+            // the <tref> element got removed in SVG2.  So, here we still use a match
+            // against the full namespaced version of the attribute.
+            .and_then(|(attr, value)| Fragment::parse(value).attribute(attr).ok());
 
         Ok(())
     }

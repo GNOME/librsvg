@@ -435,7 +435,7 @@ impl PathCommand {
 ///
 /// When you are finished constructing a path builder, turn it into
 /// a `Path` with `into_path`.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct PathBuilder {
     path_commands: TinyVec<[PathCommand; 32]>,
 }
@@ -473,12 +473,6 @@ enum PackedCommand {
 }
 
 impl PathBuilder {
-    pub fn new() -> PathBuilder {
-        PathBuilder {
-            path_commands: TinyVec::new(),
-        }
-    }
-
     pub fn into_path(self) -> Path {
         let num_coords = self
             .path_commands
@@ -620,7 +614,7 @@ fn is_subpath_zero_length(mut subpath: impl Iterator<Item = PathCommand>) -> ((f
 
 impl Path {
     /// Get an iterator over a path `Subpath`s.
-    fn iter_subpath<'a>(&'a self) -> SubPathIter<'a> {
+    fn iter_subpath(&self) -> SubPathIter {
         SubPathIter {
             path: &self,
             next_start: 0,
@@ -708,7 +702,7 @@ mod tests {
 
     #[test]
     fn empty_builder() {
-        let builder = PathBuilder::new();
+        let builder = PathBuilder::default();
         let path = builder.into_path();
         assert!(path.is_empty());
         assert_eq!(path.iter().count(), 0);
@@ -716,7 +710,7 @@ mod tests {
 
     #[test]
     fn all_commands() {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
         builder.move_to(42.0, 43.0);
         builder.line_to(42.0, 43.0);
         builder.curve_to(42.0, 43.0, 44.0, 45.0, 46.0, 47.0);
@@ -755,7 +749,7 @@ mod tests {
 
     #[test]
     fn subpath_iter() {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
         builder.move_to(42.0, 43.0);
         builder.line_to(42.0, 43.0);
         builder.close_path();
