@@ -626,7 +626,7 @@ fn is_subpath_zero_length(mut subpath: impl Iterator<Item = PathCommand>) -> ((f
 
 impl Path {
     /// Get an iterator over a path `Subpath`s.
-    fn iter_subpath<'a>(&'a self) -> SubPathIter<'a> {
+    fn iter_subpath(&self) -> SubPathIter {
         SubPathIter {
             path: &self,
             next_start: 0,
