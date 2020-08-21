@@ -1,3 +1,21 @@
+Version 2.49.4
+
+- Support ARM64 Windows builds (Chun-wei Fan).
+
+- #165 - Draw zero-length paths with square caps correctly (Bastien Orivel).
+
+- #568 - Support href attribute in addition to xlink:href per SVG2.
+
+- #560 - Ignore missing filter references per SVG2.
+
+- #609 - Support the transform attribute again in clipPath (Sven Neumann).
+
+- Update Criterion benchmarks (Ernestas Kulik).
+
+- Update to newer dependencies (Bastien Orivel).
+
+- Many style fixes per cargo-clippy (Dunja Lalic, Sven Neuman).
+
 Version 2.49.3
 
 - #34 - The 'font' shorthand in is now supported in CSS.  Librsvg
