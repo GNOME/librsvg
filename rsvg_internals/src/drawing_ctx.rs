@@ -311,7 +311,7 @@ impl DrawingCtx {
                         );
                     }
                 }
-                None // so that the following and_then() won't run
+                None
             })
             .map(|t| {
                 self.cr.transform(t.into());
