@@ -37,7 +37,7 @@ fn lex_path(input: &str) {
 fn path_parser(c: &mut Criterion) {
     c.bench_function("parse path into builder", |b| {
         let input = black_box(INPUT);
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         b.iter(|| {
             let _ = parse_path_into_builder(&input, &mut builder);

@@ -919,7 +919,7 @@ mod tests {
     ) {
         let expected_result = make_parse_result(error_pos_str, expected_error_kind);
 
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
         let result = parse_path_into_builder(path_str, &mut builder);
 
         let path = builder.into_path();

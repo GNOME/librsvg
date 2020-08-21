@@ -862,7 +862,7 @@ mod directionality_tests {
 
     // Single open path; the easy case
     fn setup_open_path() -> Segments {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -882,7 +882,7 @@ mod directionality_tests {
     }
 
     fn setup_multiple_open_subpaths() -> Segments {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -911,7 +911,7 @@ mod directionality_tests {
 
     // Closed subpath; must have a line segment back to the first point
     fn setup_closed_subpath() -> Segments {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -935,7 +935,7 @@ mod directionality_tests {
     // Multiple closed subpaths; each must have a line segment back to their
     // initial points, with no degenerate segments between subpaths.
     fn setup_multiple_closed_subpaths() -> Segments {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -969,7 +969,7 @@ mod directionality_tests {
     // A lineto follows the first closed subpath, with no moveto to start the second subpath.
     // The lineto must start at the first point of the first subpath.
     fn setup_no_moveto_after_closepath() -> Segments {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
 
         builder.move_to(10.0, 10.0);
         builder.line_to(20.0, 10.0);
@@ -1005,7 +1005,7 @@ mod directionality_tests {
     // only build a cairo_path_t for the final rendering step.
     //
     // fn setup_sequence_of_moveto () -> Segments {
-    // let mut builder = PathBuilder::new ();
+    // let mut builder = PathBuilder::default ();
     //
     // builder.move_to (10.0, 10.0);
     // builder.move_to (20.0, 20.0);
@@ -1111,7 +1111,7 @@ mod marker_tests {
 
     #[test]
     fn emits_for_open_subpath() {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
         builder.move_to(0.0, 0.0);
         builder.line_to(1.0, 0.0);
         builder.line_to(1.0, 1.0);
@@ -1146,7 +1146,7 @@ mod marker_tests {
 
     #[test]
     fn emits_for_closed_subpath() {
-        let mut builder = PathBuilder::new();
+        let mut builder = PathBuilder::default();
         builder.move_to(0.0, 0.0);
         builder.line_to(1.0, 0.0);
         builder.line_to(1.0, 1.0);
