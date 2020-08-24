@@ -436,15 +436,11 @@ impl DocumentBuilder {
     fn append_chars_to_parent(&mut self, text: &str, parent: &mut Node) {
         // When the last child is a Chars node we can coalesce
         // the text and avoid screwing up the Pango layouts
-        let chars_node = if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
-            child
+        if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
+            child.borrow_chars().append(text);
         } else {
-            let child = Node::new(NodeData::new_chars());
-            parent.append(child.clone());
-            child
+            parent.append(Node::new(NodeData::new_chars(text)));
         };
-
-        chars_node.borrow_chars().append(text);
     }
 
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
