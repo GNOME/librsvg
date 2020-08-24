@@ -1,5 +1,6 @@
 //! The main context structure which drives the drawing process.
 
+use float_cmp::approx_eq;
 use once_cell::sync::Lazy;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
@@ -510,7 +511,7 @@ impl DrawingCtx {
                 // Here we are clipping in user space, so the bbox doesn't matter
                 dc.clip_to_node(&clip_in_user_space, acquired_nodes, &dc.empty_bbox())?;
 
-                let is_opaque = (opacity - 1.0).abs() < f64::EPSILON;
+                let is_opaque = approx_eq!(f64, opacity, 1.0);
                 let needs_temporary_surface = !(is_opaque
                     && filter.is_none()
                     && mask.is_none()
