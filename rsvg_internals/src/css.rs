@@ -267,6 +267,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
     type AtRule = Rule;
     type Error = ParseErrorKind<'i>;
 
+    #[allow(clippy::type_complexity)]
     fn parse_prelude<'t>(
         &mut self,
         name: CowRcStr<'i>,
@@ -709,14 +710,16 @@ impl Stylesheet {
         for rule in &self.qualified_rules {
             for selector in &rule.selectors.0 {
                 // This magic call is stolen from selectors::matching::matches_selector_list()
-                if selectors::matching::matches_selector(
+                let matches = selectors::matching::matches_selector(
                     selector,
                     0,
                     None,
                     &RsvgElement(node.clone()),
                     match_ctx,
                     &mut |_, _| {},
-                ) {
+                );
+
+                if matches {
                     for decl in rule.declarations.iter() {
                         acc.push(Match {
                             declaration: decl,
