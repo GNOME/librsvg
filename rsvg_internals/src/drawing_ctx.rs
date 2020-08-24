@@ -515,6 +515,7 @@ impl DrawingCtx {
                 let needs_temporary_surface = !(is_opaque
                     && filter.is_none()
                     && mask.is_none()
+                    && values.mix_blend_mode() == MixBlendMode::Normal
                     && clip_in_object_space.is_none());
 
                 if needs_temporary_surface {
@@ -633,6 +634,7 @@ impl DrawingCtx {
                         // No mask, so composite the temporary surface
 
                         dc.cr.set_matrix(affines.compositing.into());
+                        dc.cr.set_operator(values.mix_blend_mode().into());
 
                         if opacity < 1.0 {
                             dc.cr.paint_with_alpha(opacity);
