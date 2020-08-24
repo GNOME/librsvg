@@ -484,15 +484,16 @@ fn children_to_chunks(
 /// `xml:space="preserve"` attribute.  A `Chars` stores the characters verbatim
 /// as they come out of the XML parser, after ensuring that they are valid UTF-8.
 
+#[derive(Default)]
 pub struct Chars {
     string: RefCell<String>,
     space_normalized: RefCell<Option<String>>,
 }
 
 impl Chars {
-    pub fn new() -> Chars {
+    pub fn new(initial_text: &str) -> Chars {
         Chars {
-            string: RefCell::new(String::new()),
+            string: RefCell::new(String::from(initial_text)),
             space_normalized: RefCell::new(None),
         }
     }
@@ -561,12 +562,6 @@ impl Chars {
 
     pub fn get_string(&self) -> String {
         self.string.borrow().clone()
-    }
-}
-
-impl Default for Chars {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -1013,4 +1008,24 @@ fn create_pango_layout(
     layout.set_text(text);
 
     layout
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Chars;
+
+    #[test]
+    fn chars_default() {
+        let c = Chars::default();
+        assert!(c.is_empty());
+        assert!(c.space_normalized.borrow().is_none());
+    }
+
+    #[test]
+    fn chars_new() {
+        let example = "Test 123";
+        let c = Chars::new(example);
+        assert_eq!(c.get_string(), example);
+        assert!(c.space_normalized.borrow().is_none());
+    }
 }

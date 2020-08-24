@@ -72,8 +72,8 @@ impl NodeData {
         NodeData::Element(Element::new(name, pbag))
     }
 
-    pub fn new_chars() -> NodeData {
-        NodeData::Text(Chars::new())
+    pub fn new_chars(initial_text: &str) -> NodeData {
+        NodeData::Text(Chars::new(initial_text))
     }
 }
 
