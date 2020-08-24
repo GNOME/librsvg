@@ -63,10 +63,7 @@ impl NumberList {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
-        Self::parse(&mut parser, length).and_then(|r| {
-            // FIXME: parser.expect_exhausted()?;
-            Ok(r)
-        })
+        Self::parse(&mut parser, length).map(|r| r)
     }
 }
 
