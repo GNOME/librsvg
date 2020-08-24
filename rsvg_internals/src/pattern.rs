@@ -220,7 +220,7 @@ impl PaintSource for Pattern {
             }
         }
 
-        let pattern = pattern.to_resolved();
+        let pattern = pattern.into_resolved();
 
         *resolved = Some(pattern.clone());
 
@@ -385,7 +385,7 @@ impl AsPaintSource for ResolvedPattern {
 }
 
 impl UnresolvedPattern {
-    fn to_resolved(self) -> ResolvedPattern {
+    fn into_resolved(self) -> ResolvedPattern {
         assert!(self.is_resolved());
 
         ResolvedPattern {

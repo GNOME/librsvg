@@ -155,7 +155,7 @@ enum Variant {
 }
 
 impl UnresolvedVariant {
-    fn to_resolved(self) -> Variant {
+    fn into_resolved(self) -> Variant {
         assert!(self.is_resolved());
 
         match self {
@@ -395,7 +395,7 @@ pub struct Gradient {
 }
 
 impl UnresolvedGradient {
-    fn to_resolved(self) -> Gradient {
+    fn into_resolved(self) -> Gradient {
         assert!(self.is_resolved());
 
         let UnresolvedGradient {
@@ -413,7 +413,7 @@ impl UnresolvedGradient {
                 spread: spread.unwrap(),
                 stops: stops.unwrap(),
 
-                variant: variant.to_resolved(),
+                variant: variant.into_resolved(),
             },
 
             UnresolvedVariant::Radial { .. } => Gradient {
@@ -422,7 +422,7 @@ impl UnresolvedGradient {
                 spread: spread.unwrap(),
                 stops: stops.unwrap(),
 
-                variant: variant.to_resolved(),
+                variant: variant.into_resolved(),
             },
         }
     }
@@ -713,7 +713,7 @@ macro_rules! impl_paint_source {
                     }
                 }
 
-                let gradient = gradient.to_resolved();
+                let gradient = gradient.into_resolved();
 
                 *resolved = Some(gradient.clone());
 
