@@ -24,8 +24,8 @@ use crate::paint_server::{PaintServer, PaintSource};
 use crate::path_builder::*;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, FillRule, Opacity, Overflow, ShapeRendering, StrokeDasharray, StrokeLinecap,
-    StrokeLinejoin,
+    ClipRule, FillRule, MixBlendMode, Opacity, Overflow, ShapeRendering, StrokeDasharray,
+    StrokeLinecap, StrokeLinejoin,
 };
 use crate::rect::Rect;
 use crate::shapes::Markers;
@@ -515,6 +515,7 @@ impl DrawingCtx {
                 let needs_temporary_surface = !(is_opaque
                     && filter.is_none()
                     && mask.is_none()
+                    && values.mix_blend_mode() == MixBlendMode::Normal
                     && clip_in_object_space.is_none());
 
                 if needs_temporary_surface {
@@ -633,6 +634,7 @@ impl DrawingCtx {
                         // No mask, so composite the temporary surface
 
                         dc.cr.set_matrix(affines.compositing.into());
+                        dc.cr.set_operator(values.mix_blend_mode().into());
 
                         if opacity < 1.0 {
                             dc.cr.paint_with_alpha(opacity);
@@ -1387,6 +1389,31 @@ impl From<StrokeLinecap> for cairo::LineCap {
             StrokeLinecap::Butt => cairo::LineCap::Butt,
             StrokeLinecap::Round => cairo::LineCap::Round,
             StrokeLinecap::Square => cairo::LineCap::Square,
+        }
+    }
+}
+
+impl From<MixBlendMode> for cairo::Operator {
+    fn from(m: MixBlendMode) -> cairo::Operator {
+        use cairo::Operator;
+
+        match m {
+            MixBlendMode::Normal => Operator::Over,
+            MixBlendMode::Multiply => Operator::Multiply,
+            MixBlendMode::Screen => Operator::Screen,
+            MixBlendMode::Overlay => Operator::Overlay,
+            MixBlendMode::Darken => Operator::Darken,
+            MixBlendMode::Lighten => Operator::Lighten,
+            MixBlendMode::ColorDodge => Operator::ColorDodge,
+            MixBlendMode::ColorBurn => Operator::ColorBurn,
+            MixBlendMode::HardLight => Operator::HardLight,
+            MixBlendMode::SoftLight => Operator::SoftLight,
+            MixBlendMode::Difference => Operator::Difference,
+            MixBlendMode::Exclusion => Operator::Exclusion,
+            MixBlendMode::Hue => Operator::HslHue,
+            MixBlendMode::Saturation => Operator::HslSaturation,
+            MixBlendMode::Color => Operator::HslColor,
+            MixBlendMode::Luminosity => Operator::HslLuminosity,
         }
     }
 }

@@ -449,6 +449,32 @@ make_property!(
     newtype_parse: IRI,
 );
 
+// https://www.w3.org/TR/compositing/#mix-blend-mode
+make_property!(
+    ComputedValues,
+    MixBlendMode,
+    default: Normal,
+    inherits_automatically: false,
+
+    identifiers:
+    "normal" => Normal,
+    "multiply" => Multiply,
+    "screen" => Screen,
+    "overlay" => Overlay,
+    "darken" => Darken,
+    "lighten" => Lighten,
+    "color-dodge" => ColorDodge,
+    "color-burn" => ColorBurn,
+    "hard-light" => HardLight,
+    "soft-light" => SoftLight,
+    "difference" => Difference,
+    "exclusion" => Exclusion,
+    "hue" => Hue,
+    "saturation" => Saturation,
+    "color" => Color,
+    "luminosity" => Luminosity,
+);
+
 // https://www.w3.org/TR/SVG/masking.html#OpacityProperty
 make_property!(
     ComputedValues,
