@@ -817,15 +817,15 @@ impl CHandle {
 
                 Ok((ink_r, width, height))
             })
-            .and_then(|(ink_r, width, height)| {
+            .map(|(ink_r, width, height)| {
                 let (w, h) = inner.size_callback.call(width, height);
 
-                Ok(RsvgDimensionData {
+                RsvgDimensionData {
                     width: w,
                     height: h,
                     em: ink_r.width(),
                     ex: ink_r.height(),
-                })
+                }
             });
 
         inner.size_callback.end_loop();

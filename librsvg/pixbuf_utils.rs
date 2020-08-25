@@ -260,7 +260,7 @@ fn pixbuf_from_file_with_size_mode(
                     dpi,
                 )
             })
-            .and_then(|pixbuf| Ok(pixbuf.to_glib_full()))
+            .map(|pixbuf| pixbuf.to_glib_full())
             .unwrap_or_else(|e| {
                 set_gerror(error, 0, &format!("{}", e));
                 ptr::null_mut()
