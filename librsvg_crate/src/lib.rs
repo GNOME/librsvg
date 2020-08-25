@@ -515,7 +515,7 @@ impl<'a> CairoRenderer<'a> {
         self.handle
             .0
             .get_geometry_for_layer(id, viewport, self.dpi, false)
-            .map(|(i, l)| (i.into(), l.into()))
+            .map(|(i, l)| (i, l))
     }
 
     /// Renders a single SVG element in the same place as for a whole SVG document
@@ -585,7 +585,7 @@ impl<'a> CairoRenderer<'a> {
         self.handle
             .0
             .get_geometry_for_element(id, self.dpi, false)
-            .map(|(i, l)| (i.into(), l.into()))
+            .map(|(i, l)| (i, l))
     }
 
     /// Renders a single SVG element to a given viewport
