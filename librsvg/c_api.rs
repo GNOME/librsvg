@@ -1327,7 +1327,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
+    match rhandle.render_cairo_sub(&cr, id.as_deref()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -1351,7 +1351,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
+    match rhandle.get_pixbuf_sub(id.as_deref()) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             rsvg_log!("could not render: {}", e);
@@ -1385,7 +1385,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_dimensions_sub(id.as_ref().map(String::as_str)) {
+    match rhandle.get_dimensions_sub(id.as_deref()) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
             true.to_glib()
@@ -1416,7 +1416,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_position_sub(id.as_ref().map(String::as_str)) {
+    match rhandle.get_position_sub(id.as_deref()) {
         Ok(position) => {
             *position_data = position;
             true.to_glib()
@@ -1732,7 +1732,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_layer(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_layer(id.as_ref().map(String::as_str), &(*viewport).into()) {
+    match rhandle.get_geometry_for_layer(id.as_deref(), &(*viewport).into()) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
@@ -1773,7 +1773,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_layer(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_layer(&cr, id.as_ref().map(String::as_str), &(*viewport).into()) {
+    match rhandle.render_layer(&cr, id.as_deref(), &(*viewport).into()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -1802,7 +1802,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str)) {
+    match rhandle.get_geometry_for_element(id.as_deref()) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
@@ -1843,11 +1843,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_element(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_element(
-        &cr,
-        id.as_ref().map(String::as_str),
-        &(*element_viewport).into(),
-    ) {
+    match rhandle.render_element(&cr, id.as_deref(), &(*element_viewport).into()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
