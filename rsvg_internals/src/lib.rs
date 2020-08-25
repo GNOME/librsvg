@@ -1,46 +1,57 @@
-//! # The implementation of librsvg
+//! The implementation of librsvg.
 //!
 //! The implementation of librsvg is in the `rsvg_internals` crate.  It is not a public
 //! crate; instead, it exports the primitives necessary to implement librsvg's public APIs,
 //! both the C and Rust APIs.  It has the XML and CSS parsing code, the SVG element
 //! definitions and tree of elements, and all the drawing logic.
 //!
-//! Some interesting parts of rsvg_internals:
+//! # Common entry points for newcomers
 //!
-//! * [The `Handle` struct](handle/struct.Handle.html) provides the primitives to implement
-//! the public APIs, such as loading an SVG file and rendering it.
+//! * Are you adding support for a CSS property?  Look in the [`property_defs`] module.
 //!
-//! * [The `DrawingCtx` struct](drawing_ctx/struct.DrawingCtx.html) is active while an SVG
-//! handle is being drawn or queried for its geometry.  It has all the mutable state related
-//! to the drawing process.
+//! # Some interesting parts of rsvg_internals
 //!
-//! * [The `Document` struct](document/struct.Document.html) represents a loaded SVG
-//! document.  It holds the tree of [`Node`] elements, and a mapping of `id` attributes
-//! to the corresponding element nodes.
+//! * The [`Handle`] struct provides the primitives to implement the public APIs, such as
+//! loading an SVG file and rendering it.
 //!
-//! * [The `node` module](node/index.html) provides the [`Node`] struct and
-//! helper traits used to operate on nodes.
+//! * The [`DrawingCtx`] struct is active while an SVG handle is being drawn or queried
+//! for its geometry.  It has all the mutable state related to the drawing process.
 //!
-//! * [The `element` module](element/index.html) provides the [`Element`] struct and
-//! the [`SetAttributes`] and [`Draw`] traits which are implemented by all SVG elements.
+//! * The [`Document`] struct represents a loaded SVG document.  It holds the tree of
+//! [`Node`] elements, and a mapping of `id` attributes to the corresponding element
+//! nodes.
 //!
-//! * [The `xml` module](xml/index.html) receives events from the XML parser, and builds a
-//! [`Document`] as a tree of [`Node`].
+//! * The [`node`] module provides the [`Node`] struct and helper traits used to operate
+//! on nodes.
 //!
-//! * [The `properties` module](properties/index.html) contains structs that represent
-//! collections of CSS properties.
+//! * The [`element`] module provides the [`Element`] struct and the [`SetAttributes`] and
+//! [`Draw`] traits which are implemented by all SVG elements.
 //!
-//! * [The `property_defs` module](property_defs/index.html) contains one type for each of
-//! the CSS style properties that librsvg supports.
+//! * The [`xml`] module receives events from the XML parser, and builds a [`Document`] as
+//! a tree of [`Node`].
 //!
-//! * [The `css` module](css/index.html) contains the implementation of CSS parsing
-//! and matching.
+//! * The [`properties`] module contains structs that represent collections of CSS
+//! properties.
+//!
+//! * The [`property_defs`] module contains one type for each of the CSS style properties
+//! that librsvg supports.
+//!
+//! * The [`css`] module contains the implementation of CSS parsing and matching.
 //!
 //! [`Document`]: document/struct.Document.html
 //! [`Node`]: node/type.Node.html
 //! [`Element`]: element/struct.Element.html
+//! [`Handle`]: handle/struct.Handle.html
+//! [`DrawingCtx`]: drawing_ctx/struct.DrawingCtx.html
+//! [`Document`]: document/struct.Document.html
 //! [`SetAttributes`]: element/trait.SetAttributes.html
 //! [`Draw`]: element/trait.Draw.html
+//! [`css`]: css/index.html
+//! [`element`]: element/index.html
+//! [`node`]: node/index.html
+//! [`properties`]: properties/index.html
+//! [`property_defs`]: property_defs/index.html
+//! [`xml`]: xml/index.html
 
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]

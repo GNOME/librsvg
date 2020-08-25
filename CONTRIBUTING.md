@@ -85,6 +85,9 @@ with a sample SVG file.
 The library's internals are being documented at
 https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg_internals/index.html
 
+Please see that documentation for common tasks like adding support for
+a new CSS property.
+
 ### Working on the source
 
 Librsvg uses an autotools setup, which is described in detail [in this

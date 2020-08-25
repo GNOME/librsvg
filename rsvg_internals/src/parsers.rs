@@ -16,7 +16,7 @@ pub trait Parse: Sized {
     /// Convenience function to parse a value out of a `&str`.
     ///
     /// This is useful mostly for tests which want to avoid creating a
-    /// `cssparser::Parser` by hand.
+    /// `cssparser::Parser` by hand.  Property types do not need to reimplement this.
     fn parse_str(s: &str) -> Result<Self, ParseError> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
@@ -30,6 +30,7 @@ pub fn optional_comma<'i, 't>(parser: &mut Parser<'i, 't>) {
     let _ = parser.try_parse(|p| p.expect_comma());
 }
 
+/// Parses an `f32` and ensures that it is not an infinity or NaN.
 pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
     if n.is_finite() {
         Ok(n)

@@ -1,4 +1,46 @@
 //! Definitions for CSS property types.
+//!
+//! This module defines most of the CSS property types that librsvg supports.  Each
+//! property requires a Rust type that will hold its values, and that type should
+//! implement a few traits, as follows.
+//!
+//! # Requirements for a property type
+//!
+//! You should call the [`make_property`] macro to take care of most of these requirements
+//! automatically:
+//!
+//! * A name for the type.  For example, the `fill` property has a [`Fill`] type defined
+//! in this module.
+//!
+//! * An initial value per the CSS or SVG specs, given through an implementation of the
+//! `Default` trait.
+//!
+//! * Whether the property's computed value inherits to child elements, given
+//! through an implementation of the [`inherits_automatically`] method of the [`Property`]
+//! trait.
+//!
+//! * A way to derive the CSS *computed value* for the property, given through an
+//! implementation of the [`compute`] method of the [`Property`] trait.
+//!
+//! * The actual underlying type.  For example, the [`make_property`] macro can generate a
+//! field-less enum for properties like the `clip-rule` property, which just has
+//! identifier-based values like `nonzero` and `evenodd`.  For general-purpose types like
+//! [`Length`], the macro can wrap them in a newtype like `struct`
+//! [`StrokeWidth`]`(Length)`.  For custom types, the macro call can be used just to
+//! define the initial/default value and whether the property inherits automatically; you
+//! should provide the other required trait implementations separately.
+//!
+//! * An implementation of the [`Parse`] trait for the underlying type.
+//!
+//! [`compute`]: ../property_macros/trait.Property.html#tymethod.compute
+//! [`inherits_automatically`]: ../property_macros/trait.Property.html#tymethod.inherits_automatically
+//! [`Fill`]: struct.Fill.html
+//! [`Length`]: ../length/struct.Length.html
+//! [`make_property`]: ../macro.make_property.html
+//! [`Opacity`]: struct.Opacity.html
+//! [`Parse`]: ../trait.Parse.html
+//! [`Property`]: ../property_macros/trait.Property.html
+//! [`UnitInterval`]: ../unit_interval/struct.UnitInterval.html
 
 use cssparser::{Parser, Token};
 
