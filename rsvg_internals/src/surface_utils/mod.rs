@@ -69,6 +69,8 @@ pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
     #[inline]
     fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: u32, y: u32) {
         let value = pixel.to_u32();
+
+        #[allow(clippy::cast_ptr_alignment)]
         unsafe {
             *(&mut self[y as usize * stride + x as usize * 4] as *mut u8 as *mut u32) = value;
         }

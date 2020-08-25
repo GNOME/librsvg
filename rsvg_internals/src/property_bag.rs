@@ -99,7 +99,7 @@ impl<'a> Iterator for PropertyBagIter<'a> {
     type Item = (QualName, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(a, v)| (a.clone(), v.clone()))
+        self.0.next().map(|(a, v)| (a.clone(), <&str>::clone(v)))
     }
 }
 
