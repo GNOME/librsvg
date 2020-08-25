@@ -1,4 +1,22 @@
 //! CSS properties, specified values, computed values.
+//!
+//! To implement support for a CSS property, do the following:
+//!
+//! * Create a type that will hold the property's values.  Please do this in the file
+//! `property_defs.rs`; you should cut-and-paste from the existing property definitions or
+//! read the documentation of the [`make_property`] macro.  You should read the
+//! documentation for the [`property_defs`] module to see all that is involved in creating
+//! a type for a property.
+//!
+//! * Modify the call to the `make_properties` macro in this module to include the new
+//! property's name.
+//!
+//! * Modify the rest of librsvg wherever the computed value of the property needs to be used.
+//! This is available in methods that take an argument of type [`ComputedValues`].
+//!
+//! [`make_property`]: ../macro.make_property.html
+//! [`property_defs`]: ../property_defs/index.html
+//! [`ComputedValues`]: ../struct.ComputedValues.html
 
 use cssparser::{
     self, BasicParseErrorKind, DeclarationListParser, ParseErrorKind, Parser, ParserInput, ToCss,
@@ -69,7 +87,7 @@ impl PropertyId {
     }
 }
 
-/// Holds the specified CSS properties for an element
+/// Holds the specified values for the CSS properties of an element.
 #[derive(Clone)]
 pub struct SpecifiedValues {
     indices: [u8; PropertyId::UnsetProperty as usize],
@@ -118,6 +136,20 @@ impl ComputedValues {
 ///
 /// See the only invocation of this macro to see how it is used; it is just
 /// a declarative list of property names.
+///
+/// **NOTE:** If you get a compiler error similar to this:
+///
+/// ```
+/// 362 |         "mix-blend-mode"              => mix_blend_mode              : MixBlendMode,
+///     |         ^^^^^^^^^^^^^^^^ no rules expected this token in macro call
+/// ```
+///
+/// Then it may be that you put the name inside the `longhands` block, when it should be
+/// inside the `longhands_not_supported_by_markup5ever` block.  This is because the
+/// [`markup5ever`] crate does not have predefined names for every single property out
+/// there; just the common ones.
+///
+/// [`markup5ever`]: https://docs.rs/markup5ever
 macro_rules! make_properties {
     {
         shorthands: {
@@ -187,6 +219,7 @@ macro_rules! make_properties {
             )+
         }
 
+        /// Holds the computed values for the CSS properties of an element.
         #[derive(Debug, Default, Clone)]
         pub struct ComputedValues {
             $(

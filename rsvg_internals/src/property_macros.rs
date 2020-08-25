@@ -1,7 +1,23 @@
 //! Macros to define CSS properties.
 
+/// Trait which all CSS property types should implement.
+///
+/// This is generic on `T` for testing purposes; in the actual code `T` needs to
+/// be [`ComputedValues`].
+///
+/// [`ComputedValues`]: ../properties/struct.ComputedValues.html
 pub trait Property<T> {
+    /// Whether the property's computed value inherits from parent to child elements.
+    ///
+    /// For each property, the CSS or SVG specs say whether the property inherits
+    /// automatically.  When a property is not specified in an element, the return value
+    /// of this method determines whether the property's value is copied from the parent
+    /// element (`true`), or whether it resets to the initial/default value (`false`).
     fn inherits_automatically() -> bool;
+
+    /// Derive the CSS computed value from the parent element's `ComputedValues` and the `self` value.
+    ///
+    /// The CSS or SVG specs say how to derive this for each property.
     fn compute(&self, _: &T) -> Self;
 }
 
@@ -11,15 +27,15 @@ pub trait Property<T> {
 ///
 /// * Define a type to represent the property's values.
 ///
-/// * A `Parse` implementation to parse the property.
+/// * A [`Parse`] implementation to parse the property.
 ///
 /// * A `Default` implementation to define the property's *initial* value.
 ///
-/// * A `Property` implementation to define whether the property
-/// inherits from the parent element, and how the property calculates
+/// * A [`Property`] implementation to define whether the property
+/// inherits from the parent element, and how the property derives
 /// its computed value.
 ///
-/// When going from `SpecifiedValues` to `ComputedValues, properties
+/// When going from [`SpecifiedValues`] to [`ComputedValues`], properties
 /// which inherit automatically from the parent element will just have
 /// their values cloned.  Properties which do not inherit will be reset back
 /// to their initial value (i.e. their `Default`).
@@ -50,8 +66,8 @@ pub trait Property<T> {
 /// );
 /// ```
 ///
-/// This generates a simple enum like the following, with implementations of `Parse`,
-/// `Default`, and `Property`.
+/// This generates a simple enum like the following, with implementations of [`Parse`],
+/// `Default`, and [`Property`].
 ///
 /// ```ignore
 /// pub enum StrokeLinejoin { Miter, Round, Bevel }
@@ -79,6 +95,12 @@ pub trait Property<T> {
 /// implentation of `Property::compute` that is more than a simple `clone`.  In this case,
 /// define the custom type separately, and use the macro to specify the default value and
 /// the `Property` implementation.
+///
+/// [`Parse`]: ../trait.Parse.html
+/// [`Property`]: ../property_macros/trait.Property.html
+/// [`ComputedValues`]: ../properties/struct.ComputedValues.html
+/// [`SpecifiedValues`]: ../properties/struct.SpecifiedValues.html
+///
 #[macro_export]
 macro_rules! make_property {
     ($computed_values_type: ty,
