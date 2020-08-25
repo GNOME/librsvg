@@ -189,7 +189,7 @@ impl BaseUrl {
         self.inner
             .as_ref()
             .map(|b| b.cstring.as_ptr())
-            .unwrap_or_else(|| ptr::null())
+            .unwrap_or_else(ptr::null)
     }
 }
 
@@ -1496,7 +1496,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
 
     let res = file
         .read(cancellable.as_ref())
-        .map_err(|e| LoadingError::from(e))
+        .map_err(LoadingError::from)
         .and_then(|stream| rhandle.read_stream_sync(&stream.upcast(), cancellable.as_ref()));
 
     match res {

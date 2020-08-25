@@ -234,7 +234,7 @@ fn pixbuf_from_file_with_size_mode(
         let cancellable: Option<&gio::Cancellable> = None;
         let handle = match file
             .read(cancellable)
-            .map_err(|e| LoadingError::from(e))
+            .map_err(LoadingError::from)
             .and_then(|stream| Handle::from_stream(&load_options, stream.as_ref(), None))
         {
             Ok(handle) => handle,
