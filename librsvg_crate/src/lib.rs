@@ -174,6 +174,7 @@ pub use rsvg_internals::{
 /// functions to load an [`SvgHandle`][SvgHandle].
 ///
 /// [SvgHandle]: struct.SvgHandle.html
+#[derive(Default)]
 pub struct Loader {
     unlimited_size: bool,
     keep_image_data: bool,
@@ -200,10 +201,7 @@ impl Loader {
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        Loader {
-            unlimited_size: false,
-            keep_image_data: false,
-        }
+        Self::default()
     }
 
     /// Controls safety limits used in the XML parser.
