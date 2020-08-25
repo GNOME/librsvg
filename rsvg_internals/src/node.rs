@@ -106,6 +106,7 @@ pub struct CascadedValues<'a> {
     inner: CascadedInner<'a>,
 }
 
+#[allow(clippy::large_enum_variant)]
 enum CascadedInner<'a> {
     FromNode(Ref<'a, Element>),
     FromValues(ComputedValues),
