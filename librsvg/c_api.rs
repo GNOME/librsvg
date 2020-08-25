@@ -146,6 +146,7 @@ pub struct RsvgHandle {
     _abi_padding: [glib_sys::gpointer; 16],
 }
 
+#[allow(clippy::large_enum_variant)]
 enum LoadState {
     // Just created the CHandle
     Start,
