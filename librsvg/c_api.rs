@@ -1953,11 +1953,9 @@ impl ErrorDomain for RsvgError {
         RSVG_ERROR_FAILED
     }
 
-    fn from(code: i32) -> Option<Self> {
-        match code {
-            // We don't have enough information from glib error codes
-            _ => Some(RsvgError),
-        }
+    fn from(_code: i32) -> Option<Self> {
+        // We don't have enough information from glib error codes
+        Some(RsvgError)
     }
 }
 
