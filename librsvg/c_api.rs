@@ -687,7 +687,6 @@ impl CHandle {
 
             _ => {
                 rsvg_g_critical("Handle must not be closed in order to write to it");
-                return;
             }
         }
     }
