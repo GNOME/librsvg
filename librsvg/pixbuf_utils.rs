@@ -118,8 +118,8 @@ fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (f64, 
                 let zoom_y = f64::from(size_mode.height) / out_height;
                 let zoom = zoom_x.min(zoom_y);
 
-                out_width = zoom * out_width;
-                out_height = zoom * out_height;
+                out_width *= zoom;
+                out_height *= zoom;
             }
         }
 
