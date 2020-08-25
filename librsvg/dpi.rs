@@ -10,8 +10,6 @@
 //! This module encapsulates that behavior so that the `rsvg_internals` crate
 //! can always have immutable DPI values as intended.
 
-use rsvg_internals;
-
 // This is configurable at runtime
 const DEFAULT_DPI_X: f64 = 90.0;
 const DEFAULT_DPI_Y: f64 = 90.0;

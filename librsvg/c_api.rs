@@ -8,7 +8,6 @@ use std::str;
 use std::sync::Once;
 use std::{f64, i32};
 
-use cast;
 use gdk_pixbuf::Pixbuf;
 use glib::error::ErrorDomain;
 use url::Url;

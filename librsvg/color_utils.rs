@@ -1,5 +1,3 @@
-use libc;
-
 use std::ffi::CStr;
 
 use rsvg_internals::{Color, Parse};
