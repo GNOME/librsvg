@@ -169,7 +169,7 @@ clippy:
     - rustc --version && cargo --version
     - cargo install clippy --force
     - cargo clippy --all
-  when: manual
+#  when: manual
 
 tarball:
   image: $AMD64_OPENSUSE_TUMBLEWEED
