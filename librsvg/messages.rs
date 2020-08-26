@@ -1,6 +1,5 @@
 use glib::translate::*;
 use glib_sys::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
-use libc;
 
 /*
   G_LOG_LEVEL_CRITICAL          = 1 << 3,

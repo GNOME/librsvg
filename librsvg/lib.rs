@@ -1,6 +1,4 @@
-#![allow(clippy::clone_on_ref_ptr)]
-#![allow(clippy::not_unsafe_ptr_arg_deref)]
-#![allow(clippy::too_many_arguments)]
+#![allow(clippy::missing_safety_doc)]
 #![warn(unused)]
 
 #[rustfmt::skip]

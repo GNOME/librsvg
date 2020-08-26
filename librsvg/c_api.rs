@@ -8,7 +8,6 @@ use std::str;
 use std::sync::Once;
 use std::{f64, i32};
 
-use cast;
 use gdk_pixbuf::Pixbuf;
 use glib::error::ErrorDomain;
 use url::Url;
@@ -147,6 +146,7 @@ pub struct RsvgHandle {
     _abi_padding: [glib_sys::gpointer; 16],
 }
 
+#[allow(clippy::large_enum_variant)]
 enum LoadState {
     // Just created the CHandle
     Start,
@@ -190,7 +190,7 @@ impl BaseUrl {
         self.inner
             .as_ref()
             .map(|b| b.cstring.as_ptr())
-            .unwrap_or_else(|| ptr::null())
+            .unwrap_or_else(ptr::null)
     }
 }
 
@@ -688,7 +688,6 @@ impl CHandle {
 
             _ => {
                 rsvg_g_critical("Handle must not be closed in order to write to it");
-                return;
             }
         }
     }
@@ -819,15 +818,15 @@ impl CHandle {
 
                 Ok((ink_r, width, height))
             })
-            .and_then(|(ink_r, width, height)| {
+            .map(|(ink_r, width, height)| {
                 let (w, h) = inner.size_callback.call(width, height);
 
-                Ok(RsvgDimensionData {
+                RsvgDimensionData {
                     width: w,
                     height: h,
                     em: ink_r.width(),
                     ex: ink_r.height(),
-                })
+                }
             });
 
         inner.size_callback.end_loop();
@@ -1329,7 +1328,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_cairo_sub(&cr, id.as_ref().map(String::as_str)) {
+    match rhandle.render_cairo_sub(&cr, id.as_deref()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -1353,7 +1352,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf_sub(
     let rhandle = get_rust_handle(handle);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_pixbuf_sub(id.as_ref().map(String::as_str)) {
+    match rhandle.get_pixbuf_sub(id.as_deref()) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             rsvg_log!("could not render: {}", e);
@@ -1387,7 +1386,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_dimensions_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_dimensions_sub(id.as_ref().map(String::as_str)) {
+    match rhandle.get_dimensions_sub(id.as_deref()) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
             true.to_glib()
@@ -1418,7 +1417,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_position_sub(id.as_ref().map(String::as_str)) {
+    match rhandle.get_position_sub(id.as_deref()) {
         Ok(position) => {
             *position_data = position;
             true.to_glib()
@@ -1498,7 +1497,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_new_from_gfile_sync(
 
     let res = file
         .read(cancellable.as_ref())
-        .map_err(|e| LoadingError::from(e))
+        .map_err(LoadingError::from)
         .and_then(|stream| rhandle.read_stream_sync(&stream.upcast(), cancellable.as_ref()));
 
     match res {
@@ -1734,7 +1733,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_layer(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_layer(id.as_ref().map(String::as_str), &(*viewport).into()) {
+    match rhandle.get_geometry_for_layer(id.as_deref(), &(*viewport).into()) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
@@ -1775,7 +1774,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_layer(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_layer(&cr, id.as_ref().map(String::as_str), &(*viewport).into()) {
+    match rhandle.render_layer(&cr, id.as_deref(), &(*viewport).into()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -1804,7 +1803,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_geometry_for_element(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_element(id.as_ref().map(String::as_str)) {
+    match rhandle.get_geometry_for_element(id.as_deref()) {
         Ok((ink_rect, logical_rect)) => {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
@@ -1845,11 +1844,7 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_element(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_element(
-        &cr,
-        id.as_ref().map(String::as_str),
-        &(*element_viewport).into(),
-    ) {
+    match rhandle.render_element(&cr, id.as_deref(), &(*element_viewport).into()) {
         Ok(()) => true.to_glib(),
 
         Err(e) => {
@@ -1955,11 +1950,9 @@ impl ErrorDomain for RsvgError {
         RSVG_ERROR_FAILED
     }
 
-    fn from(code: i32) -> Option<Self> {
-        match code {
-            // We don't have enough information from glib error codes
-            _ => Some(RsvgError),
-        }
+    fn from(_code: i32) -> Option<Self> {
+        // We don't have enough information from glib error codes
+        Some(RsvgError)
     }
 }
 

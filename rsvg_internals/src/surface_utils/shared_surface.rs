@@ -358,6 +358,7 @@ impl ImageSurface<Shared> {
         assert!(x < self.width as u32);
         assert!(y < self.height as u32);
 
+        #[allow(clippy::cast_ptr_alignment)]
         let value = unsafe {
             *(self
                 .data_ptr
@@ -373,6 +374,7 @@ impl ImageSurface<Shared> {
     pub fn get_pixel_by_offset(&self, offset: isize) -> Pixel {
         assert!(offset < self.stride as isize * self.height as isize);
 
+        #[allow(clippy::cast_ptr_alignment)]
         let value = unsafe { *(self.data_ptr.as_ptr().offset(offset) as *const u32) };
         Pixel::from_u32(value)
     }
@@ -723,6 +725,7 @@ impl ImageSurface<Shared> {
 
                     let value = pixel.to_u32();
 
+                    #[allow(clippy::cast_ptr_alignment)]
                     unsafe {
                         let ptr = self
                             .ptr

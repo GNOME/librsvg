@@ -1,5 +1,6 @@
 //! Types for rectangles.
 
+#[allow(clippy::module_inception)]
 mod rect {
     use crate::float_eq_cairo::ApproxEqCairo;
     use core::ops::{Add, Range, Sub};
