@@ -6,14 +6,13 @@ use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
-use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 
@@ -67,20 +66,15 @@ impl Draw for Image {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if self.href.is_none() {
-            return Ok(draw_ctx.empty_bbox());
-        }
-
-        let href = self.href.as_ref().unwrap();
-        let surface = match *href {
-            Href::PlainUrl(ref url) => match acquired_nodes.lookup_image(url) {
+        let surface = match self.href {
+            Some(Href::PlainUrl(ref url)) => match acquired_nodes.lookup_image(url) {
                 Ok(surf) => surf,
                 Err(e) => {
                     rsvg_log!("could not load image \"{}\": {}", url, e);
                     return Ok(draw_ctx.empty_bbox());
                 }
             },
-            Href::WithFragment(_) => {
+            Some(_) => {
                 rsvg_log!(
                     "not rendering {} because its href cannot contain a fragment identifier",
                     node
@@ -88,31 +82,25 @@ impl Draw for Image {
 
                 return Ok(draw_ctx.empty_bbox());
             }
+            None => return Ok(draw_ctx.empty_bbox()),
         };
 
         let values = cascaded.get();
+
         let params = draw_ctx.get_view_params();
-        let rect = self.get_rect(values, &params);
+        let x = self.x.normalize(&values, &params);
+        let y = self.y.normalize(&values, &params);
+        let w = self.width.normalize(&values, &params);
+        let h = self.height.normalize(&values, &params);
 
         draw_ctx.draw_image(
             &surface,
-            rect,
+            Rect::new(x, y, x + w, y + h),
             self.aspect,
             node,
             acquired_nodes,
             values,
             clipping,
         )
-    }
-}
-
-impl Image {
-    fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
-        let x = self.x.normalize(&values, &params);
-        let y = self.y.normalize(&values, &params);
-        let w = self.width.normalize(&values, &params);
-        let h = self.height.normalize(&values, &params);
-
-        Rect::new(x, y, x + w, y + h)
     }
 }
