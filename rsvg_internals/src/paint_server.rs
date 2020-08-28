@@ -112,17 +112,6 @@ pub trait AsPaintSource {
     ) -> Result<bool, RenderingError>;
 }
 
-// Any of the attributes in gradient and pattern elements may be omitted.
-// The missing ones are resolved from the "fallback" IRI. If still missing,
-// they are resolved to the default value
-pub trait Resolve {
-    fn is_resolved(&self) -> bool;
-
-    fn resolve_from_fallback(&self, fallback: &Self) -> Self;
-
-    fn resolve_from_defaults(&self) -> Self;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
