@@ -6,7 +6,7 @@ use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -16,7 +16,6 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
-use crate::viewbox::ViewBox;
 
 #[derive(Default)]
 pub struct Image {
@@ -68,18 +67,19 @@ impl Draw for Image {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        let params = draw_ctx.get_view_params();
-
-        let rect = self.get_rect(values, &params);
-
-        if rect.is_empty() || self.href.is_none() {
+        if self.href.is_none() {
             return Ok(draw_ctx.empty_bbox());
         }
 
         let href = self.href.as_ref().unwrap();
-        let url = match *href {
-            Href::PlainUrl(ref url) => url,
+        let surface = match *href {
+            Href::PlainUrl(ref url) => match acquired_nodes.lookup_image(url) {
+                Ok(surf) => surf,
+                Err(e) => {
+                    rsvg_log!("could not load image \"{}\": {}", url, e);
+                    return Ok(draw_ctx.empty_bbox());
+                }
+            },
             Href::WithFragment(_) => {
                 rsvg_log!(
                     "not rendering {} because its href cannot contain a fragment identifier",
@@ -90,60 +90,19 @@ impl Draw for Image {
             }
         };
 
-        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            let surface = match an.lookup_image(url) {
-                Ok(surf) => surf,
-                Err(e) => {
-                    rsvg_log!("could not load image \"{}\": {}", url, e);
-                    return Ok(dc.empty_bbox());
-                }
-            };
+        let values = cascaded.get();
+        let params = draw_ctx.get_view_params();
+        let rect = self.get_rect(values, &params);
 
-            let clip_mode = if !values.is_overflow() && self.aspect.is_slice() {
-                Some(ClipMode::ClipToViewport)
-            } else {
-                None
-            };
-
-            let image_width = surface.width();
-            let image_height = surface.height();
-            if clipping || image_width == 0 || image_height == 0 {
-                return Ok(dc.empty_bbox());
-            }
-
-            dc.with_saved_cr(&mut |dc| {
-                let image_width = f64::from(image_width);
-                let image_height = f64::from(image_height);
-                let vbox = ViewBox(Rect::from_size(image_width, image_height));
-
-                if let Some(_params) =
-                    dc.push_new_viewport(Some(vbox), rect, self.aspect, clip_mode)
-                {
-                    let cr = dc.get_cairo_context();
-
-                    // We need to set extend appropriately, so can't use cr.set_source_surface().
-                    //
-                    // If extend is left at its default value (None), then bilinear scaling uses
-                    // transparency outside of the image producing incorrect results.
-                    // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
-                    // opaque 100×1 image of a gradient scaled to 100×98 which ends up
-                    // transparent almost everywhere without this fix (which it shouldn't).
-                    let ptn = surface.to_cairo_pattern();
-                    ptn.set_extend(cairo::Extend::Pad);
-                    cr.set_source(&ptn);
-
-                    // Clip is needed due to extend being set to pad.
-                    cr.rectangle(0.0, 0.0, image_width, image_height);
-                    cr.clip();
-
-                    cr.paint();
-                }
-
-                // The bounding box for <image> is decided by the values of x, y, w, h
-                // and not by the final computed image bounds.
-                Ok(dc.empty_bbox().with_rect(rect))
-            })
-        })
+        draw_ctx.draw_image(
+            &surface,
+            rect,
+            self.aspect,
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+        )
     }
 }
 
