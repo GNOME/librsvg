@@ -10,7 +10,6 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::float_eq_cairo::ApproxEqCairo;
 use crate::font_props::FontWeight;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -18,12 +17,10 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::{
-    Direction, FontStretch, FontStyle, FontVariant, TextAnchor, TextRendering, UnicodeBidi,
-    WritingMode, XmlLang, XmlSpace,
+    Direction, FontStretch, FontStyle, FontVariant, TextAnchor, UnicodeBidi, WritingMode, XmlLang,
+    XmlSpace,
 };
-use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
-use crate::transform::Transform;
 
 /// An absolutely-positioned array of `Span`s
 ///
@@ -273,141 +270,8 @@ impl PositionedSpan {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.with_saved_cr(&mut |dc| {
-            let transform = dc.get_transform();
-
-            let gravity = self.layout.get_context().unwrap().get_gravity();
-            let bbox = self.compute_text_bbox(transform, gravity);
-            if bbox.is_none() {
-                return Ok(dc.empty_bbox());
-            }
-
-            let mut bbox = if clipping {
-                dc.empty_bbox()
-            } else {
-                bbox.unwrap()
-            };
-
-            let cr = dc.get_cairo_context();
-            cr.set_antialias(cairo::Antialias::from(self.values.text_rendering()));
-            dc.setup_cr_for_stroke(&cr, &self.values);
-            cr.move_to(self.rendered_position.0, self.rendered_position.1);
-
-            let rotation = gravity.to_rotation();
-            if !rotation.approx_eq_cairo(0.0) {
-                cr.rotate(-rotation);
-            }
-
-            let current_color = self.values.color().0;
-
-            let res = if !clipping {
-                dc.set_source_paint_server(
-                    acquired_nodes,
-                    &self.values.fill().0,
-                    self.values.fill_opacity().0,
-                    &bbox,
-                    current_color,
-                )
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        pangocairo::functions::update_layout(&cr, &self.layout);
-                        pangocairo::functions::show_layout(&cr, &self.layout);
-                    };
-                })
-            } else {
-                Ok(())
-            };
-
-            if res.is_ok() {
-                let mut need_layout_path = clipping;
-
-                let res = if !clipping {
-                    dc.set_source_paint_server(
-                        acquired_nodes,
-                        &self.values.stroke().0,
-                        self.values.stroke_opacity().0,
-                        &bbox,
-                        current_color,
-                    )
-                    .map(|had_paint_server| {
-                        if had_paint_server {
-                            need_layout_path = true;
-                        }
-                    })
-                } else {
-                    Ok(())
-                };
-
-                if res.is_ok() && need_layout_path {
-                    pangocairo::functions::update_layout(&cr, &self.layout);
-                    pangocairo::functions::layout_path(&cr, &self.layout);
-
-                    if !clipping {
-                        let (x0, y0, x1, y1) = cr.stroke_extents();
-                        let r = Rect::new(x0, y0, x1, y1);
-                        let ib = BoundingBox::new()
-                            .with_transform(transform)
-                            .with_ink_rect(r);
-                        cr.stroke();
-                        bbox.insert(&ib);
-                    }
-                }
-            }
-
-            res.map(|_: ()| bbox)
-        })
-    }
-
-    fn compute_text_bbox(
-        &self,
-        transform: Transform,
-        gravity: pango::Gravity,
-    ) -> Option<BoundingBox> {
-        #![allow(clippy::many_single_char_names)]
-
-        let (ink, _) = self.layout.get_extents();
-        if ink.width == 0 || ink.height == 0 {
-            return None;
-        }
-
         let (x, y) = self.rendered_position;
-        let ink_x = f64::from(ink.x);
-        let ink_y = f64::from(ink.y);
-        let ink_width = f64::from(ink.width);
-        let ink_height = f64::from(ink.height);
-        let pango_scale = f64::from(pango::SCALE);
-
-        let (x, y, w, h) = if gravity_is_vertical(gravity) {
-            (
-                x + (ink_x - ink_height) / pango_scale,
-                y + ink_y / pango_scale,
-                ink_height / pango_scale,
-                ink_width / pango_scale,
-            )
-        } else {
-            (
-                x + ink_x / pango_scale,
-                y + ink_y / pango_scale,
-                ink_width / pango_scale,
-                ink_height / pango_scale,
-            )
-        };
-
-        let r = Rect::new(x, y, x + w, y + h);
-        let bbox = BoundingBox::new()
-            .with_transform(transform)
-            .with_rect(r)
-            .with_ink_rect(r);
-
-        Some(bbox)
-    }
-}
-
-// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
-fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
-    match gravity {
-        pango::Gravity::East | pango::Gravity::West => true,
-        _ => false,
+        draw_ctx.draw_text(&self.layout, x, y, acquired_nodes, &self.values, clipping)
     }
 }
 
@@ -793,17 +657,6 @@ fn to_pango_units(v: f64) -> i32 {
 impl<'a> From<&'a XmlLang> for pango::Language {
     fn from(l: &'a XmlLang) -> pango::Language {
         pango::Language::from_string(&l.0)
-    }
-}
-
-impl From<TextRendering> for cairo::Antialias {
-    fn from(tr: TextRendering) -> cairo::Antialias {
-        match tr {
-            TextRendering::Auto
-            | TextRendering::OptimizeLegibility
-            | TextRendering::GeometricPrecision => cairo::Antialias::Default,
-            TextRendering::OptimizeSpeed => cairo::Antialias::None,
-        }
     }
 }
 

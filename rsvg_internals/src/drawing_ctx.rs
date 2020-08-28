@@ -18,6 +18,7 @@ use crate::dpi::Dpi;
 use crate::element::Element;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
+use crate::float_eq_cairo::ApproxEqCairo;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -25,7 +26,7 @@ use crate::path_builder::*;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, MixBlendMode, Opacity, Overflow, ShapeRendering, StrokeDasharray,
-    StrokeLinecap, StrokeLinejoin,
+    StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
 use crate::shapes::Markers;
@@ -732,7 +733,7 @@ impl DrawingCtx {
     }
 
     /// Saves the current Cairo context, runs the draw_fn, and restores the context
-    pub fn with_saved_cr(
+    fn with_saved_cr(
         &mut self,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1020,6 +1021,158 @@ impl DrawingCtx {
         } else {
             Ok(self.empty_bbox())
         }
+    }
+
+    pub fn draw_image(
+        &mut self,
+        surface: &SharedImageSurface,
+        rect: Rect,
+        aspect: AspectRatio,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes,
+        values: &ComputedValues,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let image_width = surface.width();
+        let image_height = surface.height();
+        if clipping || rect.is_empty() || image_width == 0 || image_height == 0 {
+            return Ok(self.empty_bbox());
+        }
+
+        let image_width = f64::from(image_width);
+        let image_height = f64::from(image_height);
+        let vbox = ViewBox(Rect::from_size(image_width, image_height));
+
+        let clip_mode = if !values.is_overflow() && aspect.is_slice() {
+            Some(ClipMode::ClipToViewport)
+        } else {
+            None
+        };
+
+        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |_an, dc| {
+            dc.with_saved_cr(&mut |dc| {
+                if let Some(_params) = dc.push_new_viewport(Some(vbox), rect, aspect, clip_mode) {
+                    let cr = dc.get_cairo_context();
+
+                    // We need to set extend appropriately, so can't use cr.set_source_surface().
+                    //
+                    // If extend is left at its default value (None), then bilinear scaling uses
+                    // transparency outside of the image producing incorrect results.
+                    // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
+                    // opaque 100×1 image of a gradient scaled to 100×98 which ends up
+                    // transparent almost everywhere without this fix (which it shouldn't).
+                    let ptn = surface.to_cairo_pattern();
+                    ptn.set_extend(cairo::Extend::Pad);
+                    cr.set_source(&ptn);
+
+                    // Clip is needed due to extend being set to pad.
+                    cr.rectangle(0.0, 0.0, image_width, image_height);
+                    cr.clip();
+
+                    cr.paint();
+                }
+
+                // The bounding box for <image> is decided by the values of x, y, w, h
+                // and not by the final computed image bounds.
+                Ok(dc.empty_bbox().with_rect(rect))
+            })
+        })
+    }
+
+    pub fn draw_text(
+        &mut self,
+        layout: &pango::Layout,
+        x: f64,
+        y: f64,
+        acquired_nodes: &mut AcquiredNodes,
+        values: &ComputedValues,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let transform = self.get_transform();
+
+        let gravity = layout.get_context().unwrap().get_gravity();
+
+        let bbox = compute_text_box(layout, x, y, transform, gravity);
+        if bbox.is_none() {
+            return Ok(self.empty_bbox());
+        }
+
+        let mut bbox = if clipping {
+            self.empty_bbox()
+        } else {
+            bbox.unwrap()
+        };
+
+        self.with_saved_cr(&mut |dc| {
+            let cr = dc.get_cairo_context();
+
+            cr.set_antialias(cairo::Antialias::from(values.text_rendering()));
+            dc.setup_cr_for_stroke(&cr, &values);
+            cr.move_to(x, y);
+
+            let rotation = gravity.to_rotation();
+            if !rotation.approx_eq_cairo(0.0) {
+                cr.rotate(-rotation);
+            }
+
+            let current_color = values.color().0;
+
+            let res = if !clipping {
+                dc.set_source_paint_server(
+                    acquired_nodes,
+                    &values.fill().0,
+                    values.fill_opacity().0,
+                    &bbox,
+                    current_color,
+                )
+                .map(|had_paint_server| {
+                    if had_paint_server {
+                        pangocairo::functions::update_layout(&cr, &layout);
+                        pangocairo::functions::show_layout(&cr, &layout);
+                    };
+                })
+            } else {
+                Ok(())
+            };
+
+            if res.is_ok() {
+                let mut need_layout_path = clipping;
+
+                let res = if !clipping {
+                    dc.set_source_paint_server(
+                        acquired_nodes,
+                        &values.stroke().0,
+                        values.stroke_opacity().0,
+                        &bbox,
+                        current_color,
+                    )
+                    .map(|had_paint_server| {
+                        if had_paint_server {
+                            need_layout_path = true;
+                        }
+                    })
+                } else {
+                    Ok(())
+                };
+
+                if res.is_ok() && need_layout_path {
+                    pangocairo::functions::update_layout(&cr, &layout);
+                    pangocairo::functions::layout_path(&cr, &layout);
+
+                    if !clipping {
+                        let (x0, y0, x1, y1) = cr.stroke_extents();
+                        let r = Rect::new(x0, y0, x1, y1);
+                        let ib = BoundingBox::new()
+                            .with_transform(transform)
+                            .with_ink_rect(r);
+                        cr.stroke();
+                        bbox.insert(&ib);
+                    }
+                }
+            }
+
+            res.map(|_: ()| bbox)
+        })
     }
 
     pub fn get_snapshot(
@@ -1360,6 +1513,59 @@ fn compute_stroke_and_fill_box(cr: &cairo::Context, values: &ComputedValues) -> 
     bbox
 }
 
+fn compute_text_box(
+    layout: &pango::Layout,
+    x: f64,
+    y: f64,
+    transform: Transform,
+    gravity: pango::Gravity,
+) -> Option<BoundingBox> {
+    #![allow(clippy::many_single_char_names)]
+
+    let (ink, _) = layout.get_extents();
+    if ink.width == 0 || ink.height == 0 {
+        return None;
+    }
+
+    let ink_x = f64::from(ink.x);
+    let ink_y = f64::from(ink.y);
+    let ink_width = f64::from(ink.width);
+    let ink_height = f64::from(ink.height);
+    let pango_scale = f64::from(pango::SCALE);
+
+    let (x, y, w, h) = if gravity_is_vertical(gravity) {
+        (
+            x + (ink_x - ink_height) / pango_scale,
+            y + ink_y / pango_scale,
+            ink_height / pango_scale,
+            ink_width / pango_scale,
+        )
+    } else {
+        (
+            x + ink_x / pango_scale,
+            y + ink_y / pango_scale,
+            ink_width / pango_scale,
+            ink_height / pango_scale,
+        )
+    };
+
+    let r = Rect::new(x, y, x + w, y + h);
+    let bbox = BoundingBox::new()
+        .with_transform(transform)
+        .with_rect(r)
+        .with_ink_rect(r);
+
+    Some(bbox)
+}
+
+// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
+fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
+    match gravity {
+        pango::Gravity::East | pango::Gravity::West => true,
+        _ => false,
+    }
+}
+
 /// escape quotes and backslashes with backslash
 fn escape_link_target(value: &str) -> Cow<'_, str> {
     static REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"['\\]").unwrap());
@@ -1441,6 +1647,17 @@ impl From<ShapeRendering> for cairo::Antialias {
         match sr {
             ShapeRendering::Auto | ShapeRendering::GeometricPrecision => cairo::Antialias::Default,
             ShapeRendering::OptimizeSpeed | ShapeRendering::CrispEdges => cairo::Antialias::None,
+        }
+    }
+}
+
+impl From<TextRendering> for cairo::Antialias {
+    fn from(tr: TextRendering) -> cairo::Antialias {
+        match tr {
+            TextRendering::Auto
+            | TextRendering::OptimizeLegibility
+            | TextRendering::GeometricPrecision => cairo::Antialias::Default,
+            TextRendering::OptimizeSpeed => cairo::Antialias::None,
         }
     }
 }
