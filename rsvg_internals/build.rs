@@ -91,35 +91,26 @@ fn unlinearize(c: f64) -> f64 {
     }
 }
 
-fn compute_table<F: Fn(f64) -> f64>(f: F) -> [u8; 256] {
-    let mut table = [0; 256];
+fn print_table<W, F>(w: &mut W, name: &str, f: F, len: u32)
+where
+    W: Write,
+    F: Fn(f64) -> f64,
+{
+    writeln!(w, "const {}: [u8; {}] = [", name, len).unwrap();
 
-    for i in 0..=255 {
-        let c = i as f64 / 255.0;
-        let x = f(c);
-        table[i] = (x * 255.0).round() as u8;
-    }
-
-    table
-}
-
-fn print_table<W: Write>(w: &mut W, name: &str, table: &[u8]) {
-    writeln!(w, "const {}: [u8; {}] = [", name, table.len()).unwrap();
-
-    for x in table {
-        writeln!(w, "    {},", x).unwrap();
+    for i in 0..len {
+        let x = f(i as f64 / 255.0);
+        let v = (x * 255.0).round() as u8;
+        writeln!(w, "    {},", v).unwrap();
     }
 
     writeln!(w, "];").unwrap();
 }
 
 fn generate_srgb_tables() {
-    let linearize_table = compute_table(linearize);
-    let unlinearize_table = compute_table(unlinearize);
-
     let path = Path::new(&env::var("OUT_DIR").unwrap()).join("srgb-codegen.rs");
     let mut file = BufWriter::new(File::create(&path).unwrap());
 
-    print_table(&mut file, "LINEARIZE", &linearize_table);
-    print_table(&mut file, "UNLINEARIZE", &unlinearize_table);
+    print_table(&mut file, "LINEARIZE", linearize, 256);
+    print_table(&mut file, "UNLINEARIZE", unlinearize, 256);
 }
