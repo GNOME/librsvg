@@ -2,6 +2,7 @@
 
 use float_cmp::approx_eq;
 use once_cell::sync::Lazy;
+use pango::FontMapExt;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -165,10 +166,6 @@ impl DrawingCtx {
 
     pub fn is_measuring(&self) -> bool {
         self.measuring
-    }
-
-    pub fn is_testing(&self) -> bool {
-        self.testing
     }
 
     pub fn get_cairo_context(&self) -> cairo::Context {
@@ -1659,5 +1656,44 @@ impl From<TextRendering> for cairo::Antialias {
             | TextRendering::GeometricPrecision => cairo::Antialias::Default,
             TextRendering::OptimizeSpeed => cairo::Antialias::None,
         }
+    }
+}
+
+impl From<&DrawingCtx> for pango::Context {
+    fn from(draw_ctx: &DrawingCtx) -> pango::Context {
+        let cr = draw_ctx.get_cairo_context();
+        let font_map = pangocairo::FontMap::get_default().unwrap();
+        let context = font_map.create_context().unwrap();
+        pangocairo::functions::update_context(&cr, &context);
+
+        // Pango says this about pango_cairo_context_set_resolution():
+        //
+        //     Sets the resolution for the context. This is a scale factor between
+        //     points specified in a #PangoFontDescription and Cairo units. The
+        //     default value is 96, meaning that a 10 point font will be 13
+        //     units high. (10 * 96. / 72. = 13.3).
+        //
+        // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
+        // However, we are normalizing everything to userspace units, which amount to
+        // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
+        // to the size values we give it.
+        //
+        // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
+        // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
+        // right here, instead of spreading them out through our Length normalization
+        // code.
+        pangocairo::functions::context_set_resolution(&context, 72.0);
+
+        if draw_ctx.testing {
+            let mut options = cairo::FontOptions::new();
+
+            options.set_antialias(cairo::Antialias::Gray);
+            options.set_hint_style(cairo::HintStyle::Full);
+            options.set_hint_metrics(cairo::HintMetrics::On);
+
+            pangocairo::functions::context_set_font_options(&context, Some(&options));
+        }
+
+        context
     }
 }
