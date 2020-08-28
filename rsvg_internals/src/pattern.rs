@@ -96,10 +96,6 @@ struct UnresolvedPattern {
 pub struct ResolvedPattern {
     units: PatternUnits,
     content_units: PatternContentUnits,
-    // This Option<Option<ViewBox>> is a bit strange.  We want a field
-    // with value None to mean, "this field isn't resolved yet".  However,
-    // the vbox can very well be *not* specified in the SVG file.
-    // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
     affine: Transform,
