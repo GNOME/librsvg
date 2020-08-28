@@ -733,7 +733,7 @@ impl DrawingCtx {
     }
 
     /// Saves the current Cairo context, runs the draw_fn, and restores the context
-    pub fn with_saved_cr(
+    fn with_saved_cr(
         &mut self,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
