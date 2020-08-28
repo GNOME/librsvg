@@ -3,14 +3,13 @@
 use cssparser::Parser;
 
 use crate::allowed_url::Fragment;
-use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::element::Element;
 use crate::error::*;
-use crate::node::{CascadedValues, Node};
+use crate::gradient::Gradient;
+use crate::node::NodeBorrow;
 use crate::parsers::Parse;
-use crate::properties::ComputedValues;
-use crate::unit_interval::UnitInterval;
+use crate::pattern::ResolvedPattern;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {
@@ -19,6 +18,13 @@ pub enum PaintServer {
         iri: Fragment,
         alternate: Option<cssparser::Color>,
     },
+    SolidColor(cssparser::Color),
+}
+
+pub enum PaintSource {
+    None,
+    Gradient(Gradient, Option<cssparser::Color>),
+    Pattern(ResolvedPattern, Option<cssparser::Color>),
     SolidColor(cssparser::Color),
 }
 
@@ -57,59 +63,69 @@ impl Parse for PaintServer {
     }
 }
 
-pub trait PaintSource {
-    type Resolved: AsPaintSource;
-
-    fn resolve(
+impl PaintServer {
+    pub fn resolve(
         &self,
-        node: &Node,
         acquired_nodes: &mut AcquiredNodes,
-    ) -> Result<Self::Resolved, AcquireError>;
+    ) -> Result<PaintSource, RenderingError> {
+        match self {
+            PaintServer::Iri {
+                ref iri,
+                ref alternate,
+            } => acquired_nodes
+                .acquire(iri)
+                .and_then(|acquired| {
+                    let node = acquired.get();
+                    assert!(node.is_element());
 
-    fn resolve_fallbacks_and_set_pattern(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
-        draw_ctx: &mut DrawingCtx,
-        opacity: UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError> {
-        match self.resolve(&node, acquired_nodes) {
-            Ok(resolved) => {
-                let cascaded = CascadedValues::new_from_node(node);
-                let values = cascaded.get();
-                resolved.set_as_paint_source(acquired_nodes, values, draw_ctx, opacity, bbox)
-            }
+                    match *node.borrow_element() {
+                        Element::LinearGradient(ref g) => g
+                            .resolve(&node, acquired_nodes)
+                            .map(|g| PaintSource::Gradient(g, *alternate)),
+                        Element::Pattern(ref p) => p
+                            .resolve(&node, acquired_nodes)
+                            .map(|p| PaintSource::Pattern(p, *alternate)),
+                        Element::RadialGradient(ref g) => g
+                            .resolve(&node, acquired_nodes)
+                            .map(|g| PaintSource::Gradient(g, *alternate)),
+                        _ => Err(AcquireError::InvalidLinkType(iri.clone())),
+                    }
+                })
+                .or_else(|err| match (err, alternate) {
+                    (AcquireError::CircularReference(node), _) => {
+                        rsvg_log!("circular reference in paint server {}", node);
+                        Err(RenderingError::CircularReference)
+                    }
 
-            Err(AcquireError::CircularReference(node)) => {
-                rsvg_log!("circular reference in paint server {}", node);
-                Err(RenderingError::CircularReference)
-            }
+                    (AcquireError::MaxReferencesExceeded, _) => {
+                        rsvg_log!("maximum number of references exceeded");
+                        Err(RenderingError::InstancingLimit)
+                    }
 
-            Err(AcquireError::MaxReferencesExceeded) => {
-                rsvg_log!("maximum number of references exceeded");
-                Err(RenderingError::InstancingLimit)
-            }
+                    (_, Some(color)) => {
+                        rsvg_log!(
+                            "could not resolve paint server \"{}\", using alternate color",
+                            iri
+                        );
 
-            Err(e) => {
-                rsvg_log!("not using paint server {}: {}", node, e);
+                        Ok(PaintSource::SolidColor(*color))
+                    }
 
-                // "could not resolve" means caller needs to fall back to color
-                Ok(false)
-            }
+                    (_, _) => {
+                        rsvg_log!(
+                            "could not resolve paint server \"{}\", no alternate color specified",
+                            iri
+                        );
+
+                        Ok(PaintSource::None)
+                    }
+                }),
+
+            PaintServer::SolidColor(color) => Ok(PaintSource::SolidColor(*color)),
+
+            PaintServer::None => Ok(PaintSource::None),
         }
     }
-}
-
-pub trait AsPaintSource {
-    fn set_as_paint_source(
-        self,
-        acquired_nodes: &mut AcquiredNodes,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError>;
 }
 
 #[cfg(test)]

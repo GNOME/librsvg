@@ -271,6 +271,7 @@ impl FilterContext {
         acquired_nodes: &mut AcquiredNodes,
         paint_server: &PaintServer,
         opacity: UnitInterval,
+        values: &ComputedValues,
     ) -> Result<SharedImageSurface, cairo::Status> {
         let mut surface = ExclusiveImageSurface::new(
             self.source_surface.width(),
@@ -290,6 +291,7 @@ impl FilterContext {
                     opacity,
                     &self.node_bbox,
                     self.computed_from_node_being_filtered.color().0,
+                    values,
                 )
                 .map(|had_paint_server| {
                     if had_paint_server {
@@ -355,6 +357,7 @@ impl FilterContext {
                     acquired_nodes,
                     &values.fill().0,
                     values.fill_opacity().0,
+                    &values,
                 )
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
@@ -365,6 +368,7 @@ impl FilterContext {
                     acquired_nodes,
                     &values.stroke().0,
                     values.stroke_opacity().0,
+                    &values,
                 )
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
