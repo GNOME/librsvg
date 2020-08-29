@@ -1096,6 +1096,48 @@ impl DrawingCtx {
         }
     }
 
+    /// Computes and returns a surface corresponding to the given paint server.
+    pub fn get_paint_server_surface(
+        &mut self,
+        width: i32,
+        height: i32,
+        acquired_nodes: &mut AcquiredNodes,
+        paint_server: &PaintServer,
+        opacity: UnitInterval,
+        bbox: &BoundingBox,
+        current_color: cssparser::RGBA,
+        values: &ComputedValues,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
+
+        surface.draw(&mut |cr| {
+            let cr_save = self.get_cairo_context();
+            self.set_cairo_context(&cr);
+
+            // FIXME: we are ignoring any error
+            let _ = self
+                .set_source_paint_server(
+                    acquired_nodes,
+                    paint_server,
+                    opacity,
+                    bbox,
+                    current_color,
+                    values,
+                )
+                .map(|had_paint_server| {
+                    if had_paint_server {
+                        cr.paint();
+                    }
+                });
+
+            self.set_cairo_context(&cr_save);
+
+            Ok(())
+        })?;
+
+        surface.share()
+    }
+
     pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
         let params = self.get_view_params();
 

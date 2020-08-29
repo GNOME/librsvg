@@ -7,15 +7,11 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::node::{Node, NodeBorrow};
-use crate::paint_server::PaintServer;
 use crate::parsers::CustomIdent;
 use crate::properties::ComputedValues;
 use crate::rect::IRect;
-use crate::surface_utils::shared_surface::{
-    ExclusiveImageSurface, SharedImageSurface, SurfaceType,
-};
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
-use crate::unit_interval::UnitInterval;
 
 use super::error::FilterError;
 use super::Input;
@@ -264,49 +260,6 @@ impl FilterContext {
         }
     }
 
-    /// Computes and returns a surface corresponding to the given paint server.
-    fn get_paint_server_surface(
-        &self,
-        draw_ctx: &mut DrawingCtx,
-        acquired_nodes: &mut AcquiredNodes,
-        paint_server: &PaintServer,
-        opacity: UnitInterval,
-        values: &ComputedValues,
-    ) -> Result<SharedImageSurface, cairo::Status> {
-        let mut surface = ExclusiveImageSurface::new(
-            self.source_surface.width(),
-            self.source_surface.height(),
-            SurfaceType::SRgb,
-        )?;
-
-        surface.draw(&mut |cr| {
-            let cr_save = draw_ctx.get_cairo_context();
-            draw_ctx.set_cairo_context(&cr);
-
-            // FIXME: we are ignoring the following error; propagate it upstream
-            let _ = draw_ctx
-                .set_source_paint_server(
-                    acquired_nodes,
-                    paint_server,
-                    opacity,
-                    &self.node_bbox,
-                    self.computed_from_node_being_filtered.color().0,
-                    values,
-                )
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        cr.paint();
-                    }
-                });
-
-            draw_ctx.set_cairo_context(&cr_save);
-
-            Ok(())
-        })?;
-
-        surface.share()
-    }
-
     /// Retrieves the filter input surface according to the SVG rules.
     ///
     /// Does not take `processing_linear_rgb` into account.
@@ -351,23 +304,29 @@ impl FilterContext {
                 })
                 .map(FilterInput::StandardInput),
 
-            Input::FillPaint => self
+            Input::FillPaint => draw_ctx
                 .get_paint_server_surface(
-                    draw_ctx,
+                    self.source_surface.width(),
+                    self.source_surface.height(),
                     acquired_nodes,
                     &values.fill().0,
                     values.fill_opacity().0,
+                    &self.node_bbox,
+                    self.computed_from_node_being_filtered.color().0,
                     &values,
                 )
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
-            Input::StrokePaint => self
+            Input::StrokePaint => draw_ctx
                 .get_paint_server_surface(
-                    draw_ctx,
+                    self.source_surface.width(),
+                    self.source_surface.height(),
                     acquired_nodes,
                     &values.stroke().0,
                     values.stroke_opacity().0,
+                    &self.node_bbox,
+                    self.computed_from_node_being_filtered.color().0,
                     &values,
                 )
                 .map_err(FilterError::CairoError)
