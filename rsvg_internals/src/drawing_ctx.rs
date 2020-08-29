@@ -170,10 +170,6 @@ impl DrawingCtx {
         self.measuring
     }
 
-    pub fn get_cairo_context(&self) -> cairo::Context {
-        self.cr.clone()
-    }
-
     pub fn get_transform(&self) -> Transform {
         Transform::from(self.cr.get_matrix())
     }
@@ -187,7 +183,7 @@ impl DrawingCtx {
     // It would be better to have an explicit push/pop for the cairo_t, or
     // pushing a temporary surface, or something that does not involve
     // monkeypatching the cr directly.
-    pub fn set_cairo_context(&mut self, cr: &cairo::Context) {
+    fn set_cairo_context(&mut self, cr: &cairo::Context) {
         self.cr = cr.clone();
     }
 
@@ -283,7 +279,7 @@ impl DrawingCtx {
         preserve_aspect_ratio: AspectRatio,
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
-        let cr = self.get_cairo_context();
+        let cr = self.cr.clone();
 
         if let Some(ClipMode::ClipToViewport) = clip_mode {
             cr.rectangle(
@@ -351,7 +347,7 @@ impl DrawingCtx {
             let cascaded = CascadedValues::new_from_node(node);
 
             self.with_saved_transform(Some(node_transform), &mut |dc| {
-                let cr = dc.get_cairo_context();
+                let cr = dc.cr.clone();
 
                 // here we don't push a layer because we are clipping
                 let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
@@ -752,7 +748,7 @@ impl DrawingCtx {
 
         let attributes = format!("uri='{}'", escape_link_target(link_target));
 
-        let cr = self.get_cairo_context();
+        let cr = self.cr.clone();
         cr.tag_begin(CAIRO_TAG_LINK, &attributes);
 
         let res = draw_fn(self);
@@ -881,7 +877,7 @@ impl DrawingCtx {
             );
         }
 
-        let cr = self.get_cairo_context();
+        let cr = self.cr.clone();
         cr.set_source(&g);
 
         Ok(true)
@@ -997,7 +993,7 @@ impl DrawingCtx {
 
         // Draw to another surface
 
-        let cr_save = self.get_cairo_context();
+        let cr_save = self.cr.clone();
 
         let surface = cr_save
             .get_target()
@@ -1051,7 +1047,7 @@ impl DrawingCtx {
         };
 
         let UnitInterval(o) = opacity;
-        self.get_cairo_context().set_source_rgba(
+        self.cr.clone().set_source_rgba(
             f64::from(rgba.red_f32()),
             f64::from(rgba.green_f32()),
             f64::from(rgba.blue_f32()),
@@ -1111,7 +1107,7 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
-            let cr_save = self.get_cairo_context();
+            let cr_save = self.cr.clone();
             self.set_cairo_context(&cr);
 
             // FIXME: we are ignoring any error
@@ -1234,7 +1230,7 @@ impl DrawingCtx {
         if !path.is_empty() {
             let bbox =
                 self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                    let cr = dc.get_cairo_context();
+                    let cr = dc.cr.clone();
 
                     let is_square_linecap = values.stroke_line_cap() == StrokeLinecap::Square;
                     path.to_cairo(&cr, is_square_linecap)?;
@@ -1287,7 +1283,7 @@ impl DrawingCtx {
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |_an, dc| {
             dc.with_saved_cr(&mut |dc| {
                 if let Some(_params) = dc.push_new_viewport(Some(vbox), rect, aspect, clip_mode) {
-                    let cr = dc.get_cairo_context();
+                    let cr = dc.cr.clone();
 
                     // We need to set extend appropriately, so can't use cr.set_source_surface().
                     //
@@ -1339,7 +1335,7 @@ impl DrawingCtx {
         };
 
         self.with_saved_cr(&mut |dc| {
-            let cr = dc.get_cairo_context();
+            let cr = dc.cr.clone();
 
             cr.set_antialias(cairo::Antialias::from(values.text_rendering()));
             dc.setup_cr_for_stroke(&cr, &values);
@@ -1612,7 +1608,7 @@ impl DrawingCtx {
         };
 
         // all other nodes
-        let cr = self.get_cairo_context();
+        let cr = self.cr.clone();
         cr.translate(use_rect.x0, use_rect.y0);
 
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
@@ -1911,7 +1907,7 @@ impl From<TextRendering> for cairo::Antialias {
 
 impl From<&DrawingCtx> for pango::Context {
     fn from(draw_ctx: &DrawingCtx) -> pango::Context {
-        let cr = draw_ctx.get_cairo_context();
+        let cr = draw_ctx.cr.clone();
         let font_map = pangocairo::FontMap::get_default().unwrap();
         let context = font_map.create_context().unwrap();
         pangocairo::functions::update_context(&cr, &context);
