@@ -20,7 +20,7 @@ use crate::element::Element;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::gradient::{Gradient, GradientUnits, SpreadMethod};
+use crate::gradient::{Gradient, GradientUnits, GradientVariant, SpreadMethod};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -829,7 +829,36 @@ impl DrawingCtx {
             self.get_view_params()
         };
 
-        let g = gradient.to_cairo_gradient(values, &params);
+        let g = match gradient.get_variant() {
+            GradientVariant::Linear { x1, y1, x2, y2 } => {
+                cairo::Gradient::clone(&cairo::LinearGradient::new(
+                    x1.normalize(values, &params),
+                    y1.normalize(values, &params),
+                    x2.normalize(values, &params),
+                    y2.normalize(values, &params),
+                ))
+            }
+
+            GradientVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
+                let n_cx = cx.normalize(values, &params);
+                let n_cy = cy.normalize(values, &params);
+                let n_r = r.normalize(values, &params);
+                let n_fx = fx.normalize(values, &params);
+                let n_fy = fy.normalize(values, &params);
+                let n_fr = fr.normalize(values, &params);
+
+                cairo::Gradient::clone(&cairo::RadialGradient::new(
+                    n_fx, n_fy, n_fr, n_cx, n_cy, n_r,
+                ))
+            }
+        };
 
         let transform = transform.pre_transform(&gradient.get_transform());
         if let Some(m) = transform.invert() {

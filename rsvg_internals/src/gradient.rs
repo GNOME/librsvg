@@ -10,14 +10,12 @@ use std::cell::RefCell;
 use crate::allowed_url::Fragment;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
-use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
-use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
@@ -124,7 +122,7 @@ enum UnresolvedVariant {
 
 /// Parameters specific to each gradient type, after resolving.
 #[derive(Clone)]
-enum Variant {
+pub enum GradientVariant {
     Linear {
         x1: Length<Horizontal>,
         y1: Length<Vertical>,
@@ -143,11 +141,11 @@ enum Variant {
 }
 
 impl UnresolvedVariant {
-    fn into_resolved(self) -> Variant {
+    fn into_resolved(self) -> GradientVariant {
         assert!(self.is_resolved());
 
         match self {
-            UnresolvedVariant::Linear { x1, y1, x2, y2 } => Variant::Linear {
+            UnresolvedVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
                 x1: x1.unwrap(),
                 y1: y1.unwrap(),
                 x2: x2.unwrap(),
@@ -161,7 +159,7 @@ impl UnresolvedVariant {
                 fx,
                 fy,
                 fr,
-            } => Variant::Radial {
+            } => GradientVariant::Radial {
                 cx: cx.unwrap(),
                 cy: cy.unwrap(),
                 r: r.unwrap(),
@@ -341,7 +339,7 @@ pub struct Gradient {
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 
-    variant: Variant,
+    variant: GradientVariant,
 }
 
 impl UnresolvedGradient {
@@ -683,40 +681,8 @@ impl Gradient {
         &self.stops
     }
 
-    /// Creates a cairo::Gradient corresponding to the gradient type of the
-    /// &self Variant.  This does not have color stops set on it yet;
-    /// call Gradient.add_color_stops_to_pattern() afterwards.
-    pub fn to_cairo_gradient(&self, values: &ComputedValues, params: &ViewParams) -> cairo::Gradient {
-        match self.variant {
-            Variant::Linear { x1, y1, x2, y2 } => {
-                cairo::Gradient::clone(&cairo::LinearGradient::new(
-                    x1.normalize(values, params),
-                    y1.normalize(values, params),
-                    x2.normalize(values, params),
-                    y2.normalize(values, params),
-                ))
-            }
-
-            Variant::Radial {
-                cx,
-                cy,
-                r,
-                fx,
-                fy,
-                fr,
-            } => {
-                let n_cx = cx.normalize(values, params);
-                let n_cy = cy.normalize(values, params);
-                let n_r = r.normalize(values, params);
-                let n_fx = fx.normalize(values, params);
-                let n_fy = fy.normalize(values, params);
-                let n_fr = fr.normalize(values, params);
-
-                cairo::Gradient::clone(&cairo::RadialGradient::new(
-                    n_fx, n_fy, n_fr, n_cx, n_cy, n_r,
-                ))
-            }
-        }
+    pub fn get_variant(&self) -> &GradientVariant {
+        &self.variant
     }
 }
 
