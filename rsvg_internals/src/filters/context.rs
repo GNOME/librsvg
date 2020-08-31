@@ -99,10 +99,9 @@ impl FilterContext {
         computed_from_node_being_filtered: &ComputedValues,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx,
+        draw_transform: Transform,
         node_bbox: BoundingBox,
     ) -> Self {
-        let draw_transform = draw_ctx.get_transform();
-
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();

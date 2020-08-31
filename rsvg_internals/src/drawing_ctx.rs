@@ -170,7 +170,7 @@ impl DrawingCtx {
         self.measuring
     }
 
-    pub fn get_transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         Transform::from(self.cr.get_matrix())
     }
 
@@ -779,6 +779,7 @@ impl DrawingCtx {
                             child_surface,
                             acquired_nodes,
                             self,
+                            self.get_transform(),
                             node_bbox,
                         );
                     }
