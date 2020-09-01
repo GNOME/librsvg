@@ -2,27 +2,22 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
-use std::f64;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
-use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::float_eq_cairo::ApproxEqCairo;
 use crate::href::{is_href, set_href};
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw, WeakNode};
-use crate::paint_server::{AsPaintSource, PaintSource};
+use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::transform::Transform;
-use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -157,228 +152,6 @@ impl SetAttributes for Pattern {
 }
 
 impl Draw for Pattern {}
-
-impl PaintSource for Pattern {
-    type Resolved = ResolvedPattern;
-
-    fn resolve(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
-    ) -> Result<Self::Resolved, AcquireError> {
-        let mut resolved = self.resolved.borrow_mut();
-        if let Some(ref pattern) = *resolved {
-            return Ok(pattern.clone());
-        }
-
-        let Unresolved {
-            mut pattern,
-            mut fallback,
-        } = self.get_unresolved(node);
-
-        let mut stack = NodeStack::new();
-
-        while !pattern.is_resolved() {
-            if let Some(ref fragment) = fallback {
-                match acquired_nodes.acquire(&fragment) {
-                    Ok(acquired) => {
-                        let acquired_node = acquired.get();
-
-                        if stack.contains(acquired_node) {
-                            return Err(AcquireError::CircularReference(acquired_node.clone()));
-                        }
-
-                        match *acquired_node.borrow_element() {
-                            Element::Pattern(ref p) => {
-                                let unresolved = p.get_unresolved(&acquired_node);
-                                pattern = pattern.resolve_from_fallback(&unresolved.pattern);
-                                fallback = unresolved.fallback;
-
-                                stack.push(acquired_node);
-                            }
-                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
-                        }
-                    }
-
-                    Err(AcquireError::MaxReferencesExceeded) => {
-                        return Err(AcquireError::MaxReferencesExceeded)
-                    }
-
-                    Err(e) => {
-                        rsvg_log!("Stopping pattern resolution: {}", e);
-                        pattern = pattern.resolve_from_defaults();
-                        break;
-                    }
-                }
-            } else {
-                pattern = pattern.resolve_from_defaults();
-                break;
-            }
-        }
-
-        let pattern = pattern.into_resolved();
-
-        *resolved = Some(pattern.clone());
-
-        Ok(pattern)
-    }
-}
-
-impl AsPaintSource for ResolvedPattern {
-    fn set_as_paint_source(
-        self,
-        acquired_nodes: &mut AcquiredNodes,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError> {
-        let node = if let Some(n) = self.children.node_with_children() {
-            n
-        } else {
-            // This means we didn't find any children among the fallbacks,
-            // so there is nothing to render.
-            return Ok(false);
-        };
-
-        let units = self.units;
-        let content_units = self.content_units;
-        let pattern_affine = self.affine;
-        let vbox = self.vbox;
-        let preserve_aspect_ratio = self.preserve_aspect_ratio;
-
-        let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-            draw_ctx.push_view_box(1.0, 1.0)
-        } else {
-            draw_ctx.get_view_params()
-        };
-
-        let pattern_rect = self.get_rect(values, &params);
-
-        // Work out the size of the rectangle so it takes into account the object bounding box
-
-        let (bbwscale, bbhscale) = match units {
-            PatternUnits(CoordUnits::ObjectBoundingBox) => bbox.rect.unwrap().size(),
-            PatternUnits(CoordUnits::UserSpaceOnUse) => (1.0, 1.0),
-        };
-
-        let taffine = draw_ctx.get_transform().pre_transform(&pattern_affine);
-
-        let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
-        let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
-
-        let scaled_width = pattern_rect.width() * bbwscale;
-        let scaled_height = pattern_rect.height() * bbhscale;
-
-        let pw: i32 = (scaled_width * scwscale) as i32;
-        let ph: i32 = (scaled_height * schscale) as i32;
-
-        if scaled_width.abs() < f64::EPSILON
-            || scaled_height.abs() < f64::EPSILON
-            || pw < 1
-            || ph < 1
-        {
-            return Ok(false);
-        }
-
-        scwscale = f64::from(pw) / scaled_width;
-        schscale = f64::from(ph) / scaled_height;
-
-        // Create the pattern coordinate system
-        let mut affine = match units {
-            PatternUnits(CoordUnits::ObjectBoundingBox) => {
-                let bbrect = bbox.rect.unwrap();
-                Transform::new_translate(
-                    bbrect.x0 + pattern_rect.x0 * bbrect.width(),
-                    bbrect.y0 + pattern_rect.y0 * bbrect.height(),
-                )
-            }
-
-            PatternUnits(CoordUnits::UserSpaceOnUse) => {
-                Transform::new_translate(pattern_rect.x0, pattern_rect.y0)
-            }
-        };
-
-        // Apply the pattern transform
-        affine = affine.post_transform(&pattern_affine);
-
-        let mut caffine: Transform;
-
-        // Create the pattern contents coordinate system
-        let _params = if let Some(vbox) = vbox {
-            // If there is a vbox, use that
-            let r =
-                preserve_aspect_ratio.compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
-
-            let sw = r.width() / vbox.0.width();
-            let sh = r.height() / vbox.0.height();
-            let x = r.x0 - vbox.0.x0 * sw;
-            let y = r.y0 - vbox.0.y0 * sh;
-
-            caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
-
-            draw_ctx.push_view_box(vbox.0.width(), vbox.0.height())
-        } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
-            // If coords are in terms of the bounding box, use them
-            let (bbw, bbh) = bbox.rect.unwrap().size();
-
-            caffine = Transform::new_scale(bbw, bbh);
-
-            draw_ctx.push_view_box(1.0, 1.0)
-        } else {
-            caffine = Transform::identity();
-            draw_ctx.get_view_params()
-        };
-
-        if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {
-            caffine = caffine.post_scale(scwscale, schscale);
-            affine = affine.pre_scale(1.0 / scwscale, 1.0 / schscale);
-        }
-
-        // Draw to another surface
-
-        let cr_save = draw_ctx.get_cairo_context();
-
-        let surface = cr_save
-            .get_target()
-            .create_similar(cairo::Content::ColorAlpha, pw, ph)?;
-
-        let cr_pattern = cairo::Context::new(&surface);
-
-        draw_ctx.set_cairo_context(&cr_pattern);
-
-        // Set up transformations to be determined by the contents units
-        cr_pattern.set_matrix(caffine.into());
-
-        // Draw everything
-        let res = draw_ctx.with_alpha(opacity, &mut |dc| {
-            let pattern_cascaded = CascadedValues::new_from_node(&node);
-            let pattern_values = pattern_cascaded.get();
-            dc.with_discrete_layer(
-                &node,
-                acquired_nodes,
-                pattern_values,
-                false,
-                &mut |an, dc| node.draw_children(an, &pattern_cascaded, dc, false),
-            )
-        });
-
-        // Return to the original coordinate system and rendering context
-        draw_ctx.set_cairo_context(&cr_save);
-
-        // Set the final surface as a Cairo pattern into the Cairo context
-        let pattern = cairo::SurfacePattern::create(&surface);
-
-        if let Some(m) = affine.invert() {
-            pattern.set_matrix(m.into())
-        }
-        pattern.set_extend(cairo::Extend::Repeat);
-        pattern.set_filter(cairo::Filter::Best);
-        cr_save.set_source(&pattern);
-
-        res.map(|_| true)
-    }
-}
 
 impl UnresolvedPattern {
     fn into_resolved(self) -> ResolvedPattern {
@@ -529,23 +302,41 @@ impl UnresolvedChildren {
     }
 }
 
-impl Children {
-    fn node_with_children(&self) -> Option<Node> {
-        match *self {
-            Children::Empty => None,
-            Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
-        }
-    }
-}
-
 impl ResolvedPattern {
-    fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+    pub fn get_units(&self) -> PatternUnits {
+        self.units
+    }
+
+    pub fn get_content_units(&self) -> PatternContentUnits {
+        self.content_units
+    }
+
+    pub fn get_vbox(&self) -> Option<ViewBox> {
+        self.vbox
+    }
+
+    pub fn get_preserve_aspect_ratio(&self) -> AspectRatio {
+        self.preserve_aspect_ratio
+    }
+
+    pub fn get_transform(&self) -> Transform {
+        self.affine
+    }
+
+    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         let x = self.x.normalize(&values, &params);
         let y = self.y.normalize(&values, &params);
         let w = self.width.normalize(&values, &params);
         let h = self.height.normalize(&values, &params);
 
         Rect::new(x, y, x + w, y + h)
+    }
+
+    pub fn node_with_children(&self) -> Option<Node> {
+        match self.children {
+            Children::Empty => None,
+            Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
+        }
     }
 }
 
@@ -560,6 +351,68 @@ impl Pattern {
             pattern,
             fallback: self.fallback.clone(),
         }
+    }
+
+    pub fn resolve(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes,
+    ) -> Result<ResolvedPattern, AcquireError> {
+        let mut resolved = self.resolved.borrow_mut();
+        if let Some(ref pattern) = *resolved {
+            return Ok(pattern.clone());
+        }
+
+        let Unresolved {
+            mut pattern,
+            mut fallback,
+        } = self.get_unresolved(node);
+
+        let mut stack = NodeStack::new();
+
+        while !pattern.is_resolved() {
+            if let Some(ref fragment) = fallback {
+                match acquired_nodes.acquire(&fragment) {
+                    Ok(acquired) => {
+                        let acquired_node = acquired.get();
+
+                        if stack.contains(acquired_node) {
+                            return Err(AcquireError::CircularReference(acquired_node.clone()));
+                        }
+
+                        match *acquired_node.borrow_element() {
+                            Element::Pattern(ref p) => {
+                                let unresolved = p.get_unresolved(&acquired_node);
+                                pattern = pattern.resolve_from_fallback(&unresolved.pattern);
+                                fallback = unresolved.fallback;
+
+                                stack.push(acquired_node);
+                            }
+                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
+                        }
+                    }
+
+                    Err(AcquireError::MaxReferencesExceeded) => {
+                        return Err(AcquireError::MaxReferencesExceeded)
+                    }
+
+                    Err(e) => {
+                        rsvg_log!("Stopping pattern resolution: {}", e);
+                        pattern = pattern.resolve_from_defaults();
+                        break;
+                    }
+                }
+            } else {
+                pattern = pattern.resolve_from_defaults();
+                break;
+            }
+        }
+
+        let pattern = pattern.into_resolved();
+
+        *resolved = Some(pattern.clone());
+
+        Ok(pattern)
     }
 }
 

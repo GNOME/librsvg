@@ -18,6 +18,7 @@ use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::transform::Transform;
 
 mod bounds;
 use self::bounds::BoundsBuilder;
@@ -273,6 +274,7 @@ pub fn render(
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes,
     draw_ctx: &mut DrawingCtx,
+    transform: Transform,
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
     let filter_node = &*filter_node;
@@ -287,6 +289,7 @@ pub fn render(
         computed_from_node_being_filtered,
         source_surface,
         draw_ctx,
+        transform,
         node_bbox,
     );
 

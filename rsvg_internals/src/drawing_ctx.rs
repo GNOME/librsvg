@@ -20,10 +20,12 @@ use crate::element::Element;
 use crate::error::{AcquireError, RenderingError};
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
+use crate::gradient::{Gradient, GradientUnits, GradientVariant, SpreadMethod};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
 use crate::path_builder::*;
+use crate::pattern::{PatternContentUnits, PatternUnits, ResolvedPattern};
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, MixBlendMode, Opacity, Overflow, ShapeRendering, StrokeDasharray,
@@ -168,11 +170,7 @@ impl DrawingCtx {
         self.measuring
     }
 
-    pub fn get_cairo_context(&self) -> cairo::Context {
-        self.cr.clone()
-    }
-
-    pub fn get_transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         Transform::from(self.cr.get_matrix())
     }
 
@@ -185,7 +183,7 @@ impl DrawingCtx {
     // It would be better to have an explicit push/pop for the cairo_t, or
     // pushing a temporary surface, or something that does not involve
     // monkeypatching the cr directly.
-    pub fn set_cairo_context(&mut self, cr: &cairo::Context) {
+    fn set_cairo_context(&mut self, cr: &cairo::Context) {
         self.cr = cr.clone();
     }
 
@@ -281,7 +279,7 @@ impl DrawingCtx {
         preserve_aspect_ratio: AspectRatio,
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
-        let cr = self.get_cairo_context();
+        let cr = self.cr.clone();
 
         if let Some(ClipMode::ClipToViewport) = clip_mode {
             cr.rectangle(
@@ -349,7 +347,7 @@ impl DrawingCtx {
             let cascaded = CascadedValues::new_from_node(node);
 
             self.with_saved_transform(Some(node_transform), &mut |dc| {
-                let cr = dc.get_cairo_context();
+                let cr = dc.cr.clone();
 
                 // here we don't push a layer because we are clipping
                 let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
@@ -750,7 +748,7 @@ impl DrawingCtx {
 
         let attributes = format!("uri='{}'", escape_link_target(link_target));
 
-        let cr = self.get_cairo_context();
+        let cr = self.cr.clone();
         cr.tag_begin(CAIRO_TAG_LINK, &attributes);
 
         let res = draw_fn(self);
@@ -781,6 +779,7 @@ impl DrawingCtx {
                             child_surface,
                             acquired_nodes,
                             self,
+                            self.get_transform(),
                             node_bbox,
                         );
                     }
@@ -806,100 +805,334 @@ impl DrawingCtx {
         Ok(child_surface)
     }
 
+    fn set_gradient(
+        self: &mut DrawingCtx,
+        gradient: &Gradient,
+        _acquired_nodes: &mut AcquiredNodes,
+        opacity: UnitInterval,
+        values: &ComputedValues,
+        bbox: &BoundingBox,
+    ) -> Result<bool, RenderingError> {
+        let units = gradient.get_units();
+        let transform = if let Ok(t) = bbox.rect_to_transform(units.0) {
+            t
+        } else {
+            return Ok(false);
+        };
+
+        let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
+            self.push_view_box(1.0, 1.0)
+        } else {
+            self.get_view_params()
+        };
+
+        let g = match gradient.get_variant() {
+            GradientVariant::Linear { x1, y1, x2, y2 } => {
+                cairo::Gradient::clone(&cairo::LinearGradient::new(
+                    x1.normalize(values, &params),
+                    y1.normalize(values, &params),
+                    x2.normalize(values, &params),
+                    y2.normalize(values, &params),
+                ))
+            }
+
+            GradientVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => {
+                let n_cx = cx.normalize(values, &params);
+                let n_cy = cy.normalize(values, &params);
+                let n_r = r.normalize(values, &params);
+                let n_fx = fx.normalize(values, &params);
+                let n_fy = fy.normalize(values, &params);
+                let n_fr = fr.normalize(values, &params);
+
+                cairo::Gradient::clone(&cairo::RadialGradient::new(
+                    n_fx, n_fy, n_fr, n_cx, n_cy, n_r,
+                ))
+            }
+        };
+
+        let transform = transform.pre_transform(&gradient.get_transform());
+        if let Some(m) = transform.invert() {
+            g.set_matrix(m.into())
+        }
+
+        g.set_extend(cairo::Extend::from(gradient.get_spread()));
+
+        for stop in gradient.get_stops() {
+            let UnitInterval(stop_offset) = stop.offset;
+            let UnitInterval(o) = opacity;
+            let UnitInterval(stop_opacity) = stop.opacity;
+
+            g.add_color_stop_rgba(
+                stop_offset,
+                f64::from(stop.rgba.red_f32()),
+                f64::from(stop.rgba.green_f32()),
+                f64::from(stop.rgba.blue_f32()),
+                f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
+            );
+        }
+
+        let cr = self.cr.clone();
+        cr.set_source(&g);
+
+        Ok(true)
+    }
+
+    fn set_pattern(
+        &mut self,
+        pattern: &ResolvedPattern,
+        acquired_nodes: &mut AcquiredNodes,
+        opacity: UnitInterval,
+        values: &ComputedValues,
+        bbox: &BoundingBox,
+    ) -> Result<bool, RenderingError> {
+        let node = if let Some(n) = pattern.node_with_children() {
+            n
+        } else {
+            // This means we didn't find any children among the fallbacks,
+            // so there is nothing to render.
+            return Ok(false);
+        };
+
+        let units = pattern.get_units();
+        let content_units = pattern.get_content_units();
+        let pattern_transform = pattern.get_transform();
+
+        let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
+            self.push_view_box(1.0, 1.0)
+        } else {
+            self.get_view_params()
+        };
+
+        let pattern_rect = pattern.get_rect(values, &params);
+
+        // Work out the size of the rectangle so it takes into account the object bounding box
+        let (bbwscale, bbhscale) = match units {
+            PatternUnits(CoordUnits::ObjectBoundingBox) => bbox.rect.unwrap().size(),
+            PatternUnits(CoordUnits::UserSpaceOnUse) => (1.0, 1.0),
+        };
+
+        let taffine = self.get_transform().pre_transform(&pattern_transform);
+
+        let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
+        let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
+
+        let scaled_width = pattern_rect.width() * bbwscale;
+        let scaled_height = pattern_rect.height() * bbhscale;
+
+        let pw: i32 = (scaled_width * scwscale) as i32;
+        let ph: i32 = (scaled_height * schscale) as i32;
+
+        if scaled_width.abs() < f64::EPSILON
+            || scaled_height.abs() < f64::EPSILON
+            || pw < 1
+            || ph < 1
+        {
+            return Ok(false);
+        }
+
+        scwscale = f64::from(pw) / scaled_width;
+        schscale = f64::from(ph) / scaled_height;
+
+        // Create the pattern coordinate system
+        let mut affine = match units {
+            PatternUnits(CoordUnits::ObjectBoundingBox) => {
+                let bbrect = bbox.rect.unwrap();
+                Transform::new_translate(
+                    bbrect.x0 + pattern_rect.x0 * bbrect.width(),
+                    bbrect.y0 + pattern_rect.y0 * bbrect.height(),
+                )
+            }
+
+            PatternUnits(CoordUnits::UserSpaceOnUse) => {
+                Transform::new_translate(pattern_rect.x0, pattern_rect.y0)
+            }
+        };
+
+        // Apply the pattern transform
+        affine = affine.post_transform(&pattern_transform);
+
+        let mut caffine: Transform;
+
+        // Create the pattern contents coordinate system
+        let _params = if let Some(vbox) = pattern.get_vbox() {
+            // If there is a vbox, use that
+            let r = pattern
+                .get_preserve_aspect_ratio()
+                .compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
+
+            let sw = r.width() / vbox.0.width();
+            let sh = r.height() / vbox.0.height();
+            let x = r.x0 - vbox.0.x0 * sw;
+            let y = r.y0 - vbox.0.y0 * sh;
+
+            caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
+
+            self.push_view_box(vbox.0.width(), vbox.0.height())
+        } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
+            // If coords are in terms of the bounding box, use them
+            let (bbw, bbh) = bbox.rect.unwrap().size();
+
+            caffine = Transform::new_scale(bbw, bbh);
+
+            self.push_view_box(1.0, 1.0)
+        } else {
+            caffine = Transform::identity();
+            self.get_view_params()
+        };
+
+        if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {
+            caffine = caffine.post_scale(scwscale, schscale);
+            affine = affine.pre_scale(1.0 / scwscale, 1.0 / schscale);
+        }
+
+        // Draw to another surface
+
+        let cr_save = self.cr.clone();
+
+        let surface = cr_save
+            .get_target()
+            .create_similar(cairo::Content::ColorAlpha, pw, ph)?;
+
+        let cr_pattern = cairo::Context::new(&surface);
+
+        self.set_cairo_context(&cr_pattern);
+
+        // Set up transformations to be determined by the contents units
+        cr_pattern.set_matrix(caffine.into());
+
+        // Draw everything
+        let res = self.with_alpha(opacity, &mut |dc| {
+            let pattern_cascaded = CascadedValues::new_from_node(&node);
+            let pattern_values = pattern_cascaded.get();
+            dc.with_discrete_layer(
+                &node,
+                acquired_nodes,
+                pattern_values,
+                false,
+                &mut |an, dc| node.draw_children(an, &pattern_cascaded, dc, false),
+            )
+        });
+
+        // Return to the original coordinate system and rendering context
+        self.set_cairo_context(&cr_save);
+
+        // Set the final surface as a Cairo pattern into the Cairo context
+        let pattern = cairo::SurfacePattern::create(&surface);
+
+        if let Some(m) = affine.invert() {
+            pattern.set_matrix(m.into())
+        }
+        pattern.set_extend(cairo::Extend::Repeat);
+        pattern.set_filter(cairo::Filter::Best);
+        cr_save.set_source(&pattern);
+
+        res.map(|_| true)
+    }
+
     fn set_color(
         &self,
         color: cssparser::Color,
         opacity: UnitInterval,
         current_color: cssparser::RGBA,
-    ) {
+    ) -> Result<bool, RenderingError> {
         let rgba = match color {
             cssparser::Color::RGBA(rgba) => rgba,
             cssparser::Color::CurrentColor => current_color,
         };
 
         let UnitInterval(o) = opacity;
-        self.get_cairo_context().set_source_rgba(
+        self.cr.clone().set_source_rgba(
             f64::from(rgba.red_f32()),
             f64::from(rgba.green_f32()),
             f64::from(rgba.blue_f32()),
             f64::from(rgba.alpha_f32()) * o,
         );
+
+        Ok(true)
     }
 
     pub fn set_source_paint_server(
         &mut self,
         acquired_nodes: &mut AcquiredNodes,
-        ps: &PaintServer,
+        paint_server: &PaintServer,
         opacity: UnitInterval,
         bbox: &BoundingBox,
         current_color: cssparser::RGBA,
+        values: &ComputedValues,
     ) -> Result<bool, RenderingError> {
-        match *ps {
-            PaintServer::Iri {
-                ref iri,
-                ref alternate,
-            } => {
-                let mut had_paint_server = false;
+        let paint_source = paint_server.resolve(acquired_nodes)?;
 
-                match acquired_nodes.acquire(iri) {
-                    Ok(acquired) => {
-                        let node = acquired.get();
-
-                        assert!(node.is_element());
-
-                        had_paint_server = match *node.borrow_element() {
-                            Element::LinearGradient(ref g) => g.resolve_fallbacks_and_set_pattern(
-                                &node,
-                                acquired_nodes,
-                                self,
-                                opacity,
-                                bbox,
-                            )?,
-                            Element::RadialGradient(ref g) => g.resolve_fallbacks_and_set_pattern(
-                                &node,
-                                acquired_nodes,
-                                self,
-                                opacity,
-                                bbox,
-                            )?,
-                            Element::Pattern(ref p) => p.resolve_fallbacks_and_set_pattern(
-                                &node,
-                                acquired_nodes,
-                                self,
-                                opacity,
-                                bbox,
-                            )?,
-                            _ => false,
-                        }
-                    }
-
-                    Err(AcquireError::MaxReferencesExceeded) => {
-                        return Err(RenderingError::InstancingLimit);
-                    }
-
-                    Err(_) => (),
-                }
-
-                if !had_paint_server && alternate.is_some() {
-                    self.set_color(alternate.unwrap(), opacity, current_color);
-                    had_paint_server = true;
+        match paint_source {
+            PaintSource::Gradient(g, c) => {
+                if self.set_gradient(&g, acquired_nodes, opacity, values, bbox)? {
+                    Ok(true)
+                } else if let Some(c) = c {
+                    self.set_color(c, opacity, current_color)
                 } else {
-                    rsvg_log!(
-                        "pattern \"{}\" was not found and there was no fallback alternate",
-                        iri
-                    );
+                    Ok(false)
                 }
-
-                Ok(had_paint_server)
             }
-
-            PaintServer::SolidColor(color) => {
-                self.set_color(color, opacity, current_color);
-                Ok(true)
+            PaintSource::Pattern(p, c) => {
+                if self.set_pattern(&p, acquired_nodes, opacity, values, bbox)? {
+                    Ok(true)
+                } else if let Some(c) = c {
+                    self.set_color(c, opacity, current_color)
+                } else {
+                    Ok(false)
+                }
             }
-
-            PaintServer::None => Ok(false),
+            PaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
+            PaintSource::None => Ok(false),
         }
+    }
+
+    /// Computes and returns a surface corresponding to the given paint server.
+    pub fn get_paint_server_surface(
+        &mut self,
+        width: i32,
+        height: i32,
+        acquired_nodes: &mut AcquiredNodes,
+        paint_server: &PaintServer,
+        opacity: UnitInterval,
+        bbox: &BoundingBox,
+        current_color: cssparser::RGBA,
+        values: &ComputedValues,
+    ) -> Result<SharedImageSurface, cairo::Status> {
+        let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
+
+        surface.draw(&mut |cr| {
+            let cr_save = self.cr.clone();
+            self.set_cairo_context(&cr);
+
+            // FIXME: we are ignoring any error
+            let _ = self
+                .set_source_paint_server(
+                    acquired_nodes,
+                    paint_server,
+                    opacity,
+                    bbox,
+                    current_color,
+                    values,
+                )
+                .map(|had_paint_server| {
+                    if had_paint_server {
+                        cr.paint();
+                    }
+                });
+
+            self.set_cairo_context(&cr_save);
+
+            Ok(())
+        })?;
+
+        surface.share()
     }
 
     pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
@@ -952,6 +1185,7 @@ impl DrawingCtx {
                 values.fill_opacity().0,
                 &bbox,
                 current_color,
+                values,
             )
             .map(|had_paint_server| {
                 if had_paint_server {
@@ -969,6 +1203,7 @@ impl DrawingCtx {
                     values.stroke_opacity().0,
                     &bbox,
                     current_color,
+                    values,
                 )
                 .map(|had_paint_server| {
                     if had_paint_server {
@@ -996,7 +1231,7 @@ impl DrawingCtx {
         if !path.is_empty() {
             let bbox =
                 self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                    let cr = dc.get_cairo_context();
+                    let cr = dc.cr.clone();
 
                     let is_square_linecap = values.stroke_line_cap() == StrokeLinecap::Square;
                     path.to_cairo(&cr, is_square_linecap)?;
@@ -1049,7 +1284,7 @@ impl DrawingCtx {
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |_an, dc| {
             dc.with_saved_cr(&mut |dc| {
                 if let Some(_params) = dc.push_new_viewport(Some(vbox), rect, aspect, clip_mode) {
-                    let cr = dc.get_cairo_context();
+                    let cr = dc.cr.clone();
 
                     // We need to set extend appropriately, so can't use cr.set_source_surface().
                     //
@@ -1101,7 +1336,7 @@ impl DrawingCtx {
         };
 
         self.with_saved_cr(&mut |dc| {
-            let cr = dc.get_cairo_context();
+            let cr = dc.cr.clone();
 
             cr.set_antialias(cairo::Antialias::from(values.text_rendering()));
             dc.setup_cr_for_stroke(&cr, &values);
@@ -1121,6 +1356,7 @@ impl DrawingCtx {
                     values.fill_opacity().0,
                     &bbox,
                     current_color,
+                    values,
                 )
                 .map(|had_paint_server| {
                     if had_paint_server {
@@ -1142,6 +1378,7 @@ impl DrawingCtx {
                         values.stroke_opacity().0,
                         &bbox,
                         current_color,
+                        values,
                     )
                     .map(|had_paint_server| {
                         if had_paint_server {
@@ -1372,7 +1609,7 @@ impl DrawingCtx {
         };
 
         // all other nodes
-        let cr = self.get_cairo_context();
+        let cr = self.cr.clone();
         cr.translate(use_rect.x0, use_rect.y0);
 
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
@@ -1576,6 +1813,16 @@ fn escape_link_target(value: &str) -> Cow<'_, str> {
     })
 }
 
+impl From<SpreadMethod> for cairo::Extend {
+    fn from(s: SpreadMethod) -> cairo::Extend {
+        match s {
+            SpreadMethod::Pad => cairo::Extend::Pad,
+            SpreadMethod::Reflect => cairo::Extend::Reflect,
+            SpreadMethod::Repeat => cairo::Extend::Repeat,
+        }
+    }
+}
+
 impl From<StrokeLinejoin> for cairo::LineJoin {
     fn from(j: StrokeLinejoin) -> cairo::LineJoin {
         match j {
@@ -1661,7 +1908,7 @@ impl From<TextRendering> for cairo::Antialias {
 
 impl From<&DrawingCtx> for pango::Context {
     fn from(draw_ctx: &DrawingCtx) -> pango::Context {
-        let cr = draw_ctx.get_cairo_context();
+        let cr = draw_ctx.cr.clone();
         let font_map = pangocairo::FontMap::get_default().unwrap();
         let context = font_map.create_context().unwrap();
         pangocairo::functions::update_context(&cr, &context);

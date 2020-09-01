@@ -8,18 +8,14 @@ use matches::matches;
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
-use crate::bbox::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::paint_server::{AsPaintSource, PaintSource};
 use crate::parsers::{Parse, ParseValue};
-use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
@@ -27,15 +23,15 @@ use crate::unit_interval::UnitInterval;
 
 /// Contents of a <stop> element for gradient color stops
 #[derive(Copy, Clone)]
-struct ColorStop {
+pub struct ColorStop {
     /// <stop offset="..."/>
-    offset: UnitInterval,
+    pub offset: UnitInterval,
 
     /// <stop stop-color="..."/>
-    rgba: cssparser::RGBA,
+    pub rgba: cssparser::RGBA,
 
     /// <stop stop-opacity="..."/>
-    opacity: UnitInterval,
+    pub opacity: UnitInterval,
 }
 
 // gradientUnits attribute; its default is objectBoundingBox
@@ -43,7 +39,7 @@ coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
 /// spreadMethod attribute for gradients
 #[derive(Debug, Copy, Clone, PartialEq)]
-enum SpreadMethod {
+pub enum SpreadMethod {
     Pad,
     Reflect,
     Repeat,
@@ -63,16 +59,6 @@ impl Parse for SpreadMethod {
 impl Default for SpreadMethod {
     fn default() -> SpreadMethod {
         SpreadMethod::Pad
-    }
-}
-
-impl From<SpreadMethod> for cairo::Extend {
-    fn from(s: SpreadMethod) -> cairo::Extend {
-        match s {
-            SpreadMethod::Pad => cairo::Extend::Pad,
-            SpreadMethod::Reflect => cairo::Extend::Reflect,
-            SpreadMethod::Repeat => cairo::Extend::Repeat,
-        }
     }
 }
 
@@ -136,7 +122,7 @@ enum UnresolvedVariant {
 
 /// Parameters specific to each gradient type, after resolving.
 #[derive(Clone)]
-enum Variant {
+pub enum GradientVariant {
     Linear {
         x1: Length<Horizontal>,
         y1: Length<Vertical>,
@@ -155,11 +141,11 @@ enum Variant {
 }
 
 impl UnresolvedVariant {
-    fn into_resolved(self) -> Variant {
+    fn into_resolved(self) -> GradientVariant {
         assert!(self.is_resolved());
 
         match self {
-            UnresolvedVariant::Linear { x1, y1, x2, y2 } => Variant::Linear {
+            UnresolvedVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
                 x1: x1.unwrap(),
                 y1: y1.unwrap(),
                 x2: x2.unwrap(),
@@ -173,7 +159,7 @@ impl UnresolvedVariant {
                 fx,
                 fy,
                 fr,
-            } => Variant::Radial {
+            } => GradientVariant::Radial {
                 cx: cx.unwrap(),
                 cy: cy.unwrap(),
                 r: r.unwrap(),
@@ -296,44 +282,6 @@ impl UnresolvedVariant {
     }
 }
 
-impl Variant {
-    /// Creates a cairo::Gradient corresponding to the gradient type of the
-    /// &self Variant.  This does not have color stops set on it yet;
-    /// call Gradient.add_color_stops_to_pattern() afterwards.
-    fn to_cairo_gradient(&self, values: &ComputedValues, params: &ViewParams) -> cairo::Gradient {
-        match *self {
-            Variant::Linear { x1, y1, x2, y2 } => {
-                cairo::Gradient::clone(&cairo::LinearGradient::new(
-                    x1.normalize(values, params),
-                    y1.normalize(values, params),
-                    x2.normalize(values, params),
-                    y2.normalize(values, params),
-                ))
-            }
-
-            Variant::Radial {
-                cx,
-                cy,
-                r,
-                fx,
-                fy,
-                fr,
-            } => {
-                let n_cx = cx.normalize(values, params);
-                let n_cy = cy.normalize(values, params);
-                let n_r = r.normalize(values, params);
-                let n_fx = fx.normalize(values, params);
-                let n_fy = fy.normalize(values, params);
-                let n_fr = fr.normalize(values, params);
-
-                cairo::Gradient::clone(&cairo::RadialGradient::new(
-                    n_fx, n_fy, n_fr, n_cx, n_cy, n_r,
-                ))
-            }
-        }
-    }
-}
-
 /// Fields shared by all gradient nodes
 #[derive(Default)]
 struct Common {
@@ -391,7 +339,7 @@ pub struct Gradient {
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 
-    variant: Variant,
+    variant: GradientVariant,
 }
 
 impl UnresolvedGradient {
@@ -563,31 +511,6 @@ impl RadialGradient {
     }
 }
 
-macro_rules! impl_get_unresolved {
-    ($gradient:ty) => {
-        impl $gradient {
-            fn get_unresolved(&self, node: &Node) -> Unresolved {
-                let mut gradient = UnresolvedGradient {
-                    units: self.common.units,
-                    transform: self.common.transform,
-                    spread: self.common.spread,
-                    stops: None,
-                    variant: self.get_unresolved_variant(),
-                };
-
-                gradient.add_color_stops_from_node(node);
-
-                Unresolved {
-                    gradient,
-                    fallback: self.common.fallback.clone(),
-                }
-            }
-        }
-    };
-}
-impl_get_unresolved!(LinearGradient);
-impl_get_unresolved!(RadialGradient);
-
 impl SetAttributes for Common {
     fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
         for (attr, value) in pbag.iter() {
@@ -633,49 +556,31 @@ impl SetAttributes for LinearGradient {
 
 impl Draw for LinearGradient {}
 
-impl SetAttributes for RadialGradient {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_attributes(pbag)?;
-        // Create a local expanded name for "fr" because markup5ever doesn't have built-in
-        let expanded_name_fr = ExpandedName {
-            ns: &Namespace::from(""),
-            local: &LocalName::from("fr"),
-        };
+macro_rules! impl_gradient {
+    ($gradient_type:ident, $other_type:ident) => {
+        impl $gradient_type {
+            fn get_unresolved(&self, node: &Node) -> Unresolved {
+                let mut gradient = UnresolvedGradient {
+                    units: self.common.units,
+                    transform: self.common.transform,
+                    spread: self.common.spread,
+                    stops: None,
+                    variant: self.get_unresolved_variant(),
+                };
 
-        for (attr, value) in pbag.iter() {
-            let attr_expanded = attr.expanded();
+                gradient.add_color_stops_from_node(node);
 
-            if attr_expanded == expanded_name_fr {
-                self.fr = Some(attr.parse(value)?);
-            } else {
-                match attr_expanded {
-                    expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
-                    expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
-                    expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
-                    expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
-                    expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
-
-                    _ => (),
+                Unresolved {
+                    gradient,
+                    fallback: self.common.fallback.clone(),
                 }
             }
-        }
 
-        Ok(())
-    }
-}
-
-impl Draw for RadialGradient {}
-
-macro_rules! impl_paint_source {
-    ($gradient_type:ident, $other_type:ident) => {
-        impl PaintSource for $gradient_type {
-            type Resolved = Gradient;
-
-            fn resolve(
+            pub fn resolve(
                 &self,
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes,
-            ) -> Result<Self::Resolved, AcquireError> {
+            ) -> Result<Gradient, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {
                     return Ok(gradient.clone());
@@ -723,80 +628,61 @@ macro_rules! impl_paint_source {
     };
 }
 
-impl_paint_source!(LinearGradient, RadialGradient);
+impl_gradient!(LinearGradient, RadialGradient);
+impl_gradient!(RadialGradient, LinearGradient);
 
-impl_paint_source!(RadialGradient, LinearGradient);
+impl SetAttributes for RadialGradient {
+    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
+        self.common.set_attributes(pbag)?;
+        // Create a local expanded name for "fr" because markup5ever doesn't have built-in
+        let expanded_name_fr = ExpandedName {
+            ns: &Namespace::from(""),
+            local: &LocalName::from("fr"),
+        };
 
-impl AsPaintSource for Gradient {
-    fn set_as_paint_source(
-        self,
-        _acquired_nodes: &mut AcquiredNodes,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        opacity: UnitInterval,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError> {
-        if let Ok(transform) = bbox.rect_to_transform(self.units.0) {
-            let params = if self.units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-                draw_ctx.push_view_box(1.0, 1.0)
+        for (attr, value) in pbag.iter() {
+            let attr_expanded = attr.expanded();
+
+            if attr_expanded == expanded_name_fr {
+                self.fr = Some(attr.parse(value)?);
             } else {
-                draw_ctx.get_view_params()
-            };
+                match attr_expanded {
+                    expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
+                    expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
+                    expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
+                    expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
+                    expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
 
-            let p = match self.variant {
-                Variant::Linear { .. } => {
-                    let g = self.variant.to_cairo_gradient(values, &params);
-                    cairo::Gradient::clone(&g)
+                    _ => (),
                 }
-
-                Variant::Radial { .. } => {
-                    let g = self.variant.to_cairo_gradient(values, &params);
-                    cairo::Gradient::clone(&g)
-                }
-            };
-
-            self.set_on_cairo_pattern(&p, &transform, opacity);
-
-            let cr = draw_ctx.get_cairo_context();
-            cr.set_source(&p);
-
-            Ok(true)
-        } else {
-            Ok(false)
+            }
         }
+
+        Ok(())
     }
 }
 
-impl Gradient {
-    fn set_on_cairo_pattern(
-        &self,
-        pattern: &cairo::Gradient,
-        transform: &Transform,
-        opacity: UnitInterval,
-    ) {
-        let transform = transform.pre_transform(&self.transform);
+impl Draw for RadialGradient {}
 
-        if let Some(m) = transform.invert() {
-            pattern.set_matrix(m.into())
-        }
-        pattern.set_extend(cairo::Extend::from(self.spread));
-        self.add_color_stops_to_pattern(pattern, opacity);
+impl Gradient {
+    pub fn get_units(&self) -> GradientUnits {
+        self.units
     }
 
-    fn add_color_stops_to_pattern(&self, pattern: &cairo::Gradient, opacity: UnitInterval) {
-        for stop in &self.stops {
-            let UnitInterval(stop_offset) = stop.offset;
-            let UnitInterval(o) = opacity;
-            let UnitInterval(stop_opacity) = stop.opacity;
+    pub fn get_spread(&self) -> SpreadMethod {
+        self.spread
+    }
 
-            pattern.add_color_stop_rgba(
-                stop_offset,
-                f64::from(stop.rgba.red_f32()),
-                f64::from(stop.rgba.green_f32()),
-                f64::from(stop.rgba.blue_f32()),
-                f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
-            );
-        }
+    pub fn get_transform(&self) -> Transform {
+        self.transform
+    }
+
+    pub fn get_stops(&self) -> &Vec<ColorStop> {
+        &self.stops
+    }
+
+    pub fn get_variant(&self) -> &GradientVariant {
+        &self.variant
     }
 }
 
