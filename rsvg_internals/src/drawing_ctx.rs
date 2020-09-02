@@ -18,9 +18,11 @@ use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
 use crate::element::Element;
 use crate::error::{AcquireError, RenderingError};
+use crate::filter::{FilterValue, FilterValueList};
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{Gradient, GradientUnits, GradientVariant, SpreadMethod};
+use crate::iri::IRI;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -487,14 +489,13 @@ impl DrawingCtx {
                 let clip_uri = clip_path_value.0.get();
                 let mask = mask_value.0.get();
 
-                // The `filter` property does not apply to masks.
-                let filter = if node.is_element() {
+                let filters = if node.is_element() {
                     match *node.borrow_element() {
-                        Element::Mask(_) => None,
-                        _ => values.filter().0.get().cloned(),
+                        Element::Mask(_) => FilterValueList::default(),
+                        _ => values.filter().0,
                     }
                 } else {
-                    values.filter().0.get().cloned()
+                    values.filter().0
                 };
 
                 let UnitInterval(opacity) = values.opacity().0;
@@ -509,7 +510,7 @@ impl DrawingCtx {
 
                 let is_opaque = approx_eq!(f64, opacity, 1.0);
                 let needs_temporary_surface = !(is_opaque
-                    && filter.is_none()
+                    && filters.is_empty()
                     && mask.is_none()
                     && values.mix_blend_mode() == MixBlendMode::Normal
                     && clip_in_object_space.is_none());
@@ -525,12 +526,12 @@ impl DrawingCtx {
 
                     // Create temporary surface and its cr
 
-                    let cr = if filter.is_some() {
-                        cairo::Context::new(&*dc.create_surface_for_toplevel_viewport()?)
-                    } else {
+                    let cr = if filters.is_empty() {
                         cairo::Context::new(
                             &dc.create_similar_surface_for_toplevel_viewport(&dc.cr.get_target())?,
                         )
+                    } else {
+                        cairo::Context::new(&*dc.create_surface_for_toplevel_viewport()?)
                     };
 
                     cr.set_matrix(affines.for_temporary_surface.into());
@@ -549,7 +550,7 @@ impl DrawingCtx {
 
                     // Filter
 
-                    let source_surface = if let Some(filter_uri) = filter {
+                    let source_surface = if filters.is_applicable(node, acquired_nodes) {
                         // The target surface has multiple references.
                         // We need to copy it to a new surface to have a unique
                         // reference to be able to safely access the pixel data.
@@ -557,17 +558,27 @@ impl DrawingCtx {
                             &cairo::ImageSurface::try_from(dc.cr.get_target()).unwrap(),
                         )?;
 
-                        let img_surface = dc
-                            .run_filter(
-                                acquired_nodes,
-                                &filter_uri,
-                                node,
-                                values,
+                        let img_surface = filters
+                            .0
+                            .iter()
+                            .try_fold(
                                 child_surface,
-                                bbox,
+                                |surface, filter| -> Result<_, RenderingError> {
+                                    if let FilterValue::URL(IRI::Resource(filter_uri)) = filter {
+                                        dc.run_filter(
+                                            acquired_nodes,
+                                            &filter_uri,
+                                            node,
+                                            values,
+                                            surface,
+                                            bbox,
+                                        )
+                                    } else {
+                                        Ok(surface)
+                                    }
+                                },
                             )?
                             .into_image_surface()?;
-
                         // turn ImageSurface into a Surface
                         (*img_surface).clone()
                     } else {
@@ -767,6 +778,9 @@ impl DrawingCtx {
         child_surface: SharedImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
+        // TODO: since we check is_applicable before we get here, these checks are redundant
+        // do we want to remove them and directly grab the filter node? or keep for future error
+        // handling?
         match acquired_nodes.acquire(filter_uri) {
             Ok(acquired) => {
                 let filter_node = acquired.get();
