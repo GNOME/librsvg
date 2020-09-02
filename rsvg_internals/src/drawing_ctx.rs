@@ -1178,7 +1178,7 @@ impl DrawingCtx {
         )
         .map(|had_paint_server| {
             if had_paint_server {
-                cr.stroke();
+                cr.stroke_preserve();
             }
         })?;
 
@@ -1203,7 +1203,7 @@ impl DrawingCtx {
         )
         .map(|had_paint_server| {
             if had_paint_server {
-                cr.fill();
+                cr.fill_preserve();
             }
         })?;
 
@@ -1230,39 +1230,54 @@ impl DrawingCtx {
             if clipping {
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
                 path.to_cairo(&cr, is_square_linecap)?;
-                Ok(dc.empty_bbox())
-            } else {
-                let current_color = values.color().0;
-
-                cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
-                dc.setup_cr_for_stroke(&cr, values);
-
-                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
-                path.to_cairo(&cr, is_square_linecap)?;
-                let bbox = compute_stroke_and_fill_box(&cr, &values);
-                cr.new_path();
-
-                for &target in &values.paint_order().targets {
-                    match target {
-                        PaintTarget::Fill if !clipping => {
-                            path.to_cairo(&cr, is_square_linecap)?;
-                            dc.fill(&cr, an, values, &bbox, current_color)?;
-                            cr.new_path();
-                        }
-                        PaintTarget::Stroke if !clipping => {
-                            path.to_cairo(&cr, is_square_linecap)?;
-                            dc.stroke(&cr, an, values, &bbox, current_color)?;
-                            cr.new_path();
-                        }
-                        PaintTarget::Markers if markers == Markers::Yes => {
-                            marker::render_markers_for_path(path, dc, an, values, clipping)?;
-                        }
-                        _ => {}
-                    }
-                }
-
-                Ok(bbox)
+                return Ok(dc.empty_bbox());
             }
+
+            let current_color = values.color().0;
+
+            cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
+            dc.setup_cr_for_stroke(&cr, values);
+
+            cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
+
+            let mut bounding_box: Option<BoundingBox> = None;
+            let mut has_path = false;
+            cr.new_path();
+
+            for &target in &values.paint_order().targets {
+                // fill and stroke operations will preserve the path.
+                // markers operation will clear the path.
+                match target {
+                    PaintTarget::Fill | PaintTarget::Stroke => {
+                        if !has_path {
+                            path.to_cairo(&cr, is_square_linecap)?;
+                            has_path = true;
+                        }
+                        let bbox = bounding_box
+                            .get_or_insert_with(|| compute_stroke_and_fill_box(&cr, &values));
+
+                        if target == PaintTarget::Stroke {
+                            dc.stroke(&cr, an, values, &bbox, current_color)?;
+                        } else {
+                            dc.fill(&cr, an, values, &bbox, current_color)?;
+                        }
+                    }
+                    PaintTarget::Markers if markers == Markers::Yes => {
+                        if has_path {
+                            cr.new_path();
+                            has_path = false;
+                        }
+                        marker::render_markers_for_path(path, dc, an, values, clipping)?;
+                    }
+                    _ => {}
+                }
+            }
+
+            if has_path {
+                cr.new_path();
+            }
+
+            Ok(bounding_box.unwrap())
         })
     }
 
