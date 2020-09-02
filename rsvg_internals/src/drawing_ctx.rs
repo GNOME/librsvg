@@ -1227,43 +1227,42 @@ impl DrawingCtx {
             let cr = dc.cr.clone();
             let is_square_linecap = values.stroke_line_cap() == StrokeLinecap::Square;
 
-            cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
-            dc.setup_cr_for_stroke(&cr, values);
-
-            let bbox = if clipping {
+            if clipping {
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
                 path.to_cairo(&cr, is_square_linecap)?;
-                dc.empty_bbox()
+                Ok(dc.empty_bbox())
             } else {
+                let current_color = values.color().0;
+
+                cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
+                dc.setup_cr_for_stroke(&cr, values);
+
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
                 path.to_cairo(&cr, is_square_linecap)?;
                 let bbox = compute_stroke_and_fill_box(&cr, &values);
                 cr.new_path();
-                bbox
-            };
 
-            let current_color = values.color().0;
-
-            for &target in &values.paint_order().targets {
-                match target {
-                    PaintTarget::Fill if !clipping => {
-                        path.to_cairo(&cr, is_square_linecap)?;
-                        dc.fill(&cr, an, values, &bbox, current_color)?;
-                        cr.new_path();
+                for &target in &values.paint_order().targets {
+                    match target {
+                        PaintTarget::Fill if !clipping => {
+                            path.to_cairo(&cr, is_square_linecap)?;
+                            dc.fill(&cr, an, values, &bbox, current_color)?;
+                            cr.new_path();
+                        }
+                        PaintTarget::Stroke if !clipping => {
+                            path.to_cairo(&cr, is_square_linecap)?;
+                            dc.stroke(&cr, an, values, &bbox, current_color)?;
+                            cr.new_path();
+                        }
+                        PaintTarget::Markers if markers == Markers::Yes => {
+                            marker::render_markers_for_path(path, dc, an, values, clipping)?;
+                        }
+                        _ => {}
                     }
-                    PaintTarget::Stroke if !clipping => {
-                        path.to_cairo(&cr, is_square_linecap)?;
-                        dc.stroke(&cr, an, values, &bbox, current_color)?;
-                        cr.new_path();
-                    }
-                    PaintTarget::Markers if markers == Markers::Yes => {
-                        marker::render_markers_for_path(path, dc, an, values, clipping)?;
-                    }
-                    _ => {}
                 }
-            }
 
-            Ok(bbox)
+                Ok(bbox)
+            }
         })
     }
 
