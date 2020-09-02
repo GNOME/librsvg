@@ -1058,7 +1058,7 @@ impl DrawingCtx {
         Ok(true)
     }
 
-    pub fn set_source_paint_server(
+    fn set_source_paint_server(
         &mut self,
         acquired_nodes: &mut AcquiredNodes,
         paint_server: &PaintServer,
@@ -1135,7 +1135,7 @@ impl DrawingCtx {
         surface.share()
     }
 
-    pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
+    fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
         let params = self.get_view_params();
 
         cr.set_line_width(values.stroke_width().0.normalize(values, &params));
@@ -1160,7 +1160,7 @@ impl DrawingCtx {
         }
     }
 
-    pub fn stroke(
+    fn stroke(
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes,
@@ -1185,7 +1185,7 @@ impl DrawingCtx {
         Ok(())
     }
 
-    pub fn fill(
+    fn fill(
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes,
