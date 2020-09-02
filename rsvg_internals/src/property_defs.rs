@@ -41,6 +41,7 @@
 //! [`Parse`]: ../trait.Parse.html
 //! [`Property`]: ../property_macros/trait.Property.html
 //! [`UnitInterval`]: ../unit_interval/struct.UnitInterval.html
+use std::convert::TryInto;
 
 use cssparser::{Parser, Token};
 
@@ -497,6 +498,90 @@ make_property!(
     "scroll" => Scroll,
     "auto" => Auto,
 );
+
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum PaintTarget {
+    Fill,
+    Stroke,
+    Markers,
+}
+
+// https://www.w3.org/TR/SVG2/painting.html#PaintOrder
+make_property!(
+    ComputedValues,
+    PaintOrder,
+    inherits_automatically: true,
+    fields: {
+        targets: [PaintTarget; 3], default: [PaintTarget::Fill, PaintTarget::Stroke, PaintTarget::Markers],
+    }
+
+    parse_impl: {
+        impl Parse for PaintOrder {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<PaintOrder, ParseError<'i>> {
+                let allowed_targets = 3;
+                let mut targets = Vec::with_capacity(allowed_targets);
+
+                if parser.try_parse(|p| p.expect_ident_matching("normal")).is_ok() {
+                    return Ok(PaintOrder::default());
+                }
+
+                while !parser.is_exhausted() {
+                    let loc = parser.current_source_location();
+                    let token = parser.next()?;
+
+                    let value = match token {
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("fill") && !targets.contains(&PaintTarget::Fill) => PaintTarget::Fill,
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("stroke") && !targets.contains(&PaintTarget::Stroke) => PaintTarget::Stroke,
+                        Token::Ident(ref cow) if cow.eq_ignore_ascii_case("markers") && !targets.contains(&PaintTarget::Markers) => PaintTarget::Markers,
+                        _ => return Err(loc.new_basic_unexpected_token_error(token.clone()).into()),
+                    };
+
+                    targets.push(value);
+                };
+
+                // any values which were not specfied should be painted in default order
+                // (fill, stroke, markers) following the values which were explicitly specified.
+                for &target in &[PaintTarget::Fill, PaintTarget::Stroke, PaintTarget::Markers] {
+                    if !targets.contains(&target) {
+                        targets.push(target);
+                    }
+                }
+                Ok(PaintOrder {
+                    targets: targets[..].try_into().expect("Incorrect number of targets in paint-order")
+                })
+            }
+        }
+    }
+);
+
+#[cfg(test)]
+#[test]
+fn parses_paint_order() {
+    assert_eq!(
+        PaintOrder::parse_str("normal").unwrap(),
+        PaintOrder {
+            targets: [PaintTarget::Fill, PaintTarget::Stroke, PaintTarget::Markers]
+        }
+    );
+
+    assert_eq!(
+        PaintOrder::parse_str("markers fill").unwrap(),
+        PaintOrder {
+            targets: [PaintTarget::Markers, PaintTarget::Fill, PaintTarget::Stroke]
+        }
+    );
+
+    assert_eq!(
+        PaintOrder::parse_str("stroke").unwrap(),
+        PaintOrder {
+            targets: [PaintTarget::Stroke, PaintTarget::Fill, PaintTarget::Markers]
+        }
+    );
+
+    assert!(PaintOrder::parse_str("stroke stroke").is_err());
+    assert!(PaintOrder::parse_str("markers stroke fill hello").is_err());
+}
 
 // https://www.w3.org/TR/SVG/painting.html#ShapeRenderingProperty
 make_property!(

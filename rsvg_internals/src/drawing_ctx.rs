@@ -28,8 +28,8 @@ use crate::path_builder::*;
 use crate::pattern::{PatternContentUnits, PatternUnits, ResolvedPattern};
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, FillRule, MixBlendMode, Opacity, Overflow, ShapeRendering, StrokeDasharray,
-    StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, FillRule, MixBlendMode, Opacity, Overflow, PaintTarget, ShapeRendering,
+    StrokeDasharray, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
 use crate::shapes::Markers;
@@ -1058,7 +1058,7 @@ impl DrawingCtx {
         Ok(true)
     }
 
-    pub fn set_source_paint_server(
+    fn set_source_paint_server(
         &mut self,
         acquired_nodes: &mut AcquiredNodes,
         paint_server: &PaintServer,
@@ -1135,7 +1135,7 @@ impl DrawingCtx {
         surface.share()
     }
 
-    pub fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
+    fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
         let params = self.get_view_params();
 
         cr.set_line_width(values.stroke_width().0.normalize(values, &params));
@@ -1160,63 +1160,54 @@ impl DrawingCtx {
         }
     }
 
-    pub fn stroke_and_fill(
+    fn stroke(
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
-    ) -> Result<BoundingBox, RenderingError> {
-        cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
+        bbox: &BoundingBox,
+        current_color: cssparser::RGBA,
+    ) -> Result<(), RenderingError> {
+        self.set_source_paint_server(
+            acquired_nodes,
+            &values.stroke().0,
+            values.stroke_opacity().0,
+            bbox,
+            current_color,
+            values,
+        )
+        .map(|had_paint_server| {
+            if had_paint_server {
+                cr.stroke();
+            }
+        })?;
 
-        self.setup_cr_for_stroke(cr, values);
+        Ok(())
+    }
 
-        // Update the bbox in the rendering context.  Below, we actually set the
-        // fill/stroke patterns on the cairo_t.  That process requires the
-        // rendering context to have an updated bbox; for example, for the
-        // coordinate system in patterns.
-        let bbox = compute_stroke_and_fill_box(cr, values);
+    fn fill(
+        &mut self,
+        cr: &cairo::Context,
+        acquired_nodes: &mut AcquiredNodes,
+        values: &ComputedValues,
+        bbox: &BoundingBox,
+        current_color: cssparser::RGBA,
+    ) -> Result<(), RenderingError> {
+        self.set_source_paint_server(
+            acquired_nodes,
+            &values.fill().0,
+            values.fill_opacity().0,
+            bbox,
+            current_color,
+            values,
+        )
+        .map(|had_paint_server| {
+            if had_paint_server {
+                cr.fill();
+            }
+        })?;
 
-        let current_color = values.color().0;
-
-        let res = self
-            .set_source_paint_server(
-                acquired_nodes,
-                &values.fill().0,
-                values.fill_opacity().0,
-                &bbox,
-                current_color,
-                values,
-            )
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    if values.stroke().0 == PaintServer::None {
-                        cr.fill();
-                    } else {
-                        cr.fill_preserve();
-                    }
-                }
-            })
-            .and_then(|_| {
-                self.set_source_paint_server(
-                    acquired_nodes,
-                    &values.stroke().0,
-                    values.stroke_opacity().0,
-                    &bbox,
-                    current_color,
-                    values,
-                )
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        cr.stroke();
-                    }
-                })
-            });
-
-        // clear the path in case stroke == fill == None; otherwise
-        // we leave it around from computing the bounding box
-        cr.new_path();
-
-        res.map(|_: ()| bbox)
+        Ok(())
     }
 
     pub fn draw_path(
@@ -1228,31 +1219,51 @@ impl DrawingCtx {
         markers: Markers,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if !path.is_empty() {
-            let bbox =
-                self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                    let cr = dc.cr.clone();
-
-                    let is_square_linecap = values.stroke_line_cap() == StrokeLinecap::Square;
-                    path.to_cairo(&cr, is_square_linecap)?;
-
-                    if clipping {
-                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
-                        Ok(dc.empty_bbox())
-                    } else {
-                        cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
-                        dc.stroke_and_fill(&cr, an, values)
-                    }
-                })?;
-
-            if markers == Markers::Yes {
-                marker::render_markers_for_path(path, self, acquired_nodes, values, clipping)?;
-            }
-
-            Ok(bbox)
-        } else {
-            Ok(self.empty_bbox())
+        if path.is_empty() {
+            return Ok(self.empty_bbox());
         }
+
+        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+            let cr = dc.cr.clone();
+            let is_square_linecap = values.stroke_line_cap() == StrokeLinecap::Square;
+
+            if clipping {
+                cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
+                path.to_cairo(&cr, is_square_linecap)?;
+                Ok(dc.empty_bbox())
+            } else {
+                let current_color = values.color().0;
+
+                cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
+                dc.setup_cr_for_stroke(&cr, values);
+
+                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
+                path.to_cairo(&cr, is_square_linecap)?;
+                let bbox = compute_stroke_and_fill_box(&cr, &values);
+                cr.new_path();
+
+                for &target in &values.paint_order().targets {
+                    match target {
+                        PaintTarget::Fill if !clipping => {
+                            path.to_cairo(&cr, is_square_linecap)?;
+                            dc.fill(&cr, an, values, &bbox, current_color)?;
+                            cr.new_path();
+                        }
+                        PaintTarget::Stroke if !clipping => {
+                            path.to_cairo(&cr, is_square_linecap)?;
+                            dc.stroke(&cr, an, values, &bbox, current_color)?;
+                            cr.new_path();
+                        }
+                        PaintTarget::Markers if markers == Markers::Yes => {
+                            marker::render_markers_for_path(path, dc, an, values, clipping)?;
+                        }
+                        _ => {}
+                    }
+                }
+
+                Ok(bbox)
+            }
+        })
     }
 
     pub fn draw_image(

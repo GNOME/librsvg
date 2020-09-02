@@ -416,6 +416,7 @@ make_properties! {
     longhands_not_supported_by_markup5ever: {
         "line-height"                 => line_height                 : LineHeight,
         "mix-blend-mode"              => mix_blend_mode              : MixBlendMode,
+        "paint-order"                 => paint_order                 : PaintOrder,
     }
 
     // These are not properties, but presentation attributes.  However,
@@ -594,6 +595,7 @@ impl SpecifiedValues {
         compute!(MixBlendMode, mix_blend_mode);
         compute!(Opacity, opacity);
         compute!(Overflow, overflow);
+        compute!(PaintOrder, paint_order);
         compute!(ShapeRendering, shape_rendering);
         compute!(StopColor, stop_color);
         compute!(StopOpacity, stop_opacity);

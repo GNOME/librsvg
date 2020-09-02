@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="750" height="450">
+<rect height="300" width="1000" fill="#98fb98"/>
+<rect height="300" width="1000" y="300" fill="#87cefa"/>
+<path d="M 200 300 H 1000" stroke="#deb887" stroke-width="37.5"/>
+<path d="M -200 -100 a 100 100 0 0 1 100 -100 h 200 a 100 100 0 0 1 100 100 v 200 a 100 100 0 0 1 -100 100 h -200 a 100 100 0 0 1 -100 -100 z" stroke="#deb887" stroke-width="125" fill="white" paint-order="stroke fill" transform="matrix(0.6 0 0 0.6 200 300)"/>
+</svg>
