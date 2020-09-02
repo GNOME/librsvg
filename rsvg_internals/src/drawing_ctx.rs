@@ -1166,9 +1166,8 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         bbox: &BoundingBox,
+        current_color: cssparser::RGBA,
     ) -> Result<(), RenderingError> {
-        let current_color = values.color().0;
-
         self.set_source_paint_server(
             acquired_nodes,
             &values.stroke().0,
@@ -1192,9 +1191,8 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes,
         values: &ComputedValues,
         bbox: &BoundingBox,
+        current_color: cssparser::RGBA,
     ) -> Result<(), RenderingError> {
-        let current_color = values.color().0;
-
         self.set_source_paint_server(
             acquired_nodes,
             &values.fill().0,
@@ -1244,16 +1242,18 @@ impl DrawingCtx {
                 bbox
             };
 
+            let current_color = values.color().0;
+
             for &target in &values.paint_order().targets {
                 match target {
                     PaintTarget::Fill if !clipping => {
                         path.to_cairo(&cr, is_square_linecap)?;
-                        dc.fill(&cr, an, values, &bbox)?;
+                        dc.fill(&cr, an, values, &bbox, current_color)?;
                         cr.new_path();
                     }
                     PaintTarget::Stroke if !clipping => {
                         path.to_cairo(&cr, is_square_linecap)?;
-                        dc.stroke(&cr, an, values, &bbox)?;
+                        dc.stroke(&cr, an, values, &bbox, current_color)?;
                         cr.new_path();
                     }
                     PaintTarget::Markers if markers == Markers::Yes => {
