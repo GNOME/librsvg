@@ -21,7 +21,10 @@ pub trait Parse: Sized {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
-        Self::parse(&mut parser).map(|r| r)
+        let res = Self::parse(&mut parser)?;
+        parser.expect_exhausted()?;
+
+        Ok(res)
     }
 }
 
@@ -100,7 +103,6 @@ impl<T: Parse + Copy> Parse for NumberOptionalNumber<T> {
         if !parser.is_exhausted() {
             optional_comma(parser);
             let y = Parse::parse(parser)?;
-            parser.expect_exhausted()?;
             Ok(NumberOptionalNumber(x, y))
         } else {
             Ok(NumberOptionalNumber(x, x))

@@ -642,7 +642,17 @@ impl SpecifiedValues {
         // attribute like marker="#foo" and it needs to be set in the style attribute
         // like style="marker: #foo;".  So, pass false for accept_shorthands here.
         match parse_property(&attr, &mut parser, false) {
-            Ok(prop) => self.set_parsed_property(&prop),
+            Ok(prop) => {
+                if parser.expect_exhausted().is_ok() {
+                    self.set_parsed_property(&prop);
+                } else {
+                    rsvg_log!(
+                        "(ignoring invalid presentation attribute {:?}\n    value=\"{}\")\n",
+                        attr.expanded(),
+                        value,
+                    );
+                }
+            }
 
             // not a presentation attribute; just ignore it
             Err(ParseError {

@@ -93,8 +93,6 @@ impl Parse for Angle {
             }
         };
 
-        parser.expect_exhausted()?;
-
         Ok(angle)
     }
 }
