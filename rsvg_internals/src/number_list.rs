@@ -54,8 +54,6 @@ impl NumberList {
             }
         }
 
-        parser.expect_exhausted()?;
-
         Ok(NumberList(v))
     }
 
@@ -63,7 +61,9 @@ impl NumberList {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
-        Self::parse(&mut parser, length).map(|r| r)
+        let res = Self::parse(&mut parser, length)?;
+        parser.expect_exhausted()?;
+        Ok(res)
     }
 }
 

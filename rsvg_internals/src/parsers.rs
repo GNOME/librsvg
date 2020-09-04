@@ -21,7 +21,10 @@ pub trait Parse: Sized {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 
-        Self::parse(&mut parser).map(|r| r)
+        let res = Self::parse(&mut parser)?;
+        parser.expect_exhausted()?;
+
+        Ok(res)
     }
 }
 
