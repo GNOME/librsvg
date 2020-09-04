@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
 
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::{Declaration, Origin};
@@ -40,7 +41,6 @@ use crate::node::*;
 use crate::parsers::Parse;
 use crate::pattern::Pattern;
 use crate::properties::{ComputedValues, SpecifiedValues};
-use crate::property_bag::PropertyBag;
 use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
@@ -70,10 +70,10 @@ use crate::transform::Transform;
 pub type ElementResult = Result<(), ElementError>;
 
 pub trait SetAttributes {
-    /// Sets per-element attributes from the `pbag`
+    /// Sets per-element attributes.
     ///
-    /// Each element is supposed to iterate the `pbag`, and parse any attributes it needs.
-    fn set_attributes(&mut self, _pbag: &PropertyBag<'_>) -> ElementResult {
+    /// Each element is supposed to iterate the `attributes`, and parse any ones it needs.
+    fn set_attributes(&mut self, _attributes: &Attributes) -> ElementResult {
         Ok(())
     }
 }
@@ -142,8 +142,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         self.transform
     }
 
-    fn save_style_attribute(&mut self, pbag: &PropertyBag<'_>) {
-        let result = pbag
+    fn save_style_attribute(&mut self, attrs: &Attributes) {
+        let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
             .map(|(_, value)| value);
@@ -152,8 +152,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         }
     }
 
-    fn set_transform_attribute(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
-        let result = pbag
+    fn set_transform_attribute(&mut self, attrs: &Attributes) -> Result<(), ElementError> {
+        let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
             .map(|(attr, value)| {
@@ -170,11 +170,11 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     fn set_conditional_processing_attributes(
         &mut self,
-        pbag: &PropertyBag<'_>,
+        attrs: &Attributes,
     ) -> Result<(), ElementError> {
         let mut cond = self.cond;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             let mut parse = || -> Result<_, ValueErrorKind> {
                 match attr.expanded() {
                     expanded_name!("", "requiredExtensions") if cond => {
@@ -204,9 +204,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         Ok(())
     }
 
-    /// Hands the pbag to the node's state, to apply the presentation attributes
-    fn set_presentation_attributes(&mut self, pbag: &PropertyBag<'_>) -> Result<(), ElementError> {
-        match self.specified_values.parse_presentation_attributes(pbag) {
+    /// Hands the `attrs` to the node's state, to apply the presentation attributes.
+    fn set_presentation_attributes(&mut self, attrs: &Attributes) -> Result<(), ElementError> {
+        match self.specified_values.parse_presentation_attributes(attrs) {
             Ok(_) => Ok(()),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
@@ -262,13 +262,13 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 }
 
 impl<T: SetAttributes + Draw> SetAttributes for ElementInner<T> {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.save_style_attribute(pbag);
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.save_style_attribute(attrs);
 
-        self.set_transform_attribute(pbag)
-            .and_then(|_| self.set_conditional_processing_attributes(pbag))
-            .and_then(|_| self.element_impl.set_attributes(pbag))
-            .and_then(|_| self.set_presentation_attributes(pbag))
+        self.set_transform_attribute(attrs)
+            .and_then(|_| self.set_conditional_processing_attributes(attrs))
+            .and_then(|_| self.element_impl.set_attributes(attrs))
+            .and_then(|_| self.set_presentation_attributes(attrs))
     }
 }
 
@@ -459,11 +459,11 @@ impl Element {
     ///
     /// [`Element`]: type.Element.html
     /// [`NonRendering`]: ../structure/struct.NonRendering.html
-    pub fn new(name: &QualName, pbag: &PropertyBag) -> Element {
+    pub fn new(name: &QualName, attrs: &Attributes) -> Element {
         let mut id = None;
         let mut class = None;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "id") => id = Some(value),
                 expanded_name!("", "class") => class = Some(value),
@@ -499,7 +499,7 @@ impl Element {
 
         let mut element = create_fn(name, id, class);
 
-        if let Err(e) = element.set_attributes(pbag) {
+        if let Err(e) = element.set_attributes(attrs) {
             element.set_error(e);
         }
 
@@ -594,8 +594,8 @@ impl Element {
 }
 
 impl SetAttributes for Element {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        call_inner!(self, set_attributes, pbag)
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        call_inner!(self, set_attributes, attrs)
     }
 }
 

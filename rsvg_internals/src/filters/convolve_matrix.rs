@@ -2,6 +2,7 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
@@ -9,7 +10,6 @@ use crate::error::*;
 use crate::node::Node;
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
@@ -55,10 +55,10 @@ impl Default for FeConvolveMatrix {
 }
 
 impl SetAttributes for FeConvolveMatrix {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "order") => {
                     let NumberOptionalNumber(x, y) =
@@ -103,7 +103,7 @@ impl SetAttributes for FeConvolveMatrix {
         }
 
         // target_x and target_y depend on order.
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "targetX") => {
                     self.target_x = {
@@ -146,7 +146,7 @@ impl SetAttributes for FeConvolveMatrix {
         }
 
         // Finally, parse the kernel matrix.
-        for (attr, value) in pbag
+        for (attr, value) in attrs
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!("", "kernelMatrix"))
         {

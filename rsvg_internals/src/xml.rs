@@ -15,12 +15,12 @@ use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
 use crate::allowed_url::AllowedUrl;
+use crate::attributes::Attributes;
 use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
 use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
-use crate::property_bag::PropertyBag;
 use crate::style::StyleType;
 use crate::xml2_load::Xml2Parser;
 
@@ -166,7 +166,7 @@ impl XmlState {
         }
     }
 
-    pub fn start_element(&self, name: QualName, pbag: &PropertyBag) -> Result<(), ()> {
+    pub fn start_element(&self, name: QualName, attrs: &Attributes) -> Result<(), ()> {
         self.check_limits()?;
 
         let context = self.inner.borrow().context();
@@ -178,8 +178,8 @@ impl XmlState {
         self.inner.borrow_mut().num_loaded_elements += 1;
 
         let new_context = match context {
-            Context::Start => self.element_creation_start_element(&name, pbag),
-            Context::ElementCreation => self.element_creation_start_element(&name, pbag),
+            Context::Start => self.element_creation_start_element(&name, attrs),
+            Context::ElementCreation => self.element_creation_start_element(&name, attrs),
 
             Context::Style => self.inside_style_start_element(&name),
             Context::UnsupportedStyleChild => self.unsupported_style_start_element(&name),
@@ -187,7 +187,7 @@ impl XmlState {
             Context::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, &name),
             Context::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(&name),
             Context::XIncludeFallback(ref ctx) => {
-                self.xinclude_fallback_start_element(&ctx, &name, pbag)
+                self.xinclude_fallback_start_element(&ctx, &name, attrs)
             }
 
             Context::FatalError(_) => unreachable!(),
@@ -312,9 +312,9 @@ impl XmlState {
         }
     }
 
-    fn element_creation_start_element(&self, name: &QualName, pbag: &PropertyBag) -> Context {
+    fn element_creation_start_element(&self, name: &QualName, attrs: &Attributes) -> Context {
         if name.expanded() == xinclude_name!("include") {
-            self.xinclude_start_element(name, pbag)
+            self.xinclude_start_element(name, attrs)
         } else {
             let mut inner = self.inner.borrow_mut();
 
@@ -323,7 +323,7 @@ impl XmlState {
                 .document_builder
                 .as_mut()
                 .unwrap()
-                .append_element(name, pbag, parent);
+                .append_element(name, attrs, parent);
             inner.current_node = Some(node);
 
             if name.expanded() == expanded_name!(svg "style") {
@@ -388,14 +388,14 @@ impl XmlState {
         Context::UnsupportedStyleChild
     }
 
-    fn xinclude_start_element(&self, _name: &QualName, pbag: &PropertyBag) -> Context {
+    fn xinclude_start_element(&self, _name: &QualName, attrs: &Attributes) -> Context {
         let mut href = None;
         let mut parse = None;
         let mut encoding = None;
 
         let ln_parse = LocalName::from("parse");
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "href") => href = Some(value),
                 ref v
@@ -443,13 +443,13 @@ impl XmlState {
         &self,
         ctx: &XIncludeContext,
         name: &QualName,
-        pbag: &PropertyBag,
+        attrs: &Attributes,
     ) -> Context {
         if ctx.need_fallback {
             if name.expanded() == xinclude_name!("include") {
-                self.xinclude_start_element(name, pbag)
+                self.xinclude_start_element(name, attrs)
             } else {
-                self.element_creation_start_element(name, pbag)
+                self.element_creation_start_element(name, attrs)
             }
         } else {
             Context::UnsupportedXIncludeChild

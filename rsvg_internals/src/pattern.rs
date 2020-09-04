@@ -5,6 +5,7 @@ use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
+use crate::attributes::Attributes;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::drawing_ctx::ViewParams;
@@ -15,7 +16,6 @@ use crate::length::*;
 use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
-use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::*;
@@ -111,8 +111,8 @@ pub struct Pattern {
 }
 
 impl SetAttributes for Pattern {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "patternUnits") => self.common.units = Some(attr.parse(value)?),
                 expanded_name!("", "patternContentUnits") => {
@@ -425,11 +425,11 @@ mod tests {
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let bag = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
+        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
 
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("pattern")),
-            &bag,
+            &attrs,
         ));
 
         let unresolved = borrow_element_as!(node, Pattern).get_unresolved(&node);

@@ -2,6 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::{Fragment, Href};
 use crate::aspect_ratio::AspectRatio;
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
@@ -9,7 +10,6 @@ use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
-use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
@@ -111,10 +111,10 @@ impl FeImage {
 }
 
 impl SetAttributes for FeImage {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 

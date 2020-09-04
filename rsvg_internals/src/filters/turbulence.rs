@@ -1,13 +1,13 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
@@ -57,10 +57,10 @@ impl Default for FeTurbulence {
 }
 
 impl SetAttributes for FeTurbulence {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "baseFrequency") => {
                     let NumberOptionalNumber(x, y) =

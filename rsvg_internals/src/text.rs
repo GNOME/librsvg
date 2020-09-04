@@ -4,6 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -14,7 +15,6 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
-use crate::property_bag::PropertyBag;
 use crate::property_defs::{
     Direction, FontStretch, FontStyle, FontVariant, TextAnchor, UnicodeBidi, WritingMode, XmlLang,
     XmlSpace,
@@ -461,8 +461,8 @@ impl Text {
 }
 
 impl SetAttributes for Text {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
@@ -582,8 +582,8 @@ fn extract_chars_children_to_chunks_recursively(
 }
 
 impl SetAttributes for TRef {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.link = pbag
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.link = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!(xlink "href"))
             // Unlike other elements which use `href` in SVG2 versus `xlink:href` in SVG1.1,
@@ -632,8 +632,8 @@ impl TSpan {
 }
 
 impl SetAttributes for TSpan {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value).map(Some)?,
                 expanded_name!("", "y") => self.y = attr.parse(value).map(Some)?,

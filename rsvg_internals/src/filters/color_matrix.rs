@@ -2,6 +2,7 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
@@ -9,7 +10,6 @@ use crate::error::*;
 use crate::node::Node;
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
@@ -52,12 +52,12 @@ impl Default for FeColorMatrix {
 
 #[rustfmt::skip]
 impl SetAttributes for FeColorMatrix {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
         // First, determine the operation type.
         let mut operation_type = Default::default();
-        for (attr, value) in pbag
+        for (attr, value) in attrs
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!("", "type"))
         {
@@ -77,7 +77,7 @@ impl SetAttributes for FeColorMatrix {
                 )
             };
         } else {
-            for (attr, value) in pbag
+            for (attr, value) in attrs
                 .iter()
                 .filter(|(attr, _)| attr.expanded() == expanded_name!("", "values"))
             {

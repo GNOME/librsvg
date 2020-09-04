@@ -5,6 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::time::Instant;
 
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
@@ -15,7 +16,6 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::property_bag::PropertyBag;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
@@ -200,8 +200,8 @@ impl Primitive {
 }
 
 impl SetAttributes for Primitive {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
                 expanded_name!("", "y") => self.y = Some(attr.parse(value)?),
@@ -246,10 +246,10 @@ impl PrimitiveWithInput {
 }
 
 impl SetAttributes for PrimitiveWithInput {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
-        self.in_ = pbag
+        self.in_ = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
             .and_then(|(attr, value)| attr.parse(value).ok());

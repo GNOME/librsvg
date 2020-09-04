@@ -4,6 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Href;
 use crate::aspect_ratio::AspectRatio;
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -13,7 +14,6 @@ use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
-use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 
 #[derive(Default)]
@@ -27,8 +27,8 @@ pub struct Image {
 }
 
 impl SetAttributes for Image {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,

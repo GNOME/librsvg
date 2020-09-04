@@ -5,6 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::rc::Rc;
 
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -16,7 +17,6 @@ use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
 use crate::properties::ComputedValues;
-use crate::property_bag::PropertyBag;
 use cssparser::{Parser, Token};
 
 #[derive(Copy, Clone, PartialEq)]
@@ -116,8 +116,8 @@ pub struct Path {
 }
 
 impl SetAttributes for Path {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "d") {
                 let mut builder = PathBuilder::default();
                 if let Err(e) = path_parser::parse_path_into_builder(value, &mut builder) {
@@ -222,8 +222,8 @@ pub struct Polygon {
 }
 
 impl SetAttributes for Polygon {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value).map(Some)?;
             }
@@ -259,8 +259,8 @@ pub struct Polyline {
 }
 
 impl SetAttributes for Polyline {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value).map(Some)?;
             }
@@ -297,8 +297,8 @@ pub struct Line {
 }
 
 impl SetAttributes for Line {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x1") => self.x1 = attr.parse(value)?,
                 expanded_name!("", "y1") => self.y1 = attr.parse(value)?,
@@ -363,8 +363,8 @@ pub struct Rect {
 }
 
 impl SetAttributes for Rect {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
@@ -595,8 +595,8 @@ pub struct Circle {
 }
 
 impl SetAttributes for Circle {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,
                 expanded_name!("", "cy") => self.cy = attr.parse(value)?,
@@ -652,8 +652,8 @@ pub struct Ellipse {
 }
 
 impl SetAttributes for Ellipse {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,
                 expanded_name!("", "cy") => self.cy = attr.parse(value)?,

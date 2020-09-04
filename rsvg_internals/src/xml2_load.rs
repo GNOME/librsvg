@@ -15,8 +15,8 @@ use std::sync::Once;
 use glib::translate::*;
 use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 
+use crate::attributes::Attributes;
 use crate::error::LoadingError;
-use crate::property_bag::PropertyBag;
 use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
 use crate::xml::XmlState;
 use crate::xml2::*;
@@ -214,9 +214,9 @@ unsafe extern "C" fn sax_start_element_ns_cb(
     let qual_name = make_qual_name(prefix, uri, localname);
 
     let nb_attributes = nb_attributes as usize;
-    let pbag = PropertyBag::new_from_xml2_attributes(nb_attributes, attributes as *const *const _);
+    let attrs = Attributes::new_from_xml2_attributes(nb_attributes, attributes as *const *const _);
 
-    if let Err(e) = xml2_parser.state.start_element(qual_name, &pbag) {
+    if let Err(e) = xml2_parser.state.start_element(qual_name, &attrs) {
         let _: () = e; // guard in case we change the error type later
 
         let parser = xml2_parser.parser.get();

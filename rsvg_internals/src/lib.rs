@@ -103,6 +103,7 @@ mod property_macros;
 mod allowed_url;
 mod angle;
 mod aspect_ratio;
+mod attributes;
 mod bbox;
 mod color;
 mod cond;
@@ -131,7 +132,6 @@ pub mod path_builder; // pub for benchmarking
 pub mod path_parser; // pub for benchmarking
 mod pattern;
 mod properties;
-mod property_bag;
 mod property_defs;
 pub mod rect;
 mod shapes;

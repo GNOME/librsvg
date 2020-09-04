@@ -4,6 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
@@ -16,7 +17,6 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::viewbox::*;
 
@@ -192,8 +192,8 @@ impl Svg {
 }
 
 impl SetAttributes for Svg {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
@@ -305,8 +305,8 @@ impl Use {
 }
 
 impl SetAttributes for Use {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 ref a if is_href(a) => set_href(
                     a,
@@ -364,8 +364,8 @@ impl Symbol {
 }
 
 impl SetAttributes for Symbol {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
@@ -395,8 +395,8 @@ impl ClipPath {
 }
 
 impl SetAttributes for ClipPath {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        let result = pbag
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "clipPathUnits"))
             .and_then(|(attr, value)| attr.parse(value).ok());
@@ -458,8 +458,8 @@ impl Mask {
 }
 
 impl SetAttributes for Mask {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
@@ -489,8 +489,8 @@ pub struct Link {
 }
 
 impl SetAttributes for Link {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 ref a if is_href(a) => set_href(a, &mut self.link, value.to_owned()),
                 _ => (),
