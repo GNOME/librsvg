@@ -1,3 +1,19 @@
+Version 2.49.5
+
+- #607 - Support the mix-blend-mode property from SVG2 and the
+  Compositing and Blending Level 1 specification, so layers can be
+  composited with operators like multiply/screen/color-burn, etc.
+  https://www.w3.org/TR/compositing-1/ (John Ledbetter).
+
+- #473 - Support the paint-order property from SVG2, so one can pick
+  the order in which a path's fill/stroke/markers are drawn (John Ledbetter).
+
+- Cleanups of the basic drawing and paint-handling code (Paolo Borelli).
+
+- Many style fixes per cargo-clippy (Sven Neumann).
+
+- Improved documentation on the library's internals.
+
 Version 2.49.4
 
 - Support ARM64 Windows builds (Chun-wei Fan).
@@ -14,7 +30,7 @@ Version 2.49.4
 
 - Update to newer dependencies (Bastien Orivel).
 
-- Many style fixes per cargo-clippy (Dunja Lalic, Sven Neuman).
+- Many style fixes per cargo-clippy (Dunja Lalic, Sven Neumann).
 
 Version 2.49.3
 
