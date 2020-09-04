@@ -1,8 +1,8 @@
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
-use crate::property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};
@@ -23,8 +23,8 @@ impl Default for FeFlood {
 }
 
 impl SetAttributes for FeFlood {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)
     }
 }
 

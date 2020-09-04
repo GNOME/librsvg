@@ -1,13 +1,13 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::parsers::{Parse, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface};
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -46,10 +46,10 @@ impl Default for FeDisplacementMap {
 }
 
 impl SetAttributes for FeDisplacementMap {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "in2") => self.in2 = Some(attr.parse(value)?),
                 expanded_name!("", "scale") => self.scale = attr.parse(value)?,

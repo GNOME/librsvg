@@ -4,13 +4,13 @@ use std::f64;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::parsers::{NumberOptionalNumber, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},
@@ -43,9 +43,9 @@ impl Default for FeGaussianBlur {
 }
 
 impl SetAttributes for FeGaussianBlur {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
-        let result = pbag
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
+        let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "stdDeviation"))
             .and_then(|(attr, value)| {
