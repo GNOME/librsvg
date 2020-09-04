@@ -40,6 +40,7 @@ rctree = "0.3.3"
 rgb = { version="0.8.17", features=["argb"] }
 regex = "1"
 selectors = "0.22.0"
+string_cache = "0.8.0"
 tinyvec = {version = "0.3.2", features = ["alloc"]}
 url = "2"
 xml5ever = "0.16.1"
