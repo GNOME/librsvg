@@ -3,6 +3,7 @@
 use std::f64::consts::*;
 
 use cssparser::{Parser, Token};
+use float_cmp::approx_eq;
 
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
@@ -46,8 +47,8 @@ impl Angle {
     // Normalizes an angle to [0.0, 2*PI)
     fn normalize(rad: f64) -> f64 {
         let res = rad % (PI * 2.0);
-        if res.abs() < std::f64::EPSILON {
-            res.abs()
+        if approx_eq!(f64, res, 0.0) {
+            0.0
         } else if res < 0.0 {
             res + PI * 2.0
         } else {
@@ -100,8 +101,6 @@ impl Parse for Angle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use float_cmp::ApproxEq;
-    use std::f64;
 
     #[test]
     fn parses_angle() {
@@ -129,7 +128,7 @@ mod tests {
         let i = Angle::from_vector(incoming_vx, incoming_vy);
         let o = Angle::from_vector(outgoing_vx, outgoing_vy);
         let bisected = i.bisect(o);
-        assert!(expected.approx_eq(bisected.radians(), (2.0 * PI * f64::EPSILON, 1)));
+        assert!(approx_eq!(f64, expected, bisected.radians()));
     }
 
     #[test]

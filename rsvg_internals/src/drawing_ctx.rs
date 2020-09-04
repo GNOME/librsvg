@@ -926,14 +926,14 @@ impl DrawingCtx {
         let scaled_width = pattern_rect.width() * bbwscale;
         let scaled_height = pattern_rect.height() * bbhscale;
 
+        if approx_eq!(f64, scaled_width, 0.0) || approx_eq!(f64, scaled_height, 0.0) {
+            return Ok(false);
+        }
+
         let pw: i32 = (scaled_width * scwscale) as i32;
         let ph: i32 = (scaled_height * schscale) as i32;
 
-        if scaled_width.abs() < f64::EPSILON
-            || scaled_height.abs() < f64::EPSILON
-            || pw < 1
-            || ph < 1
-        {
+        if pw < 1 || ph < 1 {
             return Ok(false);
         }
 
