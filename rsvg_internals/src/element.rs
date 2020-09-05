@@ -115,6 +115,10 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         &self.element_name
     }
 
+    fn get_attributes(&self) -> &Attributes {
+        &self.attributes
+    }
+
     fn get_id(&self) -> Option<&str> {
         self.id.as_deref()
     }
@@ -511,6 +515,10 @@ impl Element {
 
     pub fn element_name(&self) -> &QualName {
         call_inner!(self, element_name)
+    }
+
+    pub fn get_attributes(&self) -> &Attributes {
+        call_inner!(self, get_attributes)
     }
 
     pub fn get_id(&self) -> Option<&str> {
