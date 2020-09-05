@@ -429,7 +429,7 @@ mod tests {
 
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("pattern")),
-            &attrs,
+            attrs,
         ));
 
         let unresolved = borrow_element_as!(node, Pattern).get_unresolved(&node);

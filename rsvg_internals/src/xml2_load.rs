@@ -216,7 +216,7 @@ unsafe extern "C" fn sax_start_element_ns_cb(
     let nb_attributes = nb_attributes as usize;
     let attrs = Attributes::new_from_xml2_attributes(nb_attributes, attributes as *const *const _);
 
-    if let Err(e) = xml2_parser.state.start_element(qual_name, &attrs) {
+    if let Err(e) = xml2_parser.state.start_element(qual_name, attrs) {
         let _: () = e; // guard in case we change the error type later
 
         let parser = xml2_parser.parser.get();

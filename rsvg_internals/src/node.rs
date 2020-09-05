@@ -68,7 +68,7 @@ pub enum NodeData {
 }
 
 impl NodeData {
-    pub fn new_element(name: &QualName, attrs: &Attributes) -> NodeData {
+    pub fn new_element(name: &QualName, attrs: Attributes) -> NodeData {
         NodeData::Element(Element::new(name, attrs))
     }
 
