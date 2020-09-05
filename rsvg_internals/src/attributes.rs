@@ -5,20 +5,27 @@ use std::slice;
 use std::str;
 
 use markup5ever::{namespace_url, LocalName, Namespace, Prefix, QualName};
+use string_cache::DefaultAtom;
 
 use crate::util::{opt_utf8_cstr, utf8_cstr};
+
+/// Type used to store attribute values.
+///
+/// Attribute values are often repeated in an SVG file, so we intern them using the
+/// string_cache crate.
+pub type AttributeValue = DefaultAtom;
 
 /// Iterable wrapper for libxml2's representation of attribute/value.
 ///
 /// See the [`new_from_xml2_attributes`] function for information.
 ///
 /// [`new_from_xml2_attributes`]: #method.new_from_xml2_attributes
-pub struct Attributes<'a>(Vec<(QualName, &'a str)>);
+pub struct Attributes(Vec<(QualName, AttributeValue)>);
 
 /// Iterator from `Attributes.iter`.
-pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, &'a str)>);
+pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 
-impl<'a> Attributes<'a> {
+impl Attributes {
     /// Creates an iterable `Attributes` from the C array of borrowed C strings.
     ///
     /// With libxml2's SAX parser, the caller's startElementNsSAX2Func
@@ -40,7 +47,7 @@ impl<'a> Attributes<'a> {
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
-    ) -> Attributes<'a> {
+    ) -> Attributes {
         let mut array = Vec::new();
 
         if n_attributes > 0 && !attrs.is_null() {
@@ -75,8 +82,9 @@ impl<'a> Attributes<'a> {
 
                     let value_slice = slice::from_raw_parts(value_start as *const u8, len);
                     let value_str = str::from_utf8_unchecked(value_slice);
+                    let value_atom = DefaultAtom::from(value_str);
 
-                    array.push((qual_name, value_str));
+                    array.push((qual_name, value_atom));
                 }
             }
         }
@@ -99,7 +107,7 @@ impl<'a> Iterator for AttributesIter<'a> {
     type Item = (QualName, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(a, v)| (a.clone(), <&str>::clone(v)))
+        self.0.next().map(|(a, v)| (a.clone(), v.as_ref()))
     }
 }
 
