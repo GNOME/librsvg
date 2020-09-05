@@ -99,6 +99,7 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
+    attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
     result: ElementResult,
@@ -465,8 +466,8 @@ impl Element {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "id") => id = Some(value),
-                expanded_name!("", "class") => class = Some(value),
+                expanded_name!("", "id") => id = Some(String::from(value)),
+                expanded_name!("", "class") => class = Some(String::from(value)),
                 _ => (),
             }
         }
@@ -497,9 +498,11 @@ impl Element {
 
         //    sizes::print_sizes();
 
-        let mut element = create_fn(name, id, class);
+        let attrs_clone = attrs.clone();
 
-        if let Err(e) = element.set_attributes(&attrs) {
+        let mut element = create_fn(name, attrs, id, class);
+
+        if let Err(e) = element.set_attributes(&attrs_clone) {
             element.set_error(e);
         }
 
@@ -628,11 +631,12 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element {
+        pub fn $name(element_name: &QualName, attributes: Attributes, id: Option<String>, class: Option<String>) -> Element {
             Element::$element_type(Box::new(ElementInner {
                 element_name: element_name.clone(),
-                id: id.map(str::to_string),
-                class: class.map(str::to_string),
+                id: id,
+                class: class,
+                attributes,
                 specified_values: Default::default(),
                 important_styles: Default::default(),
                 transform: Default::default(),
@@ -719,8 +723,12 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn =
-    fn(element_name: &QualName, id: Option<&str>, class: Option<&str>) -> Element;
+type ElementCreateFn = fn(
+    element_name: &QualName,
+    attributes: Attributes,
+    id: Option<String>,
+    class: Option<String>,
+) -> Element;
 
 #[derive(Copy, Clone, PartialEq)]
 enum ElementCreateFlags {

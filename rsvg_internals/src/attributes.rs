@@ -20,6 +20,7 @@ pub type AttributeValue = DefaultAtom;
 /// See the [`new_from_xml2_attributes`] function for information.
 ///
 /// [`new_from_xml2_attributes`]: #method.new_from_xml2_attributes
+#[derive(Clone)]
 pub struct Attributes(Vec<(QualName, AttributeValue)>);
 
 /// Iterator from `Attributes.iter`.
