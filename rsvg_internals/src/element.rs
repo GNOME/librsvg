@@ -452,14 +452,14 @@ macro_rules! call_inner {
 }
 
 impl Element {
-    /// Takes an XML element name and a list of attribute/value pairs and creates an [`Element`].
+    /// Takes an XML element name and consumes a list of attribute/value pairs to create an [`Element`].
     ///
     /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
     /// element.
     ///
     /// [`Element`]: type.Element.html
     /// [`NonRendering`]: ../structure/struct.NonRendering.html
-    pub fn new(name: &QualName, attrs: &Attributes) -> Element {
+    pub fn new(name: &QualName, attrs: Attributes) -> Element {
         let mut id = None;
         let mut class = None;
 
@@ -499,7 +499,7 @@ impl Element {
 
         let mut element = create_fn(name, id, class);
 
-        if let Err(e) = element.set_attributes(attrs) {
+        if let Err(e) = element.set_attributes(&attrs) {
             element.set_error(e);
         }
 

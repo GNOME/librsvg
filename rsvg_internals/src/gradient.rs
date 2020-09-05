@@ -710,16 +710,18 @@ mod tests {
 
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
-            &attrs,
+            attrs,
         ));
 
         let unresolved = borrow_element_as!(node, LinearGradient).get_unresolved(&node);
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
+        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
+
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
-            &attrs,
+            attrs,
         ));
 
         let unresolved = borrow_element_as!(node, RadialGradient).get_unresolved(&node);

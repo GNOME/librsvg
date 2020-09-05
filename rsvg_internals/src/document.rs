@@ -395,7 +395,7 @@ impl DocumentBuilder {
     pub fn append_element(
         &mut self,
         name: &QualName,
-        attrs: &Attributes,
+        attrs: Attributes,
         parent: Option<Node>,
     ) -> Node {
         let node = Node::new(NodeData::new_element(name, attrs));

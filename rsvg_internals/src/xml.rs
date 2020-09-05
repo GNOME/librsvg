@@ -166,7 +166,7 @@ impl XmlState {
         }
     }
 
-    pub fn start_element(&self, name: QualName, attrs: &Attributes) -> Result<(), ()> {
+    pub fn start_element(&self, name: QualName, attrs: Attributes) -> Result<(), ()> {
         self.check_limits()?;
 
         let context = self.inner.borrow().context();
@@ -312,7 +312,7 @@ impl XmlState {
         }
     }
 
-    fn element_creation_start_element(&self, name: &QualName, attrs: &Attributes) -> Context {
+    fn element_creation_start_element(&self, name: &QualName, attrs: Attributes) -> Context {
         if name.expanded() == xinclude_name!("include") {
             self.xinclude_start_element(name, attrs)
         } else {
@@ -388,7 +388,7 @@ impl XmlState {
         Context::UnsupportedStyleChild
     }
 
-    fn xinclude_start_element(&self, _name: &QualName, attrs: &Attributes) -> Context {
+    fn xinclude_start_element(&self, _name: &QualName, attrs: Attributes) -> Context {
         let mut href = None;
         let mut parse = None;
         let mut encoding = None;
@@ -443,7 +443,7 @@ impl XmlState {
         &self,
         ctx: &XIncludeContext,
         name: &QualName,
-        attrs: &Attributes,
+        attrs: Attributes,
     ) -> Context {
         if ctx.need_fallback {
             if name.expanded() == xinclude_name!("include") {
