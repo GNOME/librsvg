@@ -4,6 +4,7 @@ use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use matches::matches;
 use once_cell::sync::Lazy;
+use std::cell::{Ref, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
@@ -99,7 +100,7 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
-    attributes: Attributes,
+    attributes: RefCell<Attributes>,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
     result: ElementResult,
@@ -111,12 +112,51 @@ pub struct ElementInner<T: SetAttributes + Draw> {
 }
 
 impl<T: SetAttributes + Draw> ElementInner<T> {
+    fn new(
+        element_name: QualName,
+        id: Option<String>,
+        class: Option<String>,
+        attributes: Attributes,
+        result: Result<(), ElementError>,
+        element_impl: T,
+    ) -> ElementInner<T> {
+        let mut e = Self {
+            element_name,
+            id,
+            class,
+            attributes: RefCell::new(attributes),
+            specified_values: Default::default(),
+            important_styles: Default::default(),
+            result,
+            transform: Default::default(),
+            values: Default::default(),
+            cond: true,
+            style_attr: String::new(),
+            element_impl,
+        };
+
+        e.save_style_attribute();
+
+        let mut set_attributes = || -> Result<(), ElementError> {
+            e.set_transform_attribute()?;
+            e.set_conditional_processing_attributes()?;
+            e.set_presentation_attributes()?;
+            Ok(())
+        };
+
+        if let Err(error) = set_attributes() {
+            e.set_error(error);
+        }
+
+        e
+    }
+
     fn element_name(&self) -> &QualName {
         &self.element_name
     }
 
-    fn get_attributes(&self) -> &Attributes {
-        &self.attributes
+    fn get_attributes(&self) -> Ref<Attributes> {
+        self.attributes.borrow()
     }
 
     fn get_id(&self) -> Option<&str> {
@@ -147,7 +187,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         self.transform
     }
 
-    fn save_style_attribute(&mut self, attrs: &Attributes) {
+    fn save_style_attribute(&mut self) {
+        let attrs = self.attributes.borrow();
+
         let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
@@ -157,61 +199,56 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         }
     }
 
-    fn set_transform_attribute(&mut self, attrs: &Attributes) -> Result<(), ElementError> {
-        let result = attrs
+    fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
+        let pair = self.attributes
+            .borrow()
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
             .map(|(attr, value)| {
-                Transform::parse_str(value).attribute(attr).map(|affine| {
-                    self.transform = affine;
-                })
+                (attr.clone(), value.to_string())
             });
-        if let Some(transform_result) = result {
-            return transform_result;
+
+        if let Some((attr, value)) = pair {
+            Transform::parse_str(&value).attribute(attr).map(|affine| {
+                self.transform = affine;
+            })?;
         }
 
         Ok(())
     }
 
-    fn set_conditional_processing_attributes(
-        &mut self,
-        attrs: &Attributes,
-    ) -> Result<(), ElementError> {
+    fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {
         let mut cond = self.cond;
 
-        for (attr, value) in attrs.iter() {
-            let mut parse = || -> Result<_, ValueErrorKind> {
-                match attr.expanded() {
-                    expanded_name!("", "requiredExtensions") if cond => {
-                        cond = RequiredExtensions::from_attribute(value)
-                            .map(|RequiredExtensions(res)| res)?;
-                    }
-
-                    expanded_name!("", "requiredFeatures") if cond => {
-                        cond = RequiredFeatures::from_attribute(value)
-                            .map(|RequiredFeatures(res)| res)?;
-                    }
-
-                    expanded_name!("", "systemLanguage") if cond => {
-                        cond = SystemLanguage::from_attribute(value, &LOCALE)
-                            .map(|SystemLanguage(res)| res)?;
-                    }
-
-                    _ => {}
+        for (attr, value) in self.attributes.borrow().iter() {
+            match attr.expanded() {
+                expanded_name!("", "requiredExtensions") if cond => {
+                    cond = RequiredExtensions::from_attribute(value)
+                        .map(|RequiredExtensions(res)| res).attribute(attr)?;
                 }
 
-                Ok(cond)
-            };
+                expanded_name!("", "requiredFeatures") if cond => {
+                    cond = RequiredFeatures::from_attribute(value)
+                        .map(|RequiredFeatures(res)| res).attribute(attr)?;
+                }
 
-            parse().map(|c| self.cond = c).attribute(attr)?;
+                expanded_name!("", "systemLanguage") if cond => {
+                    cond = SystemLanguage::from_attribute(value, &LOCALE)
+                        .map(|SystemLanguage(res)| res).attribute(attr)?;
+                }
+
+                _ => {}
+            }
         }
+
+        self.cond = cond;
 
         Ok(())
     }
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
-    fn set_presentation_attributes(&mut self, attrs: &Attributes) -> Result<(), ElementError> {
-        match self.specified_values.parse_presentation_attributes(attrs) {
+    fn set_presentation_attributes(&mut self) -> Result<(), ElementError> {
+        match self.specified_values.parse_presentation_attributes(&self.attributes.borrow()) {
             Ok(_) => Ok(()),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
@@ -263,17 +300,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     fn is_in_error(&self) -> bool {
         self.result.is_err()
-    }
-}
-
-impl<T: SetAttributes + Draw> SetAttributes for ElementInner<T> {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.save_style_attribute(attrs);
-
-        self.set_transform_attribute(attrs)
-            .and_then(|_| self.set_conditional_processing_attributes(attrs))
-            .and_then(|_| self.element_impl.set_attributes(attrs))
-            .and_then(|_| self.set_presentation_attributes(attrs))
     }
 }
 
@@ -502,22 +528,14 @@ impl Element {
 
         //    sizes::print_sizes();
 
-        let attrs_clone = attrs.clone();
-
-        let mut element = create_fn(name, attrs, id, class);
-
-        if let Err(e) = element.set_attributes(&attrs_clone) {
-            element.set_error(e);
-        }
-
-        element
+        create_fn(name, attrs, id, class)
     }
 
     pub fn element_name(&self) -> &QualName {
         call_inner!(self, element_name)
     }
 
-    pub fn get_attributes(&self) -> &Attributes {
+    pub fn get_attributes(&self) -> Ref<Attributes> {
         call_inner!(self, get_attributes)
     }
 
@@ -555,10 +573,6 @@ impl Element {
 
     pub fn set_style_attribute(&mut self) {
         call_inner!(self, set_style_attribute);
-    }
-
-    fn set_error(&mut self, error: ElementError) {
-        call_inner!(self, set_error, error);
     }
 
     pub fn is_in_error(&self) -> bool {
@@ -604,12 +618,6 @@ impl Element {
     }
 }
 
-impl SetAttributes for Element {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        call_inner!(self, set_attributes, attrs)
-    }
-}
-
 impl Draw for Element {
     fn draw(
         &self,
@@ -640,20 +648,20 @@ impl fmt::Display for Element {
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
         pub fn $name(element_name: &QualName, attributes: Attributes, id: Option<String>, class: Option<String>) -> Element {
-            Element::$element_type(Box::new(ElementInner {
-                element_name: element_name.clone(),
-                id: id,
-                class: class,
+            let mut element_impl = <$element_type>::default();
+
+            let result = element_impl.set_attributes(&attributes);
+
+            let element = Element::$element_type(Box::new(ElementInner::new(
+                element_name.clone(),
+                id,
+                class,
                 attributes,
-                specified_values: Default::default(),
-                important_styles: Default::default(),
-                transform: Default::default(),
-                result: Ok(()),
-                values: ComputedValues::default(),
-                cond: true,
-                style_attr: String::new(),
-                element_impl: <$element_type>::default(),
-            }))
+                result,
+                element_impl,
+            )));
+
+            element
         }
     };
 }
