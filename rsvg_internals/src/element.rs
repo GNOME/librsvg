@@ -4,7 +4,6 @@ use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use matches::matches;
 use once_cell::sync::Lazy;
-use std::cell::{Ref, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
@@ -100,7 +99,7 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
     id: Option<String>,    // id attribute from XML element
     class: Option<String>, // class attribute from XML element
-    attributes: RefCell<Attributes>,
+    attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
     result: ElementResult,
@@ -124,7 +123,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             element_name,
             id,
             class,
-            attributes: RefCell::new(attributes),
+            attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
             result,
@@ -155,8 +154,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         &self.element_name
     }
 
-    fn get_attributes(&self) -> Ref<Attributes> {
-        self.attributes.borrow()
+    fn get_attributes(&self) -> &Attributes {
+        &self.attributes
     }
 
     fn get_id(&self) -> Option<&str> {
@@ -190,7 +189,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     fn save_style_attribute(&mut self) {
         self.style_attr.push_str(
             self.attributes
-                .borrow()
                 .iter()
                 .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
                 .map(|(_, value)| value)
@@ -200,7 +198,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
         self.transform = self.attributes
-            .borrow()
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
             .map(|(attr, value)| {
@@ -214,7 +211,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {
         let mut cond = self.cond;
 
-        for (attr, value) in self.attributes.borrow().iter() {
+        for (attr, value) in self.attributes.iter() {
             match attr.expanded() {
                 expanded_name!("", "requiredExtensions") if cond => {
                     cond = RequiredExtensions::from_attribute(value)
@@ -242,7 +239,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
     fn set_presentation_attributes(&mut self) -> Result<(), ElementError> {
-        match self.specified_values.parse_presentation_attributes(&self.attributes.borrow()) {
+        match self.specified_values.parse_presentation_attributes(&self.attributes) {
             Ok(_) => Ok(()),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
@@ -529,7 +526,7 @@ impl Element {
         call_inner!(self, element_name)
     }
 
-    pub fn get_attributes(&self) -> Ref<Attributes> {
+    pub fn get_attributes(&self) -> &Attributes {
         call_inner!(self, get_attributes)
     }
 
