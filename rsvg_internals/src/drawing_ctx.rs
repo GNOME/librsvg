@@ -86,6 +86,47 @@ pub enum ClipMode {
     ClipToVbox,
 }
 
+/// Set path on the cairo context, or clear it.
+/// This helper object keeps track whether the path has been set already,
+/// so that it isn't recalculated every so often.
+struct PathHelper<'a> {
+    cr: &'a cairo::Context,
+    path: &'a Path,
+    is_square_linecap: bool,
+    has_path: Option<bool>,
+}
+
+impl<'a> PathHelper<'a> {
+    pub fn new(cr: &'a cairo::Context, path: &'a Path, values: &ComputedValues) -> Self {
+        PathHelper {
+            cr,
+            path,
+            is_square_linecap: values.stroke_line_cap() == StrokeLinecap::Square,
+            has_path: None,
+        }
+    }
+
+    pub fn set(&mut self) -> Result<(), cairo::Status> {
+        match self.has_path {
+            Some(false) | None => {
+                self.has_path = Some(true);
+                self.path.to_cairo(self.cr, self.is_square_linecap)
+            }
+            Some(true) => Ok(()),
+        }
+    }
+
+    pub fn unset(&mut self) {
+        match self.has_path {
+            Some(true) | None => {
+                self.has_path = Some(false);
+                self.cr.new_path();
+            }
+            Some(false) => {}
+        }
+    }
+}
+
 pub struct DrawingCtx {
     initial_transform: Transform,
 
@@ -1225,11 +1266,11 @@ impl DrawingCtx {
 
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let cr = dc.cr.clone();
-            let is_square_linecap = values.stroke_line_cap() == StrokeLinecap::Square;
+            let mut path_helper = PathHelper::new(&cr, path, values);
 
             if clipping {
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
-                path.to_cairo(&cr, is_square_linecap)?;
+                path_helper.set()?;
                 return Ok(dc.empty_bbox());
             }
 
@@ -1241,18 +1282,14 @@ impl DrawingCtx {
             cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
 
             let mut bounding_box: Option<BoundingBox> = None;
-            let mut has_path = false;
-            cr.new_path();
+            path_helper.unset();
 
             for &target in &values.paint_order().targets {
                 // fill and stroke operations will preserve the path.
                 // markers operation will clear the path.
                 match target {
                     PaintTarget::Fill | PaintTarget::Stroke => {
-                        if !has_path {
-                            path.to_cairo(&cr, is_square_linecap)?;
-                            has_path = true;
-                        }
+                        path_helper.set()?;
                         let bbox = bounding_box
                             .get_or_insert_with(|| compute_stroke_and_fill_box(&cr, &values));
 
@@ -1263,20 +1300,14 @@ impl DrawingCtx {
                         }
                     }
                     PaintTarget::Markers if markers == Markers::Yes => {
-                        if has_path {
-                            cr.new_path();
-                            has_path = false;
-                        }
+                        path_helper.unset();
                         marker::render_markers_for_path(path, dc, an, values, clipping)?;
                     }
                     _ => {}
                 }
             }
 
-            if has_path {
-                cr.new_path();
-            }
-
+            path_helper.unset();
             Ok(bounding_box.unwrap())
         })
     }
