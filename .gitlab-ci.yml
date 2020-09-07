@@ -39,9 +39,10 @@ stages:
     - rustc --version && cargo --version
     - mkdir -p _build
     - cd _build
-    - sudo ../autogen.sh --enable-gtk-doc --enable-vala
-    - sudo make
-    - sudo make check
+    - sudo=$(command -v sudo) || sudo=""
+    - $sudo ../autogen.sh --enable-gtk-doc --enable-vala
+    - $sudo make
+    - $sudo make check
 
   artifacts:
     when: 'always'
