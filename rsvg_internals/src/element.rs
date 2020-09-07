@@ -192,17 +192,16 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .iter()
                 .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
                 .map(|(_, value)| value)
-                .unwrap_or("")
+                .unwrap_or(""),
         );
     }
 
     fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
-        self.transform = self.attributes
+        self.transform = self
+            .attributes
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
-            .map(|(attr, value)| {
-                Transform::parse_str(value).attribute(attr)
-            })
+            .map(|(attr, value)| Transform::parse_str(value).attribute(attr))
             .unwrap_or_else(|| Ok(Transform::default()))?;
 
         Ok(())
@@ -215,17 +214,20 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             match attr.expanded() {
                 expanded_name!("", "requiredExtensions") if cond => {
                     cond = RequiredExtensions::from_attribute(value)
-                        .map(|RequiredExtensions(res)| res).attribute(attr)?;
+                        .map(|RequiredExtensions(res)| res)
+                        .attribute(attr)?;
                 }
 
                 expanded_name!("", "requiredFeatures") if cond => {
                     cond = RequiredFeatures::from_attribute(value)
-                        .map(|RequiredFeatures(res)| res).attribute(attr)?;
+                        .map(|RequiredFeatures(res)| res)
+                        .attribute(attr)?;
                 }
 
                 expanded_name!("", "systemLanguage") if cond => {
                     cond = SystemLanguage::from_attribute(value, &LOCALE)
-                        .map(|SystemLanguage(res)| res).attribute(attr)?;
+                        .map(|SystemLanguage(res)| res)
+                        .attribute(attr)?;
                 }
 
                 _ => {}
@@ -239,7 +241,10 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
     fn set_presentation_attributes(&mut self) -> Result<(), ElementError> {
-        match self.specified_values.parse_presentation_attributes(&self.attributes) {
+        match self
+            .specified_values
+            .parse_presentation_attributes(&self.attributes)
+        {
             Ok(_) => Ok(()),
             Err(e) => {
                 // FIXME: we'll ignore errors here for now.
@@ -638,7 +643,12 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(element_name: &QualName, attributes: Attributes, id: Option<String>, class: Option<String>) -> Element {
+        pub fn $name(
+            element_name: &QualName,
+            attributes: Attributes,
+            id: Option<String>,
+            class: Option<String>,
+        ) -> Element {
             let mut element_impl = <$element_type>::default();
 
             let result = element_impl.set_attributes(&attributes);
