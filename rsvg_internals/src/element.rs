@@ -188,31 +188,25 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn save_style_attribute(&mut self) {
-        let attrs = self.attributes.borrow();
-
-        let result = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
-            .map(|(_, value)| value);
-        if let Some(value) = result {
-            self.style_attr.push_str(value);
-        }
+        self.style_attr.push_str(
+            self.attributes
+                .borrow()
+                .iter()
+                .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
+                .map(|(_, value)| value)
+                .unwrap_or("")
+        );
     }
 
     fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
-        let pair = self.attributes
+        self.transform = self.attributes
             .borrow()
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
             .map(|(attr, value)| {
-                (attr.clone(), value.to_string())
-            });
-
-        if let Some((attr, value)) = pair {
-            Transform::parse_str(&value).attribute(attr).map(|affine| {
-                self.transform = affine;
-            })?;
-        }
+                Transform::parse_str(value).attribute(attr)
+            })
+            .unwrap_or_else(|| Ok(Transform::default()))?;
 
         Ok(())
     }
