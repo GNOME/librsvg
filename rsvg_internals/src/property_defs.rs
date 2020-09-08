@@ -47,6 +47,7 @@ use cssparser::{Parser, Token};
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
+use crate::filter::FilterValueList;
 use crate::font_props::{Font, FontFamily, FontSize, FontWeight, LetterSpacing, LineHeight};
 use crate::iri::IRI;
 use crate::length::*;
@@ -250,9 +251,9 @@ make_property!(
 make_property!(
     ComputedValues,
     Filter,
-    default: IRI::None,
+    default: FilterValueList::default(),
     inherits_automatically: false,
-    newtype_parse: IRI,
+    newtype_parse: FilterValueList,
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty

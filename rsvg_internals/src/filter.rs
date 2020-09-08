@@ -1,13 +1,17 @@
 //! The `filter` element.
 
+use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, ElementResult, SetAttributes};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
+use crate::iri::IRI;
 use crate::length::*;
+use crate::node::{Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_bag::PropertyBag;
@@ -185,3 +189,114 @@ impl SetAttributes for Filter {
 }
 
 impl Draw for Filter {}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum FilterValue {
+    URL(IRI),
+}
+#[derive(Debug, Clone, PartialEq)]
+pub struct FilterValueList(pub Vec<FilterValue>);
+
+impl Default for FilterValueList {
+    fn default() -> FilterValueList {
+        FilterValueList(vec![])
+    }
+}
+
+impl FilterValueList {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Check that at least one filter URI exists and that all contained
+    /// URIs reference existing <filter> elements.
+    pub fn is_applicable(&self, node: &Node, acquired_nodes: &mut AcquiredNodes) -> bool {
+        if self.is_empty() {
+            return false;
+        }
+
+        self.0.iter().all(|filter| match filter {
+            FilterValue::URL(IRI::Resource(filter_uri)) => {
+                match acquired_nodes.acquire(filter_uri) {
+                    Ok(acquired) => {
+                        let filter_node = acquired.get();
+
+                        match *filter_node.borrow_element() {
+                            Element::Filter(_) => true,
+                            _ => {
+                                rsvg_log!(
+                                    "element {} will not be filtered since \"{}\" is not a filter",
+                                    node,
+                                    filter_uri,
+                                );
+                                false
+                            }
+                        }
+                    }
+                    _ => {
+                        rsvg_log!(
+                            "element {} will not be filtered since its filter \"{}\" was not found",
+                            node,
+                            filter_uri,
+                        );
+                        false
+                    }
+                }
+            }
+            FilterValue::URL(IRI::None) => {
+                unreachable!("Unexpected IRI::None in FilterValueList");
+            }
+        })
+    }
+}
+
+impl Parse for FilterValueList {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
+        let mut result = FilterValueList::default();
+
+        if parser
+            .try_parse(|p| p.expect_ident_matching("none"))
+            .is_ok()
+        {
+            return Ok(result);
+        }
+
+        while !parser.is_exhausted() {
+            let loc = parser.current_source_location();
+
+            if let Ok(iri) = IRI::parse(parser) {
+                result.0.push(FilterValue::URL(iri));
+            } else {
+                let token = parser.next()?;
+                return Err(loc.new_basic_unexpected_token_error(token.clone()).into());
+            }
+        }
+
+        Ok(result)
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn parses_filter_value_list() {
+    use crate::allowed_url::Fragment;
+    use crate::filter::FilterValue;
+    use crate::iri::IRI;
+
+    assert_eq!(
+        FilterValueList::parse_str("none"),
+        Ok(FilterValueList::default())
+    );
+
+    let f1 = Fragment::new(Some("foo.svg".to_string()), "bar".to_string());
+    let f2 = Fragment::new(Some("test.svg".to_string()), "baz".to_string());
+    assert_eq!(
+        FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)"),
+        Ok(FilterValueList(vec![
+            FilterValue::URL(IRI::Resource(f1)),
+            FilterValue::URL(IRI::Resource(f2))
+        ]))
+    );
+
+    assert!(FilterValueList::parse_str("fail").is_err());
+}
