@@ -3,6 +3,7 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
@@ -192,7 +193,7 @@ impl Draw for Filter {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterValue {
-    URL(IRI),
+    URL(Fragment),
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct FilterValueList(pub Vec<FilterValue>);
@@ -216,36 +217,31 @@ impl FilterValueList {
         }
 
         self.0.iter().all(|filter| match filter {
-            FilterValue::URL(IRI::Resource(filter_uri)) => {
-                match acquired_nodes.acquire(filter_uri) {
-                    Ok(acquired) => {
-                        let filter_node = acquired.get();
+            FilterValue::URL(filter_uri) => match acquired_nodes.acquire(filter_uri) {
+                Ok(acquired) => {
+                    let filter_node = acquired.get();
 
-                        match *filter_node.borrow_element() {
-                            Element::Filter(_) => true,
-                            _ => {
-                                rsvg_log!(
-                                    "element {} will not be filtered since \"{}\" is not a filter",
-                                    node,
-                                    filter_uri,
-                                );
-                                false
-                            }
+                    match *filter_node.borrow_element() {
+                        Element::Filter(_) => true,
+                        _ => {
+                            rsvg_log!(
+                                "element {} will not be filtered since \"{}\" is not a filter",
+                                node,
+                                filter_uri,
+                            );
+                            false
                         }
                     }
-                    _ => {
-                        rsvg_log!(
-                            "element {} will not be filtered since its filter \"{}\" was not found",
-                            node,
-                            filter_uri,
-                        );
-                        false
-                    }
                 }
-            }
-            FilterValue::URL(IRI::None) => {
-                unreachable!("Unexpected IRI::None in FilterValueList");
-            }
+                _ => {
+                    rsvg_log!(
+                        "element {} will not be filtered since its filter \"{}\" was not found",
+                        node,
+                        filter_uri,
+                    );
+                    false
+                }
+            },
         })
     }
 }
@@ -264,8 +260,8 @@ impl Parse for FilterValueList {
         while !parser.is_exhausted() {
             let loc = parser.current_source_location();
 
-            if let Ok(iri) = IRI::parse(parser) {
-                result.0.push(FilterValue::URL(iri));
+            if let Ok(IRI::Resource(uri)) = IRI::parse(parser) {
+                result.0.push(FilterValue::URL(uri));
             } else {
                 let token = parser.next()?;
                 return Err(loc.new_basic_unexpected_token_error(token.clone()).into());
@@ -281,7 +277,6 @@ impl Parse for FilterValueList {
 fn parses_filter_value_list() {
     use crate::allowed_url::Fragment;
     use crate::filter::FilterValue;
-    use crate::iri::IRI;
 
     assert_eq!(
         FilterValueList::parse_str("none"),
@@ -293,10 +288,11 @@ fn parses_filter_value_list() {
     assert_eq!(
         FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)"),
         Ok(FilterValueList(vec![
-            FilterValue::URL(IRI::Resource(f1)),
-            FilterValue::URL(IRI::Resource(f2))
+            FilterValue::URL(f1),
+            FilterValue::URL(f2)
         ]))
     );
 
     assert!(FilterValueList::parse_str("fail").is_err());
+    assert!(FilterValueList::parse_str("url(#test) none").is_err());
 }
