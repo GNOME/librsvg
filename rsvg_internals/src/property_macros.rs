@@ -167,6 +167,18 @@ macro_rules! make_property {
         impl_property!($computed_values_type, $name, $inherits_automatically);
     };
 
+    ($computed_values_type: ty,
+     $name: ident,
+     default: $default: expr,
+     inherits_automatically: $inherits_automatically: expr,
+     parse_impl: { $parse: item }
+    ) => {
+        impl_default!($name, $default);
+        impl_property!($computed_values_type, $name, $inherits_automatically);
+
+        $parse
+    };
+
     // pending - only BaselineShift
     ($computed_values_type: ty,
      $name: ident,
