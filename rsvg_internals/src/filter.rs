@@ -273,26 +273,30 @@ impl Parse for FilterValueList {
 }
 
 #[cfg(test)]
-#[test]
-fn parses_filter_value_list() {
-    use crate::allowed_url::Fragment;
-    use crate::filter::FilterValue;
+mod tests {
+    use super::*;
 
-    assert_eq!(
-        FilterValueList::parse_str("none"),
-        Ok(FilterValueList::default())
-    );
+    #[test]
+    fn parses_filter_value_list() {
+        assert_eq!(
+            FilterValueList::parse_str("none"),
+            Ok(FilterValueList::default())
+        );
 
-    let f1 = Fragment::new(Some("foo.svg".to_string()), "bar".to_string());
-    let f2 = Fragment::new(Some("test.svg".to_string()), "baz".to_string());
-    assert_eq!(
-        FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)"),
-        Ok(FilterValueList(vec![
-            FilterValue::URL(f1),
-            FilterValue::URL(f2)
-        ]))
-    );
+        let f1 = Fragment::new(Some("foo.svg".to_string()), "bar".to_string());
+        let f2 = Fragment::new(Some("test.svg".to_string()), "baz".to_string());
+        assert_eq!(
+            FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)"),
+            Ok(FilterValueList(vec![
+                FilterValue::URL(f1),
+                FilterValue::URL(f2)
+            ]))
+        );
+    }
 
-    assert!(FilterValueList::parse_str("fail").is_err());
-    assert!(FilterValueList::parse_str("url(#test) none").is_err());
+    #[test]
+    fn detects_invalid_filter_value_list() {
+        assert!(FilterValueList::parse_str("fail").is_err());
+        assert!(FilterValueList::parse_str("url(#test) none").is_err());
+    }
 }
