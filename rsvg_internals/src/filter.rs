@@ -2,6 +2,7 @@
 
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use std::slice::Iter;
 
 use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
@@ -196,7 +197,7 @@ pub enum FilterValue {
     URL(Fragment),
 }
 #[derive(Debug, Clone, PartialEq)]
-pub struct FilterValueList(pub Vec<FilterValue>);
+pub struct FilterValueList(Vec<FilterValue>);
 
 impl Default for FilterValueList {
     fn default() -> FilterValueList {
@@ -207,6 +208,10 @@ impl Default for FilterValueList {
 impl FilterValueList {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    pub fn iter(&self) -> Iter<FilterValue> {
+        self.0.iter()
     }
 
     /// Check that at least one filter URI exists and that all contained
