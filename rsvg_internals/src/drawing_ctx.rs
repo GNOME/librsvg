@@ -22,7 +22,6 @@ use crate::filter::{FilterValue, FilterValueList};
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{Gradient, GradientUnits, GradientVariant, SpreadMethod};
-use crate::iri::IRI;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -605,18 +604,15 @@ impl DrawingCtx {
                             .try_fold(
                                 child_surface,
                                 |surface, filter| -> Result<_, RenderingError> {
-                                    if let FilterValue::URL(IRI::Resource(filter_uri)) = filter {
-                                        dc.run_filter(
-                                            acquired_nodes,
-                                            &filter_uri,
-                                            node,
-                                            values,
-                                            surface,
-                                            bbox,
-                                        )
-                                    } else {
-                                        Ok(surface)
-                                    }
+                                    let FilterValue::URL(filter_uri) = filter;
+                                    dc.run_filter(
+                                        acquired_nodes,
+                                        &filter_uri,
+                                        node,
+                                        values,
+                                        surface,
+                                        bbox,
+                                    )
                                 },
                             )?
                             .into_image_surface()?;
