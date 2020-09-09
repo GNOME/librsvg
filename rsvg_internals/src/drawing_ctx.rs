@@ -599,7 +599,6 @@ impl DrawingCtx {
                         )?;
 
                         let img_surface = filters
-                            .0
                             .iter()
                             .try_fold(
                                 child_surface,

@@ -2,6 +2,7 @@
 
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use std::slice::Iter;
 
 use crate::allowed_url::Fragment;
 use crate::bbox::BoundingBox;
@@ -196,7 +197,7 @@ pub enum FilterValue {
     URL(Fragment),
 }
 #[derive(Debug, Clone, PartialEq)]
-pub struct FilterValueList(pub Vec<FilterValue>);
+pub struct FilterValueList(Vec<FilterValue>);
 
 impl Default for FilterValueList {
     fn default() -> FilterValueList {
@@ -209,6 +210,10 @@ impl FilterValueList {
         self.0.is_empty()
     }
 
+    pub fn iter(&self) -> Iter<FilterValue> {
+        self.0.iter()
+    }
+
     /// Check that at least one filter URI exists and that all contained
     /// URIs reference existing <filter> elements.
     pub fn is_applicable(&self, node: &Node, acquired_nodes: &mut AcquiredNodes) -> bool {
@@ -216,7 +221,7 @@ impl FilterValueList {
             return false;
         }
 
-        self.0.iter().all(|filter| match filter {
+        self.iter().all(|filter| match filter {
             FilterValue::URL(filter_uri) => match acquired_nodes.acquire(filter_uri) {
                 Ok(acquired) => {
                     let filter_node = acquired.get();
