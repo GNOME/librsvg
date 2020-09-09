@@ -257,14 +257,19 @@ impl Parse for FilterValueList {
             return Ok(result);
         }
 
-        while !parser.is_exhausted() {
-            let loc = parser.current_source_location();
+        loop {
+            let state = parser.state();
 
-            if let Ok(IRI::Resource(uri)) = IRI::parse(parser) {
+            if let Ok(IRI::Resource(uri)) = parser.try_parse(|p| IRI::parse(p)) {
                 result.0.push(FilterValue::URL(uri));
             } else {
-                let token = parser.next()?;
-                return Err(loc.new_basic_unexpected_token_error(token.clone()).into());
+                parser.reset(&state);
+                let token = parser.next()?.clone();
+                return Err(parser.new_basic_unexpected_token_error(token).into());
+            }
+
+            if parser.is_exhausted() {
+                break;
             }
         }
 
@@ -296,6 +301,7 @@ mod tests {
 
     #[test]
     fn detects_invalid_filter_value_list() {
+        assert!(FilterValueList::parse_str("").is_err());
         assert!(FilterValueList::parse_str("fail").is_err());
         assert!(FilterValueList::parse_str("url(#test) none").is_err());
     }
