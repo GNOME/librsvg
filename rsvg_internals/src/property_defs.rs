@@ -247,13 +247,32 @@ make_property!(
     "evenodd" => EvenOdd,
 );
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Filter {
+    None,
+    List(FilterValueList),
+}
 // https://www.w3.org/TR/SVG/filters.html#FilterProperty
 make_property!(
     ComputedValues,
     Filter,
-    default: FilterValueList::default(),
+    default: Filter::None,
     inherits_automatically: false,
-    newtype_parse: FilterValueList,
+    parse_impl: {
+        impl Parse for Filter {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
+
+                if parser
+                    .try_parse(|p| p.expect_ident_matching("none"))
+                    .is_ok()
+                {
+                    return Ok(Filter::None);
+                }
+
+                Ok(Filter::List(FilterValueList::parse(parser)?))
+            }
+        }
+    }
 );
 
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
