@@ -1,3 +1,46 @@
+Version 2.50.0
+
+- The following is a summary of changes between 2.48.x and 2.50.0.  For
+  full details, please see the 2.49.x release notes below.
+
+- This release requires at least Rust 1.40.
+
+- Windows builds now support ARM64, thanks to Chun-wei Fan.
+
+- Librsvg now consumes much less memory for large SVG files.  The limit for
+  the maximum number of elements in an SVG is bigger now at 1 million
+  elements (this limit exists to avoid unbounded memory consumption by
+  maliciously large files, and is plenty to render even very detailed
+  maps).  Thanks to Sergey "Shnatsel" Davidoff and Adam Reichold for making
+  this possible.
+
+- #34 - The 'font' shorthand in is now supported in CSS.  Librsvg
+  ignores the 'line-height' sub-property because it cannot be done
+  easily with Pango, but everything else in 'font' should work now.
+
+- Many new features from SVG2:
+
+- #508 - radialGradient now supports the "fr" property from SVG2
+  (Dunja Lalic, Corentin Rossignon).
+
+- #568 - Support href attribute in addition to xlink:href per SVG2.
+
+- #560 - Ignore missing filter references per SVG2.
+
+- #607 - Support the mix-blend-mode property from SVG2 and the
+  Compositing and Blending Level 1 specification, so layers can be
+  composited with operators like multiply/screen/color-burn, etc.
+  https://www.w3.org/TR/compositing-1/ (John Ledbetter).
+
+- #473 - Support the paint-order property from SVG2, so one can pick
+  the order in which a path's fill/stroke/markers are drawn (John Ledbetter).
+
+- Many bug fixes and little optimizations; see the 2.49.x release notes for
+  details.  Thanks to Paolo Borelli, Daniel Kolesa, Ernestas Kulik.
+  Sven Neumann, Bastien Orivel, Jordan Petridis, Emile Snyder.
+
+- Special thanks to Sven Neumann for fixing all the cargo-clippy lints.
+
 Version 2.49.5
 
 - #607 - Support the mix-blend-mode property from SVG2 and the
