@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="100">
+  <style type="text/css">
+    rect[id] { fill: blue; }
+
+    rect[id="rojo"] { fill: red; }
+    rect[id|="rojo"] { fill: red; }
+
+    rect[id^="verde"] { fill: lime; }
+    rect[id$="verde"] { fill: lime; }
+
+    rect[id*="azul"] { fill: blue; }
+  </style>
+
+  <rect x="0" y="0" width="50" height="50" id="rojo"/>
+  <rect x="0" y="50" width="50" height="50" id="rojo-jojojo"/>
+
+  <rect x="50" y="0" width="50" height="50" id="verdecito"/>
+  <rect x="50" y="50" width="50" height="50" id="superverde"/>
+
+  <rect x="100" y="0" width="50" height="50" id="cualquier_cosa"/>
+  <rect x="100" y="50" width="50" height="50" id="superazulito"/>
+</svg>

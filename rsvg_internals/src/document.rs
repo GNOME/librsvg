@@ -10,13 +10,13 @@ use std::include_str;
 use std::rc::Rc;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
+use crate::attributes::Attributes;
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
-use crate::property_bag::PropertyBag;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
@@ -395,10 +395,10 @@ impl DocumentBuilder {
     pub fn append_element(
         &mut self,
         name: &QualName,
-        pbag: &PropertyBag,
+        attrs: Attributes,
         parent: Option<Node>,
     ) -> Node {
-        let node = Node::new(NodeData::new_element(name, pbag));
+        let node = Node::new(NodeData::new_element(name, attrs));
 
         if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id

@@ -3,6 +3,7 @@ use std::cmp::min;
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
@@ -10,7 +11,6 @@ use crate::error::*;
 use crate::node::{Node, NodeBorrow};
 use crate::number_list::{NumberList, NumberListLength};
 use crate::parsers::{Parse, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
@@ -35,8 +35,8 @@ impl Default for FeComponentTransfer {
 }
 
 impl SetAttributes for FeComponentTransfer {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)
     }
 }
 
@@ -198,8 +198,8 @@ macro_rules! func_x {
 
         impl SetAttributes for $func_name {
             #[inline]
-            fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-                for (attr, value) in pbag.iter() {
+            fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+                for (attr, value) in attrs.iter() {
                     match attr.expanded() {
                         expanded_name!("", "type") => self.function_type = attr.parse(value)?,
                         expanded_name!("", "tableValues") => {

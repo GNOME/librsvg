@@ -1,25 +1,33 @@
-//! Iterate among libxml2's arrays of XML attribute/value.
+//! Store XML element attributes and their values.
 
 use std::mem;
 use std::slice;
 use std::str;
 
 use markup5ever::{namespace_url, LocalName, Namespace, Prefix, QualName};
+use string_cache::DefaultAtom;
 
 use crate::util::{opt_utf8_cstr, utf8_cstr};
+
+/// Type used to store attribute values.
+///
+/// Attribute values are often repeated in an SVG file, so we intern them using the
+/// string_cache crate.
+pub type AttributeValue = DefaultAtom;
 
 /// Iterable wrapper for libxml2's representation of attribute/value.
 ///
 /// See the [`new_from_xml2_attributes`] function for information.
 ///
 /// [`new_from_xml2_attributes`]: #method.new_from_xml2_attributes
-pub struct PropertyBag<'a>(Vec<(QualName, &'a str)>);
+#[derive(Clone)]
+pub struct Attributes(Vec<(QualName, AttributeValue)>);
 
-/// Iterator from `PropertyBag.iter`.
-pub struct PropertyBagIter<'a>(slice::Iter<'a, (QualName, &'a str)>);
+/// Iterator from `Attributes.iter`.
+pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 
-impl<'a> PropertyBag<'a> {
-    /// Creates an iterable `PropertyBag` from the C array of borrowed C strings.
+impl Attributes {
+    /// Creates an iterable `Attributes` from the C array of borrowed C strings.
     ///
     /// With libxml2's SAX parser, the caller's startElementNsSAX2Func
     /// callback gets passed a `xmlChar **` for attributes, which
@@ -34,13 +42,13 @@ impl<'a> PropertyBag<'a> {
     ///
     /// * All strings are valid UTF-8.
     ///
-    /// The lifetime of the `PropertyBag` should be considered the same as the lifetime of the
-    /// `attrs` array, as the property bag does not copy the strings - it directly stores pointers
+    /// The lifetime of the `Attributes` should be considered the same as the lifetime of the
+    /// `attrs` array, as the `Attributes` does not copy the strings - it directly stores pointers
     /// into that array's strings.
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
-    ) -> PropertyBag<'a> {
+    ) -> Attributes {
         let mut array = Vec::new();
 
         if n_attributes > 0 && !attrs.is_null() {
@@ -75,31 +83,32 @@ impl<'a> PropertyBag<'a> {
 
                     let value_slice = slice::from_raw_parts(value_start as *const u8, len);
                     let value_str = str::from_utf8_unchecked(value_slice);
+                    let value_atom = DefaultAtom::from(value_str);
 
-                    array.push((qual_name, value_str));
+                    array.push((qual_name, value_atom));
                 }
             }
         }
 
-        PropertyBag(array)
+        Attributes(array)
     }
 
-    /// Returns the number of attributes in the property bag.
+    /// Returns the number of attributes.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
     /// Creates an iterator that yields `(QualName, &'a str)` tuples.
-    pub fn iter(&self) -> PropertyBagIter<'_> {
-        PropertyBagIter(self.0.iter())
+    pub fn iter(&self) -> AttributesIter<'_> {
+        AttributesIter(self.0.iter())
     }
 }
 
-impl<'a> Iterator for PropertyBagIter<'a> {
+impl<'a> Iterator for AttributesIter<'a> {
     type Item = (QualName, &'a str);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(a, v)| (a.clone(), <&str>::clone(v)))
+        self.0.next().map(|(a, v)| (a.clone(), v.as_ref()))
     }
 }
 
@@ -111,13 +120,13 @@ mod tests {
     use std::ptr;
 
     #[test]
-    fn empty_property_bag() {
-        let map = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
+    fn empty_attributes() {
+        let map = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
         assert_eq!(map.len(), 0);
     }
 
     #[test]
-    fn property_bag_with_namespaces() {
+    fn attributes_with_namespaces() {
         let attrs = [
             (
                 CString::new("href").unwrap(),
@@ -161,13 +170,13 @@ mod tests {
             v.push(val_end); // value_end
         }
 
-        let pbag = unsafe { PropertyBag::new_from_xml2_attributes(3, v.as_ptr()) };
+        let attrs = unsafe { Attributes::new_from_xml2_attributes(3, v.as_ptr()) };
 
         let mut had_href: bool = false;
         let mut had_ry: bool = false;
         let mut had_d: bool = false;
 
-        for (a, v) in pbag.iter() {
+        for (a, v) in attrs.iter() {
             match a.expanded() {
                 expanded_name!(xlink "href") => {
                     assert!(v == "1");

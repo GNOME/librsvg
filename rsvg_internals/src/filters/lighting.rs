@@ -8,6 +8,7 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 use std::cmp::max;
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
@@ -18,7 +19,6 @@ use crate::filters::{
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
@@ -121,8 +121,8 @@ impl FeDistantLight {
 }
 
 impl SetAttributes for FeDistantLight {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
                 expanded_name!("", "elevation") => self.elevation = attr.parse(value)?,
@@ -155,8 +155,8 @@ impl FePointLight {
 }
 
 impl SetAttributes for FePointLight {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
@@ -206,8 +206,8 @@ impl FeSpotLight {
 }
 
 impl SetAttributes for FeSpotLight {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
@@ -257,10 +257,10 @@ impl Common {
 }
 
 impl SetAttributes for Common {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "surfaceScale") => self.surface_scale = attr.parse(value)?,
 
@@ -302,9 +302,9 @@ impl Default for FeDiffuseLighting {
 }
 
 impl SetAttributes for FeDiffuseLighting {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_attributes(pbag)?;
-        let result = pbag
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.common.set_attributes(attrs)?;
+        let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "diffuseConstant"))
             .and_then(|(attr, value)| {
@@ -370,10 +370,10 @@ impl Default for FeSpecularLighting {
 }
 
 impl SetAttributes for FeSpecularLighting {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.common.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "specularConstant") => {
                     self.specular_constant = attr.parse_and_validate(value, |x| {

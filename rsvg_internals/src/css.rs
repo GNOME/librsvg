@@ -464,12 +464,28 @@ impl selectors::Element for RsvgElement {
 
     fn attr_matches(
         &self,
-        _ns: &NamespaceConstraint<&Namespace>,
-        _local_name: &LocalName,
-        _operation: &AttrSelectorOperation<&String>,
+        ns: &NamespaceConstraint<&Namespace>,
+        local_name: &LocalName,
+        operation: &AttrSelectorOperation<&String>,
     ) -> bool {
-        // unsupported
-        false
+        self.0
+            .borrow_element()
+            .get_attributes()
+            .iter()
+            .find(|(attr, _)| {
+                // do we have an attribute that matches the namespace and local_name?
+                match *ns {
+                    NamespaceConstraint::Any => *local_name == attr.local,
+                    NamespaceConstraint::Specific(ns) => {
+                        QualName::new(None, ns.clone(), local_name.clone()) == *attr
+                    }
+                }
+            })
+            .map(|(_, value)| {
+                // we have one; does the attribute's value match the expected operation?
+                operation.eval_str(value)
+            })
+            .unwrap_or(false)
     }
 
     fn match_non_ts_pseudo_class<F>(

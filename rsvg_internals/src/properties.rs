@@ -26,11 +26,11 @@ use markup5ever::{
 };
 use std::collections::HashSet;
 
+use crate::attributes::Attributes;
 use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::font_props::*;
 use crate::parsers::{Parse, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::property_defs::*;
 use crate::property_macros::Property;
 
@@ -721,9 +721,9 @@ impl SpecifiedValues {
 
     pub fn parse_presentation_attributes(
         &mut self,
-        pbag: &PropertyBag<'_>,
+        attrs: &Attributes,
     ) -> Result<(), ElementError> {
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!(xml "lang") => {
                     // xml:lang is a non-presentation attribute and as such cannot have the

@@ -33,6 +33,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/allowed_url.rs			\
 	rsvg_internals/src/angle.rs				\
 	rsvg_internals/src/aspect_ratio.rs			\
+	rsvg_internals/src/attributes.rs			\
 	rsvg_internals/src/bbox.rs				\
 	rsvg_internals/src/color.rs				\
 	rsvg_internals/src/cond.rs				\
@@ -85,7 +86,6 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/path_parser.rs			\
 	rsvg_internals/src/pattern.rs				\
 	rsvg_internals/src/properties.rs			\
-	rsvg_internals/src/property_bag.rs			\
 	rsvg_internals/src/property_defs.rs			\
 	rsvg_internals/src/property_macros.rs			\
 	rsvg_internals/src/rect.rs				\

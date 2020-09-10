@@ -15,13 +15,13 @@ use markup5ever::QualName;
 use std::cell::{Ref, RefMut};
 use std::fmt;
 
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::*;
 use crate::error::*;
 use crate::properties::ComputedValues;
-use crate::property_bag::PropertyBag;
 use crate::text::Chars;
 
 /// Strong reference to an element in the SVG tree.
@@ -68,8 +68,8 @@ pub enum NodeData {
 }
 
 impl NodeData {
-    pub fn new_element(name: &QualName, pbag: &PropertyBag) -> NodeData {
-        NodeData::Element(Element::new(name, pbag))
+    pub fn new_element(name: &QualName, attrs: Attributes) -> NodeData {
+        NodeData::Element(Element::new(name, attrs))
     }
 
     pub fn new_chars(initial_text: &str) -> NodeData {

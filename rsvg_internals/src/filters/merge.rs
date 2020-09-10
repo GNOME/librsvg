@@ -1,11 +1,11 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::node::{Node, NodeBorrow};
 use crate::parsers::ParseValue;
-use crate::property_bag::PropertyBag;
 use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
@@ -34,15 +34,15 @@ impl Default for FeMerge {
 }
 
 impl SetAttributes for FeMerge {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)
     }
 }
 
 impl SetAttributes for FeMergeNode {
     #[inline]
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.in_ = pbag
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.in_ = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
             .and_then(|(attr, value)| attr.parse(value).ok());

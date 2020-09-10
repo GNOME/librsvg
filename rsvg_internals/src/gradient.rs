@@ -8,6 +8,7 @@ use matches::matches;
 use std::cell::RefCell;
 
 use crate::allowed_url::Fragment;
+use crate::attributes::Attributes;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
@@ -16,7 +17,6 @@ use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
-use crate::property_bag::PropertyBag;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
@@ -81,8 +81,8 @@ fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind>
 }
 
 impl SetAttributes for Stop {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        let result = pbag
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "offset"))
             .and_then(|(attr, value)| attr.parse_and_validate(value, validate_offset).ok())
@@ -512,8 +512,8 @@ impl RadialGradient {
 }
 
 impl SetAttributes for Common {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => self.units = Some(attr.parse(value)?),
                 expanded_name!("", "gradientTransform") => {
@@ -536,10 +536,10 @@ impl SetAttributes for Common {
 }
 
 impl SetAttributes for LinearGradient {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.common.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x1") => self.x1 = Some(attr.parse(value)?),
                 expanded_name!("", "y1") => self.y1 = Some(attr.parse(value)?),
@@ -632,15 +632,15 @@ impl_gradient!(LinearGradient, RadialGradient);
 impl_gradient!(RadialGradient, LinearGradient);
 
 impl SetAttributes for RadialGradient {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.common.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.common.set_attributes(attrs)?;
         // Create a local expanded name for "fr" because markup5ever doesn't have built-in
         let expanded_name_fr = ExpandedName {
             ns: &Namespace::from(""),
             local: &LocalName::from("fr"),
         };
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             let attr_expanded = attr.expanded();
 
             if attr_expanded == expanded_name_fr {
@@ -706,20 +706,22 @@ mod tests {
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
-        let bag = unsafe { PropertyBag::new_from_xml2_attributes(0, ptr::null()) };
+        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
 
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
-            &bag,
+            attrs,
         ));
 
         let unresolved = borrow_element_as!(node, LinearGradient).get_unresolved(&node);
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
+        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
+
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
-            &bag,
+            attrs,
         ));
 
         let unresolved = borrow_element_as!(node, RadialGradient).get_unresolved(&node);

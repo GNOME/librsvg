@@ -9,6 +9,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::allowed_url::Fragment;
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
+use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -21,7 +22,6 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
 use crate::properties::ComputedValues;
-use crate::property_bag::PropertyBag;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::*;
@@ -176,8 +176,8 @@ impl Marker {
 }
 
 impl SetAttributes for Marker {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        for (attr, value) in pbag.iter() {
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,
                 expanded_name!("", "refX") => self.ref_x = attr.parse(value)?,

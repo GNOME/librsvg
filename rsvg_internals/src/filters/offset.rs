@@ -1,11 +1,11 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::parsers::ParseValue;
-use crate::property_bag::PropertyBag;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
@@ -30,10 +30,10 @@ impl Default for FeOffset {
 }
 
 impl SetAttributes for FeOffset {
-    fn set_attributes(&mut self, pbag: &PropertyBag<'_>) -> ElementResult {
-        self.base.set_attributes(pbag)?;
+    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+        self.base.set_attributes(attrs)?;
 
-        for (attr, value) in pbag.iter() {
+        for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "dx") => self.dx = attr.parse(value)?,
                 expanded_name!("", "dy") => self.dy = attr.parse(value)?,
