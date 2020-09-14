@@ -255,13 +255,6 @@ impl Parse for FilterValueList {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
         let mut result = FilterValueList::default();
 
-        if parser
-            .try_parse(|p| p.expect_ident_matching("none"))
-            .is_ok()
-        {
-            return Ok(result);
-        }
-
         loop {
             let state = parser.state();
 
@@ -288,11 +281,6 @@ mod tests {
 
     #[test]
     fn parses_filter_value_list() {
-        assert_eq!(
-            FilterValueList::parse_str("none"),
-            Ok(FilterValueList::default())
-        );
-
         let f1 = Fragment::new(Some("foo.svg".to_string()), "bar".to_string());
         let f2 = Fragment::new(Some("test.svg".to_string()), "baz".to_string());
         assert_eq!(
@@ -306,6 +294,7 @@ mod tests {
 
     #[test]
     fn detects_invalid_filter_value_list() {
+        assert!(FilterValueList::parse_str("none").is_err());
         assert!(FilterValueList::parse_str("").is_err());
         assert!(FilterValueList::parse_str("fail").is_err());
         assert!(FilterValueList::parse_str("url(#test) none").is_err());
