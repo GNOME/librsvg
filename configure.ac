@@ -394,7 +394,6 @@ po/Makefile.in
 ])
 
 AC_CONFIG_FILES([librsvg-${RSVG_API_VERSION}.pc:librsvg.pc.in],[],[RSVG_API_VERSION=$RSVG_API_VERSION])
-AC_CONFIG_FILES([librsvg-${RSVG_API_VERSION}-uninstalled.pc:librsvg-uninstalled.pc.in],[],[RSVG_API_VERSION=$RSVG_API_VERSION])
 
 AC_OUTPUT
 
