@@ -3,9 +3,6 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-svgz_supported=true
-css_supported=true
-
 Name: librsvg
 Description: library that renders svg files
 Version: @VERSION@
