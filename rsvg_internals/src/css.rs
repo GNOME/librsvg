@@ -713,7 +713,7 @@ impl Stylesheet {
                     LoadingError::BadCss
                 })
             })
-            .and_then(|utf8| self.parse(&utf8, base_url))
+            .and_then(|utf8| self.parse(&utf8, Some(&aurl)))
     }
 
     /// Appends the style declarations that match a specified node to a given vector
