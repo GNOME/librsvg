@@ -323,6 +323,7 @@
 #include "rsvg.h"
 
 /* Implemented in rsvg_internals/src/handle.rs */
+extern void rsvg_rust_handle_set_dpi (RsvgHandle *raw_handle, double dpi);
 extern void rsvg_rust_handle_set_dpi_x_y (RsvgHandle *raw_handle, double dpi_x, double dpi_y);
 extern void rsvg_rust_handle_set_base_url (RsvgHandle *raw_handle, const char *uri);
 extern void rsvg_rust_handle_set_base_gfile (RsvgHandle *raw_handle, GFile *file);
@@ -335,9 +336,11 @@ extern gboolean rsvg_rust_handle_read_stream_sync (RsvgHandle *handle,
 extern gboolean rsvg_rust_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error);
 extern gboolean rsvg_rust_handle_close (RsvgHandle *handle, GError **error);
 extern gboolean rsvg_rust_handle_has_sub (RsvgHandle *handle, const char *id);
+extern gboolean rsvg_rust_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
 extern gboolean rsvg_rust_handle_render_cairo_sub (RsvgHandle *handle,
                                                    cairo_t *cr,
                                                    const char *id);
+extern GdkPixbuf *rsvg_rust_handle_get_pixbuf (RsvgHandle *handle);
 extern GdkPixbuf *rsvg_rust_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id);
 extern void rsvg_rust_handle_get_dimensions (RsvgHandle *handle,
                                              RsvgDimensionData *dimension_data);
@@ -351,6 +354,7 @@ extern void rsvg_rust_handle_set_size_callback (RsvgHandle *raw_handle,
                                                 RsvgSizeFunc size_func,
                                                 gpointer user_data,
                                                 GDestroyNotify destroy_notify);
+extern RsvgHandle *rsvg_rust_handle_new (void);
 extern RsvgHandle *rsvg_rust_handle_new_with_flags (RsvgHandleFlags flags);
 extern RsvgHandle *rsvg_rust_handle_new_from_file (const char *filename,
                                                    GError **error);
@@ -366,6 +370,7 @@ extern RsvgHandle *rsvg_rust_handle_new_from_stream_sync (GInputStream *input_st
 extern RsvgHandle *rsvg_rust_handle_new_from_data (const guint8 *data,
                                                    gsize data_len,
                                                    GError **error);
+extern void rsvg_rust_handle_free (RsvgHandle *handle);
 extern gboolean rsvg_rust_handle_set_stylesheet (RsvgHandle  *handle,
                                                  const char  *css,
                                                  gsize        css_len,
@@ -406,12 +411,10 @@ extern gboolean rsvg_rust_handle_render_element (RsvgHandle           *handle,
 
 
 
-/* Implemented in rsvg_internals/src/c_api.rs */
+/* Implemented in librsvg/c_api.rs */
 extern GType rsvg_rust_error_get_type (void);
-extern GType rsvg_rust_handle_flags_get_type (void);
-
-/* Implemented in rsvg_internals/src/c_api.rs */
 extern GType rsvg_rust_handle_get_type (void);
+extern GType rsvg_rust_handle_flags_get_type (void);
 
 GType
 rsvg_handle_get_type (void)
@@ -429,7 +432,7 @@ rsvg_handle_get_type (void)
 void
 rsvg_handle_free (RsvgHandle *handle)
 {
-    g_object_unref (handle);
+    rsvg_rust_handle_free (handle);
 }
 
 /**
@@ -461,7 +464,7 @@ rsvg_handle_free (RsvgHandle *handle)
 RsvgHandle *
 rsvg_handle_new (void)
 {
-    return RSVG_HANDLE (g_object_new (RSVG_TYPE_HANDLE, NULL));
+    return rsvg_rust_handle_new();
 }
 
 /**
@@ -875,7 +878,7 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
 gboolean
 rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr)
 {
-    return rsvg_handle_render_cairo_sub (handle, cr, NULL);
+    return rsvg_rust_handle_render_cairo (handle, cr);
 }
 
 /**
@@ -1034,7 +1037,7 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id)
 GdkPixbuf *
 rsvg_handle_get_pixbuf (RsvgHandle *handle)
 {
-    return rsvg_handle_get_pixbuf_sub (handle, NULL);
+    return rsvg_rust_handle_get_pixbuf (handle);
 }
 
 /**
@@ -1054,7 +1057,7 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
 void
 rsvg_handle_set_dpi (RsvgHandle *handle, double dpi)
 {
-    rsvg_handle_set_dpi_x_y (handle, dpi, dpi);
+    rsvg_rust_handle_set_dpi (handle, dpi);
 }
 
 /**
