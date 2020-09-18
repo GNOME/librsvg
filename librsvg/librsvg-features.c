@@ -1,32 +1,40 @@
 #include "rsvg.h"
 
 /**
- * librsvg_major_version:
+ * rsvg_major_version:
  *
  * Major version of the library.  For example, for version 2.3.4, the major
  * version will be 2.
+ *
+ * Since: 2.52
  */
-const guint librsvg_major_version = LIBRSVG_MAJOR_VERSION;
+const guint rsvg_major_version = LIBRSVG_MAJOR_VERSION;
 
 /**
- * librsvg_minor_version:
+ * rsvg_minor_version:
  *
  * Minor version of the library.  For example, for version 2.3.4, the minor
  * version will be 3.
+ *
+ * Since: 2.52
  */
-const guint librsvg_minor_version = LIBRSVG_MINOR_VERSION;
+const guint rsvg_minor_version = LIBRSVG_MINOR_VERSION;
 
 /**
- * librsvg_micro_version:
+ * rsvg_micro_version:
  *
  * Micro version of the library.  For example, for version 2.3.4, the micro
  * version will be 4.
+ *
+ * Since: 2.52
  */
-const guint librsvg_micro_version = LIBRSVG_MICRO_VERSION;
+const guint rsvg_micro_version = LIBRSVG_MICRO_VERSION;
 
 /**
- * librsvg_version:
+ * rsvg_version:
  *
  * String with the library version.  For example, "<literal>2.3.4</literal>".
+ *
+ * Since: 2.52
  */
-const char librsvg_version[] = LIBRSVG_VERSION;
+const char rsvg_version[] = LIBRSVG_VERSION;

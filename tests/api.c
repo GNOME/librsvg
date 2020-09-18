@@ -1413,8 +1413,8 @@ static void
 library_version_constants (void)
 {
     gchar *version = g_strdup_printf ("%u.%u.%u",
-                                      librsvg_major_version, librsvg_minor_version, librsvg_micro_version);
-    g_assert_cmpstr (version, ==, librsvg_version);
+                                      rsvg_major_version, rsvg_minor_version, rsvg_micro_version);
+    g_assert_cmpstr (version, ==, rsvg_version);
     g_free (version);
 }
 
