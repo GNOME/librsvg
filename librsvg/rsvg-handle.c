@@ -323,12 +323,12 @@
 #include "rsvg.h"
 
 /* Implemented in rsvg_internals/src/handle.rs */
-extern void rsvg_rust_handle_set_dpi (RsvgHandle *raw_handle, double dpi);
-extern void rsvg_rust_handle_set_dpi_x_y (RsvgHandle *raw_handle, double dpi_x, double dpi_y);
-extern void rsvg_rust_handle_set_base_url (RsvgHandle *raw_handle, const char *uri);
-extern void rsvg_rust_handle_set_base_gfile (RsvgHandle *raw_handle, GFile *file);
-extern const char *rsvg_rust_handle_get_base_url (RsvgHandle *raw_handle);
-extern guint rsvg_rust_handle_set_testing (RsvgHandle *raw_handle, gboolean testing);
+extern void rsvg_rust_handle_set_dpi (RsvgHandle *handle, double dpi);
+extern void rsvg_rust_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y);
+extern void rsvg_rust_handle_set_base_url (RsvgHandle *handle, const char *uri);
+extern void rsvg_rust_handle_set_base_gfile (RsvgHandle *handle, GFile *file);
+extern const char *rsvg_rust_handle_get_base_url (RsvgHandle *handle);
+extern guint rsvg_rust_handle_set_testing (RsvgHandle *handle, gboolean testing);
 extern gboolean rsvg_rust_handle_read_stream_sync (RsvgHandle *handle,
                                                    GInputStream *stream,
                                                    GCancellable *cancellable,
@@ -350,7 +350,7 @@ extern gboolean rsvg_rust_handle_get_dimensions_sub (RsvgHandle *handle,
 extern gboolean rsvg_rust_handle_get_position_sub (RsvgHandle *handle,
                                                    RsvgPositionData *dimension_data,
                                                    const char *id);
-extern void rsvg_rust_handle_set_size_callback (RsvgHandle *raw_handle,
+extern void rsvg_rust_handle_set_size_callback (RsvgHandle *handle,
                                                 RsvgSizeFunc size_func,
                                                 gpointer user_data,
                                                 GDestroyNotify destroy_notify);
@@ -408,7 +408,9 @@ extern gboolean rsvg_rust_handle_render_element (RsvgHandle           *handle,
                                                  const char           *id,
                                                  const RsvgRectangle  *element_viewport,
                                                  GError              **error);
-
+extern const char *rsvg_rust_handle_get_desc (RsvgHandle *handle);
+extern const char *rsvg_rust_handle_get_metadata (RsvgHandle *handle);
+extern const char *rsvg_rust_handle_get_title (RsvgHandle *handle);
 
 
 /* Implemented in librsvg/c_api.rs */
@@ -777,9 +779,7 @@ rsvg_handle_set_stylesheet (RsvgHandle   *handle,
 const char *
 rsvg_handle_get_metadata (RsvgHandle * handle)
 {
-    g_return_val_if_fail (handle, NULL);
-
-    return NULL;
+    return rsvg_rust_handle_get_metadata (handle);
 }
 
 /**
@@ -796,9 +796,7 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
 const char *
 rsvg_handle_get_title (RsvgHandle *handle)
 {
-    g_return_val_if_fail (handle, NULL);
-
-    return NULL;
+    return rsvg_rust_handle_get_title (handle);
 }
 
 /**
@@ -815,9 +813,7 @@ rsvg_handle_get_title (RsvgHandle *handle)
 const char *
 rsvg_handle_get_desc (RsvgHandle *handle)
 {
-    g_return_val_if_fail (handle, NULL);
-
-    return NULL;
+    return rsvg_rust_handle_get_desc (handle);
 }
 
 /**

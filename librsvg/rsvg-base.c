@@ -34,6 +34,11 @@ extern void rsvg_rust_set_default_dpi_x_y(double dpi_x, double dpi_y);
 /* Implemented in rsvg_internals/src/error.rs */
 extern GQuark rsvg_rust_error_quark (void);
 
+/* Implemented in librsvg/c_api.rs */
+extern void rsvg_rust_init (void);
+extern void rsvg_rust_term (void);
+extern void rsvg_rust_cleanup (void);
+
 /**
  * rsvg_error_quark:
  *
@@ -99,6 +104,7 @@ rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
 void
 rsvg_init (void)
 {
+    rsvg_rust_init ();
 }
 
 /**
@@ -112,6 +118,7 @@ rsvg_init (void)
 void
 rsvg_term (void)
 {
+    rsvg_rust_term ();
 }
 
 /**
@@ -124,6 +131,7 @@ rsvg_term (void)
 void
 rsvg_cleanup (void)
 {
+    rsvg_rust_cleanup ();
 }
 
 /* This is defined like this so that we can export the Rust function... just for
