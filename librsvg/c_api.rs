@@ -1927,6 +1927,52 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_element(
     }
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_get_desc(handle: *const RsvgHandle) -> *mut libc::c_char {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_desc => ptr::null_mut();
+
+        is_rsvg_handle(handle),
+    }
+
+    ptr::null_mut()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_get_metadata(
+    handle: *const RsvgHandle,
+) -> *mut libc::c_char {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_metadata => ptr::null_mut();
+
+        is_rsvg_handle(handle),
+    }
+
+    ptr::null_mut()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_get_title(
+    handle: *const RsvgHandle,
+) -> *mut libc::c_char {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_title => ptr::null_mut();
+
+        is_rsvg_handle(handle),
+    }
+
+    ptr::null_mut()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_init() {}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_term() {}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_cleanup() {}
+
 /// Detects whether a `*const libc::c_char` is a path or a URI
 ///
 /// `rsvg_handle_new_from_file()` takes a `filename` argument, and advertises
