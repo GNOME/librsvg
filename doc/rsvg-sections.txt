@@ -93,15 +93,12 @@ rsvg_pixbuf_from_file_at_zoom_with_max
 
 <SECTION>
 <FILE>rsvg-features</FILE>
-<TITLE>Version check and feature tests</TITLE>
+<TITLE>Version checks</TITLE>
 LIBRSVG_MAJOR_VERSION
 LIBRSVG_MINOR_VERSION
 LIBRSVG_MICRO_VERSION
 LIBRSVG_VERSION
 LIBRSVG_CHECK_VERSION
-LIBRSVG_HAVE_SVGZ
-LIBRSVG_HAVE_CSS
-LIBRSVG_CHECK_FEATURE
 rsvg_major_version
 rsvg_minor_version
 rsvg_micro_version
