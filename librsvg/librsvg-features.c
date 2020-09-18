@@ -1,3 +1,20 @@
+/**
+ * SECTION: rsvg-features
+ * @short_description: Check for the version of librsvg being used.
+ *
+ * Librsvg provides a few C macros that C and C++ programs can use to
+ * check the version being used at compile-time, that is, the API that
+ * the program expects to have.  This is useful for programs that need
+ * to conditionally compile code with <literal>#ifdef</literal> blocks
+ * depending on the version of librsvg that may be available during
+ * compilation.
+ *
+ * Librsvg also provides a few global constants that can be used to
+ * check the version of librsvg being used at run-time.  This is
+ * useful to know which version of librsvg is actually being used on
+ * the system where the program is running.
+ */
+
 #include "rsvg.h"
 
 /**
