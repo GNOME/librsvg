@@ -1400,6 +1400,24 @@ return_if_fail_type_check (void)
     g_test_trap_assert_stderr ("*rsvg_handle_get_base_uri*assertion*handle*failed*");
 }
 
+static void
+library_version_defines (void)
+{
+    gchar *version = g_strdup_printf ("%u.%u.%u",
+                                      LIBRSVG_MAJOR_VERSION, LIBRSVG_MINOR_VERSION, LIBRSVG_MICRO_VERSION);
+    g_assert_cmpstr (version, ==, LIBRSVG_VERSION);
+    g_free (version);
+}
+
+static void
+library_version_constants (void)
+{
+    gchar *version = g_strdup_printf ("%u.%u.%u",
+                                      librsvg_major_version, librsvg_minor_version, librsvg_micro_version);
+    g_assert_cmpstr (version, ==, librsvg_version);
+    g_free (version);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -1453,6 +1471,8 @@ main (int argc, char **argv)
     g_test_add_func ("/api/return_if_fail", return_if_fail);
     g_test_add_func ("/api/return_if_fail_null_check", return_if_fail_null_check);
     g_test_add_func ("/api/return_if_fail_type_check", return_if_fail_type_check);
+    g_test_add_func ("/api/library_version_defines", library_version_defines);
+    g_test_add_func ("/api/library_version_constants", library_version_constants);
 
     return g_test_run ();
 }
