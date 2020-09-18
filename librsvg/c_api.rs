@@ -1164,6 +1164,19 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_base_url(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_set_dpi(handle: *const RsvgHandle, dpi: f64) {
+    rsvg_return_if_fail! {
+        rsvg_handle_set_dpi;
+
+        is_rsvg_handle(handle),
+    }
+
+    let rhandle = get_rust_handle(handle);
+    rhandle.set_dpi_x(dpi);
+    rhandle.set_dpi_y(dpi);
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_set_dpi_x_y(
     handle: *const RsvgHandle,
     dpi_x: f64,
@@ -1312,6 +1325,31 @@ pub unsafe extern "C" fn rsvg_rust_handle_has_sub(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_render_cairo(
+    handle: *const RsvgHandle,
+    cr: *mut cairo_sys::cairo_t,
+) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_render_cairo => false.to_glib();
+
+        is_rsvg_handle(handle),
+        !cr.is_null(),
+    }
+
+    let rhandle = get_rust_handle(handle);
+    let cr = from_glib_none(cr);
+
+    match rhandle.render_cairo_sub(&cr, None) {
+        Ok(()) => true.to_glib(),
+
+        Err(e) => {
+            rsvg_log!("could not render: {}", e);
+            false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
     handle: *const RsvgHandle,
     cr: *mut cairo_sys::cairo_t,
@@ -1334,6 +1372,27 @@ pub unsafe extern "C" fn rsvg_rust_handle_render_cairo_sub(
         Err(e) => {
             rsvg_log!("could not render: {}", e);
             false.to_glib()
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_get_pixbuf(
+    handle: *const RsvgHandle,
+) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_pixbuf => ptr::null_mut();
+
+        is_rsvg_handle(handle),
+    }
+
+    let rhandle = get_rust_handle(handle);
+
+    match rhandle.get_pixbuf_sub(None) {
+        Ok(pixbuf) => pixbuf.to_glib_full(),
+        Err(e) => {
+            rsvg_log!("could not render: {}", e);
+            ptr::null_mut()
         }
     }
 }
@@ -1433,6 +1492,15 @@ pub unsafe extern "C" fn rsvg_rust_handle_get_position_sub(
             false.to_glib()
         }
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_new() -> *const RsvgHandle {
+    let obj: *mut gobject_sys::GObject = glib::Object::new(CHandle::get_type(), &[])
+        .unwrap()
+        .to_glib_full();
+
+    obj as *mut _
 }
 
 #[no_mangle]
@@ -1610,6 +1678,11 @@ unsafe fn set_out_param<T: Copy>(
     if !out_has_param.is_null() {
         *out_has_param = has_value.to_glib();
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_rust_handle_free(handle: *mut RsvgHandle) {
+    gobject_sys::g_object_unref(handle as *mut _);
 }
 
 #[no_mangle]
