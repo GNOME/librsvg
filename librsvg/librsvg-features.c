@@ -82,6 +82,22 @@
  */
 
 /**
+ * LIBRSVG_CHECK_VERSION:
+ * @major: component for the major version to check
+ * @minor: component for the minor version to check
+ * @micro: component for the micro version to check
+ *
+ * This C macro returns #TRUE if the specified version is equal to or
+ * newer than the version of librsvg being compiled against.
+ *
+ * Note that this a compile-time check for C programs.  If you want a
+ * run-time check for the version of librsvg being used, or if you are
+ * using another programming language, see the variables
+ * @rsvg_major_version, @rsvg_minor_version, @rsvg_micro_version
+ * instead.
+ */
+
+/**
  * rsvg_major_version:
  *
  * Major version of the library.  For example, for version 2.3.4, the major
