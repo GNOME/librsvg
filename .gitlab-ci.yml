@@ -137,15 +137,6 @@ debian:testing:
     - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
 
-debian_i386:testing:
-  image: $I386_DEBIAN_TESTING
-  allow_failure: true
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  before_script:
-    - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
-  <<: *distro_test
-
 # STAGE 1 LINTS
 ########################################################################
 
@@ -192,8 +183,8 @@ fedora:test_release:
   <<: *distro_test
   <<: *stage_3
 
-debian:testing_release_i386:
-  image: $I386_DEBIAN_TESTING
+debian:testing_release:
+  image: $AMD64_DEBIAN_TESTING
   allow_failure: true
   variables:
     LIBRSVG_DEBUG: "no"
