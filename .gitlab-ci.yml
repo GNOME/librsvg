@@ -87,12 +87,12 @@ stages:
       - ccache/
 
 .distro_template: &distro_test
-    stage: cross_distro
-    <<: *test
+  stage: cross_distro
+  <<: *test
 
 .rustc_template: &rustc
-    stage: rustc
-    <<: *test
+  stage: rustc
+  <<: *test
 
 # Jobs that are marked as stage 3 will only run on scheduled pipelines.
 # Ideal targets for this stage are expensive task, that only need to be run
@@ -109,14 +109,12 @@ stages:
 .fedora test:
   image: $AMD64_FEDORA_LATEST
   stage: test
-  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *test
 
 fedora:rawhide:
   image: $AMD64_FEDORA_RAWHIDE
-  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
   <<: *distro_test
@@ -130,9 +128,10 @@ opensuse:tumbleweed:
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
-  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "yes"
+    # we are only interested in build issues - run the tests with maximum tolerance
+    RSVG_TEST_TOLERANCE: "255"
   before_script:
     - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
@@ -177,7 +176,6 @@ tarball:
 fedora:test_release:
   image: $AMD64_FEDORA_LATEST
   stage: test
-  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "no"
   <<: *distro_test
@@ -185,9 +183,9 @@ fedora:test_release:
 
 debian:testing_release:
   image: $AMD64_DEBIAN_TESTING
-  allow_failure: true
   variables:
     LIBRSVG_DEBUG: "no"
+    RSVG_TEST_TOLERANCE: "255"
   before_script:
     - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
