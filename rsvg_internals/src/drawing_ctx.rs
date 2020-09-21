@@ -147,7 +147,7 @@ pub struct DrawingCtx {
 
 impl DrawingCtx {
     pub fn new(
-        node: Option<&Node>,
+        limit_to_stack: Option<&Node>,
         cr: &cairo::Context,
         viewport: Rect,
         dpi: Dpi,
@@ -195,8 +195,8 @@ impl DrawingCtx {
             testing,
         };
 
-        if let Some(node) = node {
-            for n in node.ancestors() {
+        if let Some(limit_to_stack) = limit_to_stack {
+            for n in limit_to_stack.ancestors() {
                 draw_ctx.drawsub_stack.push(n.clone());
             }
         }
