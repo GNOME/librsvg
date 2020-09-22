@@ -54,8 +54,7 @@ use crate::viewbox::ViewBox;
 /// previous viewport.
 pub struct ViewParams {
     pub dpi: Dpi,
-    pub view_box_width: f64,
-    pub view_box_height: f64,
+    pub vbox: ViewBox,
     view_box_stack: Option<Weak<RefCell<Vec<ViewBox>>>>,
 }
 
@@ -63,8 +62,7 @@ impl ViewParams {
     pub fn new(dpi: Dpi, view_box_width: f64, view_box_height: f64) -> ViewParams {
         ViewParams {
             dpi,
-            view_box_width,
-            view_box_height,
+            vbox: ViewBox::from(Rect::from_size(view_box_width, view_box_height)),
             view_box_stack: None,
         }
     }
@@ -294,12 +292,11 @@ impl DrawingCtx {
     pub fn get_view_params(&self) -> ViewParams {
         let view_box_stack = self.view_box_stack.borrow();
         let last = view_box_stack.len() - 1;
-        let top_rect = &view_box_stack[last];
+        let vbox = view_box_stack[last];
 
         ViewParams {
             dpi: self.dpi,
-            view_box_width: top_rect.width(),
-            view_box_height: top_rect.height(),
+            vbox,
             view_box_stack: None,
         }
     }
@@ -312,14 +309,13 @@ impl DrawingCtx {
     /// The viewport will stay in place, and will be the one returned by
     /// `get_view_params()`, until the returned `ViewParams` is dropped.
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
-        self.view_box_stack
-            .borrow_mut()
-            .push(ViewBox::from(Rect::from_size(width, height)));
+        let vbox = ViewBox::from(Rect::from_size(width, height));
+
+        self.view_box_stack.borrow_mut().push(vbox);
 
         ViewParams {
             dpi: self.dpi,
-            view_box_width: width,
-            view_box_height: height,
+            vbox,
             view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
         }
     }
