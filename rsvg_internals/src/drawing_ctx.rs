@@ -204,29 +204,20 @@ impl DrawingCtx {
     ) -> DrawingCtx {
         let initial_transform = Transform::from(cr.get_matrix());
 
-        // This is more or less a hack to make measuring geometries possible,
-        // while the code gets refactored not to need special cases for that.
-
-        let (rect, vbox) = if measuring {
-            let unit_rect = Rect::from_size(1.0, 1.0);
-            (unit_rect, ViewBox(unit_rect))
-        } else {
-            // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
-            //
-            // "For the outermost svg element, the SVG user agent must
-            // determine an initial viewport coordinate system and an
-            // initial user coordinate system such that the two
-            // coordinates systems are identical. The origin of both
-            // coordinate systems must be at the origin of the SVG
-            // viewport."
-            //
-            // "... the initial viewport coordinate system (and therefore
-            // the initial user coordinate system) must have its origin at
-            // the top/left of the viewport"
-            let vbox = ViewBox(Rect::from_size(viewport.width(), viewport.height()));
-
-            (viewport, vbox)
-        };
+        // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
+        //
+        // "For the outermost svg element, the SVG user agent must
+        // determine an initial viewport coordinate system and an
+        // initial user coordinate system such that the two
+        // coordinates systems are identical. The origin of both
+        // coordinate systems must be at the origin of the SVG
+        // viewport."
+        //
+        // "... the initial viewport coordinate system (and therefore
+        // the initial user coordinate system) must have its origin at
+        // the top/left of the viewport"
+        let vbox = ViewBox(Rect::from_size(viewport.width(), viewport.height()));
+        let rect = viewport;
 
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
