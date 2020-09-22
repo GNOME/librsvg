@@ -380,10 +380,10 @@ impl DrawingCtx {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
                         clip_to_rectangle(&self.cr, &*vbox);
                     }
-                    self.push_view_box(vbox.width(), vbox.height())
-                } else {
-                    self.get_view_params()
                 }
+
+                let vbox = vbox.unwrap_or_else(|| self.get_top_viewbox());
+                self.push_view_box(vbox.width(), vbox.height())
             })
     }
 
