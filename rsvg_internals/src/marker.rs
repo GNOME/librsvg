@@ -135,7 +135,7 @@ impl Marker {
         }
 
         let params = if let Some(vbox) = self.vbox {
-            if vbox.0.is_empty() {
+            if vbox.is_empty() {
                 return Ok(draw_ctx.empty_bbox());
             }
 
@@ -143,7 +143,7 @@ impl Marker {
                 .aspect
                 .compute(&vbox, &Rect::from_size(marker_width, marker_height));
 
-            let (vb_width, vb_height) = vbox.0.size();
+            let (vb_width, vb_height) = vbox.size();
             transform = transform.pre_scale(r.width() / vb_width, r.height() / vb_height);
 
             draw_ctx.push_view_box(vb_width, vb_height)
@@ -161,7 +161,7 @@ impl Marker {
         } else {
             Some(
                 self.vbox
-                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| vb.0),
+                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| *vb),
             )
         };
 

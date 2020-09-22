@@ -228,7 +228,7 @@ impl Draw for Svg {
                 // Use our viewBox if available, or try to derive one from
                 // the intrinsic dimensions.
                 self.vbox.or_else(|| {
-                    Some(ViewBox(Rect::from_size(
+                    Some(ViewBox::from(Rect::from_size(
                         svg_viewport.width(),
                         svg_viewport.height(),
                     )))

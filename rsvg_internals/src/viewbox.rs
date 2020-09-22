@@ -1,6 +1,7 @@
 //! Parser for the `viewBox` attribute.
 
 use cssparser::Parser;
+use std::ops::Deref;
 
 use crate::error::*;
 use crate::number_list::{NumberList, NumberListLength};
@@ -12,9 +13,26 @@ use crate::rect::Rect;
 /// A `ViewBox` is a new user-space coordinate system mapped onto the rectangle defined by
 /// the current viewport.  See https://www.w3.org/TR/SVG2/coords.html#ViewBoxAttribute
 ///
+/// `ViewBox` derefs to `Rect`, so you can use `Rect`'s methods and fields directly like
+/// `vbox.x0` or `vbox.width()`.
+///
 /// [`Rect`]: rect/type.Rect.html
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct ViewBox(pub Rect);
+pub struct ViewBox(Rect);
+
+impl Deref for ViewBox {
+    type Target = Rect;
+
+    fn deref(&self) -> &Rect {
+        &self.0
+    }
+}
+
+impl From<Rect> for ViewBox {
+    fn from(r: Rect) -> ViewBox {
+        ViewBox(r)
+    }
+}
 
 impl Parse for ViewBox {
     // Parse a viewBox attribute

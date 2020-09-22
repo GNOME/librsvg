@@ -128,7 +128,7 @@ impl AspectRatio {
             None => *viewport,
 
             Some(Align { x, y, fit }) => {
-                let (vb_width, vb_height) = vbox.0.size();
+                let (vb_width, vb_height) = vbox.size();
                 let (vp_width, vp_height) = viewport.size();
 
                 let w_factor = vp_width / vb_width;
@@ -180,15 +180,15 @@ impl AspectRatio {
         // the preserveAspectRatio attribute is only used if viewBox is specified
         // https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
         let transform = if let Some(vbox) = vbox {
-            if vbox.0.is_empty() {
+            if vbox.is_empty() {
                 // Width or height of 0 for the viewBox disables rendering of the element
                 // https://www.w3.org/TR/SVG/coords.html#ViewBoxAttribute
                 return Ok(None);
             } else {
                 let r = self.compute(&vbox, viewport);
                 Transform::new_translate(r.x0, r.y0)
-                    .pre_scale(r.width() / vbox.0.width(), r.height() / vbox.0.height())
-                    .pre_translate(-vbox.0.x0, -vbox.0.y0)
+                    .pre_scale(r.width() / vbox.width(), r.height() / vbox.height())
+                    .pre_translate(-vbox.x0, -vbox.y0)
             }
         } else {
             Transform::new_translate(viewport.x0, viewport.y0)
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn aligns() {
-        let viewbox = ViewBox(Rect::from_size(1.0, 10.0));
+        let viewbox = ViewBox::from(Rect::from_size(1.0, 10.0));
 
         let foo = AspectRatio::parse_str("xMinYMin meet").unwrap();
         let foo = foo.compute(&viewbox, &Rect::from_size(10.0, 1.0));
