@@ -321,8 +321,7 @@ impl<N: Normalize> Length<N> {
             LengthUnit::Px => self.length,
 
             LengthUnit::Percent => {
-                self.length
-                    * <N as Normalize>::normalize(params.view_box_width, params.view_box_height)
+                self.length * <N as Normalize>::normalize(params.vbox.width(), params.vbox.height())
             }
 
             LengthUnit::Em => self.length * font_size_from_values(values, params),
