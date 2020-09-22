@@ -300,11 +300,16 @@ impl DrawingCtx {
         )?)
     }
 
+    fn get_top_viewbox(&self) -> ViewBox {
+        let view_box_stack = self.view_box_stack.borrow();
+        *view_box_stack
+            .last()
+            .expect("view_box_stack must never be empty!")
+    }
+
     /// Gets the viewport that was last pushed with `push_view_box()`.
     pub fn get_view_params(&self) -> ViewParams {
-        let view_box_stack = self.view_box_stack.borrow();
-        let last = view_box_stack.len() - 1;
-        let vbox = view_box_stack[last];
+        let vbox = self.get_top_viewbox();
 
         ViewParams {
             dpi: self.dpi,
