@@ -126,10 +126,18 @@ impl<'a> PathHelper<'a> {
     }
 }
 
-pub struct DrawingCtx {
-    initial_transform: Transform,
+#[derive(Copy, Clone)]
+struct Viewport {
+    /// The viewport's coordinate system, or "user coordinate system" in SVG terms.
+    transform: Transform,
 
-    rect: Rect,
+    /// Corners of the current coordinate space.
+    vbox: ViewBox,
+}
+
+pub struct DrawingCtx {
+    initial_viewport: Viewport,
+
     dpi: Dpi,
 
     cr_stack: Vec<cairo::Context>,
@@ -185,8 +193,6 @@ impl DrawingCtx {
         testing: bool,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
-        let initial_transform = Transform::from(cr.get_matrix());
-
         // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
         //
         // "For the outermost svg element, the SVG user agent must
@@ -199,15 +205,18 @@ impl DrawingCtx {
         // "... the initial viewport coordinate system (and therefore
         // the initial user coordinate system) must have its origin at
         // the top/left of the viewport"
-        let vbox = ViewBox::from(Rect::from_size(viewport.width(), viewport.height()));
-        let rect = viewport;
+        let vbox = ViewBox::from(viewport);
+
+        let initial_viewport = Viewport {
+            transform: Transform::from(cr.get_matrix()),
+            vbox,
+        };
 
         let mut view_box_stack = Vec::new();
         view_box_stack.push(vbox);
 
         DrawingCtx {
-            initial_transform,
-            rect,
+            initial_viewport,
             dpi,
             cr_stack: Vec::new(),
             cr: cr.clone(),
@@ -219,7 +228,7 @@ impl DrawingCtx {
     }
 
     pub fn toplevel_viewport(&self) -> Rect {
-        self.rect
+        *self.initial_viewport.vbox
     }
 
     pub fn is_measuring(&self) -> bool {
@@ -255,10 +264,13 @@ impl DrawingCtx {
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
-        let (viewport_width, viewport_height) = (self.rect.width(), self.rect.height());
+        let rect = self.toplevel_viewport();
+
+        let (viewport_width, viewport_height) = (rect.width(), rect.height());
 
         let (width, height) = self
-            .initial_transform
+            .initial_viewport
+            .transform
             .transform_distance(viewport_width, viewport_height);
 
         // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
@@ -666,8 +678,11 @@ impl DrawingCtx {
     }
 
     fn initial_transform_with_offset(&self) -> Transform {
-        self.initial_transform
-            .pre_translate(self.rect.x0, self.rect.y0)
+        let rect = self.toplevel_viewport();
+
+        self.initial_viewport
+            .transform
+            .pre_translate(rect.x0, rect.y0)
     }
 
     /// Saves the current transform, applies a new transform if specified,
@@ -1539,22 +1554,24 @@ impl DrawingCtx {
     ) -> Result<SharedImageSurface, RenderingError> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
+        let save_initial_viewport = self.initial_viewport;
         let save_cr = self.cr.clone();
-        let save_rect = self.rect;
 
         {
             let cr = cairo::Context::new(&surface);
             cr.set_matrix(affine.into());
 
             self.cr = cr;
-
-            self.rect = Rect::from_size(f64::from(width), f64::from(height));
+            self.initial_viewport = Viewport {
+                transform: affine,
+                vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
+            };
 
             let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, false)?;
         }
 
         self.cr = save_cr;
-        self.rect = save_rect;
+        self.initial_viewport = save_initial_viewport;
 
         Ok(SharedImageSurface::wrap(surface, SurfaceType::SRgb)?)
     }
