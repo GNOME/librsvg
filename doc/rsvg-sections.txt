@@ -102,5 +102,4 @@ LIBRSVG_CHECK_VERSION
 rsvg_major_version
 rsvg_minor_version
 rsvg_micro_version
-rsvg_version
 </SECTION>

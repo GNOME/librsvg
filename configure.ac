@@ -380,6 +380,7 @@ AC_SUBST([AM_LDFLAGS])
 
 AC_CONFIG_FILES([
 librsvg/librsvg-features.h
+librsvg/version.rs
 Makefile
 librsvg-zip
 gdk-pixbuf-loader/Makefile

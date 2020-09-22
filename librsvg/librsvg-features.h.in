@@ -50,6 +50,5 @@
 RSVG_VAR const guint rsvg_major_version;
 RSVG_VAR const guint rsvg_minor_version;
 RSVG_VAR const guint rsvg_micro_version;
-RSVG_VAR const char rsvg_version[];
 
 #endif

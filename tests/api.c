@@ -1410,12 +1410,21 @@ library_version_defines (void)
 }
 
 static void
+library_version_check (void)
+{
+    g_assert_true(LIBRSVG_CHECK_VERSION(1, 99, 9));
+    g_assert_true(LIBRSVG_CHECK_VERSION(2, 0, 0));
+    g_assert_true(LIBRSVG_CHECK_VERSION(2, 50, 7));
+    g_assert_false(LIBRSVG_CHECK_VERSION(2, 99, 0));
+    g_assert_false(LIBRSVG_CHECK_VERSION(3, 0, 0));
+}
+
+static void
 library_version_constants (void)
 {
-    gchar *version = g_strdup_printf ("%u.%u.%u",
-                                      rsvg_major_version, rsvg_minor_version, rsvg_micro_version);
-    g_assert_cmpstr (version, ==, rsvg_version);
-    g_free (version);
+    g_assert_cmpuint (rsvg_major_version, ==, LIBRSVG_MAJOR_VERSION);
+    g_assert_cmpuint (rsvg_minor_version, ==, LIBRSVG_MINOR_VERSION);
+    g_assert_cmpuint (rsvg_micro_version, ==, LIBRSVG_MICRO_VERSION);
 }
 
 int
@@ -1472,6 +1481,7 @@ main (int argc, char **argv)
     g_test_add_func ("/api/return_if_fail_null_check", return_if_fail_null_check);
     g_test_add_func ("/api/return_if_fail_type_check", return_if_fail_type_check);
     g_test_add_func ("/api/library_version_defines", library_version_defines);
+    g_test_add_func ("/api/library_version_check", library_version_check);
     g_test_add_func ("/api/library_version_constants", library_version_constants);
 
     return g_test_run ();
