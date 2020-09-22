@@ -55,7 +55,7 @@ use crate::viewbox::ViewBox;
 pub struct ViewParams {
     pub dpi: Dpi,
     pub vbox: ViewBox,
-    view_box_stack: Option<Weak<RefCell<Vec<ViewBox>>>>,
+    viewport_stack: Option<Weak<RefCell<Vec<Viewport>>>>,
 }
 
 impl ViewParams {
@@ -63,14 +63,14 @@ impl ViewParams {
         ViewParams {
             dpi,
             vbox: ViewBox::from(Rect::from_size(view_box_width, view_box_height)),
-            view_box_stack: None,
+            viewport_stack: None,
         }
     }
 }
 
 impl Drop for ViewParams {
     fn drop(&mut self) {
-        if let Some(ref weak_stack) = self.view_box_stack {
+        if let Some(ref weak_stack) = self.viewport_stack {
             let stack = weak_stack
                 .upgrade()
                 .expect("A ViewParams was dropped after its DrawingCtx!?");
@@ -143,7 +143,7 @@ pub struct DrawingCtx {
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
 
-    view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
+    viewport_stack: Rc<RefCell<Vec<Viewport>>>,
 
     drawsub_stack: Vec<Node>,
 
@@ -212,15 +212,15 @@ impl DrawingCtx {
             vbox,
         };
 
-        let mut view_box_stack = Vec::new();
-        view_box_stack.push(vbox);
+        let mut viewport_stack = Vec::new();
+        viewport_stack.push(initial_viewport);
 
         DrawingCtx {
             initial_viewport,
             dpi,
             cr_stack: Vec::new(),
             cr: cr.clone(),
-            view_box_stack: Rc::new(RefCell::new(view_box_stack)),
+            viewport_stack: Rc::new(RefCell::new(viewport_stack)),
             drawsub_stack,
             measuring,
             testing,
@@ -300,11 +300,11 @@ impl DrawingCtx {
         )?)
     }
 
-    fn get_top_viewbox(&self) -> ViewBox {
-        let view_box_stack = self.view_box_stack.borrow();
-        *view_box_stack
+    fn get_top_viewport(&self) -> Viewport {
+        let viewport_stack = self.viewport_stack.borrow();
+        *viewport_stack
             .last()
-            .expect("view_box_stack must never be empty!")
+            .expect("viewport_stack must never be empty!")
     }
 
     pub fn push_coord_units(&self, units: CoordUnits) -> ViewParams {
@@ -317,12 +317,12 @@ impl DrawingCtx {
 
     /// Gets the viewport that was last pushed with `push_view_box()`.
     pub fn get_view_params(&self) -> ViewParams {
-        let vbox = self.get_top_viewbox();
+        let viewport = self.get_top_viewport();
 
         ViewParams {
             dpi: self.dpi,
-            vbox,
-            view_box_stack: None,
+            vbox: viewport.vbox,
+            viewport_stack: None,
         }
     }
 
@@ -334,14 +334,18 @@ impl DrawingCtx {
     /// The viewport will stay in place, and will be the one returned by
     /// `get_view_params()`, until the returned `ViewParams` is dropped.
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
+        let Viewport { transform, .. } = self.get_top_viewport();
+
         let vbox = ViewBox::from(Rect::from_size(width, height));
 
-        self.view_box_stack.borrow_mut().push(vbox);
+        self.viewport_stack
+            .borrow_mut()
+            .push(Viewport { transform, vbox });
 
         ViewParams {
             dpi: self.dpi,
             vbox,
-            view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
+            viewport_stack: Some(Rc::downgrade(&self.viewport_stack)),
         }
     }
 
@@ -390,7 +394,7 @@ impl DrawingCtx {
                     }
                 }
 
-                let vbox = vbox.unwrap_or_else(|| self.get_top_viewbox());
+                let vbox = vbox.unwrap_or_else(|| self.get_top_viewport().vbox);
                 self.push_view_box(vbox.width(), vbox.height())
             })
     }
