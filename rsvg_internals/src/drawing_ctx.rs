@@ -487,12 +487,15 @@ impl DrawingCtx {
 
             clip_to_rectangle(&mask_cr, &clip_rect);
 
-            let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
+            if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 if bbox_rect.is_empty() {
                     return Ok(None);
                 }
                 assert!(bbtransform.is_invertible());
                 mask_cr.transform(bbtransform.into());
+            }
+
+            let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 self.push_view_box(1.0, 1.0)
             } else {
                 self.get_view_params()
