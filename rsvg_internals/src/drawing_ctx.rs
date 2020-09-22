@@ -338,13 +338,7 @@ impl DrawingCtx {
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
         if let Some(ClipMode::ClipToViewport) = clip_mode {
-            self.cr.rectangle(
-                viewport.x0,
-                viewport.y0,
-                viewport.width(),
-                viewport.height(),
-            );
-            self.cr.clip();
+            clip_to_rectangle(&self.cr, &viewport);
         }
 
         preserve_aspect_ratio
@@ -371,9 +365,7 @@ impl DrawingCtx {
 
                 if let Some(vbox) = vbox {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
-                        self.cr
-                            .rectangle(vbox.x0, vbox.y0, vbox.width(), vbox.height());
-                        self.cr.clip();
+                        clip_to_rectangle(&self.cr, &*vbox);
                     }
                     self.push_view_box(vbox.width(), vbox.height())
                 } else {
@@ -480,13 +472,7 @@ impl DrawingCtx {
                 mask_rect
             };
 
-            mask_cr.rectangle(
-                clip_rect.x0,
-                clip_rect.y0,
-                clip_rect.width(),
-                clip_rect.height(),
-            );
-            mask_cr.clip();
+            clip_to_rectangle(&mask_cr, &clip_rect);
 
             let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 if bbox_rect.is_empty() {
@@ -727,9 +713,7 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(rect) = clip {
             self.cr.save();
-            self.cr
-                .rectangle(rect.x0, rect.y0, rect.width(), rect.height());
-            self.cr.clip();
+            clip_to_rectangle(&self.cr, &rect);
         }
 
         let res = draw_fn(self);
@@ -1397,8 +1381,7 @@ impl DrawingCtx {
                     cr.set_source(&ptn);
 
                     // Clip is needed due to extend being set to pad.
-                    cr.rectangle(0.0, 0.0, image_width, image_height);
-                    cr.clip();
+                    clip_to_rectangle(&cr, &Rect::from_size(image_width, image_height));
 
                     cr.paint();
                 }
@@ -1910,6 +1893,11 @@ fn escape_link_target(value: &str) -> Cow<'_, str> {
             _ => unreachable!(),
         }
     })
+}
+
+fn clip_to_rectangle(cr: &cairo::Context, r: &Rect) {
+    cr.rectangle(r.x0, r.y0, r.width(), r.height());
+    cr.clip();
 }
 
 impl From<SpreadMethod> for cairo::Extend {
