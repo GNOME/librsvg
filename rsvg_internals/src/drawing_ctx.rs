@@ -216,7 +216,7 @@ impl DrawingCtx {
         // "... the initial viewport coordinate system (and therefore
         // the initial user coordinate system) must have its origin at
         // the top/left of the viewport"
-        let vbox = ViewBox(Rect::from_size(viewport.width(), viewport.height()));
+        let vbox = ViewBox::from(Rect::from_size(viewport.width(), viewport.height()));
         let rect = viewport;
 
         let mut view_box_stack = Vec::new();
@@ -309,7 +309,7 @@ impl DrawingCtx {
     pub fn get_view_params(&self) -> ViewParams {
         let view_box_stack = self.view_box_stack.borrow();
         let last = view_box_stack.len() - 1;
-        let top_rect = &view_box_stack[last].0;
+        let top_rect = &view_box_stack[last];
 
         ViewParams {
             dpi: self.dpi,
@@ -329,7 +329,7 @@ impl DrawingCtx {
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
         self.view_box_stack
             .borrow_mut()
-            .push(ViewBox(Rect::from_size(width, height)));
+            .push(ViewBox::from(Rect::from_size(width, height)));
 
         ViewParams {
             dpi: self.dpi,
@@ -374,10 +374,10 @@ impl DrawingCtx {
                     Some(v) => {
                         rsvg_log!(
                             "ignoring viewBox ({}, {}, {}, {}) since it is not usable",
-                            v.0.x0,
-                            v.0.y0,
-                            v.0.width(),
-                            v.0.height()
+                            v.x0,
+                            v.y0,
+                            v.width(),
+                            v.height()
                         );
                     }
                 }
@@ -388,10 +388,10 @@ impl DrawingCtx {
 
                 if let Some(vbox) = vbox {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
-                        cr.rectangle(vbox.0.x0, vbox.0.y0, vbox.0.width(), vbox.0.height());
+                        cr.rectangle(vbox.x0, vbox.y0, vbox.width(), vbox.height());
                         cr.clip();
                     }
-                    self.push_view_box(vbox.0.width(), vbox.0.height())
+                    self.push_view_box(vbox.width(), vbox.height())
                 } else {
                     self.get_view_params()
                 }
@@ -1066,14 +1066,14 @@ impl DrawingCtx {
                 .get_preserve_aspect_ratio()
                 .compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
 
-            let sw = r.width() / vbox.0.width();
-            let sh = r.height() / vbox.0.height();
-            let x = r.x0 - vbox.0.x0 * sw;
-            let y = r.y0 - vbox.0.y0 * sh;
+            let sw = r.width() / vbox.width();
+            let sh = r.height() / vbox.height();
+            let x = r.x0 - vbox.x0 * sw;
+            let y = r.y0 - vbox.y0 * sh;
 
             caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
 
-            self.push_view_box(vbox.0.width(), vbox.0.height())
+            self.push_view_box(vbox.width(), vbox.height())
         } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
             // If coords are in terms of the bounding box, use them
             let (bbw, bbh) = bbox.rect.unwrap().size();
@@ -1388,7 +1388,7 @@ impl DrawingCtx {
 
         let image_width = f64::from(image_width);
         let image_height = f64::from(image_height);
-        let vbox = ViewBox(Rect::from_size(image_width, image_height));
+        let vbox = ViewBox::from(Rect::from_size(image_width, image_height));
 
         let clip_mode = if !values.is_overflow() && aspect.is_slice() {
             Some(ClipMode::ClipToViewport)

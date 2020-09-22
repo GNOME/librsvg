@@ -463,7 +463,7 @@ impl<'a> CairoRenderer<'a> {
         IntrinsicDimensions {
             width: d.width.map(Into::into),
             height: d.height.map(Into::into),
-            vbox: d.vbox.map(|v| cairo::Rectangle::from(v.0)),
+            vbox: d.vbox.map(|v| cairo::Rectangle::from(*v)),
         }
     }
 

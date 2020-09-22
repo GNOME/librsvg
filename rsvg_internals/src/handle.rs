@@ -408,7 +408,7 @@ fn get_svg_size(dimensions: &IntrinsicDimensions, cascaded: &CascadedValues, dpi
 
     match (w, h, dimensions.vbox) {
         (w, h, Some(vbox)) => {
-            let params = ViewParams::new(dpi, vbox.0.width(), vbox.0.height());
+            let params = ViewParams::new(dpi, vbox.width(), vbox.height());
 
             Some((w.normalize(values, &params), h.normalize(values, &params)))
         }
