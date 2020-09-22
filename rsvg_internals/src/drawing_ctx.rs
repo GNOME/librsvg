@@ -146,10 +146,7 @@ pub struct DrawingCtx {
 }
 
 pub enum DrawingMode {
-    LimitToStack {
-        node: Node,
-        root: Node,
-    },
+    LimitToStack { node: Node, root: Node },
 
     OnlyNode(Node),
 }
@@ -168,12 +165,7 @@ pub fn draw_tree(
 ) -> Result<BoundingBox, RenderingError> {
     let (drawsub_stack, node) = match mode {
         DrawingMode::LimitToStack { node, root } => {
-            (node
-             .ancestors()
-             .map(|n| n.clone())
-             .collect(),
-             root,
-            )
+            (node.ancestors().map(|n| n.clone()).collect(), root)
         }
 
         DrawingMode::OnlyNode(node) => (Vec::new(), node),
@@ -181,14 +173,7 @@ pub fn draw_tree(
 
     let cascaded = CascadedValues::new_from_node(&node);
 
-    let mut draw_ctx = DrawingCtx::new(
-        cr,
-        viewport,
-        dpi,
-        measuring,
-        testing,
-        drawsub_stack,
-    );
+    let mut draw_ctx = DrawingCtx::new(cr, viewport, dpi, measuring, testing, drawsub_stack);
 
     draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)
 }
