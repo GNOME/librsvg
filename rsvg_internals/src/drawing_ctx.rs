@@ -1061,16 +1061,20 @@ impl DrawingCtx {
             caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
 
             self.push_view_box(vbox.width(), vbox.height())
-        } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
-            // If coords are in terms of the bounding box, use them
-            let (bbw, bbh) = bbox.rect.unwrap().size();
-
-            caffine = Transform::new_scale(bbw, bbh);
-
-            self.push_view_box(1.0, 1.0)
         } else {
-            caffine = Transform::identity();
-            self.get_view_params()
+            caffine = if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
+                // If coords are in terms of the bounding box, use them
+                let (bbw, bbh) = bbox.rect.unwrap().size();
+                Transform::new_scale(bbw, bbh)
+            } else {
+                Transform::identity()
+            };
+
+            if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
+                self.push_view_box(1.0, 1.0)
+            } else {
+                self.get_view_params()
+            }
         };
 
         if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {
