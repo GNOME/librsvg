@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{DrawingMode, ViewParams, draw_tree};
+use crate::drawing_ctx::{draw_tree, DrawingMode, ViewParams};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -395,7 +395,11 @@ fn unit_rectangle() -> Rect {
 /// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
 /// element.  If these are not available, then the size must be computed
 /// by actually measuring the geometries of elements in the document.
-fn get_svg_size(dimensions: &IntrinsicDimensions, cascaded: &CascadedValues, dpi: Dpi) -> Option<(f64, f64)> {
+fn get_svg_size(
+    dimensions: &IntrinsicDimensions,
+    cascaded: &CascadedValues,
+    dpi: Dpi,
+) -> Option<(f64, f64)> {
     let values = cascaded.get();
 
     // these defaults are per the spec
