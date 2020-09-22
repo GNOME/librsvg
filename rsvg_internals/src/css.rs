@@ -217,6 +217,12 @@ unsafe extern "C" fn css_property(
 
 unsafe extern "C" fn css_error(_a_this: *mut CRDocHandler) {
     println!("CSS parsing error");
+    
+    let handler_data = get_doc_handler_data(_a_this);
+    if !handler_data.selector.is_null() && ((*(handler_data.selector)).ref_count > 1) {
+        cr_selector_unref(handler_data.selector);
+        handler_data.selector = ptr::null_mut();
+    }
 }
 
 unsafe extern "C" fn css_unrecoverable_error(_a_this: *mut CRDocHandler) {
