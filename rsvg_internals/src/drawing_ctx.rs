@@ -337,16 +337,14 @@ impl DrawingCtx {
         preserve_aspect_ratio: AspectRatio,
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
-        let cr = self.cr.clone();
-
         if let Some(ClipMode::ClipToViewport) = clip_mode {
-            cr.rectangle(
+            self.cr.rectangle(
                 viewport.x0,
                 viewport.y0,
                 viewport.width(),
                 viewport.height(),
             );
-            cr.clip();
+            self.cr.clip();
         }
 
         preserve_aspect_ratio
@@ -373,8 +371,9 @@ impl DrawingCtx {
 
                 if let Some(vbox) = vbox {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
-                        cr.rectangle(vbox.x0, vbox.y0, vbox.width(), vbox.height());
-                        cr.clip();
+                        self.cr
+                            .rectangle(vbox.x0, vbox.y0, vbox.width(), vbox.height());
+                        self.cr.clip();
                     }
                     self.push_view_box(vbox.width(), vbox.height())
                 } else {
