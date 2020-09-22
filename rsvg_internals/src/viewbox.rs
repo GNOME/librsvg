@@ -9,6 +9,9 @@ use crate::rect::Rect;
 
 /// Newtype around a [`Rect`], used to represent the `viewBox` attribute.
 ///
+/// A `ViewBox` is a new user-space coordinate system mapped onto the rectangle defined by
+/// the current viewport.  See https://www.w3.org/TR/SVG2/coords.html#ViewBoxAttribute
+///
 /// [`Rect`]: rect/type.Rect.html
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox(pub Rect);
