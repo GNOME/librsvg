@@ -307,6 +307,14 @@ impl DrawingCtx {
             .expect("view_box_stack must never be empty!")
     }
 
+    pub fn push_coord_units(&self, units: CoordUnits) -> ViewParams {
+        if units == CoordUnits::ObjectBoundingBox {
+            self.push_view_box(1.0, 1.0)
+        } else {
+            self.get_view_params()
+        }
+    }
+
     /// Gets the viewport that was last pushed with `push_view_box()`.
     pub fn get_view_params(&self) -> ViewParams {
         let vbox = self.get_top_viewbox();
@@ -448,12 +456,7 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let params = if mask_units == CoordUnits::ObjectBoundingBox {
-                self.push_view_box(1.0, 1.0)
-            } else {
-                self.get_view_params()
-            };
-
+            let params = self.push_coord_units(mask_units);
             mask.get_rect(&values, &params)
         };
 
@@ -495,11 +498,7 @@ impl DrawingCtx {
                 mask_cr.transform(bbtransform.into());
             }
 
-            let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
-                self.push_view_box(1.0, 1.0)
-            } else {
-                self.get_view_params()
-            };
+            let _params = self.push_coord_units(mask.get_content_units());
 
             self.push_cairo_context(mask_cr);
 
@@ -899,18 +898,14 @@ impl DrawingCtx {
         values: &ComputedValues,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let units = gradient.get_units();
-        let transform = if let Ok(t) = bbox.rect_to_transform(units.0) {
+        let GradientUnits(units) = gradient.get_units();
+        let transform = if let Ok(t) = bbox.rect_to_transform(units) {
             t
         } else {
             return Ok(false);
         };
 
-        let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            self.push_view_box(1.0, 1.0)
-        } else {
-            self.get_view_params()
-        };
+        let params = self.push_coord_units(units);
 
         let g = match gradient.get_variant() {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
@@ -990,11 +985,7 @@ impl DrawingCtx {
         let content_units = pattern.get_content_units();
         let pattern_transform = pattern.get_transform();
 
-        let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-            self.push_view_box(1.0, 1.0)
-        } else {
-            self.get_view_params()
-        };
+        let params = self.push_coord_units(units.0);
 
         let pattern_rect = pattern.get_rect(values, &params);
 
@@ -1062,7 +1053,9 @@ impl DrawingCtx {
 
             self.push_view_box(vbox.width(), vbox.height())
         } else {
-            caffine = if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
+            let PatternContentUnits(content_units) = content_units;
+
+            caffine = if content_units == CoordUnits::ObjectBoundingBox {
                 // If coords are in terms of the bounding box, use them
                 let (bbw, bbh) = bbox.rect.unwrap().size();
                 Transform::new_scale(bbw, bbh)
@@ -1070,11 +1063,7 @@ impl DrawingCtx {
                 Transform::identity()
             };
 
-            if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
-                self.push_view_box(1.0, 1.0)
-            } else {
-                self.get_view_params()
-            }
+            self.push_coord_units(content_units)
         };
 
         if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {

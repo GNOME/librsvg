@@ -67,20 +67,7 @@ impl Filter {
 
         let mut bbox = BoundingBox::new();
 
-        // transform is set up in FilterContext::new() in such a way that for
-        // filterunits == ObjectBoundingBox it includes scaling to correct width, height and
-        // this is why width and height are set to 1, 1 (and for filterunits ==
-        // UserSpaceOnUse, transform doesn't include scaling because in this case the correct
-        // width, height already happens to be the viewbox width, height).
-        //
-        // It's done this way because with ObjectBoundingBox, non-percentage values are supposed to
-        // represent the fractions of the referenced node, and with width and height = 1, 1 this
-        // works out exactly like that.
-        let params = if self.filterunits == CoordUnits::ObjectBoundingBox {
-            draw_ctx.push_view_box(1.0, 1.0)
-        } else {
-            draw_ctx.get_view_params()
-        };
+        let params = draw_ctx.push_coord_units(self.filterunits);
 
         // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
         // referencing node. No units are allowed (it's checked during attribute parsing).
