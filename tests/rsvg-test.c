@@ -212,6 +212,28 @@ test_tolerate (const gchar *message)
 // offset.
 #define FRAME_SIZE 47
 
+G_GNUC_CONST static unsigned int
+tolerable_difference (void)
+{
+    const gchar *env = g_getenv ("RSVG_TEST_TOLERANCE");
+    if (env)
+	return strtoul (env, NULL, 10);
+
+#ifdef __x86_64__
+    return 2;
+#else
+    /* https://gitlab.gnome.org/GNOME/librsvg/issues/178,
+     * https://gitlab.gnome.org/GNOME/librsvg/issues/366 */
+    return 20;
+#endif
+}
+
+G_GNUC_CONST static unsigned int
+allowed_difference (void)
+{
+    return 2;
+}
+
 static void
 rsvg_cairo_check (gconstpointer data)
 {
@@ -277,26 +299,17 @@ rsvg_cairo_check (gconstpointer data)
                         width_a, height_a, width_b, height_b);
     }
     else {
-#ifdef __x86_64__
-	const unsigned int MAX_DIFF = 2;
-#else
-        /* https://gitlab.gnome.org/GNOME/librsvg/issues/178,
-         * https://gitlab.gnome.org/GNOME/librsvg/issues/366 */
-	const unsigned int MAX_DIFF = 20;
-#endif
-	const unsigned int WARN_DIFF = 2;
-
 	surface_diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
 						   dimensions.width, dimensions.height);
 
 	test_utils_compare_surfaces (surface_a, surface_b, surface_diff, &result);
 
-	if (result.pixels_changed && result.max_diff > MAX_DIFF) {
+	if (result.pixels_changed && result.max_diff > tolerable_difference ()) {
             g_test_fail ();
             save_image (surface_diff, test_file_base, "-diff.png");
 	}
-        else if (result.pixels_changed && result.max_diff > WARN_DIFF) {
-            test_tolerate ("not the same as x86_64, but giving it the benefit of the doubt");
+        else if (result.pixels_changed && result.max_diff > allowed_difference ()) {
+            test_tolerate ("not perfect, but somewhat tolerable");
             save_image (surface_diff, test_file_base, "-diff.png");
 	}
 
