@@ -326,6 +326,18 @@ impl DrawingCtx {
         }
     }
 
+    fn push_viewport(&self, viewport: Viewport) -> ViewParams {
+        let vbox = viewport.vbox;
+
+        self.viewport_stack.borrow_mut().push(viewport);
+
+        ViewParams {
+            dpi: self.dpi,
+            vbox,
+            viewport_stack: Some(Rc::downgrade(&self.viewport_stack)),
+        }
+    }
+
     /// Pushes a viewport size for normalizing `Length` values.
     ///
     /// You should pass the returned `ViewParams` to all subsequent `Length.normalize()`
@@ -337,16 +349,7 @@ impl DrawingCtx {
         let Viewport { transform, .. } = self.get_top_viewport();
 
         let vbox = ViewBox::from(Rect::from_size(width, height));
-
-        self.viewport_stack
-            .borrow_mut()
-            .push(Viewport { transform, vbox });
-
-        ViewParams {
-            dpi: self.dpi,
-            vbox,
-            viewport_stack: Some(Rc::downgrade(&self.viewport_stack)),
-        }
+        self.push_viewport(Viewport { transform, vbox })
     }
 
     /// Creates a new coordinate space inside a viewport.
@@ -394,8 +397,12 @@ impl DrawingCtx {
                     }
                 }
 
-                let vbox = vbox.unwrap_or_else(|| self.get_top_viewport().vbox);
-                self.push_view_box(vbox.width(), vbox.height())
+                let top_viewport = self.get_top_viewport();
+
+                self.push_viewport(Viewport {
+                    transform: top_viewport.transform.post_transform(&t),
+                    vbox: vbox.unwrap_or(top_viewport.vbox),
+                })
             })
     }
 
