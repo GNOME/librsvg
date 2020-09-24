@@ -23,22 +23,6 @@
    Author: Raph Levien <raph@artofcode.com>
 */
 
-#include "config.h"
-
-#include "rsvg.h"
-#include "rsvg-css.h"
-
-/* Implemented in rsvg_internals/src/dpi.rs */
-extern void rsvg_rust_set_default_dpi_x_y(double dpi_x, double dpi_y);
-
-/* Implemented in rsvg_internals/src/error.rs */
-extern GQuark rsvg_rust_error_quark (void);
-
-/* Implemented in librsvg/c_api.rs */
-extern void rsvg_rust_init (void);
-extern void rsvg_rust_term (void);
-extern void rsvg_rust_cleanup (void);
-
 /**
  * rsvg_error_quark:
  *
@@ -46,11 +30,6 @@ extern void rsvg_rust_cleanup (void);
  *
  * Returns: The error domain
  */
-GQuark
-rsvg_error_quark (void)
-{
-    return rsvg_rust_error_quark ();
-}
 
 /**
  * rsvg_set_default_dpi:
@@ -66,11 +45,6 @@ rsvg_error_quark (void)
  * created; it would not work after that.  To avoid global mutable state, please
  * use rsvg_handle_set_dpi() instead.
  */
-void
-rsvg_set_default_dpi (double dpi)
-{
-    rsvg_rust_set_default_dpi_x_y (dpi, dpi);
-}
 
 /**
  * rsvg_set_default_dpi_x_y:
@@ -87,11 +61,6 @@ rsvg_set_default_dpi (double dpi)
  * created; it would not work after that.  To avoid global mutable state, please
  * use rsvg_handle_set_dpi() instead.
  */
-void
-rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
-{
-    rsvg_rust_set_default_dpi_x_y (dpi_x, dpi_y);
-}
 
 /**
  * rsvg_init:
@@ -101,11 +70,6 @@ rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y)
  * Since: 2.9
  * Deprecated: 2.36: There is no need to initialize librsvg.
  **/
-void
-rsvg_init (void)
-{
-    rsvg_rust_init ();
-}
 
 /**
  * rsvg_term:
@@ -115,11 +79,6 @@ rsvg_init (void)
  * Since: 2.9
  * Deprecated: 2.36: There is no need to de-initialize librsvg.
  **/
-void
-rsvg_term (void)
-{
-    rsvg_rust_term ();
-}
 
 /**
  * rsvg_cleanup:
@@ -128,17 +87,3 @@ rsvg_term (void)
  *
  * Since: 2.36
  **/
-void
-rsvg_cleanup (void)
-{
-    rsvg_rust_cleanup ();
-}
-
-/* This is defined like this so that we can export the Rust function... just for
- * the benefit of rsvg-convert.c
- */
-RsvgCssColorSpec
-rsvg_css_parse_color_ (const char *str)
-{
-    return rsvg_css_parse_color (str);
-}

@@ -48,7 +48,7 @@ typedef struct {
 
 /* This one is semi-public for mis-use in rsvg-convert */
 RSVG_API
-RsvgCssColorSpec rsvg_css_parse_color_ (const char *str);
+RsvgCssColorSpec rsvg_css_parse_color (const char *str);
 
 #ifdef RSVG_COMPILATION
 

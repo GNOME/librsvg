@@ -52,7 +52,7 @@ impl From<Dpi> for rsvg_internals::Dpi {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_set_default_dpi_x_y(dpi_x: f64, dpi_y: f64) {
+pub unsafe extern "C" fn rsvg_set_default_dpi_x_y(dpi_x: f64, dpi_y: f64) {
     if dpi_x <= 0.0 {
         DPI_X = DEFAULT_DPI_X;
     } else {
@@ -63,5 +63,16 @@ pub unsafe extern "C" fn rsvg_rust_set_default_dpi_x_y(dpi_x: f64, dpi_y: f64) {
         DPI_Y = DEFAULT_DPI_Y;
     } else {
         DPI_Y = dpi_y;
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_set_default_dpi(dpi: f64) {
+    if dpi <= 0.0 {
+        DPI_X = DEFAULT_DPI_X;
+        DPI_Y = DEFAULT_DPI_Y;
+    } else {
+        DPI_X = dpi;
+        DPI_Y = dpi;
     }
 }
