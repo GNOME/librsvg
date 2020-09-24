@@ -40,6 +40,8 @@ use crate::dpi::Dpi;
 use crate::messages::{rsvg_g_critical, rsvg_g_warning};
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 
+include!(concat!(env!("OUT_DIR"), "/version.rs"));
+
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
     // for GBindingFlags, from gtk-rs/glib/src/gobject/auto/flags.rs

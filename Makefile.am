@@ -122,6 +122,7 @@ LIBRSVG_CRATE_SRC = 						\
 
 LIBRSVG_C_API_SRC =						\
 	librsvg/Cargo.toml					\
+	librsvg/build.rs					\
 	librsvg/c_api.rs					\
 	librsvg/color_utils.rs					\
 	librsvg/dpi.rs						\

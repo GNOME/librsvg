@@ -77,6 +77,5 @@ Rsvg-2.0.typelib
 librsvg-2.0.vapi
 librsvg-*.tar.xz
 librsvg-*.tar.bz2
-librsvg/version.rs
 rust/target
 _rsvg_dummy.c
