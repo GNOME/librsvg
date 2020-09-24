@@ -32,34 +32,6 @@
  * cross-platform GTK+ widget toolkit.
  */
 
-#include "config.h"
-
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "rsvg.h"
-
-/* Defined in rsvg_internals/src/pixbuf_utils.rs */
-extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_size (const char *filename,
-                                                      int width,
-                                                      int height,
-                                                      GError **error);
-extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_zoom (const char *filename,
-                                                      double x_zoom,
-                                                      double y_zoom,
-                                                      GError **error);
-extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_zoom_with_max (const char *filename,
-                                                               double x_zoom,
-                                                               double y_zoom,
-                                                               int max_width,
-                                                               int max_height,
-                                                               GError **error);
-extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_max_size (const char *filename,
-                                                          int max_width,
-                                                          int max_height,
-                                                          GError **error);
-
 /**
  * rsvg_pixbuf_from_file:
  * @filename: A file name
@@ -72,11 +44,6 @@ extern GdkPixbuf *rsvg_rust_pixbuf_from_file_at_max_size (const char *filename,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
-GdkPixbuf *
-rsvg_pixbuf_from_file (const gchar *filename, GError **error)
-{
-    return rsvg_rust_pixbuf_from_file_at_size (filename, -1, -1, error);
-}
 
 /**
  * rsvg_pixbuf_from_file_at_zoom:
@@ -93,14 +60,6 @@ rsvg_pixbuf_from_file (const gchar *filename, GError **error)
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
-GdkPixbuf *
-rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
-                               double x_zoom,
-                               double y_zoom,
-                               GError **error)
-{
-    return rsvg_rust_pixbuf_from_file_at_zoom (filename, x_zoom, y_zoom, error);
-}
 
 /**
  * rsvg_pixbuf_from_file_at_zoom_with_max:
@@ -120,16 +79,6 @@ rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
-GdkPixbuf *
-rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
-                                        double x_zoom,
-                                        double y_zoom,
-                                        gint max_width,
-                                        gint max_height,
-                                        GError **error)
-{
-    return rsvg_rust_pixbuf_from_file_at_zoom_with_max (filename, x_zoom, y_zoom, max_width, max_height, error);
-}
 
 /**
  * rsvg_pixbuf_from_file_at_size:
@@ -147,14 +96,6 @@ rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
-GdkPixbuf *
-rsvg_pixbuf_from_file_at_size (const gchar *filename,
-                               gint width,
-                               gint height,
-                               GError **error)
-{
-    return rsvg_rust_pixbuf_from_file_at_size (filename, width, height, error);
-}
 
 /**
  * rsvg_pixbuf_from_file_at_max_size:
@@ -171,11 +112,3 @@ rsvg_pixbuf_from_file_at_size (const gchar *filename,
  * Return value: A newly allocated #GdkPixbuf, or %NULL
  * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
  **/
-GdkPixbuf *
-rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
-                                   gint max_width,
-                                   gint max_height,
-                                   GError **error)
-{
-    return rsvg_rust_pixbuf_from_file_at_max_size(filename, max_width, max_height, error);
-}

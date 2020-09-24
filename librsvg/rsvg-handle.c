@@ -311,119 +311,6 @@
 
 /***** End documentation for RsvgHandle properties *****/
 
-#include "config.h"
-#define _GNU_SOURCE 1
-
-#include <string.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <glib/gprintf.h>
-#include <glib/gi18n-lib.h>
-
-#include "rsvg.h"
-
-/* Implemented in rsvg_internals/src/handle.rs */
-extern void rsvg_rust_handle_set_dpi (RsvgHandle *handle, double dpi);
-extern void rsvg_rust_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y);
-extern void rsvg_rust_handle_set_base_url (RsvgHandle *handle, const char *uri);
-extern void rsvg_rust_handle_set_base_gfile (RsvgHandle *handle, GFile *file);
-extern const char *rsvg_rust_handle_get_base_url (RsvgHandle *handle);
-extern guint rsvg_rust_handle_set_testing (RsvgHandle *handle, gboolean testing);
-extern gboolean rsvg_rust_handle_read_stream_sync (RsvgHandle *handle,
-                                                   GInputStream *stream,
-                                                   GCancellable *cancellable,
-                                                   GError **error);
-extern gboolean rsvg_rust_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error);
-extern gboolean rsvg_rust_handle_close (RsvgHandle *handle, GError **error);
-extern gboolean rsvg_rust_handle_has_sub (RsvgHandle *handle, const char *id);
-extern gboolean rsvg_rust_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
-extern gboolean rsvg_rust_handle_render_cairo_sub (RsvgHandle *handle,
-                                                   cairo_t *cr,
-                                                   const char *id);
-extern GdkPixbuf *rsvg_rust_handle_get_pixbuf (RsvgHandle *handle);
-extern GdkPixbuf *rsvg_rust_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id);
-extern void rsvg_rust_handle_get_dimensions (RsvgHandle *handle,
-                                             RsvgDimensionData *dimension_data);
-extern gboolean rsvg_rust_handle_get_dimensions_sub (RsvgHandle *handle,
-                                                     RsvgDimensionData *dimension_data,
-                                                     const char *id);
-extern gboolean rsvg_rust_handle_get_position_sub (RsvgHandle *handle,
-                                                   RsvgPositionData *dimension_data,
-                                                   const char *id);
-extern void rsvg_rust_handle_set_size_callback (RsvgHandle *handle,
-                                                RsvgSizeFunc size_func,
-                                                gpointer user_data,
-                                                GDestroyNotify destroy_notify);
-extern RsvgHandle *rsvg_rust_handle_new (void);
-extern RsvgHandle *rsvg_rust_handle_new_with_flags (RsvgHandleFlags flags);
-extern RsvgHandle *rsvg_rust_handle_new_from_file (const char *filename,
-                                                   GError **error);
-extern RsvgHandle *rsvg_rust_handle_new_from_gfile_sync (GFile *file,
-                                                         RsvgHandleFlags flags,
-                                                         GCancellable *cancellable,
-                                                         GError **error);
-extern RsvgHandle *rsvg_rust_handle_new_from_stream_sync (GInputStream *input_stream,
-                                                          GFile *base_file,
-                                                          RsvgHandleFlags flags,
-                                                          GCancellable *cancellable,
-                                                          GError **error);
-extern RsvgHandle *rsvg_rust_handle_new_from_data (const guint8 *data,
-                                                   gsize data_len,
-                                                   GError **error);
-extern void rsvg_rust_handle_free (RsvgHandle *handle);
-extern gboolean rsvg_rust_handle_set_stylesheet (RsvgHandle  *handle,
-                                                 const char  *css,
-                                                 gsize        css_len,
-                                                 GError     **error);
-
-extern void rsvg_rust_handle_get_intrinsic_dimensions (RsvgHandle *handle,
-                                                       gboolean   *out_has_width,
-                                                       RsvgLength *out_width,
-                                                       gboolean   *out_has_height,
-                                                       RsvgLength *out_height,
-                                                       gboolean   *out_has_viewbox,
-                                                       RsvgRectangle *out_viewbox);
-extern gboolean rsvg_rust_handle_render_document (RsvgHandle           *handle,
-                                                  cairo_t              *cr,
-                                                  const RsvgRectangle  *viewport,
-                                                  GError              **error);
-extern gboolean rsvg_rust_handle_get_geometry_for_layer (RsvgHandle     *handle,
-                                                         const char     *id,
-                                                         const RsvgRectangle *viewport,
-                                                         RsvgRectangle  *out_ink_rect,
-                                                         RsvgRectangle  *out_logical_rect,
-                                                         GError        **error);
-extern gboolean rsvg_rust_handle_render_layer (RsvgHandle           *handle,
-                                               cairo_t              *cr,
-                                               const char           *id,
-                                               const RsvgRectangle  *viewport,
-                                               GError              **error);
-extern gboolean rsvg_rust_handle_get_geometry_for_element (RsvgHandle     *handle,
-                                                           const char     *id,
-                                                           RsvgRectangle  *out_ink_rect,
-                                                           RsvgRectangle  *out_logical_rect,
-                                                           GError        **error);
-extern gboolean rsvg_rust_handle_render_element (RsvgHandle           *handle,
-                                                 cairo_t              *cr,
-                                                 const char           *id,
-                                                 const RsvgRectangle  *element_viewport,
-                                                 GError              **error);
-extern const char *rsvg_rust_handle_get_desc (RsvgHandle *handle);
-extern const char *rsvg_rust_handle_get_metadata (RsvgHandle *handle);
-extern const char *rsvg_rust_handle_get_title (RsvgHandle *handle);
-
-
-/* Implemented in librsvg/c_api.rs */
-extern GType rsvg_rust_error_get_type (void);
-extern GType rsvg_rust_handle_get_type (void);
-extern GType rsvg_rust_handle_flags_get_type (void);
-
-GType
-rsvg_handle_get_type (void)
-{
-    return rsvg_rust_handle_get_type ();
-}
-
 /**
  * rsvg_handle_free:
  * @handle: An #RsvgHandle
@@ -431,11 +318,6 @@ rsvg_handle_get_type (void)
  * Frees @handle.
  * Deprecated: Use g_object_unref() instead.
  **/
-void
-rsvg_handle_free (RsvgHandle *handle)
-{
-    rsvg_rust_handle_free (handle);
-}
 
 /**
  * rsvg_handle_new:
@@ -463,11 +345,6 @@ rsvg_handle_free (RsvgHandle *handle)
  *
  * Returns: A new #RsvgHandle with no flags set.
  **/
-RsvgHandle *
-rsvg_handle_new (void)
-{
-    return rsvg_rust_handle_new();
-}
 
 /**
  * rsvg_handle_new_from_data:
@@ -483,11 +360,6 @@ rsvg_handle_new (void)
  * Returns: A #RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
  */
-RsvgHandle *
-rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
-{
-    return rsvg_rust_handle_new_from_data (data, data_len, error);
-}
 
 /**
  * rsvg_handle_new_from_file:
@@ -502,11 +374,6 @@ rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GError **error)
  * Returns: A #RsvgHandle or %NULL if an error occurs.
  * Since: 2.14
  */
-RsvgHandle *
-rsvg_handle_new_from_file (const gchar *filename, GError **error)
-{
-    return rsvg_rust_handle_new_from_file (filename, error);
-}
 
 /**
  * rsvg_handle_new_with_flags:
@@ -520,11 +387,6 @@ rsvg_handle_new_from_file (const gchar *filename, GError **error)
  *
  * Since: 2.36
  **/
-RsvgHandle *
-rsvg_handle_new_with_flags (RsvgHandleFlags flags)
-{
-    return rsvg_rust_handle_new_with_flags (flags);
-}
 
 /**
  * rsvg_handle_new_from_gfile_sync:
@@ -548,14 +410,6 @@ rsvg_handle_new_with_flags (RsvgHandleFlags flags)
  *
  * Since: 2.32
  */
-RsvgHandle *
-rsvg_handle_new_from_gfile_sync (GFile          *file,
-                                 RsvgHandleFlags flags,
-                                 GCancellable   *cancellable,
-                                 GError        **error)
-{
-    return rsvg_rust_handle_new_from_gfile_sync (file, flags, cancellable, error);
-}
 
 /**
  * rsvg_handle_new_from_stream_sync:
@@ -580,19 +434,6 @@ rsvg_handle_new_from_gfile_sync (GFile          *file,
  *
  * Since: 2.32
  */
-RsvgHandle *
-rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
-                                  GFile           *base_file,
-                                  RsvgHandleFlags  flags,
-                                  GCancellable    *cancellable,
-                                  GError         **error)
-{
-    return rsvg_rust_handle_new_from_stream_sync (input_stream,
-                                                  base_file,
-                                                  flags,
-                                                  cancellable,
-                                                  error);
-}
 
 /**
  * rsvg_handle_write:
@@ -618,11 +459,6 @@ rsvg_handle_new_from_stream_sync (GInputStream    *input_stream,
  * called.  To avoid a big temporary buffer, use the suggested functions, which
  * take a #GFile or a #GInputStream and do not require a temporary buffer.
  **/
-gboolean
-rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **error)
-{
-    return rsvg_rust_handle_write (handle, buf, count, error);
-}
 
 /**
  * rsvg_handle_close:
@@ -640,11 +476,6 @@ rsvg_handle_write (RsvgHandle *handle, const guchar *buf, gsize count, GError **
  * rsvg_handle_new_from_stream_sync().  See the deprecation notes for
  * rsvg_handle_write() for more information.
  **/
-gboolean
-rsvg_handle_close (RsvgHandle *handle, GError **error)
-{
-    return rsvg_rust_handle_close(handle, error);
-}
 
 /**
  * rsvg_handle_read_stream_sync:
@@ -671,17 +502,6 @@ rsvg_handle_close (RsvgHandle *handle, GError **error)
  *
  * Since: 2.32
  */
-gboolean
-rsvg_handle_read_stream_sync (RsvgHandle   *handle,
-                              GInputStream *stream,
-                              GCancellable *cancellable,
-                              GError      **error)
-{
-    return rsvg_rust_handle_read_stream_sync (handle,
-                                              stream,
-                                              cancellable,
-                                              error);
-}
 
 /**
  * rsvg_handle_set_base_uri:
@@ -695,11 +515,6 @@ rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  *
  * Since: 2.9
  */
-void
-rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri)
-{
-    rsvg_rust_handle_set_base_url (handle, base_uri);
-}
 
 /**
  * rsvg_handle_set_base_gfile:
@@ -713,12 +528,6 @@ rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri)
  *
  * Since: 2.32
  */
-void
-rsvg_handle_set_base_gfile (RsvgHandle *handle,
-                            GFile      *base_file)
-{
-    rsvg_rust_handle_set_base_gfile (handle, base_file);
-}
 
 /**
  * rsvg_handle_get_base_uri:
@@ -729,11 +538,6 @@ rsvg_handle_set_base_gfile (RsvgHandle *handle,
  * Returns: the base uri, possibly null
  * Since: 2.8
  */
-const char *
-rsvg_handle_get_base_uri (RsvgHandle *handle)
-{
-    return rsvg_rust_handle_get_base_url (handle);
-}
 
 /**
  * rsvg_handle_set_stylesheet:
@@ -756,14 +560,6 @@ rsvg_handle_get_base_uri (RsvgHandle *handle)
  *
  * Since: 2.48
  */
-gboolean
-rsvg_handle_set_stylesheet (RsvgHandle   *handle,
-                            const guint8 *css,
-                            gsize         css_len,
-                            GError      **error)
-{
-    return rsvg_rust_handle_set_stylesheet (handle, css, css_len, error);
-}
 
 /**
  * rsvg_handle_get_metadata:
@@ -776,11 +572,6 @@ rsvg_handle_set_stylesheet (RsvgHandle   *handle,
  * Deprecated: 2.36.  Librsvg does not read the metadata/desc/title elements;
  * this function always returns #NULL.
  */
-const char *
-rsvg_handle_get_metadata (RsvgHandle * handle)
-{
-    return rsvg_rust_handle_get_metadata (handle);
-}
 
 /**
  * rsvg_handle_get_title:
@@ -793,11 +584,6 @@ rsvg_handle_get_metadata (RsvgHandle * handle)
  * Deprecated: 2.36.  Librsvg does not read the metadata/desc/title elements;
  * this function always returns #NULL.
  */
-const char *
-rsvg_handle_get_title (RsvgHandle *handle)
-{
-    return rsvg_rust_handle_get_title (handle);
-}
 
 /**
  * rsvg_handle_get_desc:
@@ -810,11 +596,6 @@ rsvg_handle_get_title (RsvgHandle *handle)
  * Deprecated: 2.36.  Librsvg does not read the metadata/desc/title elements;
  * this function always returns #NULL.
  */
-const char *
-rsvg_handle_get_desc (RsvgHandle *handle)
-{
-    return rsvg_rust_handle_get_desc (handle);
-}
 
 /**
  * rsvg_handle_render_cairo_sub:
@@ -844,11 +625,6 @@ rsvg_handle_get_desc (RsvgHandle *handle)
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
  */
-gboolean
-rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
-{
-    return rsvg_rust_handle_render_cairo_sub (handle, cr, id);
-}
 
 /**
  * rsvg_handle_render_cairo:
@@ -871,11 +647,6 @@ rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id)
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
  */
-gboolean
-rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr)
-{
-    return rsvg_rust_handle_render_cairo (handle, cr);
-}
 
 /**
  * rsvg_handle_get_dimensions:
@@ -890,11 +661,6 @@ rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr)
  *
  * Since: 2.14
  */
-void
-rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data)
-{
-    rsvg_rust_handle_get_dimensions (handle, dimension_data);
-}
 
 /**
  * rsvg_handle_get_dimensions_sub:
@@ -918,13 +684,6 @@ rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_dat
  *
  * Since: 2.22
  */
-gboolean
-rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
-                                RsvgDimensionData *dimension_data,
-                                const char *id)
-{
-    return rsvg_rust_handle_get_dimensions_sub (handle, dimension_data, id);
-}
 
 /**
  * rsvg_handle_get_position_sub:
@@ -948,13 +707,6 @@ rsvg_handle_get_dimensions_sub (RsvgHandle *handle,
  *
  * Since: 2.22
  */
-gboolean
-rsvg_handle_get_position_sub (RsvgHandle *handle,
-                              RsvgPositionData *position_data,
-                              const char *id)
-{
-    return rsvg_rust_handle_get_position_sub (handle, position_data, id);
-}
 
 /**
  * rsvg_handle_has_sub:
@@ -973,11 +725,6 @@ rsvg_handle_get_position_sub (RsvgHandle *handle,
  *
  * Since: 2.22
  */
-gboolean
-rsvg_handle_has_sub (RsvgHandle *handle, const char *id)
-{
-    return rsvg_rust_handle_has_sub (handle, id);
-}
 
 /**
  * rsvg_handle_get_pixbuf_sub:
@@ -1009,11 +756,6 @@ rsvg_handle_has_sub (RsvgHandle *handle, const char *id)
  *
  * Since: 2.14
  **/
-GdkPixbuf *
-rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id)
-{
-    return rsvg_rust_handle_get_pixbuf_sub (handle, id);
-}
 
 /**
  * rsvg_handle_get_pixbuf:
@@ -1030,11 +772,6 @@ rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id)
  *
  * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
  **/
-GdkPixbuf *
-rsvg_handle_get_pixbuf (RsvgHandle *handle)
-{
-    return rsvg_rust_handle_get_pixbuf (handle);
-}
 
 /**
  * rsvg_handle_set_dpi:
@@ -1050,11 +787,6 @@ rsvg_handle_get_pixbuf (RsvgHandle *handle)
  *
  * Since: 2.8
  */
-void
-rsvg_handle_set_dpi (RsvgHandle *handle, double dpi)
-{
-    rsvg_rust_handle_set_dpi (handle, dpi);
-}
 
 /**
  * rsvg_handle_set_dpi_x_y:
@@ -1071,11 +803,6 @@ rsvg_handle_set_dpi (RsvgHandle *handle, double dpi)
  *
  * Since: 2.8
  */
-void
-rsvg_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y)
-{
-    rsvg_rust_handle_set_dpi_x_y (handle, dpi_x, dpi_y);
-}
 
 /**
  * rsvg_handle_set_size_callback:
@@ -1134,17 +861,6 @@ rsvg_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y)
  * refers to the whole SVG or to just a sub-element of it.  It is easier, and
  * unambiguous, to use code similar to the example above.
  **/
-void
-rsvg_handle_set_size_callback (RsvgHandle *handle,
-                               RsvgSizeFunc size_func,
-                               gpointer user_data,
-                               GDestroyNotify user_data_destroy)
-{
-    rsvg_rust_handle_set_size_callback (handle,
-                                        size_func,
-                                        user_data,
-                                        user_data_destroy);
-}
 
 /**
  * rsvg_handle_get_intrinsic_dimensions:
@@ -1190,23 +906,6 @@ rsvg_handle_set_size_callback (RsvgHandle *handle,
  *
  * Since: 2.46
  */
-void
-rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
-                                      gboolean   *out_has_width,
-                                      RsvgLength *out_width,
-                                      gboolean   *out_has_height,
-                                      RsvgLength *out_height,
-                                      gboolean   *out_has_viewbox,
-                                      RsvgRectangle *out_viewbox)
-{
-    rsvg_rust_handle_get_intrinsic_dimensions (handle,
-                                               out_has_width,
-                                               out_width,
-                                               out_has_height,
-                                               out_height,
-                                               out_has_viewbox,
-                                               out_viewbox);
-}
 
 /**
  * rsvg_handle_render_document:
@@ -1230,14 +929,6 @@ rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  *
  * Since: 2.46
  */
-gboolean
-rsvg_handle_render_document (RsvgHandle           *handle,
-                             cairo_t              *cr,
-                             const RsvgRectangle  *viewport,
-                             GError              **error)
-{
-    return rsvg_rust_handle_render_document (handle, cr, viewport, error);
-}
 
 /**
  * rsvg_handle_get_geometry_for_layer:
@@ -1281,21 +972,6 @@ rsvg_handle_render_document (RsvgHandle           *handle,
  *
  * Since: 2.46
  */
-gboolean
-rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
-                                    const char     *id,
-                                    const RsvgRectangle *viewport,
-                                    RsvgRectangle  *out_ink_rect,
-                                    RsvgRectangle  *out_logical_rect,
-                                    GError        **error)
-{
-    return rsvg_rust_handle_get_geometry_for_layer (handle,
-                                                    id,
-                                                    viewport,
-                                                    out_ink_rect,
-                                                    out_logical_rect,
-                                                    error);
-}
 
 /**
  * rsvg_handle_render_layer:
@@ -1331,15 +1007,6 @@ rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  *
  * Since: 2.46
  */
-gboolean
-rsvg_handle_render_layer (RsvgHandle           *handle,
-                          cairo_t              *cr,
-                          const char           *id,
-                          const RsvgRectangle  *viewport,
-                          GError              **error)
-{
-    return rsvg_rust_handle_render_layer (handle, cr, id, viewport, error);
-}
 
 /**
  * rsvg_handle_get_geometry_for_element:
@@ -1388,19 +1055,6 @@ rsvg_handle_render_layer (RsvgHandle           *handle,
  *
  * Since: 2.46
  */
-gboolean
-rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
-                                      const char     *id,
-                                      RsvgRectangle  *out_ink_rect,
-                                      RsvgRectangle  *out_logical_rect,
-                                      GError        **error)
-{
-    return rsvg_rust_handle_get_geometry_for_element (handle,
-                                                      id,
-                                                      out_ink_rect,
-                                                      out_logical_rect,
-                                                      error);
-}
 
 /**
  * rsvg_handle_render_element:
@@ -1437,15 +1091,6 @@ rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  *
  * Since: 2.46
  */
-gboolean
-rsvg_handle_render_element (RsvgHandle           *handle,
-                            cairo_t              *cr,
-                            const char           *id,
-                            const RsvgRectangle  *element_viewport,
-                            GError              **error)
-{
-    return rsvg_rust_handle_render_element (handle, cr, id, element_viewport, error);
-}
 
 /**
  * rsvg_handle_internal_set_testing:
@@ -1455,20 +1100,3 @@ rsvg_handle_render_element (RsvgHandle           *handle,
  * Do not call this function.  This is intended for librsvg's internal
  * test suite only.
  **/
-void
-rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing)
-{
-    rsvg_rust_handle_set_testing (handle, testing);
-}
-
-GType
-rsvg_error_get_type(void)
-{
-    return rsvg_rust_error_get_type();
-}
-
-GType
-rsvg_handle_flags_get_type(void)
-{
-    return rsvg_rust_handle_flags_get_type();
-}

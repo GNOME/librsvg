@@ -569,7 +569,7 @@ main (int argc, char **argv)
         if (background_color_str && g_ascii_strcasecmp(background_color_str, "none") != 0) {
             RsvgCssColorSpec spec;
 
-            spec = rsvg_css_parse_color_ (background_color_str);
+            spec = rsvg_css_parse_color (background_color_str);
             if (spec.kind == RSVG_CSS_COLOR_SPEC_ARGB) {
                 background_color = spec.argb;
             } else {

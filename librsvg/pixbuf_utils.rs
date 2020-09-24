@@ -269,7 +269,32 @@ fn pixbuf_from_file_with_size_mode(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_pixbuf_from_file_at_size(
+pub unsafe extern "C" fn rsvg_pixbuf_from_file(
+    filename: *const libc::c_char,
+    error: *mut *mut glib_sys::GError,
+) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    rsvg_return_val_if_fail! {
+        rsvg_pixbuf_from_file => ptr::null_mut();
+
+        !filename.is_null(),
+        error.is_null() || (*error).is_null(),
+    }
+
+    pixbuf_from_file_with_size_mode(
+        filename,
+        &SizeMode {
+            kind: SizeKind::WidthHeight,
+            x_zoom: 0.0,
+            y_zoom: 0.0,
+            width: -1,
+            height: -1,
+        },
+        error,
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
     filename: *const libc::c_char,
     width: i32,
     height: i32,
@@ -297,7 +322,7 @@ pub unsafe extern "C" fn rsvg_rust_pixbuf_from_file_at_size(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_pixbuf_from_file_at_zoom(
+pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
     filename: *const libc::c_char,
     x_zoom: f64,
     y_zoom: f64,
@@ -325,7 +350,7 @@ pub unsafe extern "C" fn rsvg_rust_pixbuf_from_file_at_zoom(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_pixbuf_from_file_at_zoom_with_max(
+pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
     filename: *const libc::c_char,
     x_zoom: f64,
     y_zoom: f64,
@@ -356,7 +381,7 @@ pub unsafe extern "C" fn rsvg_rust_pixbuf_from_file_at_zoom_with_max(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_rust_pixbuf_from_file_at_max_size(
+pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_max_size(
     filename: *const libc::c_char,
     max_width: i32,
     max_height: i32,
