@@ -1623,7 +1623,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_from_data(
-    data: *mut u8,
+    data: *const u8,
     data_len: usize,
     error: *mut *mut glib_sys::GError,
 ) -> *const RsvgHandle {
@@ -1648,7 +1648,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     assert!(data_len <= std::isize::MAX as usize);
     let data_len = data_len as isize;
 
-    let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data, data_len, None);
+    let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data as *mut u8, data_len, None);
 
     let ret = rsvg_handle_new_from_stream_sync(
         raw_stream as *mut _,
