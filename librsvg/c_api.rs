@@ -1166,7 +1166,7 @@ pub unsafe extern "C" fn rsvg_handle_get_base_uri(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_set_dpi(handle: *const RsvgHandle, dpi: f64) {
+pub unsafe extern "C" fn rsvg_handle_set_dpi(handle: *const RsvgHandle, dpi: libc::c_double) {
     rsvg_return_if_fail! {
         rsvg_handle_set_dpi;
 
@@ -1181,8 +1181,8 @@ pub unsafe extern "C" fn rsvg_handle_set_dpi(handle: *const RsvgHandle, dpi: f64
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_set_dpi_x_y(
     handle: *const RsvgHandle,
-    dpi_x: f64,
-    dpi_y: f64,
+    dpi_x: libc::c_double,
+    dpi_y: libc::c_double,
 ) {
     rsvg_return_if_fail! {
         rsvg_handle_set_dpi_x_y;
@@ -1506,7 +1506,7 @@ pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: u32) -> *const RsvgHandle {
+pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
     let obj: *mut gobject_sys::GObject =
         glib::Object::new(CHandle::get_type(), &[("flags", &flags)])
             .unwrap()
@@ -1544,7 +1544,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
     file: *mut gio_sys::GFile,
-    flags: u32,
+    flags: RsvgHandleFlags,
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> *const RsvgHandle {
@@ -1585,7 +1585,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
 pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
     input_stream: *mut gio_sys::GInputStream,
     base_file: *mut gio_sys::GFile,
-    flags: u32,
+    flags: RsvgHandleFlags,
     cancellable: *mut gio_sys::GCancellable,
     error: *mut *mut glib_sys::GError,
 ) -> *const RsvgHandle {
