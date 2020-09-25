@@ -352,7 +352,7 @@ impl DrawingCtx {
         self.push_viewport(Viewport { transform, vbox })
     }
 
-    /// Creates a new coordinate space inside a viewport.
+    /// Creates a new coordinate space inside a viewport and sets a clipping rectangle.
     ///
     /// Note that this actually changes the `draw_ctx.cr`'s transformation to match
     /// the new coordinate space, but the old one is not restored after the
