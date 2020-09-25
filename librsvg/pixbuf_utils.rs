@@ -296,8 +296,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
     filename: *const libc::c_char,
-    width: i32,
-    height: i32,
+    width: libc::c_int,
+    height: libc::c_int,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     rsvg_return_val_if_fail! {
@@ -324,8 +324,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
     filename: *const libc::c_char,
-    x_zoom: f64,
-    y_zoom: f64,
+    x_zoom: libc::c_double,
+    y_zoom: libc::c_double,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     rsvg_return_val_if_fail! {
@@ -352,10 +352,10 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
     filename: *const libc::c_char,
-    x_zoom: f64,
-    y_zoom: f64,
-    max_width: i32,
-    max_height: i32,
+    x_zoom: libc::c_double,
+    y_zoom: libc::c_double,
+    max_width: libc::c_int,
+    max_height: libc::c_int,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     rsvg_return_val_if_fail! {
@@ -383,8 +383,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_max_size(
     filename: *const libc::c_char,
-    max_width: i32,
-    max_height: i32,
+    max_width: libc::c_int,
+    max_height: libc::c_int,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
     rsvg_return_val_if_fail! {
