@@ -12,7 +12,6 @@ DOC_MODULE = rsvg
 # Uncomment for versioned docs and specify the version of the module, e.g. '2'.
 DOC_MODULE_VERSION = $(RSVG_API_VERSION)
 
-
 # The top-level SGML file. You can change this if you want to.
 DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.xml
 
@@ -69,10 +68,7 @@ EXTRA_HFILES =
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
 IGNORE_HFILES =			\
 	config.h		\
-	rsvg-attributes.h	\
-	rsvg-css.h		\
-	rsvg-private.h		\
-	rsvg-size-callback.h
+	rsvg-css.h
 
 # Images to copy into HTML directory.
 # e.g. HTML_IMAGES=$(top_srcdir)/gtk/stock-icons/stock_about_24.png
