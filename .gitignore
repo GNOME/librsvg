@@ -12,9 +12,6 @@ configure
 depcomp
 gtk-doc.make
 install-sh
-librsvg-enum-types.c
-librsvg-enum-types.h
-librsvg-features.h
 librsvg-zip
 librsvg.spec
 libtool
@@ -23,10 +20,6 @@ missing
 rsvg
 rsvg-convert
 rsvg-dimensions
-rsvg-view
-rsvg-view-3
-s-enum-types-c
-s-enum-types-h
 stamp-h1
 test-driver
 test-performance
@@ -60,6 +53,7 @@ doc/xml/
 gdk-pixbuf-loader/gdk-pixbuf.loaders
 gdk-pixbuf-loader/librsvg.thumbnailer
 gdk-pixbuf-loader/rsvg-loader
+librsvg/rsvg-version.h
 m4/gettext.m4
 m4/gtk-doc.m4
 m4/host-cpu-c-abi.m4

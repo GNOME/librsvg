@@ -1,3 +1,10 @@
+#if !defined (__RSVG_RSVG_H_INSIDE__) && !defined (RSVG_COMPILATION)
+#warning "Including <librsvg/rsvg-features.h> directly is deprecated."
+#endif
+
+#ifndef RSVG_FEATURES_H
+#define RSVG_FEATURES_H
+
 /**
  * SECTION: rsvg-features
  * @short_description: Check for the version of librsvg being used.
@@ -14,8 +21,6 @@
  * useful to know which version of librsvg is actually being used on
  * the system where the program is running.
  */
-
-#include "rsvg.h"
 
 /**
  * LIBRSVG_MAJOR_VERSION:
@@ -113,6 +118,41 @@
  * @rsvg_major_version, @rsvg_minor_version, @rsvg_micro_version
  * instead.
  */
+#define LIBRSVG_CHECK_VERSION(major,minor,micro) \
+  (LIBRSVG_MAJOR_VERSION > (major) || \
+   (LIBRSVG_MAJOR_VERSION == (major) && LIBRSVG_MINOR_VERSION > (minor)) || \
+   (LIBRSVG_MAJOR_VERSION == (major) && LIBRSVG_MINOR_VERSION == (minor) && LIBRSVG_MICRO_VERSION >= (micro)))
+
+#ifndef __GI_SCANNER__
+#define LIBRSVG_HAVE_SVGZ  (TRUE)
+#define LIBRSVG_HAVE_CSS   (TRUE)
+
+#define LIBRSVG_CHECK_FEATURE(FEATURE) (defined(LIBRSVG_HAVE_##FEATURE) && LIBRSVG_HAVE_##FEATURE)
+#endif
+
+#ifndef __GTK_DOC_IGNORE__
+
+/*
+ * On Windows builds, we need to decorate variables that are exposed in the public API
+ * so that they can be properly exported and linked to, for DLL builds
+ */
+#ifndef RSVG_VAR
+# ifdef G_PLATFORM_WIN32
+#  ifndef RSVG_STATIC
+#   ifdef RSVG_COMPILATION
+#    define RSVG_VAR extern __declspec (dllexport)
+#   else /* RSVG_COMPILATION */
+#    define RSVG_VAR extern __declspec (dllimport)
+#   endif /* !RSVG_COMPILATION */
+#  else /* !RSVG_STATIC */
+#   define RSVG_VAR extern
+#  endif /* RSVG_STATIC */
+# else /* G_PLATFORM_WIN32 */
+#  define RSVG_VAR extern
+# endif /* !G_PLATFORM_WIN32 */
+#endif
+
+#endif /* __GTK_DOC_IGNORE__ */
 
 /**
  * rsvg_major_version:
@@ -122,6 +162,7 @@
  *
  * Since: 2.52
  */
+RSVG_VAR const guint rsvg_major_version;
 
 /**
  * rsvg_minor_version:
@@ -131,6 +172,7 @@
  *
  * Since: 2.52
  */
+RSVG_VAR const guint rsvg_minor_version;
 
 /**
  * rsvg_micro_version:
@@ -140,3 +182,6 @@
  *
  * Since: 2.52
  */
+RSVG_VAR const guint rsvg_micro_version;
+
+#endif
