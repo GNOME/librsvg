@@ -1,13 +1,5 @@
 # List of source files containing translatable strings.
 # Please keep this file sorted alphabetically.
-librsvg/librsvg-enum-types.c
-librsvg/librsvg-features.c
-librsvg/rsvg-base.c
-librsvg/rsvg-handle.c
-librsvg/rsvg-load.c
-librsvg/rsvg-pixbuf.c
-librsvg/rsvg-size-callback.c
-librsvg/s-enum-types-c
 rsvg_internals/benches/box_blur.rs
 rsvg_internals/benches/composite.rs
 rsvg_internals/benches/lighting.rs

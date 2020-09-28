@@ -12,7 +12,6 @@ DOC_MODULE = rsvg
 # Uncomment for versioned docs and specify the version of the module, e.g. '2'.
 DOC_MODULE_VERSION = $(RSVG_API_VERSION)
 
-
 # The top-level SGML file. You can change this if you want to.
 DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.xml
 
@@ -31,7 +30,7 @@ SCAN_OPTIONS = --deprecated-guards="RSVG_DISABLE_DEPRECATED"
 
 # Extra options to supply to gtkdoc-mkdb.
 # e.g. MKDB_OPTIONS=--sgml-mode --output-format=xml
-MKDB_OPTIONS = --xml-mode --output-format=xml --name-space=rsvg
+MKDB_OPTIONS = --xml-mode --output-format=xml --name-space=rsvg --source-suffixes=c,rs,h
 
 # Extra options to supply to gtkdoc-mktmpl
 # e.g. MKTMPL_OPTIONS=--only-section-tmpl
@@ -54,11 +53,11 @@ FIXXREF_OPTIONS = \
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
 HFILE_GLOB = \
-	$(top_srcdir)/librsvg/*.h \
-	$(top_builddir)/librsvg/*.h
+	$(top_srcdir)/librsvg/*.h	\
+	$(top_builddir)/librsvg/rsvg-version.h
 
 CFILE_GLOB = \
-	$(top_srcdir)/librsvg/*.c
+	$(top_srcdir)/librsvg/*.rs
 
 # Extra header to include when scanning, which are not under DOC_SOURCE_DIR
 # e.g. EXTRA_HFILES=$(top_srcdir}/contrib/extra.h
@@ -69,10 +68,7 @@ EXTRA_HFILES =
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
 IGNORE_HFILES =			\
 	config.h		\
-	rsvg-attributes.h	\
-	rsvg-css.h		\
-	rsvg-private.h		\
-	rsvg-size-callback.h
+	rsvg-css.h
 
 # Images to copy into HTML directory.
 # e.g. HTML_IMAGES=$(top_srcdir)/gtk/stock-icons/stock_about_24.png

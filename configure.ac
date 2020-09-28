@@ -1,3 +1,4 @@
+
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[51])
@@ -379,7 +380,7 @@ AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
 AC_CONFIG_FILES([
-librsvg/librsvg-features.h
+librsvg/rsvg-version.h
 Makefile
 librsvg-zip
 gdk-pixbuf-loader/Makefile

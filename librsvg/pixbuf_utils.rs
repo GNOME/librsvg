@@ -1,3 +1,11 @@
+/**
+ * SECTION: rsvg-pixbuf
+ * @short_description: How to render SVGs into GdkPixbufs, for easy use in GTK+
+ *  applications
+ *
+ * GdkPixbuf is a library for image loading and manipulation. It is part of the
+ * cross-platform GTK+ widget toolkit.
+ */
 use std::path::PathBuf;
 use std::ptr;
 
@@ -268,6 +276,18 @@ fn pixbuf_from_file_with_size_mode(
     }
 }
 
+/**
+ * rsvg_pixbuf_from_file:
+ * @filename: A file name
+ * @error: return location for errors
+ *
+ * Loads a new #GdkPixbuf from @filename and returns it.  The caller must
+ * assume the reference to the reurned pixbuf. If an error occurred, @error is
+ * set and %NULL is returned.
+ *
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ **/
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file(
     filename: *const libc::c_char,
@@ -293,6 +313,22 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file(
     )
 }
 
+/**
+ * rsvg_pixbuf_from_file_at_size:
+ * @filename: A file name
+ * @width: The new width, or -1
+ * @height: The new height, or -1
+ * @error: return location for errors
+ *
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
+ * from the size indicated to the new size indicated by @width and @height.  If
+ * both of these are -1, then the default size of the image being loaded is
+ * used.  The caller must assume the reference to the returned pixbuf. If an
+ * error occurred, @error is set and %NULL is returned.
+ *
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ **/
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
     filename: *const libc::c_char,
@@ -321,6 +357,21 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
     )
 }
 
+/**
+ * rsvg_pixbuf_from_file_at_zoom:
+ * @filename: A file name
+ * @x_zoom: The horizontal zoom factor
+ * @y_zoom: The vertical zoom factor
+ * @error: return location for errors
+ *
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
+ * from the size indicated by the file by a factor of @x_zoom and @y_zoom.  The
+ * caller must assume the reference to the returned pixbuf. If an error
+ * occurred, @error is set and %NULL is returned.
+ *
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ **/
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
     filename: *const libc::c_char,
@@ -349,6 +400,24 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
     )
 }
 
+/**
+ * rsvg_pixbuf_from_file_at_zoom_with_max:
+ * @filename: A file name
+ * @x_zoom: The horizontal zoom factor
+ * @y_zoom: The vertical zoom factor
+ * @max_width: The requested max width
+ * @max_height: The requested max height
+ * @error: return location for errors
+ *
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is scaled
+ * from the size indicated by the file by a factor of @x_zoom and @y_zoom. If the
+ * resulting pixbuf would be larger than max_width/max_heigh it is uniformly scaled
+ * down to fit in that rectangle. The caller must assume the reference to the
+ * returned pixbuf. If an error occurred, @error is set and %NULL is returned.
+ *
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ **/
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
     filename: *const libc::c_char,
@@ -380,6 +449,21 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
     )
 }
 
+/**
+ * rsvg_pixbuf_from_file_at_max_size:
+ * @filename: A file name
+ * @max_width: The requested max width
+ * @max_height: The requested max height
+ * @error: return location for errors
+ *
+ * Loads a new #GdkPixbuf from @filename and returns it.  This pixbuf is uniformly
+ * scaled so that the it fits into a rectangle of size max_width * max_height. The
+ * caller must assume the reference to the returned pixbuf. If an error occurred,
+ * @error is set and %NULL is returned.
+ *
+ * Return value: A newly allocated #GdkPixbuf, or %NULL
+ * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ **/
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_max_size(
     filename: *const libc::c_char,
