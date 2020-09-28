@@ -308,10 +308,14 @@ impl DrawingCtx {
     }
 
     pub fn push_coord_units(&self, units: CoordUnits) -> ViewParams {
-        if units == CoordUnits::ObjectBoundingBox {
-            self.push_view_box(1.0, 1.0)
-        } else {
-            self.get_view_params()
+        match units {
+            CoordUnits::ObjectBoundingBox => self.push_view_box(1.0, 1.0),
+
+            CoordUnits::UserSpaceOnUse => {
+                // Duplicate the topmost viewport;
+                let viewport = self.get_top_viewport();
+                self.push_viewport(viewport)
+            }
         }
     }
 
