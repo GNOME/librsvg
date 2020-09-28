@@ -83,10 +83,10 @@ fn root_geometry_with_percent_viewport() {
 
 #[cfg(ignore)]
 #[test]
-fn root_geometry_with_percent_viewport_with_offset() {
+fn layer_geometry_with_offset_viewport() {
     let svg = load_svg(
         br#"<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
   <rect x="10" y="20" width="30" height="40"/>
 </svg>
 "#,
