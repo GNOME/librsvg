@@ -179,9 +179,16 @@ pub fn draw_tree(
 
     let cascaded = CascadedValues::new_from_node(&node);
 
+    let transform = Transform::from(cr.get_matrix());
+    let mut bbox = BoundingBox::new().with_transform(transform);
+
     let mut draw_ctx = DrawingCtx::new(cr, viewport, dpi, measuring, testing, drawsub_stack);
 
-    draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)
+    let content_bbox = draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)?;
+
+    bbox.insert(&content_bbox);
+
+    Ok(bbox)
 }
 
 impl DrawingCtx {
@@ -214,10 +221,7 @@ impl DrawingCtx {
         let viewport = viewport.translate((-viewport.x0, -viewport.y0));
         let vbox = ViewBox::from(viewport);
 
-        let initial_viewport = Viewport {
-            transform,
-            vbox,
-        };
+        let initial_viewport = Viewport { transform, vbox };
 
         let mut viewport_stack = Vec::new();
         viewport_stack.push(initial_viewport);

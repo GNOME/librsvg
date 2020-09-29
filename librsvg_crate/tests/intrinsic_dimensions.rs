@@ -81,7 +81,6 @@ fn root_geometry_with_percent_viewport() {
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
 
-#[cfg(ignore)]
 #[test]
 fn layer_geometry_with_offset_viewport() {
     let svg = load_svg(
