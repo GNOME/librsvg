@@ -30,7 +30,7 @@ SCAN_OPTIONS = --deprecated-guards="RSVG_DISABLE_DEPRECATED"
 
 # Extra options to supply to gtkdoc-mkdb.
 # e.g. MKDB_OPTIONS=--sgml-mode --output-format=xml
-MKDB_OPTIONS = --xml-mode --output-format=xml --name-space=rsvg --source-suffixes=c,rs,h
+MKDB_OPTIONS = --xml-mode --output-format=xml --name-space=rsvg
 
 # Extra options to supply to gtkdoc-mktmpl
 # e.g. MKTMPL_OPTIONS=--only-section-tmpl
@@ -53,11 +53,11 @@ FIXXREF_OPTIONS = \
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
 HFILE_GLOB = \
-	$(top_srcdir)/librsvg/*.h	\
-	$(top_builddir)/librsvg/rsvg-version.h
+	$(top_srcdir)/librsvg/*.h \
+	$(top_builddir)/librsvg/*.h
 
 CFILE_GLOB = \
-	$(top_srcdir)/librsvg/*.rs
+	$(top_srcdir)/librsvg/*.c
 
 # Extra header to include when scanning, which are not under DOC_SOURCE_DIR
 # e.g. EXTRA_HFILES=$(top_srcdir}/contrib/extra.h

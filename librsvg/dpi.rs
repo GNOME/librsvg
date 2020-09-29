@@ -51,21 +51,6 @@ impl From<Dpi> for rsvg_internals::Dpi {
     }
 }
 
-/**
- * rsvg_set_default_dpi_x_y:
- * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
- * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
- *
- * Do not use this function.  Create an #RsvgHandle and call
- * rsvg_handle_set_dpi_x_y() on it instead.
- *
- * Since: 2.8
- *
- * Deprecated: 2.42.3: This function used to set a global default DPI.  However,
- * it only worked if it was called before any #RsvgHandle objects had been
- * created; it would not work after that.  To avoid global mutable state, please
- * use rsvg_handle_set_dpi() instead.
- */
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_set_default_dpi_x_y(dpi_x: libc::c_double, dpi_y: libc::c_double) {
     if dpi_x <= 0.0 {
@@ -81,20 +66,6 @@ pub unsafe extern "C" fn rsvg_set_default_dpi_x_y(dpi_x: libc::c_double, dpi_y: 
     }
 }
 
-/**
- * rsvg_set_default_dpi:
- * @dpi: Dots Per Inch (aka Pixels Per Inch)
- *
- * Do not use this function.  Create an #RsvgHandle and call
- * rsvg_handle_set_dpi() on it instead.
- *
- * Since: 2.8
- *
- * Deprecated: 2.42.3: This function used to set a global default DPI.  However,
- * it only worked if it was called before any #RsvgHandle objects had been
- * created; it would not work after that.  To avoid global mutable state, please
- * use rsvg_handle_set_dpi() instead.
- */
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_set_default_dpi(dpi: libc::c_double) {
     if dpi <= 0.0 {
