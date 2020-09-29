@@ -144,6 +144,37 @@ fn layer_geometry_with_viewbox_and_offset_viewport() {
 }
 
 #[test]
+fn layer_geometry_with_no_width_height() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 200 200">
+  <rect x="110" y="120" width="30" height="40"/>
+</svg>
+"#,
+    );
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let viewport = cairo::Rectangle {
+        x: 100.0,
+        y: 100.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
+    let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
+
+    let rect = cairo::Rectangle {
+        x: 105.0,
+        y: 110.0,
+        width: 15.0,
+        height: 20.0,
+    };
+
+    assert_eq!((ink_r, logical_r), (rect, rect));
+}
+
+#[test]
 fn layer_geometry_with_percent_viewport() {
     let svg = load_svg(
         br#"<?xml version="1.0" encoding="UTF-8"?>
