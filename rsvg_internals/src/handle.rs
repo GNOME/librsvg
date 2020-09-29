@@ -240,22 +240,17 @@ impl Handle {
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
-        let root = self.document.root();
-
-        let mode = if let Some(id) = id {
-            let node = self.lookup_node(id).map_err(RenderingError::InvalidId)?;
-
-            DrawingMode::LimitToStack { node, root }
-        } else {
-            DrawingMode::OnlyNode(root)
-        };
-
         cr.save();
 
+        let node = self.get_node_or_root(id)?;
+        let root = self.document.root();
+
+        let viewport = Rect::from(*viewport);
+
         let res = draw_tree(
-            mode,
+            DrawingMode::LimitToStack { node, root },
             cr,
-            Rect::from(*viewport),
+            viewport,
             dpi,
             false,
             is_testing,
