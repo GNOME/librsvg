@@ -52,17 +52,13 @@ FIXXREF_OPTIONS = \
 # Used for dependencies. The docs will be rebuilt if any of these change.
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
-HFILE_GLOB = \
-	$(top_srcdir)/librsvg/*.h \
-	$(top_builddir)/librsvg/*.h
-
-CFILE_GLOB = \
-	$(top_srcdir)/librsvg/*.c
+HFILE_GLOB = $(top_srcdir)/librsvg/*.h
+CFILE_GLOB =
 
 # Extra header to include when scanning, which are not under DOC_SOURCE_DIR
 # e.g. EXTRA_HFILES=$(top_srcdir}/contrib/extra.h
 # EXTRA_HFILES = $(top_builddir)/evdocument/ev-version.h
-EXTRA_HFILES =
+EXTRA_HFILES = $(top_builddir)/librsvg/rsvg-version.h
 
 # Header files to ignore when scanning. Use base file name, no paths
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
