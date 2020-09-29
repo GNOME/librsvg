@@ -132,6 +132,12 @@ LIBRSVG_C_API_SRC =						\
 	librsvg/benches/pixbuf_from_surface.rs			\
 	$(NULL)
 
+LIBRSVG_C_API_DOC_SRC =						\
+	librsvg/rsvg-base.c					\
+	librsvg/rsvg-features.c					\
+	librsvg/rsvg-handle.c					\
+	librsvg/rsvg-pixbuf.c
+
 RUST_EXTRA = 						\
 	Cargo.lock					\
 	cargo-vendor-config				\
@@ -270,6 +276,7 @@ dist_doc_DATA =				\
 EXTRA_DIST =				\
 	$(LIBRSVG_INTERNALS_SRC)	\
 	$(LIBRSVG_C_API_SRC)		\
+	$(LIBRSVG_C_API_DOC_SRC)	\
 	$(RUST_EXTRA)			\
 	$(LIBRSVG_CRATE_SRC)		\
 	librsvg.doap			\
