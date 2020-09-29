@@ -252,11 +252,7 @@ impl FilterContext {
     pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
         // See comments in compute_effects_region() for how this works.
         let units = borrow_element_as!(self.node, Filter).get_primitive_units();
-        if units == CoordUnits::ObjectBoundingBox {
-            draw_ctx.push_view_box(1.0, 1.0)
-        } else {
-            draw_ctx.get_view_params()
-        }
+        draw_ctx.push_coord_units(units)
     }
 
     /// Retrieves the filter input surface according to the SVG rules.

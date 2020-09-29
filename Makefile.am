@@ -114,8 +114,8 @@ LIBRSVG_CRATE_SRC = 						\
 	librsvg_crate/examples/proportional.rs			\
 	librsvg_crate/src/lib.rs				\
 	librsvg_crate/tests/api.rs				\
+	librsvg_crate/tests/bugs.rs				\
 	librsvg_crate/tests/intrinsic_dimensions.rs		\
-	librsvg_crate/tests/render_to_viewport.rs		\
 	librsvg_crate/tests/primitives.rs			\
 	librsvg_crate/tests/utils/mod.rs			\
 	librsvg_crate/tests/utils/compare_surfaces.rs		\

@@ -54,25 +54,23 @@ use crate::viewbox::ViewBox;
 /// previous viewport.
 pub struct ViewParams {
     pub dpi: Dpi,
-    pub view_box_width: f64,
-    pub view_box_height: f64,
-    view_box_stack: Option<Weak<RefCell<Vec<ViewBox>>>>,
+    pub vbox: ViewBox,
+    viewport_stack: Option<Weak<RefCell<Vec<Viewport>>>>,
 }
 
 impl ViewParams {
     pub fn new(dpi: Dpi, view_box_width: f64, view_box_height: f64) -> ViewParams {
         ViewParams {
             dpi,
-            view_box_width,
-            view_box_height,
-            view_box_stack: None,
+            vbox: ViewBox::from(Rect::from_size(view_box_width, view_box_height)),
+            viewport_stack: None,
         }
     }
 }
 
 impl Drop for ViewParams {
     fn drop(&mut self) {
-        if let Some(ref weak_stack) = self.view_box_stack {
+        if let Some(ref weak_stack) = self.viewport_stack {
             let stack = weak_stack
                 .upgrade()
                 .expect("A ViewParams was dropped after its DrawingCtx!?");
@@ -128,16 +126,24 @@ impl<'a> PathHelper<'a> {
     }
 }
 
-pub struct DrawingCtx {
-    initial_transform: Transform,
+#[derive(Copy, Clone)]
+struct Viewport {
+    /// The viewport's coordinate system, or "user coordinate system" in SVG terms.
+    transform: Transform,
 
-    rect: Rect,
+    /// Corners of the current coordinate space.
+    vbox: ViewBox,
+}
+
+pub struct DrawingCtx {
+    initial_viewport: Viewport,
+
     dpi: Dpi,
 
     cr_stack: Vec<cairo::Context>,
     cr: cairo::Context,
 
-    view_box_stack: Rc<RefCell<Vec<ViewBox>>>,
+    viewport_stack: Rc<RefCell<Vec<Viewport>>>,
 
     drawsub_stack: Vec<Node>,
 
@@ -145,67 +151,95 @@ pub struct DrawingCtx {
     testing: bool,
 }
 
+pub enum DrawingMode {
+    LimitToStack { node: Node, root: Node },
+
+    OnlyNode(Node),
+}
+
+/// The toplevel drawing routine.
+///
+/// This creates a DrawingCtx internally and starts drawing at the specified `node`.
+pub fn draw_tree(
+    mode: DrawingMode,
+    cr: &cairo::Context,
+    viewport: Rect,
+    dpi: Dpi,
+    measuring: bool,
+    testing: bool,
+    acquired_nodes: &mut AcquiredNodes,
+) -> Result<BoundingBox, RenderingError> {
+    let (drawsub_stack, node) = match mode {
+        DrawingMode::LimitToStack { node, root } => {
+            (node.ancestors().map(|n| n.clone()).collect(), root)
+        }
+
+        DrawingMode::OnlyNode(node) => (Vec::new(), node),
+    };
+
+    let cascaded = CascadedValues::new_from_node(&node);
+
+    let transform = Transform::from(cr.get_matrix());
+    let mut bbox = BoundingBox::new().with_transform(transform);
+
+    let mut draw_ctx = DrawingCtx::new(cr, viewport, dpi, measuring, testing, drawsub_stack);
+
+    let content_bbox = draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)?;
+
+    bbox.insert(&content_bbox);
+
+    Ok(bbox)
+}
+
 impl DrawingCtx {
-    pub fn new(
-        node: Option<&Node>,
+    fn new(
         cr: &cairo::Context,
         viewport: Rect,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
+        drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
-        let initial_transform = Transform::from(cr.get_matrix());
+        // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
+        //
+        // "For the outermost svg element, the SVG user agent must
+        // determine an initial viewport coordinate system and an
+        // initial user coordinate system such that the two
+        // coordinates systems are identical. The origin of both
+        // coordinate systems must be at the origin of the SVG
+        // viewport."
+        //
+        // "... the initial viewport coordinate system (and therefore
+        // the initial user coordinate system) must have its origin at
+        // the top/left of the viewport"
 
-        // This is more or less a hack to make measuring geometries possible,
-        // while the code gets refactored not to need special cases for that.
+        // Translate so (0, 0) is at the viewport's upper-left corner.
+        cr.translate(viewport.x0, viewport.y0);
+        let transform = Transform::from(cr.get_matrix());
 
-        let (rect, vbox) = if measuring {
-            let unit_rect = Rect::from_size(1.0, 1.0);
-            (unit_rect, ViewBox(unit_rect))
-        } else {
-            // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
-            //
-            // "For the outermost svg element, the SVG user agent must
-            // determine an initial viewport coordinate system and an
-            // initial user coordinate system such that the two
-            // coordinates systems are identical. The origin of both
-            // coordinate systems must be at the origin of the SVG
-            // viewport."
-            //
-            // "... the initial viewport coordinate system (and therefore
-            // the initial user coordinate system) must have its origin at
-            // the top/left of the viewport"
-            let vbox = ViewBox(Rect::from_size(viewport.width(), viewport.height()));
+        // Per the spec, so the viewport has (0, 0) as upper-left.
+        let viewport = viewport.translate((-viewport.x0, -viewport.y0));
+        let vbox = ViewBox::from(viewport);
 
-            (viewport, vbox)
-        };
+        let initial_viewport = Viewport { transform, vbox };
 
-        let mut view_box_stack = Vec::new();
-        view_box_stack.push(vbox);
+        let mut viewport_stack = Vec::new();
+        viewport_stack.push(initial_viewport);
 
-        let mut draw_ctx = DrawingCtx {
-            initial_transform,
-            rect,
+        DrawingCtx {
+            initial_viewport,
             dpi,
             cr_stack: Vec::new(),
             cr: cr.clone(),
-            view_box_stack: Rc::new(RefCell::new(view_box_stack)),
-            drawsub_stack: Vec::new(),
+            viewport_stack: Rc::new(RefCell::new(viewport_stack)),
+            drawsub_stack,
             measuring,
             testing,
-        };
-
-        if let Some(node) = node {
-            for n in node.ancestors() {
-                draw_ctx.drawsub_stack.push(n.clone());
-            }
         }
-
-        draw_ctx
     }
 
     pub fn toplevel_viewport(&self) -> Rect {
-        self.rect
+        *self.initial_viewport.vbox
     }
 
     pub fn is_measuring(&self) -> bool {
@@ -241,10 +275,13 @@ impl DrawingCtx {
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
-        let (viewport_width, viewport_height) = (self.rect.width(), self.rect.height());
+        let rect = self.toplevel_viewport();
+
+        let (viewport_width, viewport_height) = (rect.width(), rect.height());
 
         let (width, height) = self
-            .initial_transform
+            .initial_viewport
+            .transform
             .transform_distance(viewport_width, viewport_height);
 
         // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
@@ -274,17 +311,45 @@ impl DrawingCtx {
         )?)
     }
 
+    fn get_top_viewport(&self) -> Viewport {
+        let viewport_stack = self.viewport_stack.borrow();
+        *viewport_stack
+            .last()
+            .expect("viewport_stack must never be empty!")
+    }
+
+    pub fn push_coord_units(&self, units: CoordUnits) -> ViewParams {
+        match units {
+            CoordUnits::ObjectBoundingBox => self.push_view_box(1.0, 1.0),
+
+            CoordUnits::UserSpaceOnUse => {
+                // Duplicate the topmost viewport;
+                let viewport = self.get_top_viewport();
+                self.push_viewport(viewport)
+            }
+        }
+    }
+
     /// Gets the viewport that was last pushed with `push_view_box()`.
     pub fn get_view_params(&self) -> ViewParams {
-        let view_box_stack = self.view_box_stack.borrow();
-        let last = view_box_stack.len() - 1;
-        let top_rect = &view_box_stack[last].0;
+        let viewport = self.get_top_viewport();
 
         ViewParams {
             dpi: self.dpi,
-            view_box_width: top_rect.width(),
-            view_box_height: top_rect.height(),
-            view_box_stack: None,
+            vbox: viewport.vbox,
+            viewport_stack: None,
+        }
+    }
+
+    fn push_viewport(&self, viewport: Viewport) -> ViewParams {
+        let vbox = viewport.vbox;
+
+        self.viewport_stack.borrow_mut().push(viewport);
+
+        ViewParams {
+            dpi: self.dpi,
+            vbox,
+            viewport_stack: Some(Rc::downgrade(&self.viewport_stack)),
         }
     }
 
@@ -296,19 +361,13 @@ impl DrawingCtx {
     /// The viewport will stay in place, and will be the one returned by
     /// `get_view_params()`, until the returned `ViewParams` is dropped.
     pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
-        self.view_box_stack
-            .borrow_mut()
-            .push(ViewBox(Rect::from_size(width, height)));
+        let Viewport { transform, .. } = self.get_top_viewport();
 
-        ViewParams {
-            dpi: self.dpi,
-            view_box_width: width,
-            view_box_height: height,
-            view_box_stack: Some(Rc::downgrade(&self.view_box_stack)),
-        }
+        let vbox = ViewBox::from(Rect::from_size(width, height));
+        self.push_viewport(Viewport { transform, vbox })
     }
 
-    /// Creates a new coordinate space inside a viewport.
+    /// Creates a new coordinate space inside a viewport and sets a clipping rectangle.
     ///
     /// Note that this actually changes the `draw_ctx.cr`'s transformation to match
     /// the new coordinate space, but the old one is not restored after the
@@ -321,16 +380,8 @@ impl DrawingCtx {
         preserve_aspect_ratio: AspectRatio,
         clip_mode: Option<ClipMode>,
     ) -> Option<ViewParams> {
-        let cr = self.cr.clone();
-
         if let Some(ClipMode::ClipToViewport) = clip_mode {
-            cr.rectangle(
-                viewport.x0,
-                viewport.y0,
-                viewport.width(),
-                viewport.height(),
-            );
-            cr.clip();
+            clip_to_rectangle(&self.cr, &viewport);
         }
 
         preserve_aspect_ratio
@@ -343,10 +394,10 @@ impl DrawingCtx {
                     Some(v) => {
                         rsvg_log!(
                             "ignoring viewBox ({}, {}, {}, {}) since it is not usable",
-                            v.0.x0,
-                            v.0.y0,
-                            v.0.width(),
-                            v.0.height()
+                            v.x0,
+                            v.y0,
+                            v.width(),
+                            v.height()
                         );
                     }
                 }
@@ -357,13 +408,16 @@ impl DrawingCtx {
 
                 if let Some(vbox) = vbox {
                     if let Some(ClipMode::ClipToVbox) = clip_mode {
-                        cr.rectangle(vbox.0.x0, vbox.0.y0, vbox.0.width(), vbox.0.height());
-                        cr.clip();
+                        clip_to_rectangle(&self.cr, &*vbox);
                     }
-                    self.push_view_box(vbox.0.width(), vbox.0.height())
-                } else {
-                    self.get_view_params()
                 }
+
+                let top_viewport = self.get_top_viewport();
+
+                self.push_viewport(Viewport {
+                    transform: top_viewport.transform.post_transform(&t),
+                    vbox: vbox.unwrap_or(top_viewport.vbox),
+                })
             })
     }
 
@@ -428,12 +482,7 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let params = if mask_units == CoordUnits::ObjectBoundingBox {
-                self.push_view_box(1.0, 1.0)
-            } else {
-                self.get_view_params()
-            };
-
+            let params = self.push_coord_units(mask_units);
             mask.get_rect(&values, &params)
         };
 
@@ -465,24 +514,17 @@ impl DrawingCtx {
                 mask_rect
             };
 
-            mask_cr.rectangle(
-                clip_rect.x0,
-                clip_rect.y0,
-                clip_rect.width(),
-                clip_rect.height(),
-            );
-            mask_cr.clip();
+            clip_to_rectangle(&mask_cr, &clip_rect);
 
-            let _params = if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
+            if mask.get_content_units() == CoordUnits::ObjectBoundingBox {
                 if bbox_rect.is_empty() {
                     return Ok(None);
                 }
                 assert!(bbtransform.is_invertible());
                 mask_cr.transform(bbtransform.into());
-                self.push_view_box(1.0, 1.0)
-            } else {
-                self.get_view_params()
-            };
+            }
+
+            let _params = self.push_coord_units(mask.get_content_units());
 
             self.push_cairo_context(mask_cr);
 
@@ -669,8 +711,11 @@ impl DrawingCtx {
     }
 
     fn initial_transform_with_offset(&self) -> Transform {
-        self.initial_transform
-            .pre_translate(self.rect.x0, self.rect.y0)
+        let rect = self.toplevel_viewport();
+
+        self.initial_viewport
+            .transform
+            .pre_translate(rect.x0, rect.y0)
     }
 
     /// Saves the current transform, applies a new transform if specified,
@@ -712,9 +757,7 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(rect) = clip {
             self.cr.save();
-            self.cr
-                .rectangle(rect.x0, rect.y0, rect.width(), rect.height());
-            self.cr.clip();
+            clip_to_rectangle(&self.cr, &rect);
         }
 
         let res = draw_fn(self);
@@ -881,18 +924,14 @@ impl DrawingCtx {
         values: &ComputedValues,
         bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let units = gradient.get_units();
-        let transform = if let Ok(t) = bbox.rect_to_transform(units.0) {
+        let GradientUnits(units) = gradient.get_units();
+        let transform = if let Ok(t) = bbox.rect_to_transform(units) {
             t
         } else {
             return Ok(false);
         };
 
-        let params = if units == GradientUnits(CoordUnits::ObjectBoundingBox) {
-            self.push_view_box(1.0, 1.0)
-        } else {
-            self.get_view_params()
-        };
+        let params = self.push_coord_units(units);
 
         let g = match gradient.get_variant() {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
@@ -972,11 +1011,7 @@ impl DrawingCtx {
         let content_units = pattern.get_content_units();
         let pattern_transform = pattern.get_transform();
 
-        let params = if units == PatternUnits(CoordUnits::ObjectBoundingBox) {
-            self.push_view_box(1.0, 1.0)
-        } else {
-            self.get_view_params()
-        };
+        let params = self.push_coord_units(units.0);
 
         let pattern_rect = pattern.get_rect(values, &params);
 
@@ -1035,24 +1070,26 @@ impl DrawingCtx {
                 .get_preserve_aspect_ratio()
                 .compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
 
-            let sw = r.width() / vbox.0.width();
-            let sh = r.height() / vbox.0.height();
-            let x = r.x0 - vbox.0.x0 * sw;
-            let y = r.y0 - vbox.0.y0 * sh;
+            let sw = r.width() / vbox.width();
+            let sh = r.height() / vbox.height();
+            let x = r.x0 - vbox.x0 * sw;
+            let y = r.y0 - vbox.y0 * sh;
 
             caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
 
-            self.push_view_box(vbox.0.width(), vbox.0.height())
-        } else if content_units == PatternContentUnits(CoordUnits::ObjectBoundingBox) {
-            // If coords are in terms of the bounding box, use them
-            let (bbw, bbh) = bbox.rect.unwrap().size();
-
-            caffine = Transform::new_scale(bbw, bbh);
-
-            self.push_view_box(1.0, 1.0)
+            self.push_view_box(vbox.width(), vbox.height())
         } else {
-            caffine = Transform::identity();
-            self.get_view_params()
+            let PatternContentUnits(content_units) = content_units;
+
+            caffine = if content_units == CoordUnits::ObjectBoundingBox {
+                // If coords are in terms of the bounding box, use them
+                let (bbw, bbh) = bbox.rect.unwrap().size();
+                Transform::new_scale(bbw, bbh)
+            } else {
+                Transform::identity()
+            };
+
+            self.push_coord_units(content_units)
         };
 
         if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {
@@ -1357,7 +1394,7 @@ impl DrawingCtx {
 
         let image_width = f64::from(image_width);
         let image_height = f64::from(image_height);
-        let vbox = ViewBox(Rect::from_size(image_width, image_height));
+        let vbox = ViewBox::from(Rect::from_size(image_width, image_height));
 
         let clip_mode = if !values.is_overflow() && aspect.is_slice() {
             Some(ClipMode::ClipToViewport)
@@ -1382,8 +1419,7 @@ impl DrawingCtx {
                     cr.set_source(&ptn);
 
                     // Clip is needed due to extend being set to pad.
-                    cr.rectangle(0.0, 0.0, image_width, image_height);
-                    cr.clip();
+                    clip_to_rectangle(&cr, &Rect::from_size(image_width, image_height));
 
                     cr.paint();
                 }
@@ -1545,22 +1581,24 @@ impl DrawingCtx {
     ) -> Result<SharedImageSurface, RenderingError> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
+        let save_initial_viewport = self.initial_viewport;
         let save_cr = self.cr.clone();
-        let save_rect = self.rect;
 
         {
             let cr = cairo::Context::new(&surface);
             cr.set_matrix(affine.into());
 
             self.cr = cr;
-
-            self.rect = Rect::from_size(f64::from(width), f64::from(height));
+            self.initial_viewport = Viewport {
+                transform: affine,
+                vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
+            };
 
             let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, false)?;
         }
 
         self.cr = save_cr;
-        self.rect = save_rect;
+        self.initial_viewport = save_initial_viewport;
 
         Ok(SharedImageSurface::wrap(surface, SurfaceType::SRgb)?)
     }
@@ -1895,6 +1933,11 @@ fn escape_link_target(value: &str) -> Cow<'_, str> {
             _ => unreachable!(),
         }
     })
+}
+
+fn clip_to_rectangle(cr: &cairo::Context, r: &Rect) {
+    cr.rectangle(r.x0, r.y0, r.width(), r.height());
+    cr.clip();
 }
 
 impl From<SpreadMethod> for cairo::Extend {

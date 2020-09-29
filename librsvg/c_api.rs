@@ -230,10 +230,10 @@ impl From<RsvgRectangle> for cairo::Rectangle {
 impl From<ViewBox> for RsvgRectangle {
     fn from(vb: ViewBox) -> RsvgRectangle {
         RsvgRectangle {
-            x: vb.0.x0,
-            y: vb.0.y0,
-            width: vb.0.width(),
-            height: vb.0.height(),
+            x: vb.x0,
+            y: vb.y0,
+            width: vb.width(),
+            height: vb.height(),
         }
     }
 }

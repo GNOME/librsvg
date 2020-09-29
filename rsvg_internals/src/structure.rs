@@ -8,7 +8,6 @@ use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::dpi::Dpi;
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
@@ -116,36 +115,10 @@ pub struct Svg {
 }
 
 impl Svg {
-    /// Returns the SVG's size suitable for the legacy C API, or None
-    /// if it must be computed by hand.
-    ///
-    /// The legacy C API can compute an SVG document's size from the
-    /// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
-    /// element.  If these are not available, then the size must be computed
-    /// by actually measuring the geometries of elements in the document.
-    pub fn get_size(&self, values: &ComputedValues, dpi: Dpi) -> Option<(f64, f64)> {
-        let (w, h) = self.get_unnormalized_size();
-
-        match (w, h, self.vbox) {
-            (w, h, Some(vbox)) => {
-                let params = ViewParams::new(dpi, vbox.0.width(), vbox.0.height());
-
-                Some((w.normalize(values, &params), h.normalize(values, &params)))
-            }
-
-            (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
-                let params = ViewParams::new(dpi, 0.0, 0.0);
-
-                Some((w.normalize(values, &params), h.normalize(values, &params)))
-            }
-            (_, _, _) => None,
-        }
-    }
-
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         IntrinsicDimensions {
-            width: self.w.map(Into::into),
-            height: self.h.map(Into::into),
+            width: self.w,
+            height: self.h,
             vbox: self.vbox,
         }
     }
@@ -255,7 +228,7 @@ impl Draw for Svg {
                 // Use our viewBox if available, or try to derive one from
                 // the intrinsic dimensions.
                 self.vbox.or_else(|| {
-                    Some(ViewBox(Rect::from_size(
+                    Some(ViewBox::from(Rect::from_size(
                         svg_viewport.width(),
                         svg_viewport.height(),
                     )))

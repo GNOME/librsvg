@@ -89,7 +89,7 @@ impl FeImage {
             .map_err(|_| FilterError::InvalidInput)?;
 
         let rect = self.aspect.compute(
-            &ViewBox(Rect::from_size(
+            &ViewBox::from(Rect::from_size(
                 f64::from(image.width()),
                 f64::from(image.height()),
             )),

@@ -7,10 +7,11 @@ use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::DrawingCtx;
-use crate::element::Element;
+use crate::drawing_ctx::{draw_tree, DrawingMode, ViewParams};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
+use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
 use url::Url;
@@ -106,33 +107,6 @@ impl Handle {
     }
 
     /// Returns (ink_rect, logical_rect)
-    fn get_node_geometry_with_viewport(
-        &self,
-        node: &Node,
-        viewport: Rect,
-        dpi: Dpi,
-        is_testing: bool,
-    ) -> Result<(Rect, Rect), RenderingError> {
-        let root = self.document.root();
-
-        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
-        let mut draw_ctx = DrawingCtx::new(Some(node), &cr, viewport, dpi, true, is_testing);
-
-        let bbox = draw_ctx.draw_node_from_stack(
-            &root,
-            &mut AcquiredNodes::new(&self.document),
-            &CascadedValues::new_from_node(&root),
-            false,
-        )?;
-
-        let ink_rect = bbox.ink_rect.unwrap_or_default();
-        let logical_rect = bbox.rect.unwrap_or_default();
-
-        Ok((ink_rect, logical_rect))
-    }
-
-    /// Returns (ink_rect, logical_rect)
     pub fn get_geometry_sub(
         &self,
         id: Option<&str>,
@@ -140,23 +114,35 @@ impl Handle {
         is_testing: bool,
     ) -> Result<(Rect, Rect), RenderingError> {
         let node = self.get_node_or_root(id)?;
-
         let root = self.document.root();
         let is_root = node == root;
 
         if is_root {
             let cascaded = CascadedValues::new_from_node(&node);
-            let values = cascaded.get();
 
-            if let Element::Svg(ref svg) = *node.borrow_element() {
-                if let Some((w, h)) = svg.get_size(&values, dpi) {
-                    let rect = Rect::from_size(w, h);
-                    return Ok((rect, rect));
-                }
+            if let Some((w, h)) = get_svg_size(&self.get_intrinsic_dimensions(), &cascaded, dpi) {
+                let rect = Rect::from_size(w, h);
+                return Ok((rect, rect));
             }
         }
 
-        self.get_node_geometry_with_viewport(&node, unit_rectangle(), dpi, is_testing)
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target);
+
+        let bbox = draw_tree(
+            DrawingMode::LimitToStack { node, root },
+            &cr,
+            unit_rectangle(),
+            dpi,
+            true,
+            is_testing,
+            &mut AcquiredNodes::new(&self.document),
+        )?;
+
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
+
+        Ok((ink_rect, logical_rect))
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
@@ -175,10 +161,25 @@ impl Handle {
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
+        let root = self.document.root();
+
         let viewport = Rect::from(*viewport);
 
-        let (ink_rect, logical_rect) =
-            self.get_node_geometry_with_viewport(&node, viewport, dpi, is_testing)?;
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target);
+
+        let bbox = draw_tree(
+            DrawingMode::LimitToStack { node, root },
+            &cr,
+            viewport,
+            dpi,
+            true,
+            is_testing,
+            &mut AcquiredNodes::new(&self.document),
+        )?;
+
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
 
         Ok((
             cairo::Rectangle::from(ink_rect),
@@ -239,36 +240,26 @@ impl Handle {
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
-        let node = if let Some(id) = id {
-            Some(self.lookup_node(id).map_err(RenderingError::InvalidId)?)
-        } else {
-            None
-        };
+        cr.save();
 
+        let node = self.get_node_or_root(id)?;
         let root = self.document.root();
 
-        cr.save();
-        let mut draw_ctx = DrawingCtx::new(
-            node.as_ref(),
+        let viewport = Rect::from(*viewport);
+
+        let res = draw_tree(
+            DrawingMode::LimitToStack { node, root },
             cr,
-            Rect::from(*viewport),
+            viewport,
             dpi,
             false,
             is_testing,
+            &mut AcquiredNodes::new(&self.document),
         );
-
-        let res = draw_ctx
-            .draw_node_from_stack(
-                &root,
-                &mut AcquiredNodes::new(&self.document),
-                &CascadedValues::new_from_node(&root),
-                false,
-            )
-            .map(|_bbox| ());
 
         cr.restore();
 
-        res
+        res.map(|_bbox| ())
     }
 
     fn get_bbox_for_element(
@@ -279,13 +270,17 @@ impl Handle {
     ) -> Result<BoundingBox, RenderingError> {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target);
-        let mut draw_ctx = DrawingCtx::new(None, &cr, unit_rectangle(), dpi, true, is_testing);
 
-        draw_ctx.draw_node_from_stack(
-            node,
+        let node = node.clone();
+
+        draw_tree(
+            DrawingMode::OnlyNode(node),
+            &cr,
+            unit_rectangle(),
+            dpi,
+            true,
+            is_testing,
             &mut AcquiredNodes::new(&self.document),
-            &CascadedValues::new_from_node(node),
-            false,
         )
     }
 
@@ -348,20 +343,19 @@ impl Handle {
         cr.scale(factor, factor);
         cr.translate(-ink_r.x0, -ink_r.y0);
 
-        let mut draw_ctx = DrawingCtx::new(None, &cr, unit_rectangle(), dpi, false, is_testing);
-
-        let res = draw_ctx
-            .draw_node_from_stack(
-                &node,
-                &mut AcquiredNodes::new(&self.document),
-                &CascadedValues::new_from_node(&node),
-                false,
-            )
-            .map(|_bbox| ());
+        let res = draw_tree(
+            DrawingMode::OnlyNode(node),
+            &cr,
+            unit_rectangle(),
+            dpi,
+            false,
+            is_testing,
+            &mut AcquiredNodes::new(&self.document),
+        );
 
         cr.restore();
 
-        res
+        res.map(|_bbox| ())
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
@@ -387,4 +381,42 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
 
 fn unit_rectangle() -> Rect {
     Rect::from_size(1.0, 1.0)
+}
+
+/// Returns the SVG's size suitable for the legacy C API, or None
+/// if it must be computed by hand.
+///
+/// The legacy C API can compute an SVG document's size from the
+/// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
+/// element.  If these are not available, then the size must be computed
+/// by actually measuring the geometries of elements in the document.
+fn get_svg_size(
+    dimensions: &IntrinsicDimensions,
+    cascaded: &CascadedValues,
+    dpi: Dpi,
+) -> Option<(f64, f64)> {
+    let values = cascaded.get();
+
+    // these defaults are per the spec
+    let w = dimensions
+        .width
+        .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
+    let h = dimensions
+        .height
+        .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
+
+    match (w, h, dimensions.vbox) {
+        (w, h, Some(vbox)) => {
+            let params = ViewParams::new(dpi, vbox.width(), vbox.height());
+
+            Some((w.normalize(values, &params), h.normalize(values, &params)))
+        }
+
+        (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
+            let params = ViewParams::new(dpi, 0.0, 0.0);
+
+            Some((w.normalize(values, &params), h.normalize(values, &params)))
+        }
+        (_, _, _) => None,
+    }
 }
