@@ -175,6 +175,40 @@ fn layer_geometry_with_no_width_height() {
 }
 
 #[test]
+fn layer_geometry_with_no_intrinsic_dimensions() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <rect x="110" y="120" width="50" height="40"/>
+</svg>
+"#,
+    );
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let viewport = cairo::Rectangle {
+        x: 100.0,
+        y: 100.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
+    let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
+
+    // The SVG document above has no width/height nor viewBox, which means it should
+    // start with an identity transform for its coordinate space.  Since the viewport
+    // is just offset by (100, 100), this just translates the coordinates of the <rect>.
+    let rect = cairo::Rectangle {
+        x: 210.0,
+        y: 220.0,
+        width: 50.0,
+        height: 40.0,
+    };
+
+    assert_eq!((ink_r, logical_r), (rect, rect));
+}
+
+#[test]
 fn layer_geometry_with_percent_viewport() {
     let svg = load_svg(
         br#"<?xml version="1.0" encoding="UTF-8"?>
