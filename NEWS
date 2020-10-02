@@ -1,3 +1,21 @@
+Version 2.50.1
+
+- #615: SVG2: Support a chain of uri() filters in the "filter" property
+  (John Ledbetter, Sven Neumann).
+
+- #483: Support CSS selectors for attribute matching, like rect[attr^="prefix"]
+
+- #554: Fixed the geometry_for_layer() APIs to not ignore the passed viewport.
+
+- Fixed CSS "import" so it allows only files from the same base directory
+  (Lars Schmertmann).
+
+- #623 - The pkg-config files (*.pc) do not define the 'svgz_supported' and
+  'css_supported' variables anymore.  These variables were hardcoded
+  to 'true' and unchanged since 2011.
+
+- #624 - The source repository no longer produces a librsvg-uninstalled.pc file.
+
 Version 2.50.0
 
 - The following is a summary of changes between 2.48.x and 2.50.0.  For
