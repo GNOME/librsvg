@@ -23,7 +23,7 @@
 //! librsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
 //! cairo-rs = "0.8.0"
 //! glib = "0.9.0"                                # only if you need streams
-//! gio = { version="0.8.0", features=["v2_50"] } # likewise
+//! gio = { version="0.8.1", features=["v2_50"] } # likewise
 //! ```
 //!
 //! # Example

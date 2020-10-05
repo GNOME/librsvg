@@ -11,7 +11,7 @@ name = "librsvg"
 [dependencies]
 cairo-rs = "0.8.0"
 glib = "0.9.0"
-gio = { version="0.8.0", features=["v2_50"] } # per configure.ac
+gio = { version="0.8.1", features=["v2_50"] } # per configure.ac
 rsvg_internals = { path = "../rsvg_internals" }
 url = "2"
 
