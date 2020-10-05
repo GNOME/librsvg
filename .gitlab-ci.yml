@@ -187,7 +187,7 @@ debian:testing_release:
     LIBRSVG_DEBUG: "no"
     RSVG_TEST_TOLERANCE: "255"
   before_script:
-    - export PATH=$PATH:/usr/lib/i386-linux-gnu/gdk-pixbuf-2.0
+    - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
   <<: *distro_test
   <<: *stage_3
 
