@@ -163,7 +163,6 @@ debian:testing:
     - ./autogen.sh --enable-gtk-doc --enable-vala
     - make
     - make check
-    - make distcheck
 
 release:
   image: $AMD64_OPENSUSE_TUMBLEWEED
