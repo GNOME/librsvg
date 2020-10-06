@@ -123,7 +123,8 @@ cargo_test:
     - sudo -E make check
   artifacts:
     when: 'always'
-    untracked: true
+    paths:
+      - tests/output
     expire_in: 1 day
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
@@ -173,6 +174,11 @@ release:
     - sudo ./autogen.sh --enable-gtk-doc --enable-vala
     - sudo -E make
     - sudo -E make distcheck
+  artifacts:
+    when: 'on_success'
+    paths:
+      - librsvg-*.tar.xz
+    expire_in: 1 week
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
       when: manual
