@@ -16,219 +16,173 @@ variables:
   RUSTC_1_27:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.27"
   RUSTC_1_28:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.28"
 
+  LIBRSVG_DEBUG: "yes"
+
+image: $AMD64_OPENSUSE_TUMBLEWEED
+
 stages:
-  - test
+  - check
+  - build
   - lint
-  - distcheck
-  - rustc
-  - cross_distro
+  - unit test
+  - acceptance test
+  - cross distro
+  - release
+  - docs
 
-.test_template: &test
-  script:
-    # CCache Config
-    - mkdir -p ccache
-    - mkdir -p .cargo_cache
-    - export CCACHE_BASEDIR=${PWD}
-    - export CCACHE_DIR=${PWD}/ccache
-    - export CC="ccache gcc"
+.global_before: &global_before
+  - rustc --version
+  - cargo --version
+  # Set up Rust cache
+  - mkdir -p cargo_cache
 
+.common:
+  variables:
     # Only stuff inside the repo directory can be cached
-    # Override the CARGO_HOME variable to force it location
-    - export CARGO_HOME="${PWD}/.cargo_cache"
+    # Override the CARGO_HOME variable to force its location
+    CARGO_HOME: "${CI_PROJECT_DIR}/cargo_cache"
+  before_script:
+    - *global_before
+  cache:
+    key:
+      files:
+        - Cargo.lock
+    paths:
+      # Rust cache
+      # https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
+      - cargo_cache/bin
+      - cargo_cache/registry/index
+      - cargo_cache/registry/cache
+      - cargo_cache/git/db
+    policy: pull
 
-    - rustc --version && cargo --version
-    - mkdir -p _build
-    - cd _build
-    - sudo=$(command -v sudo) || sudo=""
-    - $sudo ../autogen.sh --enable-gtk-doc --enable-vala
-    - $sudo make
-    - $sudo make check
+.recreate_cache:
+  cache:
+    policy: pull-push
 
+check:
+  stage: check
+  extends:
+    - .common
+    - .recreate_cache
+  needs: []
+  script:
+    - sudo -E cargo check
+
+fmt:
+  stage: lint
+  extends: .common
+  needs:
+    - job: check
+      artifacts: false
+  script:
+    - sudo -E cargo fmt --all -- --check
+
+clippy:
+  stage: lint
+  extends: .common
+  needs:
+    - job: check
+      artifacts: false
+  script:
+    - cargo clippy --version
+    - sudo CARGO_HOME=$CARGO_HOME cargo clippy --all
+
+cargo_test:
+  stage: unit test
+  extends:
+    - .common
+    # Tests require extra crates, hence cache is recreated
+    - .recreate_cache
+  needs:
+    - job: check
+      artifacts: false
+  variables:
+    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+  script:
+    - sudo -E cargo test -- --skip "cmdline"
+
+.make:
+  stage: cross distro
+  extends:
+    - .common
+  needs:
+    - job: cargo_test
+      artifacts: false
+  script:
+    - sudo ./autogen.sh --enable-gtk-doc --enable-vala
+    - sudo -E make
+    - sudo -E make check
   artifacts:
     when: 'always'
     paths:
-      - _build/tests/*.log
-      - _build/tests/output/
-      - _build/*.gir
-      - _build/*.la
-      - _build/*.pc
-      - _build/*.typelib
-      - _build/*.vapi
-      - _build/.libs
-      - _build/Makefile
-      - _build/config*
-      - _build/doc
-      - _build/librsvg-zip
-      - _build/libtool
-      - _build/stamp*
-      - _build/win32
-      - compile
-      - config.guess
-      - config.h.in
-      - config.rpath
-      - config.sub
-      - depcomp
-      - gtk-doc.make
-      - install-sh
-      - ltmain.sh
-      - missing
-      - po
-      - test-driver
+      - tests/output/*-diff.png
     expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
-  cache:
-    # JOB_NAME - Each job will have it's own cache
-    # COMMIT_REF_SLUG = Lowercase name of the branch
-    # ^ Keep diffrerent caches for each branch
-    key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
-    paths:
-      - _build/target/
-      - .cargo_cache/
-      - ccache/
-
-.distro_template: &distro_test
-  stage: cross_distro
-  <<: *test
-
-.rustc_template: &rustc
-  stage: rustc
-  <<: *test
-
-# Jobs that are marked as stage 3 will only run on scheduled pipelines.
-# Ideal targets for this stage are expensive task, that only need to be run
-# on a regular time interval. Ex testing all the gcc/rustc version that we target
-.test_stage_3: &stage_3
-  only:
-    - schedules
-    - tags
-    - web
-
-# STAGE 1 TESTS
-########################################################################
-
-.fedora test:
-  image: $AMD64_FEDORA_LATEST
-  stage: test
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *test
+opensuse:tumbleweed:
+  stage: acceptance test
+  extends: .make
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 fedora:rawhide:
   image: $AMD64_FEDORA_RAWHIDE
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *distro_test
+  extends: .make
 
-opensuse:tumbleweed:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: test
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *test
+fedora:latest:
+  image: $AMD64_FEDORA_LATEST
+  extends: .make
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
-  variables:
-    LIBRSVG_DEBUG: "yes"
-    # we are only interested in build issues - run the tests with maximum tolerance
-    RSVG_TEST_TOLERANCE: "255"
-  before_script:
-    - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
-  <<: *distro_test
-
-# STAGE 1 LINTS
-########################################################################
-
-# Configure and run rustfmt
-# Exits and build fails on bad format
-rustfmt:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: lint
-  script:
-    - rustc --version && cargo --version
-    - cargo fmt --version
-    - sudo cargo fmt --all -- --check
-
-# Configure and run clippy
-# Only fails on errors atm.
-clippy:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: lint
-  script:
-    - rustc --version && cargo --version
-    - cargo clippy --version
-    - sudo cargo clippy --all
-
-tarball:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: lint
-  dependencies:
-    - opensuse:tumbleweed
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  script:
-    - cd _build
-    - sudo make distcheck DESTDIR=/tmp/distcheck
-
-# STAGE 3 CROSS DISTRO TESTS
-#######################################################################
-
-fedora:test_release:
-  image: $AMD64_FEDORA_LATEST
-  stage: test
-  variables:
-    LIBRSVG_DEBUG: "no"
-  <<: *distro_test
-  <<: *stage_3
-
-debian:testing_release:
-  image: $AMD64_DEBIAN_TESTING
+  extends: .make
   variables:
     LIBRSVG_DEBUG: "no"
     RSVG_TEST_TOLERANCE: "255"
   before_script:
+    - *global_before
     - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
-  <<: *distro_test
-  <<: *stage_3
+  script:
+    # TODO: delete after sudo is no longer needed
+    - ./autogen.sh --enable-gtk-doc --enable-vala
+    - make
+    - make check
 
-# STAGE 3 RUSTC TESTS
-#######################################################################
-
-.rustc 1.26 1:
-  image: $RUSTC_1_26
+distcheck:
+  extends: .make
+  stage: release
   variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *rustc
-  <<: *stage_3
-
-.rustc 1.27 2:
-  image: $RUSTC_1_27
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *rustc
-  <<: *stage_3
-
-.rustc 1.28 3:
-  image: $RUSTC_1_28
-  variables:
-    LIBRSVG_DEBUG: "yes"
-  <<: *rustc
-  <<: *stage_3
-
-# STAGE 4 DOCUMENTATION
-#######################################################################
+    DESTDIR: "/tmp/distcheck"
+  script:
+    - sudo ./autogen.sh --enable-gtk-doc --enable-vala
+    - sudo -E make
+    - sudo -E make distcheck
+  artifacts:
+    when: 'on_success'
+    paths:
+      - librsvg-*.tar.xz
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 pages:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
-  stage: test
+  stage: docs
+  extends: .common
   script:
     - mkdir -p public/doc
-    - sudo cargo doc --document-private-items --no-deps
+    - sudo -E cargo doc --document-private-items --no-deps
     - cp -r target/doc/* public/doc
-
   artifacts:
     paths:
       - public
-
-  only:
-    - master
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
