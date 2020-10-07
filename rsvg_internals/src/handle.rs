@@ -2,7 +2,6 @@
 //!
 //! This module provides the primitives on which the public APIs are implemented.
 
-use crate::allowed_url::{AllowedUrl, Href};
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
@@ -14,13 +13,13 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
-use url::Url;
+use crate::url_resolver::{AllowedUrl, Href, UrlResolver};
 
 /// Loading options for SVG documents.
 #[derive(Clone)]
 pub struct LoadOptions {
-    /// Base URL; all relative references will be resolved with respect to this.
-    pub base_url: Option<Url>,
+    /// Load url resolver; all references will be resolved with respect to this.
+    pub url_resolver: UrlResolver,
 
     /// Whether to turn off size limits in libxml2.
     pub unlimited_size: bool,
@@ -30,10 +29,10 @@ pub struct LoadOptions {
 }
 
 impl LoadOptions {
-    /// Creates a `LoadOptions` with defaults, and sets the `base_url`.
-    pub fn new(base_url: Option<Url>) -> Self {
+    /// Creates a `LoadOptions` with defaults, and sets the `url resolver`.
+    pub fn new(url_resolver: UrlResolver) -> Self {
         LoadOptions {
-            base_url,
+            url_resolver,
             unlimited_size: false,
             keep_image_data: false,
         }
@@ -57,13 +56,16 @@ impl LoadOptions {
         self
     }
 
-    /// Creates a new `LoadOptions` with a different `base_url`.
+    /// Creates a new `LoadOptions` with a different `url resolver`.
     ///
     /// This is used when loading a referenced file that may in turn cause other files
     /// to be loaded, for example `<image xlink:href="subimage.svg"/>`
     pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> Self {
+        let mut url_resolver = self.url_resolver.clone();
+        url_resolver.base_url = Some((**base_url).clone());
+
         LoadOptions {
-            base_url: Some((**base_url).clone()),
+            url_resolver: url_resolver,
             unlimited_size: self.unlimited_size,
             keep_image_data: self.keep_image_data,
         }
@@ -364,7 +366,7 @@ impl Handle {
 
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
         let mut stylesheet = Stylesheet::new(Origin::User);
-        stylesheet.parse(css, None)?;
+        stylesheet.parse(css, &UrlResolver::new(None))?;
         self.document.cascade(&[stylesheet]);
         Ok(())
     }

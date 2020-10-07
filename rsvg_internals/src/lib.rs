@@ -80,6 +80,8 @@ pub use crate::surface_utils::{
     CairoARGB, Pixel,
 };
 
+pub use crate::url_resolver::UrlResolver;
+
 pub use crate::viewbox::ViewBox;
 
 #[macro_use]
@@ -100,7 +102,6 @@ mod node;
 #[macro_use]
 mod property_macros;
 
-mod allowed_url;
 mod angle;
 mod aspect_ratio;
 mod attributes;
@@ -142,6 +143,7 @@ pub mod surface_utils;
 mod text;
 mod transform;
 mod unit_interval;
+mod url_resolver;
 mod util;
 mod viewbox;
 mod xml;

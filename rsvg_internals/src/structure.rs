@@ -2,7 +2,6 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::allowed_url::Fragment;
 use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
@@ -17,6 +16,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::url_resolver::Fragment;
 use crate::viewbox::*;
 
 #[derive(Default)]

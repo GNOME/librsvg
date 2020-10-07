@@ -33,7 +33,7 @@ use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
     rsvg_log, DefsLookupErrorKind, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
-    RenderingError, RsvgLength, SharedImageSurface, SurfaceType, ViewBox,
+    RenderingError, RsvgLength, SharedImageSurface, SurfaceType, UrlResolver, ViewBox,
 };
 
 use crate::dpi::Dpi;
@@ -659,7 +659,7 @@ impl CHandle {
     fn load_options(&self) -> LoadOptions {
         let inner = self.inner.borrow();
 
-        LoadOptions::new(inner.base_url.get().map(|u| (*u).clone()))
+        LoadOptions::new(UrlResolver::new(inner.base_url.get().map(|u| (*u).clone())))
             .with_unlimited_size(inner.load_flags.unlimited_size)
             .keep_image_data(inner.load_flags.keep_image_data)
     }

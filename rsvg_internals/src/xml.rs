@@ -14,7 +14,6 @@ use std::string::ToString;
 use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
-use crate::allowed_url::AllowedUrl;
 use crate::attributes::Attributes;
 use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
@@ -22,6 +21,7 @@ use crate::io::{self, get_input_stream_for_loading};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
 use crate::style::StyleType;
+use crate::url_resolver::AllowedUrl;
 use crate::xml2_load::Xml2Parser;
 
 #[derive(Clone)]

@@ -7,7 +7,6 @@ use markup5ever::{
 use matches::matches;
 use std::cell::RefCell;
 
-use crate::allowed_url::Fragment;
 use crate::attributes::Attributes;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
@@ -20,6 +19,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::url_resolver::Fragment;
 
 /// Contents of a <stop> element for gradient color stops
 #[derive(Copy, Clone)]
