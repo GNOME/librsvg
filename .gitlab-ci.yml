@@ -16,8 +16,9 @@ variables:
   RUSTC_1_27:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.27"
   RUSTC_1_28:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.28"
 
-  DEFAULT_IMAGE: $AMD64_OPENSUSE_TUMBLEWEED
   LIBRSVG_DEBUG: "yes"
+
+image: $AMD64_OPENSUSE_TUMBLEWEED
 
 stages:
   - check
@@ -26,14 +27,14 @@ stages:
   - unit test
   - acceptance test
   - cross distro
+  - release
   - docs
 
 .global_before: &global_before
-  - uname -v
   - rustc --version
   - cargo --version
+  # Set up Rust cache
   - mkdir -p cargo_cache
-  - printenv
 
 .common:
   variables:
@@ -46,9 +47,8 @@ stages:
     key:
       files:
         - Cargo.lock
-        - Makefile
-      prefix: "check"
     paths:
+      # Rust cache
       # https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci
       - cargo_cache/bin
       - cargo_cache/registry/index
@@ -56,24 +56,20 @@ stages:
       - cargo_cache/git/db
     policy: pull
 
-.cache:
+.recreate_cache:
   cache:
-    key:
-      prefix: "${CI_JOB_NAME}"
     policy: pull-push
 
 check:
-  image: $DEFAULT_IMAGE
   stage: check
   extends:
     - .common
-    - .cache
+    - .recreate_cache
   needs: []
   script:
     - sudo -E cargo check
 
 fmt:
-  image: $DEFAULT_IMAGE
   stage: lint
   extends: .common
   needs:
@@ -83,7 +79,6 @@ fmt:
     - sudo -E cargo fmt --all -- --check
 
 clippy:
-  image: $DEFAULT_IMAGE
   stage: lint
   extends: .common
   needs:
@@ -94,13 +89,11 @@ clippy:
     - sudo CARGO_HOME=$CARGO_HOME cargo clippy --all
 
 cargo_test:
-  image: $DEFAULT_IMAGE
   stage: unit test
-  extends: .common
-  cache:
-    key:
-      prefix: "make_check"
-    policy: pull-push
+  extends:
+    - .common
+    # Tests require extra crates, hence cache is recreated
+    - .recreate_cache
   needs:
     - job: check
       artifacts: false
@@ -110,10 +103,9 @@ cargo_test:
     - sudo -E cargo test -- --skip "cmdline"
 
 .make:
-  stage: acceptance test
+  stage: cross distro
   extends:
     - .common
-    - .cache
   needs:
     - job: cargo_test
       artifacts: false
@@ -124,7 +116,7 @@ cargo_test:
   artifacts:
     when: 'always'
     paths:
-      - tests/output
+      - tests/output/*-diff.png
     expire_in: 1 day
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
@@ -132,26 +124,23 @@ cargo_test:
       allow_failure: true
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
-make_check:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
+opensuse:tumbleweed:
   stage: acceptance test
   extends: .make
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 fedora:rawhide:
   image: $AMD64_FEDORA_RAWHIDE
-  stage: cross distro
   extends: .make
 
 fedora:latest:
   image: $AMD64_FEDORA_LATEST
-  stage: cross distro
   extends: .make
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
-  stage: cross distro
   extends: .make
   variables:
     LIBRSVG_DEBUG: "no"
@@ -165,9 +154,9 @@ debian:testing:
     - make
     - make check
 
-release:
-  image: $AMD64_OPENSUSE_TUMBLEWEED
+distcheck:
   extends: .make
+  stage: release
   variables:
     DESTDIR: "/tmp/distcheck"
   script:
@@ -186,7 +175,6 @@ release:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 pages:
-  image: $DEFAULT_IMAGE
   stage: docs
   extends: .common
   script:
