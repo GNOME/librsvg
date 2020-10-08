@@ -35,15 +35,13 @@ impl Attributes {
     /// value_start and value_end point to the start-inclusive and
     /// end-exclusive bytes in the attribute's value.
     ///
+    /// # Safety
+    ///
     /// This function is unsafe because the caller must guarantee the following:
     ///
     /// * `attrs` is a valid pointer, with (n_attributes * 5) elements.
     ///
     /// * All strings are valid UTF-8.
-    ///
-    /// The lifetime of the `Attributes` should be considered the same as the lifetime of the
-    /// `attrs` array, as the `Attributes` does not copy the strings - it directly stores pointers
-    /// into that array's strings.
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
