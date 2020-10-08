@@ -1,6 +1,5 @@
 //! Store XML element attributes and their values.
 
-use std::mem;
 use std::slice;
 use std::str;
 
@@ -36,15 +35,13 @@ impl Attributes {
     /// value_start and value_end point to the start-inclusive and
     /// end-exclusive bytes in the attribute's value.
     ///
+    /// # Safety
+    ///
     /// This function is unsafe because the caller must guarantee the following:
     ///
     /// * `attrs` is a valid pointer, with (n_attributes * 5) elements.
     ///
     /// * All strings are valid UTF-8.
-    ///
-    /// The lifetime of the `Attributes` should be considered the same as the lifetime of the
-    /// `attrs` array, as the `Attributes` does not copy the strings - it directly stores pointers
-    /// into that array's strings.
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
@@ -77,8 +74,8 @@ impl Attributes {
 
                     // FIXME: ptr::offset_from() is nightly-only.
                     // We'll do the computation of the length by hand.
-                    let start: usize = mem::transmute(value_start);
-                    let end: usize = mem::transmute(value_end);
+                    let start = value_start as usize;
+                    let end = value_end as usize;
                     let len = end - start;
 
                     let value_slice = slice::from_raw_parts(value_start as *const u8, len);
