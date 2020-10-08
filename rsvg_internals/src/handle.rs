@@ -65,7 +65,7 @@ impl LoadOptions {
         url_resolver.base_url = Some((**base_url).clone());
 
         LoadOptions {
-            url_resolver: url_resolver,
+            url_resolver,
             unlimited_size: self.unlimited_size,
             keep_image_data: self.keep_image_data,
         }

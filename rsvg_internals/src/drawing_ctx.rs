@@ -170,9 +170,7 @@ pub fn draw_tree(
     acquired_nodes: &mut AcquiredNodes,
 ) -> Result<BoundingBox, RenderingError> {
     let (drawsub_stack, node) = match mode {
-        DrawingMode::LimitToStack { node, root } => {
-            (node.ancestors().map(|n| n.clone()).collect(), root)
-        }
+        DrawingMode::LimitToStack { node, root } => (node.ancestors().collect(), root),
 
         DrawingMode::OnlyNode(node) => (Vec::new(), node),
     };
