@@ -110,13 +110,16 @@ cargo_test:
     - job: cargo_test
       artifacts: false
   script:
-    - sudo ./autogen.sh --enable-gtk-doc --enable-vala
+    - mkdir -p _build
+    - cd _build
+    - sudo ../autogen.sh --enable-gtk-doc --enable-vala
     - sudo -E make
     - sudo -E make check
   artifacts:
-    when: 'always'
+    when: 'on_failure'
     paths:
-      - tests/output/*-diff.png
+      - _build/tests/*.log
+      - _build/tests/output
     expire_in: 1 day
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
@@ -150,7 +153,9 @@ debian:testing:
     - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
   script:
     # TODO: delete after sudo is no longer needed
-    - ./autogen.sh --enable-gtk-doc --enable-vala
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh --enable-gtk-doc --enable-vala
     - make
     - make check
 
