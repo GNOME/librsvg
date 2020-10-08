@@ -67,7 +67,7 @@ check:
     - .recreate_cache
   needs: []
   script:
-    - sudo -E cargo check
+    - sudo -E cargo check --workspace
 
 fmt:
   stage: lint
@@ -86,7 +86,7 @@ clippy:
       artifacts: false
   script:
     - cargo clippy --version
-    - sudo CARGO_HOME=$CARGO_HOME cargo clippy --all
+    - sudo CARGO_HOME=$CARGO_HOME cargo clippy --workspace
 
 cargo_test:
   stage: unit test
