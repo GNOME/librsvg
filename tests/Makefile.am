@@ -21,7 +21,6 @@ test_programs =		\
 	rsvg-test	\
 	crash		\
 	render-crash	\
-	dimensions	\
 	errors		\
 	infinite-loop
 
@@ -51,10 +50,6 @@ crash_SOURCES = \
 
 render_crash_SOURCES = \
 	render-crash.c	\
-	$(test_utils_common_sources)
-
-dimensions_SOURCES = \
-	dimensions.c	\
 	$(test_utils_common_sources)
 
 loading_SOURCES =		 	\
