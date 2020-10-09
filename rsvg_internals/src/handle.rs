@@ -128,23 +128,7 @@ impl Handle {
             }
         }
 
-        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
-
-        let bbox = draw_tree(
-            DrawingMode::LimitToStack { node, root },
-            &cr,
-            unit_rectangle(),
-            dpi,
-            true,
-            is_testing,
-            &mut AcquiredNodes::new(&self.document),
-        )?;
-
-        let ink_rect = bbox.ink_rect.unwrap_or_default();
-        let logical_rect = bbox.rect.unwrap_or_default();
-
-        Ok((ink_rect, logical_rect))
+        self.geometry_for_layer(node, unit_rectangle(), dpi, is_testing)
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
