@@ -37,7 +37,7 @@ pango-sys = "0.9.0"
 pangocairo = "0.9.0"
 rayon = "1"
 rctree = "0.3.3"
-rgb = { version="0.8.17", features=["argb"] }
+rgb = { version="0.8", features=["argb"] }
 regex = "1"
 selectors = "0.22.0"
 string_cache = "0.8.0"

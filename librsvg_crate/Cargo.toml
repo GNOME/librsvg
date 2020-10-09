@@ -17,4 +17,5 @@ url = "2"
 
 [dev-dependencies]
 cairo-rs = { version = "0.8.0", features = ["png", "pdf", "svg"] }
+rgb = { version="0.8", features=["argb"] }
 rsvg_internals = { path = "../rsvg_internals" }
