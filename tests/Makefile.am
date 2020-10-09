@@ -17,7 +17,6 @@ EXTRA_DIST +=		\
 # Keep "errors" at the end; they are the slowest to run
 test_programs =		\
 	api		\
-	loading		\
 	rsvg-test	\
 	crash		\
 	render-crash	\
@@ -50,10 +49,6 @@ crash_SOURCES = \
 
 render_crash_SOURCES = \
 	render-crash.c	\
-	$(test_utils_common_sources)
-
-loading_SOURCES =		 	\
-	loading.c			\
 	$(test_utils_common_sources)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
