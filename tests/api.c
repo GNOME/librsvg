@@ -1427,19 +1427,177 @@ library_version_constants (void)
     g_assert_cmpuint (rsvg_micro_version, ==, LIBRSVG_MICRO_VERSION);
 }
 
-int
-main (int argc, char **argv)
+typedef struct
+{
+    const gchar *test_name;
+    const gchar *file_path;
+    const gchar *id;
+    gdouble x;
+    gdouble y;
+    gdouble width;
+    gdouble height;
+    gboolean has_position;
+    gboolean has_dimensions;
+} DimensionsFixtureData;
+
+static void
+test_dimensions (DimensionsFixtureData *fixture)
+{
+    RsvgHandle *handle;
+    RsvgPositionData position;
+    RsvgDimensionData dimension;
+    gchar *target_file;
+    GError *error = NULL;
+
+    target_file = g_build_filename (test_utils_get_test_data_path (),
+                                    fixture->file_path, NULL);
+    handle = rsvg_handle_new_from_file (target_file, &error);
+    g_free (target_file);
+    g_assert_no_error (error);
+
+    if (fixture->id) {
+        g_assert (rsvg_handle_has_sub (handle, fixture->id));
+        g_assert (rsvg_handle_get_position_sub (handle, &position, fixture->id));
+        g_assert (rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id));
+
+        g_message ("w=%d h=%d", dimension.width, dimension.height);
+    } else {
+        rsvg_handle_get_dimensions (handle, &dimension);
+    }
+
+    if (fixture->has_position) {
+        g_assert_cmpint (fixture->x, ==, position.x);
+        g_assert_cmpint (fixture->y, ==, position.y);
+    }
+
+    if (fixture->has_dimensions) {
+        g_assert_cmpint (fixture->width,  ==, dimension.width);
+        g_assert_cmpint (fixture->height, ==, dimension.height);
+    }
+
+    g_object_unref (handle);
+}
+
+static DimensionsFixtureData dimensions_fixtures[] =
+{
+    {
+        "/dimensions/no viewbox, width and height",
+        "dimensions/bug608102.svg",
+        NULL,
+        0, 0, 16, 16,
+        FALSE, TRUE
+    },
+    {
+        "/dimensions/100% width and height",
+        "dimensions/bug612951.svg",
+        NULL,
+        0, 0, 47, 47.14,
+        FALSE, TRUE
+    },
+    {
+        "/dimensions/viewbox only",
+        "dimensions/bug614018.svg",
+        NULL,
+        0, 0, 972, 546,
+        FALSE, TRUE
+    },
+    {
+        "/dimensions/sub/rect no unit",
+        "dimensions/sub-rect-no-unit.svg",
+        "#rect-no-unit",
+        0, 0, 44, 45,
+        FALSE, TRUE
+    },
+    {
+        "/dimensions/sub/text_position",
+        "dimensions/347-wrapper.svg",
+        "#LabelA",
+        80, 48.90, 0, 0,
+        TRUE, FALSE
+    },
+    {
+        "/dimensions/with-viewbox",
+        "dimensions/521-with-viewbox.svg",
+        "#foo",
+        50.0, 60.0, 70.0, 80.0,
+        TRUE, TRUE
+    },
+};
+
+typedef struct
+{
+    const char *test_name;
+    const char *fixture;
+    size_t buf_size;
+} LoadingTestData;
+
+static void
+load_n_bytes_at_a_time (gconstpointer data)
+{
+    const LoadingTestData *fixture_data = data;
+    char *filename = g_build_filename (test_utils_get_test_data_path (), fixture_data->fixture, NULL);
+    guchar *buf = g_new (guchar, fixture_data->buf_size);
+    gboolean done;
+
+    RsvgHandle *handle;
+    FILE *file;
+
+    file = fopen (filename, "rb");
+    g_assert_nonnull (file);
+
+    handle = rsvg_handle_new_with_flags (RSVG_HANDLE_FLAGS_NONE);
+
+    done = FALSE;
+
+    do {
+        size_t num_read;
+
+        num_read = fread (buf, 1, fixture_data->buf_size, file);
+
+        if (num_read > 0) {
+            g_assert_true (rsvg_handle_write (handle, buf, num_read, NULL));
+        } else {
+            g_assert_cmpint (ferror (file), ==, 0);
+
+            if (feof (file)) {
+                done = TRUE;
+            }
+        }
+    } while (!done);
+
+    fclose (file);
+    g_free (filename);
+
+    g_assert_true (rsvg_handle_close (handle, NULL));
+
+    g_object_unref (handle);
+
+    g_free (buf);
+}
+
+static LoadingTestData loading_tests[] = {
+    { "/loading/one-byte-at-a-time", "loading/gnome-cool.svg", 1 },
+    { "/loading/compressed-one-byte-at-a-time", "loading/gnome-cool.svgz", 1 },
+    { "/loading/compressed-two-bytes-at-a-time", "loading/gnome-cool.svgz", 2 } /* to test reading the entire gzip header */
+};
+
+/* Tests for the deprecated GdkPixbuf-based API */
+static void
+add_pixbuf_tests (void)
 {
     int i;
-
-    g_test_init (&argc, &argv, NULL);
 
     for (i = 0; i < G_N_ELEMENTS (pixbuf_tests); i++) {
         g_test_add_data_func (pixbuf_tests[i].test_name, &pixbuf_tests[i], test_pixbuf);
     }
 
     g_test_add_func ("/api/pixbuf_overflow", pixbuf_overflow);
+}
 
+/* Tests for the C API of librsvg*/
+static void
+add_api_tests (void)
+{
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
     g_test_add_func ("/api/flags_registration", flags_registration);
     g_test_add_func ("/api/error_registration", error_registration);
@@ -1483,6 +1641,40 @@ main (int argc, char **argv)
     g_test_add_func ("/api/library_version_defines", library_version_defines);
     g_test_add_func ("/api/library_version_check", library_version_check);
     g_test_add_func ("/api/library_version_constants", library_version_constants);
+}
+
+/* Tests for the deprecated APIs to get geometries */
+static void
+add_geometry_tests (void)
+{
+    int i;
+
+    for (i = 0; i < G_N_ELEMENTS (dimensions_fixtures); i++)
+        g_test_add_data_func (dimensions_fixtures[i].test_name, &dimensions_fixtures[i], (void*)test_dimensions);
+}
+
+/* Tests for the deprecated API for loading bytes at a time */
+static void
+add_loading_tests (void)
+{
+    int i;
+
+    for (i = 0; i < G_N_ELEMENTS (loading_tests); i++) {
+        g_test_add_data_func (loading_tests[i].test_name, &loading_tests[i], load_n_bytes_at_a_time);
+    }
+}
+
+int
+main (int argc, char **argv)
+{
+    g_test_init (&argc, &argv, NULL);
+
+    test_utils_setup_font_map ();
+
+    add_pixbuf_tests ();
+    add_api_tests ();
+    add_geometry_tests ();
+    add_loading_tests ();
 
     return g_test_run ();
 }
