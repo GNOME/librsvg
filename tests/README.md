@@ -12,19 +12,11 @@ The test suite has the following test binaries:
 * `api` - Tests the full C API of librsvg: all the public functions,
   the RsvgHandle class and its methods, and its GObject properties.
 
-* `loading` - Tests that compressed and uncompressed SVGs are loaded
-  correctly even if read one or two bytes at a time.  This is
-  basically a test for the state machines in the loading code.
-
 * `crash` - Ensures that loading and parsing (but not rendering) a
   particular SVG doesn't crash or yield a GError.
   
 * `render-crash` - Ensures that rendering a loaded SVG doesn't crash.
 
-* `dimensions` - Loads an SVG, and tests that librsvg computes the
-  correct dimensions for the toplevel SVG element, or one of the
-  individual sub-elements.
-  
 * `errors` - Tests that errors are reported from the API when SVG
   files have deliberate errors in them.
 
@@ -277,15 +269,9 @@ metrics.
 
 ## API tests for `api.c`
 
-These test the full C API of librsvg: all the public functions, the
-RsvgHandle class and its methods, and its GObject properties.  Any new
-public APIs should get tested here.
-
-## Loading tests for `loading.c`
-
-These test the code that decompresses compressed SVGs and feeds the
-XML reader, by trying to load SVG data one or two bytes at a time.  The
-SVG and SVGZ images are in the `fixtures/loading` directory.
+These test the full C API of librsvg: all the public functions; the
+RsvgHandle class, its methods, and its GObject properties; all the
+deprecated functions.  Any new public APIs should get tested here.
 
 ## Crash tests for `crash.c`
 
@@ -302,13 +288,6 @@ each file.
 We use these tests to ensure there are no regressions after fixing a
 bug where a particular SVG loads fine, but it crashes the renderer.
 The test files are in the `fixtures/render-crash` directory.
-
-## Dimensions tests for `dimensions.c`
-
-Here we test that librsvg computes the correct dimensions for objects
-in an SVG file.  The test files are in the `fixtures/dimensions`
-directory.  The expected dimensions are declared in the test fixtures
-in `dimensions.c`.
 
 ## Error tests for `errors.c`
 
