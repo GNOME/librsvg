@@ -1524,21 +1524,23 @@ static DimensionsFixtureData dimensions_fixtures[] =
     },
 };
 
-int
-main (int argc, char **argv)
+/* Tests for the deprecated GdkPixbuf-based API */
+static void
+add_pixbuf_tests (void)
 {
     int i;
-
-    g_test_init (&argc, &argv, NULL);
-
-    test_utils_setup_font_map ();
 
     for (i = 0; i < G_N_ELEMENTS (pixbuf_tests); i++) {
         g_test_add_data_func (pixbuf_tests[i].test_name, &pixbuf_tests[i], test_pixbuf);
     }
 
     g_test_add_func ("/api/pixbuf_overflow", pixbuf_overflow);
+}
 
+/* Tests for the C API of librsvg*/
+static void
+add_api_tests (void)
+{
     g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
     g_test_add_func ("/api/flags_registration", flags_registration);
     g_test_add_func ("/api/error_registration", error_registration);
@@ -1582,9 +1584,28 @@ main (int argc, char **argv)
     g_test_add_func ("/api/library_version_defines", library_version_defines);
     g_test_add_func ("/api/library_version_check", library_version_check);
     g_test_add_func ("/api/library_version_constants", library_version_constants);
+}
+
+/* Tests for the deprecated APIs to get geometries */
+static void
+add_geometry_tests (void)
+{
+    int i;
 
     for (i = 0; i < G_N_ELEMENTS (dimensions_fixtures); i++)
         g_test_add_data_func (dimensions_fixtures[i].test_name, &dimensions_fixtures[i], (void*)test_dimensions);
+}
+
+int
+main (int argc, char **argv)
+{
+    g_test_init (&argc, &argv, NULL);
+
+    test_utils_setup_font_map ();
+
+    add_pixbuf_tests ();
+    add_api_tests ();
+    add_geometry_tests ();
 
     return g_test_run ();
 }
