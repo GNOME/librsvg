@@ -148,23 +148,11 @@ impl PixelOps for Pixel {
     }
 
     #[inline]
-    fn diff(self, pixel: &Pixel) -> Pixel {
-        let a_r = i32::from(self.r);
-        let a_g = i32::from(self.g);
-        let a_b = i32::from(self.b);
-        let a_a = i32::from(self.a);
-
-        let b_r = i32::from(pixel.r);
-        let b_g = i32::from(pixel.g);
-        let b_b = i32::from(pixel.b);
-        let b_a = i32::from(pixel.a);
-
-        let r = (a_r - b_r).abs() as u8;
-        let g = (a_g - b_g).abs() as u8;
-        let b = (a_b - b_b).abs() as u8;
-        let a = (a_a - b_a).abs() as u8;
-
-        Pixel { r, g, b, a }
+    fn diff(self, other: &Pixel) -> Pixel {
+        self.iter()
+            .zip(other.iter())
+            .map(|(l, r)| (l as i32 - r as i32).abs() as u8)
+            .collect()
     }
 
     /// Returns the pixel value as a `u32`, in the same format as `cairo::Format::ARgb32`.
@@ -190,3 +178,16 @@ impl PixelOps for Pixel {
 
 impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
 impl<'a> ImageSurfaceDataExt for &'a mut [u8] {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pixel_diff() {
+        let a = Pixel::new(0x10, 0x20, 0xf0, 0x40);
+        assert_eq!(a, a.diff(&Pixel::default()));
+        let b = Pixel::new(0x50, 0xff, 0x20, 0x10);
+        assert_eq!(a.diff(&b), Pixel::new(0x40, 0xdf, 0xd0, 0x30));
+    }
+}
