@@ -41,15 +41,6 @@ impl<T: Copy> AsCairoARGB<T> for [T] {
     }
 }
 
-/// A pixel consisting of R, G, B and A values.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct Pixel {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
-}
-
 /// Modes which specify how the values of out of bounds pixels are computed.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EdgeMode {
@@ -77,10 +68,22 @@ pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
     }
 }
 
-impl Pixel {
+/// A pixel consisting of R, G, B and A values.
+pub type Pixel = rgb::RGBA8;
+
+pub trait PixelOps {
+    fn premultiply(self) -> Self;
+    fn unpremultiply(self) -> Self;
+    fn to_mask(self, opacity: u8) -> Self;
+    fn diff(self, other: &Self) -> Self;
+    fn to_u32(self) -> u32;
+    fn from_u32(x: u32) -> Self;
+}
+
+impl PixelOps for Pixel {
     /// Returns an unpremultiplied value of this pixel.
     #[inline]
-    pub fn unpremultiply(self) -> Self {
+    fn unpremultiply(self) -> Self {
         if self.a == 0 {
             self
         } else {
@@ -98,7 +101,7 @@ impl Pixel {
 
     /// Returns a premultiplied value of this pixel.
     #[inline]
-    pub fn premultiply(self) -> Self {
+    fn premultiply(self) -> Self {
         let alpha = f64::from(self.a) / 255.0;
         let premultiply = |x| ((f64::from(x) * alpha) + 0.5) as u8;
 
@@ -107,26 +110,6 @@ impl Pixel {
             g: premultiply(self.g),
             b: premultiply(self.b),
             a: self.a,
-        }
-    }
-
-    /// Returns the pixel value as a `u32`, in the same format as `cairo::Format::ARgb32`.
-    #[inline]
-    pub fn to_u32(self) -> u32 {
-        (u32::from(self.a) << 24)
-            | (u32::from(self.r) << 16)
-            | (u32::from(self.g) << 8)
-            | u32::from(self.b)
-    }
-
-    /// Converts a `u32` in the same format as `cairo::Format::ARgb32` into a `Pixel`.
-    #[inline]
-    pub fn from_u32(x: u32) -> Self {
-        Self {
-            r: ((x >> 16) & 0xFF) as u8,
-            g: ((x >> 8) & 0xFF) as u8,
-            b: (x & 0xFF) as u8,
-            a: ((x >> 24) & 0xFF) as u8,
         }
     }
 
@@ -145,11 +128,12 @@ impl Pixel {
     /// b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
     ///
     /// This allows for the following expected behaviour:
-    ///    (we only care about the most sig byte)
+    ///    (we only care about the most significant byte)
     /// if pixel = 0x00FFFFFF, pixel' = 0xFF......
     /// if pixel = 0x00020202, pixel' = 0x02......
     /// if pixel = 0x00000000, pixel' = 0x00......
-    pub fn to_mask(self, opacity: u8) -> Self {
+    #[inline]
+    fn to_mask(self, opacity: u8) -> Self {
         let r = u32::from(self.r);
         let g = u32::from(self.g);
         let b = u32::from(self.b);
@@ -164,7 +148,7 @@ impl Pixel {
     }
 
     #[inline]
-    pub fn diff(self, pixel: &Pixel) -> Pixel {
+    fn diff(self, pixel: &Pixel) -> Pixel {
         let a_r = i32::from(self.r);
         let a_g = i32::from(self.g);
         let a_b = i32::from(self.b);
@@ -181,6 +165,26 @@ impl Pixel {
         let a = (a_a - b_a).abs() as u8;
 
         Pixel { r, g, b, a }
+    }
+
+    /// Returns the pixel value as a `u32`, in the same format as `cairo::Format::ARgb32`.
+    #[inline]
+    fn to_u32(self) -> u32 {
+        (u32::from(self.a) << 24)
+            | (u32::from(self.r) << 16)
+            | (u32::from(self.g) << 8)
+            | u32::from(self.b)
+    }
+
+    /// Converts a `u32` in the same format as `cairo::Format::ARgb32` into a `Pixel`.
+    #[inline]
+    fn from_u32(x: u32) -> Self {
+        Self {
+            r: ((x >> 16) & 0xFF) as u8,
+            g: ((x >> 8) & 0xFF) as u8,
+            b: (x & 0xFF) as u8,
+            a: ((x >> 24) & 0xFF) as u8,
+        }
     }
 }
 
