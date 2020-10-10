@@ -88,14 +88,7 @@ impl PixelOps for Pixel {
             self
         } else {
             let alpha = f64::from(self.a) / 255.0;
-            let unpremultiply = |x| ((f64::from(x) / alpha) + 0.5) as u8;
-
-            Self {
-                r: unpremultiply(self.r),
-                g: unpremultiply(self.g),
-                b: unpremultiply(self.b),
-                a: self.a,
-            }
+            self.map_rgb(|x| ((f64::from(x) / alpha) + 0.5) as u8)
         }
     }
 
@@ -103,14 +96,7 @@ impl PixelOps for Pixel {
     #[inline]
     fn premultiply(self) -> Self {
         let alpha = f64::from(self.a) / 255.0;
-        let premultiply = |x| ((f64::from(x) * alpha) + 0.5) as u8;
-
-        Self {
-            r: premultiply(self.r),
-            g: premultiply(self.g),
-            b: premultiply(self.b),
-            a: self.a,
-        }
+        self.map_rgb(|x| ((f64::from(x) * alpha) + 0.5) as u8)
     }
 
     /// Returns a 'mask' pixel with only the alpha channel
@@ -189,5 +175,17 @@ mod tests {
         assert_eq!(a, a.diff(&Pixel::default()));
         let b = Pixel::new(0x50, 0xff, 0x20, 0x10);
         assert_eq!(a.diff(&b), Pixel::new(0x40, 0xdf, 0xd0, 0x30));
+    }
+
+    #[test]
+    fn pixel_premultiply() {
+        let pixel = Pixel::new(0x22, 0x44, 0xff, 0x80);
+        assert_eq!(pixel.premultiply(), Pixel::new(0x11, 0x22, 0x80, 0x80));
+    }
+
+    #[test]
+    fn pixel_unpremultiply() {
+        let pixel = Pixel::new(0x11, 0x22, 0x80, 0x80);
+        assert_eq!(pixel.unpremultiply(), Pixel::new(0x22, 0x44, 0xff, 0x80));
     }
 }
