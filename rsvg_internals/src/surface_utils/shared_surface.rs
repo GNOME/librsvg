@@ -293,11 +293,7 @@ impl ImageSurface<Shared> {
                     let pixbuf_row: &[Pixel] = pixbuf_row.as_rgba();
 
                     for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
-                        let pixel = src.premultiply();
-                        dest.r = pixel.r;
-                        dest.g = pixel.g;
-                        dest.b = pixel.b;
-                        dest.a = pixel.a;
+                        *dest = src.premultiply().into();
                     }
                 }
             } else {
@@ -305,21 +301,14 @@ impl ImageSurface<Shared> {
                     let pixbuf_row: &[RGB8] = pixbuf_row.as_rgb();
 
                     for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
-                        dest.r = src.r;
-                        dest.g = src.g;
-                        dest.b = src.b;
-                        dest.a = 0xff;
+                        *dest = src.alpha(0xff).into();
                     }
                 }
             }
         }
 
-        match (data, content_type) {
-            (Some(bytes), Some(content_type)) => {
-                surf.surface.set_mime_data(content_type, bytes)?;
-            }
-
-            (_, _) => (),
+        if let (Some(bytes), Some(content_type)) = (data, content_type) {
+            surf.surface.set_mime_data(content_type, bytes)?;
         }
 
         surf.share()
