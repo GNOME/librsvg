@@ -67,6 +67,10 @@ name = "lighting"
 harness = false
 
 [[bench]]
+name = "path_parser"
+harness = false
+
+[[bench]]
 name = "pixel_iterators"
 harness = false
 
@@ -75,5 +79,5 @@ name = "srgb"
 harness = false
 
 [[bench]]
-name = "path_parser"
+name = "surface_from_pixbuf"
 harness = false

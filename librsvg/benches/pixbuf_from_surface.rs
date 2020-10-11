@@ -38,9 +38,7 @@ fn bench_pixbuf_from_surface(c: &mut Criterion) {
 
         let surface = surface.share().unwrap();
 
-        b.iter(|| {
-            let _pixbuf = pixbuf_from_surface(&surface).unwrap();
-        })
+        b.iter(|| pixbuf_from_surface(&surface).unwrap())
     });
 }
 
