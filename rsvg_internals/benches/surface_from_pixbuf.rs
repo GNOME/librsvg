@@ -1,6 +1,5 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use std::time::Duration;
 
 use rsvg_internals::surface_utils::shared_surface::SharedImageSurface;
 
@@ -27,9 +26,5 @@ fn bench_surface_from_pixbuf(c: &mut Criterion) {
     }
 }
 
-criterion_group!(
-    name = benches;
-    config = Criterion::default().measurement_time(Duration::from_secs(10));
-    targets = bench_surface_from_pixbuf,
-);
+criterion_group!(benches, bench_surface_from_pixbuf);
 criterion_main!(benches);
