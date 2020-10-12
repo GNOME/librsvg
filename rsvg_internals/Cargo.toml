@@ -47,6 +47,7 @@ xml5ever = "0.16.1"
 
 [dev-dependencies]
 criterion = "0.3"
+proptest = "0.10.1"
 
 [build-dependencies]
 pkg-config = "0.3.14"

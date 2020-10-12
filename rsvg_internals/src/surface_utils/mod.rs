@@ -95,8 +95,8 @@ impl PixelOps for Pixel {
     /// Returns a premultiplied value of this pixel.
     #[inline]
     fn premultiply(self) -> Self {
-        let alpha = f64::from(self.a) / 255.0;
-        self.map_rgb(|x| ((f64::from(x) * alpha) + 0.5) as u8)
+        let a = self.a as u32;
+        self.map_rgb(|x| (((x as u32) * a + 127) / 255) as u8)
     }
 
     /// Returns a 'mask' pixel with only the alpha channel
@@ -117,6 +117,7 @@ impl PixelOps for Pixel {
     ///    (we only care about the most significant byte)
     /// if pixel = 0x00FFFFFF, pixel' = 0xFF......
     /// if pixel = 0x00020202, pixel' = 0x02......
+
     /// if pixel = 0x00000000, pixel' = 0x00......
     #[inline]
     fn to_mask(self, opacity: u8) -> Self {
@@ -168,6 +169,7 @@ impl<'a> ImageSurfaceDataExt for &'a mut [u8] {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     #[test]
     fn pixel_diff() {
@@ -177,15 +179,39 @@ mod tests {
         assert_eq!(a.diff(&b), Pixel::new(0x40, 0xdf, 0xd0, 0x30));
     }
 
-    #[test]
-    fn pixel_premultiply() {
-        let pixel = Pixel::new(0x22, 0x44, 0xff, 0x80);
-        assert_eq!(pixel.premultiply(), Pixel::new(0x11, 0x22, 0x80, 0x80));
+    // Floating-point reference implementation
+    fn premultiply_float(pixel: Pixel) -> Pixel {
+        let alpha = f64::from(pixel.a) / 255.0;
+        pixel.map_rgb(|x| ((f64::from(x) * alpha) + 0.5) as u8)
     }
 
-    #[test]
-    fn pixel_unpremultiply() {
-        let pixel = Pixel::new(0x11, 0x22, 0x80, 0x80);
-        assert_eq!(pixel.unpremultiply(), Pixel::new(0x22, 0x44, 0xff, 0x80));
+    prop_compose! {
+        fn arbitrary_pixel()(a: u8, r: u8, g: u8, b: u8) -> Pixel {
+            Pixel { r, g, b, a }
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn pixel_premultiply(pixel in arbitrary_pixel()) {
+            prop_assert_eq!(pixel.premultiply(), premultiply_float(pixel));
+        }
+
+        #[test]
+        fn pixel_unpremultiply(pixel in arbitrary_pixel()) {
+            let roundtrip = pixel.premultiply().unpremultiply();
+            if pixel.a == 0 {
+                prop_assert_eq!(roundtrip, Pixel::default());
+            } else {
+                // roundtrip can't be perfect, the accepted error depends on alpha
+                let tolerance = 0xff / pixel.a;
+                let diff = roundtrip.diff(&pixel);
+                prop_assert!(diff.r <= tolerance, "red component value differs by more than {}: {:?}", tolerance, roundtrip);
+                prop_assert!(diff.g <= tolerance, "green component value differs by more than {}: {:?}", tolerance, roundtrip);
+                prop_assert!(diff.b <= tolerance, "blue component value differs by more than {}: {:?}", tolerance, roundtrip);
+
+                prop_assert_eq!(pixel.a, roundtrip.a);
+            }
+       }
     }
 }
