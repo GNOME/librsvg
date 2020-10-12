@@ -1,10 +1,8 @@
 use cairo;
 
-mod utils;
-
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use self::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
+use crate::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
 
 #[test]
 fn simple_opacity_with_transform() {

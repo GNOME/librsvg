@@ -7,9 +7,7 @@ use librsvg::{
     RenderingError,
 };
 
-mod utils;
-
-use self::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
+use crate::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
 
 #[test]
 fn no_intrinsic_dimensions() {
