@@ -5,19 +5,15 @@ use glib;
 
 use librsvg;
 use librsvg::{CairoRenderer, Loader, RenderingError, SvgHandle};
-use rsvg_internals;
 
-use self::rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+
+use rsvg_internals::{compare_surfaces, BufferDiff};
 
 use std::env;
 use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::PathBuf;
-
-mod compare_surfaces;
-use self::compare_surfaces::compare_surfaces;
-
-pub use self::compare_surfaces::BufferDiff;
 
 pub fn load_svg(input: &'static [u8]) -> SvgHandle {
     let bytes = glib::Bytes::from_static(input);

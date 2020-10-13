@@ -75,6 +75,7 @@ pub use crate::rect::{IRect, Rect};
 pub use crate::structure::IntrinsicDimensions;
 
 pub use crate::surface_utils::{
+    compare_surfaces::{compare_surfaces, BufferDiff, Diff},
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     CairoARGB, Pixel,

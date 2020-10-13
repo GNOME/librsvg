@@ -1,10 +1,9 @@
-use self::rsvg_internals::surface_utils::{
+use super::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
 };
-use self::rsvg_internals::{IRect, RenderingError};
-use rsvg_internals;
+use crate::error::RenderingError;
 
 use rgb::ComponentMap;
 
