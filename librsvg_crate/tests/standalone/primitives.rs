@@ -14,7 +14,8 @@ fn simple_opacity_with_transform() {
   </g>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -59,7 +60,8 @@ fn simple_opacity_with_offset_viewport() {
   </g>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -105,7 +107,8 @@ fn simple_opacity_with_scale() {
   </g>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -154,7 +157,8 @@ fn markers_with_scale() {
 </svg>
 
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -208,7 +212,8 @@ fn opacity_inside_transformed_group() {
   </g>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -258,7 +263,8 @@ fn compound_opacity() {
   </g>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -328,7 +334,7 @@ fn nested_masks() {
 </svg>
 
 "##,
-    );
+    ).unwrap();
 
     let output_surf = render_document(
         &svg,

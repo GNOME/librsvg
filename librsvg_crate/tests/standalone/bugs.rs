@@ -13,7 +13,7 @@ fn inf_width() {
  [l<g mask="url(sHaf:ax-fwiw0\inside\ax-ide\ax-flow#o0" styli="fility:!.5;">>
   </g>
 </svg>"#,
-    );
+    ).unwrap();
 
     let _output_surf = render_document(
         &svg,
@@ -40,7 +40,8 @@ fn nonexistent_image_shouldnt_cancel_rendering() {
   <rect x="10" y="10" width="30" height="30" fill="blue"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -92,7 +93,8 @@ fn href_attribute_overrides_xlink_href() {
   <use xlink:href="#one" href="#two"/>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -136,7 +138,8 @@ fn nonexistent_filter_leaves_object_unfiltered() {
   <rect x="100" y="100" width="100" height="100" fill="lime" filter="url(#nonexistent)"/>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -204,7 +207,8 @@ fn recursive_paint_servers_fallback_to_color() {
   <rect fill="url(#l) lime" x="100" y="100" width="100" height="100" />
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,

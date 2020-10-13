@@ -3,8 +3,7 @@ use cairo;
 use gio;
 use glib;
 
-use librsvg;
-use librsvg::{CairoRenderer, Loader, RenderingError, SvgHandle};
+use librsvg::{CairoRenderer, Loader, LoadingError, RenderingError, SvgHandle};
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
@@ -15,13 +14,11 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::path::PathBuf;
 
-pub fn load_svg(input: &'static [u8]) -> SvgHandle {
+pub fn load_svg(input: &'static [u8]) -> Result<SvgHandle, LoadingError> {
     let bytes = glib::Bytes::from_static(input);
     let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
-    Loader::new()
-        .read_stream(&stream, None::<&gio::File>, None::<&gio::Cancellable>)
-        .unwrap()
+    Loader::new().read_stream(&stream, None::<&gio::File>, None::<&gio::Cancellable>)
 }
 
 #[derive(Copy, Clone)]
