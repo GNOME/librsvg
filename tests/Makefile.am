@@ -18,7 +18,6 @@ EXTRA_DIST +=		\
 test_programs =		\
 	api		\
 	rsvg-test	\
-	render-crash	\
 	errors		\
 	infinite-loop
 
@@ -40,10 +39,6 @@ infinite_loop_SOURCES = 	\
 
 rsvg_test_SOURCES = \
 	rsvg-test.c	\
-	$(test_utils_common_sources)
-
-render_crash_SOURCES = \
-	render-crash.c	\
 	$(test_utils_common_sources)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
