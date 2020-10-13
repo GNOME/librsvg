@@ -169,3 +169,71 @@ fn nonexistent_filter_leaves_object_unfiltered() {
         "nonexistent_filter_leaves_object_unfiltered",
     );
 }
+
+// https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint says this:
+//
+// A <paint> allows a paint server reference, to be optionally
+// followed by a <color> or the keyword none. When this optional value
+// is given, the <color> value or the value none is a fallback value
+// to use if the paint server reference in the layer is invalid (due
+// to pointing to an element that does not exist or which is not a
+// valid paint server).
+//
+// I'm interpreting this to mean that if we have
+// fill="url(#recursive_paint_server) fallback_color", then the
+// recursive paint server is not valid, and should fall back to to the
+// specified color.
+#[test]
+fn recursive_paint_servers_fallback_to_color() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="200" height="200">
+  <defs>
+    <pattern id="p" width="10" height="10" xlink:href="#p"/>
+    <linearGradient id="l" xlink:href="#r"/>
+    <radialGradient id="r" xlink:href="#l"/>
+  </defs>
+
+  <!-- These two should not render as there is no fallback color -->
+  <rect fill="url(#p)" x="0" y="0" width="100" height="100" />
+  <rect fill="url(#l)" x="100" y="0" width="100" height="100" />
+
+  <!-- These two should render with the fallback color -->
+  <rect fill="url(#p) lime" x="0" y="100" width="100" height="100" />
+  <rect fill="url(#l) lime" x="100" y="100" width="100" height="100" />
+</svg>
+"##,
+    );
+
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(200, 200),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 200.0,
+            height: 200.0,
+        },
+    )
+    .unwrap();
+
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.rectangle(0.0, 100.0, 200.0, 100.0);
+        cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
+        cr.fill();
+    }
+
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(
+        &output_surf,
+        &reference_surf,
+        "recursive_paint_servers_fallback_to_color",
+    );
+}

@@ -92,16 +92,16 @@ impl PaintServer {
                     }
                 })
                 .or_else(|err| match (err, alternate) {
-                    (AcquireError::CircularReference(node), _) => {
-                        rsvg_log!("circular reference in paint server {}", node);
-                        Err(RenderingError::CircularReference)
-                    }
-
                     (AcquireError::MaxReferencesExceeded, _) => {
                         rsvg_log!("maximum number of references exceeded");
                         Err(RenderingError::InstancingLimit)
                     }
 
+                    // The following two cases catch AcquireError::CircularReference, which for
+                    // paint servers may mean that there is a pattern or gradient with a reference
+                    // cycle in its "href" attribute.  This is an invalid paint server, and per
+                    // https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint we should try to
+                    // fall back to the alternate color.
                     (_, Some(color)) => {
                         rsvg_log!(
                             "could not resolve paint server \"{}\", using alternate color",

@@ -1,5 +1,0 @@
-<svg xmlns:xlink="http://www.w3.org/1999/xlink">
-  <linearGradient id="g1" xlink:href="#g1"/>
-  <linearGradient id="g2" xlink:href="#g1"/>
-  <rect fill="url(#g2)" width="100" height="100"/>
-</svg>
