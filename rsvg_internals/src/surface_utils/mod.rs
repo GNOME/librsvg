@@ -87,8 +87,8 @@ impl PixelOps for Pixel {
         if self.a == 0 {
             self
         } else {
-            let alpha = f64::from(self.a) / 255.0;
-            self.map_rgb(|x| ((f64::from(x) / alpha) + 0.5) as u8)
+            let alpha = f32::from(self.a) / 255.0;
+            self.map_rgb(|x| ((f32::from(x) / alpha) + 0.5) as u8)
         }
     }
 

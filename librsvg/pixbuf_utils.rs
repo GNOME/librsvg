@@ -51,6 +51,7 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
 
     for (src_row, dest_row) in surface.rows().zip(pixbuf_rows) {
         let row: &mut [Pixel] = dest_row.as_rgba_mut();
+
         for (src, dest) in src_row.iter().zip(row.iter_mut()) {
             *dest = if src.a == 0 {
                 Pixel::default()
