@@ -82,10 +82,17 @@ pub trait PixelOps {
 
 impl PixelOps for Pixel {
     /// Returns an unpremultiplied value of this pixel.
+    ///
+    /// For a fully transparent pixel, a transparent black pixel will be returned.
     #[inline]
     fn unpremultiply(self) -> Self {
         if self.a == 0 {
-            self
+            Self {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
+            }
         } else {
             let alpha = f32::from(self.a) / 255.0;
             self.map_rgb(|x| ((f32::from(x) / alpha) + 0.5) as u8)
