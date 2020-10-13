@@ -6,6 +6,9 @@ extern crate float_cmp;
 mod cmdline;
 
 #[cfg(test)]
+mod errors;
+
+#[cfg(test)]
 mod loading_crash;
 
 #[cfg(test)]

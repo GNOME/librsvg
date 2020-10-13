@@ -24,23 +24,6 @@ get_test_filename (const char *basename) {
 }
 
 static void
-test_loading_error (gconstpointer data)
-{
-    const char *basename = data;
-    char *filename = get_test_filename (basename);
-    RsvgHandle *handle;
-    GError *error = NULL;
-
-    handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_null (handle);
-    g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
-
-    g_error_free (error);
-}
-
-static void
 test_instancing_limit (gconstpointer data)
 {
     const char *basename = data;
@@ -91,12 +74,6 @@ main (int argc, char **argv)
                                "308-doubly-recursive-use.svg",
                                test_instancing_limit,
                                NULL);
-
-    g_test_add_data_func_full ("/errors/515-too-many-elements.svgz",
-                               "515-too-many-elements.svgz",
-                               test_loading_error,
-                               NULL);
-
 
     return g_test_run ();
 }
