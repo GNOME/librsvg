@@ -1,5 +1,5 @@
 use cairo;
-use librsvg::LoadingError;
+use librsvg::{LoadingError, SvgHandle};
 use matches::matches;
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
@@ -250,4 +250,89 @@ fn recursive_paint_servers_fallback_to_color() {
         &reference_surf,
         "recursive_paint_servers_fallback_to_color",
     );
+}
+
+fn test_renders_as_empty(svg: &SvgHandle, test_name: &str) {
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(100, 100),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 100.0,
+        },
+    )
+    .unwrap();
+
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(&output_surf, &reference_surf, test_name);
+}
+
+// https://gitlab.gnome.org/GNOME/librsvg/-/issues/308
+#[test]
+fn recursive_use() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <g id="one">
+      <use xlink:href="#one"/>
+    </g>
+  </defs>
+
+  <use xlink:href="#one"/>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    test_renders_as_empty(&svg, "308-recursive-use");
+}
+
+// https://gitlab.gnome.org/GNOME/librsvg/-/issues/308
+#[test]
+fn use_self_ref() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <use id="one" xlink:href="#one"/>
+  </defs>
+
+  <use xlink:href="#one"/>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    test_renders_as_empty(&svg, "308-use-self-ref");
+}
+
+// https://gitlab.gnome.org/GNOME/librsvg/-/issues/308
+#[test]
+fn doubly_recursive_use() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <g id="one">
+      <use xlink:href="#two"/>
+    </g>
+
+    <g id="two">
+      <use xlink:href="#one"/>
+    </g>
+  </defs>
+
+  <use xlink:href="#one"/>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    test_renders_as_empty(&svg, "308-doubly-recursive-use");
 }

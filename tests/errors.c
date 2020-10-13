@@ -62,18 +62,5 @@ main (int argc, char **argv)
                                test_instancing_limit,
                                NULL);
 
-    g_test_add_data_func_full ("/errors/instancing_limit/308-use-self-ref.svg",
-                               "308-use-self-ref.svg",
-                               test_instancing_limit,
-                               NULL);
-    g_test_add_data_func_full ("/errors/instancing_limit/308-recursive-use.svg",
-                               "308-recursive-use.svg",
-                               test_instancing_limit,
-                               NULL);
-    g_test_add_data_func_full ("/errors/instancing_limit/308-doubly-recursive-use.svg",
-                               "308-doubly-recursive-use.svg",
-                               test_instancing_limit,
-                               NULL);
-
     return g_test_run ();
 }

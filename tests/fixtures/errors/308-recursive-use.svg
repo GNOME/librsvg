@@ -1,9 +1,0 @@
-<svg xmlns:xlink="http://www.w3.org/1999/xlink">
-  <defs>
-    <g id="one">
-      <use xlink:href="#one"/>
-    </g>
-  </defs>
-
-  <use xlink:href="#one"/>
-</svg>
