@@ -1,8 +1,18 @@
 use cairo;
-
+use librsvg::LoadingError;
+use matches::matches;
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use crate::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
+
+// https://gitlab.gnome.org/GNOME/librsvg/issues/335
+#[test]
+fn non_svg_root() {
+    assert!(matches!(
+        load_svg(b"<x></x>"),
+        Err(LoadingError::RootElementIsNotSvg)
+    ));
+}
 
 // https://gitlab.gnome.org/GNOME/librsvg/issues/496
 #[test]

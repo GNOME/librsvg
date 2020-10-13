@@ -769,6 +769,7 @@ dependencies = [
  "cairo-rs",
  "gio",
  "glib",
+ "matches",
  "rgb",
  "rsvg_internals",
  "url",
