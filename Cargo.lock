@@ -779,6 +779,7 @@ name = "librsvg-tests"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
+ "cairo-rs",
  "chrono",
  "float-cmp",
  "librsvg",

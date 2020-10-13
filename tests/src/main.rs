@@ -11,6 +11,9 @@ mod loading_crash;
 #[cfg(test)]
 mod predicates;
 
+#[cfg(test)]
+mod render_crash;
+
 mod utils;
 
 fn main() {
