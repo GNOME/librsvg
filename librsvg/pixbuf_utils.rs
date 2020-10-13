@@ -4,14 +4,14 @@ use std::ptr;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gio::prelude::*;
 use glib::translate::*;
-use rgb::{FromSlice, RGBA8};
+use rgb::FromSlice;
 use url::Url;
 
 use crate::c_api::checked_i32;
 
 use rsvg_internals::{
-    Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError, SharedImageSurface, SurfaceType,
-    UrlResolver,
+    surface_utils::PixelOps, Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError,
+    SharedImageSurface, SurfaceType, UrlResolver,
 };
 
 use crate::c_api::set_gerror;
@@ -42,39 +42,18 @@ pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, Rende
     assert!(pixbuf.get_n_channels() == 4);
 
     let pixels = unsafe { pixbuf.get_pixels() };
-    let width = width as usize;
-    let height = height as usize;
     let stride = pixbuf.get_rowstride() as usize;
-    let width_in_bytes = width * 4;
-    assert!(width_in_bytes <= stride);
 
     // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
     // to make the last row *not* have the full stride (i.e. it is
     // only as wide as the pixels in that row).
-    let pixbuf_rows = pixels.chunks_mut(stride).take(height);
+    let pixbuf_rows = pixels.chunks_mut(stride).take(height as usize);
 
     for (src_row, dest_row) in surface.rows().zip(pixbuf_rows) {
-        let row: &mut [RGBA8] = dest_row[..width_in_bytes].as_rgba_mut();
+        let row: &mut [Pixel] = dest_row.as_rgba_mut();
 
         for (src, dest) in src_row.iter().zip(row.iter_mut()) {
-            let (r, g, b, a) = if src.a == 0 {
-                (0, 0, 0, 0)
-            } else {
-                let pixel = Pixel {
-                    r: src.r,
-                    g: src.g,
-                    b: src.b,
-                    a: src.a,
-                }
-                .unpremultiply();
-
-                (pixel.r, pixel.g, pixel.b, pixel.a)
-            };
-
-            dest.r = r;
-            dest.g = g;
-            dest.b = b;
-            dest.a = a;
+            *dest = Pixel::from(*src).unpremultiply();
         }
     }
 

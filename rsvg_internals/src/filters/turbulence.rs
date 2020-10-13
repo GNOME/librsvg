@@ -10,7 +10,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
-    ImageSurfaceDataExt, Pixel,
+    ImageSurfaceDataExt, Pixel, PixelOps,
 };
 use crate::util::clamp;
 

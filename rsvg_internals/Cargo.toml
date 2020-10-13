@@ -37,7 +37,7 @@ pango-sys = "0.9.0"
 pangocairo = "0.9.0"
 rayon = "1"
 rctree = "0.3.3"
-rgb = { version="0.8.17", features=["argb"] }
+rgb = { version="0.8", features=["argb"] }
 regex = "1"
 selectors = "0.22.0"
 string_cache = "0.8.0"
@@ -47,6 +47,7 @@ xml5ever = "0.16.1"
 
 [dev-dependencies]
 criterion = "0.3"
+proptest = "0.10.1"
 
 [build-dependencies]
 pkg-config = "0.3.14"
@@ -67,7 +68,15 @@ name = "lighting"
 harness = false
 
 [[bench]]
+name = "path_parser"
+harness = false
+
+[[bench]]
 name = "pixel_iterators"
+harness = false
+
+[[bench]]
+name = "pixel_ops"
 harness = false
 
 [[bench]]
@@ -75,5 +84,5 @@ name = "srgb"
 harness = false
 
 [[bench]]
-name = "path_parser"
+name = "surface_from_pixbuf"
 harness = false

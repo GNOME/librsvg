@@ -1,10 +1,12 @@
 use self::rsvg_internals::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
-    ImageSurfaceDataExt, Pixel,
+    ImageSurfaceDataExt, Pixel, PixelOps,
 };
 use self::rsvg_internals::{IRect, RenderingError};
 use rsvg_internals;
+
+use rgb::ComponentMap;
 
 pub enum BufferDiff {
     DifferentSizes,
@@ -24,40 +26,16 @@ fn pixel_max(p: &Pixel) -> u8 {
 
 #[inline]
 fn emphasize(p: &Pixel) -> Pixel {
-    let mut r = p.r as u32;
-    let mut g = p.g as u32;
-    let mut b = p.b as u32;
-    let mut a = p.a as u32;
-
-    // emphasize
-    r = r * 4;
-    g = g * 4;
-    b = b * 4;
-    a = a * 4;
-
-    // make sure they are visible
-    if r > 0 {
-        r += 128;
-    }
-
-    if g > 0 {
-        g += 128;
-    }
-
-    if b > 0 {
-        b += 128;
-    }
-
-    if a > 0 {
-        a += 128;
-    }
-
-    let r = r.min(255) as u8;
-    let g = g.min(255) as u8;
-    let b = b.min(255) as u8;
-    let a = a.min(255) as u8;
-
-    Pixel { r, g, b, a }
+    let emphasize_component = |c| {
+        // emphasize
+        let mut c = c as u32 * 4;
+        // make sure it's visible
+        if c > 0 {
+            c += 128;
+        }
+        c.min(255) as u8
+    };
+    p.map(emphasize_component)
 }
 
 pub fn compare_surfaces(

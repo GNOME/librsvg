@@ -6,7 +6,7 @@ use std::slice;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
-use rgb::{FromSlice, RGB8, RGBA8};
+use rgb::{FromSlice, RGB8};
 
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
@@ -15,7 +15,7 @@ use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},
-    AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel,
+    AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps,
 };
 
 /// Types of pixel data in a `ImageSurface`.
@@ -281,60 +281,34 @@ impl ImageSurface<Shared> {
 
         let mut surf = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        let width = width as usize;
-        let height = height as usize;
-
         {
             // We use chunks(), not chunks_exact(), because gdk-pixbuf tends
             // to make the last row *not* have the full stride (i.e. it is
             // only as wide as the pixels in that row).
-            let pixbuf_rows = pixbuf_data.chunks(pixbuf_stride).take(height);
-
+            let pixbuf_rows = pixbuf_data.chunks(pixbuf_stride).take(height as usize);
             let surf_rows = surf.rows_mut();
 
             if has_alpha {
-                let width_in_bytes = width * 4;
-
                 for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
-                    let pixbuf_row: &[RGBA8] = pixbuf_row[..width_in_bytes].as_rgba();
+                    let pixbuf_row: &[Pixel] = pixbuf_row.as_rgba();
 
                     for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
-                        let pixel = Pixel {
-                            r: src.r,
-                            g: src.g,
-                            b: src.b,
-                            a: src.a,
-                        };
-
-                        let pixel = pixel.premultiply();
-                        dest.r = pixel.r;
-                        dest.g = pixel.g;
-                        dest.b = pixel.b;
-                        dest.a = pixel.a;
+                        *dest = src.premultiply().into();
                     }
                 }
             } else {
-                let width_in_bytes = width * 3;
-
                 for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
-                    let pixbuf_row: &[RGB8] = pixbuf_row[..width_in_bytes].as_rgb();
+                    let pixbuf_row: &[RGB8] = pixbuf_row.as_rgb();
 
                     for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
-                        dest.r = src.r;
-                        dest.g = src.g;
-                        dest.b = src.b;
-                        dest.a = 0xff;
+                        *dest = src.alpha(0xff).into();
                     }
                 }
             }
         }
 
-        match (data, content_type) {
-            (Some(bytes), Some(content_type)) => {
-                surf.surface.set_mime_data(content_type, bytes)?;
-            }
-
-            (_, _) => (),
+        if let (Some(bytes), Some(content_type)) = (data, content_type) {
+            surf.surface.set_mime_data(content_type, bytes)?;
         }
 
         surf.share()

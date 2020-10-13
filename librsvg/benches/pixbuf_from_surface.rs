@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use criterion::{criterion_group, criterion_main, Criterion};
 
 use rsvg_c_api::pixbuf_utils::pixbuf_from_surface;
@@ -38,15 +36,9 @@ fn bench_pixbuf_from_surface(c: &mut Criterion) {
 
         let surface = surface.share().unwrap();
 
-        b.iter(|| {
-            let _pixbuf = pixbuf_from_surface(&surface).unwrap();
-        })
+        b.iter(|| pixbuf_from_surface(&surface).unwrap())
     });
 }
 
-criterion_group!(
-    name = benches;
-    config = Criterion::default().measurement_time(Duration::from_secs(10));
-    targets = bench_pixbuf_from_surface,
-);
+criterion_group!(benches, bench_pixbuf_from_surface);
 criterion_main!(benches);

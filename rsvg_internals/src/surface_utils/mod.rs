@@ -41,15 +41,6 @@ impl<T: Copy> AsCairoARGB<T> for [T] {
     }
 }
 
-/// A pixel consisting of R, G, B and A values.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct Pixel {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
-}
-
 /// Modes which specify how the values of out of bounds pixels are computed.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EdgeMode {
@@ -77,57 +68,42 @@ pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
     }
 }
 
-impl Pixel {
-    /// Returns an unpremultiplied value of this pixel.
-    #[inline]
-    pub fn unpremultiply(self) -> Self {
-        if self.a == 0 {
-            self
-        } else {
-            let alpha = f64::from(self.a) / 255.0;
-            let unpremultiply = |x| ((f64::from(x) / alpha) + 0.5) as u8;
+/// A pixel consisting of R, G, B and A values.
+pub type Pixel = rgb::RGBA8;
 
+pub trait PixelOps {
+    fn premultiply(self) -> Self;
+    fn unpremultiply(self) -> Self;
+    fn to_mask(self, opacity: u8) -> Self;
+    fn diff(self, other: &Self) -> Self;
+    fn to_u32(self) -> u32;
+    fn from_u32(x: u32) -> Self;
+}
+
+impl PixelOps for Pixel {
+    /// Returns an unpremultiplied value of this pixel.
+    ///
+    /// For a fully transparent pixel, a transparent black pixel will be returned.
+    #[inline]
+    fn unpremultiply(self) -> Self {
+        if self.a == 0 {
             Self {
-                r: unpremultiply(self.r),
-                g: unpremultiply(self.g),
-                b: unpremultiply(self.b),
-                a: self.a,
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0,
             }
+        } else {
+            let alpha = f32::from(self.a) / 255.0;
+            self.map_rgb(|x| ((f32::from(x) / alpha) + 0.5) as u8)
         }
     }
 
     /// Returns a premultiplied value of this pixel.
     #[inline]
-    pub fn premultiply(self) -> Self {
-        let alpha = f64::from(self.a) / 255.0;
-        let premultiply = |x| ((f64::from(x) * alpha) + 0.5) as u8;
-
-        Self {
-            r: premultiply(self.r),
-            g: premultiply(self.g),
-            b: premultiply(self.b),
-            a: self.a,
-        }
-    }
-
-    /// Returns the pixel value as a `u32`, in the same format as `cairo::Format::ARgb32`.
-    #[inline]
-    pub fn to_u32(self) -> u32 {
-        (u32::from(self.a) << 24)
-            | (u32::from(self.r) << 16)
-            | (u32::from(self.g) << 8)
-            | u32::from(self.b)
-    }
-
-    /// Converts a `u32` in the same format as `cairo::Format::ARgb32` into a `Pixel`.
-    #[inline]
-    pub fn from_u32(x: u32) -> Self {
-        Self {
-            r: ((x >> 16) & 0xFF) as u8,
-            g: ((x >> 8) & 0xFF) as u8,
-            b: (x & 0xFF) as u8,
-            a: ((x >> 24) & 0xFF) as u8,
-        }
+    fn premultiply(self) -> Self {
+        let a = self.a as u32;
+        self.map_rgb(|x| (((x as u32) * a + 127) / 255) as u8)
     }
 
     /// Returns a 'mask' pixel with only the alpha channel
@@ -145,11 +121,13 @@ impl Pixel {
     /// b_mult = 0xFFFFFFFF / (255.0 * 255.0) * .0722 =  4768.88  ~= 4769
     ///
     /// This allows for the following expected behaviour:
-    ///    (we only care about the most sig byte)
+    ///    (we only care about the most significant byte)
     /// if pixel = 0x00FFFFFF, pixel' = 0xFF......
     /// if pixel = 0x00020202, pixel' = 0x02......
+
     /// if pixel = 0x00000000, pixel' = 0x00......
-    pub fn to_mask(self, opacity: u8) -> Self {
+    #[inline]
+    fn to_mask(self, opacity: u8) -> Self {
         let r = u32::from(self.r);
         let g = u32::from(self.g);
         let b = u32::from(self.b);
@@ -164,25 +142,83 @@ impl Pixel {
     }
 
     #[inline]
-    pub fn diff(self, pixel: &Pixel) -> Pixel {
-        let a_r = i32::from(self.r);
-        let a_g = i32::from(self.g);
-        let a_b = i32::from(self.b);
-        let a_a = i32::from(self.a);
+    fn diff(self, other: &Pixel) -> Pixel {
+        self.iter()
+            .zip(other.iter())
+            .map(|(l, r)| (l as i32 - r as i32).abs() as u8)
+            .collect()
+    }
 
-        let b_r = i32::from(pixel.r);
-        let b_g = i32::from(pixel.g);
-        let b_b = i32::from(pixel.b);
-        let b_a = i32::from(pixel.a);
+    /// Returns the pixel value as a `u32`, in the same format as `cairo::Format::ARgb32`.
+    #[inline]
+    fn to_u32(self) -> u32 {
+        (u32::from(self.a) << 24)
+            | (u32::from(self.r) << 16)
+            | (u32::from(self.g) << 8)
+            | u32::from(self.b)
+    }
 
-        let r = (a_r - b_r).abs() as u8;
-        let g = (a_g - b_g).abs() as u8;
-        let b = (a_b - b_b).abs() as u8;
-        let a = (a_a - b_a).abs() as u8;
-
-        Pixel { r, g, b, a }
+    /// Converts a `u32` in the same format as `cairo::Format::ARgb32` into a `Pixel`.
+    #[inline]
+    fn from_u32(x: u32) -> Self {
+        Self {
+            r: ((x >> 16) & 0xFF) as u8,
+            g: ((x >> 8) & 0xFF) as u8,
+            b: (x & 0xFF) as u8,
+            a: ((x >> 24) & 0xFF) as u8,
+        }
     }
 }
 
 impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
 impl<'a> ImageSurfaceDataExt for &'a mut [u8] {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    #[test]
+    fn pixel_diff() {
+        let a = Pixel::new(0x10, 0x20, 0xf0, 0x40);
+        assert_eq!(a, a.diff(&Pixel::default()));
+        let b = Pixel::new(0x50, 0xff, 0x20, 0x10);
+        assert_eq!(a.diff(&b), Pixel::new(0x40, 0xdf, 0xd0, 0x30));
+    }
+
+    // Floating-point reference implementation
+    fn premultiply_float(pixel: Pixel) -> Pixel {
+        let alpha = f64::from(pixel.a) / 255.0;
+        pixel.map_rgb(|x| ((f64::from(x) * alpha) + 0.5) as u8)
+    }
+
+    prop_compose! {
+        fn arbitrary_pixel()(a: u8, r: u8, g: u8, b: u8) -> Pixel {
+            Pixel { r, g, b, a }
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn pixel_premultiply(pixel in arbitrary_pixel()) {
+            prop_assert_eq!(pixel.premultiply(), premultiply_float(pixel));
+        }
+
+        #[test]
+        fn pixel_unpremultiply(pixel in arbitrary_pixel()) {
+            let roundtrip = pixel.premultiply().unpremultiply();
+            if pixel.a == 0 {
+                prop_assert_eq!(roundtrip, Pixel::default());
+            } else {
+                // roundtrip can't be perfect, the accepted error depends on alpha
+                let tolerance = 0xff / pixel.a;
+                let diff = roundtrip.diff(&pixel);
+                prop_assert!(diff.r <= tolerance, "red component value differs by more than {}: {:?}", tolerance, roundtrip);
+                prop_assert!(diff.g <= tolerance, "green component value differs by more than {}: {:?}", tolerance, roundtrip);
+                prop_assert!(diff.b <= tolerance, "blue component value differs by more than {}: {:?}", tolerance, roundtrip);
+
+                prop_assert_eq!(pixel.a, roundtrip.a);
+            }
+       }
+    }
+}
