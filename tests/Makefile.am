@@ -18,7 +18,6 @@ EXTRA_DIST +=		\
 test_programs =		\
 	api		\
 	rsvg-test	\
-	crash		\
 	render-crash	\
 	errors		\
 	infinite-loop
@@ -41,10 +40,6 @@ infinite_loop_SOURCES = 	\
 
 rsvg_test_SOURCES = \
 	rsvg-test.c	\
-	$(test_utils_common_sources)
-
-crash_SOURCES = \
-	crash.c		\
 	$(test_utils_common_sources)
 
 render_crash_SOURCES = \
