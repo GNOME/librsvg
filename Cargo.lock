@@ -781,6 +781,7 @@ dependencies = [
  "assert_cmd",
  "chrono",
  "float-cmp",
+ "librsvg",
  "lopdf",
  "png",
  "predicates",

@@ -6,7 +6,12 @@ extern crate float_cmp;
 mod cmdline;
 
 #[cfg(test)]
+mod loading_crash;
+
+#[cfg(test)]
 mod predicates;
+
+mod utils;
 
 fn main() {
     println!("Use 'cargo test' to run the tests.");
