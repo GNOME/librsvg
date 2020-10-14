@@ -788,6 +788,7 @@ dependencies = [
  "lopdf",
  "png",
  "predicates",
+ "rsvg_internals",
  "tempfile",
  "test-generator",
 ]

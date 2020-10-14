@@ -15,5 +15,6 @@ librsvg = { path = "../librsvg_crate" }
 lopdf = "0.25.0"
 png = "0.16.1"
 predicates = "1.0.2"
+rsvg_internals = { path = "../rsvg_internals" }
 tempfile = "3"
 test-generator = "0.3"
