@@ -76,27 +76,15 @@ pub fn compare_to_file(
     output_base_name: &str,
     reference_filename: &str,
 ) {
-    let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
     let reference_path = fixture_dir().join(reference_filename);
-
-    let mut output_file = File::create(output_path).unwrap();
-    output_surf
-        .clone()
-        .into_image_surface()
-        .unwrap()
-        .write_to_png(&mut output_file)
-        .unwrap();
-
-    let file =
-        File::open(reference_path).expect("cannot find {} - are you in the librsvg_crate directory?");
+    let file = File::open(reference_path).unwrap();
 
     let mut reference_file = BufReader::new(file);
 
     let reference = cairo::ImageSurface::create_from_png(&mut reference_file).unwrap();
     let reference_surf = SharedImageSurface::wrap(reference, SurfaceType::SRgb).unwrap();
 
-    let diff = compare_surfaces(output_surf, &reference_surf).unwrap();
-    evaluate_diff(&diff, output_base_name);
+    compare_to_surface(output_surf, &reference_surf, output_base_name);
 }
 
 pub fn compare_to_surface(
