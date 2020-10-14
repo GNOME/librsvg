@@ -74,10 +74,10 @@ pub fn fixture_dir() -> PathBuf {
 pub fn compare_to_file(
     output_surf: &SharedImageSurface,
     output_base_name: &str,
-    fixture_filename: &str,
+    reference_filename: &str,
 ) {
     let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
-    let fixture_path = fixture_dir().join(fixture_filename);
+    let reference_path = fixture_dir().join(reference_filename);
 
     let mut output_file = File::create(output_path).unwrap();
     output_surf
@@ -88,30 +88,16 @@ pub fn compare_to_file(
         .unwrap();
 
     let file =
-        File::open(fixture_path).expect("cannot find {} - are you in the librsvg_crate directory?");
+        File::open(reference_path).expect("cannot find {} - are you in the librsvg_crate directory?");
 
-    let mut fixture_file = BufReader::new(file);
+    let mut reference_file = BufReader::new(file);
 
-    let expected = cairo::ImageSurface::create_from_png(&mut fixture_file).unwrap();
-    let expected_surf = SharedImageSurface::wrap(expected, SurfaceType::SRgb).unwrap();
+    let reference = cairo::ImageSurface::create_from_png(&mut reference_file).unwrap();
+    let reference_surf = SharedImageSurface::wrap(reference, SurfaceType::SRgb).unwrap();
 
-    let diff = compare_surfaces(output_surf, &expected_surf).unwrap();
-
-    match diff {
-        BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
-
-        BufferDiff::Diff(diff) => {
-            let surf = diff.surface.into_image_surface().unwrap();
-            let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
-            let mut output_file = File::create(diff_path).unwrap();
-            surf.write_to_png(&mut output_file).unwrap();
-
-            assert_eq!(diff.num_pixels_changed, 0);
-        }
-    }
+    let diff = compare_surfaces(output_surf, &reference_surf).unwrap();
+    evaluate_diff(&diff, output_base_name);
 }
-
-const MAX_DIFF: u8 = 2;
 
 pub fn compare_to_surface(
     output_surf: &SharedImageSurface,
@@ -129,12 +115,17 @@ pub fn compare_to_surface(
         .unwrap();
 
     let diff = compare_surfaces(output_surf, reference_surf).unwrap();
+    evaluate_diff(&diff, output_base_name);
+}
 
+const MAX_DIFF: u8 = 2;
+
+fn evaluate_diff(diff: &BufferDiff, output_base_name: &str) {
     match diff {
         BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
 
         BufferDiff::Diff(diff) => {
-            let surf = diff.surface.into_image_surface().unwrap();
+            let surf = diff.surface.clone().into_image_surface().unwrap();
             let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
             let mut output_file = File::create(diff_path).unwrap();
             surf.write_to_png(&mut output_file).unwrap();
@@ -144,7 +135,7 @@ pub fn compare_to_surface(
                     "{}: {} pixels changed with maximum difference of {}",
                     output_base_name, diff.num_pixels_changed, diff.max_diff,
                 );
-                unreachable!("surfaces are too different");
+                panic!("surfaces are too different");
             }
         }
     }
