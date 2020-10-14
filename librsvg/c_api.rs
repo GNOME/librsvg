@@ -466,6 +466,7 @@ impl ObjectImpl for CHandle {
     }
 }
 
+// Keep in sync with tests/src/reference.rs
 pub fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
     cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
 }
@@ -815,6 +816,7 @@ impl CHandle {
         let res = handle
             .get_geometry_sub(id, inner.dpi.into(), inner.is_testing)
             .and_then(|(ink_r, _)| {
+                // Keep these in sync with tests/src/reference.rs
                 let width = checked_i32(ink_r.width().round())?;
                 let height = checked_i32(ink_r.height().round())?;
 

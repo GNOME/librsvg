@@ -781,6 +781,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "cairo-rs",
+ "cast",
  "chrono",
  "float-cmp",
  "librsvg",

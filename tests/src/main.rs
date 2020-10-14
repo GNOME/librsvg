@@ -15,6 +15,9 @@ mod loading_crash;
 mod predicates;
 
 #[cfg(test)]
+mod reference;
+
+#[cfg(test)]
 mod render_crash;
 
 mod utils;
