@@ -14,11 +14,9 @@ EXTRA_DIST +=		\
 	$(test_sources)	\
 	README.md
 
-# Keep "errors" at the end; they are the slowest to run
 test_programs =		\
 	api		\
-	rsvg-test	\
-	errors
+	rsvg-test
 
 test_utils_common_sources = \
 	test-utils.c	\
@@ -26,10 +24,6 @@ test_utils_common_sources = \
 
 api_SOURCES = 		\
 	api.c		\
-	$(test_utils_common_sources)
-
-errors_SOURCES = 	\
-	errors.c	\
 	$(test_utils_common_sources)
 
 rsvg_test_SOURCES = \
