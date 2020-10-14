@@ -9,7 +9,11 @@
 #![cfg(test)]
 use test_generator::test_resources;
 
+use cairo;
 use librsvg::{CairoRenderer, IntrinsicDimensions, Length, LengthUnit, Loader};
+use std::fs::File;
+use std::io::BufReader;
+use std::path::PathBuf;
 
 use crate::utils::fixture_path;
 
@@ -18,6 +22,11 @@ const TEST_SUITE_DPI: f64 = 72.0;
 
 fn reference_test(name: &str) {
     let path = fixture_path(name);
+    if path.file_stem().unwrap().to_string_lossy().starts_with("ignore") {
+        return;
+    }
+
+    let reference = reference_path(&path);
 
     let handle = Loader::new()
         .read_path(path)
@@ -26,6 +35,21 @@ fn reference_test(name: &str) {
     let renderer = CairoRenderer::new(&handle).with_dpi(TEST_SUITE_DPI, TEST_SUITE_DPI);
 
     let (width, height) = image_size(renderer.intrinsic_dimensions(), TEST_SUITE_DPI);
+
+    let mut reference_file = BufReader::new(File::open(reference).unwrap());
+    let expected = cairo::ImageSurface::create_from_png(&mut reference_file).unwrap();
+
+    assert!(width == expected.get_width() && height == expected.get_height());
+}
+
+/// Turns `/foo/bar/baz.svg` into `/foo/bar/baz-ref.svg`.
+fn reference_path(path: &PathBuf) -> PathBuf {
+    let basename = path.file_stem().unwrap();
+
+    let mut reference_filename = basename.to_string_lossy().into_owned();
+    reference_filename.push_str("-ref.png");
+
+    path.with_file_name(reference_filename)
 }
 
 /// Computes the (width, height) pixel size at which an SVG should be rendered, based on its intrinsic dimensions.
