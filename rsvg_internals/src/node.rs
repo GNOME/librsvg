@@ -12,7 +12,6 @@
 //! [`NodeData`]: struct.NodeData.html
 
 use markup5ever::QualName;
-use matches::matches;
 use std::cell::{Ref, RefMut};
 use std::fmt;
 

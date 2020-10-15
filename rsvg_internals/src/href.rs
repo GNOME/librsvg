@@ -8,7 +8,6 @@
 //! other.  We implement that logic in this module.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
-use matches::matches;
 
 /// Returns whether the attribute is either of `xlink:href` or `href`.
 ///

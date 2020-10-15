@@ -21,7 +21,6 @@
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
 use cssparser::{BasicParseError, Parser};
-use matches::matches;
 use std::ops::Deref;
 
 use crate::error::*;

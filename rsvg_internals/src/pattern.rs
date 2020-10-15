@@ -1,7 +1,6 @@
 //! The `pattern` element.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use matches::matches;
 use std::cell::RefCell;
 
 use crate::aspect_ratio::*;

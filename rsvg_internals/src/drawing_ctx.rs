@@ -1,7 +1,6 @@
 //! The main context structure which drives the drawing process.
 
 use float_cmp::approx_eq;
-use matches::matches;
 use once_cell::sync::Lazy;
 use pango::FontMapExt;
 use regex::{Captures, Regex};

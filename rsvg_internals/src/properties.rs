@@ -24,7 +24,6 @@ use cssparser::{
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName,
 };
-use matches::matches;
 use std::collections::HashSet;
 
 use crate::attributes::Attributes;

@@ -44,7 +44,6 @@
 use std::convert::TryInto;
 
 use cssparser::{Parser, Token};
-use matches::matches;
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
