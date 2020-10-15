@@ -49,7 +49,7 @@ fn reference_test(name: &str) {
         .read_path(&path)
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
-    let renderer = CairoRenderer::new(&handle).with_dpi(TEST_SUITE_DPI, TEST_SUITE_DPI);
+    let renderer = CairoRenderer::new(&handle).test_mode().with_dpi(TEST_SUITE_DPI, TEST_SUITE_DPI);
     let (width, height) = image_size(renderer.intrinsic_dimensions(), TEST_SUITE_DPI);
 
     let surface = cairo::ImageSurface::create(
