@@ -56,20 +56,23 @@ fn reference_test(name: &str) {
         cairo::Format::ARgb32,
         width + 2 * FRAME_SIZE,
         height + 2 * FRAME_SIZE,
-    ).unwrap();
+    )
+    .unwrap();
 
     {
         let cr = cairo::Context::new(&surface);
         cr.translate(f64::from(FRAME_SIZE), f64::from(FRAME_SIZE));
-        renderer.render_document(
-            &cr,
-            &cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: f64::from(width),
-                height: f64::from(height),
-            }
-        ).unwrap();
+        renderer
+            .render_document(
+                &cr,
+                &cairo::Rectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: f64::from(width),
+                    height: f64::from(height),
+                },
+            )
+            .unwrap();
     }
 
     let surface = extract_rectangle(&surface, FRAME_SIZE, FRAME_SIZE, width, height).unwrap();
@@ -89,7 +92,13 @@ fn reference_path(path: &PathBuf) -> PathBuf {
     path.with_file_name(reference_filename)
 }
 
-fn extract_rectangle(source: &cairo::ImageSurface, x: i32, y: i32, w: i32, h: i32) -> Result<cairo::ImageSurface, cairo::Status> {
+fn extract_rectangle(
+    source: &cairo::ImageSurface,
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+) -> Result<cairo::ImageSurface, cairo::Status> {
     let dest = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
     let cr = cairo::Context::new(&dest);
     cr.set_source_surface(&source, f64::from(-x), f64::from(-y));
@@ -188,9 +197,9 @@ fn normalize(l: &Length, dpi: f64) -> f64 {
 // FIXME: see how to share this code
 mod duplicated_from_librsvg_crate {
     use super::*;
+    use rsvg_internals::{compare_surfaces, BufferDiff};
     use std::env;
     use std::fs;
-    use rsvg_internals::{compare_surfaces, BufferDiff};
 
     fn output_dir() -> PathBuf {
         let path = PathBuf::from(
