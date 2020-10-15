@@ -209,8 +209,6 @@ mod duplicated_from_librsvg_crate {
 
         fs::create_dir_all(&path).expect("could not create output directory for tests");
 
-        println!("outputting to {}", path.to_string_lossy());
-
         path
     }
 
@@ -236,6 +234,7 @@ mod duplicated_from_librsvg_crate {
         output_base_name: &str,
     ) {
         let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
+        println!("output:\t{}", output_path.to_string_lossy());
 
         let mut output_file = File::create(output_path).unwrap();
         output_surf
@@ -258,6 +257,8 @@ mod duplicated_from_librsvg_crate {
             BufferDiff::Diff(diff) => {
                 let surf = diff.surface.clone().into_image_surface().unwrap();
                 let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
+                println!("diff:\t{}", diff_path.to_string_lossy());
+
                 let mut output_file = File::create(diff_path).unwrap();
                 surf.write_to_png(&mut output_file).unwrap();
 

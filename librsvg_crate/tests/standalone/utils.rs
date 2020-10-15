@@ -53,8 +53,6 @@ pub fn output_dir() -> PathBuf {
 
     fs::create_dir_all(&path).expect("could not create output directory for tests");
 
-    println!("outputting to {}", path.to_string_lossy());
-
     path
 }
 
@@ -94,6 +92,8 @@ pub fn compare_to_surface(
 ) {
     let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
 
+    println!("output:\t{}", output_path.to_string_lossy());
+
     let mut output_file = File::create(output_path).unwrap();
     output_surf
         .clone()
@@ -115,6 +115,8 @@ fn evaluate_diff(diff: &BufferDiff, output_base_name: &str) {
         BufferDiff::Diff(diff) => {
             let surf = diff.surface.clone().into_image_surface().unwrap();
             let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
+            println!("diff:\t{}", diff_path.to_string_lossy());
+
             let mut output_file = File::create(diff_path).unwrap();
             surf.write_to_png(&mut output_file).unwrap();
 
