@@ -786,6 +786,7 @@ dependencies = [
  "float-cmp",
  "librsvg",
  "lopdf",
+ "pkg-config",
  "png",
  "predicates",
  "rsvg_internals",

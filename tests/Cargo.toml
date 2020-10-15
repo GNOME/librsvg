@@ -1,8 +1,9 @@
 [package]
 name = "librsvg-tests"
 version = "0.1.0"
-authors = ["Sven Neumann <sven@svenfoo.org>"]
+authors = ["Federico Mena Quintero <federico@gnome.org>", "Sven Neumann <sven@svenfoo.org>"]
 workspace = ".."
+build = "build.rs"
 edition = "2018"
 
 [dev-dependencies]
@@ -18,3 +19,6 @@ predicates = "1.0.2"
 rsvg_internals = { path = "../rsvg_internals" }
 tempfile = "3"
 test-generator = "0.3"
+
+[build-dependencies]
+pkg-config = "0.3.14"
