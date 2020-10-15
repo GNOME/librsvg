@@ -1,6 +1,7 @@
 //! The main context structure which drives the drawing process.
 
 use float_cmp::approx_eq;
+use matches::matches;
 use once_cell::sync::Lazy;
 use pango::FontMapExt;
 use regex::{Captures, Regex};
@@ -1914,10 +1915,7 @@ fn compute_text_box(
 
 // FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
 fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
-    match gravity {
-        pango::Gravity::East | pango::Gravity::West => true,
-        _ => false,
-    }
+    matches!(gravity, pango::Gravity::East | pango::Gravity::West)
 }
 
 /// escape quotes and backslashes with backslash

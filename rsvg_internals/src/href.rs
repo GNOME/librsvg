@@ -8,6 +8,7 @@
 //! other.  We implement that logic in this module.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
+use matches::matches;
 
 /// Returns whether the attribute is either of `xlink:href` or `href`.
 ///
@@ -32,10 +33,10 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 /// }
 /// ```
 pub fn is_href(name: &ExpandedName) -> bool {
-    match *name {
-        expanded_name!(xlink "href") | expanded_name!("", "href") => true,
-        _ => false,
-    }
+    matches!(
+        *name,
+        expanded_name!(xlink "href") | expanded_name!("", "href")
+    )
 }
 
 /// Sets an `href` attribute in preference over an `xlink:href` one.

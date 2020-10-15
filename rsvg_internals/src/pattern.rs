@@ -1,6 +1,7 @@
 //! The `pattern` element.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use matches::matches;
 use std::cell::RefCell;
 
 use crate::aspect_ratio::*;
@@ -263,10 +264,7 @@ impl UnresolvedChildren {
     }
 
     fn is_resolved(&self) -> bool {
-        match *self {
-            UnresolvedChildren::Unresolved => false,
-            _ => true,
-        }
+        !matches!(*self, UnresolvedChildren::Unresolved)
     }
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedChildren) -> UnresolvedChildren {

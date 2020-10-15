@@ -12,6 +12,7 @@
 //! [`NodeData`]: struct.NodeData.html
 
 use markup5ever::QualName;
+use matches::matches;
 use std::cell::{Ref, RefMut};
 use std::fmt;
 
@@ -193,17 +194,11 @@ pub trait NodeBorrow {
 
 impl NodeBorrow for Node {
     fn is_element(&self) -> bool {
-        match *self.borrow() {
-            NodeData::Element(_) => true,
-            _ => false,
-        }
+        matches!(*self.borrow(), NodeData::Element(_))
     }
 
     fn is_chars(&self) -> bool {
-        match *self.borrow() {
-            NodeData::Text(_) => true,
-            _ => false,
-        }
+        matches!(*self.borrow(), NodeData::Text(_))
     }
 
     fn borrow_chars(&self) -> Ref<Chars> {
@@ -231,7 +226,7 @@ impl NodeBorrow for Node {
 #[macro_export]
 macro_rules! is_element_of_type {
     ($node:expr, $element_type:ident) => {
-        matches::matches!(
+        matches!(
             *$node.borrow_element(),
             crate::element::Element::$element_type(_)
         )

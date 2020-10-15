@@ -24,6 +24,7 @@ use cssparser::{
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName,
 };
+use matches::matches;
 use std::collections::HashSet;
 
 use crate::attributes::Attributes;
@@ -106,10 +107,7 @@ impl Default for SpecifiedValues {
 
 impl ComputedValues {
     pub fn is_overflow(&self) -> bool {
-        match self.overflow() {
-            Overflow::Auto | Overflow::Visible => true,
-            _ => false,
-        }
+        matches!(self.overflow(), Overflow::Auto | Overflow::Visible)
     }
 
     pub fn is_visible(&self) -> bool {
