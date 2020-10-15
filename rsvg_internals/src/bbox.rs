@@ -64,11 +64,11 @@ impl BoundingBox {
     }
 
     pub fn rect_is_empty(&self) -> bool {
-        self.rect.map(|r| r.is_empty()).unwrap_or(true)
+        self.rect.map_or(true, |r| r.is_empty())
     }
 
     pub fn ink_rect_is_empty(&self) -> bool {
-        self.ink_rect.map(|r| r.is_empty()).unwrap_or(true)
+        self.ink_rect.map_or(true, |r| r.is_empty())
     }
 
     /// Creates a transform to map to the `self.rect`.
