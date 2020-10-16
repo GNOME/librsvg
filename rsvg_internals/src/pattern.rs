@@ -263,10 +263,7 @@ impl UnresolvedChildren {
     }
 
     fn is_resolved(&self) -> bool {
-        match *self {
-            UnresolvedChildren::Unresolved => false,
-            _ => true,
-        }
+        !matches!(*self, UnresolvedChildren::Unresolved)
     }
 
     fn resolve_from_fallback(&self, fallback: &UnresolvedChildren) -> UnresolvedChildren {

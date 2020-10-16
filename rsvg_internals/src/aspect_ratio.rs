@@ -20,6 +20,7 @@
 //! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
+use cssparser::{BasicParseError, Parser};
 use std::ops::Deref;
 
 use crate::error::*;
@@ -27,7 +28,6 @@ use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::ViewBox;
-use cssparser::{BasicParseError, Parser};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
@@ -113,14 +113,13 @@ impl Align1D {
 
 impl AspectRatio {
     pub fn is_slice(&self) -> bool {
-        match self.align {
+        matches!(
+            self.align,
             Some(Align {
                 fit: FitMode::Slice,
                 ..
-            }) => true,
-
-            _ => false,
-        }
+            })
+        )
     }
 
     pub fn compute(&self, vbox: &ViewBox, viewport: &Rect) -> Rect {

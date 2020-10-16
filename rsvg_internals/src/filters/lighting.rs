@@ -2,7 +2,6 @@
 
 use float_cmp::approx_eq;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use matches::matches;
 use nalgebra::{Vector2, Vector3};
 use num_traits::identities::Zero;
 use rayon::prelude::*;

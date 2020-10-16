@@ -4,7 +4,6 @@ use cssparser::Parser;
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
 };
-use matches::matches;
 use std::cell::RefCell;
 
 use crate::attributes::Attributes;

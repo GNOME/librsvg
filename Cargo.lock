@@ -1548,7 +1548,6 @@ dependencies = [
  "libc",
  "locale_config",
  "markup5ever",
- "matches",
  "nalgebra",
  "num-traits",
  "once_cell",

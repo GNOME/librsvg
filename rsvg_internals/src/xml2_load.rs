@@ -183,7 +183,7 @@ fn make_qual_name(prefix: Option<&str>, uri: Option<&str>, localname: &str) -> Q
     // FIXME: If the element doesn't have a namespace URI, we are falling back
     // to the SVG namespace.  In reality we need to take namespace scoping into account,
     // i.e. handle the "default namespace" active at that point in the XML stack.
-    let element_ns = uri.map(Namespace::from).unwrap_or_else(|| ns!(svg));
+    let element_ns = uri.map_or_else(|| ns!(svg), Namespace::from);
 
     QualName::new(
         prefix.map(Prefix::from),

@@ -106,10 +106,7 @@ impl Default for SpecifiedValues {
 
 impl ComputedValues {
     pub fn is_overflow(&self) -> bool {
-        match self.overflow() {
-            Overflow::Auto | Overflow::Visible => true,
-            _ => false,
-        }
+        matches!(self.overflow(), Overflow::Auto | Overflow::Visible)
     }
 
     pub fn is_visible(&self) -> bool {

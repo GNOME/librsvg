@@ -2,7 +2,6 @@
 
 use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
-use matches::matches;
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
