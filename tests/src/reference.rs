@@ -49,7 +49,9 @@ fn reference_test(name: &str) {
         .read_path(&path)
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
-    let renderer = CairoRenderer::new(&handle).test_mode().with_dpi(TEST_SUITE_DPI, TEST_SUITE_DPI);
+    let renderer = CairoRenderer::new(&handle)
+        .test_mode()
+        .with_dpi(TEST_SUITE_DPI, TEST_SUITE_DPI);
     let (width, height) = image_size(renderer.intrinsic_dimensions(), TEST_SUITE_DPI);
 
     let surface = cairo::ImageSurface::create(
@@ -197,9 +199,40 @@ fn normalize(l: &Length, dpi: f64) -> f64 {
 // FIXME: see how to share this code
 mod duplicated_from_librsvg_crate {
     use super::*;
-    use rsvg_internals::{compare_surfaces, BufferDiff};
+    use rsvg_internals::{compare_surfaces, BufferDiff, Diff};
+    use std::convert::TryFrom;
     use std::env;
     use std::fs;
+    use std::sync::Once;
+
+    fn tolerable_difference() -> u8 {
+        static mut TOLERANCE: u8 = 2;
+
+        static ONCE: Once = Once::new();
+        ONCE.call_once(|| unsafe {
+            if let Ok(str) = env::var("RSVG_TEST_TOLERANCE") {
+                let value: usize = str.parse().unwrap();
+                TOLERANCE = u8::try_from(value).unwrap();
+            }
+        });
+
+        unsafe { TOLERANCE }
+    }
+
+    trait Deviation {
+        fn distinguishable(&self) -> bool;
+        fn inacceptable(&self) -> bool;
+    }
+
+    impl Deviation for Diff {
+        fn distinguishable(&self) -> bool {
+            self.max_diff > 2
+        }
+
+        fn inacceptable(&self) -> bool {
+            self.max_diff > tolerable_difference()
+        }
+    }
 
     fn output_dir() -> PathBuf {
         let path = PathBuf::from(
@@ -234,7 +267,7 @@ mod duplicated_from_librsvg_crate {
         output_base_name: &str,
     ) {
         let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
-        println!("output:\t{}", output_path.to_string_lossy());
+        println!("output: {}", output_path.to_string_lossy());
 
         let mut output_file = File::create(output_path).unwrap();
         output_surf
@@ -248,29 +281,33 @@ mod duplicated_from_librsvg_crate {
         evaluate_diff(&diff, output_base_name);
     }
 
-    const MAX_DIFF: u8 = 2;
-
     fn evaluate_diff(diff: &BufferDiff, output_base_name: &str) {
         match diff {
             BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
 
             BufferDiff::Diff(diff) => {
-                let surf = diff.surface.clone().into_image_surface().unwrap();
-                let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
-                println!("diff:\t{}", diff_path.to_string_lossy());
-
-                let mut output_file = File::create(diff_path).unwrap();
-                surf.write_to_png(&mut output_file).unwrap();
-
-                if diff.num_pixels_changed != 0 && diff.max_diff > MAX_DIFF {
+                if diff.distinguishable() {
                     println!(
                         "{}: {} pixels changed with maximum difference of {}",
                         output_base_name, diff.num_pixels_changed, diff.max_diff,
                     );
-                    panic!("surfaces are too different");
+                    save_diff(diff, output_base_name);
+
+                    if diff.inacceptable() {
+                        panic!("surfaces are too different");
+                    }
                 }
             }
         }
+    }
+
+    fn save_diff(diff: &Diff, output_base_name: &str) {
+        let surf = diff.surface.clone().into_image_surface().unwrap();
+        let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
+        println!("diff: {}", diff_path.to_string_lossy());
+
+        let mut output_file = File::create(diff_path).unwrap();
+        surf.write_to_png(&mut output_file).unwrap();
     }
 }
 
