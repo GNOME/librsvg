@@ -53,8 +53,11 @@ fn tolerable_difference() -> u8 {
     static ONCE: Once = Once::new();
     ONCE.call_once(|| unsafe {
         if let Ok(str) = env::var("RSVG_TEST_TOLERANCE") {
-            let value: usize = str.parse().unwrap();
-            TOLERANCE = u8::try_from(value).unwrap();
+            let value: usize = str
+                .parse()
+                .expect("Can not parse RSVG_TEST_TOLERANCE as a number");
+            TOLERANCE =
+                u8::try_from(value).expect("RSVG_TEST_TOLERANCE should be between 0 and 255");
         }
     });
 
