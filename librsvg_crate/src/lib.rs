@@ -448,9 +448,8 @@ impl<'a> CairoRenderer<'a> {
         assert!(dpi_y > 0.0);
 
         CairoRenderer {
-            handle: self.handle,
             dpi: Dpi::new(dpi_x, dpi_y),
-            is_testing: self.is_testing,
+            ..self
         }
     }
 
@@ -624,9 +623,8 @@ impl<'a> CairoRenderer<'a> {
     /// Turns on test mode.  Do not use this function; it is for librsvg's test suite only.
     pub fn test_mode(self) -> Self {
         CairoRenderer {
-            handle: self.handle,
-            dpi: self.dpi,
             is_testing: true,
+            ..self
         }
     }
 }
