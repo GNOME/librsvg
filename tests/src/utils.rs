@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use std::env;
 use std::path::PathBuf;
 
@@ -17,3 +19,18 @@ pub fn fixture_path(filename_from_test_resources: &str) -> PathBuf {
 
     workspace_toplevel.join(filename_from_test_resources)
 }
+
+#[cfg(have_pangoft2)]
+pub fn setup_font_map() {
+    use glib::prelude::*;
+    use pangocairo::FontMap;
+
+    let font_map = FontMap::new_for_font_type(cairo::FontType::FontTypeFt);
+
+    // TODO: create and apply FontConfig
+
+    FontMap::set_default(font_map.map(|m| m.downcast::<pangocairo::FontMap>().unwrap()));
+}
+
+#[cfg(not(have_pangoft2))]
+pub fn setup_font_map() {}
