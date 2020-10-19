@@ -15,16 +15,19 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 ///
 /// Use with an `if` pattern inside a `match`:
 ///
-/// ```ignore
-/// # use markup5ever::{LocalName, Namespace, Prefix, QualName, namespace_url};
+/// ```
+/// # #[macro_use] extern crate markup5ever;
+/// # use markup5ever::{QualName, Prefix, Namespace, LocalName, ExpandedName};
+/// # use rsvg_internals::doctest_only::{is_href,set_href};
+///
 /// let qual_name = QualName::new(
 ///     Some(Prefix::from("xlink")),
 ///     Namespace::from("http://www.w3.org/1999/xlink"),
 ///     LocalName::from("href"),
 /// );
 ///
-/// // assume foo is an Option<Value>
-/// // assume value is a Value
+/// let value = expanded_name!("", "path");
+/// let mut foo = Some(value);
 ///
 /// match qual_name.expanded() {
 ///     ref name if is_href(name) => set_href(name, &mut foo, value),

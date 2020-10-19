@@ -52,7 +52,7 @@ pub trait Property<T> {
 /// Many properties are just sets of identifiers and can be represented
 /// by simple enums.  In this case, you can use the following:
 ///
-/// ```ignore
+/// ```text
 /// make_property!(
 ///   ComputedValues,
 ///   StrokeLinejoin,
@@ -69,7 +69,7 @@ pub trait Property<T> {
 /// This generates a simple enum like the following, with implementations of [`Parse`],
 /// `Default`, and [`Property`].
 ///
-/// ```ignore
+/// ```
 /// pub enum StrokeLinejoin { Miter, Round, Bevel }
 /// ```
 ///
@@ -79,7 +79,7 @@ pub trait Property<T> {
 /// with a `cssparser::Color`, but their intial values are different.  In this case, the macro
 /// can generate a newtype around `cssparser::Color` for each case:
 ///
-/// ```ignore
+/// ```text
 /// make_property!(
 ///     ComputedValues,
 ///     FloodColor,

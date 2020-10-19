@@ -206,14 +206,24 @@ impl fmt::Display for AcquireError {
 /// From<FooError> for ValueErrorKind`, then this trait helps assign attribute values in
 /// `set_atts()` methods as follows:
 ///
-/// ```ignore
-/// use error::AttributeResultExt;
-///
-/// // fn parse_foo(...) -> Result<Foo, FooError>
+/// ```
+/// # use rsvg_internals::doctest_only::AttributeResultExt;
+/// # use rsvg_internals::doctest_only::ValueErrorKind;
+/// # use rsvg_internals::doctest_only::ElementError;
+/// # use markup5ever::{QualName, Prefix, Namespace, LocalName};
+/// # type FooError = ValueErrorKind;
+/// fn parse_foo(value: &str) -> Result<(), FooError>
+/// # { Err(ValueErrorKind::value_error("test")) }
 ///
 /// // It is assumed that there is an impl From<FooError> for ValueErrorKind
-///
-/// self.foo = parse_foo(value).attribute(local_name!("foo"))?;
+/// # let attr = QualName::new(
+/// #     Some(Prefix::from("")),
+/// #     Namespace::from(""),
+/// #     LocalName::from(""),
+/// # );
+/// let result = parse_foo("value").attribute(attr);
+/// assert!(result.is_err());
+/// # Ok::<(), ElementError>(())
 /// ```
 ///
 /// The call to `.attribute(attr)` converts the `Result` from `parse_foo()` into a full

@@ -3,17 +3,12 @@
 //! This module handles `preserveAspectRatio` values [per the SVG specification][spec].
 //! We have an [`AspectRatio`] struct which encapsulates such a value.
 //!
-//! ```ignore
+//! ```
+//! # use rsvg_internals::doctest_only::AspectRatio;
+//! # use crate::rsvg_internals::Parse;
 //! assert_eq!(
-//!     AspectRatio::parse("xMidYMid", ()),
-//!     Ok(AspectRatio {
-//!         defer: false,
-//!         align: Some(Align {
-//!             x: X(Align1D::Mid),
-//!             y: Y(Align1D::Mid),
-//!             fit: FitMode::Meet,
-//!         }),
-//!     })
+//!     AspectRatio::parse_str("xMidYMid"),
+//!     Ok(AspectRatio::default())
 //! );
 //! ```
 //!
