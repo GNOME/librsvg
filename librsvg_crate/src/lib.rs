@@ -241,23 +241,24 @@ impl Loader {
     ///
     /// # Example:
     ///
-    /// ```ignore
-    /// # // Test is ignored because "make distcheck" breaks, as the output file
-    /// # // can't be written to the read-only srcdir.
-    ///
+    /// ```
+    /// # use std::env;
     /// let svg_handle = librsvg::Loader::new()
     ///     .keep_image_data()
     ///     .read_path("example.svg")
     ///     .unwrap();
     ///
-    /// let surface = cairo::PdfSurface::new(640.0, 480.0, "output.pdf");
+    /// let mut output = env::temp_dir();
+    /// output.push("output.pdf");
+    /// let surface = cairo::PdfSurface::new(640.0, 480.0, output)?;
     /// let cr = cairo::Context::new(&surface);
     ///
     /// let renderer = librsvg::CairoRenderer::new(&svg_handle);
     /// renderer.render_document(
     ///     &cr,
     ///     &cairo::Rectangle { x: 0.0, y: 0.0, width: 640.0, height: 480.0 },
-    /// ).unwrap();
+    /// )?;
+    /// # Ok::<(), librsvg::RenderingError>(())
     /// ```
     pub fn keep_image_data(mut self) -> Self {
         self.keep_image_data = true;

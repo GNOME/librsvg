@@ -4,7 +4,7 @@
 //!
 //! Consider a CSS **stylesheet** like this:
 //!
-//! ```ignore
+//! ```css
 //! @import url("another.css");
 //!
 //! foo, .bar {
@@ -210,7 +210,7 @@ impl<'i> selectors::Parser<'i> for RuleParser {
 // implement a way to parse the `Prelude` of a ruleset or rule.  For
 // example, in this ruleset:
 //
-// ```ignore
+// ```css
 // foo, .bar { fill: red; stroke: green; }
 // ```
 //

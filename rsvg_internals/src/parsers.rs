@@ -123,13 +123,21 @@ impl Parse for i32 {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[macro_use] extern crate rsvg_internals;
+/// # use cssparser::{ParserInput, Parser};
+/// # fn main() -> Result<(), cssparser::BasicParseError<'static>> {
+/// # let mut input = ParserInput::new("true");
+/// # let mut parser = Parser::new(&mut input);
 /// let my_boolean = parse_identifiers!(
 ///     parser,
 ///     "true" => true,
 ///     "false" => false,
 /// )?;
+/// # Ok(())
+/// # }
 /// ```
+#[macro_export]
 macro_rules! parse_identifiers {
     ($parser:expr,
      $($str:expr => $val:expr,)+) => {

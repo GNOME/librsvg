@@ -149,3 +149,15 @@ mod viewbox;
 mod xml;
 mod xml2;
 mod xml2_load;
+
+#[doc(hidden)]
+pub mod doctest_only {
+    pub use crate::aspect_ratio::AspectRatio;
+    pub use crate::error::AttributeResultExt;
+    pub use crate::error::ElementError;
+    pub use crate::error::ValueErrorKind;
+    pub use crate::href::is_href;
+    pub use crate::href::set_href;
+    pub use crate::length::{Both, Horizontal, Length, LengthUnit, Vertical};
+    pub use crate::parsers::ParseValue;
+}

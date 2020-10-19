@@ -136,7 +136,7 @@ impl ComputedValues {
 ///
 /// **NOTE:** If you get a compiler error similar to this:
 ///
-/// ```
+/// ```text
 /// 362 |         "mix-blend-mode"              => mix_blend_mode              : MixBlendMode,
 ///     |         ^^^^^^^^^^^^^^^^ no rules expected this token in macro call
 /// ```

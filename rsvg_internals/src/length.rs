@@ -12,7 +12,8 @@
 //! For example, the implementation of [`Circle`] defines this structure with fields for the
 //! `(center_x, center_y, radius)`:
 //!
-//! ```ignore
+//! ```
+//! # use rsvg_internals::doctest_only::{Length,Horizontal,Vertical,Both};
 //! pub struct Circle {
 //!     cx: Length<Horizontal>,
 //!     cy: Length<Vertical>,
@@ -172,7 +173,9 @@ impl Normalize for Both {
 ///
 /// Examples of construction:
 ///
-/// ```ignore
+/// ```
+/// # use rsvg_internals::doctest_only::{Length,LengthUnit,Horizontal,Vertical,Both};
+/// # use crate::rsvg_internals::Parse;
 /// // Explicit type
 /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
 ///
@@ -276,7 +279,8 @@ impl<N: Normalize> Length<N> {
     /// The compiler needs to know the type parameter `N` which represents the length's
     /// orientation.  You can specify it explicitly, or call the parametrized method:
     ///
-    /// ```ignore
+    /// ```
+    /// # use rsvg_internals::doctest_only::{Length,LengthUnit,Horizontal,Vertical};
     /// // Explicit type
     /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
     ///
@@ -295,10 +299,22 @@ impl<N: Normalize> Length<N> {
     ///
     /// This is usually used right after parsing a length value, as part of a validation step:
     ///
-    /// ```ignore
-    /// let mut parser = Parser::new(...);
+    /// ```
+    /// # use rsvg_internals::doctest_only::{Length,Horizontal,LengthUnit};
+    /// # use rsvg_internals::doctest_only::ElementError;
+    /// # use rsvg_internals::doctest_only::ParseValue;
+    /// # use markup5ever::{QualName, Prefix, Namespace, LocalName};
+    /// # let attr = QualName::new(
+    /// #     Some(Prefix::from("")),
+    /// #     Namespace::from(""),
+    /// #     LocalName::from(""),
+    /// # );
+    /// let length: Length<Horizontal> = attr.parse_and_validate("0", Length::check_nonnegative)?;
+    /// assert_eq!(length, Length::new(0.0, LengthUnit::Px));
     ///
-    /// let length = Length::<Horizontal>::parse(&mut parser).and_then(Length::check_nonnegative)?;
+    /// let result: Result<Length<Horizontal>, ElementError> = attr.parse_and_validate("-2", Length::check_nonnegative);
+    /// assert!(result.is_err());
+    /// # Ok::<(), ElementError>(())
     /// ```
     pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
         if self.length >= 0.0 {
