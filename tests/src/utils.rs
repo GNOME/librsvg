@@ -28,14 +28,14 @@ pub fn fixture_path(filename_from_test_resources: &str) -> PathBuf {
 
 #[cfg(have_pangoft2)]
 mod pango_ft2 {
+    use super::*;
     use fontconfig_sys::fontconfig;
     use glib::prelude::*;
     use pangocairo::FontMap;
-    use super::*;
 
     extern "C" {
         // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
-	//                               FcConfig       *fcconfig);
+        //                               FcConfig       *fcconfig);
         // This is not bound in gtk-rs, and PangoFcFontMap is not even exposed, so we'll bind it by hand.
         fn pango_fc_font_map_set_config(
             font_map: *mut libc::c_void,
@@ -59,14 +59,17 @@ mod pango_ft2 {
             let path_cstring = CString::new(path_str).unwrap();
 
             if fontconfig::FcConfigAppFontAddFile(config, path_cstring.as_ptr() as *const _) == 0 {
-                panic!("Could not load font file {:?} for tests; aborting", path_str);
+                panic!(
+                    "Could not load font file {:?} for tests; aborting",
+                    path_str
+                );
             }
         }
 
         let font_map = FontMap::new_for_font_type(cairo::FontType::FontTypeFt).unwrap();
         let raw_font_map: *mut pango_sys::PangoFontMap = font_map.to_glib_none().0;
 
-        pango_fc_font_map_set_config (raw_font_map as *mut _, config);
+        pango_fc_font_map_set_config(raw_font_map as *mut _, config);
         fontconfig::FcConfigDestroy(config);
 
         FontMap::set_default(Some(font_map.downcast::<pangocairo::FontMap>().unwrap()));

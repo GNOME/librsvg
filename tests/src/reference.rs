@@ -257,11 +257,9 @@ mod duplicated_from_librsvg_crate {
         let mut reference_file = BufReader::new(file);
 
         let png = cairo::ImageSurface::create_from_png(&mut reference_file).map_err(|_| ())?;
-        let argb = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            png.get_width(),
-            png.get_height(),
-        ).map_err(|_| ())?;
+        let argb =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, png.get_width(), png.get_height())
+                .map_err(|_| ())?;
 
         {
             // convert to ARGB; the PNG may come as Rgb24
