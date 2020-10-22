@@ -3,6 +3,7 @@
 use glib::translate::*;
 use libc;
 use std::env;
+use std::ffi::CString;
 use std::path::PathBuf;
 use std::sync::Once;
 
@@ -54,10 +55,11 @@ mod pango_ft2 {
 
         for path in &font_paths {
             let path = fixture_path(path);
-            let str = path.to_str().unwrap();
+            let path_str = path.to_str().unwrap();
+            let path_cstring = CString::new(path_str).unwrap();
 
-            if fontconfig::FcConfigAppFontAddFile(config, str.as_ptr()) == 0 {
-                panic!("Could not load font file {} for tests; aborting", str);
+            if fontconfig::FcConfigAppFontAddFile(config, path_cstring.as_ptr() as *const _) == 0 {
+                panic!("Could not load font file {:?} for tests; aborting", path_str);
             }
         }
 
