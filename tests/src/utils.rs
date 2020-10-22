@@ -4,6 +4,7 @@ use glib::translate::*;
 use libc;
 use std::env;
 use std::path::PathBuf;
+use std::sync::Once;
 
 #[cfg(have_pangoft2)]
 
@@ -72,7 +73,11 @@ mod pango_ft2 {
 
 #[cfg(have_pangoft2)]
 pub fn setup_font_map() {
-    unsafe { self::pango_ft2::load_test_fonts(); }
+    static ONCE: Once = Once::new();
+
+    ONCE.call_once(|| unsafe {
+        self::pango_ft2::load_test_fonts();
+    });
 }
 
 #[cfg(not(have_pangoft2))]
