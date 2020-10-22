@@ -5,6 +5,7 @@ use libc;
 use std::env;
 use std::ffi::CString;
 use std::path::PathBuf;
+use std::sync::Once;
 
 #[cfg(have_pangoft2)]
 
@@ -84,3 +85,14 @@ pub fn setup_font_map() {
 
 #[cfg(not(have_pangoft2))]
 pub fn setup_font_map() {}
+
+pub fn setup_language() {
+    static ONCE: Once = Once::new();
+
+    ONCE.call_once(|| {
+        // For systemLanguage attribute tests.
+        // The trailing ":" is intentional to test gitlab#425.
+        env::set_var("LANGUAGE", "de:en_US:en:");
+        env::set_var("LC_ALL", "de:en_US:en:");
+    });
+}

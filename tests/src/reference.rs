@@ -16,7 +16,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use crate::utils::{fixture_path, setup_font_map};
+use crate::utils::{fixture_path, setup_font_map, setup_language};
 
 use self::duplicated_from_librsvg_crate::compare_to_file;
 
@@ -37,6 +37,7 @@ const TEST_SUITE_DPI: f64 = 72.0;
 const FRAME_SIZE: i32 = 47;
 
 fn reference_test(name: &str) {
+    setup_language();
     setup_font_map();
 
     let path = fixture_path(name);
