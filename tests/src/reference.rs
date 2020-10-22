@@ -16,7 +16,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use crate::utils::fixture_path;
+use crate::utils::{fixture_path, setup_font_map};
 
 use self::duplicated_from_librsvg_crate::compare_to_file;
 
@@ -37,6 +37,8 @@ const TEST_SUITE_DPI: f64 = 72.0;
 const FRAME_SIZE: i32 = 47;
 
 fn reference_test(name: &str) {
+    setup_font_map();
+
     let path = fixture_path(name);
     let path_base_name = path.file_stem().unwrap().to_string_lossy().to_owned();
     if path_base_name.starts_with("ignore") {
