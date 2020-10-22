@@ -1,15 +1,16 @@
 //! Tests for loading errors.
 
 #![cfg(test)]
-use test_generator::test_resources;
 
 use cairo;
 use librsvg::{CairoRenderer, Loader, LoadingError, RenderingError};
 
 use crate::utils::fixture_path;
 
-#[test_resources("tests/fixtures/errors/515-too-many-elements.svgz")]
-fn loading_crash(name: &str) {
+#[test]
+fn too_many_elements() {
+    let name = "tests/fixtures/errors/515-too-many-elements.svgz";
+
     assert!(matches!(
         Loader::new().read_path(fixture_path(name)),
         Err(LoadingError::XmlParseError(_))
@@ -41,12 +42,12 @@ fn rendering_instancing_limit(name: &str) {
     ));
 }
 
-#[test_resources("tests/fixtures/errors/323-nested-use.svg")]
-fn instancing_limit1(name: &str) {
-    rendering_instancing_limit(name);
+#[test]
+fn instancing_limit1() {
+    rendering_instancing_limit("tests/fixtures/errors/323-nested-use.svg");
 }
 
-#[test_resources("tests/fixtures/errors/515-pattern-billion-laughs.svg")]
-fn instancing_limit2(name: &str) {
-    rendering_instancing_limit(name);
+#[test]
+fn instancing_limit2() {
+    rendering_instancing_limit("tests/fixtures/errors/515-pattern-billion-laughs.svg");
 }
