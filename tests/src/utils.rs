@@ -25,12 +25,23 @@ pub fn fixture_path(filename_from_test_resources: &str) -> PathBuf {
 }
 
 #[cfg(have_pangoft2)]
-pub fn setup_font_map() {
+mod pango_ft2 {
     use fontconfig_sys::fontconfig;
     use glib::prelude::*;
     use pangocairo::FontMap;
+    use super::*;
 
-    unsafe {
+    extern "C" {
+        // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
+	//                               FcConfig       *fcconfig);
+        // This is not bound in gtk-rs, and PangoFcFontMap is not even exposed, so we'll bind it by hand.
+        fn pango_fc_font_map_set_config(
+            font_map: *mut libc::c_void,
+            config: *mut fontconfig::FcConfig,
+        );
+    }
+
+    pub unsafe fn load_test_fonts() {
         let font_paths = [
             "tests/resources/Roboto-Regular.ttf",
             "tests/resources/Roboto-Italic.ttf",
@@ -52,21 +63,16 @@ pub fn setup_font_map() {
         let font_map = FontMap::new_for_font_type(cairo::FontType::FontTypeFt).unwrap();
         let raw_font_map: *mut pango_sys::PangoFontMap = font_map.to_glib_none().0;
 
-        extern "C" {
-            // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
-	    //                               FcConfig       *fcconfig);
-            // This is not bound in gtk-rs, and PangoFcFontMap is not even exposed, so we'll bind it by hand.
-            fn pango_fc_font_map_set_config(
-                font_map: *mut libc::c_void,
-                config: *mut fontconfig::FcConfig,
-            );
-        }
-
         pango_fc_font_map_set_config (raw_font_map as *mut _, config);
         fontconfig::FcConfigDestroy(config);
 
         FontMap::set_default(Some(font_map.downcast::<pangocairo::FontMap>().unwrap()));
     }
+}
+
+#[cfg(have_pangoft2)]
+pub fn setup_font_map() {
+    unsafe { self::pango_ft2::load_test_fonts(); }
 }
 
 #[cfg(not(have_pangoft2))]
