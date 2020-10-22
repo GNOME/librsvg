@@ -1,4 +1,12 @@
 //! Tests for loading errors.
+//!
+//! Note that all the tests in this module are `#[ignore]`.  This is because they
+//! take a much longer time to run than normal tests, as they depend upon actually
+//! hitting the limits in librsvg for the number of loaded elements, or the number
+//! of referenced elements during rendering.
+//!
+//! There is a *big* difference in the run-time of these tests when compiled with
+//! `--release` versus `--debug`.  So, we will only run them in release-mode tests.
 
 #![cfg(test)]
 
@@ -7,6 +15,7 @@ use librsvg::{CairoRenderer, Loader, LoadingError, RenderingError};
 
 use crate::utils::fixture_path;
 
+#[ignore]
 #[test]
 fn too_many_elements() {
     let name = "tests/fixtures/errors/515-too-many-elements.svgz";
@@ -42,11 +51,13 @@ fn rendering_instancing_limit(name: &str) {
     ));
 }
 
+#[ignore]
 #[test]
 fn instancing_limit1() {
     rendering_instancing_limit("tests/fixtures/errors/323-nested-use.svg");
 }
 
+#[ignore]
 #[test]
 fn instancing_limit2() {
     rendering_instancing_limit("tests/fixtures/errors/515-pattern-billion-laughs.svg");
