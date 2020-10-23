@@ -1,12 +1,11 @@
-use self::rsvg_internals::surface_utils::{
+use super::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
 };
-use self::rsvg_internals::{IRect, RenderingError};
-use rsvg_internals;
+use crate::error::RenderingError;
 
-use rgb::ComponentMap;
+use rgb::{ComponentMap, RGB};
 
 pub enum BufferDiff {
     DifferentSizes,
@@ -17,11 +16,6 @@ pub struct Diff {
     pub num_pixels_changed: usize,
     pub max_diff: u8,
     pub surface: SharedImageSurface,
-}
-
-#[inline]
-fn pixel_max(p: &Pixel) -> u8 {
-    p.r.max(p.g).max(p.b).max(p.a)
 }
 
 #[inline]
@@ -58,41 +52,33 @@ pub fn compare_surfaces(
     let mut num_pixels_changed = 0;
     let mut max_diff = 0;
 
+    let black = Pixel::default().alpha(255);
+
     {
         let mut diff_data = surf_diff.get_data().unwrap();
 
         for ((xa, ya, pixel_a), (_, _, pixel_b)) in Pixels::new(surf_a).zip(Pixels::new(surf_b)) {
-            if pixel_a != pixel_b {
+            let dest = if pixel_a != pixel_b {
                 num_pixels_changed += 1;
 
                 let pixel_diff = pixel_a.diff(&pixel_b);
 
-                let pixel_max_diff = pixel_max(&pixel_diff);
+                max_diff = pixel_diff.iter().fold(max_diff, |acc, c| acc.max(c));
 
-                max_diff = max_diff.max(pixel_max_diff);
+                let pixel_diff = emphasize(&pixel_diff);
 
-                let mut pixel_diff = emphasize(&pixel_diff);
-
-                if pixel_diff.r == 0 && pixel_diff.g == 0 && pixel_diff.b == 0 {
+                if pixel_diff.rgb() == RGB::default() {
                     // alpha only difference; convert alpha to gray
-
-                    pixel_diff.r = pixel_diff.a;
-                    pixel_diff.g = pixel_diff.a;
-                    pixel_diff.b = pixel_diff.a;
+                    let a = pixel_diff.a;
+                    pixel_diff.map_rgb(|_| a)
+                } else {
+                    pixel_diff.alpha(255)
                 }
-
-                pixel_diff.a = 255;
-
-                diff_data.set_pixel(diff_stride, pixel_diff, xa, ya);
             } else {
-                let black = Pixel {
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 255,
-                };
-                diff_data.set_pixel(diff_stride, black, xa, ya);
-            }
+                black
+            };
+
+            diff_data.set_pixel(diff_stride, dest, xa, ya);
         }
     }
 

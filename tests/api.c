@@ -1,6 +1,15 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
+/* These are the C API tests for librsvg.  These test the complete C
+ * API, especially its historical peculiarities to ensure ABI
+ * compatibility.
+ *
+ * These tests are not meant to exhaustively test librsvg's features.
+ * For those, you should look at the Rust integration tests.  See
+ * tests/README.md for details.
+ */
+
 #include "config.h"
 
 #include <stdio.h>
@@ -1459,8 +1468,6 @@ test_dimensions (DimensionsFixtureData *fixture)
         g_assert (rsvg_handle_has_sub (handle, fixture->id));
         g_assert (rsvg_handle_get_position_sub (handle, &position, fixture->id));
         g_assert (rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id));
-
-        g_message ("w=%d h=%d", dimension.width, dimension.height);
     } else {
         rsvg_handle_get_dimensions (handle, &dimension);
     }
@@ -1669,6 +1676,7 @@ main (int argc, char **argv)
 {
     g_test_init (&argc, &argv, NULL);
 
+    test_utils_print_dependency_versions ();
     test_utils_setup_font_map ();
 
     add_pixbuf_tests ();

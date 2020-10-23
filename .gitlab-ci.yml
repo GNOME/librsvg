@@ -75,7 +75,6 @@ fmt:
   extends: .common
   needs:
     - job: check
-      artifacts: false
   script:
     - sudo -E cargo fmt --all -- --check
 
@@ -84,7 +83,6 @@ clippy:
   extends: .common
   needs:
     - job: check
-      artifacts: false
   script:
     - cargo clippy --version
     - sudo CARGO_HOME=$CARGO_HOME cargo clippy --workspace
@@ -97,7 +95,11 @@ cargo_test:
     - .recreate_cache
   needs:
     - job: check
-      artifacts: false
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/output
+    expire_in: 1 day
   variables:
     OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
   script:
@@ -109,7 +111,6 @@ cargo_test:
     - .common
   needs:
     - job: cargo_test
-      artifacts: false
   script:
     - mkdir -p _build
     - cd _build

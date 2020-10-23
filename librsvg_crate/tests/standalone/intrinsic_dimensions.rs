@@ -7,9 +7,7 @@ use librsvg::{
     RenderingError,
 };
 
-mod utils;
-
-use self::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
+use crate::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
 
 #[test]
 fn no_intrinsic_dimensions() {
@@ -17,7 +15,8 @@ fn no_intrinsic_dimensions() {
         br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"/>
 "#,
-    );
+    )
+    .unwrap();
 
     assert_eq!(
         CairoRenderer::new(&svg).intrinsic_dimensions(),
@@ -35,7 +34,8 @@ fn has_intrinsic_dimensions() {
         br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="10cm" height="20" viewBox="0 0 100 200"/>
 "#,
-    );
+    )
+    .unwrap();
 
     assert_eq!(
         CairoRenderer::new(&svg).intrinsic_dimensions(),
@@ -60,7 +60,8 @@ fn root_geometry_with_percent_viewport() {
   <rect x="10" y="20" width="30" height="40"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -91,7 +92,8 @@ fn layer_geometry_with_offset_viewport() {
   <rect x="10" y="20" width="30" height="40"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -122,7 +124,8 @@ fn layer_geometry_with_viewbox_and_offset_viewport() {
   <rect x="110" y="120" width="30" height="40"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -153,7 +156,8 @@ fn layer_geometry_with_no_width_height() {
   <rect x="110" y="120" width="30" height="40"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -184,7 +188,8 @@ fn layer_geometry_with_no_intrinsic_dimensions() {
   <rect x="110" y="120" width="50" height="40"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -218,7 +223,8 @@ fn layer_geometry_with_percentage_viewport() {
   <rect x="10" y="20" width="50" height="40"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -251,7 +257,8 @@ fn layer_geometry_with_percent_viewport() {
   <rect id="foo" x="10" y="20" width="30" height="40"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -285,7 +292,8 @@ fn layer_geometry_viewport_viewbox() {
   <rect id="two" x="0" y="200" width="100" height="200" fill="rgb(0,0,255)"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -316,7 +324,8 @@ fn layer_geometry_for_nonexistent_element() {
         br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"/>
 "#,
-    );
+    )
+    .unwrap();
 
     let viewport = cairo::Rectangle {
         x: 0.0,
@@ -339,7 +348,8 @@ fn layer_geometry_for_invalid_id() {
         br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"/>
 "#,
-    );
+    )
+    .unwrap();
 
     let viewport = cairo::Rectangle {
         x: 0.0,
@@ -373,7 +383,8 @@ fn render_to_viewport_with_different_size() {
   <rect x="8" y="8" width="32" height="32" fill="blue"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -417,7 +428,8 @@ fn render_to_offsetted_viewport() {
   <rect x="8" y="8" width="32" height="32" fill="blue"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -459,7 +471,8 @@ fn render_to_viewport_with_transform() {
   </g>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -512,7 +525,8 @@ fn clip_on_transformed_viewport() {
   </g>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,
@@ -581,7 +595,8 @@ fn mask_on_transformed_viewport() {
   </g>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let output_surf = render_document(
         &svg,

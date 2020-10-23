@@ -90,6 +90,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/property_macros.rs			\
 	rsvg_internals/src/rect.rs				\
 	rsvg_internals/src/shapes.rs				\
+	rsvg_internals/src/surface_utils/compare_surfaces.rs	\
 	rsvg_internals/src/surface_utils/iterators.rs		\
 	rsvg_internals/src/surface_utils/mod.rs			\
 	rsvg_internals/src/surface_utils/shared_surface.rs	\
@@ -113,12 +114,12 @@ LIBRSVG_CRATE_SRC = 						\
 	librsvg_crate/example.svg				\
 	librsvg_crate/examples/proportional.rs			\
 	librsvg_crate/src/lib.rs				\
-	librsvg_crate/tests/api.rs				\
-	librsvg_crate/tests/bugs.rs				\
-	librsvg_crate/tests/intrinsic_dimensions.rs		\
-	librsvg_crate/tests/primitives.rs			\
-	librsvg_crate/tests/utils/mod.rs			\
-	librsvg_crate/tests/utils/compare_surfaces.rs		\
+	librsvg_crate/tests/standalone/api.rs			\
+	librsvg_crate/tests/standalone/bugs.rs			\
+	librsvg_crate/tests/standalone/intrinsic_dimensions.rs	\
+	librsvg_crate/tests/standalone/main.rs			\
+	librsvg_crate/tests/standalone/primitives.rs		\
+	librsvg_crate/tests/standalone/utils.rs			\
 	$(NULL)
 
 LIBRSVG_C_API_SRC =						\
@@ -178,7 +179,7 @@ check-local:
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)		\
 	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)		\
 	OUT_DIR=$(LIBRSVG_BUILD_DIR)/tests/output	\
-	$(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+	$(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) -- --include-ignored -Z unstable-options
 
 clean-local:
 	cd $(top_srcdir) &&			\

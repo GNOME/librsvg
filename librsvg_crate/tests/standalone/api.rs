@@ -3,8 +3,7 @@ use librsvg::{CairoRenderer, DefsLookupErrorKind, HrefError, RenderingError};
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-mod utils;
-use self::utils::{compare_to_surface, load_svg};
+use crate::utils::{compare_to_surface, load_svg};
 
 #[test]
 fn has_element_with_id_works() {
@@ -14,7 +13,8 @@ fn has_element_with_id_works() {
   <rect id="foo" x="10" y="10" width="30" height="30"/>
 </svg>
 "#,
-    );
+    )
+    .unwrap();
 
     assert!(svg.has_element_with_id("#foo").unwrap());
     assert!(!svg.has_element_with_id("#bar").unwrap());
@@ -50,7 +50,8 @@ fn render_layer() {
   <rect id="bar" x="20" y="20" width="30" height="30" fill="#0000ff"/>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -105,7 +106,8 @@ fn untransformed_element() {
   </g>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -183,7 +185,8 @@ fn set_stylesheet() {
   <rect id="foo" x="10" y="20" width="30" height="40" fill="black"/>
 </svg>
 "##,
-    );
+    )
+    .unwrap();
 
     svg.set_stylesheet("rect { fill: #00ff00; }")
         .expect("should be a valid stylesheet");

@@ -1645,14 +1645,16 @@ impl DrawingCtx {
         // another <use> which references the first one, etc.).  So,
         // we acquire the <use> element itself so that circular
         // references can be caught.
-        let _self_acquired = acquired_nodes.acquire_ref(node).map_err(|e| {
-            if let AcquireError::CircularReference(_) = e {
+        let _self_acquired = match acquired_nodes.acquire_ref(node) {
+            Ok(n) => n,
+
+            Err(AcquireError::CircularReference(_)) => {
                 rsvg_log!("circular reference in element {}", node);
-                RenderingError::CircularReference
-            } else {
-                unreachable!();
+                return Ok(self.empty_bbox());
             }
-        })?;
+
+            _ => unreachable!(),
+        };
 
         if link.is_none() {
             return Ok(self.empty_bbox());
@@ -1663,7 +1665,7 @@ impl DrawingCtx {
 
             Err(AcquireError::CircularReference(node)) => {
                 rsvg_log!("circular reference in element {}", node);
-                return Err(RenderingError::CircularReference);
+                return Ok(self.empty_bbox());
             }
 
             Err(AcquireError::MaxReferencesExceeded) => {

@@ -26,12 +26,6 @@ typedef gboolean (* AddTestFunc) (GFile *file);
 
 const gchar *test_utils_get_test_data_path      (void);
 
-void         test_utils_add_test_for_all_files  (const gchar    *prefix,
-                                                 GFile          *base,
-                                                 GFile          *file,
-                                                 GTestDataFunc   test_func,
-                                                 AddTestFunc     add_test_func);
-
 void test_utils_print_dependency_versions (void);
 
 void test_utils_setup_font_map (void);

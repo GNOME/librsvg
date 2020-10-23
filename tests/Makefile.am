@@ -2,7 +2,13 @@ include $(top_srcdir)/glib-tap.mk
 
 test_sources =				\
 	Cargo.toml			\
+	build.rs			\
+	src/errors.rs			\
+	src/loading_crash.rs		\
 	src/main.rs			\
+	src/reference.rs		\
+	src/render_crash.rs		\
+	src/utils.rs			\
 	src/cmdline/mod.rs		\
 	src/cmdline/rsvg_convert.rs	\
 	src/predicates/file.rs		\
@@ -14,14 +20,8 @@ EXTRA_DIST +=		\
 	$(test_sources)	\
 	README.md
 
-# Keep "errors" at the end; they are the slowest to run
 test_programs =		\
-	api		\
-	rsvg-test	\
-	crash		\
-	render-crash	\
-	errors		\
-	infinite-loop
+	api
 
 test_utils_common_sources = \
 	test-utils.c	\
@@ -29,26 +29,6 @@ test_utils_common_sources = \
 
 api_SOURCES = 		\
 	api.c		\
-	$(test_utils_common_sources)
-
-errors_SOURCES = 	\
-	errors.c	\
-	$(test_utils_common_sources)
-
-infinite_loop_SOURCES = 	\
-	infinite-loop.c		\
-	$(test_utils_common_sources)
-
-rsvg_test_SOURCES = \
-	rsvg-test.c	\
-	$(test_utils_common_sources)
-
-crash_SOURCES = \
-	crash.c		\
-	$(test_utils_common_sources)
-
-render_crash_SOURCES = \
-	render-crash.c	\
 	$(test_utils_common_sources)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
@@ -70,7 +50,6 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
-	$(wildcard $(srcdir)/fixtures/infinite-loop/*)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.css)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\

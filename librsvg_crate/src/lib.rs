@@ -389,6 +389,7 @@ impl SvgHandle {
 pub struct CairoRenderer<'a> {
     handle: &'a SvgHandle,
     dpi: Dpi,
+    is_testing: bool,
 }
 
 // Note that these are different than the C API's default, which is 90.
@@ -433,6 +434,7 @@ impl<'a> CairoRenderer<'a> {
         CairoRenderer {
             handle,
             dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
+            is_testing: false,
         }
     }
 
@@ -446,8 +448,8 @@ impl<'a> CairoRenderer<'a> {
         assert!(dpi_y > 0.0);
 
         CairoRenderer {
-            handle: self.handle,
             dpi: Dpi::new(dpi_x, dpi_y),
+            ..self
         }
     }
 
@@ -481,7 +483,9 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.0.render_document(cr, viewport, self.dpi, false)
+        self.handle
+            .0
+            .render_document(cr, viewport, self.dpi, self.is_testing)
     }
 
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if
@@ -515,7 +519,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_layer(id, viewport, self.dpi, false)
+            .get_geometry_for_layer(id, viewport, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
 
@@ -546,7 +550,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(), RenderingError> {
         self.handle
             .0
-            .render_layer(cr, id, viewport, self.dpi, false)
+            .render_layer(cr, id, viewport, self.dpi, self.is_testing)
     }
 
     /// Computes the (ink_rect, logical_rect) of a single SVG element
@@ -585,7 +589,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_element(id, self.dpi, false)
+            .get_geometry_for_element(id, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
 
@@ -613,6 +617,14 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(), RenderingError> {
         self.handle
             .0
-            .render_element(cr, id, element_viewport, self.dpi, false)
+            .render_element(cr, id, element_viewport, self.dpi, self.is_testing)
+    }
+
+    /// Turns on test mode.  Do not use this function; it is for librsvg's test suite only.
+    pub fn test_mode(self) -> Self {
+        CairoRenderer {
+            is_testing: true,
+            ..self
+        }
     }
 }
