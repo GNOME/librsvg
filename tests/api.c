@@ -1459,8 +1459,6 @@ test_dimensions (DimensionsFixtureData *fixture)
         g_assert (rsvg_handle_has_sub (handle, fixture->id));
         g_assert (rsvg_handle_get_position_sub (handle, &position, fixture->id));
         g_assert (rsvg_handle_get_dimensions_sub (handle, &dimension, fixture->id));
-
-        g_message ("w=%d h=%d", dimension.width, dimension.height);
     } else {
         rsvg_handle_get_dimensions (handle, &dimension);
     }
