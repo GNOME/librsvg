@@ -2,7 +2,13 @@ include $(top_srcdir)/glib-tap.mk
 
 test_sources =				\
 	Cargo.toml			\
+	build.rs			\
+	src/errors.rs			\
+	src/loading_crash.rs		\
 	src/main.rs			\
+	src/reference.rs		\
+	src/render_crash.rs		\
+	src/utils.rs			\
 	src/cmdline/mod.rs		\
 	src/cmdline/rsvg_convert.rs	\
 	src/predicates/file.rs		\
