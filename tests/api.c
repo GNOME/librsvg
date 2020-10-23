@@ -1,6 +1,15 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set ts=4 nowrap ai expandtab sw=4: */
 
+/* These are the C API tests for librsvg.  These test the complete C
+ * API, especially its historical peculiarities to ensure ABI
+ * compatibility.
+ *
+ * These tests are not meant to exhaustively test librsvg's features.
+ * For those, you should look at the Rust integration tests.  See
+ * tests/README.md for details.
+ */
+
 #include "config.h"
 
 #include <stdio.h>

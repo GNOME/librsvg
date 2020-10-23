@@ -1,44 +1,27 @@
 Librsvg test suite
 ==================
 
-Librsvg's test harness is built upon [Glib's GTest utility
-functions][gtest].  These let you define tests in the C language.
+Librsvg's test suite is split like this:
 
-The test suite has the following test binaries:
+* Unit tests in the Rust code, run normally with "cargo test".
 
-* `rsvg-test` - The main test suite; loads, parses, and renders SVGs and
-  compares the results against reference PNG images.
-  
-* `api` - Tests the full C API of librsvg: all the public functions,
-  the RsvgHandle class and its methods, and its GObject properties.
+* C API tests in this tests/ directory.
 
-* `crash` - Ensures that loading and parsing (but not rendering) a
-  particular SVG doesn't crash or yield a GError.
-  
-* `render-crash` - Ensures that rendering a loaded SVG doesn't crash.
+* Rust integration tests in this tests/ directory.
 
-* `errors` - Tests that errors are reported from the API when SVG
-  files have deliberate errors in them.
-
-* `infinite-loop` - Some invalid SVG files may cause infinite loops,
-  for example, those that have circular references across SVG
-  elements. These tests ensure that librsvg can detect those errors
-  and not go spinning endlessly.
-
-These are all "black box tests": they run the library with its public
-API, and test the results.  They do not test the library's internals;
-just the output.
-
+The C API and Rust tests run the library with its public APIs in
+both languages.  In addition, the Rust tests also exercise the
+rsvg-convert program.
 
 Unit tests
 ----------
 
-Additionally, the library's source code has smaller unit tests for
-particular sections of the code.
+The library's source code has small unit tests for particular sections
+of the code.
 
 **It is better to catch errors early**, in the unit tests, if
-possible.  The test suite in this directory is for black box tests,
-which run the library as a normal program would use it.
+possible.  The test suite in this tests/ directory is for black box
+tests, which run the library as a normal program would use it.
 
 * **What should be in a unit test** - a small test of an algorithm; a
   check for computed values given some starting values; checks for
@@ -61,62 +44,129 @@ Running the test suite
 
 The easiest way to run all the tests is to go to librsvg's toplevel
 directory and run `make check`.  This will run both the small unit
-tests and the black box tests in this `librsvg/tests` directory.
+tests and the black box tests in this `tests/` directory.
 
-If you want to run just the black box tests, go into this
-`librsvg/tests` directory and run `make check`.  If you want to run
-the unit tests, go to `librsvg/rsvg_internals` and run `cargo test`.
+Alternatively, you can run just the unit tests by going to the
+`rsvg_internals/` directory and doing `cargo test`.
 
-Those commands will yield exit code 0 if all the tests pass, or
-nonzero if some tests fail.
+## C API tests - `api.c`
 
-Running `make check` will produce a `test/test-suite.log` file.  You can
-see this file for the details of failed tests.
+These test the full C API of librsvg: all the public functions; the
+RsvgHandle class, its methods, and its GObject properties; all the
+deprecated functions.  Any new public APIs should get tested here.
 
-Additionally, all the black box tests (rsvg-test, crash, etc.) will
-produce a test report in a text file.  In the tests directory, you can
-see `rsvg-test.log`, `crash.log`, etc., respectively.
+The tests are intended to preserve the historical peculiarities of the
+C API, to ensure ABI compatibility across versions of the library.
 
+These tests are not meant to exhaustively test librsvg's features.
+For those, you should look at the [Rust integration
+tests][#rust-integration-tests].
 
-# Tests and test fixtures
+This C API test suite is built upon [Glib's GTest utility
+functions][gtest], which let you define tests in the C language.
 
-Each of the test binaries mentioned above has its own set of fixtures,
-or SVG files that they will try to process.  The fixtures are in
-`librsvg/tests/fixtures/*`, where each of the `*` subdirectories
-provides the fixtures for a particular test binary.
+## Rust integration tests
 
-## Image-based reference tests for `rsvg-test.c`
+These are built as a Rust binary in this tests/ directory, and are
+runnable with `cargo test`.
 
-These will load, parse, and render an SVG, and compare the results
-against a reference PNG image.
+Note that this test binary includes tests for the rsvg-convert
+program.  It needs to be compiled before running the tests with a plain `cargo test`.
 
-Each image-based reference test uses two files: `foo.svg` and
+To just run the integration tests without testing rsvg-convert, you
+can use this:
+
+```
+cargo test -- --skip cmdline
+```
+
+The following sections describe each test module in the Rust integration tests.
+
+### Crash tests - `loading_crash.rs`
+
+These load and parse an SVG, and ensure that there are no crashes in
+the process.  Note that this does *not* render the images.
+
+The SVG images live in the `fixtures/crash` directory.  The files are
+just tested to not cause crashes during the loading process; it does
+not matter if the files are well-formed XML, for example.
+
+## Rendering crash tests - `render_crash.rs`
+
+We use these tests to ensure there are no regressions after fixing a
+bug where a particular SVG loads fine, but it crashes the renderer.
+
+The test files are in the `fixtures/render-crash` directory.  The
+module loads the files and renders them, without comparing the results
+to anything in particular.
+
+## Error tests - `errors.rs`
+
+These test conditions which should produce errors during loading or rendering.
+
+During loading, librsvg will report malformed XML as errors.  It will
+also report an error if an SVG file has more elements than what is
+configured in librsvg's internal limits; this is intended to prevent
+uncontrolled memory consumption.
+
+During rendering, librsvg will report errors if the SVG document hits
+librsvg's internal limits for the number of instanced objects; this is
+intended to prevent uncontrolled CPU consumption from malicious SVG
+files.
+
+The test files are in the `fixtures/errors` directory.
+
+## Reference tests - `reference.rs`
+
+These are the bulk of the rendering tests, where the results of
+rendering SVG files are compared against reference PNG images.
+
+The reference tests allow for minor differences in the pixel values of
+the results.  Each pixel's RGBA components gets compared to the
+corresponding one in the reference image:
+
+* If the absolute value of the difference between corresponding RGBA
+  components is more than 2, the test suite considers the result to be
+  *distinguishable* from the reference, but otherwise acceptable.
+
+* If the absolute value of the difference is more than the number in
+  the `RSVG_TEST_TOLERANCE` environment variable, the result is
+  *inacceptable* and the test suite fails; the default is 2 if that
+  variable is not set.  You can tweak this value if your machine's
+  floating-point unit produces wildly different results.
+
+The test files are in the `fixtures/reftests/` directory.  Each
+image-based reference test uses two files: `foo.svg` and
 `foo-ref.png`.  The test harness will render `foo.svg` and compare the
-results to `foo-ref.png`.  Currently we assume a pixel-perfect match.
-If there are differences in the output, the test will fail; see
-"[Examining failed reference tests](#examining-failed-reference-tests)" below.
+results to `foo-ref.png`.
 
-The test files can go anywhere under the `fixtures/reftests`
-directory; the `rsvg-test` program will recursively look inside
-`fixtures/reftests` for all SVG files, render them to `tests/output`, and
-compare them to the `-ref.png` reference images. The rendered files can
-later be removed by running `make clean`.
+Test results get written to the `tests/output/` directory; you can
+override this by setting the `OUT_DIR` environment variable.
 
-**Ignoring tests:** SVG test files or entire subdirectories in
-`fixtures/reftests` whose names begin with "`ignore`" will be skipped from
-the tests.  That is, anything that matches "`fixtures/reftests/ignore*`"
-will not be included in the tests.  You can use this to skip a few
-problematic files temporarily.
+Each `foo.svg` test file produces a `foo-out.png` result, and if that
+result is *distinguishable* from the reference PNG (per the
+terminology above), the test will also produce a `foo-diff.png` which
+you can examine by hand.  See "[Examining failed reference
+tests](#examining-failed-reference-tests)" below.
 
-As of 2016/Nov/03 we have an informal organization of these files:
+You can safely remove the `tests/output/` directory at any time.
 
-* `fixtures/reftests/svg1.1` - Tests from the W3C's SVG test suite.
+**Ignoring tests:** SVG test files in `fixtures/reftests` whose names
+begin with "`ignore`" will be skipped from the tests.  That is,
+anything that matches "ignore*.svg`" will not be included in the
+tests.  You can use this to skip a few problematic files temporarily.
+
+As of 2020/Oct/22 we have an informal organization of these files:
+
+* `fixtures/reftests/svg1.1` - Tests from the W3C's SVG1.1 test suite.
   These are supposed to test all of SVG's features; we will add them one
   by one as librsvg starts implementing the features.
+  
+* `fixtures/reftests/svg2` - Tests for SVG2 or CSS3 features.
 
 * `fixtures/reftests/bugs/*.svg` - Tests for particular bug numbers.
-  Please use the bug number from Gitlab, like `1234.svg`, and the
-  corresponding `1234-ref.png` for the known-good reference image.
+  Please use the bug number from Gitlab, like `1234-blah.svg`, and the
+  corresponding `1234-blah-ref.png` for the known-good reference image.
   
   **Note:** Librsvg migrated from git.gnome.org and bugzilla.gnome.org
   to gitlab.gnome.org.  Bug numbers in Bugzilla were around 6 digits
@@ -131,24 +181,21 @@ As of 2016/Nov/03 we have an informal organization of these files:
 
 ### Examining failed reference tests
 
-Let's say you run `make check` and see that one of the tests fails.
-For example, `rsvg-test.log` may have lines that look like
+Let's say you run `make check` and see that one of the tests fails.  The test log may have lines like these:
 
 ```
-# Storing test result image at tests/output/paths-data-18-f-out.png
-# 6798 pixels differ (with maximum difference of 255) from reference image
+---- reference::svg_1_1_tests_fixtures_reftests_svg1_1_painting_stroke_01_t_svg stdout ----
+output: output/painting-stroke-01-t-out.png
+painting-stroke-01-t: 12414 pixels changed with maximum difference of 255
+diff: output/painting-stroke-01-t-diff.png
+thread 'reference::svg_1_1_tests_fixtures_reftests_svg1_1_painting_stroke_01_t_svg' panicked at 'surfaces are too different', tests/src/reference.rs:319:25
 
-# Storing test result image at tests/output/paths-data-18-f-diff.png
-not ok 29 /rsvg-test/reftests/svg1.1/paths-data-18-f.svg
-FAIL: rsvg-test 29 /rsvg-test/reftests/svg1.1/paths-data-18-f.svg
 ```
 
-This means that the test named
-`/rsvg-test/reftests/svg1.1/paths-data-18-f.svg` failed:  those are
-autogenerated test names from GTest.  In this case, it means that the
-test file `fixtures/reftests/svg1.1/paths-data-18-f.svg` got rendered,
-and produced incorrect output when compared to
-`fixtures/reftests/svg1.1/paths-data-18-f-ref.png`.
+This means that the test file
+`fixtures/reftests/svg1.1/painting-stroke-01-t.svg` got rendered, and
+produced incorrect output when compared to
+`fixtures/reftests/svg1.1/painting-stroke-01-t-ref.png`.
 
 When a test fails, rsvg-test creates two images in `tests/output`:
 
@@ -183,7 +230,7 @@ It is up to you to decide what to do next:
 
 ### Regenerating reference images
 
-Let's say the test `/rsvg-test/reftests/.../foo.svg` failed.  Then you
+Let's say the test `tests/fixtures/reftests/.../foo.svg` failed.  Then you
 fix the bug, or determine that the output image is in fact correct,
 and it just differs from the reference image due to antialiasing
 artifacts.  In this case, your next step is to regenerate the
@@ -267,41 +314,6 @@ just those fonts.  In addition, the Pango context used for rendering
 is set up with a hardcoded mode for antialiasing, hinting, and hint
 metrics.
 
-## API tests for `api.c`
-
-These test the full C API of librsvg: all the public functions; the
-RsvgHandle class, its methods, and its GObject properties; all the
-deprecated functions.  Any new public APIs should get tested here.
-
-## Crash tests for `crash.c`
-
-These load and parse an SVG, and ensure that there are no errors in
-the process.  Note that this does *not* render the images.
-
-The SVG images live in the `fixtures/crash` directory.  The `crash`
-program will look recursively look inside `fixtures/crash` for all SVG
-files, load them, and ensure that no GError was produced while loading
-each file.
-
-## Rendering crash tests for `render-crash.c`
-
-We use these tests to ensure there are no regressions after fixing a
-bug where a particular SVG loads fine, but it crashes the renderer.
-The test files are in the `fixtures/render-crash` directory.
-
-## Error tests for `errors.c`
-
-These test conditions which should produce errors during rendering,
-that is, SVG files which should cause `rsvg_handle_render*()` to
-return a `GError`.  The test files are in the `fixtures/errors`
-directory.
-
-## Loop detection tests for `infinite-loop.c`
-
-Some invalid SVG files may cause infinite loops, for example, those
-that have circular references across SVG elements.  These tests ensure
-that librsvg can detect those errors and not go spinning endlessly.
-The test files are in the `fixtures/infinite-loop` directory.
 
 [gtest]: https://developer.gnome.org/glib/stable/glib-Testing.html
 [bug]: ../CONTRIBUTING.md#reporting-bugs
