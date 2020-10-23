@@ -179,7 +179,7 @@ check-local:
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)		\
 	LIBRSVG_BUILD_DIR=$(LIBRSVG_BUILD_DIR)		\
 	OUT_DIR=$(LIBRSVG_BUILD_DIR)/tests/output	\
-	$(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS)
+	$(CARGO) --locked test $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) -- --include-ignored -Z unstable-options
 
 clean-local:
 	cd $(top_srcdir) &&			\
