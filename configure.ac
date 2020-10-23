@@ -264,23 +264,6 @@ AC_SUBST([GTK_PREFIX],[$($PKG_CONFIG --variable=prefix gdk-pixbuf-2.0)])
 AC_SUBST([CAIRO_PREFIX],[$($PKG_CONFIG --variable=prefix cairo)])
 
 dnl ===========================================================================
-dnl Do we build the miscellaneous tools provided with librsvg ?
-
-AC_ARG_ENABLE(tools,
-              AC_HELP_STRING([--disable-tools],
-                             [do not build miscellaneous tools [default=no]]),
-              [build_misc_tools=$enableval],
-              [build_misc_tools=yes])
-
-AC_MSG_CHECKING(whether to build miscellaneous tools)
-if test "x$build_misc_tools" = "xyes" ; then
-	AC_MSG_RESULT(yes)
-else
-	AC_MSG_RESULT(no)
-fi
-AM_CONDITIONAL([BUILD_MISC_TOOLS], [test "x$build_misc_tools" = "xyes"])
-
-dnl ===========================================================================
 dnl Specify --enable-debug to make a development release.  By default,
 dnl we build in public release mode.
 
@@ -385,7 +368,6 @@ Makefile
 librsvg-zip
 gdk-pixbuf-loader/Makefile
 tests/Makefile
-tools/Makefile
 doc/Makefile
 doc/version.xml
 win32/Makefile
@@ -416,6 +398,5 @@ librsvg-$VERSION
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
-	Build miscellaneous tools:      ${build_misc_tools}
 	Build HTML documentation:       ${enable_gtk_doc}
 "
