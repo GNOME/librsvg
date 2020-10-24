@@ -90,35 +90,6 @@ pub fn output_dir() -> PathBuf {
     path
 }
 
-pub fn fixture_dir() -> PathBuf {
-    let path = PathBuf::from(
-        env::var_os("CARGO_MANIFEST_DIR")
-            .expect(r#"CARGO_MANIFEST_DIR" is not set, please set it or run under "cargo test""#),
-    )
-    .join("tests")
-    .join("fixtures");
-
-    println!("looking for fixtures at {}", path.to_string_lossy());
-
-    path
-}
-
-pub fn compare_to_file(
-    output_surf: &SharedImageSurface,
-    output_base_name: &str,
-    reference_filename: &str,
-) {
-    let reference_path = fixture_dir().join(reference_filename);
-    let file = File::open(reference_path).unwrap();
-
-    let mut reference_file = BufReader::new(file);
-
-    let reference = cairo::ImageSurface::create_from_png(&mut reference_file).unwrap();
-    let reference_surf = SharedImageSurface::wrap(reference, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(output_surf, &reference_surf, output_base_name);
-}
-
 pub fn compare_to_surface(
     output_surf: &SharedImageSurface,
     reference_surf: &SharedImageSurface,
