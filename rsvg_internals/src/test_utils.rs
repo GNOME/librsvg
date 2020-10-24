@@ -1,9 +1,10 @@
-use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::surface_utils::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use std::convert::TryFrom;
 use std::env;
 use std::fs::{self, File};
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::Once;
 
@@ -48,6 +49,38 @@ pub fn output_dir() -> PathBuf {
     fs::create_dir_all(&path).expect("could not create output directory for tests");
 
     path
+}
+
+// FIXME: proper errors?
+fn load_png_as_argb(path: &PathBuf) -> Result<cairo::ImageSurface, ()> {
+    let file = File::open(path).map_err(|_| ())?;
+
+    let mut reference_file = BufReader::new(file);
+
+    let png = cairo::ImageSurface::create_from_png(&mut reference_file).map_err(|_| ())?;
+    let argb =
+        cairo::ImageSurface::create(cairo::Format::ARgb32, png.get_width(), png.get_height())
+            .map_err(|_| ())?;
+
+    {
+        // convert to ARGB; the PNG may come as Rgb24
+        let cr = cairo::Context::new(&argb);
+        cr.set_source_surface(&png, 0.0, 0.0);
+        cr.paint();
+    }
+
+    Ok(argb)
+}
+
+pub fn compare_to_file(
+    output_surf: &SharedImageSurface,
+    output_base_name: &str,
+    reference_path: &PathBuf,
+) {
+    let png = load_png_as_argb(reference_path).unwrap();
+    let reference_surf = SharedImageSurface::wrap(png, SurfaceType::SRgb).unwrap();
+
+    compare_to_surface(output_surf, &reference_surf, output_base_name);
 }
 
 pub fn compare_to_surface(
