@@ -98,6 +98,7 @@ LIBRSVG_INTERNALS_SRC =						\
 	rsvg_internals/src/space.rs				\
 	rsvg_internals/src/structure.rs				\
 	rsvg_internals/src/style.rs				\
+	rsvg_internals/src/test_utils.rs			\
 	rsvg_internals/src/text.rs				\
 	rsvg_internals/src/transform.rs				\
 	rsvg_internals/src/unit_interval.rs			\

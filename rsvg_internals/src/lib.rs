@@ -141,6 +141,7 @@ mod space;
 mod structure;
 mod style;
 pub mod surface_utils;
+pub mod test_utils;
 mod text;
 mod transform;
 mod unit_interval;

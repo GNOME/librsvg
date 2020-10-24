@@ -1,13 +1,14 @@
 use cairo;
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg_internals::test_utils::compare_to_surface;
 
 use librsvg::{
     CairoRenderer, DefsLookupErrorKind, HrefError, IntrinsicDimensions, Length, LengthUnit,
     RenderingError,
 };
 
-use crate::utils::{compare_to_surface, load_svg, render_document, SurfaceSize};
+use crate::utils::{load_svg, render_document, SurfaceSize};
 
 #[test]
 fn no_intrinsic_dimensions() {

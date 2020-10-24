@@ -2,8 +2,9 @@ use cairo;
 use librsvg::{CairoRenderer, DefsLookupErrorKind, HrefError, RenderingError};
 
 use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg_internals::test_utils::compare_to_surface;
 
-use crate::utils::{compare_to_surface, load_svg};
+use crate::utils::load_svg;
 
 #[test]
 fn has_element_with_id_works() {
