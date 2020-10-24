@@ -1,3 +1,8 @@
+//! Utilities for the test suite.
+//!
+//! This module has utility functions that are used in the test suite
+//! to compare rendered surfaces to reference images.
+
 use crate::surface_utils::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
@@ -40,10 +45,16 @@ impl Deviation for Diff {
     }
 }
 
+/// Creates a directory from the `OUT_DIR` environment variable and returns its path.
+///
+/// # Panics
+///
+/// Will panic if the `OUT_DIR` environment variable is not set.  Normally this is set
+/// by the continuous integration scripts or the build scripts that run the test suite.
 pub fn output_dir() -> PathBuf {
     let path = PathBuf::from(
         env::var_os("OUT_DIR")
-            .expect(r#"OUT_DIR is not set, please set it or run under "cargo test""#),
+            .expect(r#"OUT_DIR is not set, please set it to a directory where the test suite can write its output"#),
     );
 
     fs::create_dir_all(&path).expect("could not create output directory for tests");
@@ -72,6 +83,15 @@ fn load_png_as_argb(path: &PathBuf) -> Result<cairo::ImageSurface, ()> {
     Ok(argb)
 }
 
+/// Compares `output_surf` to the reference image from `reference_path`.
+///
+/// Loads the image stored at `reference_path` and uses `compare_to_surface` to
+/// do the comparison.  See that function for details.
+///
+/// # Panics
+///
+/// See `compare_to_surface` for information; this function compares the images and panics in the
+/// same way as that function upon encountering differences.
 pub fn compare_to_file(
     output_surf: &SharedImageSurface,
     output_base_name: &str,
@@ -83,6 +103,16 @@ pub fn compare_to_file(
     compare_to_surface(output_surf, &reference_surf, output_base_name);
 }
 
+/// Compares two surfaces and panics if they are too different.
+///
+/// The `output_base_name` is used to write test results if the
+/// surfaces are different.  If this is `foo`, this will write
+/// `foo-out.png` with the `output_surf` and `foo-diff.png` with a
+/// visual diff between `output_surf` and `reference_surf`.
+///
+/// # Panics
+///
+/// Will panic if the surfaces are too different to be acceptable.
 pub fn compare_to_surface(
     output_surf: &SharedImageSurface,
     reference_surf: &SharedImageSurface,
