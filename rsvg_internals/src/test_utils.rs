@@ -45,17 +45,22 @@ impl Deviation for Diff {
     }
 }
 
-/// Creates a directory from the `OUT_DIR` environment variable and returns its path.
+/// Creates a directory for test output and returns its path.
+///
+/// The location for the output directory is taken from the `OUT_DIR` environment
+/// variable if that is set. Otherwise std::env::temp_dir() will be used, which is
+/// a platform dependent location for temporary files.
 ///
 /// # Panics
 ///
-/// Will panic if the `OUT_DIR` environment variable is not set.  Normally this is set
-/// by the continuous integration scripts or the build scripts that run the test suite.
+/// Will panic if the output directory can not be created.
 pub fn output_dir() -> PathBuf {
-    let path = PathBuf::from(
-        env::var_os("OUT_DIR")
-            .expect(r#"OUT_DIR is not set, please set it to a directory where the test suite can write its output"#),
-    );
+    let tempdir = || {
+        let mut path = env::temp_dir();
+        path.push("rsvg-test-output");
+        path
+    };
+    let path = env::var_os("OUT_DIR").map_or_else(tempdir, PathBuf::from);
 
     fs::create_dir_all(&path).expect("could not create output directory for tests");
 
