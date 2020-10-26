@@ -123,23 +123,11 @@ pub fn compare_to_surface(
     reference_surf: &SharedImageSurface,
     output_base_name: &str,
 ) {
-    let output_path = output_dir().join(&format!("{}-out.png", output_base_name));
-
-    println!("output: {}", output_path.to_string_lossy());
-
-    let mut output_file = File::create(output_path).unwrap();
-    output_surf
-        .clone()
-        .into_image_surface()
-        .unwrap()
-        .write_to_png(&mut output_file)
-        .unwrap();
-
     let diff = compare_surfaces(output_surf, reference_surf).unwrap();
-    evaluate_diff(&diff, output_base_name);
+    evaluate_diff(&diff, output_surf, output_base_name);
 }
 
-fn evaluate_diff(diff: &BufferDiff, output_base_name: &str) {
+fn evaluate_diff(diff: &BufferDiff, output_surf: &SharedImageSurface, output_base_name: &str) {
     match diff {
         BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
 
@@ -149,7 +137,9 @@ fn evaluate_diff(diff: &BufferDiff, output_base_name: &str) {
                     "{}: {} pixels changed with maximum difference of {}",
                     output_base_name, diff.num_pixels_changed, diff.max_diff,
                 );
-                save_diff(diff, output_base_name);
+
+                write_to_file(output_surf, output_base_name, "out");
+                write_to_file(&diff.surface, output_base_name, "diff");
 
                 if diff.inacceptable() {
                     panic!("surfaces are too different");
@@ -157,13 +147,16 @@ fn evaluate_diff(diff: &BufferDiff, output_base_name: &str) {
             }
         }
     }
+}
 
-    fn save_diff(diff: &Diff, output_base_name: &str) {
-        let surf = diff.surface.clone().into_image_surface().unwrap();
-        let diff_path = output_dir().join(&format!("{}-diff.png", output_base_name));
-        println!("diff: {}", diff_path.to_string_lossy());
-
-        let mut output_file = File::create(diff_path).unwrap();
-        surf.write_to_png(&mut output_file).unwrap();
-    }
+fn write_to_file(input: &SharedImageSurface, output_base_name: &str, suffix: &str) {
+    let path = output_dir().join(&format!("{}-{}.png", output_base_name, suffix));
+    println!("{}: {}", suffix, path.to_string_lossy());
+    let mut output_file = File::create(path).unwrap();
+    input
+        .clone()
+        .into_image_surface()
+        .unwrap()
+        .write_to_png(&mut output_file)
+        .unwrap();
 }
