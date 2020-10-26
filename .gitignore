@@ -17,7 +17,6 @@ librsvg.spec
 libtool
 ltmain.sh
 missing
-rsvg
 rsvg-convert
 stamp-h1
 test-driver
