@@ -103,7 +103,7 @@ cargo_test:
   variables:
     OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
   script:
-    - sudo -E cargo test -- --skip "cmdline"
+    - sudo -E cargo test --package librsvg --package librsvg_c_api --package rsvg_internals
 
 .make:
   stage: cross distro
