@@ -86,8 +86,11 @@ G_BEGIN_DECLS
  *
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
+ *
+ * Deprecated: 2.52.  Please use rsvg_handle_render_document() instead; that function lets
+ * you pass a viewport and obtain a good error message.
  */
-RSVG_API
+RSVG_DEPRECATED_FOR(rsvg_handle_render_document)
 gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
 
 /**
@@ -154,8 +157,11 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
  *
  * Returns: %TRUE if drawing succeeded; %FALSE otherwise.
  * Since: 2.14
+ *
+ * Deprecated: 2.52.  Please use rsvg_handle_render_layer() instead; that function lets
+ * you pass a viewport and obtain a good error message.
  */
-RSVG_API
+RSVG_DEPRECATED_FOR(rsvg_handle_render_layer)
 gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const char *id);
 
 /**
