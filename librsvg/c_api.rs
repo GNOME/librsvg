@@ -895,13 +895,27 @@ impl CHandle {
         }
     }
 
+    /// Returns the SVG's size suitable for the legacy C API.
+    ///
+    /// The legacy C API can compute an SVG document's size from the
+    /// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
+    /// element.  If these are not available, then the size must be computed
+    /// by actually measuring the geometries of elements in the document.
+    ///
+    /// See https://www.w3.org/TR/css-images-3/#sizing-terms for terminology and logic.
     fn legacy_document_size_in_pixels(
         &self,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
 
-        if let Some((width, height)) = self.get_svg_size()? {
+        let size_from_intrinsic_dimensions = handle
+            .get_intrinsic_size_in_pixels(inner.dpi.into())
+            .or_else(|| {
+                size_in_pixels_from_percentage_width_and_height(&handle.get_intrinsic_dimensions())
+            });
+
+        if let Some((width, height)) = size_from_intrinsic_dimensions {
             let rect = cairo::Rectangle::from_size(width, height);
             Ok((rect, rect))
         } else {
@@ -912,27 +926,6 @@ impl CHandle {
                 inner.is_testing,
             )
         }
-    }
-
-    // Returns the SVG's size suitable for the legacy C API, or None
-    // if it must be computed by hand.
-    //
-    // The legacy C API can compute an SVG document's size from the
-    // `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
-    // element.  If these are not available, then the size must be computed
-    // by actually measuring the geometries of elements in the document; this last
-    // case is implemented by the caller.
-    //
-    // See https://www.w3.org/TR/css-images-3/#sizing-terms for terminology and logic.
-    fn get_svg_size(&self) -> Result<Option<(f64, f64)>, RenderingError> {
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-
-        Ok(handle
-            .get_intrinsic_size_in_pixels(inner.dpi.into())
-            .or_else(|| {
-                size_in_pixels_from_percentage_width_and_height(&handle.get_intrinsic_dimensions())
-            }))
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
