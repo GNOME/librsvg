@@ -32,7 +32,7 @@ use glib::types::instance_of;
 use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, DefsLookupErrorKind, Handle, IntrinsicDimensions, LoadOptions, LoadingError,
+    rsvg_log, DefsLookupErrorKind, Handle, IntrinsicDimensions, LoadOptions, LoadingError, Rect,
     RenderingError, RsvgLength, SharedImageSurface, SurfaceType, UrlResolver, ViewBox,
 };
 
@@ -795,7 +795,6 @@ impl CHandle {
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
-        let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
 
         // This function is probably called from the cairo_render functions,
@@ -813,8 +812,8 @@ impl CHandle {
 
         inner.size_callback.start_loop();
 
-        let res = handle
-            .get_geometry_sub(id, inner.dpi.into(), inner.is_testing)
+        let res = self
+            .get_geometry_sub(id)
             .and_then(|(ink_r, _)| {
                 // Keep these in sync with tests/src/reference.rs
                 let width = checked_i32(ink_r.width().round())?;
@@ -839,15 +838,13 @@ impl CHandle {
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
-        let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
 
         if id.is_none() {
             return Ok(RsvgPositionData { x: 0, y: 0 });
         }
 
-        handle
-            .get_geometry_sub(id, inner.dpi.into(), inner.is_testing)
+        self.get_geometry_sub(id)
             .and_then(|(ink_r, _)| {
                 let width = checked_i32(ink_r.width().round())?;
                 let height = checked_i32(ink_r.height().round())?;
@@ -863,6 +860,13 @@ impl CHandle {
                 })
             })
             .map_err(warn_on_invalid_id)
+    }
+
+    fn get_geometry_sub(&self, id: Option<&str>) -> Result<(Rect, Rect), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
+
+        handle.get_geometry_sub(id, inner.dpi.into(), inner.is_testing)
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
