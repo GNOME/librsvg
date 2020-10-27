@@ -8,9 +8,7 @@ use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{draw_tree, DrawingMode, ViewParams};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
-use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, Href, UrlResolver};
@@ -108,27 +106,35 @@ impl Handle {
         }
     }
 
-    /// Returns (ink_rect, logical_rect)
-    pub fn get_geometry_sub(
-        &self,
-        id: Option<&str>,
-        dpi: Dpi,
-        is_testing: bool,
-    ) -> Result<(Rect, Rect), RenderingError> {
-        let node = self.get_node_or_root(id)?;
-        let root = self.document.root();
-        let is_root = node == root;
+    /// If the intrinsic dimensions are in physical units, computes their pixel size, or
+    /// returns `None`.
+    ///
+    /// If any of the width/height are percentages, we cannot compute the size here.  Here
+    /// just normalize lengths with physical units, or units based on the font size.
+    pub fn get_intrinsic_size_in_pixels(&self, dpi: Dpi) -> Option<(f64, f64)> {
+        let dimensions = self.get_intrinsic_dimensions();
 
-        if is_root {
-            let cascaded = CascadedValues::new_from_node(&node);
-
-            if let Some((w, h)) = get_svg_size(&self.get_intrinsic_dimensions(), &cascaded, dpi) {
-                let rect = Rect::from_size(w, h);
-                return Ok((rect, rect));
-            }
+        if dimensions.width.is_none() || dimensions.height.is_none() {
+            // If either of width/height don't exist, the spec says they should default to 100%,
+            // which is a percentage-based unit - which we can't resolve here.
+            return None;
         }
 
-        self.geometry_for_layer(node, unit_rectangle(), dpi, is_testing)
+        let w = dimensions.width.unwrap();
+        let h = dimensions.height.unwrap();
+
+        use crate::length::LengthUnit::*;
+
+        if w.unit == Percent || h.unit == Percent {
+            return None;
+        }
+
+        let params = ViewParams::new(dpi, 0.0, 0.0);
+        let root = self.document.root();
+        let cascaded = CascadedValues::new_from_node(&root);
+        let values = cascaded.get();
+
+        Some((w.normalize(values, &params), h.normalize(values, &params)))
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
@@ -379,42 +385,4 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
 
 fn unit_rectangle() -> Rect {
     Rect::from_size(1.0, 1.0)
-}
-
-/// Returns the SVG's size suitable for the legacy C API, or None
-/// if it must be computed by hand.
-///
-/// The legacy C API can compute an SVG document's size from the
-/// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
-/// element.  If these are not available, then the size must be computed
-/// by actually measuring the geometries of elements in the document.
-fn get_svg_size(
-    dimensions: &IntrinsicDimensions,
-    cascaded: &CascadedValues,
-    dpi: Dpi,
-) -> Option<(f64, f64)> {
-    let values = cascaded.get();
-
-    // these defaults are per the spec
-    let w = dimensions
-        .width
-        .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
-    let h = dimensions
-        .height
-        .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
-
-    match (w, h, dimensions.vbox) {
-        (w, h, Some(vbox)) => {
-            let params = ViewParams::new(dpi, vbox.width(), vbox.height());
-
-            Some((w.normalize(values, &params), h.normalize(values, &params)))
-        }
-
-        (w, h, None) if w.unit != LengthUnit::Percent && h.unit != LengthUnit::Percent => {
-            let params = ViewParams::new(dpi, 0.0, 0.0);
-
-            Some((w.normalize(values, &params), h.normalize(values, &params)))
-        }
-        (_, _, _) => None,
-    }
 }

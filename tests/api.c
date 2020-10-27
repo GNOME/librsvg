@@ -969,6 +969,53 @@ get_intrinsic_dimensions (void)
 }
 
 static void
+get_intrinsic_size_in_pixels_yes (void)
+{
+    char *filename = get_test_filename ("size.svg");
+    GError *error = NULL;
+    gdouble width, height;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
+
+    rsvg_handle_set_dpi (handle, 96.0);
+
+    /* Test optional parameters */
+    g_assert (rsvg_handle_get_intrinsic_size_in_pixels (handle, NULL, NULL));
+
+    /* Test the actual result */
+    g_assert (rsvg_handle_get_intrinsic_size_in_pixels (handle, &width, &height));
+    g_assert_cmpfloat (width, ==, 192.0);
+    g_assert_cmpfloat (height, ==, 288.0);
+
+    g_object_unref (handle);
+}
+
+static void
+get_intrinsic_size_in_pixels_no (void)
+{
+    char *filename = get_test_filename ("no-size.svg");
+    GError *error = NULL;
+    gdouble width, height;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
+
+    rsvg_handle_set_dpi (handle, 96.0);
+    g_assert (!rsvg_handle_get_intrinsic_size_in_pixels (handle, &width, &height));
+    g_assert_cmpfloat (width, ==, 0.0);
+    g_assert_cmpfloat (height, ==, 0.0);
+
+    g_object_unref (handle);
+}
+
+static void
 render_document (void)
 {
     char *filename = get_test_filename ("document.svg");
@@ -1488,28 +1535,28 @@ test_dimensions (DimensionsFixtureData *fixture)
 static DimensionsFixtureData dimensions_fixtures[] =
 {
     {
-        "/dimensions/no viewbox, width and height",
+        "/dimensions/viewbox_only",
         "dimensions/bug608102.svg",
         NULL,
         0, 0, 16, 16,
         FALSE, TRUE
     },
     {
-        "/dimensions/100% width and height",
+        "/dimensions/hundred_percent_width_and_height",
         "dimensions/bug612951.svg",
         NULL,
         0, 0, 47, 47.14,
         FALSE, TRUE
     },
     {
-        "/dimensions/viewbox only",
+        "/dimensions/viewbox_only_2",
         "dimensions/bug614018.svg",
         NULL,
         0, 0, 972, 546,
         FALSE, TRUE
     },
     {
-        "/dimensions/sub/rect no unit",
+        "/dimensions/sub/rect_no_unit",
         "dimensions/sub-rect-no-unit.svg",
         "#rect-no-unit",
         0, 0, 44, 45,
@@ -1523,7 +1570,7 @@ static DimensionsFixtureData dimensions_fixtures[] =
         TRUE, FALSE
     },
     {
-        "/dimensions/with-viewbox",
+        "/dimensions/with_viewbox",
         "dimensions/521-with-viewbox.svg",
         "#foo",
         50.0, 60.0, 70.0, 80.0,
@@ -1630,6 +1677,8 @@ add_api_tests (void)
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
+    g_test_add_func ("/api/get_intrinsic_size_in_pixels/yes", get_intrinsic_size_in_pixels_yes);
+    g_test_add_func ("/api/get_intrinsic_size_in_pixels/no", get_intrinsic_size_in_pixels_no);
     g_test_add_func ("/api/render_document", render_document);
     g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
     g_test_add_func ("/api/render_layer", render_layer);

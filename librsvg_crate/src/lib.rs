@@ -459,7 +459,11 @@ impl<'a> CairoRenderer<'a> {
     /// consider simply using [`render_document`] instead; it will do the scaling
     /// computations automatically.
     ///
+    /// See also [`intrinsic_size_in_pixels`], which does the conversion to pixels if
+    /// possible.
+    ///
     /// [`render_document`]: #method.render_document
+    /// [`intrinsic_size_in_pixels`]: #method.intrinsic_size_in_pixels
     pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
         let d = self.handle.0.get_intrinsic_dimensions();
 
@@ -468,6 +472,20 @@ impl<'a> CairoRenderer<'a> {
             height: d.height.map(Into::into),
             vbox: d.vbox.map(|v| cairo::Rectangle::from(*v)),
         }
+    }
+
+    /// Converts the SVG document's intrinsic dimensions to pixels, if possible.
+    ///
+    /// Returns `Some(width, height)` in pixel units if the SVG document has `width` and
+    /// `height` attributes with physical dimensions (CSS pixels, cm, in, etc.) or
+    /// font-based dimensions (em, ex).
+    ///
+    /// If the SVG document has percentage-based `width` and `height` attributes, or if
+    /// either of those attributes are not present, returns `None`.  Dimensions of that
+    /// kind require more information to be resolved to pixels; for example, the calling
+    /// application can use a viewport size to scale percentage-based dimensions.
+    pub fn intrinsic_size_in_pixels(&self) -> Option<(f64, f64)> {
+        self.handle.0.get_intrinsic_size_in_pixels(self.dpi)
     }
 
     /// Renders the whole SVG document fitted to a viewport

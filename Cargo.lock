@@ -815,6 +815,7 @@ dependencies = [
  "cairo-sys-rs",
  "cast",
  "criterion",
+ "float-cmp",
  "gdk-pixbuf",
  "gdk-pixbuf-sys",
  "gio",

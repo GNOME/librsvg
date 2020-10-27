@@ -3,15 +3,15 @@ use std::ptr;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use gio::prelude::*;
+use glib::subclass::prelude::*;
 use glib::translate::*;
 use rgb::FromSlice;
 use url::Url;
 
-use crate::c_api::checked_i32;
+use crate::c_api::{checked_i32, CHandle};
 
 use rsvg_internals::{
-    surface_utils::PixelOps, Dpi, Handle, LoadOptions, LoadingError, Pixel, RenderingError,
-    SharedImageSurface, SurfaceType, UrlResolver,
+    surface_utils::PixelOps, LoadingError, Pixel, RenderingError, SharedImageSurface, SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -132,12 +132,11 @@ fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (f64, 
 }
 
 fn render_to_pixbuf_at_size(
-    handle: &Handle,
+    handle: &CHandle,
     document_width: f64,
     document_height: f64,
     desired_width: f64,
     desired_height: f64,
-    dpi: Dpi,
 ) -> Result<Pixbuf, RenderingError> {
     if desired_width == 0.0
         || desired_height == 0.0
@@ -168,22 +167,12 @@ fn render_to_pixbuf_at_size(
         };
 
         // We do it with a cr transform so we can scale non-proportionally.
-        handle.render_document(&cr, &viewport, dpi, false)?;
+        handle.render_document(&cr, &viewport)?;
     }
 
     let shared_surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
 
     pixbuf_from_surface(&shared_surface)
-}
-
-fn get_default_dpi() -> Dpi {
-    // This is ugly, but it preserves the C API semantics of
-    //
-    //   rsvg_set_default_dpi(...);
-    //   pixbuf = rsvg_pixbuf_from_file(...);
-    //
-    // Passing negative numbers here means that the global default DPI will be used.
-    Dpi::new(-1.0, -1.0)
 }
 
 fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
@@ -195,8 +184,6 @@ fn pixbuf_from_file_with_size_mode(
     size_mode: &SizeMode,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
-    let dpi = get_default_dpi();
-
     unsafe {
         let path = PathBuf::from_glib_none(filename);
         let file = gio::File::new_for_path(path);
@@ -209,25 +196,27 @@ fn pixbuf_from_file_with_size_mode(
             }
         };
 
-        let load_options = LoadOptions::new(UrlResolver::new(Some(base_url)));
+        let handle = CHandle::new();
+        handle.set_base_url(base_url.as_str());
 
         let cancellable: Option<&gio::Cancellable> = None;
-        let handle = match file
+
+        match file
             .read(cancellable)
             .map_err(LoadingError::from)
-            .and_then(|stream| Handle::from_stream(&load_options, stream.as_ref(), None))
+            .and_then(|stream| handle.read_stream_sync(stream.as_ref(), None))
         {
-            Ok(handle) => handle,
+            Ok(()) => (),
             Err(e) => {
                 set_gerror(error, 0, &format!("{}", e));
                 return ptr::null_mut();
             }
-        };
+        }
 
         handle
-            .get_geometry_sub(None, dpi, false)
+            .get_geometry_sub(None)
             .and_then(|(ink_r, _)| {
-                let (document_width, document_height) = (ink_r.width(), ink_r.height());
+                let (document_width, document_height) = (ink_r.width, ink_r.height);
                 let (desired_width, desired_height) =
                     get_final_size(document_width, document_height, size_mode);
 
@@ -237,7 +226,6 @@ fn pixbuf_from_file_with_size_mode(
                     document_height,
                     desired_width,
                     desired_height,
-                    dpi,
                 )
             })
             .map(|pixbuf| pixbuf.to_glib_full())

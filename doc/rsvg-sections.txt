@@ -70,6 +70,7 @@ RSVG_TYPE_HANDLE_FLAGS
 <FILE>rsvg-cairo</FILE>
 <TITLE>Using RSVG with cairo</TITLE>
 rsvg_handle_get_intrinsic_dimensions
+rsvg_handle_get_intrinsic_size_in_pixels
 rsvg_handle_render_document
 rsvg_handle_get_geometry_for_layer
 rsvg_handle_render_layer
