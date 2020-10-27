@@ -49,7 +49,8 @@ G_BEGIN_DECLS
  *     If the SVG document has both <literal>width</literal> and <literal>height</literal>
  *     attributes with physical units (px, in, cm, mm, pt, pc) or font-based units (em,
  *     ex), the function computes the size directly based on the dots-per-inch (DPI) you
- *     have configured with rsvg_handle_set_dpi().
+ *     have configured with rsvg_handle_set_dpi().  This is the same approach as
+ *     rsvg_handle_get_intrinsic_size_in_pixels().
  *   </listitem>
  *   <listitem>
  *     Otherwise, if there is a <literal>viewBox</literal> attribute and both
@@ -116,7 +117,8 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
  *     If the SVG document has both <literal>width</literal> and <literal>height</literal>
  *     attributes with physical units (px, in, cm, mm, pt, pc) or font-based units (em,
  *     ex), the function computes the size directly based on the dots-per-inch (DPI) you
- *     have configured with rsvg_handle_set_dpi().
+ *     have configured with rsvg_handle_set_dpi().  This is the same approach as
+ *     rsvg_handle_get_intrinsic_size_in_pixels().
  *   </listitem>
  *   <listitem>
  *     Otherwise, if there is a <literal>viewBox</literal> attribute and both
