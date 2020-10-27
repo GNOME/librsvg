@@ -581,7 +581,7 @@ impl Drop for SizeCallback {
 }
 
 impl CHandle {
-    fn set_base_url(&self, url: &str) {
+    pub fn set_base_url(&self, url: &str) {
         let state = self.load_state.borrow();
 
         match *state {
@@ -717,7 +717,7 @@ impl CHandle {
         }
     }
 
-    fn read_stream_sync(
+    pub fn read_stream_sync(
         &self,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
@@ -862,7 +862,7 @@ impl CHandle {
             .map_err(warn_on_invalid_id)
     }
 
-    fn get_geometry_sub(&self, id: Option<&str>) -> Result<(Rect, Rect), RenderingError> {
+    pub fn get_geometry_sub(&self, id: Option<&str>) -> Result<(Rect, Rect), RenderingError> {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
 
@@ -929,7 +929,7 @@ impl CHandle {
         pixbuf_from_surface(&surface)
     }
 
-    fn render_document(
+    pub fn render_document(
         &self,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
