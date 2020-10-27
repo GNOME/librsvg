@@ -891,11 +891,11 @@ impl CHandle {
                 inner.is_testing,
             ),
 
-            None => self.document_size_in_pixels(),
+            None => self.legacy_document_size_in_pixels(),
         }
     }
 
-    fn document_size_in_pixels(
+    fn legacy_document_size_in_pixels(
         &self,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
