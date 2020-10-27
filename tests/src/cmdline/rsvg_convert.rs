@@ -34,16 +34,8 @@ use tempfile::Builder;
 struct RsvgConvert {}
 
 impl RsvgConvert {
-    fn binary_location() -> &'static Path {
-        match option_env!("LIBRSVG_BUILD_DIR") {
-            Some(dir) => Path::new(dir),
-            None => Path::new(env!("CARGO_MANIFEST_DIR")),
-        }
-    }
-
     fn new() -> Command {
-        let path = Self::binary_location().join("rsvg-convert");
-        let mut command = Command::new(path);
+        let mut command = Command::cargo_bin("rsvg-convert").unwrap();
         command.env_clear();
         command
     }

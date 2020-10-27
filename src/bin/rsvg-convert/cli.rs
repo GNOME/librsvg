@@ -1,11 +1,13 @@
 // command-line interface for rsvg-convert
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use librsvg::{Color, Parse};
 
+use crate::input::Input;
+
 arg_enum! {
-    #[derive(Debug)]
+    #[derive(Clone, Copy, Debug)]
     pub enum Format {
         Png,
         Pdf,
@@ -17,18 +19,19 @@ arg_enum! {
 
 #[derive(Debug)]
 pub struct Args {
-    resolution: (f32, f32),
-    zoom: (f32, f32),
-    width: Option<u32>,
-    height: Option<u32>,
-    format: Format,
+    pub dpi_x: f64,
+    pub dpi_y: f64,
+    pub zoom: (f32, f32),
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub format: Format,
+    pub export_id: Option<String>,
+    pub keep_aspect_ratio: bool,
+    pub background_color: Option<Color>,
+    pub stylesheet: Option<PathBuf>,
+    pub unlimited: bool,
+    pub keep_image_data: bool,
     output: Option<PathBuf>,
-    export_id: Option<String>,
-    keep_aspect_ratio: bool,
-    background_color: Option<Color>,
-    stylesheet: Option<PathBuf>,
-    unlimited: bool,
-    keep_image_data: bool,
     input: Vec<PathBuf>,
 }
 
@@ -195,10 +198,8 @@ impl Args {
         };
 
         let args = Args {
-            resolution: (
-                value_t!(matches, "res_x", f32)?,
-                value_t!(matches, "res_y", f32)?,
-            ),
+            dpi_x: value_t!(matches, "res_x", f64)?,
+            dpi_y: value_t!(matches, "res_y", f64)?,
             zoom: if matches.is_present("zoom") {
                 let zoom = value_t!(matches, "zoom", f32)?;
                 (zoom, zoom)
@@ -210,7 +211,6 @@ impl Args {
             width: value_t!(matches, "size_x", u32).or_none()?,
             height: value_t!(matches, "size_y", u32).or_none()?,
             format,
-            output: matches.value_of_os("output").map(PathBuf::from),
             export_id: value_t!(matches, "export_id", String)
                 .or_none()?
                 .map(lookup_id),
@@ -219,6 +219,7 @@ impl Args {
             stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
             unlimited: matches.is_present("unlimited"),
             keep_image_data,
+            output: matches.value_of_os("output").map(PathBuf::from),
             input: match matches.values_of_os("FILE") {
                 Some(values) => values.map(PathBuf::from).collect(),
                 None => Vec::new(),
@@ -238,6 +239,14 @@ impl Args {
         }
 
         Ok(args)
+    }
+
+    pub fn output(&self) -> Option<&Path> {
+        self.output.as_deref()
+    }
+
+    pub fn input(&self) -> Input<'_> {
+        Input::new(&self.input)
     }
 }
 
