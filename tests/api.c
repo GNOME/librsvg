@@ -1488,28 +1488,28 @@ test_dimensions (DimensionsFixtureData *fixture)
 static DimensionsFixtureData dimensions_fixtures[] =
 {
     {
-        "/dimensions/no viewbox, width and height",
+        "/dimensions/viewbox_only",
         "dimensions/bug608102.svg",
         NULL,
         0, 0, 16, 16,
         FALSE, TRUE
     },
     {
-        "/dimensions/100% width and height",
+        "/dimensions/hundred_percent_width_and_height",
         "dimensions/bug612951.svg",
         NULL,
         0, 0, 47, 47.14,
         FALSE, TRUE
     },
     {
-        "/dimensions/viewbox only",
+        "/dimensions/viewbox_only_2",
         "dimensions/bug614018.svg",
         NULL,
         0, 0, 972, 546,
         FALSE, TRUE
     },
     {
-        "/dimensions/sub/rect no unit",
+        "/dimensions/sub/rect_no_unit",
         "dimensions/sub-rect-no-unit.svg",
         "#rect-no-unit",
         0, 0, 44, 45,
@@ -1523,7 +1523,7 @@ static DimensionsFixtureData dimensions_fixtures[] =
         TRUE, FALSE
     },
     {
-        "/dimensions/with-viewbox",
+        "/dimensions/with_viewbox",
         "dimensions/521-with-viewbox.svg",
         "#foo",
         50.0, 60.0, 70.0, 80.0,
