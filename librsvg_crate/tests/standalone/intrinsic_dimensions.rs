@@ -54,6 +54,57 @@ fn has_intrinsic_dimensions() {
 }
 
 #[test]
+fn intrinsic_size_in_pixels() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="10" height="20" viewBox="0 0 100 200"/>
+"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        CairoRenderer::new(&svg).intrinsic_size_in_pixels(),
+        Some((10.0, 20.0)),
+    );
+}
+
+#[test]
+fn no_intrinsic_size_in_pixels_with_percent_dimensions() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 200"/>
+"#,
+    )
+    .unwrap();
+
+    assert_eq!(CairoRenderer::new(&svg).intrinsic_size_in_pixels(), None);
+}
+
+#[test]
+fn no_intrinsic_size_in_pixels_with_no_dimensions() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 200"/>
+"#,
+    )
+    .unwrap();
+
+    assert_eq!(CairoRenderer::new(&svg).intrinsic_size_in_pixels(), None);
+}
+
+#[test]
+fn no_intrinsic_size_in_pixels_with_one_missing_dimension() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" viewBox="0 0 100 200"/>
+"#,
+    )
+    .unwrap();
+
+    assert_eq!(CairoRenderer::new(&svg).intrinsic_size_in_pixels(), None);
+}
+
+#[test]
 fn root_geometry_with_percent_viewport() {
     let svg = load_svg(
         br#"<?xml version="1.0" encoding="UTF-8"?>
