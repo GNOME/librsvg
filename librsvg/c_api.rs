@@ -1060,6 +1060,13 @@ impl CHandle {
         Ok(handle.get_intrinsic_dimensions())
     }
 
+    fn get_intrinsic_size_in_pixels(&self) -> Result<Option<(f64, f64)>, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
+
+        Ok(handle.get_intrinsic_size_in_pixels(inner.dpi.into()))
+    }
+
     fn set_testing(&self, is_testing: bool) {
         let mut inner = self.inner.borrow_mut();
         inner.is_testing = is_testing;
@@ -1872,6 +1879,37 @@ pub unsafe extern "C" fn rsvg_handle_get_intrinsic_dimensions(
     set_out_param(out_has_width, out_width, &w.map(Into::into));
     set_out_param(out_has_height, out_height, &h.map(Into::into));
     set_out_param(out_has_viewbox, out_viewbox, &r);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_get_intrinsic_size_in_pixels(
+    handle: *const RsvgHandle,
+    out_width: *mut f64,
+    out_height: *mut f64,
+) -> glib_sys::gboolean {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_intrinsic_size_in_pixels => false.to_glib();
+
+        is_rsvg_handle(handle),
+    }
+
+    let rhandle = get_rust_handle(handle);
+
+    let dim = rhandle
+        .get_intrinsic_size_in_pixels()
+        .unwrap_or_else(|_| panic!("API called out of order"));
+
+    let (w, h) = dim.unwrap_or((0.0, 0.0));
+
+    if !out_width.is_null() {
+        *out_width = w;
+    }
+
+    if !out_height.is_null() {
+        *out_height = h;
+    }
+
+    dim.is_some().to_glib()
 }
 
 #[no_mangle]

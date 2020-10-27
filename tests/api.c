@@ -969,6 +969,53 @@ get_intrinsic_dimensions (void)
 }
 
 static void
+get_intrinsic_size_in_pixels_yes (void)
+{
+    char *filename = get_test_filename ("size.svg");
+    GError *error = NULL;
+    gdouble width, height;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
+
+    rsvg_handle_set_dpi (handle, 96.0);
+
+    /* Test optional parameters */
+    g_assert (rsvg_handle_get_intrinsic_size_in_pixels (handle, NULL, NULL));
+
+    /* Test the actual result */
+    g_assert (rsvg_handle_get_intrinsic_size_in_pixels (handle, &width, &height));
+    g_assert_cmpfloat (width, ==, 192.0);
+    g_assert_cmpfloat (height, ==, 288.0);
+
+    g_object_unref (handle);
+}
+
+static void
+get_intrinsic_size_in_pixels_no (void)
+{
+    char *filename = get_test_filename ("no-size.svg");
+    GError *error = NULL;
+    gdouble width, height;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
+
+    rsvg_handle_set_dpi (handle, 96.0);
+    g_assert (!rsvg_handle_get_intrinsic_size_in_pixels (handle, &width, &height));
+    g_assert_cmpfloat (width, ==, 0.0);
+    g_assert_cmpfloat (height, ==, 0.0);
+
+    g_object_unref (handle);
+}
+
+static void
 render_document (void)
 {
     char *filename = get_test_filename ("document.svg");
@@ -1630,6 +1677,8 @@ add_api_tests (void)
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
+    g_test_add_func ("/api/get_intrinsic_size_in_pixels/yes", get_intrinsic_size_in_pixels_yes);
+    g_test_add_func ("/api/get_intrinsic_size_in_pixels/no", get_intrinsic_size_in_pixels_no);
     g_test_add_func ("/api/render_document", render_document);
     g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
     g_test_add_func ("/api/render_layer", render_layer);

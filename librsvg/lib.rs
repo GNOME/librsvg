@@ -12,6 +12,7 @@ pub use crate::c_api::{
     rsvg_handle_get_geometry_for_element,
     rsvg_handle_get_geometry_for_layer,
     rsvg_handle_get_intrinsic_dimensions,
+    rsvg_handle_get_intrinsic_size_in_pixels,
     rsvg_handle_get_pixbuf_sub,
     rsvg_handle_get_position_sub,
     rsvg_handle_has_sub,

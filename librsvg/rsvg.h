@@ -889,6 +889,66 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
                                            gboolean   *out_has_viewbox,
                                            RsvgRectangle *out_viewbox);
 
+/**
+ * rsvg_handle_get_intrinsic_size_in_pixels:
+ * @handle: An #RsvgHandle
+ * @out_width: (out)(optional): Will be set to the computed width
+ * @out_height: (out)(optional): Will be set to the computed height
+ *
+ * Converts an SVG document's intrinsic dimensions to pixels, and returns the result.
+ *
+ * This function is able to extract the size in pixels from an SVG document if the
+ * document has both <literal>width</literal> and <literal>height</literal> attributes
+ * with physical units (px, in, cm, mm, pt, pc) or font-based units (em, ex).  For
+ * physical units, the dimensions are normalized to pixels using the dots-per-inch (DPI)
+ * value set previously with rsvg_handle_set_dpi().  For font-based units, this function
+ * uses the computed value of the `font-size` property for the toplevel
+ * <literal>&lt;svg&gt;</literal> element.  In those cases, this function returns %TRUE.
+ *
+ * This function is not able to extract the size in pixels directly from the intrinsic
+ * dimensions of the SVG document if the <literal>width</literal> or
+ * <literal>height</literal> are in percentage units (or if they do not exist, in which
+ * case the SVG spec mandates that they default to 100%), as these require a
+ * <firstterm>viewport</firstterm> to be resolved to a final size.  In this case, the
+ * function returns %FALSE.
+ *
+ * For example, the following document fragment has intrinsic dimensions that will resolve
+ * to 20x30 pixels.
+ *
+ * |[
+ * <svg xmlns="http://www.w3.org/2000/svg" width="20" height="30"/>
+ * ]|
+ *
+ * Similarly, if the DPI is set to 96, this document will resolve to 192x288 pixels (i.e. 96*2 x 96*3).
+ *
+ * |[
+ * <svg xmlns="http://www.w3.org/2000/svg" width="2in" height="3in"/>
+ * ]|
+ *
+ * The dimensions of the following documents cannot be resolved to pixels directly, and
+ * this function would return %FALSE for them:
+ *
+ * |[
+ * <!-- Needs a viewport against which to compute the percentages. -->
+ * <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"/>
+ *
+ * <!-- Does not have intrinsic width/height, just a 1:2 aspect ratio which
+ *      needs to be fitted within a viewport. -->
+ * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 200"/>
+ * ]|
+ *
+ *
+ * Returns: %TRUE if the dimensions could be converted directly to pixels; in this case
+ * @out_width and @out_height will be set accordingly.  If the dimensions cannot be converted
+ * to pixels, returns %FALSE and puts 0.0 in both @out_width and @out_height.
+ *
+ * Since: 2.52
+ */
+RSVG_API
+gboolean rsvg_handle_get_intrinsic_size_in_pixels (RsvgHandle *handle,
+                                                   gdouble    *out_width,
+                                                   gdouble    *out_height);
+
 /* GIO APIs */
 
 /**
