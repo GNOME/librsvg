@@ -221,14 +221,9 @@ GType rsvg_error_get_type (void);
  *
  * # Rendering
  *
- * The preferred way to render an already-loaded RsvgHandle is to use
- * rsvg_handle_render_cairo().  Please see its documentation for details.
- *
- * Alternatively, you can use rsvg_handle_get_pixbuf() to directly obtain a
- * #GdkPixbuf with the rendered image.  This is simple, but it does not let you
- * control the size at which the SVG will be rendered.  It will just be rendered
- * at the size which rsvg_handle_get_dimensions() would return, which depends on
- * the dimensions that librsvg is able to compute from the SVG data.
+ * The preferred way to render a whole SVG document is to use
+ * rsvg_handle_render_document().  Please see its documentation for
+ * details.
  *
  * # API ordering
  *
