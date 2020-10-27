@@ -38,10 +38,43 @@ G_BEGIN_DECLS
  * @handle: A #RsvgHandle
  * @cr: A Cairo context
  *
- * Draws a loaded SVG handle to a Cairo context.  Drawing will occur with
- * respect to the @cr's current transformation:  for example, if the @cr has a
- * rotated current transformation matrix, the whole SVG will be rotated in the
- * rendered version.
+ * Draws a loaded SVG handle to a Cairo context.  Please try to use
+ * rsvg_handle_render_document() instead, which allows you to pick the size
+ * at which the document will be rendered.
+ *
+ * Historically this function has picked a size by itself, based on the following rules:
+ *
+ * <itemizedlist>
+ *   <listitem>
+ *     If the SVG document has both <literal>width</literal> and <literal>height</literal>
+ *     attributes with physical units (px, in, cm, mm, pt, pc) or font-based units (em,
+ *     ex), the function computes the size directly based on the dots-per-inch (DPI) you
+ *     have configured with rsvg_handle_set_dpi().
+ *   </listitem>
+ *   <listitem>
+ *     Otherwise, if there is a <literal>viewBox</literal> attribute and both
+ *     <literal>width</literal> and <literal>height</literal> are set to
+ *     <literal>100%</literal> (or if they don't exist at all and thus default to 100%),
+ *     the function uses the width and height of the viewBox as a pixel size.  This
+ *     produces a rendered document with the correct aspect ratio.
+ *   </listitem>
+ *   <listitem>
+ *      Otherwise, this function computes the extents of every graphical object in the SVG
+ *      document to find the total extents.  This is moderately expensive, but no more expensive
+ *      than rendering the whole document, for example.
+ *   </listitem>
+ *   <listitem>
+ *     This function cannot deal with percentage-based units for <literal>width</literal>
+ *     and <literal>height</literal> because there is no viewport against which they could
+ *     be resolved; that is why it will compute the extents of objects in that case.  This
+ *     is why we recommend that you use rsvg_handle_render_document() instead, which takes
+ *     in a viewport and follows the sizing policy from the web platform.
+ *   </listitem>
+ * </itemizedlist>
+ *
+ * Drawing will occur with respect to the @cr's current transformation: for example, if
+ * the @cr has a rotated current transformation matrix, the whole SVG will be rotated in
+ * the rendered version.
  *
  * This function depends on the #RsvgHandle's DPI to compute dimensions in
  * pixels, so you should call rsvg_handle_set_dpi() beforehand.
@@ -65,10 +98,47 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to render the whole SVG.
  *
- * Draws a subset of a loaded SVG handle to a Cairo context.  Drawing will occur with
- * respect to the @cr's current transformation:  for example, if the @cr has a
- * rotated current transformation matrix, the whole SVG will be rotated in the
- * rendered version.
+ * Renders a single SVG element in the same place as for a whole SVG document (a "subset"
+ * of the document).  Please try to use rsvg_handle_render_layer() instead, which allows
+ * you to pick the size at which the document with the layer will be rendered.
+ *
+ * This is equivalent to rsvg_handle_render_cairo(), but it renders only a single
+ * element and its children, as if they composed an individual layer in the SVG.
+ *
+ * Historically this function has picked a size for the whole document by itself, based
+ * on the following rules:
+ *
+ * <itemizedlist>
+ *   <listitem>
+ *     If the SVG document has both <literal>width</literal> and <literal>height</literal>
+ *     attributes with physical units (px, in, cm, mm, pt, pc) or font-based units (em,
+ *     ex), the function computes the size directly based on the dots-per-inch (DPI) you
+ *     have configured with rsvg_handle_set_dpi().
+ *   </listitem>
+ *   <listitem>
+ *     Otherwise, if there is a <literal>viewBox</literal> attribute and both
+ *     <literal>width</literal> and <literal>height</literal> are set to
+ *     <literal>100%</literal> (or if they don't exist at all and thus default to 100%),
+ *     the function uses the width and height of the viewBox as a pixel size.  This
+ *     produces a rendered document with the correct aspect ratio.
+ *   </listitem>
+ *   <listitem>
+ *     Otherwise, this function computes the extents of every graphical object in the SVG
+ *     document to find the total extents.  This is moderately expensive, but no more expensive
+ *     than rendering the whole document, for example.
+ *   </listitem>
+ *   <listitem>
+ *     This function cannot deal with percentage-based units for <literal>width</literal>
+ *     and <literal>height</literal> because there is no viewport against which they could
+ *     be resolved; that is why it will compute the extents of objects in that case.  This
+ *     is why we recommend that you use rsvg_handle_render_layer() instead, which takes
+ *     in a viewport and follows the sizing policy from the web platform.
+ *   </listitem>
+ * </itemizedlist>
+ *
+ * Drawing will occur with respect to the @cr's current transformation: for example, if
+ * the @cr has a rotated current transformation matrix, the whole SVG will be rotated in
+ * the rendered version.
  *
  * This function depends on the #RsvgHandle's DPI to compute dimensions in
  * pixels, so you should call rsvg_handle_set_dpi() beforehand.
@@ -97,8 +167,8 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const ch
  *
  * Renders the whole SVG document fitted to a viewport.
  *
- * The @viewport gives the position and size at which the whole SVG
- * document will be rendered.
+ * The @viewport gives the position and size at which the whole SVG document will be
+ * rendered.  The document is scaled proportionally to fit into this viewport.
  *
  * The @cr must be in a #CAIRO_STATUS_SUCCESS state, or this function will not
  * render anything, and instead will return an error.
@@ -177,6 +247,10 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * @error: (optional): a location to store a #GError, or %NULL
  *
  * Renders a single SVG element in the same place as for a whole SVG document.
+ *
+ * The @viewport gives the position and size at which the whole SVG document would be
+ * rendered.  The document is scaled proportionally to fit into this viewport; hence the
+ * individual layer may be smaller than this.
  *
  * This is equivalent to rsvg_handle_render_document(), but it renders only a
  * single element and its children, as if they composed an individual layer in
