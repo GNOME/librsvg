@@ -216,7 +216,7 @@ fn pixbuf_from_file_with_size_mode(
         handle
             .get_geometry_sub(None)
             .and_then(|(ink_r, _)| {
-                let (document_width, document_height) = (ink_r.width(), ink_r.height());
+                let (document_width, document_height) = (ink_r.width, ink_r.height);
                 let (desired_width, desired_height) =
                     get_final_size(document_width, document_height, size_mode);
 

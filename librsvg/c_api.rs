@@ -8,13 +8,12 @@ use std::str;
 use std::sync::Once;
 use std::{f64, i32};
 
+use bitflags::bitflags;
+use float_cmp::approx_eq;
 use gdk_pixbuf::Pixbuf;
+use gio::prelude::*;
 use glib::error::ErrorDomain;
 use url::Url;
-
-use bitflags::bitflags;
-
-use gio::prelude::*;
 
 use glib::object::ObjectClass;
 use glib::subclass;
@@ -32,7 +31,7 @@ use glib::types::instance_of;
 use gobject_sys::{GEnumValue, GFlagsValue};
 
 use rsvg_internals::{
-    rsvg_log, DefsLookupErrorKind, Handle, IntrinsicDimensions, LoadOptions, LoadingError, Rect,
+    rsvg_log, DefsLookupErrorKind, Handle, IntrinsicDimensions, Length, LoadOptions, LoadingError,
     RenderingError, RsvgLength, SharedImageSurface, SurfaceType, UrlResolver, ViewBox,
 };
 
@@ -580,6 +579,21 @@ impl Drop for SizeCallback {
     }
 }
 
+trait CairoRectangleExt {
+    fn from_size(width: f64, height: f64) -> Self;
+}
+
+impl CairoRectangleExt for cairo::Rectangle {
+    fn from_size(width: f64, height: f64) -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            width,
+            height,
+        }
+    }
+}
+
 impl CHandle {
     pub fn set_base_url(&self, url: &str) {
         let state = self.load_state.borrow();
@@ -816,8 +830,8 @@ impl CHandle {
             .get_geometry_sub(id)
             .and_then(|(ink_r, _)| {
                 // Keep these in sync with tests/src/reference.rs
-                let width = checked_i32(ink_r.width().round())?;
-                let height = checked_i32(ink_r.height().round())?;
+                let width = checked_i32(ink_r.width.round())?;
+                let height = checked_i32(ink_r.height.round())?;
 
                 Ok((ink_r, width, height))
             })
@@ -827,8 +841,8 @@ impl CHandle {
                 RsvgDimensionData {
                     width: w,
                     height: h,
-                    em: ink_r.width(),
-                    ex: ink_r.height(),
+                    em: ink_r.width,
+                    ex: ink_r.height,
                 }
             });
 
@@ -846,8 +860,8 @@ impl CHandle {
 
         self.get_geometry_sub(id)
             .and_then(|(ink_r, _)| {
-                let width = checked_i32(ink_r.width().round())?;
-                let height = checked_i32(ink_r.height().round())?;
+                let width = checked_i32(ink_r.width.round())?;
+                let height = checked_i32(ink_r.height.round())?;
 
                 Ok((ink_r, width, height))
             })
@@ -855,18 +869,70 @@ impl CHandle {
                 inner.size_callback.call(width, height);
 
                 Ok(RsvgPositionData {
-                    x: checked_i32(ink_r.x0)?,
-                    y: checked_i32(ink_r.y0)?,
+                    x: checked_i32(ink_r.x)?,
+                    y: checked_i32(ink_r.y)?,
                 })
             })
             .map_err(warn_on_invalid_id)
     }
 
-    pub fn get_geometry_sub(&self, id: Option<&str>) -> Result<(Rect, Rect), RenderingError> {
+    pub fn get_geometry_sub(
+        &self,
+        id: Option<&str>,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
         let inner = self.inner.borrow();
 
-        handle.get_geometry_sub(id, inner.dpi.into(), inner.is_testing)
+        match id {
+            Some(id) => handle.get_geometry_for_layer(
+                Some(id),
+                &unit_rectangle(),
+                inner.dpi.into(),
+                inner.is_testing,
+            ),
+
+            None => self.document_size_in_pixels(),
+        }
+    }
+
+    fn document_size_in_pixels(
+        &self,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
+
+        if let Some((width, height)) = self.get_svg_size()? {
+            let rect = cairo::Rectangle::from_size(width, height);
+            Ok((rect, rect))
+        } else {
+            handle.get_geometry_for_layer(
+                None,
+                &unit_rectangle(),
+                inner.dpi.into(),
+                inner.is_testing,
+            )
+        }
+    }
+
+    // Returns the SVG's size suitable for the legacy C API, or None
+    // if it must be computed by hand.
+    //
+    // The legacy C API can compute an SVG document's size from the
+    // `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
+    // element.  If these are not available, then the size must be computed
+    // by actually measuring the geometries of elements in the document; this last
+    // case is implemented by the caller.
+    //
+    // See https://www.w3.org/TR/css-images-3/#sizing-terms for terminology and logic.
+    fn get_svg_size(&self) -> Result<Option<(f64, f64)>, RenderingError> {
+        let handle = self.get_handle_ref()?;
+        let inner = self.inner.borrow();
+
+        Ok(handle
+            .get_intrinsic_size_in_pixels(inner.dpi.into())
+            .or_else(|| {
+                size_in_pixels_from_percentage_width_and_height(&handle.get_intrinsic_dimensions())
+            }))
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
@@ -1005,6 +1071,57 @@ impl CHandle {
         let mut inner = self.inner.borrow_mut();
         inner.is_testing = is_testing;
     }
+}
+
+/// If the width and height are in percentage units, computes a size equal to the
+/// `viewBox`'s aspect ratio if it exists, or else returns None.
+///
+/// For example, a `viewBox="0 0 100 200"` will yield `Some(100.0, 200.0)`.
+///
+/// Note that this only checks that the width and height are in percentage units, but
+/// it actually ignores their values.  This is because at the point this function is
+/// called, there is no viewport to embed the SVG document in, so those percentage
+/// units cannot be resolved against anything in particular.  The idea is to return
+/// some dimensions with the correct aspect ratio.
+fn size_in_pixels_from_percentage_width_and_height(
+    dim: &IntrinsicDimensions,
+) -> Option<(f64, f64)> {
+    let IntrinsicDimensions {
+        width,
+        height,
+        vbox,
+    } = *dim;
+
+    use rsvg_internals::LengthUnit::*;
+
+    // If both width and height are 100%, just use the vbox size as a pixel size.
+    // This gives a size with the correct aspect ratio.
+
+    match (width, height, vbox) {
+        (None, None, Some(vbox)) => Some((vbox.width(), vbox.height())),
+
+        (
+            Some(Length {
+                length: w,
+                unit: Percent,
+                ..
+            }),
+            Some(Length {
+                length: h,
+                unit: Percent,
+                ..
+            }),
+            Some(vbox),
+        ) if approx_eq!(f64, w, 1.0) && approx_eq!(f64, h, 1.0) => {
+            Some((vbox.width(), vbox.height()))
+        }
+
+        _ => None,
+    }
+}
+
+fn unit_rectangle() -> cairo::Rectangle {
+    cairo::Rectangle::from_size(1.0, 1.0)
 }
 
 fn is_rsvg_handle(obj: *const RsvgHandle) -> bool {
