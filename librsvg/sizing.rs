@@ -4,6 +4,14 @@ use librsvg::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
 use crate::c_api::unit_rectangle;
 
 pub trait LegacySize {
+    /// Returns the SVG's size suitable for the legacy C API.
+    ///
+    /// The legacy C API can compute an SVG document's size from the
+    /// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
+    /// element.  If these are not available, then the size must be computed
+    /// by actually measuring the geometries of elements in the document.
+    ///
+    /// See https://www.w3.org/TR/css-images-3/#sizing-terms for terminology and logic.
     fn legacy_document_size_in_pixels(&self) -> Result<(f64, f64), RenderingError>;
 }
 

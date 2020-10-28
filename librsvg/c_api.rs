@@ -9,7 +9,6 @@ use std::sync::Once;
 use std::{f64, i32};
 
 use bitflags::bitflags;
-use float_cmp::approx_eq;
 use gdk_pixbuf::Pixbuf;
 use gio::prelude::*;
 use glib::error::ErrorDomain;
@@ -30,14 +29,17 @@ use glib::types::instance_of;
 
 use gobject_sys::{GEnumValue, GFlagsValue};
 
-use rsvg_internals::{
-    rsvg_log, DefsLookupErrorKind, Handle, IntrinsicDimensions, Length, LoadOptions, LoadingError,
-    RenderingError, RsvgLength, SharedImageSurface, SurfaceType, UrlResolver, ViewBox,
+use librsvg::{
+    CairoRenderer, DefsLookupErrorKind, IntrinsicDimensions, Loader, LoadingError, RenderingError,
+    SvgHandle,
 };
+
+use rsvg_internals::{rsvg_log, RsvgLength, SharedImageSurface, SurfaceType};
 
 use crate::dpi::Dpi;
 use crate::messages::{rsvg_g_critical, rsvg_g_warning};
 use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
+use crate::sizing::LegacySize;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -155,9 +157,28 @@ enum LoadState {
     // Being loaded using the legacy write()/close() API
     Loading { buffer: Vec<u8> },
 
-    ClosedOk { handle: Handle },
+    ClosedOk { handle: SvgHandle },
 
     ClosedError,
+}
+
+impl LoadState {
+    fn set_from_loading_result(
+        &mut self,
+        result: Result<SvgHandle, LoadingError>,
+    ) -> Result<(), LoadingError> {
+        match result {
+            Ok(handle) => {
+                *self = LoadState::ClosedOk { handle };
+                Ok(())
+            }
+
+            Err(e) => {
+                *self = LoadState::ClosedError;
+                Err(e)
+            }
+        }
+    }
 }
 
 /// Holds the base URL for loading a handle, and the C-accessible version of it
@@ -185,6 +206,10 @@ impl BaseUrl {
 
     fn get(&self) -> Option<&Url> {
         self.inner.as_ref().map(|b| &b.url)
+    }
+
+    fn get_gfile(&self) -> Option<gio::File> {
+        self.get().map(|url| gio::File::new_for_uri(url.as_str()))
     }
 
     fn get_ptr(&self) -> *const libc::c_char {
@@ -222,17 +247,6 @@ impl From<RsvgRectangle> for cairo::Rectangle {
             y: r.y,
             width: r.width,
             height: r.height,
-        }
-    }
-}
-
-impl From<ViewBox> for RsvgRectangle {
-    fn from(vb: ViewBox) -> RsvgRectangle {
-        RsvgRectangle {
-            x: vb.x0,
-            y: vb.y0,
-            width: vb.width(),
-            height: vb.height(),
         }
     }
 }
@@ -671,14 +685,6 @@ impl CHandle {
         HandleFlags::from(inner.load_flags)
     }
 
-    fn load_options(&self) -> LoadOptions {
-        let inner = self.inner.borrow();
-
-        LoadOptions::new(UrlResolver::new(inner.base_url.get().map(|u| (*u).clone())))
-            .with_unlimited_size(inner.load_flags.unlimited_size)
-            .keep_image_data(inner.load_flags.keep_image_data)
-    }
-
     fn set_size_callback(
         &self,
         size_func: RsvgSizeFunc,
@@ -710,6 +716,7 @@ impl CHandle {
     }
 
     fn close(&self) -> Result<(), LoadingError> {
+        let inner = self.inner.borrow();
         let mut state = self.load_state.borrow_mut();
 
         match *state {
@@ -722,7 +729,8 @@ impl CHandle {
                 let bytes = Bytes::from(&*buffer);
                 let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
 
-                self.read_stream(state, &stream.upcast(), None)
+                let base_file = inner.base_url.get_gfile();
+                self.read_stream(state, &stream.upcast(), base_file.as_ref(), None)
             }
 
             // Closing is idempotent
@@ -737,9 +745,14 @@ impl CHandle {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
         let state = self.load_state.borrow_mut();
+        let inner = self.inner.borrow();
 
         match *state {
-            LoadState::Start => self.read_stream(state, stream, cancellable),
+            LoadState::Start => {
+                let base_file = inner.base_url.get_gfile();
+                self.read_stream(state, stream, base_file.as_ref(), cancellable)
+            }
+
             LoadState::Loading { .. } | LoadState::ClosedOk { .. } | LoadState::ClosedError => {
                 rsvg_g_critical(
                     "handle must not be already loaded in order to call \
@@ -754,22 +767,15 @@ impl CHandle {
         &self,
         mut load_state: RefMut<LoadState>,
         stream: &gio::InputStream,
+        base_file: Option<&gio::File>,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        match Handle::from_stream(&self.load_options(), stream, cancellable) {
-            Ok(handle) => {
-                *load_state = LoadState::ClosedOk { handle };
-                Ok(())
-            }
+        let loader = self.make_loader();
 
-            Err(e) => {
-                *load_state = LoadState::ClosedError;
-                Err(e)
-            }
-        }
+        load_state.set_from_loading_result(loader.read_stream(stream, base_file, cancellable))
     }
 
-    fn get_handle_ref(&self) -> Result<Ref<Handle>, RenderingError> {
+    fn get_handle_ref(&self) -> Result<Ref<SvgHandle>, RenderingError> {
         let state = self.load_state.borrow();
 
         match *state {
@@ -798,9 +804,25 @@ impl CHandle {
         }
     }
 
+    fn make_loader(&self) -> Loader {
+        let inner = self.inner.borrow();
+
+        let mut loader = Loader::new();
+
+        if inner.load_flags.unlimited_size {
+            loader = loader.with_unlimited_size();
+        }
+
+        if inner.load_flags.keep_image_data {
+            loader = loader.keep_image_data();
+        }
+
+        loader
+    }
+
     fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.has_sub(id).map_err(warn_on_invalid_id)
+        handle.has_element_with_id(id).map_err(warn_on_invalid_id)
     }
 
     fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
@@ -876,55 +898,32 @@ impl CHandle {
             .map_err(warn_on_invalid_id)
     }
 
+    fn make_renderer<'a>(&self, handle_ref: &'a Ref<SvgHandle>) -> CairoRenderer<'a> {
+        let inner = self.inner.borrow();
+
+        let mut renderer = CairoRenderer::new(&*handle_ref).with_dpi(inner.dpi.x(), inner.dpi.y());
+
+        if inner.is_testing {
+            renderer = renderer.test_mode();
+        }
+
+        renderer
+    }
+
     pub fn get_geometry_sub(
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
+        let renderer = self.make_renderer(&handle);
 
         match id {
-            Some(id) => handle.get_geometry_for_layer(
-                Some(id),
-                &unit_rectangle(),
-                inner.dpi.into(),
-                inner.is_testing,
-            ),
+            Some(id) => renderer.geometry_for_layer(Some(id), &unit_rectangle()),
 
-            None => self.legacy_document_size_in_pixels(),
-        }
-    }
-
-    /// Returns the SVG's size suitable for the legacy C API.
-    ///
-    /// The legacy C API can compute an SVG document's size from the
-    /// `width`, `height`, and `viewBox` attributes of the toplevel `<svg>`
-    /// element.  If these are not available, then the size must be computed
-    /// by actually measuring the geometries of elements in the document.
-    ///
-    /// See https://www.w3.org/TR/css-images-3/#sizing-terms for terminology and logic.
-    fn legacy_document_size_in_pixels(
-        &self,
-    ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-
-        let size_from_intrinsic_dimensions = handle
-            .get_intrinsic_size_in_pixels(inner.dpi.into())
-            .or_else(|| {
-                size_in_pixels_from_percentage_width_and_height(&handle.get_intrinsic_dimensions())
-            });
-
-        if let Some((width, height)) = size_from_intrinsic_dimensions {
-            let rect = cairo::Rectangle::from_size(width, height);
-            Ok((rect, rect))
-        } else {
-            handle.get_geometry_for_layer(
-                None,
-                &unit_rectangle(),
-                inner.dpi.into(),
-                inner.is_testing,
-            )
+            None => renderer.legacy_document_size_in_pixels().map(|(w, h)| {
+                let rect = cairo::Rectangle::from_size(w, h);
+                (rect, rect)
+            }),
         }
     }
 
@@ -996,8 +995,9 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle.render_document(cr, viewport, inner.dpi.into(), inner.is_testing)
+
+        let renderer = self.make_renderer(&handle);
+        renderer.render_document(cr, viewport)
     }
 
     fn get_geometry_for_layer(
@@ -1006,9 +1006,10 @@ impl CHandle {
         viewport: &cairo::Rectangle,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle
-            .get_geometry_for_layer(id, viewport, inner.dpi.into(), inner.is_testing)
+        let renderer = self.make_renderer(&handle);
+
+        renderer
+            .geometry_for_layer(id, viewport)
             .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
             .map_err(warn_on_invalid_id)
     }
@@ -1022,9 +1023,11 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle
-            .render_layer(cr, id, viewport, inner.dpi.into(), inner.is_testing)
+
+        let renderer = self.make_renderer(&handle);
+
+        renderer
+            .render_layer(cr, id, viewport)
             .map_err(warn_on_invalid_id)
     }
 
@@ -1033,9 +1036,11 @@ impl CHandle {
         id: Option<&str>,
     ) -> Result<(RsvgRectangle, RsvgRectangle), RenderingError> {
         let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle
-            .get_geometry_for_element(id, inner.dpi.into(), inner.is_testing)
+
+        let renderer = self.make_renderer(&handle);
+
+        renderer
+            .geometry_for_element(id)
             .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
             .map_err(warn_on_invalid_id)
     }
@@ -1049,74 +1054,29 @@ impl CHandle {
         check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-        handle
-            .render_element(cr, id, element_viewport, inner.dpi.into(), inner.is_testing)
+
+        let renderer = self.make_renderer(&handle);
+
+        renderer
+            .render_element(cr, id, element_viewport)
             .map_err(warn_on_invalid_id)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
         let handle = self.get_handle_ref()?;
-        Ok(handle.get_intrinsic_dimensions())
+        let renderer = self.make_renderer(&handle);
+        Ok(renderer.intrinsic_dimensions())
     }
 
     fn get_intrinsic_size_in_pixels(&self) -> Result<Option<(f64, f64)>, RenderingError> {
         let handle = self.get_handle_ref()?;
-        let inner = self.inner.borrow();
-
-        Ok(handle.get_intrinsic_size_in_pixels(inner.dpi.into()))
+        let renderer = self.make_renderer(&handle);
+        Ok(renderer.intrinsic_size_in_pixels())
     }
 
     fn set_testing(&self, is_testing: bool) {
         let mut inner = self.inner.borrow_mut();
         inner.is_testing = is_testing;
-    }
-}
-
-/// If the width and height are in percentage units, computes a size equal to the
-/// `viewBox`'s aspect ratio if it exists, or else returns None.
-///
-/// For example, a `viewBox="0 0 100 200"` will yield `Some(100.0, 200.0)`.
-///
-/// Note that this only checks that the width and height are in percentage units, but
-/// it actually ignores their values.  This is because at the point this function is
-/// called, there is no viewport to embed the SVG document in, so those percentage
-/// units cannot be resolved against anything in particular.  The idea is to return
-/// some dimensions with the correct aspect ratio.
-fn size_in_pixels_from_percentage_width_and_height(
-    dim: &IntrinsicDimensions,
-) -> Option<(f64, f64)> {
-    let IntrinsicDimensions {
-        width,
-        height,
-        vbox,
-    } = *dim;
-
-    use rsvg_internals::LengthUnit::*;
-
-    // If both width and height are 100%, just use the vbox size as a pixel size.
-    // This gives a size with the correct aspect ratio.
-
-    match (width, height, vbox) {
-        (None, None, Some(vbox)) => Some((vbox.width(), vbox.height())),
-
-        (
-            Some(Length {
-                length: w,
-                unit: Percent,
-                ..
-            }),
-            Some(Length {
-                length: h,
-                unit: Percent,
-                ..
-            }),
-            Some(vbox),
-        ) if approx_eq!(f64, w, 1.0) && approx_eq!(f64, h, 1.0) => {
-            Some((vbox.width(), vbox.height()))
-        }
-
-        _ => None,
     }
 }
 
