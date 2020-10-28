@@ -70,11 +70,11 @@ fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
     }
 }
 
-pub fn rsvg_g_warning(msg: &str) {
+pub(crate) fn rsvg_g_warning(msg: &str) {
     rsvg_g_log(glib_sys::G_LOG_LEVEL_WARNING, msg);
 }
 
-pub fn rsvg_g_critical(msg: &str) {
+pub(crate) fn rsvg_g_critical(msg: &str) {
     rsvg_g_log(glib_sys::G_LOG_LEVEL_CRITICAL, msg);
 }
 

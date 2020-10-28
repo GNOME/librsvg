@@ -18,7 +18,7 @@ use rsvg_internals::{Color, Parse};
 // Keep this in sync with rsvg-css.h:RsvgCssColorKind
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub enum ColorKind {
+enum ColorKind {
     ARGB,
     ParseError,
 }

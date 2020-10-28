@@ -18,17 +18,17 @@ static mut DPI_X: f64 = DEFAULT_DPI_X;
 static mut DPI_Y: f64 = DEFAULT_DPI_Y;
 
 #[derive(Debug, Copy, Clone, Default)]
-pub struct Dpi {
+pub(crate) struct Dpi {
     x: f64,
     y: f64,
 }
 
 impl Dpi {
-    pub fn new(x: f64, y: f64) -> Dpi {
+    pub(crate) fn new(x: f64, y: f64) -> Dpi {
         Dpi { x, y }
     }
 
-    pub fn x(&self) -> f64 {
+    pub(crate) fn x(&self) -> f64 {
         if self.x <= 0.0 {
             unsafe { DPI_X }
         } else {
@@ -36,7 +36,7 @@ impl Dpi {
         }
     }
 
-    pub fn y(&self) -> f64 {
+    pub(crate) fn y(&self) -> f64 {
         if self.y <= 0.0 {
             unsafe { DPI_Y }
         } else {
