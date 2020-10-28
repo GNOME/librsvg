@@ -15,7 +15,9 @@ use crate::dpi::Dpi;
 use crate::sizing::LegacySize;
 
 use rsvg_internals::{
-    surface_utils::PixelOps, Pixel, RenderingError, SharedImageSurface, SurfaceType,
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
+    surface_utils::{Pixel, PixelOps},
+    RenderingError,
 };
 
 use crate::c_api::set_gerror;

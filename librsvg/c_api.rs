@@ -58,7 +58,11 @@ use librsvg::{
     SvgHandle,
 };
 
-use rsvg_internals::{rsvg_log, RsvgLength, SharedImageSurface, SurfaceType};
+use rsvg_internals::{
+    rsvg_log,
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
+    RsvgLength,
+};
 
 use crate::dpi::Dpi;
 use crate::messages::{rsvg_g_critical, rsvg_g_warning};
