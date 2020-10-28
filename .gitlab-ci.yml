@@ -1,20 +1,11 @@
 # -*- indent-tabs-mode: nil -*-
 
 variables:
-  # Container(OCI) images for various distros and architectures and compilers
+  # Container(OCI) images for various distros
 
   AMD64_FEDORA_LATEST:       "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/fedora:latest"
-  AMD64_FEDORA_RAWHIDE:      "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/fedora:rawhide"
   AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/opensuse:tumbleweed"
   AMD64_DEBIAN_TESTING:      "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/debian:testing"
-  AMD64_UBUNTU_BIONIC:       "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/ubuntu:18.04"
-
-  I386_DEBIAN_TESTING:       "registry.gitlab.gnome.org/gnome/librsvg-oci-images/i386/debian:testing"
-  I386_UBUNTU_BIONIC:        "registry.gitlab.gnome.org/gnome/librsvg-oci-images/i386/ubuntu:18.04"
-
-  RUSTC_1_26:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.26"
-  RUSTC_1_27:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.27"
-  RUSTC_1_28:                "registry.gitlab.gnome.org/gnome/librsvg-oci-images/rustc:1.28"
 
   LIBRSVG_DEBUG: "yes"
 
@@ -135,10 +126,6 @@ opensuse:tumbleweed:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
-
-fedora:rawhide:
-  image: $AMD64_FEDORA_RAWHIDE
-  extends: .make
 
 fedora:latest:
   image: $AMD64_FEDORA_LATEST
