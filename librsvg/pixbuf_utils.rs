@@ -1,3 +1,7 @@
+//! Legacy C API for functions that render directly to a `GdkPixbuf`.
+//!
+//! This is the implementation of the `rsvg_pixbuf_*` family of functions.
+
 use std::path::PathBuf;
 use std::ptr;
 
