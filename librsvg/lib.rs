@@ -54,3 +54,4 @@ mod c_api;
 mod color_utils;
 mod dpi;
 pub mod pixbuf_utils;
+mod sizing;

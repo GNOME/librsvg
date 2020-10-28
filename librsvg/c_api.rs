@@ -1120,7 +1120,7 @@ fn size_in_pixels_from_percentage_width_and_height(
     }
 }
 
-fn unit_rectangle() -> cairo::Rectangle {
+pub fn unit_rectangle() -> cairo::Rectangle {
     cairo::Rectangle::from_size(1.0, 1.0)
 }
 
