@@ -2,16 +2,16 @@ use std::path::PathBuf;
 use std::ptr;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
-use gio::prelude::*;
-use glib::subclass::prelude::*;
 use glib::translate::*;
+use librsvg::{CairoRenderer, Loader};
 use rgb::FromSlice;
-use url::Url;
 
-use crate::c_api::{checked_i32, CHandle};
+use crate::c_api::checked_i32;
+use crate::dpi::Dpi;
+use crate::sizing::LegacySize;
 
 use rsvg_internals::{
-    surface_utils::PixelOps, LoadingError, Pixel, RenderingError, SharedImageSurface, SurfaceType,
+    surface_utils::PixelOps, Pixel, RenderingError, SharedImageSurface, SurfaceType,
 };
 
 use crate::c_api::set_gerror;
@@ -132,7 +132,7 @@ fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (f64, 
 }
 
 fn render_to_pixbuf_at_size(
-    handle: &CHandle,
+    renderer: &CairoRenderer,
     document_width: f64,
     document_height: f64,
     desired_width: f64,
@@ -167,7 +167,7 @@ fn render_to_pixbuf_at_size(
         };
 
         // We do it with a cr transform so we can scale non-proportionally.
-        handle.render_document(&cr, &viewport)?;
+        renderer.render_document(&cr, &viewport)?;
     }
 
     let shared_surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
@@ -175,65 +175,47 @@ fn render_to_pixbuf_at_size(
     pixbuf_from_surface(&shared_surface)
 }
 
-fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
-    Ok(Url::parse(&file.get_uri()).map_err(|_| LoadingError::BadUrl)?)
-}
-
-fn pixbuf_from_file_with_size_mode(
+unsafe fn pixbuf_from_file_with_size_mode(
     filename: *const libc::c_char,
     size_mode: &SizeMode,
     error: *mut *mut glib_sys::GError,
 ) -> *mut gdk_pixbuf_sys::GdkPixbuf {
-    unsafe {
-        let path = PathBuf::from_glib_none(filename);
-        let file = gio::File::new_for_path(path);
+    let path = PathBuf::from_glib_none(filename);
 
-        let base_url = match url_from_file(&file) {
-            Ok(url) => url,
-            Err(e) => {
-                set_gerror(error, 0, &format!("{}", e));
-                return ptr::null_mut();
-            }
-        };
-
-        let handle = CHandle::new();
-        handle.set_base_url(base_url.as_str());
-
-        let cancellable: Option<&gio::Cancellable> = None;
-
-        match file
-            .read(cancellable)
-            .map_err(LoadingError::from)
-            .and_then(|stream| handle.read_stream_sync(stream.as_ref(), None))
-        {
-            Ok(()) => (),
-            Err(e) => {
-                set_gerror(error, 0, &format!("{}", e));
-                return ptr::null_mut();
-            }
+    let handle = match Loader::new().read_path(path) {
+        Ok(handle) => handle,
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            return ptr::null_mut();
         }
+    };
 
-        handle
-            .get_geometry_sub(None)
-            .and_then(|(ink_r, _)| {
-                let (document_width, document_height) = (ink_r.width, ink_r.height);
-                let (desired_width, desired_height) =
-                    get_final_size(document_width, document_height, size_mode);
+    let dpi = Dpi::default();
+    let renderer = CairoRenderer::new(&handle).with_dpi(dpi.x(), dpi.y());
 
-                render_to_pixbuf_at_size(
-                    &handle,
-                    document_width,
-                    document_height,
-                    desired_width,
-                    desired_height,
-                )
-            })
-            .map(|pixbuf| pixbuf.to_glib_full())
-            .unwrap_or_else(|e| {
-                set_gerror(error, 0, &format!("{}", e));
-                ptr::null_mut()
-            })
-    }
+    let (document_width, document_height) = match renderer.legacy_document_size_in_pixels() {
+        Ok(dim) => dim,
+        Err(e) => {
+            set_gerror(error, 0, &format!("{}", e));
+            return ptr::null_mut();
+        }
+    };
+
+    let (desired_width, desired_height) =
+        get_final_size(document_width, document_height, size_mode);
+
+    render_to_pixbuf_at_size(
+        &renderer,
+        document_width,
+        document_height,
+        desired_width,
+        desired_height,
+    )
+    .map(|pixbuf| pixbuf.to_glib_full())
+    .unwrap_or_else(|e| {
+        set_gerror(error, 0, &format!("{}", e));
+        ptr::null_mut()
+    })
 }
 
 #[no_mangle]
