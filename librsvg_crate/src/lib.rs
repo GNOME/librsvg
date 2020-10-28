@@ -157,12 +157,12 @@ use std::path::Path;
 
 use gio::{Cancellable, FileExt};
 
-use rsvg_internals::{Dpi, Handle, LoadOptions};
-
 pub use rsvg_internals::{
-    DefsLookupErrorKind, HrefError, Length as InternalLength, LengthUnit, LoadingError,
-    RenderingError, RsvgLength as Length, UrlResolver,
+    DefsLookupErrorKind, Dpi, Handle, HrefError, LengthUnit, LoadOptions, LoadingError,
+    RenderingError, RsvgLength as Length,
 };
+
+use rsvg_internals::UrlResolver;
 
 /// Builder for loading an [`SvgHandle`][SvgHandle].
 ///
