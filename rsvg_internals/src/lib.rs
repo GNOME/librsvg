@@ -83,8 +83,6 @@ pub use crate::surface_utils::{
 
 pub use crate::url_resolver::UrlResolver;
 
-pub use crate::viewbox::ViewBox;
-
 #[macro_use]
 pub mod log;
 
