@@ -97,7 +97,6 @@ cargo_test:
     - sudo -E cargo test --package librsvg --package librsvg_c_api --package rsvg_internals
 
 .make:
-  stage: cross distro
   extends:
     - .common
   needs:
@@ -130,15 +129,21 @@ opensuse:tumbleweed:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
+.distro:
+  stage: cross distro
+  extends: .make
+  variables:
+    LIBRSVG_DEBUG: "no"
+
 fedora:latest:
   image: $AMD64_FEDORA_LATEST
-  extends: .make
+  extends: .distro
 
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
-  extends: .make
+  extends: .distro
   script:
-    # TODO: delete after sudo is no longer needed
+    # TODO: delete after sudo is no longer needed on the other builds
     - mkdir -p _build
     - cd _build
     - ../autogen.sh --enable-gtk-doc --enable-vala
@@ -146,8 +151,8 @@ debian:testing:
     - make check
 
 distcheck:
-  extends: .make
   stage: release
+  extends: .distro
   variables:
     DESTDIR: "/tmp/distcheck"
   script:
