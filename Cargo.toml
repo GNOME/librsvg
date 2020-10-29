@@ -1,7 +1,99 @@
+[package]
+name = "librsvg"
+version = "2.51.0"
+authors = ["Federico Mena Quintero <federico@gnome.org>"]
+build = "build.rs"
+edition = "2018"
+
+[lib]
+name = "librsvg"
+
+[dependencies]
+bitflags = "1.0"
+# Keep these in sync with respect to the cairo-rs version:
+#   src/lib.rs - toplevel example in the docs
+cairo-rs = { version="0.8.0", features=["v1_16", "png", "pdf", "svg"] }
+cairo-sys-rs = "0.9.0"
+cast = "0.2.3"
+cssparser = "0.27.1"
+data-url = "0.1"
+encoding = "0.2.33"
+float-cmp = "0.8.0"
+gdk-pixbuf = "0.8.0"
+gdk-pixbuf-sys = "0.9.0"
+gio = { version="0.8.1", features=["v2_50"] } # per configure.ac
+gio-sys = "0.9.1"
+glib = "0.9.0"
+glib-sys = { version="0.9.1", features=["v2_50"] }
+gobject-sys = "0.9.0"
+itertools = "0.9.0"
+language-tags = "0.2.2"
+libc = "0.2"
+locale_config = "*" # recommended explicitly by locale_config's README.md
+markup5ever = "0.10"
+nalgebra = "0.21.0"
+num-traits = "0.2"
+once_cell = "1.2.0"
+pango = "0.8.0"
+pango-sys = "0.9.0"
+pangocairo = "0.9.0"
+rayon = "1"
+rctree = "0.3.3"
+rgb = { version="0.8", features=["argb"] }
+regex = "1"
+selectors = "0.22.0"
+string_cache = "0.8.0"
+tinyvec = {version = "0.3.2", features = ["alloc"]}
+url = "2"
+xml5ever = "0.16.1"
+
+[dev-dependencies]
+matches = "0.1"
+criterion = "0.3"
+proptest = "0.10.1"
+
+[build-dependencies]
+pkg-config = "0.3.14"
+regex = "1.3.9"
+
+[[bench]]
+name = "box_blur"
+harness = false
+
+[[bench]]
+name = "composite"
+harness = false
+
+[[bench]]
+name = "lighting"
+harness = false
+
+[[bench]]
+name = "path_parser"
+harness = false
+
+[[bench]]
+name = "pixbuf_from_surface"
+harness = false
+
+[[bench]]
+name = "pixel_iterators"
+harness = false
+
+[[bench]]
+name = "pixel_ops"
+harness = false
+
+[[bench]]
+name = "srgb"
+harness = false
+
+[[bench]]
+name = "surface_from_pixbuf"
+harness = false
+
 [workspace]
 members = [
-    "librsvg",
-    "librsvg_crate",
-    "rsvg_internals",
+    ".",
     "tests",
 ]
