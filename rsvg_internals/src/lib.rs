@@ -126,7 +126,7 @@ pub mod path_parser; // pub for benchmarking
 mod pattern;
 mod properties;
 mod property_defs;
-pub mod rect;
+mod rect;
 mod shapes;
 mod space;
 mod structure;

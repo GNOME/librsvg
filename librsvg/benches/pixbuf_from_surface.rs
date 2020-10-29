@@ -1,10 +1,12 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
 use rsvg_c_api::pixbuf_utils::pixbuf_from_surface;
-use rsvg_internals::rect::IRect;
-use rsvg_internals::surface_utils::{
-    shared_surface::{ExclusiveImageSurface, SurfaceType},
-    ImageSurfaceDataExt, Pixel,
+use rsvg_internals::{
+    surface_utils::{
+        shared_surface::{ExclusiveImageSurface, SurfaceType},
+        ImageSurfaceDataExt, Pixel,
+    },
+    IRect,
 };
 
 const BOUNDS: IRect = IRect {

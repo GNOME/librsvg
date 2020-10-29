@@ -1,12 +1,14 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use nalgebra::{Matrix3, Vector2};
 
-use rsvg_internals::filters::lighting::Normal;
-use rsvg_internals::rect::IRect;
-use rsvg_internals::surface_utils::{
-    iterators::{PixelRectangle, Pixels},
-    shared_surface::{SharedImageSurface, SurfaceType},
-    EdgeMode,
+use rsvg_internals::{
+    filters::lighting::Normal,
+    surface_utils::{
+        iterators::{PixelRectangle, Pixels},
+        shared_surface::{SharedImageSurface, SurfaceType},
+        EdgeMode,
+    },
+    IRect,
 };
 
 /// Computes and returns the normal vector for the light filters.
