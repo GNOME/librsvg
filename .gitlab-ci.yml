@@ -21,12 +21,6 @@ stages:
   - release
   - docs
 
-.global_before: &global_before
-  - rustc --version
-  - cargo --version
-  # Set up Rust cache
-  - mkdir -p cargo_cache
-
 .common:
   interruptible: true
   variables:
@@ -34,7 +28,10 @@ stages:
     # Override the CARGO_HOME variable to force its location
     CARGO_HOME: "${CI_PROJECT_DIR}/cargo_cache"
   before_script:
-    - *global_before
+    - rustc --version
+    - cargo --version
+    # Set up Rust cache
+    - mkdir -p cargo_cache
   cache:
     key:
       files:
@@ -140,9 +137,6 @@ fedora:latest:
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
   extends: .make
-  variables:
-    LIBRSVG_DEBUG: "no"
-    RSVG_TEST_TOLERANCE: "255"
   script:
     # TODO: delete after sudo is no longer needed
     - mkdir -p _build
