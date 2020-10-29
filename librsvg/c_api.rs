@@ -58,7 +58,11 @@ use librsvg::{
     SvgHandle,
 };
 
-use rsvg_internals::{rsvg_log, RsvgLength, SharedImageSurface, SurfaceType};
+use rsvg_internals::{
+    rsvg_log,
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
+    RsvgLength,
+};
 
 use crate::dpi::Dpi;
 use crate::messages::{rsvg_g_critical, rsvg_g_warning};
@@ -126,11 +130,11 @@ mod handle_flags {
 
 #[derive(Default, Copy, Clone)]
 struct LoadFlags {
-    pub unlimited_size: bool,
-    pub keep_image_data: bool,
+    unlimited_size: bool,
+    keep_image_data: bool,
 }
 
-pub use self::handle_flags::*;
+use self::handle_flags::*;
 
 impl From<HandleFlags> for LoadFlags {
     fn from(hflags: HandleFlags) -> LoadFlags {
@@ -514,7 +518,7 @@ impl ObjectImpl for CHandle {
 }
 
 // Keep in sync with tests/src/reference.rs
-pub fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
+pub(crate) fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
     cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
 }
 
@@ -557,15 +561,15 @@ pub type RsvgSizeFunc = Option<
     ),
 >;
 
-pub struct SizeCallback {
-    pub size_func: RsvgSizeFunc,
-    pub user_data: glib_sys::gpointer,
-    pub destroy_notify: glib_sys::GDestroyNotify,
-    pub in_loop: Cell<bool>,
+struct SizeCallback {
+    size_func: RsvgSizeFunc,
+    user_data: glib_sys::gpointer,
+    destroy_notify: glib_sys::GDestroyNotify,
+    in_loop: Cell<bool>,
 }
 
 impl SizeCallback {
-    pub fn new(
+    fn new(
         size_func: RsvgSizeFunc,
         user_data: glib_sys::gpointer,
         destroy_notify: glib_sys::GDestroyNotify,
@@ -578,7 +582,7 @@ impl SizeCallback {
         }
     }
 
-    pub fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
+    fn call(&self, width: libc::c_int, height: libc::c_int) -> (libc::c_int, libc::c_int) {
         unsafe {
             let mut w = width;
             let mut h = height;
@@ -591,17 +595,17 @@ impl SizeCallback {
         }
     }
 
-    pub fn start_loop(&self) {
+    fn start_loop(&self) {
         assert!(!self.in_loop.get());
         self.in_loop.set(true);
     }
 
-    pub fn end_loop(&self) {
+    fn end_loop(&self) {
         assert!(self.in_loop.get());
         self.in_loop.set(false);
     }
 
-    pub fn get_in_loop(&self) -> bool {
+    fn get_in_loop(&self) -> bool {
         self.in_loop.get()
     }
 }
@@ -643,7 +647,7 @@ impl CairoRectangleExt for cairo::Rectangle {
 }
 
 impl CHandle {
-    pub fn set_base_url(&self, url: &str) {
+    fn set_base_url(&self, url: &str) {
         let state = self.load_state.borrow();
 
         match *state {
@@ -773,7 +777,7 @@ impl CHandle {
         }
     }
 
-    pub fn read_stream_sync(
+    fn read_stream_sync(
         &self,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
@@ -944,7 +948,7 @@ impl CHandle {
         renderer
     }
 
-    pub fn get_geometry_sub(
+    fn get_geometry_sub(
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
@@ -1021,7 +1025,7 @@ impl CHandle {
         pixbuf_from_surface(&surface)
     }
 
-    pub fn render_document(
+    fn render_document(
         &self,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
@@ -1114,7 +1118,7 @@ impl CHandle {
     }
 }
 
-pub fn unit_rectangle() -> cairo::Rectangle {
+pub(crate) fn unit_rectangle() -> cairo::Rectangle {
     cairo::Rectangle::from_size(1.0, 1.0)
 }
 
@@ -2201,10 +2205,10 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
 /// the public librsvg API does not have detailed error codes yet, so we use
 /// this single value as the only possible error code to return.
 #[derive(Copy, Clone)]
-pub struct RsvgError;
+struct RsvgError;
 
 // Keep in sync with rsvg.h:RsvgError
-pub const RSVG_ERROR_FAILED: i32 = 0;
+const RSVG_ERROR_FAILED: i32 = 0;
 
 impl ErrorDomain for RsvgError {
     fn domain() -> glib::Quark {

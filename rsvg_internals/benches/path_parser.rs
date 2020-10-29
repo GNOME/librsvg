@@ -27,7 +27,7 @@ static SLICE_EDGES: [(usize, usize); 14] = [
 ];
 
 fn lex_path(input: &str) {
-    let lexer = Lexer::new(black_box(INPUT));
+    let lexer = Lexer::new(black_box(input));
 
     for (_pos, _token) in lexer {
         // no-op

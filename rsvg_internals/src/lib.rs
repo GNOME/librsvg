@@ -74,16 +74,7 @@ pub use crate::rect::{IRect, Rect};
 
 pub use crate::structure::IntrinsicDimensions;
 
-pub use crate::surface_utils::{
-    compare_surfaces::{compare_surfaces, BufferDiff, Diff},
-    iterators::Pixels,
-    shared_surface::{SharedImageSurface, SurfaceType},
-    CairoARGB, Pixel,
-};
-
 pub use crate::url_resolver::UrlResolver;
-
-pub use crate::viewbox::ViewBox;
 
 #[macro_use]
 pub mod log;
@@ -135,7 +126,7 @@ pub mod path_parser; // pub for benchmarking
 mod pattern;
 mod properties;
 mod property_defs;
-pub mod rect;
+mod rect;
 mod shapes;
 mod space;
 mod structure;
