@@ -78,7 +78,6 @@ fn check_for_pangoft2() {
     }
 }
 
-
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
 ///
 /// The input and the output are supposed to be in the [0, 1] range.

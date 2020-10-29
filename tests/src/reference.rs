@@ -11,9 +11,9 @@ use test_generator::test_resources;
 
 use cairo;
 use librsvg::{
-    CairoRenderer, IntrinsicDimensions, Length, Loader,
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     test_utils::compare_to_file,
+    CairoRenderer, IntrinsicDimensions, Length, Loader,
 };
 use std::path::PathBuf;
 

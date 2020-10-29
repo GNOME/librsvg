@@ -85,8 +85,8 @@ mod node;
 #[macro_use]
 mod property_macros;
 
-mod api;
 mod angle;
+mod api;
 mod aspect_ratio;
 mod attributes;
 mod bbox;
@@ -144,5 +144,5 @@ pub mod doctest_only {
     pub use crate::href::is_href;
     pub use crate::href::set_href;
     pub use crate::length::{Both, Horizontal, Length, LengthUnit, Vertical};
-    pub use crate::parsers::{ParseValue, Parse};
+    pub use crate::parsers::{Parse, ParseValue};
 }
