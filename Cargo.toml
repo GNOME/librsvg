@@ -5,6 +5,3 @@ members = [
     "rsvg_internals",
     "tests",
 ]
-
-[profile.release]
-debug = true
