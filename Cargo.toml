@@ -107,9 +107,3 @@ harness = false
 [[bench]]
 name = "surface_from_pixbuf"
 harness = false
-
-[workspace]
-members = [
-    ".",
-    "tests",
-]

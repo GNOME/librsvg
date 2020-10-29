@@ -7,8 +7,6 @@ use std::ffi::CString;
 use std::path::PathBuf;
 use std::sync::Once;
 
-#[cfg(have_pangoft2)]
-
 /// Given a filename from `test_generator::test_resources`, computes the correct fixture filename.
 ///
 /// The `test_resources` procedural macro works by running a filename glob starting on

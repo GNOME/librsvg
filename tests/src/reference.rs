@@ -10,9 +10,11 @@
 use test_generator::test_resources;
 
 use cairo;
-use librsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader};
-use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use rsvg_internals::test_utils::compare_to_file;
+use librsvg::{
+    CairoRenderer, IntrinsicDimensions, Length, Loader,
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
+    test_utils::compare_to_file,
+};
 use std::path::PathBuf;
 
 use crate::utils::{fixture_path, setup_font_map, setup_language};

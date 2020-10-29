@@ -20,6 +20,7 @@ mod reference;
 #[cfg(test)]
 mod render_crash;
 
+#[cfg(test)]
 mod utils;
 
 fn main() {

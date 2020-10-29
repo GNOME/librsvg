@@ -8,6 +8,7 @@ use pkg_config::{Config, Error};
 
 fn main() {
     find_libxml2();
+    check_for_pangoft2();
     generate_srgb_tables();
 }
 
@@ -66,6 +67,17 @@ fn find(package_name: &str, version: &str, shared_libs: &[&str]) -> Result<(), E
         Err(err) => Err(err),
     }
 }
+
+fn check_for_pangoft2() {
+    if pkg_config::Config::new()
+        .atleast_version("1.38")
+        .probe("pangoft2")
+        .is_ok()
+    {
+        println!("cargo:rustc-cfg=have_pangoft2");
+    }
+}
+
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
 ///
