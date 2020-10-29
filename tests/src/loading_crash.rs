@@ -8,12 +8,8 @@ use test_generator::test_resources;
 
 use librsvg::Loader;
 
-use crate::utils::fixture_path;
-
 #[test_resources("tests/fixtures/crash/*.svg")]
-fn loading_crash(name: &str) {
-    let path = fixture_path(name);
-
+fn loading_crash(path: &str) {
     // We just test for crashes during loading, and don't care about success/error.
     let _ = Loader::new().read_path(path);
 }

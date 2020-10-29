@@ -9,12 +9,8 @@ use test_generator::test_resources;
 use cairo;
 use librsvg::{CairoRenderer, Loader};
 
-use crate::utils::fixture_path;
-
 #[test_resources("tests/fixtures/render-crash/*.svg")]
-fn loading_crash(name: &str) {
-    let path = fixture_path(name);
-
+fn loading_crash(path: &str) {
     let handle = Loader::new()
         .read_path(path)
         .unwrap_or_else(|e| panic!("could not load: {}", e));
