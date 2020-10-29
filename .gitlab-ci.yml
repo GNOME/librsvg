@@ -49,6 +49,9 @@ stages:
     policy: pull
 
 .recreate_cache:
+  after_script:
+    # Fix up ownership of the cache, not all builds use sudo
+    - sudo chown -R "$(id -u):$(id -g)" ${CI_PROJECT_DIR}/cargo_cache
   cache:
     policy: pull-push
 
