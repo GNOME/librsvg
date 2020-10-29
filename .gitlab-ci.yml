@@ -76,7 +76,7 @@ clippy:
     - job: check
   script:
     - cargo clippy --version
-    - sudo CARGO_HOME=$CARGO_HOME cargo clippy --workspace
+    - sudo -E cargo clippy --workspace
 
 cargo_test:
   stage: unit test
@@ -137,9 +137,6 @@ debian:testing:
   variables:
     LIBRSVG_DEBUG: "no"
     RSVG_TEST_TOLERANCE: "255"
-  before_script:
-    - *global_before
-    - export PATH=$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0
   script:
     # TODO: delete after sudo is no longer needed
     - mkdir -p _build
