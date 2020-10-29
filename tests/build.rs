@@ -1,3 +1,5 @@
+use pkg_config;
+
 fn main() {
     check_for_pangoft2();
 }

@@ -39,8 +39,8 @@ pango-sys = "0.9.0"
 pangocairo = "0.9.0"
 rayon = "1"
 rctree = "0.3.3"
-rgb = { version="0.8", features=["argb"] }
 regex = "1"
+rgb = { version="0.8", features=["argb"] }
 selectors = "0.22.0"
 string_cache = "0.8.0"
 tinyvec = {version = "0.3.2", features = ["alloc"]}
@@ -48,9 +48,25 @@ url = "2"
 xml5ever = "0.16.1"
 
 [dev-dependencies]
-matches = "0.1"
+assert_cmd = "1.0.1"
+cairo-rs = { version = "0.8.0", features = ["png"] }
+cast = "0.2.3"
+chrono = "0.4.0"
 criterion = "0.3"
+glib = "0.9.0"
+libc = "0.2"
+lopdf = "0.25.0"
+matches = "0.1"
+pkg-config = "0.3.14"
+pango = "0.8.0"
+pango-sys = "0.9.0"
+pangocairo = "0.9.0"
+png = "0.16.1"
+predicates = "1.0.2"
 proptest = "0.10.1"
+tempfile = "3"
+test-generator = "0.3"
+yeslogic-fontconfig-sys = "2.11.1"
 
 [build-dependencies]
 pkg-config = "0.3.14"
