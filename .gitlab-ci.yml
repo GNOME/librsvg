@@ -140,9 +140,6 @@ fedora:latest:
 debian:testing:
   image: $AMD64_DEBIAN_TESTING
   extends: .make
-  variables:
-    LIBRSVG_DEBUG: "no"
-    RSVG_TEST_TOLERANCE: "255"
   script:
     # TODO: delete after sudo is no longer needed
     - mkdir -p _build
