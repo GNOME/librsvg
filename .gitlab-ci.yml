@@ -125,7 +125,10 @@ cargo_test:
 
 opensuse:tumbleweed:
   stage: acceptance test
-  extends: .make
+  extends:
+    - .make
+    # make check runs extra tests that require extra crates, hence recreate cache
+    - .recreate_cache
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
