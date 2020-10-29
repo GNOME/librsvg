@@ -13,7 +13,7 @@
 //! `(center_x, center_y, radius)`:
 //!
 //! ```
-//! # use rsvg_internals::doctest_only::{Length,Horizontal,Vertical,Both};
+//! # use librsvg::doctest_only::{Length,Horizontal,Vertical,Both};
 //! pub struct Circle {
 //!     cx: Length<Horizontal>,
 //!     cy: Length<Vertical>,
@@ -174,8 +174,8 @@ impl Normalize for Both {
 /// Examples of construction:
 ///
 /// ```
-/// # use rsvg_internals::doctest_only::{Length,LengthUnit,Horizontal,Vertical,Both};
-/// # use crate::rsvg_internals::Parse;
+/// # use librsvg::doctest_only::{Length,LengthUnit,Horizontal,Vertical,Both};
+/// # use librsvg::doctest_only::Parse;
 /// // Explicit type
 /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
 ///
@@ -280,7 +280,7 @@ impl<N: Normalize> Length<N> {
     /// orientation.  You can specify it explicitly, or call the parametrized method:
     ///
     /// ```
-    /// # use rsvg_internals::doctest_only::{Length,LengthUnit,Horizontal,Vertical};
+    /// # use librsvg::doctest_only::{Length,LengthUnit,Horizontal,Vertical};
     /// // Explicit type
     /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
     ///
@@ -300,9 +300,9 @@ impl<N: Normalize> Length<N> {
     /// This is usually used right after parsing a length value, as part of a validation step:
     ///
     /// ```
-    /// # use rsvg_internals::doctest_only::{Length,Horizontal,LengthUnit};
-    /// # use rsvg_internals::doctest_only::ElementError;
-    /// # use rsvg_internals::doctest_only::ParseValue;
+    /// # use librsvg::doctest_only::{Length,Horizontal,LengthUnit};
+    /// # use librsvg::doctest_only::ElementError;
+    /// # use librsvg::doctest_only::ParseValue;
     /// # use markup5ever::{QualName, Prefix, Namespace, LocalName};
     /// # let attr = QualName::new(
     /// #     Some(Prefix::from("")),

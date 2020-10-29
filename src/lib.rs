@@ -58,23 +58,14 @@
 #![allow(clippy::too_many_arguments)]
 #![warn(unused)]
 
+// The public API is exported here
+pub use crate::api::*;
+
 pub use crate::color::Color;
-
-pub use crate::dpi::Dpi;
-
-pub use crate::error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError};
-
-pub use crate::handle::{Handle, LoadOptions};
-
-pub use crate::length::{Length, LengthUnit, RsvgLength};
 
 pub use crate::parsers::Parse;
 
 pub use crate::rect::{IRect, Rect};
-
-pub use crate::structure::IntrinsicDimensions;
-
-pub use crate::url_resolver::UrlResolver;
 
 #[macro_use]
 pub mod log;
@@ -94,6 +85,7 @@ mod node;
 #[macro_use]
 mod property_macros;
 
+mod api;
 mod angle;
 mod aspect_ratio;
 mod attributes;
@@ -152,5 +144,5 @@ pub mod doctest_only {
     pub use crate::href::is_href;
     pub use crate::href::set_href;
     pub use crate::length::{Both, Horizontal, Length, LengthUnit, Vertical};
-    pub use crate::parsers::ParseValue;
+    pub use crate::parsers::{ParseValue, Parse};
 }

@@ -4,8 +4,8 @@
 //! We have an [`AspectRatio`] struct which encapsulates such a value.
 //!
 //! ```
-//! # use rsvg_internals::doctest_only::AspectRatio;
-//! # use crate::rsvg_internals::Parse;
+//! # use librsvg::doctest_only::AspectRatio;
+//! # use librsvg::doctest_only::Parse;
 //! assert_eq!(
 //!     AspectRatio::parse_str("xMidYMid"),
 //!     Ok(AspectRatio::default())

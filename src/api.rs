@@ -150,6 +150,11 @@
 #![warn(missing_docs)]
 #![deny(warnings)]
 
+pub use crate::{
+    error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError},
+    length::{LengthUnit, RsvgLength as Length},
+};
+
 use glib::prelude::*;
 use url::Url;
 
@@ -157,12 +162,11 @@ use std::path::Path;
 
 use gio::{Cancellable, FileExt};
 
-pub use rsvg_internals::{
-    DefsLookupErrorKind, Dpi, Handle, HrefError, LengthUnit, LoadOptions, LoadingError,
-    RenderingError, RsvgLength as Length,
+use crate::{
+    dpi::Dpi,
+    handle::{Handle, LoadOptions},
+    url_resolver::UrlResolver,
 };
-
-use rsvg_internals::UrlResolver;
 
 /// Builder for loading an [`SvgHandle`][SvgHandle].
 ///

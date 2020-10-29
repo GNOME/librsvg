@@ -124,7 +124,7 @@ impl Parse for i32 {
 /// # Example
 ///
 /// ```
-/// # #[macro_use] extern crate rsvg_internals;
+/// # #[macro_use] extern crate librsvg;
 /// # use cssparser::{ParserInput, Parser};
 /// # fn main() -> Result<(), cssparser::BasicParseError<'static>> {
 /// # let mut input = ParserInput::new("true");

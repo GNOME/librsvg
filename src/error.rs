@@ -207,9 +207,9 @@ impl fmt::Display for AcquireError {
 /// `set_atts()` methods as follows:
 ///
 /// ```
-/// # use rsvg_internals::doctest_only::AttributeResultExt;
-/// # use rsvg_internals::doctest_only::ValueErrorKind;
-/// # use rsvg_internals::doctest_only::ElementError;
+/// # use librsvg::doctest_only::AttributeResultExt;
+/// # use librsvg::doctest_only::ValueErrorKind;
+/// # use librsvg::doctest_only::ElementError;
 /// # use markup5ever::{QualName, Prefix, Namespace, LocalName};
 /// # type FooError = ValueErrorKind;
 /// fn parse_foo(value: &str) -> Result<(), FooError>

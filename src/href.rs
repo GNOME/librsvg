@@ -18,7 +18,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 /// ```
 /// # #[macro_use] extern crate markup5ever;
 /// # use markup5ever::{QualName, Prefix, Namespace, LocalName, ExpandedName};
-/// # use rsvg_internals::doctest_only::{is_href,set_href};
+/// # use librsvg::doctest_only::{is_href,set_href};
 ///
 /// let qual_name = QualName::new(
 ///     Some(Prefix::from("xlink")),
