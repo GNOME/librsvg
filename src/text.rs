@@ -265,7 +265,7 @@ impl PositionedSpan {
 
     fn draw(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -284,7 +284,7 @@ impl PositionedSpan {
 fn children_to_chunks(
     chunks: &mut Vec<Chunk>,
     node: &Node,
-    acquired_nodes: &mut AcquiredNodes,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
     dx: Option<Length<Horizontal>>,
@@ -440,7 +440,7 @@ impl Text {
     fn make_chunks(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Vec<Chunk> {
@@ -480,7 +480,7 @@ impl Draw for Text {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -539,7 +539,7 @@ impl TRef {
     fn to_chunks(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         chunks: &mut Vec<Chunk>,
         depth: usize,
@@ -609,7 +609,7 @@ impl TSpan {
     fn to_chunks(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         chunks: &mut Vec<Chunk>,

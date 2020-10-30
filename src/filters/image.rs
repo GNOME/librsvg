@@ -40,7 +40,7 @@ impl FeImage {
     fn render_node(
         &self,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
         fragment: &Fragment,
@@ -77,7 +77,7 @@ impl FeImage {
     fn render_external_image(
         &self,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &DrawingCtx,
         bounds: Rect,
         unclipped_bounds: &Rect,
@@ -140,7 +140,7 @@ impl FilterEffect for FeImage {
         &self,
         node: &Node,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds_builder = self.base.get_bounds(ctx, node.parent().as_ref())?;

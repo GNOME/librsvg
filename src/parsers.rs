@@ -17,7 +17,7 @@ pub trait Parse: Sized {
     ///
     /// This is useful mostly for tests which want to avoid creating a
     /// `cssparser::Parser` by hand.  Property types do not need to reimplement this.
-    fn parse_str(s: &str) -> Result<Self, ParseError> {
+    fn parse_str(s: &str) -> Result<Self, ParseError<'_>> {
         let mut input = ParserInput::new(s);
         let mut parser = Parser::new(&mut input);
 

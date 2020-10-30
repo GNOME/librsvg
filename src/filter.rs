@@ -197,13 +197,13 @@ impl FilterValueList {
         self.0.is_empty()
     }
 
-    pub fn iter(&self) -> Iter<FilterValue> {
+    pub fn iter(&self) -> Iter<'_, FilterValue> {
         self.0.iter()
     }
 
     /// Check that at least one filter URI exists and that all contained
     /// URIs reference existing <filter> elements.
-    pub fn is_applicable(&self, node: &Node, acquired_nodes: &mut AcquiredNodes) -> bool {
+    pub fn is_applicable(&self, node: &Node, acquired_nodes: &mut AcquiredNodes<'_>) -> bool {
         if self.is_empty() {
             return false;
         }

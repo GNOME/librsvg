@@ -353,7 +353,7 @@ impl Pattern {
     pub fn resolve(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<ResolvedPattern, AcquireError> {
         let mut resolved = self.resolved.borrow_mut();
         if let Some(ref pattern) = *resolved {

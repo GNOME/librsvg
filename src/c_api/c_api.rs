@@ -326,7 +326,7 @@ impl ops::DerefMut for RsvgHandleClass {
     }
 }
 
-static PROPERTIES: [subclass::Property; 11] = [
+static PROPERTIES: [subclass::Property<'_>; 11] = [
     subclass::Property("flags", |name| {
         ParamSpec::flags(
             name,
@@ -803,7 +803,7 @@ impl CHandle {
 
     fn read_stream(
         &self,
-        mut load_state: RefMut<LoadState>,
+        mut load_state: RefMut<'_, LoadState>,
         stream: &gio::InputStream,
         base_file: Option<&gio::File>,
         cancellable: Option<&gio::Cancellable>,
@@ -813,7 +813,7 @@ impl CHandle {
         load_state.set_from_loading_result(loader.read_stream(stream, base_file, cancellable))
     }
 
-    fn get_handle_ref(&self) -> Result<Ref<SvgHandle>, RenderingError> {
+    fn get_handle_ref(&self) -> Result<Ref<'_, SvgHandle>, RenderingError> {
         let state = self.load_state.borrow();
 
         match *state {
@@ -936,7 +936,7 @@ impl CHandle {
             .map_err(warn_on_invalid_id)
     }
 
-    fn make_renderer<'a>(&self, handle_ref: &'a Ref<SvgHandle>) -> CairoRenderer<'a> {
+    fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
         let inner = self.inner.borrow();
 
         let mut renderer = CairoRenderer::new(&*handle_ref).with_dpi(inner.dpi.x(), inner.dpi.y());

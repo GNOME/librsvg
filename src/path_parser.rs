@@ -37,7 +37,7 @@ pub enum LexError {
 }
 
 impl<'a> Lexer<'_> {
-    pub fn new(input: &'a str) -> Lexer {
+    pub fn new(input: &'a str) -> Lexer<'a> {
         let mut ci = input.bytes().enumerate();
         let current = ci.next();
         Lexer {

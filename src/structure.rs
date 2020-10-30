@@ -28,7 +28,7 @@ impl Draw for Group {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -61,7 +61,7 @@ impl Draw for Switch {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -195,7 +195,7 @@ impl Draw for Svg {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -311,7 +311,7 @@ impl Draw for Use {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -478,7 +478,7 @@ impl Draw for Link {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,

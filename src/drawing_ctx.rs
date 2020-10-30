@@ -167,7 +167,7 @@ pub fn draw_tree(
     dpi: Dpi,
     measuring: bool,
     testing: bool,
-    acquired_nodes: &mut AcquiredNodes,
+    acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Result<BoundingBox, RenderingError> {
     let (drawsub_stack, node) = match mode {
         DrawingMode::LimitToStack { node, root } => (node.ancestors().collect(), root),
@@ -422,7 +422,7 @@ impl DrawingCtx {
     fn clip_to_node(
         &mut self,
         clip_node: &Option<Node>,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         if clip_node.is_none() {
@@ -464,7 +464,7 @@ impl DrawingCtx {
         mask_node: &Node,
         transform: Transform,
         bbox: &BoundingBox,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<Option<cairo::ImageSurface>, RenderingError> {
         if bbox.rect.is_none() {
             // The node being masked is empty / doesn't have a
@@ -551,11 +551,11 @@ impl DrawingCtx {
     pub fn with_discrete_layer(
         &mut self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
         draw_fn: &mut dyn FnMut(
-            &mut AcquiredNodes,
+            &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
@@ -821,7 +821,7 @@ impl DrawingCtx {
     fn run_filters(
         &mut self,
         filters: &Filter,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
         values: &ComputedValues,
         node_bbox: BoundingBox,
@@ -866,7 +866,7 @@ impl DrawingCtx {
 
     fn run_filter(
         &mut self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         filter_uri: &Fragment,
         node: &Node,
         values: &ComputedValues,
@@ -917,7 +917,7 @@ impl DrawingCtx {
     fn set_gradient(
         self: &mut DrawingCtx,
         gradient: &Gradient,
-        _acquired_nodes: &mut AcquiredNodes,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         values: &ComputedValues,
         bbox: &BoundingBox,
@@ -992,7 +992,7 @@ impl DrawingCtx {
     fn set_pattern(
         &mut self,
         pattern: &ResolvedPattern,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         values: &ComputedValues,
         bbox: &BoundingBox,
@@ -1163,7 +1163,7 @@ impl DrawingCtx {
 
     fn set_source_paint_server(
         &mut self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         paint_server: &PaintServer,
         opacity: UnitInterval,
         bbox: &BoundingBox,
@@ -1201,7 +1201,7 @@ impl DrawingCtx {
         &mut self,
         width: i32,
         height: i32,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         paint_server: &PaintServer,
         opacity: UnitInterval,
         bbox: &BoundingBox,
@@ -1266,7 +1266,7 @@ impl DrawingCtx {
     fn stroke(
         &mut self,
         cr: &cairo::Context,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         bbox: &BoundingBox,
         current_color: cssparser::RGBA,
@@ -1291,7 +1291,7 @@ impl DrawingCtx {
     fn fill(
         &mut self,
         cr: &cairo::Context,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         bbox: &BoundingBox,
         current_color: cssparser::RGBA,
@@ -1317,7 +1317,7 @@ impl DrawingCtx {
         &mut self,
         path: &Path,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         markers: Markers,
         clipping: bool,
@@ -1380,7 +1380,7 @@ impl DrawingCtx {
         rect: Rect,
         aspect: AspectRatio,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1434,7 +1434,7 @@ impl DrawingCtx {
         layout: &pango::Layout,
         x: f64,
         y: f64,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1571,7 +1571,7 @@ impl DrawingCtx {
     pub fn draw_node_to_surface(
         &mut self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         affine: Transform,
         width: i32,
@@ -1604,7 +1604,7 @@ impl DrawingCtx {
     pub fn draw_node_from_stack(
         &mut self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1633,7 +1633,7 @@ impl DrawingCtx {
     pub fn draw_from_use_node(
         &mut self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         link: Option<&Fragment>,
         clipping: bool,
@@ -1796,7 +1796,7 @@ impl CompositingAffines {
 
 // Returns (clip_in_user_space, clip_in_object_space), both Option<Node>
 fn get_clip_in_user_and_object_space(
-    acquired_nodes: &mut AcquiredNodes,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     clip_uri: Option<&Fragment>,
 ) -> (Option<Node>, Option<Node>) {
     clip_uri

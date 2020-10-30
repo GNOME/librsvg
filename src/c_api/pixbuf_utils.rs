@@ -136,7 +136,7 @@ fn get_final_size(in_width: f64, in_height: f64, size_mode: &SizeMode) -> (f64, 
 }
 
 fn render_to_pixbuf_at_size(
-    renderer: &CairoRenderer,
+    renderer: &CairoRenderer<'_>,
     document_width: f64,
     document_height: f64,
     desired_width: f64,

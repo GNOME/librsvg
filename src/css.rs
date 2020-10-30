@@ -155,7 +155,7 @@ pub enum ParseErrorKind<'i> {
 }
 
 impl<'i> From<selectors::parser::SelectorParseErrorKind<'i>> for ParseErrorKind<'i> {
-    fn from(e: selectors::parser::SelectorParseErrorKind) -> ParseErrorKind {
+    fn from(e: selectors::parser::SelectorParseErrorKind<'_>) -> ParseErrorKind<'_> {
         ParseErrorKind::Selector(e)
     }
 }
@@ -377,7 +377,7 @@ impl From<Node> for RsvgElement {
 }
 
 impl fmt::Debug for RsvgElement {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0.borrow())
     }
 }
@@ -490,7 +490,7 @@ impl selectors::Element for RsvgElement {
     fn match_non_ts_pseudo_class<F>(
         &self,
         _pc: &<Self::Impl as SelectorImpl>::NonTSPseudoClass,
-        _context: &mut MatchingContext<Self::Impl>,
+        _context: &mut MatchingContext<'_, Self::Impl>,
         _flags_setter: &mut F,
     ) -> bool
     where
@@ -503,7 +503,7 @@ impl selectors::Element for RsvgElement {
     fn match_pseudo_element(
         &self,
         _pe: &<Self::Impl as SelectorImpl>::PseudoElement,
-        _context: &mut MatchingContext<Self::Impl>,
+        _context: &mut MatchingContext<'_, Self::Impl>,
     ) -> bool {
         // unsupported
         false
@@ -721,7 +721,7 @@ impl Stylesheet {
     fn get_matches<'a>(
         &'a self,
         node: &Node,
-        match_ctx: &mut MatchingContext<Selector>,
+        match_ctx: &mut MatchingContext<'_, Selector>,
         acc: &mut Vec<Match<'a>>,
     ) {
         for rule in &self.qualified_rules {

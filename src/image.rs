@@ -61,7 +61,7 @@ impl Draw for Image {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,

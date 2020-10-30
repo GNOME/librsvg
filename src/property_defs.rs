@@ -103,7 +103,7 @@ make_property!(
             // see sp_style_merge_baseline_shift_from_parent()
             fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<BaselineShift, crate::error::ParseError<'i>> {
                 parser.try_parse(|p| Ok(BaselineShift(Length::<Both>::parse(p)?)))
-                    .or_else(|_: ParseError| {
+                    .or_else(|_: ParseError<'_>| {
                         Ok(parse_identifiers!(
                             parser,
                             "baseline" => BaselineShift(Length::<Both>::new(0.0, LengthUnit::Percent)),

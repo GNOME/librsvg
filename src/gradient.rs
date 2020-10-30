@@ -578,7 +578,7 @@ macro_rules! impl_gradient {
             pub fn resolve(
                 &self,
                 node: &Node,
-                acquired_nodes: &mut AcquiredNodes,
+                acquired_nodes: &mut AcquiredNodes<'_>,
             ) -> Result<Gradient, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {

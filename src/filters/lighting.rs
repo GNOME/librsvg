@@ -455,7 +455,7 @@ macro_rules! impl_lighting_filter {
                 &self,
                 node: &Node,
                 ctx: &FilterContext,
-                acquired_nodes: &mut AcquiredNodes,
+                acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterResult, FilterError> {
                 let input = self

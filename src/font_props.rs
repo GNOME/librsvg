@@ -278,7 +278,7 @@ impl Parse for FontWeight {
                     "lighter" => FontWeight::Lighter,
                 )?)
             })
-            .or_else(|_: ParseError| {
+            .or_else(|_: ParseError<'_>| {
                 let loc = parser.current_source_location();
                 let i = parser.expect_integer()?;
                 if (1..=1000).contains(&i) {

@@ -57,7 +57,7 @@ impl FeMergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
@@ -80,7 +80,7 @@ impl FilterEffect for FeMerge {
         &self,
         node: &Node,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.

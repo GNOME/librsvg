@@ -1151,7 +1151,7 @@ impl ImageSurface<Shared> {
         output_surface.share()
     }
 
-    pub fn rows(&self) -> Rows {
+    pub fn rows(&self) -> Rows<'_> {
         Rows {
             surface: &self,
             next_row: 0,
@@ -1299,13 +1299,13 @@ impl ImageSurface<Exclusive> {
 
     /// Raw access to the image data as a slice
     #[inline]
-    pub fn get_data(&mut self) -> cairo::ImageSurfaceData {
+    pub fn get_data(&mut self) -> cairo::ImageSurfaceData<'_> {
         self.surface.get_data().unwrap()
     }
 
     /// Modify the image data
     #[inline]
-    pub fn modify(&mut self, draw_fn: &mut dyn FnMut(&mut cairo::ImageSurfaceData, usize)) {
+    pub fn modify(&mut self, draw_fn: &mut dyn FnMut(&mut cairo::ImageSurfaceData<'_>, usize)) {
         let stride = self.stride() as usize;
         let mut data = self.get_data();
 
@@ -1322,7 +1322,7 @@ impl ImageSurface<Exclusive> {
         draw_fn(&cr)
     }
 
-    pub fn rows_mut(&mut self) -> RowsMut {
+    pub fn rows_mut(&mut self) -> RowsMut<'_> {
         let width = self.surface.get_width();
         let height = self.surface.get_height();
         let stride = self.surface.get_stride();

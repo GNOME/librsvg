@@ -260,7 +260,7 @@ impl FilterContext {
     /// Does not take `processing_linear_rgb` into account.
     fn get_input_raw(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         in_: Option<&Input>,
     ) -> Result<FilterInput, FilterError> {
@@ -339,7 +339,7 @@ impl FilterContext {
     /// Retrieves the filter input surface according to the SVG rules.
     pub fn get_input(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         in_: Option<&Input>,
     ) -> Result<FilterInput, FilterError> {

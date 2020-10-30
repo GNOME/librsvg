@@ -178,17 +178,17 @@ pub trait NodeBorrow {
     /// Borrows a `Chars` reference.
     ///
     /// Panics: will panic if `&self` is not a `NodeData::Text` node
-    fn borrow_chars(&self) -> Ref<Chars>;
+    fn borrow_chars(&self) -> Ref<'_, Chars>;
 
     /// Borrows an `Element` reference
     ///
     /// Panics: will panic if `&self` is not a `NodeData::Element` node
-    fn borrow_element(&self) -> Ref<Element>;
+    fn borrow_element(&self) -> Ref<'_, Element>;
 
     /// Borrows an `Element` reference mutably
     ///
     /// Panics: will panic if `&self` is not a `NodeData::Element` node
-    fn borrow_element_mut(&mut self) -> RefMut<Element>;
+    fn borrow_element_mut(&mut self) -> RefMut<'_, Element>;
 }
 
 impl NodeBorrow for Node {
@@ -200,21 +200,21 @@ impl NodeBorrow for Node {
         matches!(*self.borrow(), NodeData::Text(_))
     }
 
-    fn borrow_chars(&self) -> Ref<Chars> {
+    fn borrow_chars(&self) -> Ref<'_, Chars> {
         Ref::map(self.borrow(), |n| match *n {
             NodeData::Text(ref c) => c,
             _ => panic!("tried to borrow_chars for a non-text node"),
         })
     }
 
-    fn borrow_element(&self) -> Ref<Element> {
+    fn borrow_element(&self) -> Ref<'_, Element> {
         Ref::map(self.borrow(), |n| match *n {
             NodeData::Element(ref e) => e,
             _ => panic!("tried to borrow_element for a non-element node"),
         })
     }
 
-    fn borrow_element_mut(&mut self) -> RefMut<Element> {
+    fn borrow_element_mut(&mut self) -> RefMut<'_, Element> {
         RefMut::map(self.borrow_mut(), |n| match *n {
             NodeData::Element(ref mut e) => e,
             _ => panic!("tried to borrow_element_mut for a non-element node"),
@@ -268,7 +268,7 @@ impl NodeCascade for Node {
 pub trait NodeDraw {
     fn draw(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -276,7 +276,7 @@ pub trait NodeDraw {
 
     fn draw_children(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -286,7 +286,7 @@ pub trait NodeDraw {
 impl NodeDraw for Node {
     fn draw(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -299,7 +299,7 @@ impl NodeDraw for Node {
 
     fn draw_children(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,

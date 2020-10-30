@@ -101,7 +101,7 @@ impl Marker {
     fn render(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         xpos: f64,
         ypos: f64,
@@ -556,7 +556,7 @@ enum MarkerType {
 
 fn emit_marker_by_name(
     draw_ctx: &mut DrawingCtx,
-    acquired_nodes: &mut AcquiredNodes,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     name: &Fragment,
     xpos: f64,
     ypos: f64,
@@ -620,7 +620,7 @@ where
 pub fn render_markers_for_path(
     path: &Path,
     draw_ctx: &mut DrawingCtx,
-    acquired_nodes: &mut AcquiredNodes,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     values: &ComputedValues,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {

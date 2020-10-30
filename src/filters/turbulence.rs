@@ -336,7 +336,7 @@ impl FilterEffect for FeTurbulence {
         &self,
         node: &Node,
         ctx: &FilterContext,
-        _acquired_nodes: &mut AcquiredNodes,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds = self

@@ -340,7 +340,7 @@ fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Parse
         let angle = Angle::from_degrees(f64::parse(p)?);
 
         let (tx, ty) = p
-            .try_parse(|p| -> Result<_, ParseError> {
+            .try_parse(|p| -> Result<_, ParseError<'_>> {
                 optional_comma(p);
                 let tx = f64::parse(p)?;
 

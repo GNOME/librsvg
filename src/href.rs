@@ -34,7 +34,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 ///     _ => unreachable!(),
 /// }
 /// ```
-pub fn is_href(name: &ExpandedName) -> bool {
+pub fn is_href(name: &ExpandedName<'_>) -> bool {
     matches!(
         *name,
         expanded_name!(xlink "href") | expanded_name!("", "href")
@@ -44,7 +44,7 @@ pub fn is_href(name: &ExpandedName) -> bool {
 /// Sets an `href` attribute in preference over an `xlink:href` one.
 ///
 /// See [`is_href`](#fn.is_href.html) for example usage.
-pub fn set_href<T>(name: &ExpandedName, dest: &mut Option<T>, href: T) {
+pub fn set_href<T>(name: &ExpandedName<'_>, dest: &mut Option<T>, href: T) {
     if dest.is_none() || *name != expanded_name!(xlink "href") {
         *dest = Some(href);
     }

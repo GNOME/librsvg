@@ -39,7 +39,7 @@ pub trait FilterEffect: SetAttributes + Draw {
         &self,
         node: &Node,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError>;
 
@@ -105,7 +105,7 @@ impl Parse for Input {
                     "StrokePaint" => Input::StrokePaint,
                 )?)
             })
-            .or_else(|_: BasicParseError| {
+            .or_else(|_: BasicParseError<'_>| {
                 let ident = CustomIdent::parse(parser)?;
                 Ok(Input::FilterOutput(ident))
             })
@@ -238,7 +238,7 @@ impl PrimitiveWithInput {
     fn get_input(
         &self,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterInput, FilterError> {
         ctx.get_input(acquired_nodes, draw_ctx, self.in_.as_ref())
@@ -272,7 +272,7 @@ pub fn render(
     filter_node: &Node,
     computed_from_node_being_filtered: &ComputedValues,
     source_surface: SharedImageSurface,
-    acquired_nodes: &mut AcquiredNodes,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
     transform: Transform,
     node_bbox: BoundingBox,

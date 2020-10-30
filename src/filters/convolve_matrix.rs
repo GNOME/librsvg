@@ -198,7 +198,7 @@ impl FilterEffect for FeConvolveMatrix {
         &self,
         node: &Node,
         ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         #![allow(clippy::many_single_char_names)]

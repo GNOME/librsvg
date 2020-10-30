@@ -84,7 +84,7 @@ pub trait Draw {
     fn draw(
         &self,
         _node: &Node,
-        _acquired_nodes: &mut AcquiredNodes,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
         _cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
@@ -302,7 +302,7 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
@@ -617,7 +617,7 @@ impl Draw for Element {
     fn draw(
         &self,
         node: &Node,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,

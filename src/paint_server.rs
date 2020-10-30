@@ -66,7 +66,7 @@ impl Parse for PaintServer {
 impl PaintServer {
     pub fn resolve(
         &self,
-        acquired_nodes: &mut AcquiredNodes,
+        acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<PaintSource, RenderingError> {
         match self {
             PaintServer::Iri {

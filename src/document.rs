@@ -279,7 +279,7 @@ pub struct AcquiredNodes<'i> {
 }
 
 impl<'i> AcquiredNodes<'i> {
-    pub fn new(document: &Document) -> AcquiredNodes {
+    pub fn new(document: &Document) -> AcquiredNodes<'_> {
         AcquiredNodes {
             document,
             num_elements_acquired: 0,

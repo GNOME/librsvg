@@ -216,7 +216,7 @@ impl Fragment {
 }
 
 impl fmt::Display for Fragment {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}#{}", self.uri().unwrap_or(""), self.fragment())
     }
 }
