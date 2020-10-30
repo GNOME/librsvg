@@ -505,16 +505,10 @@ impl Element {
                 // Whenever we encounter a element name we don't understand, represent it as a
                 // non-rendering element.  This is like a group, but it doesn't do any rendering
                 // of children.  The effect is that we will ignore all children of unknown elements.
-                None => (
-                    create_non_rendering,
-                    ElementCreateFlags::Default,
-                ),
+                None => (create_non_rendering, ElementCreateFlags::Default),
             }
         } else {
-            (
-                create_non_rendering,
-                ElementCreateFlags::Default,
-            )
+            (create_non_rendering, ElementCreateFlags::Default)
         };
 
         if flags == ElementCreateFlags::IgnoreClass {

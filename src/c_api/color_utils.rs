@@ -1,9 +1,6 @@
 use std::ffi::CStr;
 
-use crate::{
-    color::Color,
-    parsers::Parse,
-};
+use crate::{color::Color, parsers::Parse};
 
 // There are two quirks here:
 //

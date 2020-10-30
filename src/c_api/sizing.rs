@@ -1,5 +1,5 @@
-use float_cmp::approx_eq;
 use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
+use float_cmp::approx_eq;
 
 use super::c_api::unit_rectangle;
 

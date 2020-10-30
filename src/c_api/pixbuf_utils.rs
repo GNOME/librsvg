@@ -9,15 +9,15 @@ use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::*;
 use rgb::FromSlice;
 
-use crate::api::{CairoRenderer, Loader};
 use super::c_api::{checked_i32, set_gerror};
 use super::dpi::Dpi;
 use super::sizing::LegacySize;
+use crate::api::{CairoRenderer, Loader};
 
 use crate::{
+    error::RenderingError,
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     surface_utils::{Pixel, PixelOps},
-    error::RenderingError,
 };
 
 fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {

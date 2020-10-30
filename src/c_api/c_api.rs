@@ -59,9 +59,9 @@ use crate::api::{
 };
 
 use crate::{
+    length::RsvgLength,
     rsvg_log,
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    length::RsvgLength,
 };
 
 use super::dpi::Dpi;

@@ -56,11 +56,9 @@
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::too_many_arguments)]
-
 #![warn(nonstandard_style, rust_2018_idioms, unused)]
 // Some lints no longer exist
 #![warn(renamed_and_removed_lints)]
-
 // Standalone lints
 #![warn(trivial_casts, trivial_numeric_casts)]
 #![deny(warnings)]
