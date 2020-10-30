@@ -1,6 +1,9 @@
 use std::ffi::CStr;
 
-use rsvg_internals::{Color, Parse};
+use crate::{
+    color::Color,
+    parsers::Parse,
+};
 
 // There are two quirks here:
 //

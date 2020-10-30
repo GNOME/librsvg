@@ -53,21 +53,21 @@ use glib::types::instance_of;
 
 use gobject_sys::{GEnumValue, GFlagsValue};
 
-use librsvg::{
+use crate::api::{
     CairoRenderer, DefsLookupErrorKind, IntrinsicDimensions, Loader, LoadingError, RenderingError,
     SvgHandle,
 };
 
-use rsvg_internals::{
+use crate::{
     rsvg_log,
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    RsvgLength,
+    length::RsvgLength,
 };
 
-use crate::dpi::Dpi;
-use crate::messages::{rsvg_g_critical, rsvg_g_warning};
-use crate::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
-use crate::sizing::LegacySize;
+use super::dpi::Dpi;
+use super::messages::{rsvg_g_critical, rsvg_g_warning};
+use super::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
+use super::sizing::LegacySize;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 

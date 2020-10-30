@@ -45,9 +45,9 @@ impl Dpi {
     }
 }
 
-impl From<Dpi> for rsvg_internals::Dpi {
-    fn from(dpi: Dpi) -> rsvg_internals::Dpi {
-        rsvg_internals::Dpi::new(dpi.x(), dpi.y())
+impl From<Dpi> for crate::dpi::Dpi {
+    fn from(dpi: Dpi) -> crate::dpi::Dpi {
+        crate::dpi::Dpi::new(dpi.x(), dpi.y())
     }
 }
 

@@ -7,20 +7,18 @@ use std::ptr;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::*;
-use librsvg::{CairoRenderer, Loader};
 use rgb::FromSlice;
 
-use crate::c_api::checked_i32;
-use crate::dpi::Dpi;
-use crate::sizing::LegacySize;
+use crate::api::{CairoRenderer, Loader};
+use super::c_api::{checked_i32, set_gerror};
+use super::dpi::Dpi;
+use super::sizing::LegacySize;
 
-use rsvg_internals::{
+use crate::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     surface_utils::{Pixel, PixelOps},
-    RenderingError,
+    error::RenderingError,
 };
-
-use crate::c_api::set_gerror;
 
 fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
     assert!(width > 0 && height > 0);

@@ -1,7 +1,7 @@
 use float_cmp::approx_eq;
-use librsvg::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
+use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
 
-use crate::c_api::unit_rectangle;
+use super::c_api::unit_rectangle;
 
 pub trait LegacySize {
     /// Returns the SVG's size suitable for the legacy C API.
@@ -51,7 +51,7 @@ fn size_in_pixels_from_percentage_width_and_height(
         vbox,
     } = *dim;
 
-    use librsvg::LengthUnit::*;
+    use crate::api::LengthUnit::*;
 
     // If both width and height are 100%, just use the vbox size as a pixel size.
     // This gives a size with the correct aspect ratio.
