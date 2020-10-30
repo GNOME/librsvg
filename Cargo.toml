@@ -7,6 +7,7 @@ edition = "2018"
 
 [lib]
 name = "librsvg"
+crate-type = [ "staticlib", "rlib" ]
 
 [dependencies]
 bitflags = "1.0"
