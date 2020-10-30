@@ -148,20 +148,20 @@ mod tests {
         let mut v: Vec<*const libc::c_char> = Vec::new();
 
         for (localname, prefix, uri, val) in &attrs {
-            v.push(localname.as_ptr() as *const libc::c_char);
+            v.push(localname.as_ptr());
             v.push(
                 prefix
                     .as_ref()
                     .map(|p: &CString| p.as_ptr())
-                    .unwrap_or_else(|| ptr::null()) as *const libc::c_char,
+                    .unwrap_or_else(|| ptr::null()),
             );
             v.push(
                 uri.as_ref()
                     .map(|p: &CString| p.as_ptr())
-                    .unwrap_or_else(|| ptr::null()) as *const libc::c_char,
+                    .unwrap_or_else(|| ptr::null()),
             );
 
-            let val_start = val.as_ptr() as *const libc::c_char;
+            let val_start = val.as_ptr();
             let val_end = unsafe { val_start.offset(val.as_bytes().len() as isize) };
             v.push(val_start); // value_start
             v.push(val_end); // value_end
