@@ -383,7 +383,7 @@ mod tests {
             .pre_translate(-tx, -ty)
     }
 
-    fn parse_transform(s: &str) -> Result<Transform, ParseError> {
+    fn parse_transform(s: &str) -> Result<Transform, ParseError<'_>> {
         Transform::parse_str(s)
     }
 
