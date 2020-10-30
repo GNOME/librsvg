@@ -1,7 +1,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 #[rustfmt::skip]
-pub use c_api::{
+pub use handle::{
     rsvg_error_get_type,
     rsvg_handle_close,
     rsvg_handle_flags_get_type,
@@ -49,8 +49,8 @@ pub use pixbuf_utils::{
 #[macro_use]
 mod messages;
 
-mod c_api;
 mod color_utils;
 mod dpi;
+mod handle;
 pub mod pixbuf_utils;
 mod sizing;

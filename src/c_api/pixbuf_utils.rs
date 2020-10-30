@@ -9,8 +9,8 @@ use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::*;
 use rgb::FromSlice;
 
-use super::c_api::{checked_i32, set_gerror};
 use super::dpi::Dpi;
+use super::handle::{checked_i32, set_gerror};
 use super::sizing::LegacySize;
 use crate::api::{CairoRenderer, Loader};
 

@@ -1,7 +1,7 @@
 use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
 use float_cmp::approx_eq;
 
-use super::c_api::unit_rectangle;
+use super::handle::unit_rectangle;
 
 pub trait LegacySize {
     /// Returns the SVG's size suitable for the legacy C API.
