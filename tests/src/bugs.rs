@@ -1,8 +1,10 @@
 use cairo;
-use librsvg::{LoadingError, SvgHandle};
+use librsvg::{
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
+    test_utils::compare_to_surface,
+    LoadingError, SvgHandle,
+};
 use matches::matches;
-use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use rsvg_internals::test_utils::compare_to_surface;
 
 use crate::utils::{load_svg, render_document, SurfaceSize};
 
