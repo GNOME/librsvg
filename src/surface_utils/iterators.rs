@@ -53,7 +53,7 @@ impl<'a> Pixels<'a> {
             bounds,
             x: bounds.x0 as u32,
             y: bounds.y0 as u32,
-            offset: bounds.y0 as isize * surface.stride() as isize + bounds.x0 as isize * 4,
+            offset: bounds.y0 as isize * surface.stride() + bounds.x0 as isize * 4,
         }
     }
 }

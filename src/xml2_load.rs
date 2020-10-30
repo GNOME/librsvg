@@ -419,9 +419,10 @@ impl Xml2Parser {
         });
 
         unsafe {
+            let xml2_parser_ptr: *mut Xml2Parser = xml2_parser.as_mut();
             let parser = xmlCreateIOParserCtxt(
                 &mut sax_handler,
-                xml2_parser.as_mut() as *mut _ as *mut _,
+                xml2_parser_ptr as *mut _,
                 Some(stream_ctx_read),
                 Some(stream_ctx_close),
                 Box::into_raw(ctx) as *mut _,

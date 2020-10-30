@@ -64,7 +64,8 @@ pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
 
         #[allow(clippy::cast_ptr_alignment)]
         unsafe {
-            *(&mut self[y as usize * stride + x as usize * 4] as *mut u8 as *mut u32) = value;
+            let p: *mut u8 = &mut self[y as usize * stride + x as usize * 4];
+            *(p as *mut u32) = value;
         }
     }
 }

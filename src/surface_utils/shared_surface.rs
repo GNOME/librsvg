@@ -346,7 +346,7 @@ impl ImageSurface<Shared> {
     /// Retrieves the pixel value by offset into the pixel data array.
     #[inline]
     pub fn get_pixel_by_offset(&self, offset: isize) -> Pixel {
-        assert!(offset < self.stride as isize * self.height as isize);
+        assert!(offset < self.stride * self.height as isize);
 
         #[allow(clippy::cast_ptr_alignment)]
         let value = unsafe { *(self.data_ptr.as_ptr().offset(offset) as *const u32) };

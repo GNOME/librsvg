@@ -497,7 +497,7 @@ impl Element {
             }
         }
 
-        let (create_fn, flags) = if name.ns == ns!(svg) {
+        let (create_fn, flags): (ElementCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
             match ELEMENT_CREATORS.get(name.local.as_ref()) {
                 // hack in the SVG namespace for supported element names
                 Some(&(create_fn, flags)) => (create_fn, flags),
@@ -506,13 +506,13 @@ impl Element {
                 // non-rendering element.  This is like a group, but it doesn't do any rendering
                 // of children.  The effect is that we will ignore all children of unknown elements.
                 None => (
-                    create_non_rendering as ElementCreateFn,
+                    create_non_rendering,
                     ElementCreateFlags::Default,
                 ),
             }
         } else {
             (
-                create_non_rendering as ElementCreateFn,
+                create_non_rendering,
                 ElementCreateFlags::Default,
             )
         };
@@ -576,22 +576,22 @@ impl Element {
 
     pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
         match self {
-            Element::FeBlend(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeColorMatrix(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeComponentTransfer(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeComposite(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeConvolveMatrix(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeDiffuseLighting(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeDisplacementMap(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeFlood(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeGaussianBlur(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeImage(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeMerge(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeMorphology(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeOffset(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeSpecularLighting(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeTile(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
-            Element::FeTurbulence(ref fe) => Some(&fe.element_impl as &dyn FilterEffect),
+            Element::FeBlend(ref fe) => Some(&fe.element_impl),
+            Element::FeColorMatrix(ref fe) => Some(&fe.element_impl),
+            Element::FeComponentTransfer(ref fe) => Some(&fe.element_impl),
+            Element::FeComposite(ref fe) => Some(&fe.element_impl),
+            Element::FeConvolveMatrix(ref fe) => Some(&fe.element_impl),
+            Element::FeDiffuseLighting(ref fe) => Some(&fe.element_impl),
+            Element::FeDisplacementMap(ref fe) => Some(&fe.element_impl),
+            Element::FeFlood(ref fe) => Some(&fe.element_impl),
+            Element::FeGaussianBlur(ref fe) => Some(&fe.element_impl),
+            Element::FeImage(ref fe) => Some(&fe.element_impl),
+            Element::FeMerge(ref fe) => Some(&fe.element_impl),
+            Element::FeMorphology(ref fe) => Some(&fe.element_impl),
+            Element::FeOffset(ref fe) => Some(&fe.element_impl),
+            Element::FeSpecularLighting(ref fe) => Some(&fe.element_impl),
+            Element::FeTile(ref fe) => Some(&fe.element_impl),
+            Element::FeTurbulence(ref fe) => Some(&fe.element_impl),
             _ => None,
         }
     }

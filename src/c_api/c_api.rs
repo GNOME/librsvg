@@ -316,13 +316,19 @@ impl ops::Deref for RsvgHandleClass {
     type Target = ObjectClass;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const _ as *const Self::Target) }
+        unsafe {
+            let self_ptr: *const RsvgHandleClass = self;
+            &*(self_ptr as *const Self::Target)
+        }
     }
 }
 
 impl ops::DerefMut for RsvgHandleClass {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *(self as *mut _ as *mut Self::Target) }
+        unsafe {
+            let self_ptr: *mut RsvgHandleClass = self;
+            &mut *(self_ptr as *mut Self::Target)
+        }
     }
 }
 
@@ -508,9 +514,9 @@ impl ObjectImpl for CHandle {
                 Ok(self.get_dimensions_or_empty().ex.to_value()),
 
             // the following three are deprecated
-            subclass::Property("title", ..)    => Ok((None as Option<String>).to_value()),
-            subclass::Property("desc", ..)     => Ok((None as Option<String>).to_value()),
-            subclass::Property("metadata", ..) => Ok((None as Option<String>).to_value()),
+            subclass::Property("title", ..)    => Ok(None::<String>.to_value()),
+            subclass::Property("desc", ..)     => Ok(None::<String>.to_value()),
+            subclass::Property("metadata", ..) => Ok(None::<String>.to_value()),
 
             _ => unreachable!("invalid property id={} for RsvgHandle", id),
         }
@@ -1772,7 +1778,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data as *mut u8, data_len, None);
 
     let ret = rsvg_handle_new_from_stream_sync(
-        raw_stream as *mut _,
+        raw_stream,
         ptr::null_mut(), // base_file
         0,               // flags
         ptr::null_mut(), // cancellable
