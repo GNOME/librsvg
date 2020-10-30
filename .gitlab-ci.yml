@@ -77,6 +77,17 @@ clippy:
   script:
     - cargo clippy --version
     - sudo -E cargo clippy --workspace
+  after_script:
+    - sudo -E cargo clippy --workspace --message-format=json &> clippy.txt || true
+    - sudo -E /opt/cargo/bin/gitlab-clippy clippy.txt
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
+    expire_in: 1 week
+  rules:
+    - if: '$CODE_QUALITY_DISABLED'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "push"'
 
 cargo_test:
   stage: unit test
