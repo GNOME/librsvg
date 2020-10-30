@@ -141,14 +141,7 @@
 //! [SVG 1.1]: https://www.w3.org/TR/SVG11/
 //! [SVG 2]: https://www.w3.org/TR/SVG2/
 
-// Enable lint group collections
-#![warn(nonstandard_style, rust_2018_idioms, unused)]
-// Some lints no longer exist
-#![warn(renamed_and_removed_lints)]
-// Standalone lints
-#![warn(trivial_casts, trivial_numeric_casts)]
 #![warn(missing_docs)]
-#![deny(warnings)]
 
 pub use crate::{
     error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError},
