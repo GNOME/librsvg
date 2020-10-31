@@ -95,7 +95,7 @@ mod api;
 mod aspect_ratio;
 mod attributes;
 mod bbox;
-mod c_api;
+pub mod c_api;
 mod color;
 mod cond;
 mod css;

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use rsvg_internals::{
+use librsvg::{
     surface_utils::{
         shared_surface::{ExclusiveImageSurface, SurfaceType},
         srgb::{linearize, map_unpremultiplied_components_loop},

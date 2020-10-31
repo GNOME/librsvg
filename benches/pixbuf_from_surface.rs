@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use rsvg_c_api::pixbuf_utils::pixbuf_from_surface;
-use rsvg_internals::{
+use librsvg::{
+    c_api::pixbuf_utils::pixbuf_from_surface,
     surface_utils::{
         shared_surface::{ExclusiveImageSurface, SurfaceType},
         ImageSurfaceDataExt, Pixel,

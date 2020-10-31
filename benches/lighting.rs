@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use nalgebra::{Matrix3, Vector2};
 
-use rsvg_internals::{
+use librsvg::{
     filters::lighting::Normal,
     surface_utils::{
         iterators::{PixelRectangle, Pixels},
