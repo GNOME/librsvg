@@ -112,24 +112,25 @@ LIBRSVG_SRC =					\
 	src/url_resolver.rs			\
 	src/util.rs				\
 	src/viewbox.rs				\
+	src/ua.css				\
 	src/xml2_load.rs			\
 	src/xml2.rs				\
 	src/xml.rs				\
 	$(NULL)
 
-RUST_EXTRA = 						\
-	Cargo.lock					\
-	cargo-vendor-config				\
-	example.svg					\
-	rsvg_internals/benches/box_blur.rs		\
-	rsvg_internals/benches/composite.rs		\
-	rsvg_internals/benches/lighting.rs		\
-	rsvg_internals/benches/path_parser.rs           \
-	rsvg_internals/benches/pixel_iterators.rs	\
-	rsvg_internals/benches/pixel_ops.rs		\
-	rsvg_internals/benches/srgb.rs			\
-	rsvg_internals/benches/surface_from_pixbuf.rs	\
-	rsvg_internals/src/ua.css			\
+RUST_EXTRA =					\
+	Cargo.lock				\
+	cargo-vendor-config			\
+	example.svg				\
+	benches/box_blur.rs			\
+	benches/composite.rs			\
+	benches/lighting.rs			\
+	benches/path_parser.rs			\
+	benches/pixbuf_from_surface.rs		\
+	benches/pixel_iterators.rs		\
+	benches/pixel_ops.rs			\
+	benches/srgb.rs				\
+	benches/surface_from_pixbuf.rs		\
 	$(NULL)
 
 if DEBUG_RELEASE
