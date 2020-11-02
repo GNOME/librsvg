@@ -88,13 +88,15 @@ impl Surface {
         }
     }
 
-    pub fn render(&self, renderer: &CairoRenderer, id: Option<&str>) -> Result<(), RenderingError> {
-        let cr = cairo::Context::new(self);
-        let viewport = self.bounds();
-        let show_page = |_| self.show_page(&cr);
-
+    pub fn render(
+        &self,
+        renderer: &CairoRenderer,
+        cr: &cairo::Context,
+        id: Option<&str>,
+    ) -> Result<(), RenderingError> {
+        let show_page = |_| self.show_page(cr);
         renderer
-            .render_layer(&cr, id, &viewport)
+            .render_layer(cr, id, &self.bounds())
             .and_then(show_page)
     }
 
