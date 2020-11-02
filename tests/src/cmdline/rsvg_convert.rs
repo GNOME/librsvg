@@ -35,7 +35,7 @@ impl RsvgConvert {
     fn binary_location() -> &'static Path {
         match option_env!("LIBRSVG_BUILD_DIR") {
             Some(dir) => Path::new(dir),
-            None => Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap(),
+            None => Path::new(env!("CARGO_MANIFEST_DIR")),
         }
     }
 
