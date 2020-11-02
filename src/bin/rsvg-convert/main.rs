@@ -6,6 +6,7 @@ mod input;
 mod output;
 mod surface;
 
+use cssparser::Color;
 use librsvg::{CairoRenderer, Loader, RenderingError};
 
 use crate::cli::Args;
@@ -66,8 +67,19 @@ fn main() {
         }
 
         if let Some(ref surface) = target {
+            let cr = cairo::Context::new(surface);
+
+            if let Some(Color::RGBA(rgba)) = args.background_color {
+                cr.set_source_rgba(
+                    rgba.red_f32().into(),
+                    rgba.green_f32().into(),
+                    rgba.blue_f32().into(),
+                    rgba.alpha_f32().into(),
+                );
+            }
+
             surface
-                .render(&renderer, args.export_id())
+                .render(&renderer, &cr, args.export_id())
                 .unwrap_or_else(|e| match e {
                     RenderingError::InvalidId(_) => exit!(
                         "File {} does not have an object with id \"{}\")",
