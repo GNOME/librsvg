@@ -25,7 +25,7 @@ pub struct Args {
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub format: Format,
-    pub export_id: Option<String>,
+    export_id: Option<String>,
     pub keep_aspect_ratio: bool,
     pub background_color: Option<Color>,
     pub stylesheet: Option<PathBuf>,
@@ -239,6 +239,10 @@ impl Args {
         }
 
         Ok(args)
+    }
+
+    pub fn export_id(&self) -> Option<&str> {
+        self.export_id.as_deref()
     }
 
     pub fn output(&self) -> Option<&Path> {
