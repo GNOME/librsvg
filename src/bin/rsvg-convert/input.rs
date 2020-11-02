@@ -2,6 +2,7 @@
 
 use core::ops::Deref;
 use gio::FileExt;
+use std::fmt;
 use std::os::unix::io::RawFd;
 use std::path::PathBuf;
 
@@ -79,6 +80,15 @@ impl Item {
 
     pub fn file(&self) -> Option<&gio::File> {
         self.file.as_ref()
+    }
+}
+
+impl fmt::Display for Item {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.file {
+            Some(file) => file.get_path().unwrap().display().fmt(f),
+            None => "stdin".fmt(f),
+        }
     }
 }
 
