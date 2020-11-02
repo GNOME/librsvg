@@ -17,7 +17,7 @@
 #include <cairo.h>
 
 #define RSVG_DISABLE_DEPRECATION_WARNINGS /* so we can test deprecated API */
-#include "librsvg/rsvg.h"
+#include "include/rsvg.h"
 #include "test-utils.h"
 
 /*

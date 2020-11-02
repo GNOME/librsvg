@@ -28,7 +28,7 @@
 
 #include <stdlib.h>
 
-#include "librsvg/rsvg.h"
+#include "include/rsvg.h"
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #define N_(string) (string)

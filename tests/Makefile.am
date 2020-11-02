@@ -1,35 +1,39 @@
 include $(top_srcdir)/glib-tap.mk
 
-test_sources =				\
-	Cargo.toml			\
-	build.rs			\
-	src/errors.rs			\
-	src/loading_crash.rs		\
-	src/main.rs			\
-	src/reference.rs		\
-	src/render_crash.rs		\
-	src/utils.rs			\
-	src/cmdline/mod.rs		\
-	src/cmdline/rsvg_convert.rs	\
-	src/predicates/file.rs		\
-	src/predicates/mod.rs		\
-	src/predicates/pdf.rs		\
-	src/predicates/png.rs
+NULL =
+
+test_sources =					\
+	build.rs				\
+	src/api.rs				\
+	src/bugs.rs				\
+	src/cmdline/mod.rs			\
+	src/cmdline/rsvg_convert.rs		\
+	src/errors.rs				\
+	src/intrinsic_dimensions.rs		\
+	src/loading_crash.rs			\
+	src/main.rs				\
+	src/predicates/file.rs			\
+	src/predicates/mod.rs			\
+	src/predicates/pdf.rs			\
+	src/predicates/png.rs			\
+	src/primitives.rs			\
+	src/reference.rs			\
+	src/render_crash.rs			\
+	src/utils.rs				\
+	$(NULL)
 
 EXTRA_DIST +=		\
 	$(test_sources)	\
-	README.md
+	README.md	\
+	$(NULL)
 
-test_programs =		\
-	api
-
-test_utils_common_sources = \
-	test-utils.c	\
-	test-utils.h
+test_programs = api
 
 api_SOURCES = 		\
 	api.c		\
-	$(test_utils_common_sources)
+	test-utils.c	\
+	test-utils.h	\
+	$(NULL)
 
 LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 	$(LIBRSVG_LIBS)							\
@@ -38,7 +42,7 @@ LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
 AM_CPPFLAGS =					\
 	-I$(srcdir) 				\
 	-I$(top_srcdir)				\
-	-I$(top_builddir)/librsvg		\
+	-I$(top_builddir)/include		\
 	-DTEST_DATA_DIR="\"$(srcdir)\""		\
 	-DTEST_SRC_DIR="\"$(PWD)\""		\
 	-DTOP_SRC_DIR="\"$(top_srcdir)\""	\

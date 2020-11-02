@@ -13,22 +13,20 @@
 use cairo;
 use librsvg::{CairoRenderer, Loader, LoadingError, RenderingError};
 
-use crate::utils::fixture_path;
-
 #[ignore]
 #[test]
 fn too_many_elements() {
     let name = "tests/fixtures/errors/515-too-many-elements.svgz";
 
     assert!(matches!(
-        Loader::new().read_path(fixture_path(name)),
+        Loader::new().read_path(name),
         Err(LoadingError::XmlParseError(_))
     ));
 }
 
 fn rendering_instancing_limit(name: &str) {
     let handle = Loader::new()
-        .read_path(fixture_path(name))
+        .read_path(name)
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 500).unwrap();

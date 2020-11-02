@@ -10,12 +10,14 @@
 use test_generator::test_resources;
 
 use cairo;
-use librsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader};
-use rsvg_internals::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use rsvg_internals::test_utils::compare_to_file;
+use librsvg::{
+    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
+    test_utils::compare_to_file,
+    CairoRenderer, IntrinsicDimensions, Length, Loader,
+};
 use std::path::PathBuf;
 
-use crate::utils::{fixture_path, setup_font_map, setup_language};
+use crate::utils::{setup_font_map, setup_language};
 
 // The original reference images from the SVG1.1 test suite are at 72 DPI.
 const TEST_SUITE_DPI: f64 = 72.0;
@@ -33,11 +35,11 @@ const TEST_SUITE_DPI: f64 = 72.0;
 // offset.
 const FRAME_SIZE: i32 = 47;
 
-fn reference_test(name: &str) {
+fn reference_test(path: &str) {
     setup_language();
     setup_font_map();
 
-    let path = fixture_path(name);
+    let path = PathBuf::from(path);
     let path_base_name = path.file_stem().unwrap().to_string_lossy().to_owned();
     if path_base_name.starts_with("ignore") {
         return;

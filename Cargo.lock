@@ -784,49 +784,16 @@ checksum = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a"
 name = "librsvg"
 version = "2.51.0"
 dependencies = [
- "cairo-rs",
- "gio",
- "glib",
- "matches",
- "rgb",
- "rsvg_internals",
- "url",
-]
-
-[[package]]
-name = "librsvg-tests"
-version = "0.1.0"
-dependencies = [
  "assert_cmd",
- "cairo-rs",
- "cast",
- "chrono",
- "float-cmp",
- "glib",
- "libc",
- "librsvg",
- "lopdf",
- "pango",
- "pango-sys",
- "pangocairo",
- "pkg-config",
- "png",
- "predicates",
- "rsvg_internals",
- "tempfile",
- "test-generator",
- "yeslogic-fontconfig-sys",
-]
-
-[[package]]
-name = "librsvg_c_api"
-version = "0.0.1"
-dependencies = [
  "bitflags",
  "cairo-rs",
  "cairo-sys-rs",
  "cast",
+ "chrono",
  "criterion",
+ "cssparser",
+ "data-url",
+ "encoding",
  "float-cmp",
  "gdk-pixbuf",
  "gdk-pixbuf-sys",
@@ -835,12 +802,35 @@ dependencies = [
  "glib",
  "glib-sys",
  "gobject-sys",
+ "itertools",
+ "language-tags",
  "libc",
- "librsvg",
+ "locale_config",
+ "lopdf",
+ "markup5ever",
+ "matches",
+ "nalgebra",
+ "num-traits",
+ "once_cell",
+ "pango",
+ "pango-sys",
+ "pangocairo",
+ "pkg-config",
+ "png",
+ "predicates",
+ "proptest",
+ "rayon",
+ "rctree",
  "regex",
  "rgb",
- "rsvg_internals",
+ "selectors",
+ "string_cache",
+ "tempfile",
+ "test-generator",
+ "tinyvec",
  "url",
+ "xml5ever",
+ "yeslogic-fontconfig-sys",
 ]
 
 [[package]]
@@ -945,9 +935,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.3.3"
+version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3728d817d99e5ac407411fa471ff9800a778d88a24685968b36824eaf4bee400"
+checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
 
 [[package]]
 name = "memoffset"
@@ -1025,9 +1015,9 @@ dependencies = [
 
 [[package]]
 name = "num-integer"
-version = "0.1.43"
+version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d59457e662d541ba17869cf51cf177c0b5f0cbf476c66bdc90bf1edac4f875b"
+checksum = "d2cc698a63b549a70bc047073d2949cce27cd1c7b0a4a862d08a8031bc2801db"
 dependencies = [
  "autocfg",
  "num-traits",
@@ -1046,9 +1036,9 @@ dependencies = [
 
 [[package]]
 name = "num-traits"
-version = "0.2.12"
+version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac267bcc07f48ee5f8935ab0d24f316fb722d7a1292e2913f0cc196b29ffd611"
+checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
 dependencies = [
  "autocfg",
  "libm",
@@ -1574,48 +1564,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "287f3c3f8236abb92d8b7e36797f19159df4b58f0a658cc3fb6dd3004b1f3bd3"
 dependencies = [
  "bytemuck",
-]
-
-[[package]]
-name = "rsvg_internals"
-version = "0.0.1"
-dependencies = [
- "cairo-rs",
- "cairo-sys-rs",
- "cast",
- "criterion",
- "cssparser",
- "data-url",
- "encoding",
- "float-cmp",
- "gdk-pixbuf",
- "gdk-pixbuf-sys",
- "gio",
- "gio-sys",
- "glib",
- "glib-sys",
- "itertools",
- "language-tags",
- "libc",
- "locale_config",
- "markup5ever",
- "nalgebra",
- "num-traits",
- "once_cell",
- "pango",
- "pango-sys",
- "pangocairo",
- "pkg-config",
- "proptest",
- "rayon",
- "rctree",
- "regex",
- "rgb",
- "selectors",
- "string_cache",
- "tinyvec",
- "url",
- "xml5ever",
 ]
 
 [[package]]
