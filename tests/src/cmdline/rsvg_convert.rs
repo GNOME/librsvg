@@ -3,13 +3,15 @@ extern crate chrono;
 extern crate predicates;
 extern crate tempfile;
 
+use crate::predicates::ends_with_pkg_version;
 use crate::predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
 use chrono::{TimeZone, Utc};
-use predicate::str::*;
+use predicates::boolean::*;
 use predicates::prelude::*;
+use predicates::str::*;
 use std::path::Path;
 use tempfile::Builder;
 
@@ -205,7 +207,9 @@ fn multiple_input_files_not_allowed_for_png_output() {
         .arg(two)
         .assert()
         .failure()
-        .stderr("Multiple SVG files are only allowed for PDF and (E)PS output.\n");
+        .stderr(contains(
+            "Multiple SVG files are only allowed for PDF and (E)PS output",
+        ));
 }
 
 #[test]
@@ -532,7 +536,7 @@ fn background_color_option_invalid_color_yields_error() {
         .arg("--background-color=foobar")
         .assert()
         .failure()
-        .stderr("Invalid color specification.\n");
+        .stderr(contains("Invalid").and(contains("color")));
 }
 
 #[test]
@@ -581,7 +585,7 @@ fn export_id_option_error() {
         .arg("--export-id=foobar")
         .assert()
         .failure()
-        .stderr("File stdin does not have an object with id \"foobar\"\n");
+        .stderr(starts_with("File stdin does not have an object with id \""));
 }
 
 #[test]
@@ -648,22 +652,32 @@ fn no_keep_image_data_option() {
     RsvgConvert::accepts_arg("--no-keep-image-data");
 }
 
+fn is_version_output() -> TrimPredicate<AndPredicate<StartsWithPredicate, EndsWithPredicate, str>> {
+    starts_with("rsvg-convert ")
+        .and(ends_with_pkg_version())
+        .trim()
+}
+
 #[test]
 fn version_option() {
-    RsvgConvert::option_yields_output("--version", starts_with("rsvg-convert version "));
+    RsvgConvert::option_yields_output("--version", is_version_output())
 }
 
 #[test]
 fn version_short_option() {
-    RsvgConvert::option_yields_output("-v", starts_with("rsvg-convert version "));
+    RsvgConvert::option_yields_output("-v", is_version_output())
+}
+
+fn is_usage_output() -> OrPredicate<ContainsPredicate, ContainsPredicate, str> {
+    contains("Usage:").or(contains("USAGE:"))
 }
 
 #[test]
 fn help_option() {
-    RsvgConvert::option_yields_output("--help", starts_with("Usage:"));
+    RsvgConvert::option_yields_output("--help", is_usage_output())
 }
 
 #[test]
 fn help_short_option() {
-    RsvgConvert::option_yields_output("-?", starts_with("Usage:"));
+    RsvgConvert::option_yields_output("-?", is_usage_output())
 }
