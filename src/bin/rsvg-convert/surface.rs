@@ -50,6 +50,9 @@ impl Surface {
 
     fn new_for_pdf(width: f64, height: f64, stream: Stream) -> Result<Self, cairo::Status> {
         let surface = cairo::PdfSurface::for_stream(width, height, stream)?;
+        if let Some(date) = metadata::creation_date() {
+            surface.set_metadata(cairo::PdfMetadata::CreateDate, &date)?;
+        }
         Ok(Self::Pdf(surface, (width, height)))
     }
 
@@ -119,6 +122,29 @@ impl Surface {
         match self {
             Self::Png(surface, stream) => surface.write_to_png(stream),
             _ => Self::finish_output_stream(self),
+        }
+    }
+}
+
+mod metadata {
+    use chrono::prelude::*;
+    use std::env;
+    use std::str::FromStr;
+
+    use super::super::exit;
+
+    pub fn creation_date() -> Option<String> {
+        match env::var("SOURCE_DATE_EPOCH") {
+            Ok(epoch) => {
+                let seconds = i64::from_str(&epoch)
+                    .unwrap_or_else(|e| exit!("Environment variable $SOURCE_DATE_EPOCH: {}", e));
+                let datetime = Utc.timestamp(seconds, 0);
+                Some(datetime.to_rfc3339())
+            }
+            Err(env::VarError::NotPresent) => None,
+            Err(env::VarError::NotUnicode(_)) => {
+                exit!("Environment variable $SOURCE_DATE_EPOCH is not valid Unicode")
+            }
         }
     }
 }

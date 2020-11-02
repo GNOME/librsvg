@@ -13,6 +13,7 @@ use crate::cli::Args;
 use crate::output::Stream;
 use crate::surface::Surface;
 
+#[macro_export]
 macro_rules! exit {
     () => (exit!("Error"));
     ($($arg:tt)*) => ({
