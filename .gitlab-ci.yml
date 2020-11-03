@@ -23,14 +23,16 @@ stages:
 
 .common:
   interruptible: true
+  before_script:
+    - rustc --version
+    - cargo --version
+
+.cache:
   variables:
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force its location
     CARGO_HOME: "${CI_PROJECT_DIR}/cargo_cache"
   before_script:
-    - rustc --version
-    - cargo --version
-    # Set up Rust cache
     - mkdir -p cargo_cache
   cache:
     key:
@@ -45,7 +47,8 @@ stages:
       - cargo_cache/git/db
     policy: pull
 
-.recreate_cache:
+.cache_push:
+  extends: .cache
   after_script:
     # Fix up ownership of the cache, not all builds use sudo
     - sudo chown -R "$(id -u):$(id -g)" ${CI_PROJECT_DIR}/cargo_cache
@@ -56,14 +59,15 @@ check:
   stage: check
   extends:
     - .common
-    - .recreate_cache
+    - .cache_push
   needs: []
   script:
     - sudo -E cargo check --workspace
 
 fmt:
   stage: lint
-  extends: .common
+  extends:
+    - .common
   needs:
     - job: check
   script:
@@ -71,7 +75,9 @@ fmt:
 
 clippy:
   stage: lint
-  extends: .common
+  extends:
+    - .common
+    - .cache
   needs:
     - job: check
   script:
@@ -92,9 +98,10 @@ clippy:
 cargo_test:
   stage: unit test
   extends:
+  extends:
     - .common
-    # Tests require extra crates, hence cache is recreated
-    - .recreate_cache
+    # Tests require extra crates, hence cache is pushed
+    - .cache_push
   needs:
     - job: check
   artifacts:
@@ -110,6 +117,7 @@ cargo_test:
 .make:
   extends:
     - .common
+    - .cache
   needs:
     - job: cargo_test
   script:
@@ -134,8 +142,8 @@ opensuse:tumbleweed:
   stage: acceptance test
   extends:
     - .make
-    # make check runs extra tests that require extra crates, hence recreate cache
-    - .recreate_cache
+    # make check runs extra tests that require extra crates, hence cache is pushed
+    - .cache_push
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
@@ -183,7 +191,9 @@ distcheck:
 
 pages:
   stage: docs
-  extends: .common
+  extends:
+    - .common
+    - .cache
   script:
     - mkdir -p public/doc
     - sudo -E cargo doc --document-private-items --no-deps
