@@ -8,6 +8,8 @@ variables:
   AMD64_DEBIAN_TESTING:      "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/debian:testing"
 
   LIBRSVG_DEBUG: "yes"
+  # Turn compiler warnings into errors
+  RUSTFLAGS: '-D warnings'
 
 image: $AMD64_OPENSUSE_TUMBLEWEED
 
