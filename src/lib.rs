@@ -61,7 +61,6 @@
 #![warn(renamed_and_removed_lints)]
 // Standalone lints
 #![warn(trivial_casts, trivial_numeric_casts)]
-#![deny(warnings)]
 
 // The public API is exported here
 pub use crate::api::*;
