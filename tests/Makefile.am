@@ -1,30 +1,23 @@
 include $(top_srcdir)/glib-tap.mk
 
-NULL =
-
-test_sources =					\
-	build.rs				\
-	src/api.rs				\
-	src/bugs.rs				\
-	src/cmdline/mod.rs			\
-	src/cmdline/rsvg_convert.rs		\
-	src/errors.rs				\
-	src/intrinsic_dimensions.rs		\
-	src/loading_crash.rs			\
-	src/main.rs				\
-	src/predicates/file.rs			\
-	src/predicates/mod.rs			\
-	src/predicates/pdf.rs			\
-	src/predicates/png.rs			\
-	src/primitives.rs			\
-	src/reference.rs			\
-	src/render_crash.rs			\
-	src/utils.rs				\
-	$(NULL)
-
-EXTRA_DIST +=		\
-	$(test_sources)	\
-	README.md	\
+test_sources =				\
+	build.rs			\
+	src/api.rs			\
+	src/bugs.rs			\
+	src/cmdline/mod.rs		\
+	src/cmdline/rsvg_convert.rs	\
+	src/errors.rs			\
+	src/intrinsic_dimensions.rs	\
+	src/loading_crash.rs		\
+	src/main.rs			\
+	src/predicates/file.rs		\
+	src/predicates/mod.rs		\
+	src/predicates/pdf.rs		\
+	src/predicates/png.rs		\
+	src/primitives.rs		\
+	src/reference.rs		\
+	src/render_crash.rs		\
+	src/utils.rs			\
 	$(NULL)
 
 test_programs = api
@@ -35,8 +28,8 @@ api_SOURCES = 		\
 	test-utils.h	\
 	$(NULL)
 
-LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la		\
-	$(LIBRSVG_LIBS)							\
+LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
+	$(LIBRSVG_LIBS)						\
 	$(LIBM)
 
 AM_CPPFLAGS =					\
@@ -48,8 +41,10 @@ AM_CPPFLAGS =					\
 	-DTOP_SRC_DIR="\"$(top_srcdir)\""	\
 	$(LIBRSVG_CFLAGS)
 
-dist_installed_test_data =						\
-	$(wildcard $(srcdir)/resources/*)				\
+test_resources =	\
+	$(wildcard $(srcdir)/resources/*.ttf)
+
+test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/api/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
@@ -71,6 +66,13 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/reftests/svg2/*.png)		\
 	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/dimensions/*.svg)
+
+EXTRA_DIST +=			\
+	$(test_sources)		\
+	$(test_resources)	\
+	$(test_fixtures)	\
+	README.md		\
+	$(NULL)
 
 clean-local:
 	rm -rf output
