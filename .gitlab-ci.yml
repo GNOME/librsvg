@@ -8,6 +8,8 @@ variables:
   AMD64_DEBIAN_TESTING:      "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/debian:testing"
 
   LIBRSVG_DEBUG: "yes"
+  # Turn compiler warnings into errors
+  RUSTFLAGS: '-D warnings'
 
 image: $AMD64_OPENSUSE_TUMBLEWEED
 
@@ -21,7 +23,7 @@ stages:
   - release
   - docs
 
-.common:
+default:
   interruptible: true
   before_script:
     - rustc --version
@@ -57,17 +59,13 @@ stages:
 
 check:
   stage: check
-  extends:
-    - .common
-    - .cache_push
+  extends: '.cache_push'
   needs: []
   script:
     - sudo -E cargo check --workspace
 
 fmt:
   stage: lint
-  extends:
-    - .common
   needs:
     - job: check
   script:
@@ -75,9 +73,7 @@ fmt:
 
 clippy:
   stage: lint
-  extends:
-    - .common
-    - .cache
+  extends: '.cache'
   needs:
     - job: check
   script:
@@ -98,8 +94,6 @@ clippy:
 cargo_test:
   stage: unit test
   extends:
-  extends:
-    - .common
     # Tests require extra crates, hence cache is pushed
     - .cache_push
   needs:
@@ -115,9 +109,7 @@ cargo_test:
     - sudo -E cargo test -- --skip cmdline --skip loading_crash --skip reference --skip render_crash
 
 .make:
-  extends:
-    - .common
-    - .cache
+  extends: '.cache'
   needs:
     - job: cargo_test
   script:
@@ -191,9 +183,7 @@ distcheck:
 
 pages:
   stage: docs
-  extends:
-    - .common
-    - .cache
+  extends: '.cache'
   script:
     - mkdir -p public/doc
     - sudo -E cargo doc --document-private-items --no-deps
