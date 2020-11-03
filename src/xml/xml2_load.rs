@@ -18,8 +18,9 @@ use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use crate::attributes::Attributes;
 use crate::error::LoadingError;
 use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
-use crate::xml::XmlState;
-use crate::xml2::*;
+
+use super::xml2::*;
+use super::XmlState;
 
 #[rustfmt::skip]
 fn get_xml2_sax_handler() -> xmlSAXHandler {

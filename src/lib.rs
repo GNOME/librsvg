@@ -138,8 +138,6 @@ mod url_resolver;
 mod util;
 mod viewbox;
 mod xml;
-mod xml2;
-mod xml2_load;
 
 #[doc(hidden)]
 pub mod doctest_only {
