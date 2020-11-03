@@ -38,6 +38,7 @@ doc/rsvg-decl.txt
 doc/rsvg-undeclared.txt
 doc/rsvg-undocumented.txt
 doc/rsvg-unused.txt
+doc/rsvg.actions
 doc/rsvg.args
 doc/rsvg.hierarchy
 doc/rsvg.interfaces
@@ -51,7 +52,7 @@ doc/xml/
 gdk-pixbuf-loader/gdk-pixbuf.loaders
 gdk-pixbuf-loader/librsvg.thumbnailer
 gdk-pixbuf-loader/rsvg-loader
-librsvg/rsvg-version.h
+include/rsvg-version.h
 m4/gettext.m4
 m4/gtk-doc.m4
 m4/host-cpu-c-abi.m4
