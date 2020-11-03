@@ -82,6 +82,6 @@ src/unit_interval.rs
 src/url_resolver.rs
 src/util.rs
 src/viewbox.rs
-src/xml.rs
-src/xml2.rs
-src/xml2_load.rs
+src/xml/mod.rs
+src/xml/xml2.rs
+src/xml/xml2_load.rs

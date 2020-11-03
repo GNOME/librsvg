@@ -113,9 +113,9 @@ LIBRSVG_SRC =					\
 	src/util.rs				\
 	src/viewbox.rs				\
 	src/ua.css				\
-	src/xml2_load.rs			\
-	src/xml2.rs				\
-	src/xml.rs				\
+	src/xml/mod.rs				\
+	src/xml/xml2_load.rs			\
+	src/xml/xml2.rs				\
 	$(NULL)
 
 RUST_EXTRA =					\

@@ -22,7 +22,11 @@ use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
-use crate::xml2_load::Xml2Parser;
+
+use xml2_load::Xml2Parser;
+
+mod xml2;
+mod xml2_load;
 
 #[derive(Clone)]
 enum Context {
