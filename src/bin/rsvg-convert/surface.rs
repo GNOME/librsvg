@@ -6,6 +6,11 @@ use librsvg::{CairoRenderer, RenderingError};
 use crate::cli::Format;
 use crate::output::Stream;
 
+// TODO
+fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
+    cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+}
+
 pub enum Surface {
     Png(cairo::ImageSurface, Stream),
     Pdf(cairo::PdfSurface, (f64, f64)),
@@ -43,8 +48,9 @@ impl Surface {
     }
 
     fn new_for_png(width: f64, height: f64, stream: Stream) -> Result<Self, cairo::Status> {
-        let surface =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, width as i32, height as i32)?;
+        let w = checked_i32(width.round())?;
+        let h = checked_i32(height.round())?;
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
         Ok(Self::Png(surface, stream))
     }
 

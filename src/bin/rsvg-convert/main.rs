@@ -22,6 +22,14 @@ macro_rules! exit {
     })
 }
 
+fn size_limit_exceeded() -> ! {
+    exit!(
+        "The resulting image would be larger than 32767 pixels on either dimension.\n\
+           Librsvg currently cannot render to images bigger than that.\n\
+           Please specify a smaller size."
+    );
+}
+
 fn load_stylesheet(args: &Args) -> std::io::Result<Option<String>> {
     match args.stylesheet {
         Some(ref filename) => std::fs::read_to_string(filename).map(Some),
@@ -58,10 +66,11 @@ fn main() {
                     let output = Stream::new(args.output())
                         .unwrap_or_else(|e| exit!("Error opening output: {}", e));
 
-                    Some(
-                        Surface::new(args.format, width, height, output)
-                            .unwrap_or_else(|e| exit!("Error creating output surface: {}", e)),
-                    )
+                    match Surface::new(args.format, width, height, output) {
+                        Ok(surface) => Some(surface),
+                        Err(cairo::Status::InvalidSize) => size_limit_exceeded(),
+                        Err(e) => exit!("Error creating output surface: {}", e),
+                    }
                 }
                 None => None,
             };
