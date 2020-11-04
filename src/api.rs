@@ -215,12 +215,12 @@ impl Loader {
     /// use librsvg;
     ///
     /// let svg_handle = librsvg::Loader::new()
-    ///     .with_unlimited_size()
+    ///     .with_unlimited_size(true)
     ///     .read_path("example.svg")    // presumably a trusted huge file
     ///     .unwrap();
     /// ```
-    pub fn with_unlimited_size(mut self) -> Self {
-        self.unlimited_size = true;
+    pub fn with_unlimited_size(mut self, unlimited: bool) -> Self {
+        self.unlimited_size = unlimited;
         self
     }
 
@@ -241,7 +241,7 @@ impl Loader {
     /// ```
     /// # use std::env;
     /// let svg_handle = librsvg::Loader::new()
-    ///     .keep_image_data()
+    ///     .keep_image_data(true)
     ///     .read_path("example.svg")
     ///     .unwrap();
     ///
@@ -257,8 +257,8 @@ impl Loader {
     /// )?;
     /// # Ok::<(), librsvg::RenderingError>(())
     /// ```
-    pub fn keep_image_data(mut self) -> Self {
-        self.keep_image_data = true;
+    pub fn keep_image_data(mut self, keep: bool) -> Self {
+        self.keep_image_data = keep;
         self
     }
 
