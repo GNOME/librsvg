@@ -118,8 +118,8 @@ mod limits;
 mod marker;
 mod number_list;
 mod paint_server;
-pub mod path_builder; // pub for benchmarking
-pub mod path_parser; // pub for benchmarking
+mod path_builder;
+mod path_parser;
 mod pattern;
 mod properties;
 mod property_defs;
@@ -137,6 +137,12 @@ mod url_resolver;
 mod util;
 mod viewbox;
 mod xml;
+
+#[doc(hidden)]
+pub mod bench_only {
+    pub use crate::path_builder::PathBuilder;
+    pub use crate::path_parser::{parse_path_into_builder, Lexer};
+}
 
 #[doc(hidden)]
 pub mod doctest_only {
