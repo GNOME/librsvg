@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use librsvg::{Color, Parse};
 
 use crate::input::Input;
+use crate::size::{Dpi, Zoom};
 
 arg_enum! {
     #[derive(Clone, Copy, Debug)]
@@ -19,9 +20,9 @@ arg_enum! {
 
 #[derive(Debug)]
 pub struct Args {
-    pub dpi_x: f64,
-    pub dpi_y: f64,
-    pub zoom: (f32, f32),
+    pub dpi: Dpi,
+    zoom_x: Option<f64>,
+    zoom_y: Option<f64>,
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub format: Format,
@@ -66,7 +67,6 @@ impl Args {
                     .long("x-zoom")
                     .takes_value(true)
                     .value_name("float")
-                    .default_value("1.0")
                     .conflicts_with("zoom")
                     .help("Horizontal zoom factor"),
             )
@@ -76,7 +76,6 @@ impl Args {
                     .long("y-zoom")
                     .takes_value(true)
                     .value_name("float")
-                    .default_value("1.0")
                     .conflicts_with("zoom")
                     .help("Vertical zoom factor"),
             )
@@ -86,7 +85,6 @@ impl Args {
                     .long("zoom")
                     .takes_value(true)
                     .value_name("float")
-                    .default_value("1.0")
                     .help("Zoom factor"),
             )
             .arg(
@@ -197,17 +195,17 @@ impl Args {
             }
         };
 
+        let zoom = value_t!(matches, "zoom", f64).or_none()?;
+        let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
+        let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
+
         let args = Args {
-            dpi_x: value_t!(matches, "res_x", f64)?,
-            dpi_y: value_t!(matches, "res_y", f64)?,
-            zoom: if matches.is_present("zoom") {
-                let zoom = value_t!(matches, "zoom", f32)?;
-                (zoom, zoom)
-            } else {
-                let zoom_x = value_t!(matches, "zoom_x", f32)?;
-                let zoom_y = value_t!(matches, "zoom_y", f32)?;
-                (zoom_x, zoom_y)
+            dpi: Dpi {
+                x: value_t!(matches, "res_x", f64)?,
+                y: value_t!(matches, "res_y", f64)?,
             },
+            zoom_x: zoom.or(zoom_x),
+            zoom_y: zoom.or(zoom_y),
             width: value_t!(matches, "size_x", u32).or_none()?,
             height: value_t!(matches, "size_y", u32).or_none()?,
             format,
@@ -251,6 +249,15 @@ impl Args {
 
     pub fn input(&self) -> Input<'_> {
         Input::new(&self.input)
+    }
+
+    pub fn zoom(&self) -> Zoom {
+        match (self.zoom_x, self.zoom_y) {
+            (None, None) => Zoom { x: 1.0, y: 1.0 },
+            (Some(x), None) => Zoom { x, y: x },
+            (None, Some(y)) => Zoom { x: y, y },
+            (Some(x), Some(y)) => Zoom { x, y },
+        }
     }
 }
 

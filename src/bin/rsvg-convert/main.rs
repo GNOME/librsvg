@@ -4,13 +4,15 @@ extern crate clap;
 mod cli;
 mod input;
 mod output;
+mod size;
 mod surface;
 
 use cssparser::Color;
-use librsvg::{CairoRenderer, Loader, RenderingError};
+use librsvg::{CairoRenderer, Loader, RenderingError, SvgHandle};
 
 use crate::cli::Args;
 use crate::output::Stream;
+use crate::size::Size;
 use crate::surface::Surface;
 
 #[macro_export]
@@ -37,6 +39,13 @@ fn load_stylesheet(args: &Args) -> std::io::Result<Option<String>> {
     }
 }
 
+fn get_size(_handle: &SvgHandle, renderer: &CairoRenderer, args: &Args) -> Option<Size> {
+    // TODO
+    renderer
+        .intrinsic_size_in_pixels()
+        .map(|(w, h)| Size::new(w, h).scale(args.zoom()))
+}
+
 fn main() {
     let args = Args::new().unwrap_or_else(|e| e.exit());
 
@@ -58,21 +67,21 @@ fn main() {
                 .unwrap_or_else(|e| exit!("Error applying stylesheet: {}", e));
         }
 
-        let renderer = CairoRenderer::new(&handle).with_dpi(args.dpi_x, args.dpi_y);
+        let renderer = CairoRenderer::new(&handle).with_dpi(args.dpi.x, args.dpi.y);
 
         if target.is_none() {
-            target = match renderer.intrinsic_size_in_pixels() {
-                Some((width, height)) => {
-                    let output = Stream::new(args.output())
-                        .unwrap_or_else(|e| exit!("Error opening output: {}", e));
+            let size = get_size(&handle, &renderer, &args)
+                .unwrap_or_else(|| exit!("Could not get dimensions for file {}", input));
 
-                    match Surface::new(args.format, width, height, output) {
-                        Ok(surface) => Some(surface),
-                        Err(cairo::Status::InvalidSize) => size_limit_exceeded(),
-                        Err(e) => exit!("Error creating output surface: {}", e),
-                    }
+            target = {
+                let output = Stream::new(args.output())
+                    .unwrap_or_else(|e| exit!("Error opening output: {}", e));
+
+                match Surface::new(args.format, size, output) {
+                    Ok(surface) => Some(surface),
+                    Err(cairo::Status::InvalidSize) => size_limit_exceeded(),
+                    Err(e) => exit!("Error creating output surface: {}", e),
                 }
-                None => None,
             };
         }
 
@@ -87,6 +96,9 @@ fn main() {
                     rgba.alpha_f32().into(),
                 );
             }
+
+            let zoom = args.zoom();
+            cr.scale(zoom.x, zoom.y);
 
             surface
                 .render(&renderer, &cr, args.export_id())
