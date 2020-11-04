@@ -5,17 +5,18 @@ use librsvg::{CairoRenderer, RenderingError};
 
 use crate::cli::Format;
 use crate::output::Stream;
+use crate::size::Size;
 
-// TODO
+// TODO: use from src/lib/handle.rs
 fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
     cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
 }
 
 pub enum Surface {
     Png(cairo::ImageSurface, Stream),
-    Pdf(cairo::PdfSurface, (f64, f64)),
-    Ps(cairo::PsSurface, (f64, f64)),
-    Svg(cairo::SvgSurface, (f64, f64)),
+    Pdf(cairo::PdfSurface, Size),
+    Ps(cairo::PsSurface, Size),
+    Svg(cairo::SvgSurface, Size),
 }
 
 impl Deref for Surface {
@@ -32,68 +33,61 @@ impl Deref for Surface {
 }
 
 impl Surface {
-    pub fn new(
-        format: Format,
-        width: f64,
-        height: f64,
-        stream: Stream,
-    ) -> Result<Self, cairo::Status> {
+    pub fn new(format: Format, size: Size, stream: Stream) -> Result<Self, cairo::Status> {
         match format {
-            Format::Png => Self::new_for_png(width, height, stream),
-            Format::Pdf => Self::new_for_pdf(width, height, stream),
-            Format::Ps => Self::new_for_ps(width, height, stream, false),
-            Format::Eps => Self::new_for_ps(width, height, stream, true),
-            Format::Svg => Self::new_for_svg(width, height, stream),
+            Format::Png => Self::new_for_png(size, stream),
+            Format::Pdf => Self::new_for_pdf(size, stream),
+            Format::Ps => Self::new_for_ps(size, stream, false),
+            Format::Eps => Self::new_for_ps(size, stream, true),
+            Format::Svg => Self::new_for_svg(size, stream),
         }
     }
 
-    fn new_for_png(width: f64, height: f64, stream: Stream) -> Result<Self, cairo::Status> {
-        let w = checked_i32(width.round())?;
-        let h = checked_i32(height.round())?;
+    fn new_for_png(size: Size, stream: Stream) -> Result<Self, cairo::Status> {
+        let w = checked_i32(size.w.round())?;
+        let h = checked_i32(size.h.round())?;
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
         Ok(Self::Png(surface, stream))
     }
 
-    fn new_for_pdf(width: f64, height: f64, stream: Stream) -> Result<Self, cairo::Status> {
-        let surface = cairo::PdfSurface::for_stream(width, height, stream)?;
+    fn new_for_pdf(size: Size, stream: Stream) -> Result<Self, cairo::Status> {
+        let surface = cairo::PdfSurface::for_stream(size.w, size.h, stream)?;
         if let Some(date) = metadata::creation_date() {
             surface.set_metadata(cairo::PdfMetadata::CreateDate, &date)?;
         }
-        Ok(Self::Pdf(surface, (width, height)))
+        Ok(Self::Pdf(surface, size))
     }
 
-    fn new_for_ps(
-        width: f64,
-        height: f64,
-        stream: Stream,
-        eps: bool,
-    ) -> Result<Self, cairo::Status> {
-        let surface = cairo::PsSurface::for_stream(width, height, stream)?;
+    fn new_for_ps(size: Size, stream: Stream, eps: bool) -> Result<Self, cairo::Status> {
+        let surface = cairo::PsSurface::for_stream(size.w, size.h, stream)?;
         surface.set_eps(eps);
-        Ok(Self::Ps(surface, (width, height)))
+        Ok(Self::Ps(surface, size))
     }
 
-    fn new_for_svg(width: f64, height: f64, stream: Stream) -> Result<Self, cairo::Status> {
-        let surface = cairo::SvgSurface::for_stream(width, height, stream)?;
-        Ok(Self::Svg(surface, (width, height)))
+    fn new_for_svg(size: Size, stream: Stream) -> Result<Self, cairo::Status> {
+        let surface = cairo::SvgSurface::for_stream(size.w, size.h, stream)?;
+        Ok(Self::Svg(surface, size))
     }
 
-    fn size(&self) -> (f64, f64) {
+    fn size(&self) -> Size {
         match self {
-            Self::Png(s, _) => (s.get_width() as f64, s.get_height() as f64),
-            Self::Pdf(_, size) => *size,
-            Self::Ps(_, size) => *size,
-            Self::Svg(_, size) => *size,
+            Self::Png(surface, _) => Size {
+                w: surface.get_width() as f64,
+                h: surface.get_height() as f64,
+            },
+            Self::Pdf(_, size) => size.clone(),
+            Self::Ps(_, size) => size.clone(),
+            Self::Svg(_, size) => size.clone(),
         }
     }
 
     fn bounds(&self) -> cairo::Rectangle {
-        let (width, height) = self.size();
+        let size = self.size();
         cairo::Rectangle {
             x: 0.0,
             y: 0.0,
-            width,
-            height,
+            width: size.w,
+            height: size.h,
         }
     }
 
