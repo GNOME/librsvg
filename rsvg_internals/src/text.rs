@@ -293,6 +293,8 @@ fn children_to_chunks(
                         &cascaded,
                         draw_ctx,
                         chunks,
+                        dx,
+                        dy,
                         depth + 1,
                     );
                 }
@@ -603,6 +605,8 @@ impl TSpan {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         chunks: &mut Vec<Chunk>,
+        dx: f64,
+        dy: f64,
         depth: usize,
     ) {
         let values = cascaded.get();
@@ -611,8 +615,11 @@ impl TSpan {
         let x = self.x.map(|l| l.normalize(&values, &params));
         let y = self.y.map(|l| l.normalize(&values, &params));
 
-        let dx = self.dx.map_or(0.0, |l| l.normalize(&values, &params));
-        let dy = self.dy.map_or(0.0, |l| l.normalize(&values, &params));
+        let span_dx = self.dx.map_or(0.0, |l| l.normalize(&values, &params));
+        let span_dy = self.dy.map_or(0.0, |l| l.normalize(&values, &params));
+
+        let dx = dx + span_dx;
+        let dy = dy + span_dy;
 
         chunks.push(Chunk::new(values, x, y));
 
