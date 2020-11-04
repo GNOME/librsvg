@@ -108,6 +108,31 @@ cargo_test:
   script:
     - sudo -E cargo test -- --skip cmdline --skip loading_crash --skip reference --skip render_crash
 
+cargo_bench:
+  stage: unit test
+  needs:
+    - job: check
+  script: |
+    BENCHES=("box_blur" "composite" "lighting" "path_parser" "pixbuf_from_surface" "pixel_iterators" "pixel_ops" "srgb" "surface_from_pixbuf")
+    sudo -E git checkout ${CI_DEFAULT_BRANCH}
+    for BENCH in "${BENCHES[@]}"
+    do
+      sudo -E cargo bench --bench $BENCH -- --noplot --save-baseline master
+    done
+    sudo -E git checkout ${CI_COMMIT_SHA}
+    for BENCH in "${BENCHES[@]}"
+    do
+      sudo -E cargo bench --bench $BENCH -- --noplot --baseline master
+    done
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "master"'
+      when: manual
+      allow_failure: true
+  artifacts:
+    paths:
+      - target/criterion
+    expire_in: 1 week
+
 .make:
   extends: '.cache'
   needs:
