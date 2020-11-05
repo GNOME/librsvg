@@ -1,3 +1,7 @@
+Version 2.50.2
+
+- #642 - Fix dx/dy offsets in nested <tspan> elements.
+
 Version 2.50.1
 
 - #615: SVG2: Support a chain of uri() filters in the "filter" property
