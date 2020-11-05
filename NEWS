@@ -1,3 +1,9 @@
+Version 2.48.9
+
+- #642 - Fix dx/dy offsets in nested <tspan> elements.
+
+- Windows: support ARM64 builds (Chun-wei Fan).
+
 Version 2.48.8
 
 - #605 - Compute 'bolder' and 'lighter' font-weight correctly.
