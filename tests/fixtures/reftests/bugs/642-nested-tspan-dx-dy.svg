@@ -1,0 +1,17 @@
+<svg width="500" height="500" xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <rect x="0" y="0" width="500" height="500" fill="white"/>
+
+  <!-- with buggy #642 these will overlap -->
+  <text x="100" y="100" fill="black" style="font-family: sans-serif; font-size: 20px;">
+    <tspan x="100" y="100" dy="0"><tspan>one</tspan></tspan>
+    <tspan x="100" y="100" dy="20"><tspan>two</tspan></tspan>
+    <tspan x="100" y="100" dy="40"><tspan>three</tspan></tspan>
+  </text>
+
+  <!-- but these won't, note the whitespace inside the outermost tspans -->
+  <text x="100" y="200" fill="black" style="font-family: sans-serif; font-size: 20px;">
+    <tspan x="100" y="200" dy="0"> <tspan>one</tspan></tspan>
+    <tspan x="100" y="200" dy="20"> <tspan>two</tspan></tspan>
+    <tspan x="100" y="200" dy="40"> <tspan>three</tspan></tspan>
+  </text>
+</svg>
