@@ -481,23 +481,23 @@ fn x_and_y_resolution() {
 }
 
 #[test]
-fn defaults_are_used_for_zero_resolutions() {
+fn zero_resolution_is_invalid() {
     RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--dpi-x=0")
         .arg("--dpi-y=0")
         .assert()
-        .success()
-        .stdout(file::is_png().with_size(90, 360));
+        .failure()
+        .stderr(contains("Invalid resolution"));
 }
 
 #[test]
-fn defaults_are_used_for_negative_resolutions() {
+fn negative_resolution_is_invalid() {
     RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--dpi-x=-100")
         .arg("--dpi-y=-100")
         .assert()
-        .success()
-        .stdout(file::is_png().with_size(90, 360));
+        .failure()
+        .stderr(contains("Invalid resolution"));
 }
 
 #[test]
