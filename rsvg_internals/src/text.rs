@@ -39,15 +39,15 @@ use crate::transform::Transform;
 /// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
 struct Chunk {
     values: ComputedValues,
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
+    x: Option<f64>,
+    y: Option<f64>,
     spans: Vec<Span>,
 }
 
 struct MeasuredChunk {
     values: ComputedValues,
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
+    x: Option<f64>,
+    y: Option<f64>,
     advance: (f64, f64),
     spans: Vec<MeasuredSpan>,
 }
@@ -61,8 +61,8 @@ struct PositionedChunk {
 struct Span {
     values: ComputedValues,
     text: String,
-    dx: Option<Length<Horizontal>>,
-    dy: Option<Length<Vertical>>,
+    dx: f64,
+    dy: f64,
     _depth: usize,
 }
 
@@ -71,8 +71,8 @@ struct MeasuredSpan {
     layout: pango::Layout,
     _layout_size: (f64, f64),
     advance: (f64, f64),
-    dx: Option<Length<Horizontal>>,
-    dy: Option<Length<Vertical>>,
+    dx: f64,
+    dy: f64,
 }
 
 struct PositionedSpan {
@@ -85,11 +85,7 @@ struct PositionedSpan {
 }
 
 impl Chunk {
-    fn new(
-        values: &ComputedValues,
-        x: Option<Length<Horizontal>>,
-        y: Option<Length<Vertical>>,
-    ) -> Chunk {
+    fn new(values: &ComputedValues, x: Option<f64>, y: Option<f64>) -> Chunk {
         Chunk {
             values: values.clone(),
             x,
@@ -181,13 +177,7 @@ fn text_anchor_advance(
 }
 
 impl Span {
-    fn new(
-        text: &str,
-        values: ComputedValues,
-        dx: Option<Length<Horizontal>>,
-        dy: Option<Length<Vertical>>,
-        depth: usize,
-    ) -> Span {
+    fn new(text: &str, values: ComputedValues, dx: f64, dy: f64, depth: usize) -> Span {
         Span {
             values,
             text: text.to_string(),
@@ -241,14 +231,8 @@ impl PositionedSpan {
         let baseline_shift = values.baseline_shift.0.normalize(&values, &params);
         let offset = baseline + baseline_shift;
 
-        let dx = measured
-            .dx
-            .map(|l| l.normalize(&values, &params))
-            .unwrap_or(0.0);
-        let dy = measured
-            .dy
-            .map(|l| l.normalize(&values, &params))
-            .unwrap_or(0.0);
+        let dx = measured.dx;
+        let dy = measured.dy;
 
         let (render_x, render_y) = if values.writing_mode.is_vertical() {
             (x + offset + dx, y + dy)
@@ -423,8 +407,8 @@ fn children_to_chunks(
     acquired_nodes: &mut AcquiredNodes,
     cascaded: &CascadedValues<'_>,
     draw_ctx: &mut DrawingCtx,
-    dx: Option<Length<Horizontal>>,
-    dy: Option<Length<Vertical>>,
+    dx: f64,
+    dy: f64,
     depth: usize,
 ) {
     for child in node.children() {
@@ -445,6 +429,8 @@ fn children_to_chunks(
                     &cascaded,
                     draw_ctx,
                     chunks,
+                    dx,
+                    dy,
                     depth + 1,
                 );
             }
@@ -531,19 +517,23 @@ impl NodeChars {
         &self,
         node: &RsvgNode,
         values: &ComputedValues,
-        dx: Option<Length<Horizontal>>,
-        dy: Option<Length<Vertical>>,
+        dx: f64,
+        dy: f64,
         depth: usize,
-    ) -> Span {
+    ) -> Option<Span> {
         self.ensure_normalized_string(node, values);
 
-        Span::new(
-            self.space_normalized.borrow().as_ref().unwrap(),
-            values.clone(),
-            dx,
-            dy,
-            depth,
-        )
+        if self.space_normalized.borrow().as_ref().unwrap() == "" {
+            None
+        } else {
+            Some(Span::new(
+                self.space_normalized.borrow().as_ref().unwrap(),
+                values.clone(),
+                dx,
+                dy,
+                depth,
+            ))
+        }
     }
 
     fn to_chunks(
@@ -551,16 +541,16 @@ impl NodeChars {
         node: &RsvgNode,
         values: &ComputedValues,
         chunks: &mut Vec<Chunk>,
-        dx: Option<Length<Horizontal>>,
-        dy: Option<Length<Vertical>>,
+        dx: f64,
+        dy: f64,
         depth: usize,
     ) {
-        let span = self.make_span(&node, values, dx, dy, depth);
+        if let Some(span) = self.make_span(&node, values, dx, dy, depth) {
+            let num_chunks = chunks.len();
+            assert!(num_chunks > 0);
 
-        let num_chunks = chunks.len();
-        assert!(num_chunks > 0);
-
-        chunks[num_chunks - 1].spans.push(span);
+            chunks[num_chunks - 1].spans.push(span);
+        }
     }
 
     pub fn get_string(&self) -> String {
@@ -589,17 +579,27 @@ impl Text {
         acquired_nodes: &mut AcquiredNodes,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
+        x: f64,
+        y: f64,
     ) -> Vec<Chunk> {
         let mut chunks = Vec::new();
-        chunks.push(Chunk::new(cascaded.get(), Some(self.x), Some(self.y)));
+
+        let values = cascaded.get();
+        let params = draw_ctx.get_view_params();
+
+        chunks.push(Chunk::new(&values, Some(x), Some(y)));
+
+        let dx = self.dx.map_or(0.0, |l| l.normalize(&values, &params));
+        let dy = self.dy.map_or(0.0, |l| l.normalize(&values, &params));
+
         children_to_chunks(
             &mut chunks,
             node,
             acquired_nodes,
             cascaded,
             draw_ctx,
-            self.dx,
-            self.dy,
+            dx,
+            dy,
             0,
         );
         chunks
@@ -635,7 +635,7 @@ impl NodeTrait for Text {
         let mut x = self.x.normalize(values, &params);
         let mut y = self.y.normalize(values, &params);
 
-        let chunks = self.make_chunks(node, acquired_nodes, cascaded, draw_ctx);
+        let chunks = self.make_chunks(node, acquired_nodes, cascaded, draw_ctx, x, y);
 
         let mut measured_chunks = Vec::new();
         for chunk in &chunks {
@@ -644,12 +644,8 @@ impl NodeTrait for Text {
 
         let mut positioned_chunks = Vec::new();
         for chunk in &measured_chunks {
-            let chunk_x = chunk
-                .x
-                .map_or_else(|| x, |l| l.normalize(&chunk.values, &params));
-            let chunk_y = chunk
-                .y
-                .map_or_else(|| y, |l| l.normalize(&chunk.values, &params));
+            let chunk_x = chunk.x.unwrap_or(x);
+            let chunk_y = chunk.y.unwrap_or(y);
 
             let positioned = PositionedChunk::from_measured(&chunk, draw_ctx, chunk_x, chunk_y);
 
@@ -719,7 +715,7 @@ fn extract_chars_children_to_chunks_recursively(
             NodeType::Chars => child
                 .borrow()
                 .get_impl::<NodeChars>()
-                .to_chunks(&child, values, chunks, None, None, depth),
+                .to_chunks(&child, values, chunks, 0.0, 0.0, depth),
             _ => extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1),
         }
     }
@@ -756,10 +752,22 @@ impl TSpan {
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
         chunks: &mut Vec<Chunk>,
+        dx: f64,
+        dy: f64,
         depth: usize,
     ) {
         let values = cascaded.get();
-        chunks.push(Chunk::new(values, self.x, self.y));
+
+        let params = draw_ctx.get_view_params();
+        let x = self.x.map(|l| l.normalize(&values, &params));
+        let y = self.y.map(|l| l.normalize(&values, &params));
+
+        let span_dx = dx + self.dx.map_or(0.0, |l| l.normalize(&values, &params));
+        let span_dy = dy + self.dy.map_or(0.0, |l| l.normalize(&values, &params));
+
+        if x.is_some() || y.is_some() {
+            chunks.push(Chunk::new(values, x, y));
+        }
 
         children_to_chunks(
             chunks,
@@ -767,8 +775,8 @@ impl TSpan {
             acquired_nodes,
             cascaded,
             draw_ctx,
-            self.dx,
-            self.dy,
+            span_dx,
+            span_dy,
             depth,
         );
     }
