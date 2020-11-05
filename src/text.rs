@@ -380,16 +380,20 @@ impl Chars {
         dx: f64,
         dy: f64,
         depth: usize,
-    ) -> Span {
+    ) -> Option<Span> {
         self.ensure_normalized_string(node, values);
 
-        Span::new(
-            self.space_normalized.borrow().as_ref().unwrap(),
-            values.clone(),
-            dx,
-            dy,
-            depth,
-        )
+        if self.space_normalized.borrow().as_ref().unwrap() == "" {
+            None
+        } else {
+            Some(Span::new(
+                self.space_normalized.borrow().as_ref().unwrap(),
+                values.clone(),
+                dx,
+                dy,
+                depth,
+            ))
+        }
     }
 
     fn to_chunks(
@@ -401,12 +405,12 @@ impl Chars {
         dy: f64,
         depth: usize,
     ) {
-        let span = self.make_span(&node, values, dx, dy, depth);
+        if let Some(span) = self.make_span(&node, values, dx, dy, depth) {
+            let num_chunks = chunks.len();
+            assert!(num_chunks > 0);
 
-        let num_chunks = chunks.len();
-        assert!(num_chunks > 0);
-
-        chunks[num_chunks - 1].spans.push(span);
+            chunks[num_chunks - 1].spans.push(span);
+        }
     }
 
     pub fn get_string(&self) -> String {
