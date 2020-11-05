@@ -567,7 +567,11 @@ fn stylesheet_option_error() {
 
 #[test]
 fn export_id_option() {
-    RsvgConvert::accepts_arg("--export-id=one");
+    RsvgConvert::new_with_input("tests/fixtures/api/geometry-element.svg")
+        .arg("--export-id=foo")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(127, 127));
 }
 
 #[test]
@@ -576,7 +580,8 @@ fn export_id_short_option() {
         .arg("-i")
         .arg("two")
         .assert()
-        .success();
+        .success()
+        .stdout(file::is_png().with_size(90, 180));
 }
 
 #[test]
