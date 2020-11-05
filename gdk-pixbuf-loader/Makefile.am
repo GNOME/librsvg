@@ -12,7 +12,6 @@ libpixbufloader_svg_la_CPPFLAGS = \
 	-I$(top_srcdir)/include			\
 	-I$(top_builddir)			\
 	-I$(top_builddir)/include		\
-	-I$(top_builddir)/include/librsvg	\
 	-DGDK_PIXBUF_ENABLE_BACKEND		\
 	-DG_LOG_DOMAIN=\"libpixbufloader-svg\" 	\
 	$(AM_CPPFLAGS)
@@ -43,7 +42,6 @@ rsvg_loader_CPPFLAGS = \
 	-I$(top_srcdir)/include			\
 	-I$(top_builddir)			\
 	-I$(top_builddir)/include		\
-	-I$(top_builddir)/include/librsvg	\
 	$(AM_CPPFLAGS)
 rsvg_loader_CFLAGS = \
 	$(GDK_PIXBUF_CFLAGS) \
