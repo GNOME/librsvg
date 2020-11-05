@@ -615,13 +615,12 @@ impl TSpan {
         let x = self.x.map(|l| l.normalize(&values, &params));
         let y = self.y.map(|l| l.normalize(&values, &params));
 
-        let span_dx = self.dx.map_or(0.0, |l| l.normalize(&values, &params));
-        let span_dy = self.dy.map_or(0.0, |l| l.normalize(&values, &params));
+        let span_dx = dx + self.dx.map_or(0.0, |l| l.normalize(&values, &params));
+        let span_dy = dy + self.dy.map_or(0.0, |l| l.normalize(&values, &params));
 
-        let dx = dx + span_dx;
-        let dy = dy + span_dy;
-
-        chunks.push(Chunk::new(values, x, y));
+        if x.is_some() || y.is_some() {
+            chunks.push(Chunk::new(values, x, y));
+        }
 
         children_to_chunks(
             chunks,
@@ -629,8 +628,8 @@ impl TSpan {
             acquired_nodes,
             cascaded,
             draw_ctx,
-            dx,
-            dy,
+            span_dx,
+            span_dy,
             depth,
         );
     }
