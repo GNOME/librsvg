@@ -50,6 +50,7 @@ impl Args {
                     .takes_value(true)
                     .value_name("float")
                     .default_value("90")
+                    .validator(is_valid_resolution)
                     .help("Pixels per inch"),
             )
             .arg(
@@ -59,6 +60,7 @@ impl Args {
                     .takes_value(true)
                     .value_name("float")
                     .default_value("90")
+                    .validator(is_valid_resolution)
                     .help("Pixels per inch"),
             )
             .arg(
@@ -68,6 +70,7 @@ impl Args {
                     .takes_value(true)
                     .value_name("float")
                     .conflicts_with("zoom")
+                    .validator(is_valid_zoom_factor)
                     .help("Horizontal zoom factor"),
             )
             .arg(
@@ -77,6 +80,7 @@ impl Args {
                     .takes_value(true)
                     .value_name("float")
                     .conflicts_with("zoom")
+                    .validator(is_valid_zoom_factor)
                     .help("Vertical zoom factor"),
             )
             .arg(
@@ -85,6 +89,7 @@ impl Args {
                     .long("zoom")
                     .takes_value(true)
                     .value_name("float")
+                    .validator(is_valid_zoom_factor)
                     .help("Zoom factor"),
             )
             .arg(
@@ -258,6 +263,22 @@ impl Args {
             (None, Some(y)) => Zoom { x: y, y },
             (Some(x), Some(y)) => Zoom { x, y },
         }
+    }
+}
+
+fn is_valid_resolution(v: String) -> Result<(), String> {
+    match v.parse::<f64>() {
+        Ok(res) if res > 0.0 => Ok(()),
+        Ok(_) => Err(String::from("Invalid resolution")),
+        Err(e) => Err(format!("{}", e)),
+    }
+}
+
+fn is_valid_zoom_factor(v: String) -> Result<(), String> {
+    match v.parse::<f64>() {
+        Ok(res) if res > 0.0 => Ok(()),
+        Ok(_) => Err(String::from("Invalid zoom factor")),
+        Err(e) => Err(format!("{}", e)),
     }
 }
 
