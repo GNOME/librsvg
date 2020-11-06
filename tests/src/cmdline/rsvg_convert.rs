@@ -3,13 +3,15 @@ extern crate chrono;
 extern crate predicates;
 extern crate tempfile;
 
+use crate::predicates::ends_with_pkg_version;
 use crate::predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
 use chrono::{TimeZone, Utc};
-use predicate::str::*;
+use predicates::boolean::*;
 use predicates::prelude::*;
+use predicates::str::*;
 use std::path::Path;
 use tempfile::Builder;
 
@@ -46,17 +48,19 @@ impl RsvgConvert {
         command
     }
 
-    fn new_with_input(input: &Path) -> Command {
+    fn new_with_input<P>(file: P) -> Command
+    where
+        P: AsRef<Path>,
+    {
         let mut command = RsvgConvert::new();
-        match command.pipe_stdin(input) {
+        match command.pipe_stdin(&file) {
             Ok(_) => command,
-            Err(e) => panic!("Error opening file '{}': {}", input.display(), e),
+            Err(e) => panic!("Error opening file '{}': {}", file.as_ref().display(), e),
         }
     }
 
-    fn accepts_option(option: &str) {
-        let input = Path::new("tests/fixtures/api/dpi.svg");
-        RsvgConvert::new_with_input(input)
+    fn accepts_arg(option: &str) {
+        RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
             .arg(option)
             .assert()
             .success();
@@ -77,8 +81,7 @@ impl RsvgConvert {
 
 #[test]
 fn converts_svg_from_stdin_to_png() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .assert()
         .success()
         .stdout(file::is_png());
@@ -96,8 +99,7 @@ fn argument_is_input_filename() {
 
 #[test]
 fn output_format_png() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--format=png")
         .assert()
         .success()
@@ -106,8 +108,7 @@ fn output_format_png() {
 
 #[test]
 fn output_format_ps() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--format=ps")
         .assert()
         .success()
@@ -116,8 +117,7 @@ fn output_format_ps() {
 
 #[test]
 fn output_format_eps() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--format=eps")
         .assert()
         .success()
@@ -126,8 +126,7 @@ fn output_format_eps() {
 
 #[test]
 fn output_format_pdf() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--format=pdf")
         .assert()
         .success()
@@ -136,8 +135,7 @@ fn output_format_pdf() {
 
 #[test]
 fn output_format_svg_short_option() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("-f")
         .arg("svg")
         .assert()
@@ -153,8 +151,7 @@ fn output_file_option() {
     };
     assert!(predicates::path::is_file().not().eval(&output));
 
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg(format!("--output={}", output.display()))
         .assert()
         .success()
@@ -172,8 +169,7 @@ fn output_file_short_option() {
     };
     assert!(predicates::path::is_file().not().eval(&output));
 
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("-o")
         .arg(format!("{}", output.display()))
         .assert()
@@ -196,8 +192,7 @@ fn empty_input_yields_error() {
 
 #[test]
 fn empty_svg_yields_error() {
-    let input = Path::new("tests/fixtures/dimensions/empty.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/empty.svg")
         .assert()
         .failure()
         .stderr("The SVG stdin has no dimensions\n");
@@ -212,7 +207,9 @@ fn multiple_input_files_not_allowed_for_png_output() {
         .arg(two)
         .assert()
         .failure()
-        .stderr("Multiple SVG files are only allowed for PDF and (E)PS output.\n");
+        .stderr(contains(
+            "Multiple SVG files are only allowed for PDF and (E)PS output",
+        ));
 }
 
 #[test]
@@ -310,8 +307,7 @@ fn env_source_data_epoch_empty() {
 
 #[test]
 fn width_option() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--width=300")
         .assert()
         .success()
@@ -320,8 +316,7 @@ fn width_option() {
 
 #[test]
 fn height_option() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--height=200")
         .assert()
         .success()
@@ -330,8 +325,7 @@ fn height_option() {
 
 #[test]
 fn width_and_height_options() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--width=300")
         .arg("--height=200")
         .assert()
@@ -341,8 +335,7 @@ fn width_and_height_options() {
 
 #[test]
 fn zoom_factor() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--zoom=0.8")
         .assert()
         .success()
@@ -352,8 +345,7 @@ fn zoom_factor() {
 // TODO: Is this a bug in rsvg-convert or the desired behavior ?
 #[test]
 fn zoom_factor_and_width_conflicts() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--width=400")
         .arg("--zoom=1.5")
         .assert()
@@ -363,8 +355,7 @@ fn zoom_factor_and_width_conflicts() {
 
 #[test]
 fn zoom_factor_and_larger_size() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--width=400")
         .arg("--height=200")
         .arg("--zoom=1.5")
@@ -375,8 +366,7 @@ fn zoom_factor_and_larger_size() {
 
 #[test]
 fn zoom_factor_and_smaller_size() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--width=400")
         .arg("--height=200")
         .arg("--zoom=3.5")
@@ -387,8 +377,7 @@ fn zoom_factor_and_smaller_size() {
 
 #[test]
 fn x_zoom_option() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--x-zoom=2")
         .assert()
         .success()
@@ -397,8 +386,7 @@ fn x_zoom_option() {
 
 #[test]
 fn x_short_option() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("-x")
         .arg("2.0")
         .assert()
@@ -408,8 +396,7 @@ fn x_short_option() {
 
 #[test]
 fn y_zoom_option() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--y-zoom=2.0")
         .assert()
         .success()
@@ -418,8 +405,7 @@ fn y_zoom_option() {
 
 #[test]
 fn y_short_option() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("-y")
         .arg("2")
         .assert()
@@ -429,10 +415,9 @@ fn y_short_option() {
 
 #[test]
 fn huge_zoom_factor_yields_error() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
     let starts_with = starts_with("The resulting image would be larger than 32767 pixels");
     let ends_with = ends_with("Please specify a smaller size.");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--zoom=1000")
         .assert()
         .failure()
@@ -441,8 +426,7 @@ fn huge_zoom_factor_yields_error() {
 
 #[test]
 fn default_resolution_is_90dpi() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .assert()
         .success()
         .stdout(file::is_png().with_size(90, 360));
@@ -450,8 +434,7 @@ fn default_resolution_is_90dpi() {
 
 #[test]
 fn x_resolution() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--dpi-x=300")
         .assert()
         .success()
@@ -460,8 +443,7 @@ fn x_resolution() {
 
 #[test]
 fn x_resolution_short_option() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("-d")
         .arg("45")
         .assert()
@@ -471,8 +453,7 @@ fn x_resolution_short_option() {
 
 #[test]
 fn y_resolution() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--dpi-y=300")
         .assert()
         .success()
@@ -481,8 +462,7 @@ fn y_resolution() {
 
 #[test]
 fn y_resolution_short_option() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("-p")
         .arg("45")
         .assert()
@@ -492,8 +472,7 @@ fn y_resolution_short_option() {
 
 #[test]
 fn x_and_y_resolution() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--dpi-x=300")
         .arg("--dpi-y=150")
         .assert()
@@ -502,31 +481,28 @@ fn x_and_y_resolution() {
 }
 
 #[test]
-fn defaults_are_used_for_zero_resolutions() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+fn zero_resolution_is_invalid() {
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--dpi-x=0")
         .arg("--dpi-y=0")
         .assert()
-        .success()
-        .stdout(file::is_png().with_size(90, 360));
+        .failure()
+        .stderr(contains("Invalid resolution"));
 }
 
 #[test]
-fn defaults_are_used_for_negative_resolutions() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+fn negative_resolution_is_invalid() {
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--dpi-x=-100")
         .arg("--dpi-y=-100")
         .assert()
-        .success()
-        .stdout(file::is_png().with_size(90, 360));
+        .failure()
+        .stderr(contains("Invalid resolution"));
 }
 
 #[test]
 fn pdf_page_size() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--format=pdf")
         .assert()
         .success()
@@ -537,26 +513,17 @@ fn pdf_page_size() {
 
 #[test]
 fn background_color_option_with_valid_color() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
-        .arg("--background-color=purple")
-        .assert()
-        .success();
+    RsvgConvert::accepts_arg("--background-color=purple");
 }
 
 #[test]
 fn background_color_option_none() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
-        .arg("--background-color=None")
-        .assert()
-        .success();
+    RsvgConvert::accepts_arg("--background-color=None");
 }
 
 #[test]
 fn background_color_short_option() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("-b")
         .arg("#aabbcc")
         .assert()
@@ -565,18 +532,16 @@ fn background_color_short_option() {
 
 #[test]
 fn background_color_option_invalid_color_yields_error() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--background-color=foobar")
         .assert()
         .failure()
-        .stderr("Invalid color specification.\n");
+        .stderr(contains("Invalid").and(contains("color")));
 }
 
 #[test]
 fn stylesheet_option() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--stylesheet=tests/fixtures/dimensions/empty.svg")
         .assert()
         .success();
@@ -584,8 +549,7 @@ fn stylesheet_option() {
 
 #[test]
 fn stylesheet_short_option() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("-s")
         .arg("tests/fixtures/dimensions/empty.svg")
         .assert()
@@ -594,8 +558,7 @@ fn stylesheet_short_option() {
 
 #[test]
 fn stylesheet_option_error() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--stylesheet=foobar")
         .assert()
         .failure()
@@ -604,41 +567,40 @@ fn stylesheet_option_error() {
 
 #[test]
 fn export_id_option() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
-        .arg("--export-id=one")
+    RsvgConvert::new_with_input("tests/fixtures/api/geometry-element.svg")
+        .arg("--export-id=foo")
         .assert()
-        .success();
+        .success()
+        .stdout(file::is_png().with_size(127, 127));
 }
 
 #[test]
 fn export_id_short_option() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("-i")
         .arg("two")
         .assert()
-        .success();
+        .success()
+        .stdout(file::is_png().with_size(90, 180));
 }
 
 #[test]
 fn export_id_option_error() {
-    let input = Path::new("tests/fixtures/api/dpi.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--export-id=foobar")
         .assert()
         .failure()
-        .stderr("File stdin does not have an object with id \"foobar\"\n");
+        .stderr(starts_with("File stdin does not have an object with id \""));
 }
 
 #[test]
 fn unlimited_option() {
-    RsvgConvert::accepts_option("--unlimited");
+    RsvgConvert::accepts_arg("--unlimited");
 }
 
 #[test]
 fn unlimited_short_option() {
-    RsvgConvert::accepts_option("-u");
+    RsvgConvert::accepts_arg("-u");
 }
 
 #[test]
@@ -679,8 +641,7 @@ fn keep_aspect_ratio_short_option() {
 
 #[test]
 fn overflowing_size_is_detected() {
-    let input = Path::new("tests/fixtures/render-crash/591-vbox-overflow.svg");
-    RsvgConvert::new_with_input(input)
+    RsvgConvert::new_with_input("tests/fixtures/render-crash/591-vbox-overflow.svg")
         .assert()
         .failure()
         .stderr(contains("Could not get dimensions").trim());
@@ -688,30 +649,40 @@ fn overflowing_size_is_detected() {
 
 #[test]
 fn keep_image_data_option() {
-    RsvgConvert::accepts_option("--keep-image-data");
+    RsvgConvert::accepts_arg("--keep-image-data");
 }
 
 #[test]
 fn no_keep_image_data_option() {
-    RsvgConvert::accepts_option("--no-keep-image-data");
+    RsvgConvert::accepts_arg("--no-keep-image-data");
+}
+
+fn is_version_output() -> TrimPredicate<AndPredicate<StartsWithPredicate, EndsWithPredicate, str>> {
+    starts_with("rsvg-convert ")
+        .and(ends_with_pkg_version())
+        .trim()
 }
 
 #[test]
 fn version_option() {
-    RsvgConvert::option_yields_output("--version", starts_with("rsvg-convert version "));
+    RsvgConvert::option_yields_output("--version", is_version_output())
 }
 
 #[test]
 fn version_short_option() {
-    RsvgConvert::option_yields_output("-v", starts_with("rsvg-convert version "));
+    RsvgConvert::option_yields_output("-v", is_version_output())
+}
+
+fn is_usage_output() -> OrPredicate<ContainsPredicate, ContainsPredicate, str> {
+    contains("Usage:").or(contains("USAGE:"))
 }
 
 #[test]
 fn help_option() {
-    RsvgConvert::option_yields_output("--help", starts_with("Usage:"));
+    RsvgConvert::option_yields_output("--help", is_usage_output())
 }
 
 #[test]
 fn help_short_option() {
-    RsvgConvert::option_yields_output("-?", starts_with("Usage:"));
+    RsvgConvert::option_yields_output("-?", is_usage_output())
 }

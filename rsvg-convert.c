@@ -211,8 +211,8 @@ main (int argc, char **argv)
     double x_zoom = 1.0;
     double y_zoom = 1.0;
     double zoom = 1.0;
-    double dpi_x = -1.0;
-    double dpi_y = -1.0;
+    double dpi_x = 90.0;
+    double dpi_y = 90.0;
     int width = -1;
     int height = -1;
     int bVersion = 0;
@@ -350,12 +350,9 @@ main (int argc, char **argv)
         exit (1);
     }
 
-    if (dpi_x <= 0.0) {
-        dpi_x = 90.0;
-    }
-
-    if (dpi_y <= 0.0) {
-        dpi_y = 90.0;
+    if (dpi_x <= 0.0 || dpi_y <= 0.0) {
+        g_printerr (_("Invalid resolution\n"));
+        exit (1);
     }
 
     if (format != NULL &&
