@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use librsvg::{Color, Parse};
 
 use crate::input::Input;
-use crate::size::{Dpi, Zoom};
+use crate::size::{Dpi, Scale};
 
 arg_enum! {
     #[derive(Clone, Copy, Debug)]
@@ -256,12 +256,12 @@ impl Args {
         Input::new(&self.input)
     }
 
-    pub fn zoom(&self) -> Zoom {
+    pub fn zoom(&self) -> Scale {
         match (self.zoom_x, self.zoom_y) {
-            (None, None) => Zoom { x: 1.0, y: 1.0 },
-            (Some(x), None) => Zoom { x, y: x },
-            (None, Some(y)) => Zoom { x: y, y },
-            (Some(x), Some(y)) => Zoom { x, y },
+            (None, None) => Scale { x: 1.0, y: 1.0 },
+            (Some(x), None) => Scale { x, y: x },
+            (None, Some(y)) => Scale { x: y, y },
+            (Some(x), Some(y)) => Scale { x, y },
         }
     }
 }

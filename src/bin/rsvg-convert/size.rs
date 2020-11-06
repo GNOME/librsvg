@@ -4,7 +4,7 @@ pub struct Dpi {
     pub y: f64,
 }
 
-pub struct Zoom {
+pub struct Scale {
     pub x: f64,
     pub y: f64,
 }
@@ -20,10 +20,10 @@ impl Size {
         Self { w, h }
     }
 
-    pub fn scale(&self, zoom: Zoom) -> Self {
+    pub fn scale(&self, scale: Scale) -> Self {
         Self {
-            w: self.w * zoom.x,
-            h: self.h * zoom.y,
+            w: self.w * scale.x,
+            h: self.h * scale.y,
         }
     }
 }

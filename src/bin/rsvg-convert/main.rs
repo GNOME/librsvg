@@ -40,8 +40,8 @@ fn load_stylesheet(args: &Args) -> std::io::Result<Option<String>> {
 }
 
 fn get_size(_handle: &SvgHandle, renderer: &CairoRenderer, args: &Args) -> Option<Size> {
-    // TODO
-    renderer
+
+    match renderer
         .intrinsic_size_in_pixels()
         .map(|(w, h)| Size::new(w, h).scale(args.zoom()))
 }
@@ -97,8 +97,8 @@ fn main() {
                 );
             }
 
-            let zoom = args.zoom();
-            cr.scale(zoom.x, zoom.y);
+            let scale = args.zoom();
+            cr.scale(scale.x, scale.y);
 
             surface
                 .render(&renderer, &cr, args.export_id())
