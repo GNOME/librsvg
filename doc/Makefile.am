@@ -19,7 +19,7 @@ DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.xml
 # gtk-doc will search all .c & .h files beneath here for inline comments
 # documenting the functions and macros.
 # e.g. DOC_SOURCE_DIR=../../../gtk
-DOC_SOURCE_DIR = $(abs_top_srcdir)/include
+DOC_SOURCE_DIR = $(abs_top_srcdir)/include/librsvg
 
 # Extra options to pass to gtkdoc-scangobj. Not normally needed.
 SCANGOBJ_OPTIONS = --type-init-func="g_type_init ()"
@@ -52,13 +52,13 @@ FIXXREF_OPTIONS = \
 # Used for dependencies. The docs will be rebuilt if any of these change.
 # e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
-HFILE_GLOB = $(top_srcdir)/include/*.h
+HFILE_GLOB = $(top_srcdir)/include/librsvg/*.h
 CFILE_GLOB =
 
 # Extra header to include when scanning, which are not under DOC_SOURCE_DIR
 # e.g. EXTRA_HFILES=$(top_srcdir}/contrib/extra.h
 # EXTRA_HFILES = $(top_builddir)/evdocument/ev-version.h
-EXTRA_HFILES = $(top_builddir)/include/rsvg-version.h
+EXTRA_HFILES = $(top_builddir)/include/librsvg/rsvg-version.h
 
 # Header files to ignore when scanning. Use base file name, no paths
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
@@ -88,8 +88,7 @@ expand_content_files =
 # e.g. GTKDOC_CFLAGS=-I$(top_srcdir) -I$(top_builddir) $(GTK_DEBUG_FLAGS)
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
 GTKDOC_CFLAGS =					\
-	-I$(top_srcdir)				\
-	-I$(top_builddir)			\
+	-I$(top_srcdir)/include			\
 	-I$(top_builddir)/include		\
 	$(LIBRSVG_CFLAGS)			\
 	$(WARN_CFLAGS)				\

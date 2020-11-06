@@ -27,7 +27,7 @@ m4_define([rsvg_lt_version_info],rsvg_lt_current:rsvg_lt_revision:rsvg_lt_age)
 AC_INIT([RSVG],[rsvg_version],[https://gitlab.gnome.org/GNOME/librsvg/issues],[librsvg])
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_SRCDIR([include/rsvg.h])
+AC_CONFIG_SRCDIR([include/librsvg/rsvg.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([1.9 foreign no-dist-gzip dist-xz tar-ustar subdir-objects])
@@ -363,7 +363,7 @@ AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
 AC_CONFIG_FILES([
-include/rsvg-version.h
+include/librsvg/rsvg-version.h
 Makefile
 librsvg-zip
 gdk-pixbuf-loader/Makefile

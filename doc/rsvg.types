@@ -1,3 +1,3 @@
-#include <include/rsvg.h>
+#include <librsvg/rsvg.h>
 
 rsvg_handle_get_type

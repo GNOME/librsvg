@@ -1453,9 +1453,9 @@ const char *rsvg_handle_get_metadata (RsvgHandle *handle);
 
 G_END_DECLS
 
-#include "rsvg-features.h"
-#include "rsvg-version.h"
-#include "rsvg-cairo.h"
+#include <librsvg/rsvg-features.h>
+#include <librsvg/rsvg-version.h>
+#include <librsvg/rsvg-cairo.h>
 
 #undef __RSVG_RSVG_H_INSIDE__
 

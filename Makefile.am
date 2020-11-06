@@ -192,20 +192,9 @@ librsvg_c_api.la: $(librsvg_c_api_la_OBJECTS) $(LIBRSVG_SRC)
 	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) \
 	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && mv $(RUST_LIB) .libs/librsvg_c_api.a
 
-librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = \
-	-I$(top_srcdir) 			\
-	-I$(top_builddir) 			\
-	-I$(top_builddir)/include		\
-	-DG_LOG_DOMAIN=\"librsvg\" 		\
-	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
-	-DSRCDIR=\""${abs_top_srcdir}"\"	\
-	-DRSVG_DISABLE_DEPRECATION_WARNINGS	\
-	$(AM_CPPFLAGS)
+librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = $(AM_CPPFLAGS)
 
-librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = \
-	-DRSVG_COMPILATION	\
-	$(LIBRSVG_CFLAGS) 	\
-	$(AM_CFLAGS)
+librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = $(AM_CFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 	$(BSYMBOLIC_LDFLAG) \
@@ -216,7 +205,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 	$(AM_LDFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
-	librsvg_c_api.la \
+	librsvg_c_api.la	\
 	$(LIBRSVG_LIBS) 	\
 	$(LIBM)			\
 	$(DLOPEN_LIBS)
@@ -231,8 +220,7 @@ rsvg_convert_SOURCES =			\
 	$(NULL)
 
 rsvg_convert_CPPFLAGS = \
-	-I$(top_srcdir) 			\
-	-I$(top_builddir) 			\
+	-I$(top_srcdir)/include			\
 	-I$(top_builddir)/include		\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	$(AM_CPPFLAGS)
@@ -300,9 +288,9 @@ Rsvg_@RSVG_API_VERSION_U@_gir_PACKAGES = \
 	pango \
 	libxml-2.0 \
 	$(NULL)
-Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_builddir) -I$(top_builddir)/include -DRSVG_COMPILATION
+Rsvg_@RSVG_API_VERSION_U@_gir_CFLAGS = -I$(top_srcdir)/include -I$(top_builddir) -I$(top_builddir)/include -DRSVG_COMPILATION
 Rsvg_@RSVG_API_VERSION_U@_gir_LIBS = librsvg-@RSVG_API_MAJOR_VERSION@.la
-Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS = --c-include="include/rsvg.h"
+Rsvg_@RSVG_API_VERSION_U@_gir_SCANNERFLAGS = --c-include="librsvg/rsvg.h"
 
 girdir = $(datadir)/gir-1.0
 nodist_gir_DATA = $(INTROSPECTION_GIRS)
