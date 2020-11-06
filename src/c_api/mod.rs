@@ -53,4 +53,4 @@ mod color_utils;
 mod dpi;
 mod handle;
 pub mod pixbuf_utils;
-mod sizing;
+pub mod sizing;
