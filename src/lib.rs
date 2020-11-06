@@ -154,3 +154,8 @@ pub mod doctest_only {
     pub use crate::length::{Both, CssLength, Horizontal, Length, LengthUnit, ULength, Vertical};
     pub use crate::parsers::{Parse, ParseValue};
 }
+
+#[doc(hidden)]
+pub mod rsvg_convert_only {
+    pub use crate::c_api::sizing::LegacySize;
+}
