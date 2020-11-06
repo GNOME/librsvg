@@ -62,7 +62,7 @@ check:
   extends: '.cache_push'
   needs: []
   script:
-    - sudo -E cargo check --workspace
+    - sudo -E cargo check
 
 fmt:
   stage: lint
@@ -78,10 +78,10 @@ clippy:
     - job: check
   script:
     - cargo clippy --version
-    - sudo -E cargo clippy --workspace
+    - gitlab-clippy --version
+    - sudo -E cargo clippy
   after_script:
-    - sudo -E cargo clippy --workspace --message-format=json &> clippy.txt || true
-    - sudo -E /opt/cargo/bin/gitlab-clippy clippy.txt
+    - sudo -E cargo clippy --message-format=json | /opt/cargo/bin/gitlab-clippy -o gl-code-quality-report.json
   artifacts:
     reports:
       codequality: gl-code-quality-report.json
