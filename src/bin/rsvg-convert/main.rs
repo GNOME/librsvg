@@ -8,6 +8,7 @@ mod size;
 mod surface;
 
 use cssparser::Color;
+use librsvg::rsvg_convert_only::LegacySize;
 use librsvg::{CairoRenderer, Loader, RenderingError, SvgHandle};
 
 use crate::cli::Args;
@@ -39,10 +40,13 @@ fn load_stylesheet(args: &Args) -> std::io::Result<Option<String>> {
     }
 }
 
-fn get_size(_handle: &SvgHandle, renderer: &CairoRenderer, args: &Args) -> Option<Size> {
-
-    match renderer
-        .intrinsic_size_in_pixels()
+fn get_size(
+    _handle: &SvgHandle,
+    renderer: &CairoRenderer,
+    args: &Args,
+) -> Result<Size, RenderingError> {
+    renderer
+        .legacy_document_size_in_pixels()
         .map(|(w, h)| Size::new(w, h).scale(args.zoom()))
 }
 
@@ -71,7 +75,7 @@ fn main() {
 
         if target.is_none() {
             let size = get_size(&handle, &renderer, &args)
-                .unwrap_or_else(|| exit!("Could not get dimensions for file {}", input));
+                .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
 
             target = {
                 let output = Stream::new(args.output())
