@@ -231,9 +231,7 @@ rsvg_convert_SOURCES =			\
 	$(NULL)
 
 rsvg_convert_CPPFLAGS = \
-	-I$(top_srcdir) 			\
 	-I$(top_srcdir)/include			\
-	-I$(top_builddir) 			\
 	-I$(top_builddir)/include		\
 	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
 	$(AM_CPPFLAGS)

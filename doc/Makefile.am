@@ -88,9 +88,7 @@ expand_content_files =
 # e.g. GTKDOC_CFLAGS=-I$(top_srcdir) -I$(top_builddir) $(GTK_DEBUG_FLAGS)
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
 GTKDOC_CFLAGS =					\
-	-I$(top_srcdir)				\
 	-I$(top_srcdir)/include			\
-	-I$(top_builddir)			\
 	-I$(top_builddir)/include		\
 	$(LIBRSVG_CFLAGS)			\
 	$(WARN_CFLAGS)				\

@@ -34,7 +34,6 @@ LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
 
 AM_CPPFLAGS =					\
 	-I$(srcdir) 				\
-	-I$(top_srcdir)				\
 	-I$(top_srcdir)/include			\
 	-I$(top_builddir)/include		\
 	-DTEST_DATA_DIR="\"$(srcdir)\""		\

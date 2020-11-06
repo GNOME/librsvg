@@ -8,9 +8,7 @@ libpixbufloader_svg_la_SOURCES = \
 	io-svg.c
 
 libpixbufloader_svg_la_CPPFLAGS = \
-	-I$(top_srcdir)				\
 	-I$(top_srcdir)/include			\
-	-I$(top_builddir)			\
 	-I$(top_builddir)/include		\
 	-DGDK_PIXBUF_ENABLE_BACKEND		\
 	-DG_LOG_DOMAIN=\"libpixbufloader-svg\" 	\
