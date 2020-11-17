@@ -175,11 +175,11 @@ fn output_file_short_option() {
 #[test]
 fn empty_input_yields_error() {
     let starts_with = starts_with("Error reading SVG");
-    let ends_with = ends_with("Input file is too short");
+    let ends_with = ends_with("Input file is too short").trim();
     RsvgConvert::new()
         .assert()
         .failure()
-        .stderr(starts_with.and(ends_with).trim());
+        .stderr(starts_with.and(ends_with));
 }
 
 #[test]
@@ -651,10 +651,8 @@ fn no_keep_image_data_option() {
     RsvgConvert::accepts_arg("--no-keep-image-data");
 }
 
-fn is_version_output() -> TrimPredicate<AndPredicate<StartsWithPredicate, EndsWithPredicate, str>> {
-    starts_with("rsvg-convert ")
-        .and(ends_with_pkg_version())
-        .trim()
+fn is_version_output() -> AndPredicate<StartsWithPredicate, TrimPredicate<EndsWithPredicate>, str> {
+    starts_with("rsvg-convert ").and(ends_with_pkg_version().trim())
 }
 
 #[test]
