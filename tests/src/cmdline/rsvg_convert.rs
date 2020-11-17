@@ -407,13 +407,13 @@ fn y_short_option() {
 
 #[test]
 fn huge_zoom_factor_yields_error() {
-    let starts_with = starts_with("The resulting image would be larger than 32767 pixels");
-    let ends_with = ends_with("Please specify a smaller size.");
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--zoom=1000")
         .assert()
         .failure()
-        .stderr(starts_with.and(ends_with).trim());
+        .stderr(starts_with(
+            "The resulting image would be larger than 32767 pixels",
+        ));
 }
 
 #[test]
@@ -645,7 +645,9 @@ fn overflowing_size_is_detected() {
     RsvgConvert::new_with_input("tests/fixtures/render-crash/591-vbox-overflow.svg")
         .assert()
         .failure()
-        .stderr(contains("Could not get dimensions").trim());
+        .stderr(starts_with(
+            "The resulting image would be larger than 32767 pixels",
+        ));
 }
 
 #[test]
