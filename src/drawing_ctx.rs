@@ -1616,8 +1616,7 @@ impl DrawingCtx {
             true
         };
 
-        let values = cascaded.get();
-        let res = if draw && values.is_visible() {
+        let res = if draw {
             node.draw(acquired_nodes, cascaded, self, clipping)
         } else {
             Ok(self.empty_bbox())
