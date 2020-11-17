@@ -74,12 +74,7 @@ impl Draw for Switch {
                 .filter(|c| c.is_element())
                 .find(|c| c.borrow_element().get_cond())
             {
-                dc.draw_node_from_stack(
-                    &child,
-                    an,
-                    &CascadedValues::new(cascaded, &child),
-                    clipping,
-                )
+                child.draw(an, &CascadedValues::new(cascaded, &child), dc, clipping)
             } else {
                 Ok(dc.empty_bbox())
             }
