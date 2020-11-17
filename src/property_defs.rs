@@ -178,7 +178,7 @@ make_property!(
     "rtl" => Rtl,
 );
 
-// https://www.w3.org/TR/SVG/painting.html#DisplayProperty
+// https://www.w3.org/TR/CSS2/visuren.html#display-prop
 make_property!(
     ComputedValues,
     Display,
@@ -851,7 +851,7 @@ make_property!(
     "bidi-override" => Override,
 );
 
-// https://www.w3.org/TR/SVG/painting.html#VisibilityProperty
+// https://www.w3.org/TR/CSS2/visufx.html#visibility
 make_property!(
     ComputedValues,
     Visibility,
