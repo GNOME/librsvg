@@ -1692,56 +1692,58 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
-        // if it is a symbol
-        if child.is_element() {
+        if is_element_of_type!(child, Symbol) {
+            // if the <use> references a <symbol>, it gets handled specially
+
             let elt = child.borrow_element();
 
-            if let Element::Symbol(ref symbol) = *elt {
-                let clip_mode = if !values.is_overflow()
-                    || (values.overflow() == Overflow::Visible
-                        && elt.get_specified_values().is_overflow())
-                {
-                    Some(ClipMode::ClipToVbox)
-                } else {
-                    None
-                };
+            let symbol = borrow_element_as!(child, Symbol);
 
-                return self.with_discrete_layer(
-                    node,
-                    acquired_nodes,
-                    values,
-                    clipping,
-                    &mut |an, dc| {
-                        let _params = dc.push_new_viewport(
-                            symbol.get_viewbox(),
-                            use_rect,
-                            symbol.get_preserve_aspect_ratio(),
-                            clip_mode,
-                        );
+            let clip_mode = if !values.is_overflow()
+                || (values.overflow() == Overflow::Visible
+                    && elt.get_specified_values().is_overflow())
+            {
+                Some(ClipMode::ClipToVbox)
+            } else {
+                None
+            };
 
-                        child.draw_children(
-                            an,
-                            &CascadedValues::new_from_values(&child, values),
-                            dc,
-                            clipping,
-                        )
-                    },
-                );
-            }
-        };
-
-        // all other nodes
-        let cr = self.cr.clone();
-        cr.translate(use_rect.x0, use_rect.y0);
-
-        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            dc.draw_node_from_stack(
-                &child,
-                an,
-                &CascadedValues::new_from_values(&child, values),
+            return self.with_discrete_layer(
+                node,
+                acquired_nodes,
+                values,
                 clipping,
-            )
-        })
+                &mut |an, dc| {
+                    let _params = dc.push_new_viewport(
+                        symbol.get_viewbox(),
+                        use_rect,
+                        symbol.get_preserve_aspect_ratio(),
+                        clip_mode,
+                    );
+
+                    child.draw_children(
+                        an,
+                        &CascadedValues::new_from_values(&child, values),
+                        dc,
+                        clipping,
+                    )
+                },
+            );
+        } else {
+            // otherwise the referenced node is not a <symbol>; process it generically
+
+            let cr = self.cr.clone();
+            cr.translate(use_rect.x0, use_rect.y0);
+
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                dc.draw_node_from_stack(
+                    &child,
+                    an,
+                    &CascadedValues::new_from_values(&child, values),
+                    clipping,
+                )
+            })
+        }
     }
 }
 
