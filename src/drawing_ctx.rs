@@ -188,7 +188,7 @@ pub fn draw_tree(
     // Preserve the user's transform and use it for the outermost bounding box.  All bounds/extents
     // will be converted to this transform in the end.
     let user_transform = Transform::from(cr.get_matrix());
-    let mut bbox = BoundingBox::new().with_transform(user_transform);
+    let mut user_bbox = BoundingBox::new().with_transform(user_transform);
 
     // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
     //
@@ -214,9 +214,9 @@ pub fn draw_tree(
 
     let content_bbox = draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)?;
 
-    bbox.insert(&content_bbox);
+    user_bbox.insert(&content_bbox);
 
-    Ok(bbox)
+    Ok(user_bbox)
 }
 
 impl DrawingCtx {
