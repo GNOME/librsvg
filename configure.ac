@@ -107,7 +107,7 @@ AC_CHECK_PROGS(CARGO, [cargo], [no])
 AS_IF(test x$CARGO = xno,
     AC_MSG_ERROR([cargo is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
-AC_CHECK_PROGS(RUSTC, [rustc], [no])
+AC_CHECK_TOOL(RUSTC, [rustc], [no])
 AS_IF(test x$RUSTC = xno,
     AC_MSG_ERROR([rustc is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
