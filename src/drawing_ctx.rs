@@ -90,15 +90,22 @@ pub enum ClipMode {
 /// so that it isn't recalculated every so often.
 struct PathHelper<'a> {
     cr: &'a cairo::Context,
+    transform: Transform,
     path: &'a Path,
     is_square_linecap: bool,
     has_path: Option<bool>,
 }
 
 impl<'a> PathHelper<'a> {
-    pub fn new(cr: &'a cairo::Context, path: &'a Path, values: &ComputedValues) -> Self {
+    pub fn new(
+        cr: &'a cairo::Context,
+        transform: Transform,
+        path: &'a Path,
+        values: &ComputedValues,
+    ) -> Self {
         PathHelper {
             cr,
+            transform,
             path,
             is_square_linecap: values.stroke_line_cap() == StrokeLinecap::Square,
             has_path: None,
@@ -109,6 +116,7 @@ impl<'a> PathHelper<'a> {
         match self.has_path {
             Some(false) | None => {
                 self.has_path = Some(true);
+                self.cr.set_matrix(self.transform.into());
                 self.path.to_cairo(self.cr, self.is_square_linecap)
             }
             Some(true) => Ok(()),
@@ -1328,7 +1336,8 @@ impl DrawingCtx {
 
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let cr = dc.cr.clone();
-            let mut path_helper = PathHelper::new(&cr, path, values);
+            let transform = dc.get_transform();
+            let mut path_helper = PathHelper::new(&cr, transform, path, values);
 
             if clipping {
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
