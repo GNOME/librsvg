@@ -1735,10 +1735,10 @@ impl DrawingCtx {
             cr.translate(use_rect.x0, use_rect.y0);
 
             self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                dc.draw_node_from_stack(
-                    &child,
+                child.draw(
                     an,
                     &CascadedValues::new_from_values(&child, values),
+                    dc,
                     clipping,
                 )
             })
