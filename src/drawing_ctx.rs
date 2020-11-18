@@ -1707,27 +1707,21 @@ impl DrawingCtx {
                 None
             };
 
-            return self.with_discrete_layer(
-                node,
-                acquired_nodes,
-                values,
-                clipping,
-                &mut |an, dc| {
-                    let _params = dc.push_new_viewport(
-                        symbol.get_viewbox(),
-                        use_rect,
-                        symbol.get_preserve_aspect_ratio(),
-                        clip_mode,
-                    );
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                let _params = dc.push_new_viewport(
+                    symbol.get_viewbox(),
+                    use_rect,
+                    symbol.get_preserve_aspect_ratio(),
+                    clip_mode,
+                );
 
-                    child.draw_children(
-                        an,
-                        &CascadedValues::new_from_values(&child, values),
-                        dc,
-                        clipping,
-                    )
-                },
-            );
+                child.draw_children(
+                    an,
+                    &CascadedValues::new_from_values(&child, values),
+                    dc,
+                    clipping,
+                )
+            })
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
