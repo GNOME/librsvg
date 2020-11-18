@@ -157,6 +157,51 @@ impl Svg {
 
         Rect::new(nx, ny, nx + nw, ny + nh)
     }
+
+    pub fn push_viewport(
+        &self,
+        node: &Node,
+        cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Option<ViewParams> {
+        let values = cascaded.get();
+
+        let params = draw_ctx.get_view_params();
+
+        let has_parent = node.parent().is_some();
+
+        let clip_mode = if !values.is_overflow() && has_parent {
+            Some(ClipMode::ClipToViewport)
+        } else {
+            None
+        };
+
+        let svg_viewport = self.get_viewport(values, &params, !has_parent);
+
+        let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
+
+        let (viewport, vbox) = if is_measuring_toplevel_svg || has_parent {
+            // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
+            // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
+            // it wants to extend.
+            (svg_viewport, self.vbox)
+        } else {
+            (
+                // The client's viewport overrides the toplevel's x/y/w/h viewport
+                draw_ctx.toplevel_viewport(),
+                // Use our viewBox if available, or try to derive one from
+                // the intrinsic dimensions.
+                self.vbox.or_else(|| {
+                    Some(ViewBox::from(Rect::from_size(
+                        svg_viewport.width(),
+                        svg_viewport.height(),
+                    )))
+                }),
+            )
+        };
+
+        draw_ctx.push_new_viewport(vbox, viewport, self.preserve_aspect_ratio, clip_mode)
+    }
 }
 
 impl SetAttributes for Svg {
@@ -197,44 +242,8 @@ impl Draw for Svg {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        let params = draw_ctx.get_view_params();
-
-        let has_parent = node.parent().is_some();
-
-        let clip_mode = if !values.is_overflow() && has_parent {
-            Some(ClipMode::ClipToViewport)
-        } else {
-            None
-        };
-
-        let svg_viewport = self.get_viewport(values, &params, !has_parent);
-
-        let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
-
-        let (viewport, vbox) = if is_measuring_toplevel_svg || has_parent {
-            // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
-            // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
-            // it wants to extend.
-            (svg_viewport, self.vbox)
-        } else {
-            (
-                // The client's viewport overrides the toplevel's x/y/w/h viewport
-                draw_ctx.toplevel_viewport(),
-                // Use our viewBox if available, or try to derive one from
-                // the intrinsic dimensions.
-                self.vbox.or_else(|| {
-                    Some(ViewBox::from(Rect::from_size(
-                        svg_viewport.width(),
-                        svg_viewport.height(),
-                    )))
-                }),
-            )
-        };
-
         draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            let _params =
-                dc.push_new_viewport(vbox, viewport, self.preserve_aspect_ratio, clip_mode);
-
+            let _params = self.push_viewport(node, cascaded, dc);
             node.draw_children(an, cascaded, dc, clipping)
         })
     }
