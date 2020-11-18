@@ -204,8 +204,8 @@ pub fn draw_tree(
     // the top/left of the viewport"
 
     // Translate so (0, 0) is at the viewport's upper-left corner.
-    cr.translate(viewport.x0, viewport.y0);
-    let transform = Transform::from(cr.get_matrix());
+    let transform = user_transform.pre_translate(viewport.x0, viewport.y0);
+    cr.set_matrix(transform.into());
 
     // Per the spec, so the viewport has (0, 0) as upper-left.
     let viewport = viewport.translate((-viewport.x0, -viewport.y0));
