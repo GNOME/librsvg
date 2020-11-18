@@ -448,19 +448,19 @@ impl DrawingCtx {
 
             let cascaded = CascadedValues::new_from_node(node);
 
-            self.with_saved_transform(Some(node_transform), &mut |dc| {
-                let cr = dc.cr.clone();
+            let orig_transform = self.get_transform();
+            self.cr.transform(node_transform.into());
 
-                // here we don't push a layer because we are clipping
-                let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
+            // here we don't push a layer because we are clipping
+            let res = node.draw_children(acquired_nodes, &cascaded, self, true);
 
-                cr.clip();
+            self.cr.clip();
 
-                res
-            })
+            self.cr.set_matrix(orig_transform.into());
+
             // Clipping paths do not contribute to bounding boxes (they should, but we
             // need Real Computational Geometry(tm), so ignore the bbox from the clip path.
-            .map(|_bbox| ())
+            res.map(|_bbox| ())
         } else {
             Ok(())
         }
