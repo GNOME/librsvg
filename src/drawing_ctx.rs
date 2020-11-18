@@ -185,10 +185,32 @@ pub fn draw_tree(
 
     let cascaded = CascadedValues::new_from_node(&node);
 
-    let transform = Transform::from(cr.get_matrix());
-    let mut bbox = BoundingBox::new().with_transform(transform);
+    // Preserve the user's transform and use it for the outermost bounding box.  All bounds/extents
+    // will be converted to this transform in the end.
+    let user_transform = Transform::from(cr.get_matrix());
+    let mut bbox = BoundingBox::new().with_transform(user_transform);
 
-    let mut draw_ctx = DrawingCtx::new(cr, viewport, dpi, measuring, testing, drawsub_stack);
+    // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
+    //
+    // "For the outermost svg element, the SVG user agent must
+    // determine an initial viewport coordinate system and an
+    // initial user coordinate system such that the two
+    // coordinates systems are identical. The origin of both
+    // coordinate systems must be at the origin of the SVG
+    // viewport."
+    //
+    // "... the initial viewport coordinate system (and therefore
+    // the initial user coordinate system) must have its origin at
+    // the top/left of the viewport"
+
+    // Translate so (0, 0) is at the viewport's upper-left corner.
+    cr.translate(viewport.x0, viewport.y0);
+    let transform = Transform::from(cr.get_matrix());
+
+    // Per the spec, so the viewport has (0, 0) as upper-left.
+    let viewport = viewport.translate((-viewport.x0, -viewport.y0));
+
+    let mut draw_ctx = DrawingCtx::new(cr, transform, viewport, dpi, measuring, testing, drawsub_stack);
 
     let content_bbox = draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)?;
 
@@ -200,33 +222,14 @@ pub fn draw_tree(
 impl DrawingCtx {
     fn new(
         cr: &cairo::Context,
+        transform: Transform,
         viewport: Rect,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
-        // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
-        //
-        // "For the outermost svg element, the SVG user agent must
-        // determine an initial viewport coordinate system and an
-        // initial user coordinate system such that the two
-        // coordinates systems are identical. The origin of both
-        // coordinate systems must be at the origin of the SVG
-        // viewport."
-        //
-        // "... the initial viewport coordinate system (and therefore
-        // the initial user coordinate system) must have its origin at
-        // the top/left of the viewport"
-
-        // Translate so (0, 0) is at the viewport's upper-left corner.
-        cr.translate(viewport.x0, viewport.y0);
-        let transform = Transform::from(cr.get_matrix());
-
-        // Per the spec, so the viewport has (0, 0) as upper-left.
-        let viewport = viewport.translate((-viewport.x0, -viewport.y0));
         let vbox = ViewBox::from(viewport);
-
         let initial_viewport = Viewport { transform, vbox };
 
         let mut viewport_stack = Vec::new();
