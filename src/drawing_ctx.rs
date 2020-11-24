@@ -90,15 +90,22 @@ pub enum ClipMode {
 /// so that it isn't recalculated every so often.
 struct PathHelper<'a> {
     cr: &'a cairo::Context,
+    transform: Transform,
     path: &'a Path,
     is_square_linecap: bool,
     has_path: Option<bool>,
 }
 
 impl<'a> PathHelper<'a> {
-    pub fn new(cr: &'a cairo::Context, path: &'a Path, values: &ComputedValues) -> Self {
+    pub fn new(
+        cr: &'a cairo::Context,
+        transform: Transform,
+        path: &'a Path,
+        values: &ComputedValues,
+    ) -> Self {
         PathHelper {
             cr,
+            transform,
             path,
             is_square_linecap: values.stroke_line_cap() == StrokeLinecap::Square,
             has_path: None,
@@ -109,6 +116,7 @@ impl<'a> PathHelper<'a> {
         match self.has_path {
             Some(false) | None => {
                 self.has_path = Some(true);
+                self.cr.set_matrix(self.transform.into());
                 self.path.to_cairo(self.cr, self.is_square_linecap)
             }
             Some(true) => Ok(()),
@@ -177,48 +185,59 @@ pub fn draw_tree(
 
     let cascaded = CascadedValues::new_from_node(&node);
 
-    let transform = Transform::from(cr.get_matrix());
-    let mut bbox = BoundingBox::new().with_transform(transform);
+    // Preserve the user's transform and use it for the outermost bounding box.  All bounds/extents
+    // will be converted to this transform in the end.
+    let user_transform = Transform::from(cr.get_matrix());
+    let mut user_bbox = BoundingBox::new().with_transform(user_transform);
 
-    let mut draw_ctx = DrawingCtx::new(cr, viewport, dpi, measuring, testing, drawsub_stack);
+    // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
+    //
+    // "For the outermost svg element, the SVG user agent must
+    // determine an initial viewport coordinate system and an
+    // initial user coordinate system such that the two
+    // coordinates systems are identical. The origin of both
+    // coordinate systems must be at the origin of the SVG
+    // viewport."
+    //
+    // "... the initial viewport coordinate system (and therefore
+    // the initial user coordinate system) must have its origin at
+    // the top/left of the viewport"
+
+    // Translate so (0, 0) is at the viewport's upper-left corner.
+    let transform = user_transform.pre_translate(viewport.x0, viewport.y0);
+    cr.set_matrix(transform.into());
+
+    // Per the spec, so the viewport has (0, 0) as upper-left.
+    let viewport = viewport.translate((-viewport.x0, -viewport.y0));
+
+    let mut draw_ctx = DrawingCtx::new(
+        cr,
+        transform,
+        viewport,
+        dpi,
+        measuring,
+        testing,
+        drawsub_stack,
+    );
 
     let content_bbox = draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)?;
 
-    bbox.insert(&content_bbox);
+    user_bbox.insert(&content_bbox);
 
-    Ok(bbox)
+    Ok(user_bbox)
 }
 
 impl DrawingCtx {
     fn new(
         cr: &cairo::Context,
+        transform: Transform,
         viewport: Rect,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
-        // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
-        //
-        // "For the outermost svg element, the SVG user agent must
-        // determine an initial viewport coordinate system and an
-        // initial user coordinate system such that the two
-        // coordinates systems are identical. The origin of both
-        // coordinate systems must be at the origin of the SVG
-        // viewport."
-        //
-        // "... the initial viewport coordinate system (and therefore
-        // the initial user coordinate system) must have its origin at
-        // the top/left of the viewport"
-
-        // Translate so (0, 0) is at the viewport's upper-left corner.
-        cr.translate(viewport.x0, viewport.y0);
-        let transform = Transform::from(cr.get_matrix());
-
-        // Per the spec, so the viewport has (0, 0) as upper-left.
-        let viewport = viewport.translate((-viewport.x0, -viewport.y0));
         let vbox = ViewBox::from(viewport);
-
         let initial_viewport = Viewport { transform, vbox };
 
         let mut viewport_stack = Vec::new();
@@ -440,19 +459,19 @@ impl DrawingCtx {
 
             let cascaded = CascadedValues::new_from_node(node);
 
-            self.with_saved_transform(Some(node_transform), &mut |dc| {
-                let cr = dc.cr.clone();
+            let orig_transform = self.get_transform();
+            self.cr.transform(node_transform.into());
 
-                // here we don't push a layer because we are clipping
-                let res = node.draw_children(acquired_nodes, &cascaded, dc, true);
+            // here we don't push a layer because we are clipping
+            let res = node.draw_children(acquired_nodes, &cascaded, self, true);
 
-                cr.clip();
+            self.cr.clip();
 
-                res
-            })
+            self.cr.set_matrix(orig_transform.into());
+
             // Clipping paths do not contribute to bounding boxes (they should, but we
             // need Real Computational Geometry(tm), so ignore the bbox from the clip path.
-            .map(|_bbox| ())
+            res.map(|_bbox| ())
         } else {
             Ok(())
         }
@@ -1328,7 +1347,8 @@ impl DrawingCtx {
 
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let cr = dc.cr.clone();
-            let mut path_helper = PathHelper::new(&cr, path, values);
+            let transform = dc.get_transform();
+            let mut path_helper = PathHelper::new(&cr, transform, path, values);
 
             if clipping {
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
@@ -1616,8 +1636,7 @@ impl DrawingCtx {
             true
         };
 
-        let values = cascaded.get();
-        let res = if draw && values.is_visible() {
+        let res = if draw {
             node.draw(acquired_nodes, cascaded, self, clipping)
         } else {
             Ok(self.empty_bbox())
@@ -1692,56 +1711,52 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
-        // if it is a symbol
-        if child.is_element() {
+        if is_element_of_type!(child, Symbol) {
+            // if the <use> references a <symbol>, it gets handled specially
+
             let elt = child.borrow_element();
 
-            if let Element::Symbol(ref symbol) = *elt {
-                let clip_mode = if !values.is_overflow()
-                    || (values.overflow() == Overflow::Visible
-                        && elt.get_specified_values().is_overflow())
-                {
-                    Some(ClipMode::ClipToVbox)
-                } else {
-                    None
-                };
+            let symbol = borrow_element_as!(child, Symbol);
 
-                return self.with_discrete_layer(
-                    node,
-                    acquired_nodes,
-                    values,
-                    clipping,
-                    &mut |an, dc| {
-                        let _params = dc.push_new_viewport(
-                            symbol.get_viewbox(),
-                            use_rect,
-                            symbol.get_preserve_aspect_ratio(),
-                            clip_mode,
-                        );
+            let clip_mode = if !values.is_overflow()
+                || (values.overflow() == Overflow::Visible
+                    && elt.get_specified_values().is_overflow())
+            {
+                Some(ClipMode::ClipToVbox)
+            } else {
+                None
+            };
 
-                        child.draw_children(
-                            an,
-                            &CascadedValues::new_from_values(&child, values),
-                            dc,
-                            clipping,
-                        )
-                    },
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                let _params = dc.push_new_viewport(
+                    symbol.get_viewbox(),
+                    use_rect,
+                    symbol.get_preserve_aspect_ratio(),
+                    clip_mode,
                 );
-            }
-        };
 
-        // all other nodes
-        let cr = self.cr.clone();
-        cr.translate(use_rect.x0, use_rect.y0);
+                child.draw_children(
+                    an,
+                    &CascadedValues::new_from_values(&child, values),
+                    dc,
+                    clipping,
+                )
+            })
+        } else {
+            // otherwise the referenced node is not a <symbol>; process it generically
 
-        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            dc.draw_node_from_stack(
-                &child,
-                an,
-                &CascadedValues::new_from_values(&child, values),
-                clipping,
-            )
-        })
+            let cr = self.cr.clone();
+            cr.translate(use_rect.x0, use_rect.y0);
+
+            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
+                child.draw(
+                    an,
+                    &CascadedValues::new_from_values(&child, values),
+                    dc,
+                    clipping,
+                )
+            })
+        }
     }
 }
 

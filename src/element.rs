@@ -308,10 +308,15 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if !self.is_in_error() {
-            draw_ctx.with_saved_transform(Some(self.get_transform()), &mut |dc| {
-                self.element_impl
-                    .draw(node, acquired_nodes, cascaded, dc, clipping)
-            })
+            let values = cascaded.get();
+            if values.is_visible() {
+                draw_ctx.with_saved_transform(Some(self.get_transform()), &mut |dc| {
+                    self.element_impl
+                        .draw(node, acquired_nodes, cascaded, dc, clipping)
+                })
+            } else {
+                Ok(draw_ctx.empty_bbox())
+            }
         } else {
             rsvg_log!("(not rendering element {} because it is in error)", self);
 
