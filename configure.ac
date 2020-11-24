@@ -103,7 +103,7 @@ AC_SUBST(DLOPEN_LIBS)
 
 dnl ===========================================================================
 
-AC_CHECK_PROGS(CARGO, [cargo], [no])
+AC_CHECK_TOOL(CARGO, [cargo], [no])
 AS_IF(test x$CARGO = xno,
     AC_MSG_ERROR([cargo is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
