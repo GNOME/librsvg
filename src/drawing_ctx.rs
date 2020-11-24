@@ -210,7 +210,15 @@ pub fn draw_tree(
     // Per the spec, so the viewport has (0, 0) as upper-left.
     let viewport = viewport.translate((-viewport.x0, -viewport.y0));
 
-    let mut draw_ctx = DrawingCtx::new(cr, transform, viewport, dpi, measuring, testing, drawsub_stack);
+    let mut draw_ctx = DrawingCtx::new(
+        cr,
+        transform,
+        viewport,
+        dpi,
+        measuring,
+        testing,
+        drawsub_stack,
+    );
 
     let content_bbox = draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)?;
 
