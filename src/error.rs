@@ -131,9 +131,6 @@ pub enum RenderingError {
     /// Tried to reference an SVG element from a fragment identifier that is incorrect.
     InvalidId(DefsLookupErrorKind),
 
-    // FIXME: unused.
-    InvalidHref,
-
     /// Not enough memory was available for rendering.
     // FIXME: right now this is only returned from pixbuf_utils.rs
     OutOfMemory,
@@ -148,7 +145,6 @@ impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             RenderingError::InstancingLimit => write!(f, "instancing limit"),
-            RenderingError::InvalidHref => write!(f, "invalid href"),
             RenderingError::OutOfMemory => write!(f, "out of memory"),
             RenderingError::HandleIsNotLoaded => write!(f, "SVG data is not loaded into handle"),
             RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
