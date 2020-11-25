@@ -506,10 +506,10 @@ impl DocumentBuilder {
 
                     Ok(document)
                 } else {
-                    Err(LoadingError::RootElementIsNotSvg)
+                    Err(LoadingError::NoSvgRoot)
                 }
             }
-            _ => Err(LoadingError::SvgHasNoElements),
+            _ => Err(LoadingError::NoSvgRoot),
         }
     }
 }

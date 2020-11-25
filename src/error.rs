@@ -330,11 +330,8 @@ pub enum LoadingError {
     // FIXME: only used in load_image()
     EmptyData,
 
-    /// There are no SVG elements in the document.
-    SvgHasNoElements,
-
-    /// The outermost element in the document is not `<svg>`.
-    RootElementIsNotSvg,
+    /// There is no `<svg>` root element in the XML.
+    NoSvgRoot,
 
     /// Generally an I/O error, or another error from GIO.
     Glib(glib::Error),
@@ -358,8 +355,7 @@ impl fmt::Display for LoadingError {
             LoadingError::BadStylesheet => write!(f, "invalid stylesheet"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
             LoadingError::EmptyData => write!(f, "empty data"),
-            LoadingError::SvgHasNoElements => write!(f, "SVG has no elements"),
-            LoadingError::RootElementIsNotSvg => write!(f, "root element is not <svg>"),
+            LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
             LoadingError::Glib(ref e) => e.fmt(f),
             LoadingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
             LoadingError::Other(ref s) => write!(f, "{}", s),
