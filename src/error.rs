@@ -122,10 +122,6 @@ pub enum RenderingError {
     /// A Cairo error happened during rendering.
     Cairo(cairo::Status),
 
-    /// There is a circular reference between elements.
-    // FIXME: should be internal only.
-    CircularReference,
-
     /// The maximum number of rendered objects was reached.
     ///
     /// Librsvg has a limit on the number of rendered objects, so that malicious
@@ -151,7 +147,6 @@ impl error::Error for RenderingError {}
 impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            RenderingError::CircularReference => write!(f, "circular reference"),
             RenderingError::InstancingLimit => write!(f, "instancing limit"),
             RenderingError::InvalidHref => write!(f, "invalid href"),
             RenderingError::OutOfMemory => write!(f, "out of memory"),
