@@ -336,9 +336,6 @@ pub enum LoadingError {
     /// An invalid stylesheet was used.
     BadCss,
 
-    /// A Cairo error happened during loading.
-    Cairo(cairo::Status),
-
     // FIXME: only used in load_image()
     EmptyData,
 
@@ -371,7 +368,6 @@ impl fmt::Display for LoadingError {
             LoadingError::BadDataUrl => write!(f, "invalid data: URL"),
             LoadingError::BadStylesheet => write!(f, "invalid stylesheet"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
-            LoadingError::Cairo(status) => write!(f, "cairo error: {:?}", status),
             LoadingError::EmptyData => write!(f, "empty data"),
             LoadingError::SvgHasNoElements => write!(f, "SVG has no elements"),
             LoadingError::RootElementIsNotSvg => write!(f, "root element is not <svg>"),
@@ -379,14 +375,6 @@ impl fmt::Display for LoadingError {
             LoadingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
             LoadingError::Unknown => write!(f, "unknown error"),
         }
-    }
-}
-
-impl From<cairo::Status> for LoadingError {
-    fn from(e: cairo::Status) -> LoadingError {
-        assert!(e != cairo::Status::Success);
-
-        LoadingError::Cairo(e)
     }
 }
 
