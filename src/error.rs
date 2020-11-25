@@ -318,6 +318,9 @@ pub enum LoadingError {
     /// XML syntax error.
     XmlParseError(String),
 
+    /// Not enough memory to load the document.
+    OutOfMemory(String),
+
     // FIXME: this is OOM in libxml2; we shouldn't expose it.
     CouldNotCreateXmlParser,
 
@@ -362,6 +365,7 @@ impl fmt::Display for LoadingError {
         match *self {
             LoadingError::NoDataPassedToParser => write!(f, "no data passed to parser"),
             LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
+            LoadingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
             LoadingError::CouldNotCreateXmlParser => write!(f, "could not create XML parser"),
             LoadingError::BadUrl => write!(f, "invalid URL"),
             LoadingError::BadDataUrl => write!(f, "invalid data: URL"),
