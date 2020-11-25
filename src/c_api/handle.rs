@@ -766,7 +766,9 @@ impl CHandle {
         match *state {
             LoadState::Start => {
                 *state = LoadState::ClosedError;
-                Err(LoadingError::NoDataPassedToParser)
+                Err(LoadingError::XmlParseError(String::from(
+                    "caller did not write any data",
+                )))
             }
 
             LoadState::Loading { ref buffer } => {

@@ -312,9 +312,6 @@ impl From<HrefError> for ValueErrorKind {
 /// all input/output.
 #[derive(Debug, Clone)]
 pub enum LoadingError {
-    // FIXME: C API only
-    NoDataPassedToParser,
-
     /// XML syntax error.
     XmlParseError(String),
 
@@ -360,7 +357,6 @@ impl error::Error for LoadingError {}
 impl fmt::Display for LoadingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            LoadingError::NoDataPassedToParser => write!(f, "no data passed to parser"),
             LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
             LoadingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
             LoadingError::CouldNotCreateXmlParser => write!(f, "could not create XML parser"),
