@@ -103,8 +103,10 @@ impl PaintServer {
                 })
                 .or_else(|err| match (err, alternate) {
                     (AcquireError::MaxReferencesExceeded, _) => {
-                        rsvg_log!("maximum number of references exceeded");
-                        Err(RenderingError::InstancingLimit)
+                        rsvg_log!("exceeded maximum number of referenced objects");
+                        Err(RenderingError::LimitExceeded(String::from(
+                            "maximum number of referenced objects",
+                        )))
                     }
 
                     // The following two cases catch AcquireError::CircularReference, which for

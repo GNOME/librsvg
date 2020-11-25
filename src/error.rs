@@ -122,11 +122,8 @@ pub enum RenderingError {
     /// A Cairo error happened during rendering.
     Cairo(cairo::Status),
 
-    /// The maximum number of rendered objects was reached.
-    ///
-    /// Librsvg has a limit on the number of rendered objects, so that malicious
-    /// files cannot consume CPU time arbitrarily.
-    InstancingLimit,
+    /// A particular implementation-defined limit was exceeded.
+    LimitExceeded(String),
 
     /// Tried to reference an SVG element from a fragment identifier that is incorrect.
     InvalidId(DefsLookupErrorKind),
@@ -144,7 +141,7 @@ impl error::Error for RenderingError {}
 impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            RenderingError::InstancingLimit => write!(f, "instancing limit"),
+            RenderingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
             RenderingError::OutOfMemory => write!(f, "out of memory"),
             RenderingError::HandleIsNotLoaded => write!(f, "SVG data is not loaded into handle"),
             RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),

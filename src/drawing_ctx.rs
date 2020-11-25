@@ -1644,7 +1644,9 @@ impl DrawingCtx {
             }
 
             Err(AcquireError::MaxReferencesExceeded) => {
-                return Err(RenderingError::InstancingLimit);
+                return Err(RenderingError::LimitExceeded(String::from(
+                    "maximum number of referenced objects",
+                )));
             }
 
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),

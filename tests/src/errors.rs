@@ -45,7 +45,7 @@ fn rendering_instancing_limit(name: &str) {
                 height: 500.0,
             },
         ),
-        Err(RenderingError::InstancingLimit)
+        Err(RenderingError::LimitExceeded(_))
     ));
 }
 
