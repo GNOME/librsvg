@@ -229,7 +229,9 @@ fn load_image(
     loader.write(&bytes)?;
     loader.close()?;
 
-    let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
+    let pixbuf = loader.get_pixbuf().ok_or_else(|| {
+        LoadingError::Other(format!("loading image: {}", human_readable_url(aurl)))
+    })?;
 
     let bytes = if load_options.keep_image_data {
         Some(bytes)
@@ -256,13 +258,11 @@ fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> L
     let url = human_readable_url(aurl);
 
     match status {
-        cairo::Status::NoMemory => {
-            LoadingError::OutOfMemory(format!("loading image: {}", url))
-        }
+        cairo::Status::NoMemory => LoadingError::OutOfMemory(format!("loading image: {}", url)),
         cairo::Status::InvalidSize => {
             LoadingError::LimitExceeded(format!("image too big: {}", url))
         }
-        _ => LoadingError::Unknown,
+        _ => LoadingError::Other(format!("cairo error: {}", status)),
     }
 }
 

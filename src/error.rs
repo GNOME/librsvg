@@ -351,8 +351,8 @@ pub enum LoadingError {
     /// A particular implementation-defined limit was exceeded.
     LimitExceeded(String),
 
-    // FIXME: only used internally when loading pixbufs, and temporarily in c_api.
-    Unknown,
+    /// Catch-all for loading errors.
+    Other(String),
 }
 
 impl error::Error for LoadingError {}
@@ -373,7 +373,7 @@ impl fmt::Display for LoadingError {
             LoadingError::RootElementIsNotSvg => write!(f, "root element is not <svg>"),
             LoadingError::Glib(ref e) => e.fmt(f),
             LoadingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
-            LoadingError::Unknown => write!(f, "unknown error"),
+            LoadingError::Other(ref s) => write!(f, "{}", s),
         }
     }
 }

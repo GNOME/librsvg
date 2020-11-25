@@ -802,7 +802,7 @@ impl CHandle {
                     "handle must not be already loaded in order to call \
                      rsvg_handle_read_stream_sync()",
                 );
-                Err(LoadingError::Unknown)
+                Err(LoadingError::Other(String::from("API ordering")))
             }
         }
     }
@@ -972,7 +972,7 @@ impl CHandle {
                     "handle must already be loaded in order to call \
                      rsvg_handle_set_stylesheet()",
                 );
-                Err(LoadingError::Unknown)
+                Err(LoadingError::Other(String::from("API ordering")))
             }
         }
     }
