@@ -243,20 +243,24 @@ fn load_image(
     Ok(surface)
 }
 
-fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> LoadingError {
-    let human_readable_url = if aurl.scheme() == "data" {
+fn human_readable_url(aurl: &AllowedUrl) -> &str {
+    if aurl.scheme() == "data" {
         // avoid printing a huge data: URL for image data
         "data URL"
     } else {
         aurl.as_ref()
-    };
+    }
+}
+
+fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> LoadingError {
+    let url = human_readable_url(aurl);
 
     match status {
         cairo::Status::NoMemory => {
-            LoadingError::OutOfMemory(format!("loading image: {}", human_readable_url))
+            LoadingError::OutOfMemory(format!("loading image: {}", url))
         }
         cairo::Status::InvalidSize => {
-            LoadingError::LimitExceeded(format!("image too big: {}", human_readable_url))
+            LoadingError::LimitExceeded(format!("image too big: {}", url))
         }
         _ => LoadingError::Unknown,
     }
