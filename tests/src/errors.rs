@@ -20,7 +20,7 @@ fn too_many_elements() {
 
     assert!(matches!(
         Loader::new().read_path(name),
-        Err(LoadingError::XmlParseError(_))
+        Err(LoadingError::LimitExceeded(_))
     ));
 }
 

@@ -160,7 +160,7 @@ impl XmlState {
 
     fn check_limits(&self) -> Result<(), ()> {
         if self.inner.borrow().num_loaded_elements > MAX_LOADED_ELEMENTS {
-            self.error(LoadingError::XmlParseError(format!(
+            self.error(LoadingError::LimitExceeded(format!(
                 "cannot load more than {} XML elements",
                 MAX_LOADED_ELEMENTS
             )));
