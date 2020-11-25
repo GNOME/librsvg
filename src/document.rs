@@ -237,9 +237,29 @@ fn load_image(
         None
     };
 
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_deref())?;
+    let surface = SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_deref())
+        .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
     Ok(surface)
+}
+
+fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> LoadingError {
+    let human_readable_url = if aurl.scheme() == "data" {
+        // avoid printing a huge data: URL for image data
+        "data URL"
+    } else {
+        aurl.as_ref()
+    };
+
+    match status {
+        cairo::Status::NoMemory => {
+            LoadingError::OutOfMemory(format!("loading image: {}", human_readable_url))
+        }
+        cairo::Status::InvalidSize => {
+            LoadingError::LimitExceeded(format!("image too big: {}", human_readable_url))
+        }
+        _ => LoadingError::Unknown,
+    }
 }
 
 pub struct AcquiredNode {
