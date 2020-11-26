@@ -156,6 +156,7 @@ impl Resources {
                 let aurl = e.key();
                 // FIXME: pass a cancellable to these
                 let doc = io::acquire_stream(aurl, None)
+                    .map_err(LoadingError::from)
                     .and_then(|stream| {
                         Document::load_from_stream(
                             &load_options.copy_with_base_url(aurl),

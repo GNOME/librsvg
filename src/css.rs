@@ -692,6 +692,7 @@ impl Stylesheet {
             .map_err(|_| LoadingError::BadUrl)?;
 
         io::acquire_data(&aurl, None)
+            .map_err(LoadingError::from)
             .and_then(|data| {
                 let BinaryData {
                     data: bytes,

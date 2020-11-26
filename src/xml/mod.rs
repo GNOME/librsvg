@@ -22,7 +22,7 @@ use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerO
 use crate::attributes::Attributes;
 use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
-use crate::io;
+use crate::io::{self, IoError};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
 use crate::style::StyleType;
@@ -555,9 +555,7 @@ impl XmlState {
         // FIXME: distinguish between "file not found" and "invalid XML"
 
         let stream = io::acquire_stream(aurl, None).map_err(|e| match e {
-            LoadingError::BadDataUrl => {
-                AcquireError::FatalError(String::from("malformed data: URL"))
-            }
+            IoError::BadDataUrl => AcquireError::FatalError(String::from("malformed data: URL")),
             _ => AcquireError::ResourceError,
         })?;
 

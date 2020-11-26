@@ -1,24 +1,42 @@
 //! Utilities to acquire streams and data from from URLs.
 
 use gio::{Cancellable, File as GFile, FileExt, InputStream, MemoryInputStream};
-use glib::{Bytes as GBytes, Cast};
+use glib::{self, Bytes as GBytes, Cast};
+use std::fmt;
 
-use crate::error::LoadingError;
 use crate::url_resolver::AllowedUrl;
+
+pub enum IoError {
+    BadDataUrl,
+    Glib(glib::Error),
+}
+
+impl From<glib::Error> for IoError {
+    fn from(e: glib::Error) -> IoError {
+        IoError::Glib(e)
+    }
+}
+
+impl fmt::Display for IoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            IoError::BadDataUrl => write!(f, "invalid data: URL"),
+            IoError::Glib(ref e) => e.fmt(f),
+        }
+    }
+}
 
 pub struct BinaryData {
     pub data: Vec<u8>,
     pub content_type: Option<String>,
 }
 
-fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
-    let data_url = data_url::DataUrl::process(uri).map_err(|_| LoadingError::BadDataUrl)?;
+fn decode_data_uri(uri: &str) -> Result<BinaryData, IoError> {
+    let data_url = data_url::DataUrl::process(uri).map_err(|_| IoError::BadDataUrl)?;
 
     let mime_type = data_url.mime_type().to_string();
 
-    let (bytes, fragment_id) = data_url
-        .decode_to_vec()
-        .map_err(|_| LoadingError::BadDataUrl)?;
+    let (bytes, fragment_id) = data_url.decode_to_vec().map_err(|_| IoError::BadDataUrl)?;
 
     // See issue #377 - per the data: URL spec
     // (https://fetch.spec.whatwg.org/#data-urls), those URLs cannot
@@ -26,7 +44,7 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
     // one.  This probably indicates mis-quoted SVG data inside the
     // data: URL.
     if fragment_id.is_some() {
-        return Err(LoadingError::BadDataUrl);
+        return Err(IoError::BadDataUrl);
     }
 
     Ok(BinaryData {
@@ -39,7 +57,7 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
 pub fn acquire_stream(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
-) -> Result<InputStream, LoadingError> {
+) -> Result<InputStream, IoError> {
     let uri = aurl.as_str();
 
     if uri.starts_with("data:") {
@@ -67,7 +85,7 @@ pub fn acquire_stream(
 pub fn acquire_data(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
-) -> Result<BinaryData, LoadingError> {
+) -> Result<BinaryData, IoError> {
     let uri = aurl.as_str();
 
     if uri.starts_with("data:") {

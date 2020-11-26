@@ -6,6 +6,7 @@ use std::fmt;
 use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
+use crate::io::IoError;
 use crate::node::Node;
 use crate::url_resolver::Fragment;
 
@@ -340,9 +341,6 @@ pub enum LoadingError {
     /// A malformed or disallowed URL was used.
     BadUrl,
 
-    /// A `data:` URL could not be decoded.
-    BadDataUrl,
-
     /// An invalid stylesheet was used.
     BadCss,
 
@@ -367,7 +365,6 @@ impl fmt::Display for LoadingError {
             LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
             LoadingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
             LoadingError::BadUrl => write!(f, "invalid URL"),
-            LoadingError::BadDataUrl => write!(f, "invalid data: URL"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
             LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
             LoadingError::Glib(ref e) => e.fmt(f),
@@ -380,5 +377,14 @@ impl fmt::Display for LoadingError {
 impl From<glib::Error> for LoadingError {
     fn from(e: glib::Error) -> LoadingError {
         LoadingError::Glib(e)
+    }
+}
+
+impl From<IoError> for LoadingError {
+    fn from(e: IoError) -> LoadingError {
+        match e {
+            IoError::BadDataUrl => LoadingError::BadUrl,
+            IoError::Glib(e) => LoadingError::Glib(e),
+        }
     }
 }
