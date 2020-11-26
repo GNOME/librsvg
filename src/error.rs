@@ -117,6 +117,7 @@ pub enum DefsLookupErrorKind {
 }
 
 /// Errors that can happen while rendering or measuring an SVG document.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
 pub enum RenderingError {
     /// A Cairo error happened during rendering.
@@ -307,6 +308,7 @@ impl From<HrefError> for ValueErrorKind {
 ///
 /// I/O errors get reported in the `Glib` variant, since librsvg uses GIO internally for
 /// all input/output.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum LoadingError {
     /// XML syntax error.
