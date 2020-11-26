@@ -145,8 +145,7 @@ pub enum RenderingError {
     InvalidId(String),
 
     /// Not enough memory was available for rendering.
-    // FIXME: right now this is only returned from pixbuf_utils.rs
-    OutOfMemory,
+    OutOfMemory(String),
 }
 
 impl From<DefsLookupErrorKind> for RenderingError {
@@ -164,7 +163,7 @@ impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             RenderingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
-            RenderingError::OutOfMemory => write!(f, "out of memory"),
+            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
             RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
             RenderingError::IdNotFound => write!(f, "element id not found"),
             RenderingError::InvalidId(ref s) => write!(f, "invalid id: {:?}", s),
