@@ -343,9 +343,6 @@ pub enum LoadingError {
     /// A `data:` URL could not be decoded.
     BadDataUrl,
 
-    // FIXME: used only if XML processing instruction cannot find the stylesheet.
-    BadStylesheet,
-
     /// An invalid stylesheet was used.
     BadCss,
 
@@ -371,7 +368,6 @@ impl fmt::Display for LoadingError {
             LoadingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
             LoadingError::BadUrl => write!(f, "invalid URL"),
             LoadingError::BadDataUrl => write!(f, "invalid data: URL"),
-            LoadingError::BadStylesheet => write!(f, "invalid stylesheet"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
             LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
             LoadingError::Glib(ref e) => e.fmt(f),

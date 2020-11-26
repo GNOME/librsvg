@@ -413,7 +413,9 @@ impl DocumentBuilder {
         if type_.as_deref() != Some("text/css")
             || (alternate.is_some() && alternate.as_deref() != Some("no"))
         {
-            return Err(LoadingError::BadStylesheet);
+            return Err(LoadingError::Other(String::from(
+                "invalid parameters in XML processing instruction for stylesheet",
+            )));
         }
 
         // FIXME: handle CSS errors
