@@ -102,7 +102,7 @@ impl Handle {
 
             Err(DefsLookupErrorKind::NotFound) => Ok(false),
 
-            Err(e) => Err(RenderingError::InvalidId(e)),
+            Err(e) => Err(e.into()),
         }
     }
 
@@ -139,7 +139,7 @@ impl Handle {
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
         if let Some(id) = id {
-            self.lookup_node(id).map_err(RenderingError::InvalidId)
+            Ok(self.lookup_node(id)?)
         } else {
             Ok(self.document.root())
         }

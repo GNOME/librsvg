@@ -54,8 +54,7 @@ use glib::types::instance_of;
 use gobject_sys::{GEnumValue, GFlagsValue};
 
 use crate::api::{
-    CairoRenderer, DefsLookupErrorKind, IntrinsicDimensions, Loader, LoadingError, RenderingError,
-    SvgHandle,
+    CairoRenderer, IntrinsicDimensions, Loader, LoadingError, RenderingError, SvgHandle,
 };
 
 use crate::{
@@ -860,7 +859,7 @@ impl CHandle {
 
     fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.has_element_with_id(id).map_err(warn_on_invalid_id)
+        handle.has_element_with_id(id)
     }
 
     fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
@@ -908,7 +907,7 @@ impl CHandle {
 
         inner.size_callback.end_loop();
 
-        res.map_err(warn_on_invalid_id)
+        res
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
@@ -933,7 +932,6 @@ impl CHandle {
                     y: checked_i32(ink_r.y)?,
                 })
             })
-            .map_err(warn_on_invalid_id)
     }
 
     fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
@@ -1049,7 +1047,6 @@ impl CHandle {
         renderer
             .geometry_for_layer(id, viewport)
             .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
-            .map_err(warn_on_invalid_id)
     }
 
     fn render_layer(
@@ -1064,9 +1061,7 @@ impl CHandle {
 
         let renderer = self.make_renderer(&handle);
 
-        renderer
-            .render_layer(cr, id, viewport)
-            .map_err(warn_on_invalid_id)
+        renderer.render_layer(cr, id, viewport)
     }
 
     fn get_geometry_for_element(
@@ -1080,7 +1075,6 @@ impl CHandle {
         renderer
             .geometry_for_element(id)
             .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
-            .map_err(warn_on_invalid_id)
     }
 
     fn render_element(
@@ -1095,9 +1089,7 @@ impl CHandle {
 
         let renderer = self.make_renderer(&handle);
 
-        renderer
-            .render_element(cr, id, element_viewport)
-            .map_err(warn_on_invalid_id)
+        renderer.render_element(cr, id, element_viewport)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
@@ -2167,14 +2159,6 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
         rsvg_g_warning(&msg);
         Err(RenderingError::Cairo(status))
     }
-}
-
-fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
-    if e == RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences) {
-        rsvg_g_warning("the public API is not allowed to look up external references");
-    }
-
-    e
 }
 
 pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {

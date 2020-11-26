@@ -138,8 +138,11 @@ pub enum RenderingError {
     /// A particular implementation-defined limit was exceeded.
     LimitExceeded(String),
 
+    /// Tried to reference an SVG element that does not exist.
+    IdNotFound,
+
     /// Tried to reference an SVG element from a fragment identifier that is incorrect.
-    InvalidId(DefsLookupErrorKind),
+    InvalidId(String),
 
     /// Not enough memory was available for rendering.
     // FIXME: right now this is only returned from pixbuf_utils.rs
@@ -147,6 +150,15 @@ pub enum RenderingError {
 
     /// Cannot occur from librsvg_crate; this is just for the C API.
     HandleIsNotLoaded,
+}
+
+impl From<DefsLookupErrorKind> for RenderingError {
+    fn from(e: DefsLookupErrorKind) -> RenderingError {
+        match e {
+            DefsLookupErrorKind::NotFound => RenderingError::IdNotFound,
+            _ => RenderingError::InvalidId(format!("{}", e)),
+        }
+    }
 }
 
 impl error::Error for RenderingError {}
@@ -158,7 +170,8 @@ impl fmt::Display for RenderingError {
             RenderingError::OutOfMemory => write!(f, "out of memory"),
             RenderingError::HandleIsNotLoaded => write!(f, "SVG data is not loaded into handle"),
             RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
-            RenderingError::InvalidId(ref id) => write!(f, "invalid id: {:?}", id),
+            RenderingError::IdNotFound => write!(f, "element id not found"),
+            RenderingError::InvalidId(ref s) => write!(f, "invalid id: {:?}", s),
         }
     }
 }
