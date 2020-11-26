@@ -116,6 +116,18 @@ pub enum DefsLookupErrorKind {
     NotFound,
 }
 
+impl fmt::Display for DefsLookupErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            DefsLookupErrorKind::HrefError(_) => write!(f, "invalid URL"),
+            DefsLookupErrorKind::CannotLookupExternalReferences => {
+                write!(f, "cannot lookup references to elements in external files")
+            }
+            DefsLookupErrorKind::NotFound => write!(f, "not found"),
+        }
+    }
+}
+
 /// Errors that can happen while rendering or measuring an SVG document.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
