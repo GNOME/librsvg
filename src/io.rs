@@ -1,9 +1,6 @@
 //! Utilities to acquire streams and data from from URLs.
 
-use gio::{
-    BufferedInputStream, BufferedInputStreamExt, Cancellable, ConverterInputStream, File as GFile,
-    FileExt, InputStream, MemoryInputStream, ZlibCompressorFormat, ZlibDecompressor,
-};
+use gio::{Cancellable, File as GFile, FileExt, InputStream, MemoryInputStream};
 use glib::{Bytes as GBytes, Cast};
 
 use crate::error::LoadingError;
@@ -36,36 +33,6 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
         data: bytes,
         content_type: Some(mime_type),
     })
-}
-
-// Header of a gzip data stream
-const GZ_MAGIC_0: u8 = 0x1f;
-const GZ_MAGIC_1: u8 = 0x8b;
-
-pub fn get_input_stream_for_loading(
-    stream: &InputStream,
-    cancellable: Option<&Cancellable>,
-) -> Result<InputStream, LoadingError> {
-    // detect gzipped streams (svgz)
-
-    let buffered = BufferedInputStream::new(stream);
-    let num_read = buffered.fill(2, cancellable)?;
-    if num_read < 2 {
-        // FIXME: this string was localized in the original; localize it
-        return Err(LoadingError::XmlParseError(String::from(
-            "Input file is too short",
-        )));
-    }
-
-    let buf = buffered.peek_buffer();
-    assert!(buf.len() >= 2);
-    if buf[0..2] == [GZ_MAGIC_0, GZ_MAGIC_1] {
-        let decomp = ZlibDecompressor::new(ZlibCompressorFormat::Gzip);
-        let converter = ConverterInputStream::new(&buffered, &decomp);
-        Ok(converter.upcast::<InputStream>())
-    } else {
-        Ok(buffered.upcast::<InputStream>())
-    }
 }
 
 /// Returns an input stream.  The url can be a data: URL or a plain URI

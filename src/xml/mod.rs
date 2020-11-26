@@ -2,6 +2,11 @@
 
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
+use gio::{
+    BufferedInputStream, BufferedInputStreamExt, Cancellable, ConverterInputStream, InputStream,
+    ZlibCompressorFormat, ZlibDecompressor,
+};
+use glib::Cast;
 use markup5ever::{
     buffer_queue::BufferQueue, expanded_name, local_name, namespace_url, ns, ExpandedName,
     LocalName, Namespace, QualName,
@@ -17,7 +22,7 @@ use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerO
 use crate::attributes::Attributes;
 use crate::document::{Document, DocumentBuilder};
 use crate::error::LoadingError;
-use crate::io::{self, get_input_stream_for_loading};
+use crate::io;
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
 use crate::style::StyleType;
@@ -694,6 +699,36 @@ pub fn xml_load_from_possibly_compressed_stream(
     let stream = get_input_stream_for_loading(stream, cancellable)?;
 
     state.build_document(&stream, cancellable)
+}
+
+// Header of a gzip data stream
+const GZ_MAGIC_0: u8 = 0x1f;
+const GZ_MAGIC_1: u8 = 0x8b;
+
+fn get_input_stream_for_loading(
+    stream: &InputStream,
+    cancellable: Option<&Cancellable>,
+) -> Result<InputStream, LoadingError> {
+    // detect gzipped streams (svgz)
+
+    let buffered = BufferedInputStream::new(stream);
+    let num_read = buffered.fill(2, cancellable)?;
+    if num_read < 2 {
+        // FIXME: this string was localized in the original; localize it
+        return Err(LoadingError::XmlParseError(String::from(
+            "Input file is too short",
+        )));
+    }
+
+    let buf = buffered.peek_buffer();
+    assert!(buf.len() >= 2);
+    if buf[0..2] == [GZ_MAGIC_0, GZ_MAGIC_1] {
+        let decomp = ZlibDecompressor::new(ZlibCompressorFormat::Gzip);
+        let converter = ConverterInputStream::new(&buffered, &decomp);
+        Ok(converter.upcast::<InputStream>())
+    } else {
+        Ok(buffered.upcast::<InputStream>())
+    }
 }
 
 #[cfg(test)]
