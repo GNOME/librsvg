@@ -208,7 +208,7 @@ fn load_image(
     } = io::acquire_data(&aurl, None)?;
 
     if bytes.is_empty() {
-        return Err(LoadingError::EmptyData);
+        return Err(LoadingError::Other(String::from("no image data")));
     }
 
     // See issue #548 - data: URLs without a MIME-type automatically

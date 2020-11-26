@@ -349,9 +349,6 @@ pub enum LoadingError {
     /// An invalid stylesheet was used.
     BadCss,
 
-    // FIXME: only used in load_image()
-    EmptyData,
-
     /// There is no `<svg>` root element in the XML.
     NoSvgRoot,
 
@@ -376,7 +373,6 @@ impl fmt::Display for LoadingError {
             LoadingError::BadDataUrl => write!(f, "invalid data: URL"),
             LoadingError::BadStylesheet => write!(f, "invalid stylesheet"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
-            LoadingError::EmptyData => write!(f, "empty data"),
             LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
             LoadingError::Glib(ref e) => e.fmt(f),
             LoadingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
