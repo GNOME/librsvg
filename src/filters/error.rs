@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fmt;
 
 use crate::error::RenderingError;
@@ -24,8 +23,6 @@ pub enum FilterError {
     /// Child node was in error.
     ChildNodeInError,
 }
-
-impl Error for FilterError {}
 
 impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

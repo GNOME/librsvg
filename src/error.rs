@@ -79,16 +79,6 @@ pub struct ElementError {
     pub err: ValueErrorKind,
 }
 
-impl error::Error for ElementError {
-    fn description(&self) -> &str {
-        match self.err {
-            ValueErrorKind::UnknownProperty => "unknown property",
-            ValueErrorKind::Parse(_) => "parse error",
-            ValueErrorKind::Value(_) => "invalid attribute value",
-        }
-    }
-}
-
 impl fmt::Display for ElementError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}: {}", self.attr.expanded(), self.err)

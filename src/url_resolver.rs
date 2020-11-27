@@ -1,6 +1,5 @@
 //! Determine which URLs are allowed for loading.
 
-use std::error;
 use std::fmt;
 use std::io;
 use std::ops::Deref;
@@ -144,8 +143,6 @@ impl fmt::Display for AllowedUrl {
         self.0.fmt(f)
     }
 }
-
-impl error::Error for AllowedUrlError {}
 
 impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
