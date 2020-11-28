@@ -156,6 +156,22 @@ AM_CONDITIONAL(OS_WIN32, test "$native_win32" = "yes")
 
 dnl ===========================================================================
 
+#AC_CANONICAL_HOST
+
+AC_MSG_CHECKING([for darwin])
+case "$host" in
+  darwin*)
+    native_darwin=yes
+    ;;
+  *)
+    native_darwin=no
+    ;;
+esac
+AC_MSG_RESULT([$native_darwin])
+AM_CONDITIONAL(OS_DARWIN, test "$native_darwin" = "yes")
+
+dnl ===========================================================================
+
 GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
 AC_SUBST(GLIB_MKENUMS)
 

@@ -225,6 +225,10 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
 	-export-symbols-regex "^rsvg_.*" \
 	$(AM_LDFLAGS)
 
+if OS_DARWIN
+librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS += -framework Foundation
+endif
+
 librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 	librsvg_c_api.la \
 	$(LIBRSVG_LIBS) 	\
