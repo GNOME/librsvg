@@ -5,10 +5,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::slice::Iter;
 
 use crate::attributes::Attributes;
-use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
 use crate::iri::IRI;
@@ -17,7 +16,6 @@ use crate::node::{Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
-use crate::transform::Transform;
 use crate::url_resolver::Fragment;
 
 /// The <filter> node.
@@ -53,22 +51,7 @@ impl Filter {
         self.primitiveunits
     }
 
-    /// Computes and returns the filter effects region.
-    pub fn compute_effects_region(
-        &self,
-        computed_from_target_node: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        transform: Transform,
-        width: f64,
-        height: f64,
-    ) -> BoundingBox {
-        // Filters use the properties of the target node.
-        let values = computed_from_target_node;
-
-        let mut bbox = BoundingBox::new();
-
-        let params = draw_ctx.push_coord_units(self.filterunits);
-
+    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
         // referencing node. No units are allowed (it's checked during attribute parsing).
         let (x, y, w, h) = if self.filterunits == CoordUnits::ObjectBoundingBox {
@@ -87,19 +70,7 @@ impl Filter {
             )
         };
 
-        let rect = Rect::new(x, y, x + w, y + h);
-        let other_bbox = BoundingBox::new().with_transform(transform).with_rect(rect);
-
-        // At this point all of the previous viewbox and matrix business gets converted to pixel
-        // coordinates in the final surface, because bbox is created with an identity transform.
-        bbox.insert(&other_bbox);
-
-        // Finally, clip to the width and height of our surface.
-        let rect = Rect::from_size(width, height);
-        let other_bbox = BoundingBox::new().with_rect(rect);
-        bbox.clip(&other_bbox);
-
-        bbox
+        Rect::new(x, y, x + w, y + h)
     }
 }
 
