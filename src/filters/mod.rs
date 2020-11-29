@@ -284,8 +284,9 @@ pub fn render(
         return Ok(source_surface);
     }
 
+    let filter = borrow_element_as!(filter_node, Filter);
     let mut filter_ctx = FilterContext::new(
-        filter_node,
+        &filter,
         computed_from_node_being_filtered,
         source_surface,
         draw_ctx,

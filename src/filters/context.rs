@@ -6,7 +6,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::node::{Node, NodeBorrow};
+use crate::filter::Filter;
 use crate::parsers::CustomIdent;
 use crate::properties::ComputedValues;
 use crate::rect::{IRect, Rect};
@@ -95,7 +95,7 @@ pub struct FilterContext {
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
-        filter_node: &Node,
+        filter: &Filter,
         computed_from_node_being_filtered: &ComputedValues,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx,
@@ -105,8 +105,6 @@ impl FilterContext {
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();
-
-        let filter = borrow_element_as!(filter_node, Filter);
 
         let filter_units = filter.get_filter_units();
         let affine = match filter_units {
