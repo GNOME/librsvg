@@ -5,7 +5,7 @@ use std::f64;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::DrawingCtx;
 use crate::filter::Filter;
 use crate::parsers::CustomIdent;
 use crate::properties::ComputedValues;
@@ -252,6 +252,12 @@ impl FilterContext {
         self.paffine
     }
 
+    /// Returns the primitive units.
+    #[inline]
+    pub fn primitive_units(&self) -> CoordUnits {
+        self.primitive_units
+    }
+
     /// Returns the filter effects region.
     #[inline]
     pub fn effects_region(&self) -> BoundingBox {
@@ -260,11 +266,6 @@ impl FilterContext {
 
     pub fn get_computed_from_node_being_filtered(&self) -> &ComputedValues {
         &self.computed_from_node_being_filtered
-    }
-
-    /// Pushes the viewport size based on the value of `primitiveUnits`.
-    pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
-        draw_ctx.push_coord_units(self.primitive_units)
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
