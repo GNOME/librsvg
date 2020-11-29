@@ -47,8 +47,6 @@ pub enum FilterInput {
 
 /// The filter rendering context.
 pub struct FilterContext {
-    /// The <filter> node.
-    node: Node,
     /// Bounding box of node being filtered
     node_bbox: BoundingBox,
     /// Values from the node which referenced this filter.
@@ -61,6 +59,8 @@ pub struct FilterContext {
     previous_results: HashMap<CustomIdent, FilterOutput>,
     /// The background surface. Computed lazily.
     background_surface: RefCell<Option<Result<SharedImageSurface, FilterError>>>,
+    /// Primtive units
+    primitive_units: CoordUnits,
     /// The filter effects region.
     effects_region: BoundingBox,
     /// Whether the currently rendered filter primitive uses linear RGB for color operations.
@@ -121,7 +121,8 @@ impl FilterContext {
             .post_transform(&draw_transform),
         };
 
-        let paffine = match filter.get_primitive_units() {
+        let primitive_units = filter.get_primitive_units();
+        let paffine = match primitive_units {
             CoordUnits::UserSpaceOnUse => draw_transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
@@ -137,13 +138,13 @@ impl FilterContext {
         let (width, height) = (source_surface.width(), source_surface.height());
 
         Self {
-            node: filter_node.clone(),
             node_bbox,
             computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: RefCell::new(None),
+            primitive_units,
             effects_region: filter.compute_effects_region(
                 computed_from_node_being_filtered,
                 draw_ctx,
@@ -251,8 +252,7 @@ impl FilterContext {
     /// Pushes the viewport size based on the value of `primitiveUnits`.
     pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
         // See comments in compute_effects_region() for how this works.
-        let units = borrow_element_as!(self.node, Filter).get_primitive_units();
-        draw_ctx.push_coord_units(units)
+        draw_ctx.push_coord_units(self.primitive_units)
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
