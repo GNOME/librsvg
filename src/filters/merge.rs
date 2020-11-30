@@ -104,13 +104,9 @@ impl FilterEffect for FeMerge {
         let mut output_surface = None;
         for child in node.children().filter(|c| c.is_element()) {
             if let Element::FeMergeNode(ref merge_node) = *child.borrow_element() {
-                output_surface = Some(merge_node.render(
-                    ctx,
-                    acquired_nodes,
-                    draw_ctx,
-                    bounds,
-                    output_surface,
-                )?);
+                output_surface = merge_node
+                    .render(ctx, acquired_nodes, draw_ctx, bounds, output_surface)
+                    .ok();
             }
         }
 
