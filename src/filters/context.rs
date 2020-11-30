@@ -5,11 +5,11 @@ use std::f64;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::node::{Node, NodeBorrow};
+use crate::drawing_ctx::DrawingCtx;
+use crate::filter::Filter;
 use crate::parsers::CustomIdent;
 use crate::properties::ComputedValues;
-use crate::rect::IRect;
+use crate::rect::{IRect, Rect};
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
 
@@ -47,8 +47,6 @@ pub enum FilterInput {
 
 /// The filter rendering context.
 pub struct FilterContext {
-    /// The <filter> node.
-    node: Node,
     /// Bounding box of node being filtered
     node_bbox: BoundingBox,
     /// Values from the node which referenced this filter.
@@ -61,6 +59,8 @@ pub struct FilterContext {
     previous_results: HashMap<CustomIdent, FilterOutput>,
     /// The background surface. Computed lazily.
     background_surface: RefCell<Option<Result<SharedImageSurface, FilterError>>>,
+    /// Primtive units
+    primitive_units: CoordUnits,
     /// The filter effects region.
     effects_region: BoundingBox,
     /// Whether the currently rendered filter primitive uses linear RGB for color operations.
@@ -95,7 +95,7 @@ pub struct FilterContext {
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
-        filter_node: &Node,
+        filter: &Filter,
         computed_from_node_being_filtered: &ComputedValues,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx,
@@ -106,9 +106,8 @@ impl FilterContext {
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();
 
-        let filter = borrow_element_as!(filter_node, Filter);
-
-        let affine = match filter.get_filter_units() {
+        let filter_units = filter.get_filter_units();
+        let affine = match filter_units {
             CoordUnits::UserSpaceOnUse => draw_transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
@@ -121,7 +120,8 @@ impl FilterContext {
             .post_transform(&draw_transform),
         };
 
-        let paffine = match filter.get_primitive_units() {
+        let primitive_units = filter.get_primitive_units();
+        let paffine = match primitive_units {
             CoordUnits::UserSpaceOnUse => draw_transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
@@ -134,23 +134,37 @@ impl FilterContext {
             .post_transform(&draw_transform),
         };
 
-        let (width, height) = (source_surface.width(), source_surface.height());
+        let effects_region = {
+            let params = draw_ctx.push_coord_units(filter_units);
+            let filter_rect = filter.get_rect(&computed_from_node_being_filtered, &params);
+
+            let mut bbox = BoundingBox::new();
+            let other_bbox = BoundingBox::new()
+                .with_transform(affine)
+                .with_rect(filter_rect);
+
+            // At this point all of the previous viewbox and matrix business gets converted to pixel
+            // coordinates in the final surface, because bbox is created with an identity transform.
+            bbox.insert(&other_bbox);
+
+            // Finally, clip to the width and height of our surface.
+            let (width, height) = (source_surface.width(), source_surface.height());
+            let rect = Rect::from_size(f64::from(width), f64::from(height));
+            let other_bbox = BoundingBox::new().with_rect(rect);
+            bbox.clip(&other_bbox);
+
+            bbox
+        };
 
         Self {
-            node: filter_node.clone(),
             node_bbox,
             computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: RefCell::new(None),
-            effects_region: filter.compute_effects_region(
-                computed_from_node_being_filtered,
-                draw_ctx,
-                affine,
-                f64::from(width),
-                f64::from(height),
-            ),
+            primitive_units,
+            effects_region,
             processing_linear_rgb: false,
             _affine: affine,
             paffine,
@@ -238,6 +252,12 @@ impl FilterContext {
         self.paffine
     }
 
+    /// Returns the primitive units.
+    #[inline]
+    pub fn primitive_units(&self) -> CoordUnits {
+        self.primitive_units
+    }
+
     /// Returns the filter effects region.
     #[inline]
     pub fn effects_region(&self) -> BoundingBox {
@@ -246,13 +266,6 @@ impl FilterContext {
 
     pub fn get_computed_from_node_being_filtered(&self) -> &ComputedValues {
         &self.computed_from_node_being_filtered
-    }
-
-    /// Pushes the viewport size based on the value of `primitiveUnits`.
-    pub fn get_view_params(&self, draw_ctx: &mut DrawingCtx) -> ViewParams {
-        // See comments in compute_effects_region() for how this works.
-        let units = borrow_element_as!(self.node, Filter).get_primitive_units();
-        draw_ctx.push_coord_units(units)
     }
 
     /// Retrieves the filter input surface according to the SVG rules.

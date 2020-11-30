@@ -21,6 +21,7 @@ rsvg
 rsvg-convert
 stamp-h1
 test-driver
+.devcontainer
 *.pc
 *.stamp
 *-out.png
@@ -95,3 +96,4 @@ librsvg-2.0.vapi
 librsvg-*.tar.xz
 librsvg-*.tar.bz2
 _rsvg_dummy.c
+include/librsvg/rsvg-version.h

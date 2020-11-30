@@ -107,7 +107,7 @@ impl<'a> BoundsBuilder<'a> {
 
         // If any of the properties were specified, we need to respect them.
         if self.x.is_some() || self.y.is_some() || self.width.is_some() || self.height.is_some() {
-            let params = self.ctx.get_view_params(draw_ctx);
+            let params = draw_ctx.push_coord_units(self.ctx.primitive_units());
             let values = self.ctx.get_computed_values_from_node_being_filtered();
 
             // These replacements are correct only because self.bbox is used with the
