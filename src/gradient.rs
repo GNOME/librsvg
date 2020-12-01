@@ -124,7 +124,7 @@ enum UnresolvedVariant {
 
 /// Parameters specific to each gradient type, after resolving.
 #[derive(Clone)]
-pub enum ResolvedGradientVariant {
+enum ResolvedGradientVariant {
     Linear {
         x1: Length<Horizontal>,
         y1: Length<Vertical>,
@@ -695,26 +695,6 @@ impl SetAttributes for RadialGradient {
 impl Draw for RadialGradient {}
 
 impl ResolvedGradient {
-    pub fn get_units(&self) -> GradientUnits {
-        self.units
-    }
-
-    pub fn get_spread(&self) -> SpreadMethod {
-        self.spread
-    }
-
-    pub fn get_transform(&self) -> Transform {
-        self.transform
-    }
-
-    pub fn get_stops(&self) -> &Vec<ColorStop> {
-        &self.stops
-    }
-
-    pub fn get_variant(&self) -> &ResolvedGradientVariant {
-        &self.variant
-    }
-
     pub fn to_user_space(
         &self,
         bbox: &BoundingBox,
