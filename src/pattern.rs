@@ -315,7 +315,10 @@ impl UnresolvedChildren {
 impl ResolvedPattern {
     fn node_with_children(&self) -> Option<Node> {
         match self.children {
+            // This means we didn't find any children among the fallbacks,
+            // so there is nothing to render.
             Children::Empty => None,
+
             Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
         }
     }
@@ -326,13 +329,7 @@ impl ResolvedPattern {
         draw_ctx: &DrawingCtx,
         values: &ComputedValues,
     ) -> Option<UserSpacePattern> {
-        let node_with_children = if let Some(n) = self.node_with_children() {
-            n
-        } else {
-            // This means we didn't find any children among the fallbacks,
-            // so there is nothing to render.
-            return None;
-        };
+        let node_with_children = self.node_with_children()?;
 
         let params = draw_ctx.push_coord_units(self.units.0);
 

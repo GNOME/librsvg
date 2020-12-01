@@ -710,11 +710,7 @@ impl ResolvedGradient {
 
         let params = draw_ctx.push_coord_units(units);
 
-        let transform = if let Some(m) = transform.pre_transform(&self.transform).invert() {
-            m
-        } else {
-            return None;
-        };
+        let transform = transform.pre_transform(&self.transform).invert()?;
 
         let variant = match self.variant {
             ResolvedGradientVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
