@@ -55,7 +55,7 @@ impl Shape {
 }
 
 trait BasicShape {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Rc<SvgPath>;
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape;
 }
 
 fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
@@ -139,8 +139,8 @@ impl SetAttributes for Path {
 }
 
 impl BasicShape for Path {
-    fn make_path(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
-        self.path.clone()
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Shape {
+        Shape::new(self.path.clone(), Markers::Yes)
     }
 }
 
@@ -154,13 +154,8 @@ impl Draw for Path {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path(values, draw_ctx), Markers::Yes).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+        self.make_shape(values, draw_ctx)
+            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -247,19 +242,14 @@ impl Draw for Polygon {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path(values, draw_ctx), Markers::Yes).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+        self.make_shape(values, draw_ctx)
+            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl BasicShape for Polygon {
-    fn make_path(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
-        Rc::new(make_poly(&self.points, true))
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Shape {
+        Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
     }
 }
 
@@ -290,19 +280,14 @@ impl Draw for Polyline {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path(values, draw_ctx), Markers::Yes).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+        self.make_shape(values, draw_ctx)
+            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl BasicShape for Polyline {
-    fn make_path(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
-        Rc::new(make_poly(&self.points, false))
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Shape {
+        Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
     }
 }
 
@@ -340,18 +325,13 @@ impl Draw for Line {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path(values, draw_ctx), Markers::Yes).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+        self.make_shape(values, draw_ctx)
+            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl BasicShape for Line {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
         let mut builder = PathBuilder::default();
 
         let params = draw_ctx.get_view_params();
@@ -364,7 +344,7 @@ impl BasicShape for Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        Rc::new(builder.into_path())
+        Shape::new(Rc::new(builder.into_path()), Markers::Yes)
     }
 }
 
@@ -422,18 +402,13 @@ impl Draw for Rect {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path(values, draw_ctx), Markers::No).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+        self.make_shape(values, draw_ctx)
+            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl BasicShape for Rect {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -470,12 +445,12 @@ impl BasicShape for Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return Rc::new(builder.into_path());
+            return Shape::new(Rc::new(builder.into_path()), Markers::No);
         }
 
         // ... and rx,ry must be nonnegative
         if rx < 0.0 || ry < 0.0 {
-            return Rc::new(builder.into_path());
+            return Shape::new(Rc::new(builder.into_path()), Markers::No);
         }
 
         let half_w = w / 2.0;
@@ -601,7 +576,7 @@ impl BasicShape for Rect {
             builder.close_path();
         }
 
-        Rc::new(builder.into_path())
+        Shape::new(Rc::new(builder.into_path()), Markers::No)
     }
 }
 
@@ -639,25 +614,20 @@ impl Draw for Circle {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path(values, draw_ctx), Markers::No).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+        self.make_shape(values, draw_ctx)
+            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl BasicShape for Circle {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
         let cy = self.cy.normalize(values, &params);
         let r = self.r.normalize(values, &params);
 
-        Rc::new(make_ellipse(cx, cy, r, r))
+        Shape::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
     }
 }
 
@@ -701,18 +671,13 @@ impl Draw for Ellipse {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(self.make_path(values, draw_ctx), Markers::No).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+        self.make_shape(values, draw_ctx)
+            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
 impl BasicShape for Ellipse {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -720,7 +685,7 @@ impl BasicShape for Ellipse {
         let rx = self.rx.normalize(values, &params);
         let ry = self.ry.normalize(values, &params);
 
-        Rc::new(make_ellipse(cx, cy, rx, ry))
+        Shape::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
     }
 }
 
