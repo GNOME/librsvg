@@ -34,17 +34,6 @@ impl Shape {
     fn new(path: Rc<SvgPath>, markers: Markers) -> Shape {
         Shape { path, markers }
     }
-
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_shape(self, node, acquired_nodes, values, clipping)
-    }
 }
 
 trait BasicShape {
@@ -63,13 +52,8 @@ macro_rules! impl_draw {
                 clipping: bool,
             ) -> Result<BoundingBox, RenderingError> {
                 let values = cascaded.get();
-                self.make_shape(values, draw_ctx).draw(
-                    node,
-                    acquired_nodes,
-                    values,
-                    draw_ctx,
-                    clipping,
-                )
+                let shape = self.make_shape(values, draw_ctx);
+                draw_ctx.draw_shape(&shape, node, acquired_nodes, values, clipping)
             }
         }
     };
