@@ -33,7 +33,7 @@ struct Common {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<Option<ViewBox>>,
     preserve_aspect_ratio: Option<AspectRatio>,
-    affine: Option<Transform>,
+    transform: Option<Transform>,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<Length<Horizontal>>,
@@ -93,7 +93,7 @@ pub struct ResolvedPattern {
     content_units: PatternContentUnits,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
-    affine: Transform,
+    transform: Transform,
     x: Length<Horizontal>,
     y: Length<Vertical>,
     width: Length<Horizontal>,
@@ -123,7 +123,7 @@ impl SetAttributes for Pattern {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
                 expanded_name!("", "patternTransform") => {
-                    self.common.affine = Some(attr.parse(value)?)
+                    self.common.transform = Some(attr.parse(value)?)
                 }
                 ref a if is_href(a) => {
                     set_href(
@@ -162,7 +162,7 @@ impl UnresolvedPattern {
             content_units: self.common.content_units.unwrap(),
             vbox: self.common.vbox.unwrap(),
             preserve_aspect_ratio: self.common.preserve_aspect_ratio.unwrap(),
-            affine: self.common.affine.unwrap(),
+            transform: self.common.transform.unwrap(),
             x: self.common.x.unwrap(),
             y: self.common.y.unwrap(),
             width: self.common.width.unwrap(),
@@ -177,7 +177,7 @@ impl UnresolvedPattern {
             && self.common.content_units.is_some()
             && self.common.vbox.is_some()
             && self.common.preserve_aspect_ratio.is_some()
-            && self.common.affine.is_some()
+            && self.common.transform.is_some()
             && self.common.x.is_some()
             && self.common.y.is_some()
             && self.common.width.is_some()
@@ -193,7 +193,7 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or(fallback.common.preserve_aspect_ratio);
-        let affine = self.common.affine.or(fallback.common.affine);
+        let transform = self.common.transform.or(fallback.common.transform);
         let x = self.common.x.or(fallback.common.x);
         let y = self.common.y.or(fallback.common.y);
         let width = self.common.width.or(fallback.common.width);
@@ -206,7 +206,7 @@ impl UnresolvedPattern {
                 content_units,
                 vbox,
                 preserve_aspect_ratio,
-                affine,
+                transform,
                 x,
                 y,
                 width,
@@ -227,7 +227,7 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or_else(|| Some(AspectRatio::default()));
-        let affine = self.common.affine.or_else(|| Some(Transform::default()));
+        let transform = self.common.transform.or_else(|| Some(Transform::default()));
         let x = self.common.x.or_else(|| Some(Default::default()));
         let y = self.common.y.or_else(|| Some(Default::default()));
         let width = self.common.width.or_else(|| Some(Default::default()));
@@ -240,7 +240,7 @@ impl UnresolvedPattern {
                 content_units,
                 vbox,
                 preserve_aspect_ratio,
-                affine,
+                transform,
                 x,
                 y,
                 width,
@@ -317,7 +317,7 @@ impl ResolvedPattern {
     }
 
     pub fn get_transform(&self) -> Transform {
-        self.affine
+        self.transform
     }
 
     pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
