@@ -121,7 +121,7 @@ enum UnresolvedVariant {
 
 /// Parameters specific to each gradient type, after resolving.
 #[derive(Clone)]
-pub enum GradientVariant {
+pub enum ResolvedGradientVariant {
     Linear {
         x1: Length<Horizontal>,
         y1: Length<Vertical>,
@@ -140,11 +140,11 @@ pub enum GradientVariant {
 }
 
 impl UnresolvedVariant {
-    fn into_resolved(self) -> GradientVariant {
+    fn into_resolved(self) -> ResolvedGradientVariant {
         assert!(self.is_resolved());
 
         match self {
-            UnresolvedVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
+            UnresolvedVariant::Linear { x1, y1, x2, y2 } => ResolvedGradientVariant::Linear {
                 x1: x1.unwrap(),
                 y1: y1.unwrap(),
                 x2: x2.unwrap(),
@@ -158,7 +158,7 @@ impl UnresolvedVariant {
                 fx,
                 fy,
                 fr,
-            } => GradientVariant::Radial {
+            } => ResolvedGradientVariant::Radial {
                 cx: cx.unwrap(),
                 cy: cy.unwrap(),
                 r: r.unwrap(),
@@ -338,7 +338,7 @@ pub struct ResolvedGradient {
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 
-    variant: GradientVariant,
+    variant: ResolvedGradientVariant,
 }
 
 impl UnresolvedGradient {
@@ -680,7 +680,7 @@ impl ResolvedGradient {
         &self.stops
     }
 
-    pub fn get_variant(&self) -> &GradientVariant {
+    pub fn get_variant(&self) -> &ResolvedGradientVariant {
         &self.variant
     }
 }
