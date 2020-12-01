@@ -364,7 +364,7 @@ pub struct ResolvedGradient {
 }
 
 /// Gradient normalized to user-space units.
-pub struct Gradient {
+pub struct UserSpaceGradient {
     pub transform: Transform,
     pub spread: SpreadMethod,
     pub stops: Vec<ColorStop>,
@@ -700,7 +700,7 @@ impl ResolvedGradient {
         bbox: &BoundingBox,
         draw_ctx: &DrawingCtx,
         values: &ComputedValues,
-    ) -> Option<Gradient> {
+    ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
         let transform = if let Ok(t) = bbox.rect_to_transform(units) {
             t
@@ -741,7 +741,7 @@ impl ResolvedGradient {
             },
         };
 
-        Some(Gradient {
+        Some(UserSpaceGradient {
             transform,
             spread: self.spread,
             stops: self.stops.clone(),

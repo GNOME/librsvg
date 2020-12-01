@@ -20,7 +20,7 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filter::FilterValue;
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::gradient::{Gradient, GradientVariant, SpreadMethod};
+use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -933,7 +933,7 @@ impl DrawingCtx {
         Ok(child_surface)
     }
 
-    fn set_gradient(self: &mut DrawingCtx, gradient: &Gradient, opacity: UnitInterval) {
+    fn set_gradient(self: &mut DrawingCtx, gradient: &UserSpaceGradient, opacity: UnitInterval) {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
