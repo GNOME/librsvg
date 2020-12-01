@@ -37,7 +37,7 @@ impl Shape {
 }
 
 trait BasicShape {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape;
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape;
 }
 
 macro_rules! impl_draw {
@@ -142,7 +142,7 @@ impl SetAttributes for Path {
 }
 
 impl BasicShape for Path {
-    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Shape {
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
         Shape::new(self.path.clone(), Markers::Yes)
     }
 }
@@ -223,7 +223,7 @@ impl SetAttributes for Polygon {
 }
 
 impl BasicShape for Polygon {
-    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Shape {
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
         Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
     }
 }
@@ -248,7 +248,7 @@ impl SetAttributes for Polyline {
 }
 
 impl BasicShape for Polyline {
-    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Shape {
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
         Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
     }
 }
@@ -280,7 +280,7 @@ impl SetAttributes for Line {
 }
 
 impl BasicShape for Line {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let mut builder = PathBuilder::default();
 
         let params = draw_ctx.get_view_params();
@@ -344,7 +344,7 @@ impl SetAttributes for Rect {
 }
 
 impl BasicShape for Rect {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -543,7 +543,7 @@ impl SetAttributes for Circle {
 }
 
 impl BasicShape for Circle {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -587,7 +587,7 @@ impl SetAttributes for Ellipse {
 }
 
 impl BasicShape for Ellipse {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
