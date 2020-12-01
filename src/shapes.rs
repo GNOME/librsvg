@@ -116,7 +116,7 @@ fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
 
 #[derive(Default)]
 pub struct Path {
-    path: Option<Rc<SvgPath>>,
+    path: Rc<SvgPath>,
 }
 
 impl SetAttributes for Path {
@@ -130,7 +130,7 @@ impl SetAttributes for Path {
 
                     rsvg_log!("could not parse path: {}", e);
                 }
-                self.path = Some(Rc::new(builder.into_path()));
+                self.path = Rc::new(builder.into_path());
             }
         }
 
@@ -140,10 +140,7 @@ impl SetAttributes for Path {
 
 impl BasicShape for Path {
     fn make_path(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
-        self.path
-            .as_ref()
-            .map(Rc::clone)
-            .unwrap_or_else(|| Rc::new(PathBuilder::default().into_path()))
+        self.path.clone()
     }
 }
 
