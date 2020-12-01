@@ -2,13 +2,16 @@
 
 use cssparser::Parser;
 
+use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
 use crate::error::*;
-use crate::gradient::ResolvedGradient;
+use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
-use crate::pattern::ResolvedPattern;
+use crate::pattern::{ResolvedPattern, UserSpacePattern};
+use crate::properties::ComputedValues;
 use crate::url_resolver::Fragment;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -25,6 +28,13 @@ pub enum PaintSource {
     None,
     Gradient(ResolvedGradient, Option<cssparser::Color>),
     Pattern(ResolvedPattern, Option<cssparser::Color>),
+    SolidColor(cssparser::Color),
+}
+
+pub enum UserSpacePaintSource {
+    None,
+    Gradient(UserSpaceGradient, Option<cssparser::Color>),
+    Pattern(UserSpacePattern, Option<cssparser::Color>),
     SolidColor(cssparser::Color),
 }
 
@@ -124,6 +134,32 @@ impl PaintServer {
             PaintServer::SolidColor(color) => Ok(PaintSource::SolidColor(*color)),
 
             PaintServer::None => Ok(PaintSource::None),
+        }
+    }
+}
+
+impl PaintSource {
+    pub fn to_user_space(
+        &self,
+        bbox: &BoundingBox,
+        draw_ctx: &DrawingCtx,
+        values: &ComputedValues,
+    ) -> UserSpacePaintSource {
+        match *self {
+            PaintSource::None => UserSpacePaintSource::None,
+            PaintSource::SolidColor(c) => UserSpacePaintSource::SolidColor(c),
+
+            PaintSource::Gradient(ref g, c) => match (g.to_user_space(bbox, draw_ctx, values), c) {
+                (Some(gradient), c) => UserSpacePaintSource::Gradient(gradient, c),
+                (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
+                (None, None) => UserSpacePaintSource::None,
+            },
+
+            PaintSource::Pattern(ref p, c) => match (p.to_user_space(bbox, draw_ctx, values), c) {
+                (Some(pattern), c) => UserSpacePaintSource::Pattern(pattern, c),
+                (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
+                (None, None) => UserSpacePaintSource::None,
+            },
         }
     }
 }

@@ -23,7 +23,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
-use crate::paint_server::{PaintServer, PaintSource};
+use crate::paint_server::{PaintServer, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::{PatternContentUnits, PatternUnits, UserSpacePattern};
 use crate::properties::ComputedValues;
@@ -1143,19 +1143,13 @@ impl DrawingCtx {
         current_color: cssparser::RGBA,
         values: &ComputedValues,
     ) -> Result<bool, RenderingError> {
-        let paint_source = paint_server.resolve(acquired_nodes)?;
+        let paint_source = paint_server
+            .resolve(acquired_nodes)?
+            .to_user_space(bbox, self, values);
 
         match paint_source {
-            PaintSource::Gradient(g, c) => {
-                let had_gradient;
-
-                if let Some(gradient) = g.to_user_space(bbox, self, values) {
-                    had_gradient = self.set_gradient(&gradient, opacity)?;
-                } else {
-                    had_gradient = false;
-                }
-
-                if had_gradient {
+            UserSpacePaintSource::Gradient(gradient, c) => {
+                if self.set_gradient(&gradient, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
                     self.set_color(c, opacity, current_color)
@@ -1163,16 +1157,8 @@ impl DrawingCtx {
                     Ok(false)
                 }
             }
-            PaintSource::Pattern(p, c) => {
-                let had_pattern;
-
-                if let Some(pattern) = p.to_user_space(bbox, self, values) {
-                    had_pattern = self.set_pattern(&pattern, acquired_nodes, opacity)?;
-                } else {
-                    had_pattern = false;
-                }
-
-                if had_pattern {
+            UserSpacePaintSource::Pattern(pattern, c) => {
+                if self.set_pattern(&pattern, acquired_nodes, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
                     self.set_color(c, opacity, current_color)
@@ -1180,8 +1166,8 @@ impl DrawingCtx {
                     Ok(false)
                 }
             }
-            PaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
-            PaintSource::None => Ok(false),
+            UserSpacePaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
+            UserSpacePaintSource::None => Ok(false),
         }
     }
 
