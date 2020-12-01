@@ -5,9 +5,10 @@ use std::cell::RefCell;
 
 use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
-use crate::drawing_ctx::ViewParams;
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -101,6 +102,18 @@ pub struct ResolvedPattern {
 
     // Link to the node whose children are the pattern's resolved children.
     children: Children,
+}
+
+/// Pattern normalized to user-space units.
+pub struct UserSpacePattern {
+    pub units: PatternUnits,
+    pub content_units: PatternContentUnits,
+    pub bbox: BoundingBox,
+    pub vbox: Option<ViewBox>,
+    pub preserve_aspect_ratio: AspectRatio,
+    pub transform: Transform,
+    pub rect: Rect,
+    pub node_with_children: Node,
 }
 
 #[derive(Default)]
@@ -300,40 +313,50 @@ impl UnresolvedChildren {
 }
 
 impl ResolvedPattern {
-    pub fn get_units(&self) -> PatternUnits {
-        self.units
+    fn node_with_children(&self) -> Option<Node> {
+        match self.children {
+            Children::Empty => None,
+            Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
+        }
     }
 
-    pub fn get_content_units(&self) -> PatternContentUnits {
-        self.content_units
-    }
+    pub fn to_user_space(
+        &self,
+        bbox: &BoundingBox,
+        draw_ctx: &DrawingCtx,
+        values: &ComputedValues,
+    ) -> Option<UserSpacePattern> {
+        let node_with_children = if let Some(n) = self.node_with_children() {
+            n
+        } else {
+            // This means we didn't find any children among the fallbacks,
+            // so there is nothing to render.
+            return None;
+        };
 
-    pub fn get_vbox(&self) -> Option<ViewBox> {
-        self.vbox
-    }
+        let params = draw_ctx.push_coord_units(self.units.0);
 
-    pub fn get_preserve_aspect_ratio(&self) -> AspectRatio {
-        self.preserve_aspect_ratio
-    }
-
-    pub fn get_transform(&self) -> Transform {
-        self.transform
-    }
-
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         let x = self.x.normalize(&values, &params);
         let y = self.y.normalize(&values, &params);
         let w = self.width.normalize(&values, &params);
         let h = self.height.normalize(&values, &params);
 
-        Rect::new(x, y, x + w, y + h)
-    }
+        let rect = Rect::new(x, y, x + w, y + h);
 
-    pub fn node_with_children(&self) -> Option<Node> {
-        match self.children {
-            Children::Empty => None,
-            Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
-        }
+        // FIXME: eventually UserSpacePattern should contain fewer fields; we should be able
+        // to figure out all the transforms in advance and just put them there, rather than
+        // leaving that responsibility to DrawingCtx.set_pattern().
+
+        Some(UserSpacePattern {
+            units: self.units,
+            content_units: self.content_units,
+            vbox: self.vbox,
+            bbox: *bbox,
+            preserve_aspect_ratio: self.preserve_aspect_ratio,
+            transform: self.transform,
+            rect,
+            node_with_children,
+        })
     }
 }
 
