@@ -453,6 +453,9 @@ pub struct PathBuilder {
 ///
 /// Each `PathCommand` knows how many coordinates it ought to produce, with
 /// its `num_coordinates` method.
+///
+/// This struct implements `Default`, and it yields an empty path.
+#[derive(Default)]
 pub struct Path {
     commands: Box<[PackedCommand]>,
     coords: Box<[f64]>,
@@ -704,6 +707,13 @@ mod tests {
     fn empty_builder() {
         let builder = PathBuilder::default();
         let path = builder.into_path();
+        assert!(path.is_empty());
+        assert_eq!(path.iter().count(), 0);
+    }
+
+    #[test]
+    fn empty_path() {
+        let path = Path::default();
         assert!(path.is_empty());
         assert_eq!(path.iter().count(), 0);
     }
