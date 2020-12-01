@@ -101,13 +101,13 @@ impl<'a> PathHelper<'a> {
         cr: &'a cairo::Context,
         transform: Transform,
         path: &'a Path,
-        values: &ComputedValues,
+        linecap: StrokeLinecap,
     ) -> Self {
         PathHelper {
             cr,
             transform,
             path,
-            is_square_linecap: values.stroke_line_cap() == StrokeLinecap::Square,
+            is_square_linecap: linecap == StrokeLinecap::Square,
             has_path: None,
         }
     }
@@ -1304,7 +1304,7 @@ impl DrawingCtx {
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let cr = dc.cr.clone();
             let transform = dc.get_transform();
-            let mut path_helper = PathHelper::new(&cr, transform, path, values);
+            let mut path_helper = PathHelper::new(&cr, transform, path, values.stroke_line_cap());
 
             if clipping {
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
