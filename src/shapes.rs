@@ -138,6 +138,15 @@ impl SetAttributes for Path {
     }
 }
 
+impl BasicShape for Path {
+    fn make_path(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
+        self.path
+            .as_ref()
+            .map(Rc::clone)
+            .unwrap_or_else(|| Rc::new(PathBuilder::default().into_path()))
+    }
+}
+
 impl Draw for Path {
     fn draw(
         &self,
@@ -147,18 +156,14 @@ impl Draw for Path {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if let Some(path) = self.path.as_ref() {
-            let values = cascaded.get();
-            Shape::new(path.clone(), Markers::Yes).draw(
-                node,
-                acquired_nodes,
-                values,
-                draw_ctx,
-                clipping,
-            )
-        } else {
-            Ok(draw_ctx.empty_bbox())
-        }
+        let values = cascaded.get();
+        Shape::new(self.make_path(values, draw_ctx), Markers::Yes).draw(
+            node,
+            acquired_nodes,
+            values,
+            draw_ctx,
+            clipping,
+        )
     }
 }
 
