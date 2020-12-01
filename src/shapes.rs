@@ -247,13 +247,19 @@ impl Draw for Polygon {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes).draw(
+        Shape::new(self.make_path(values, draw_ctx), Markers::Yes).draw(
             node,
             acquired_nodes,
             values,
             draw_ctx,
             clipping,
         )
+    }
+}
+
+impl BasicShape for Polygon {
+    fn make_path(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
+        Rc::new(make_poly(&self.points, true))
     }
 }
 
@@ -284,13 +290,19 @@ impl Draw for Polyline {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes).draw(
+        Shape::new(self.make_path(values, draw_ctx), Markers::Yes).draw(
             node,
             acquired_nodes,
             values,
             draw_ctx,
             clipping,
         )
+    }
+}
+
+impl BasicShape for Polyline {
+    fn make_path(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Rc<SvgPath> {
+        Rc::new(make_poly(&self.points, false))
     }
 }
 
