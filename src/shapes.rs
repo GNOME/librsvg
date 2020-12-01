@@ -54,6 +54,10 @@ impl Shape {
     }
 }
 
+trait BasicShape {
+    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath;
+}
+
 fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
     let mut builder = PathBuilder::default();
 
@@ -332,7 +336,7 @@ impl Draw for Line {
     }
 }
 
-impl Line {
+impl BasicShape for Line {
     fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let mut builder = PathBuilder::default();
 
@@ -414,7 +418,7 @@ impl Draw for Rect {
     }
 }
 
-impl Rect {
+impl BasicShape for Rect {
     fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let params = draw_ctx.get_view_params();
 
@@ -631,7 +635,7 @@ impl Draw for Circle {
     }
 }
 
-impl Circle {
+impl BasicShape for Circle {
     fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let params = draw_ctx.get_view_params();
 
@@ -693,7 +697,7 @@ impl Draw for Ellipse {
     }
 }
 
-impl Ellipse {
+impl BasicShape for Ellipse {
     fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
         let params = draw_ctx.get_view_params();
 
