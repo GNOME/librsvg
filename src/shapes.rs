@@ -26,32 +26,37 @@ pub enum Markers {
 }
 
 pub struct Shape {
-    path: Rc<SvgPath>,
-    markers: Markers,
+    pub path: Rc<SvgPath>,
+    pub markers: Markers,
 }
 
 impl Shape {
     fn new(path: Rc<SvgPath>, markers: Markers) -> Shape {
         Shape { path, markers }
     }
+}
 
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_path(
-            &self.path,
-            node,
-            acquired_nodes,
-            values,
-            self.markers,
-            clipping,
-        )
-    }
+trait BasicShape {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape;
+}
+
+macro_rules! impl_draw {
+    ($name:ident) => {
+        impl Draw for $name {
+            fn draw(
+                &self,
+                node: &Node,
+                acquired_nodes: &mut AcquiredNodes<'_>,
+                cascaded: &CascadedValues<'_>,
+                draw_ctx: &mut DrawingCtx,
+                clipping: bool,
+            ) -> Result<BoundingBox, RenderingError> {
+                let values = cascaded.get();
+                let shape = self.make_shape(values, draw_ctx);
+                draw_ctx.draw_shape(&shape, node, acquired_nodes, values, clipping)
+            }
+        }
+    };
 }
 
 fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
@@ -112,8 +117,10 @@ fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
 
 #[derive(Default)]
 pub struct Path {
-    path: Option<Rc<SvgPath>>,
+    path: Rc<SvgPath>,
 }
+
+impl_draw!(Path);
 
 impl SetAttributes for Path {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
@@ -126,7 +133,7 @@ impl SetAttributes for Path {
 
                     rsvg_log!("could not parse path: {}", e);
                 }
-                self.path = Some(Rc::new(builder.into_path()));
+                self.path = Rc::new(builder.into_path());
             }
         }
 
@@ -134,31 +141,13 @@ impl SetAttributes for Path {
     }
 }
 
-impl Draw for Path {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        if let Some(path) = self.path.as_ref() {
-            let values = cascaded.get();
-            Shape::new(path.clone(), Markers::Yes).draw(
-                node,
-                acquired_nodes,
-                values,
-                draw_ctx,
-                clipping,
-            )
-        } else {
-            Ok(draw_ctx.empty_bbox())
-        }
+impl BasicShape for Path {
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
+        Shape::new(self.path.clone(), Markers::Yes)
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 struct Points(Vec<(f64, f64)>);
 
 impl Deref for Points {
@@ -196,21 +185,19 @@ impl Parse for Points {
     }
 }
 
-fn make_poly(points: Option<&Points>, closed: bool) -> SvgPath {
+fn make_poly(points: &Points, closed: bool) -> SvgPath {
     let mut builder = PathBuilder::default();
 
-    if let Some(points) = points {
-        for (i, &(x, y)) in points.iter().enumerate() {
-            if i == 0 {
-                builder.move_to(x, y);
-            } else {
-                builder.line_to(x, y);
-            }
+    for (i, &(x, y)) in points.iter().enumerate() {
+        if i == 0 {
+            builder.move_to(x, y);
+        } else {
+            builder.line_to(x, y);
         }
+    }
 
-        if closed {
-            builder.close_path();
-        }
+    if closed && !points.is_empty() {
+        builder.close_path();
     }
 
     builder.into_path()
@@ -218,14 +205,16 @@ fn make_poly(points: Option<&Points>, closed: bool) -> SvgPath {
 
 #[derive(Default)]
 pub struct Polygon {
-    points: Option<Points>,
+    points: Points,
 }
+
+impl_draw!(Polygon);
 
 impl SetAttributes for Polygon {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
-                self.points = attr.parse(value).map(Some)?;
+                self.points = attr.parse(value)?;
             }
         }
 
@@ -233,36 +222,24 @@ impl SetAttributes for Polygon {
     }
 }
 
-impl Draw for Polygon {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        Shape::new(Rc::new(make_poly(self.points.as_ref(), true)), Markers::Yes).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
+impl BasicShape for Polygon {
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
+        Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
     }
 }
 
 #[derive(Default)]
 pub struct Polyline {
-    points: Option<Points>,
+    points: Points,
 }
+
+impl_draw!(Polyline);
 
 impl SetAttributes for Polyline {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
-                self.points = attr.parse(value).map(Some)?;
+                self.points = attr.parse(value)?;
             }
         }
 
@@ -270,21 +247,9 @@ impl SetAttributes for Polyline {
     }
 }
 
-impl Draw for Polyline {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        Shape::new(
-            Rc::new(make_poly(self.points.as_ref(), false)),
-            Markers::Yes,
-        )
-        .draw(node, acquired_nodes, values, draw_ctx, clipping)
+impl BasicShape for Polyline {
+    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
+        Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
     }
 }
 
@@ -295,6 +260,8 @@ pub struct Line {
     x2: Length<Horizontal>,
     y2: Length<Vertical>,
 }
+
+impl_draw!(Line);
 
 impl SetAttributes for Line {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
@@ -312,28 +279,8 @@ impl SetAttributes for Line {
     }
 }
 
-impl Draw for Line {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::Yes).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
-    }
-}
-
-impl Line {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
+impl BasicShape for Line {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let mut builder = PathBuilder::default();
 
         let params = draw_ctx.get_view_params();
@@ -346,7 +293,7 @@ impl Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        builder.into_path()
+        Shape::new(Rc::new(builder.into_path()), Markers::Yes)
     }
 }
 
@@ -361,6 +308,8 @@ pub struct Rect {
     rx: Option<Length<Horizontal>>,
     ry: Option<Length<Vertical>>,
 }
+
+impl_draw!(Rect);
 
 impl SetAttributes for Rect {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
@@ -394,28 +343,8 @@ impl SetAttributes for Rect {
     }
 }
 
-impl Draw for Rect {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::No).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
-    }
-}
-
-impl Rect {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
+impl BasicShape for Rect {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let x = self.x.normalize(values, &params);
@@ -452,12 +381,12 @@ impl Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return builder.into_path();
+            return Shape::new(Rc::new(builder.into_path()), Markers::No);
         }
 
         // ... and rx,ry must be nonnegative
         if rx < 0.0 || ry < 0.0 {
-            return builder.into_path();
+            return Shape::new(Rc::new(builder.into_path()), Markers::No);
         }
 
         let half_w = w / 2.0;
@@ -583,7 +512,7 @@ impl Rect {
             builder.close_path();
         }
 
-        builder.into_path()
+        Shape::new(Rc::new(builder.into_path()), Markers::No)
     }
 }
 
@@ -593,6 +522,8 @@ pub struct Circle {
     cy: Length<Vertical>,
     r: Length<Both>,
 }
+
+impl_draw!(Circle);
 
 impl SetAttributes for Circle {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
@@ -611,35 +542,15 @@ impl SetAttributes for Circle {
     }
 }
 
-impl Draw for Circle {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::No).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
-    }
-}
-
-impl Circle {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
+impl BasicShape for Circle {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
         let cy = self.cy.normalize(values, &params);
         let r = self.r.normalize(values, &params);
 
-        make_ellipse(cx, cy, r, r)
+        Shape::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
     }
 }
 
@@ -650,6 +561,8 @@ pub struct Ellipse {
     rx: Length<Horizontal>,
     ry: Length<Vertical>,
 }
+
+impl_draw!(Ellipse);
 
 impl SetAttributes for Ellipse {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
@@ -673,28 +586,8 @@ impl SetAttributes for Ellipse {
     }
 }
 
-impl Draw for Ellipse {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        Shape::new(Rc::new(self.make_path(values, draw_ctx)), Markers::No).draw(
-            node,
-            acquired_nodes,
-            values,
-            draw_ctx,
-            clipping,
-        )
-    }
-}
-
-impl Ellipse {
-    fn make_path(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> SvgPath {
+impl BasicShape for Ellipse {
+    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
         let cx = self.cx.normalize(values, &params);
@@ -702,7 +595,7 @@ impl Ellipse {
         let rx = self.rx.normalize(values, &params);
         let ry = self.ry.normalize(values, &params);
 
-        make_ellipse(cx, cy, rx, ry)
+        Shape::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
     }
 }
 

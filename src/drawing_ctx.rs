@@ -32,7 +32,7 @@ use crate::property_defs::{
     StrokeDasharray, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
-use crate::shapes::Markers;
+use crate::shapes::{Markers, Shape};
 use crate::structure::Mask;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
@@ -101,13 +101,13 @@ impl<'a> PathHelper<'a> {
         cr: &'a cairo::Context,
         transform: Transform,
         path: &'a Path,
-        values: &ComputedValues,
+        linecap: StrokeLinecap,
     ) -> Self {
         PathHelper {
             cr,
             transform,
             path,
-            is_square_linecap: values.stroke_line_cap() == StrokeLinecap::Square,
+            is_square_linecap: linecap == StrokeLinecap::Square,
             has_path: None,
         }
     }
@@ -1288,23 +1288,23 @@ impl DrawingCtx {
         Ok(())
     }
 
-    pub fn draw_path(
+    pub fn draw_shape(
         &mut self,
-        path: &Path,
+        shape: &Shape,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
-        markers: Markers,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if path.is_empty() {
+        if shape.path.is_empty() {
             return Ok(self.empty_bbox());
         }
 
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
             let cr = dc.cr.clone();
             let transform = dc.get_transform();
-            let mut path_helper = PathHelper::new(&cr, transform, path, values);
+            let mut path_helper =
+                PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
 
             if clipping {
                 cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
@@ -1337,9 +1337,9 @@ impl DrawingCtx {
                             dc.fill(&cr, an, values, &bbox, current_color)?;
                         }
                     }
-                    PaintTarget::Markers if markers == Markers::Yes => {
+                    PaintTarget::Markers if shape.markers == Markers::Yes => {
                         path_helper.unset();
-                        marker::render_markers_for_path(path, dc, an, values, clipping)?;
+                        marker::render_markers_for_path(&shape.path, dc, an, values, clipping)?;
                     }
                     _ => {}
                 }
