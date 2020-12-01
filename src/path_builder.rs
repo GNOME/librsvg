@@ -435,7 +435,7 @@ impl PathCommand {
 ///
 /// When you are finished constructing a path builder, turn it into
 /// a `Path` with `into_path`.
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct PathBuilder {
     path_commands: TinyVec<[PathCommand; 32]>,
 }
