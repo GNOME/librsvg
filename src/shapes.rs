@@ -26,8 +26,8 @@ pub enum Markers {
 }
 
 pub struct Shape {
-    path: Rc<SvgPath>,
-    markers: Markers,
+    pub path: Rc<SvgPath>,
+    pub markers: Markers,
 }
 
 impl Shape {
@@ -43,14 +43,7 @@ impl Shape {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_path(
-            &self.path,
-            node,
-            acquired_nodes,
-            values,
-            self.markers,
-            clipping,
-        )
+        draw_ctx.draw_shape(self, node, acquired_nodes, values, clipping)
     }
 }
 
