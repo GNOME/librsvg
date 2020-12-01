@@ -58,6 +58,30 @@ trait BasicShape {
     fn make_shape(&self, values: &ComputedValues, draw_ctx: &mut DrawingCtx) -> Shape;
 }
 
+macro_rules! impl_draw {
+    ($name:ident) => {
+        impl Draw for $name {
+            fn draw(
+                &self,
+                node: &Node,
+                acquired_nodes: &mut AcquiredNodes<'_>,
+                cascaded: &CascadedValues<'_>,
+                draw_ctx: &mut DrawingCtx,
+                clipping: bool,
+            ) -> Result<BoundingBox, RenderingError> {
+                let values = cascaded.get();
+                self.make_shape(values, draw_ctx).draw(
+                    node,
+                    acquired_nodes,
+                    values,
+                    draw_ctx,
+                    clipping,
+                )
+            }
+        }
+    };
+}
+
 fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {
     let mut builder = PathBuilder::default();
 
@@ -119,6 +143,8 @@ pub struct Path {
     path: Rc<SvgPath>,
 }
 
+impl_draw!(Path);
+
 impl SetAttributes for Path {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
@@ -141,21 +167,6 @@ impl SetAttributes for Path {
 impl BasicShape for Path {
     fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &mut DrawingCtx) -> Shape {
         Shape::new(self.path.clone(), Markers::Yes)
-    }
-}
-
-impl Draw for Path {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        self.make_shape(values, draw_ctx)
-            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -220,6 +231,8 @@ pub struct Polygon {
     points: Points,
 }
 
+impl_draw!(Polygon);
+
 impl SetAttributes for Polygon {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
@@ -229,21 +242,6 @@ impl SetAttributes for Polygon {
         }
 
         Ok(())
-    }
-}
-
-impl Draw for Polygon {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        self.make_shape(values, draw_ctx)
-            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -258,6 +256,8 @@ pub struct Polyline {
     points: Points,
 }
 
+impl_draw!(Polyline);
+
 impl SetAttributes for Polyline {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
@@ -267,21 +267,6 @@ impl SetAttributes for Polyline {
         }
 
         Ok(())
-    }
-}
-
-impl Draw for Polyline {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        self.make_shape(values, draw_ctx)
-            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -299,6 +284,8 @@ pub struct Line {
     y2: Length<Vertical>,
 }
 
+impl_draw!(Line);
+
 impl SetAttributes for Line {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
@@ -312,21 +299,6 @@ impl SetAttributes for Line {
         }
 
         Ok(())
-    }
-}
-
-impl Draw for Line {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        self.make_shape(values, draw_ctx)
-            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -360,6 +332,8 @@ pub struct Rect {
     ry: Option<Length<Vertical>>,
 }
 
+impl_draw!(Rect);
+
 impl SetAttributes for Rect {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
@@ -389,21 +363,6 @@ impl SetAttributes for Rect {
         }
 
         Ok(())
-    }
-}
-
-impl Draw for Rect {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        self.make_shape(values, draw_ctx)
-            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -587,6 +546,8 @@ pub struct Circle {
     r: Length<Both>,
 }
 
+impl_draw!(Circle);
+
 impl SetAttributes for Circle {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
@@ -601,21 +562,6 @@ impl SetAttributes for Circle {
         }
 
         Ok(())
-    }
-}
-
-impl Draw for Circle {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        self.make_shape(values, draw_ctx)
-            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
@@ -639,6 +585,8 @@ pub struct Ellipse {
     ry: Length<Vertical>,
 }
 
+impl_draw!(Ellipse);
+
 impl SetAttributes for Ellipse {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
@@ -658,21 +606,6 @@ impl SetAttributes for Ellipse {
         }
 
         Ok(())
-    }
-}
-
-impl Draw for Ellipse {
-    fn draw(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        let values = cascaded.get();
-        self.make_shape(values, draw_ctx)
-            .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
