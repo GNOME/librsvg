@@ -7,14 +7,17 @@ use markup5ever::{
 use std::cell::RefCell;
 
 use crate::attributes::Attributes;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
+use crate::properties::ComputedValues;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
@@ -121,7 +124,7 @@ enum UnresolvedVariant {
 
 /// Parameters specific to each gradient type, after resolving.
 #[derive(Clone)]
-pub enum GradientVariant {
+enum ResolvedGradientVariant {
     Linear {
         x1: Length<Horizontal>,
         y1: Length<Vertical>,
@@ -139,12 +142,31 @@ pub enum GradientVariant {
     },
 }
 
+/// Parameters specific to each gradient type, after normalizing to user-space units.
+pub enum GradientVariant {
+    Linear {
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+    },
+
+    Radial {
+        cx: f64,
+        cy: f64,
+        r: f64,
+        fx: f64,
+        fy: f64,
+        fr: f64,
+    },
+}
+
 impl UnresolvedVariant {
-    fn into_resolved(self) -> GradientVariant {
+    fn into_resolved(self) -> ResolvedGradientVariant {
         assert!(self.is_resolved());
 
         match self {
-            UnresolvedVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
+            UnresolvedVariant::Linear { x1, y1, x2, y2 } => ResolvedGradientVariant::Linear {
                 x1: x1.unwrap(),
                 y1: y1.unwrap(),
                 x2: x2.unwrap(),
@@ -158,7 +180,7 @@ impl UnresolvedVariant {
                 fx,
                 fy,
                 fr,
-            } => GradientVariant::Radial {
+            } => ResolvedGradientVariant::Radial {
                 cx: cx.unwrap(),
                 cy: cy.unwrap(),
                 r: r.unwrap(),
@@ -290,7 +312,7 @@ struct Common {
 
     fallback: Option<Fragment>,
 
-    resolved: RefCell<Option<Gradient>>,
+    resolved: RefCell<Option<ResolvedGradient>>,
 }
 
 /// Node for the <linearGradient> element
@@ -332,17 +354,26 @@ struct UnresolvedGradient {
 
 /// Resolved gradient; this is memoizable after the initial resolution.
 #[derive(Clone)]
-pub struct Gradient {
+pub struct ResolvedGradient {
     units: GradientUnits,
     transform: Transform,
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 
-    variant: GradientVariant,
+    variant: ResolvedGradientVariant,
+}
+
+/// Gradient normalized to user-space units.
+pub struct UserSpaceGradient {
+    pub transform: Transform,
+    pub spread: SpreadMethod,
+    pub stops: Vec<ColorStop>,
+
+    pub variant: GradientVariant,
 }
 
 impl UnresolvedGradient {
-    fn into_resolved(self) -> Gradient {
+    fn into_resolved(self) -> ResolvedGradient {
         assert!(self.is_resolved());
 
         let UnresolvedGradient {
@@ -354,7 +385,7 @@ impl UnresolvedGradient {
         } = self;
 
         match variant {
-            UnresolvedVariant::Linear { .. } => Gradient {
+            UnresolvedVariant::Linear { .. } => ResolvedGradient {
                 units: units.unwrap(),
                 transform: transform.unwrap(),
                 spread: spread.unwrap(),
@@ -363,7 +394,7 @@ impl UnresolvedGradient {
                 variant: variant.into_resolved(),
             },
 
-            UnresolvedVariant::Radial { .. } => Gradient {
+            UnresolvedVariant::Radial { .. } => ResolvedGradient {
                 units: units.unwrap(),
                 transform: transform.unwrap(),
                 spread: spread.unwrap(),
@@ -579,7 +610,7 @@ macro_rules! impl_gradient {
                 &self,
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
-            ) -> Result<Gradient, AcquireError> {
+            ) -> Result<ResolvedGradient, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {
                     return Ok(gradient.clone());
@@ -663,25 +694,55 @@ impl SetAttributes for RadialGradient {
 
 impl Draw for RadialGradient {}
 
-impl Gradient {
-    pub fn get_units(&self) -> GradientUnits {
-        self.units
-    }
+impl ResolvedGradient {
+    pub fn to_user_space(
+        &self,
+        bbox: &BoundingBox,
+        draw_ctx: &DrawingCtx,
+        values: &ComputedValues,
+    ) -> Option<UserSpaceGradient> {
+        let units = self.units.0;
+        let transform = if let Ok(t) = bbox.rect_to_transform(units) {
+            t
+        } else {
+            return None;
+        };
 
-    pub fn get_spread(&self) -> SpreadMethod {
-        self.spread
-    }
+        let params = draw_ctx.push_coord_units(units);
 
-    pub fn get_transform(&self) -> Transform {
-        self.transform
-    }
+        let transform = transform.pre_transform(&self.transform).invert()?;
 
-    pub fn get_stops(&self) -> &Vec<ColorStop> {
-        &self.stops
-    }
+        let variant = match self.variant {
+            ResolvedGradientVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
+                x1: x1.normalize(values, &params),
+                y1: y1.normalize(values, &params),
+                x2: x2.normalize(values, &params),
+                y2: y2.normalize(values, &params),
+            },
 
-    pub fn get_variant(&self) -> &GradientVariant {
-        &self.variant
+            ResolvedGradientVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => GradientVariant::Radial {
+                cx: cx.normalize(values, &params),
+                cy: cy.normalize(values, &params),
+                r: r.normalize(values, &params),
+                fx: fx.normalize(values, &params),
+                fy: fy.normalize(values, &params),
+                fr: fr.normalize(values, &params),
+            },
+        };
+
+        Some(UserSpaceGradient {
+            transform,
+            spread: self.spread,
+            stops: self.stops.clone(),
+            variant,
+        })
     }
 }
 

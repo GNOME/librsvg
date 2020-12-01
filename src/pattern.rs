@@ -5,9 +5,10 @@ use std::cell::RefCell;
 
 use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
-use crate::drawing_ctx::ViewParams;
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -33,7 +34,7 @@ struct Common {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<Option<ViewBox>>,
     preserve_aspect_ratio: Option<AspectRatio>,
-    affine: Option<Transform>,
+    transform: Option<Transform>,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<Length<Horizontal>>,
@@ -93,7 +94,7 @@ pub struct ResolvedPattern {
     content_units: PatternContentUnits,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
-    affine: Transform,
+    transform: Transform,
     x: Length<Horizontal>,
     y: Length<Vertical>,
     width: Length<Horizontal>,
@@ -101,6 +102,18 @@ pub struct ResolvedPattern {
 
     // Link to the node whose children are the pattern's resolved children.
     children: Children,
+}
+
+/// Pattern normalized to user-space units.
+pub struct UserSpacePattern {
+    pub units: PatternUnits,
+    pub content_units: PatternContentUnits,
+    pub bbox: BoundingBox,
+    pub vbox: Option<ViewBox>,
+    pub preserve_aspect_ratio: AspectRatio,
+    pub transform: Transform,
+    pub rect: Rect,
+    pub node_with_children: Node,
 }
 
 #[derive(Default)]
@@ -123,7 +136,7 @@ impl SetAttributes for Pattern {
                     self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
                 }
                 expanded_name!("", "patternTransform") => {
-                    self.common.affine = Some(attr.parse(value)?)
+                    self.common.transform = Some(attr.parse(value)?)
                 }
                 ref a if is_href(a) => {
                     set_href(
@@ -162,7 +175,7 @@ impl UnresolvedPattern {
             content_units: self.common.content_units.unwrap(),
             vbox: self.common.vbox.unwrap(),
             preserve_aspect_ratio: self.common.preserve_aspect_ratio.unwrap(),
-            affine: self.common.affine.unwrap(),
+            transform: self.common.transform.unwrap(),
             x: self.common.x.unwrap(),
             y: self.common.y.unwrap(),
             width: self.common.width.unwrap(),
@@ -177,7 +190,7 @@ impl UnresolvedPattern {
             && self.common.content_units.is_some()
             && self.common.vbox.is_some()
             && self.common.preserve_aspect_ratio.is_some()
-            && self.common.affine.is_some()
+            && self.common.transform.is_some()
             && self.common.x.is_some()
             && self.common.y.is_some()
             && self.common.width.is_some()
@@ -193,7 +206,7 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or(fallback.common.preserve_aspect_ratio);
-        let affine = self.common.affine.or(fallback.common.affine);
+        let transform = self.common.transform.or(fallback.common.transform);
         let x = self.common.x.or(fallback.common.x);
         let y = self.common.y.or(fallback.common.y);
         let width = self.common.width.or(fallback.common.width);
@@ -206,7 +219,7 @@ impl UnresolvedPattern {
                 content_units,
                 vbox,
                 preserve_aspect_ratio,
-                affine,
+                transform,
                 x,
                 y,
                 width,
@@ -227,7 +240,7 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or_else(|| Some(AspectRatio::default()));
-        let affine = self.common.affine.or_else(|| Some(Transform::default()));
+        let transform = self.common.transform.or_else(|| Some(Transform::default()));
         let x = self.common.x.or_else(|| Some(Default::default()));
         let y = self.common.y.or_else(|| Some(Default::default()));
         let width = self.common.width.or_else(|| Some(Default::default()));
@@ -240,7 +253,7 @@ impl UnresolvedPattern {
                 content_units,
                 vbox,
                 preserve_aspect_ratio,
-                affine,
+                transform,
                 x,
                 y,
                 width,
@@ -300,40 +313,47 @@ impl UnresolvedChildren {
 }
 
 impl ResolvedPattern {
-    pub fn get_units(&self) -> PatternUnits {
-        self.units
+    fn node_with_children(&self) -> Option<Node> {
+        match self.children {
+            // This means we didn't find any children among the fallbacks,
+            // so there is nothing to render.
+            Children::Empty => None,
+
+            Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
+        }
     }
 
-    pub fn get_content_units(&self) -> PatternContentUnits {
-        self.content_units
-    }
+    pub fn to_user_space(
+        &self,
+        bbox: &BoundingBox,
+        draw_ctx: &DrawingCtx,
+        values: &ComputedValues,
+    ) -> Option<UserSpacePattern> {
+        let node_with_children = self.node_with_children()?;
 
-    pub fn get_vbox(&self) -> Option<ViewBox> {
-        self.vbox
-    }
+        let params = draw_ctx.push_coord_units(self.units.0);
 
-    pub fn get_preserve_aspect_ratio(&self) -> AspectRatio {
-        self.preserve_aspect_ratio
-    }
-
-    pub fn get_transform(&self) -> Transform {
-        self.affine
-    }
-
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         let x = self.x.normalize(&values, &params);
         let y = self.y.normalize(&values, &params);
         let w = self.width.normalize(&values, &params);
         let h = self.height.normalize(&values, &params);
 
-        Rect::new(x, y, x + w, y + h)
-    }
+        let rect = Rect::new(x, y, x + w, y + h);
 
-    pub fn node_with_children(&self) -> Option<Node> {
-        match self.children {
-            Children::Empty => None,
-            Children::WithChildren(ref wc) => Some(wc.upgrade().unwrap()),
-        }
+        // FIXME: eventually UserSpacePattern should contain fewer fields; we should be able
+        // to figure out all the transforms in advance and just put them there, rather than
+        // leaving that responsibility to DrawingCtx.set_pattern().
+
+        Some(UserSpacePattern {
+            units: self.units,
+            content_units: self.content_units,
+            vbox: self.vbox,
+            bbox: *bbox,
+            preserve_aspect_ratio: self.preserve_aspect_ratio,
+            transform: self.transform,
+            rect,
+            node_with_children,
+        })
     }
 }
 

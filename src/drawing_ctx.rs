@@ -20,12 +20,12 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filter::FilterValue;
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::gradient::{Gradient, GradientUnits, GradientVariant, SpreadMethod};
+use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
-use crate::paint_server::{PaintServer, PaintSource};
+use crate::paint_server::{PaintServer, UserSpacePaintSource};
 use crate::path_builder::*;
-use crate::pattern::{PatternContentUnits, PatternUnits, ResolvedPattern};
+use crate::pattern::{PatternContentUnits, PatternUnits, UserSpacePattern};
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintTarget, ShapeRendering,
@@ -935,29 +935,12 @@ impl DrawingCtx {
 
     fn set_gradient(
         self: &mut DrawingCtx,
-        gradient: &Gradient,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
+        gradient: &UserSpaceGradient,
         opacity: UnitInterval,
-        values: &ComputedValues,
-        bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let GradientUnits(units) = gradient.get_units();
-        let transform = if let Ok(t) = bbox.rect_to_transform(units) {
-            t
-        } else {
-            return Ok(false);
-        };
-
-        let params = self.push_coord_units(units);
-
-        let g = match gradient.get_variant() {
+        let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
-                cairo::Gradient::clone(&cairo::LinearGradient::new(
-                    x1.normalize(values, &params),
-                    y1.normalize(values, &params),
-                    x2.normalize(values, &params),
-                    y2.normalize(values, &params),
-                ))
+                cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
             }
 
             GradientVariant::Radial {
@@ -967,28 +950,13 @@ impl DrawingCtx {
                 fx,
                 fy,
                 fr,
-            } => {
-                let n_cx = cx.normalize(values, &params);
-                let n_cy = cy.normalize(values, &params);
-                let n_r = r.normalize(values, &params);
-                let n_fx = fx.normalize(values, &params);
-                let n_fy = fy.normalize(values, &params);
-                let n_fr = fr.normalize(values, &params);
-
-                cairo::Gradient::clone(&cairo::RadialGradient::new(
-                    n_fx, n_fy, n_fr, n_cx, n_cy, n_r,
-                ))
-            }
+            } => cairo::Gradient::clone(&cairo::RadialGradient::new(fx, fy, fr, cx, cy, r)),
         };
 
-        let transform = transform.pre_transform(&gradient.get_transform());
-        if let Some(m) = transform.invert() {
-            g.set_matrix(m.into())
-        }
+        g.set_matrix(gradient.transform.into());
+        g.set_extend(cairo::Extend::from(gradient.spread));
 
-        g.set_extend(cairo::Extend::from(gradient.get_spread()));
-
-        for stop in gradient.get_stops() {
+        for stop in &gradient.stops {
             let UnitInterval(stop_offset) = stop.offset;
             let UnitInterval(o) = opacity;
             let UnitInterval(stop_opacity) = stop.opacity;
@@ -1010,41 +978,23 @@ impl DrawingCtx {
 
     fn set_pattern(
         &mut self,
-        pattern: &ResolvedPattern,
+        pattern: &UserSpacePattern,
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
-        values: &ComputedValues,
-        bbox: &BoundingBox,
     ) -> Result<bool, RenderingError> {
-        let node = if let Some(n) = pattern.node_with_children() {
-            n
-        } else {
-            // This means we didn't find any children among the fallbacks,
-            // so there is nothing to render.
-            return Ok(false);
-        };
-
-        let units = pattern.get_units();
-        let content_units = pattern.get_content_units();
-        let pattern_transform = pattern.get_transform();
-
-        let params = self.push_coord_units(units.0);
-
-        let pattern_rect = pattern.get_rect(values, &params);
-
         // Work out the size of the rectangle so it takes into account the object bounding box
-        let (bbwscale, bbhscale) = match units {
-            PatternUnits(CoordUnits::ObjectBoundingBox) => bbox.rect.unwrap().size(),
+        let (bbwscale, bbhscale) = match pattern.units {
+            PatternUnits(CoordUnits::ObjectBoundingBox) => pattern.bbox.rect.unwrap().size(),
             PatternUnits(CoordUnits::UserSpaceOnUse) => (1.0, 1.0),
         };
 
-        let taffine = self.get_transform().pre_transform(&pattern_transform);
+        let taffine = self.get_transform().pre_transform(&pattern.transform);
 
         let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
         let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
 
-        let scaled_width = pattern_rect.width() * bbwscale;
-        let scaled_height = pattern_rect.height() * bbhscale;
+        let scaled_width = pattern.rect.width() * bbwscale;
+        let scaled_height = pattern.rect.height() * bbhscale;
 
         if approx_eq!(f64, scaled_width, 0.0) || approx_eq!(f64, scaled_height, 0.0) {
             return Ok(false);
@@ -1061,30 +1011,30 @@ impl DrawingCtx {
         schscale = f64::from(ph) / scaled_height;
 
         // Create the pattern coordinate system
-        let mut affine = match units {
+        let mut affine = match pattern.units {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
-                let bbrect = bbox.rect.unwrap();
+                let bbrect = pattern.bbox.rect.unwrap();
                 Transform::new_translate(
-                    bbrect.x0 + pattern_rect.x0 * bbrect.width(),
-                    bbrect.y0 + pattern_rect.y0 * bbrect.height(),
+                    bbrect.x0 + pattern.rect.x0 * bbrect.width(),
+                    bbrect.y0 + pattern.rect.y0 * bbrect.height(),
                 )
             }
 
             PatternUnits(CoordUnits::UserSpaceOnUse) => {
-                Transform::new_translate(pattern_rect.x0, pattern_rect.y0)
+                Transform::new_translate(pattern.rect.x0, pattern.rect.y0)
             }
         };
 
         // Apply the pattern transform
-        affine = affine.post_transform(&pattern_transform);
+        affine = affine.post_transform(&pattern.transform);
 
         let mut caffine: Transform;
 
         // Create the pattern contents coordinate system
-        let _params = if let Some(vbox) = pattern.get_vbox() {
+        let _params = if let Some(vbox) = pattern.vbox {
             // If there is a vbox, use that
             let r = pattern
-                .get_preserve_aspect_ratio()
+                .preserve_aspect_ratio
                 .compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
 
             let sw = r.width() / vbox.width();
@@ -1096,11 +1046,11 @@ impl DrawingCtx {
 
             self.push_view_box(vbox.width(), vbox.height())
         } else {
-            let PatternContentUnits(content_units) = content_units;
+            let PatternContentUnits(content_units) = pattern.content_units;
 
             caffine = if content_units == CoordUnits::ObjectBoundingBox {
                 // If coords are in terms of the bounding box, use them
-                let (bbw, bbh) = bbox.rect.unwrap().size();
+                let (bbw, bbh) = pattern.bbox.rect.unwrap().size();
                 Transform::new_scale(bbw, bbh)
             } else {
                 Transform::identity()
@@ -1131,14 +1081,18 @@ impl DrawingCtx {
 
         // Draw everything
         let res = self.with_alpha(opacity, &mut |dc| {
-            let pattern_cascaded = CascadedValues::new_from_node(&node);
+            let pattern_cascaded = CascadedValues::new_from_node(&pattern.node_with_children);
             let pattern_values = pattern_cascaded.get();
             dc.with_discrete_layer(
-                &node,
+                &pattern.node_with_children,
                 acquired_nodes,
                 pattern_values,
                 false,
-                &mut |an, dc| node.draw_children(an, &pattern_cascaded, dc, false),
+                &mut |an, dc| {
+                    pattern
+                        .node_with_children
+                        .draw_children(an, &pattern_cascaded, dc, false)
+                },
             )
         });
 
@@ -1189,11 +1143,13 @@ impl DrawingCtx {
         current_color: cssparser::RGBA,
         values: &ComputedValues,
     ) -> Result<bool, RenderingError> {
-        let paint_source = paint_server.resolve(acquired_nodes)?;
+        let paint_source = paint_server
+            .resolve(acquired_nodes)?
+            .to_user_space(bbox, self, values);
 
         match paint_source {
-            PaintSource::Gradient(g, c) => {
-                if self.set_gradient(&g, acquired_nodes, opacity, values, bbox)? {
+            UserSpacePaintSource::Gradient(gradient, c) => {
+                if self.set_gradient(&gradient, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
                     self.set_color(c, opacity, current_color)
@@ -1201,8 +1157,8 @@ impl DrawingCtx {
                     Ok(false)
                 }
             }
-            PaintSource::Pattern(p, c) => {
-                if self.set_pattern(&p, acquired_nodes, opacity, values, bbox)? {
+            UserSpacePaintSource::Pattern(pattern, c) => {
+                if self.set_pattern(&pattern, acquired_nodes, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
                     self.set_color(c, opacity, current_color)
@@ -1210,8 +1166,8 @@ impl DrawingCtx {
                     Ok(false)
                 }
             }
-            PaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
-            PaintSource::None => Ok(false),
+            UserSpacePaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
+            UserSpacePaintSource::None => Ok(false),
         }
     }
 
