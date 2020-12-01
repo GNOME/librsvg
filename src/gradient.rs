@@ -7,14 +7,17 @@ use markup5ever::{
 use std::cell::RefCell;
 
 use crate::attributes::Attributes;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeStack};
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
+use crate::properties::ComputedValues;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
@@ -136,6 +139,25 @@ pub enum ResolvedGradientVariant {
         fx: Length<Horizontal>,
         fy: Length<Vertical>,
         fr: Length<Both>,
+    },
+}
+
+/// Parameters specific to each gradient type, after normalizing to user-space units.
+pub enum GradientVariant {
+    Linear {
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+    },
+
+    Radial {
+        cx: f64,
+        cy: f64,
+        r: f64,
+        fx: f64,
+        fy: f64,
+        fr: f64,
     },
 }
 
@@ -339,6 +361,15 @@ pub struct ResolvedGradient {
     stops: Vec<ColorStop>,
 
     variant: ResolvedGradientVariant,
+}
+
+/// Gradient normalized to user-space units.
+pub struct Gradient {
+    pub transform: Transform,
+    pub spread: SpreadMethod,
+    pub stops: Vec<ColorStop>,
+
+    pub variant: GradientVariant,
 }
 
 impl UnresolvedGradient {
@@ -682,6 +713,60 @@ impl ResolvedGradient {
 
     pub fn get_variant(&self) -> &ResolvedGradientVariant {
         &self.variant
+    }
+
+    pub fn to_user_space(
+        &self,
+        bbox: &BoundingBox,
+        draw_ctx: &DrawingCtx,
+        values: &ComputedValues,
+    ) -> Option<Gradient> {
+        let units = self.units.0;
+        let transform = if let Ok(t) = bbox.rect_to_transform(units) {
+            t
+        } else {
+            return None;
+        };
+
+        let params = draw_ctx.push_coord_units(units);
+
+        let transform = if let Some(m) = transform.pre_transform(&self.transform).invert() {
+            m
+        } else {
+            return None;
+        };
+
+        let variant = match self.variant {
+            ResolvedGradientVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
+                x1: x1.normalize(values, &params),
+                y1: y1.normalize(values, &params),
+                x2: x2.normalize(values, &params),
+                y2: y2.normalize(values, &params),
+            },
+
+            ResolvedGradientVariant::Radial {
+                cx,
+                cy,
+                r,
+                fx,
+                fy,
+                fr,
+            } => GradientVariant::Radial {
+                cx: cx.normalize(values, &params),
+                cy: cy.normalize(values, &params),
+                r: r.normalize(values, &params),
+                fx: fx.normalize(values, &params),
+                fy: fy.normalize(values, &params),
+                fr: fr.normalize(values, &params),
+            },
+        };
+
+        Some(Gradient {
+            transform,
+            spread: self.spread,
+            stops: self.stops.clone(),
+            variant,
+        })
     }
 }
 

@@ -20,7 +20,7 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filter::FilterValue;
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::gradient::{GradientUnits, ResolvedGradient, ResolvedGradientVariant, SpreadMethod};
+use crate::gradient::{Gradient, GradientVariant, SpreadMethod};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -933,62 +933,26 @@ impl DrawingCtx {
         Ok(child_surface)
     }
 
-    fn set_gradient(
-        self: &mut DrawingCtx,
-        gradient: &ResolvedGradient,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
-        opacity: UnitInterval,
-        values: &ComputedValues,
-        bbox: &BoundingBox,
-    ) -> Result<bool, RenderingError> {
-        let GradientUnits(units) = gradient.get_units();
-        let transform = if let Ok(t) = bbox.rect_to_transform(units) {
-            t
-        } else {
-            return Ok(false);
-        };
-
-        let params = self.push_coord_units(units);
-
-        let g = match gradient.get_variant() {
-            ResolvedGradientVariant::Linear { x1, y1, x2, y2 } => {
-                cairo::Gradient::clone(&cairo::LinearGradient::new(
-                    x1.normalize(values, &params),
-                    y1.normalize(values, &params),
-                    x2.normalize(values, &params),
-                    y2.normalize(values, &params),
-                ))
+    fn set_gradient(self: &mut DrawingCtx, gradient: &Gradient, opacity: UnitInterval) {
+        let g = match gradient.variant {
+            GradientVariant::Linear { x1, y1, x2, y2 } => {
+                cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
             }
 
-            ResolvedGradientVariant::Radial {
+            GradientVariant::Radial {
                 cx,
                 cy,
                 r,
                 fx,
                 fy,
                 fr,
-            } => {
-                let n_cx = cx.normalize(values, &params);
-                let n_cy = cy.normalize(values, &params);
-                let n_r = r.normalize(values, &params);
-                let n_fx = fx.normalize(values, &params);
-                let n_fy = fy.normalize(values, &params);
-                let n_fr = fr.normalize(values, &params);
-
-                cairo::Gradient::clone(&cairo::RadialGradient::new(
-                    n_fx, n_fy, n_fr, n_cx, n_cy, n_r,
-                ))
-            }
+            } => cairo::Gradient::clone(&cairo::RadialGradient::new(fx, fy, fr, cx, cy, r)),
         };
 
-        let transform = transform.pre_transform(&gradient.get_transform());
-        if let Some(m) = transform.invert() {
-            g.set_matrix(m.into())
-        }
+        g.set_matrix(gradient.transform.into());
+        g.set_extend(cairo::Extend::from(gradient.spread));
 
-        g.set_extend(cairo::Extend::from(gradient.get_spread()));
-
-        for stop in gradient.get_stops() {
+        for stop in &gradient.stops {
             let UnitInterval(stop_offset) = stop.offset;
             let UnitInterval(o) = opacity;
             let UnitInterval(stop_opacity) = stop.opacity;
@@ -1004,8 +968,6 @@ impl DrawingCtx {
 
         let cr = self.cr.clone();
         cr.set_source(&g);
-
-        Ok(true)
     }
 
     fn set_pattern(
@@ -1193,7 +1155,8 @@ impl DrawingCtx {
 
         match paint_source {
             PaintSource::Gradient(g, c) => {
-                if self.set_gradient(&g, acquired_nodes, opacity, values, bbox)? {
+                if let Some(gradient) = g.to_user_space(bbox, self, values) {
+                    self.set_gradient(&gradient, opacity);
                     Ok(true)
                 } else if let Some(c) = c {
                     self.set_color(c, opacity, current_color)
