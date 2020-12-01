@@ -164,7 +164,7 @@ impl Draw for Path {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 struct Points(Vec<(f64, f64)>);
 
 impl Deref for Points {
@@ -202,21 +202,19 @@ impl Parse for Points {
     }
 }
 
-fn make_poly(points: Option<&Points>, closed: bool) -> SvgPath {
+fn make_poly(points: &Points, closed: bool) -> SvgPath {
     let mut builder = PathBuilder::default();
 
-    if let Some(points) = points {
-        for (i, &(x, y)) in points.iter().enumerate() {
-            if i == 0 {
-                builder.move_to(x, y);
-            } else {
-                builder.line_to(x, y);
-            }
+    for (i, &(x, y)) in points.iter().enumerate() {
+        if i == 0 {
+            builder.move_to(x, y);
+        } else {
+            builder.line_to(x, y);
         }
+    }
 
-        if closed {
-            builder.close_path();
-        }
+    if closed && !points.is_empty() {
+        builder.close_path();
     }
 
     builder.into_path()
@@ -224,14 +222,14 @@ fn make_poly(points: Option<&Points>, closed: bool) -> SvgPath {
 
 #[derive(Default)]
 pub struct Polygon {
-    points: Option<Points>,
+    points: Points,
 }
 
 impl SetAttributes for Polygon {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
-                self.points = attr.parse(value).map(Some)?;
+                self.points = attr.parse(value)?;
             }
         }
 
@@ -249,7 +247,7 @@ impl Draw for Polygon {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(Rc::new(make_poly(self.points.as_ref(), true)), Markers::Yes).draw(
+        Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes).draw(
             node,
             acquired_nodes,
             values,
@@ -261,14 +259,14 @@ impl Draw for Polygon {
 
 #[derive(Default)]
 pub struct Polyline {
-    points: Option<Points>,
+    points: Points,
 }
 
 impl SetAttributes for Polyline {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
-                self.points = attr.parse(value).map(Some)?;
+                self.points = attr.parse(value)?;
             }
         }
 
@@ -286,11 +284,13 @@ impl Draw for Polyline {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        Shape::new(
-            Rc::new(make_poly(self.points.as_ref(), false)),
-            Markers::Yes,
+        Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes).draw(
+            node,
+            acquired_nodes,
+            values,
+            draw_ctx,
+            clipping,
         )
-        .draw(node, acquired_nodes, values, draw_ctx, clipping)
     }
 }
 
