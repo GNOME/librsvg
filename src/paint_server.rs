@@ -5,7 +5,7 @@ use cssparser::Parser;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
 use crate::error::*;
-use crate::gradient::Gradient;
+use crate::gradient::ResolvedGradient;
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::ResolvedPattern;
@@ -23,7 +23,7 @@ pub enum PaintServer {
 
 pub enum PaintSource {
     None,
-    Gradient(Gradient, Option<cssparser::Color>),
+    Gradient(ResolvedGradient, Option<cssparser::Color>),
     Pattern(ResolvedPattern, Option<cssparser::Color>),
     SolidColor(cssparser::Color),
 }

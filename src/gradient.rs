@@ -290,7 +290,7 @@ struct Common {
 
     fallback: Option<Fragment>,
 
-    resolved: RefCell<Option<Gradient>>,
+    resolved: RefCell<Option<ResolvedGradient>>,
 }
 
 /// Node for the <linearGradient> element
@@ -332,7 +332,7 @@ struct UnresolvedGradient {
 
 /// Resolved gradient; this is memoizable after the initial resolution.
 #[derive(Clone)]
-pub struct Gradient {
+pub struct ResolvedGradient {
     units: GradientUnits,
     transform: Transform,
     spread: SpreadMethod,
@@ -342,7 +342,7 @@ pub struct Gradient {
 }
 
 impl UnresolvedGradient {
-    fn into_resolved(self) -> Gradient {
+    fn into_resolved(self) -> ResolvedGradient {
         assert!(self.is_resolved());
 
         let UnresolvedGradient {
@@ -354,7 +354,7 @@ impl UnresolvedGradient {
         } = self;
 
         match variant {
-            UnresolvedVariant::Linear { .. } => Gradient {
+            UnresolvedVariant::Linear { .. } => ResolvedGradient {
                 units: units.unwrap(),
                 transform: transform.unwrap(),
                 spread: spread.unwrap(),
@@ -363,7 +363,7 @@ impl UnresolvedGradient {
                 variant: variant.into_resolved(),
             },
 
-            UnresolvedVariant::Radial { .. } => Gradient {
+            UnresolvedVariant::Radial { .. } => ResolvedGradient {
                 units: units.unwrap(),
                 transform: transform.unwrap(),
                 spread: spread.unwrap(),
@@ -579,7 +579,7 @@ macro_rules! impl_gradient {
                 &self,
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
-            ) -> Result<Gradient, AcquireError> {
+            ) -> Result<ResolvedGradient, AcquireError> {
                 let mut resolved = self.common.resolved.borrow_mut();
                 if let Some(ref gradient) = *resolved {
                     return Ok(gradient.clone());
@@ -663,7 +663,7 @@ impl SetAttributes for RadialGradient {
 
 impl Draw for RadialGradient {}
 
-impl Gradient {
+impl ResolvedGradient {
     pub fn get_units(&self) -> GradientUnits {
         self.units
     }

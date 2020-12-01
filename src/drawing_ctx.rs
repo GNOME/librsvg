@@ -20,7 +20,7 @@ use crate::error::{AcquireError, RenderingError};
 use crate::filter::FilterValue;
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::gradient::{Gradient, GradientUnits, GradientVariant, SpreadMethod};
+use crate::gradient::{GradientUnits, GradientVariant, ResolvedGradient, SpreadMethod};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, PaintSource};
@@ -935,7 +935,7 @@ impl DrawingCtx {
 
     fn set_gradient(
         self: &mut DrawingCtx,
-        gradient: &Gradient,
+        gradient: &ResolvedGradient,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         values: &ComputedValues,
