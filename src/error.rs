@@ -337,8 +337,8 @@ pub enum LoadingError {
     /// There is no `<svg>` root element in the XML.
     NoSvgRoot,
 
-    /// Generally an I/O error, or another error from GIO.
-    Glib(glib::Error),
+    /// I/O error.
+    Io(String),
 
     /// A particular implementation-defined limit was exceeded.
     LimitExceeded(String),
@@ -357,7 +357,7 @@ impl fmt::Display for LoadingError {
             LoadingError::BadUrl => write!(f, "invalid URL"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
             LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
-            LoadingError::Glib(ref e) => e.fmt(f),
+            LoadingError::Io(ref s) => write!(f, "I/O error: {}", s),
             LoadingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
             LoadingError::Other(ref s) => write!(f, "{}", s),
         }
@@ -366,7 +366,9 @@ impl fmt::Display for LoadingError {
 
 impl From<glib::Error> for LoadingError {
     fn from(e: glib::Error) -> LoadingError {
-        LoadingError::Glib(e)
+        // FIXME: this is somewhat fishy; not all GError are I/O errors, but in librsvg
+        // most GError do come from gio.  Some come from GdkPixbufLoader, though.
+        LoadingError::Io(format!("{}", e))
     }
 }
 
@@ -374,7 +376,7 @@ impl From<IoError> for LoadingError {
     fn from(e: IoError) -> LoadingError {
         match e {
             IoError::BadDataUrl => LoadingError::BadUrl,
-            IoError::Glib(e) => LoadingError::Glib(e),
+            IoError::Glib(e) => LoadingError::Io(format!("{}", e)),
         }
     }
 }

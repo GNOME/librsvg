@@ -561,7 +561,7 @@ impl XmlState {
 
         // FIXME: pass a cancellable
         self.parse_from_stream(&stream, None).map_err(|e| match e {
-            LoadingError::Glib(_) => AcquireError::ResourceError,
+            LoadingError::Io(_) => AcquireError::ResourceError,
             LoadingError::XmlParseError(s) => AcquireError::FatalError(s),
             _ => AcquireError::FatalError(String::from("unknown error")),
         })
