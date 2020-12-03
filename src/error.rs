@@ -123,8 +123,8 @@ impl fmt::Display for DefsLookupErrorKind {
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq)]
 pub enum RenderingError {
-    /// A Cairo error happened during rendering.
-    Cairo(cairo::Status),
+    /// An error from the rendering backend.
+    Rendering(String),
 
     /// A particular implementation-defined limit was exceeded.
     LimitExceeded(String),
@@ -153,11 +153,11 @@ impl error::Error for RenderingError {}
 impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
+            RenderingError::Rendering(ref s) => write!(f, "rendering error: {}", s),
             RenderingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
-            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
-            RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
             RenderingError::IdNotFound => write!(f, "element id not found"),
             RenderingError::InvalidId(ref s) => write!(f, "invalid id: {:?}", s),
+            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
         }
     }
 }
@@ -166,7 +166,7 @@ impl From<cairo::Status> for RenderingError {
     fn from(e: cairo::Status) -> RenderingError {
         assert!(e != cairo::Status::Success);
 
-        RenderingError::Cairo(e)
+        RenderingError::Rendering(format!("{:?}", e))
     }
 }
 

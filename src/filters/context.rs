@@ -215,7 +215,7 @@ impl FilterContext {
             .unwrap()
             .as_ref()
             .map(|surf| surf.clone())
-            .map_err(|&s| s)
+            .map_err(|e| e.clone())
     }
 
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter

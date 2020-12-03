@@ -379,7 +379,7 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
     if status == cairo::Status::Success {
         Ok(())
     } else {
-        Err(RenderingError::Cairo(status))
+        Err(RenderingError::from(status))
     }
 }
 
