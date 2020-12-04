@@ -3,7 +3,7 @@ use std::fmt;
 use crate::error::RenderingError;
 
 /// An enumeration of errors that can occur during filter primitive rendering.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum FilterError {
     /// The units on the filter bounds are invalid
     InvalidUnits,
