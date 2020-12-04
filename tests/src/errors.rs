@@ -11,7 +11,7 @@
 #![cfg(test)]
 
 use cairo;
-use librsvg::{CairoRenderer, Loader, LoadingError, RenderingError};
+use librsvg::{CairoRenderer, ImplementationLimit, Loader, LoadingError, RenderingError};
 
 #[ignore]
 #[test]
@@ -20,7 +20,9 @@ fn too_many_elements() {
 
     assert!(matches!(
         Loader::new().read_path(name),
-        Err(LoadingError::LimitExceeded(_))
+        Err(LoadingError::LimitExceeded(
+            ImplementationLimit::TooManyLoadedElements
+        ))
     ));
 }
 
@@ -45,7 +47,9 @@ fn rendering_instancing_limit(name: &str) {
                 height: 500.0,
             },
         ),
-        Err(RenderingError::LimitExceeded(_))
+        Err(RenderingError::LimitExceeded(
+            ImplementationLimit::TooManyReferencedElements
+        ))
     ));
 }
 

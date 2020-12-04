@@ -260,9 +260,7 @@ fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> L
 
     match status {
         cairo::Status::NoMemory => LoadingError::OutOfMemory(format!("loading image: {}", url)),
-        cairo::Status::InvalidSize => {
-            LoadingError::LimitExceeded(format!("image too big: {}", url))
-        }
+        cairo::Status::InvalidSize => LoadingError::Other(format!("image too big: {}", url)),
         _ => LoadingError::Other(format!("cairo error: {}", status)),
     }
 }

@@ -6,7 +6,9 @@ use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
-use crate::error::*;
+use crate::error::{
+    AcquireError, HrefError, ImplementationLimit, ParseError, RenderingError, ValueErrorKind,
+};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
@@ -104,9 +106,9 @@ impl PaintServer {
                 .or_else(|err| match (err, alternate) {
                     (AcquireError::MaxReferencesExceeded, _) => {
                         rsvg_log!("exceeded maximum number of referenced objects");
-                        Err(RenderingError::LimitExceeded(String::from(
-                            "maximum number of referenced objects",
-                        )))
+                        Err(RenderingError::LimitExceeded(
+                            ImplementationLimit::TooManyReferencedElements,
+                        ))
                     }
 
                     // The following two cases catch AcquireError::CircularReference, which for

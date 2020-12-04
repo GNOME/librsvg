@@ -7,6 +7,7 @@ use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
 use crate::io::IoError;
+use crate::limits;
 use crate::node::Node;
 use crate::url_resolver::Fragment;
 
@@ -127,7 +128,7 @@ pub enum RenderingError {
     Rendering(String),
 
     /// A particular implementation-defined limit was exceeded.
-    LimitExceeded(String),
+    LimitExceeded(ImplementationLimit),
 
     /// Tried to reference an SVG element that does not exist.
     IdNotFound,
@@ -154,7 +155,7 @@ impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             RenderingError::Rendering(ref s) => write!(f, "rendering error: {}", s),
-            RenderingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
+            RenderingError::LimitExceeded(ref l) => write!(f, "{}", l),
             RenderingError::IdNotFound => write!(f, "element id not found"),
             RenderingError::InvalidId(ref s) => write!(f, "invalid id: {:?}", s),
             RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
@@ -341,10 +342,54 @@ pub enum LoadingError {
     Io(String),
 
     /// A particular implementation-defined limit was exceeded.
-    LimitExceeded(String),
+    LimitExceeded(ImplementationLimit),
 
     /// Catch-all for loading errors.
     Other(String),
+}
+
+/// Errors for implementation-defined limits, to mitigate malicious SVG documents.
+///
+/// These get emitted as `LoadingError::LimitExceeded` or `RenderingError::LimitExceeded`.
+/// The limits are present to mitigate malicious SVG documents which may try to exhaust
+/// all available memory, or which would use large amounts of CPU time.
+#[non_exhaustive]
+#[derive(Debug, Copy, Clone)]
+pub enum ImplementationLimit {
+    /// Document exceeded the maximum number of times that elements
+    /// can be referenced through URL fragments.
+    ///
+    /// This is a mitigation for malicious documents that attempt to
+    /// consume exponential amounts of CPU time by creating millions
+    /// of references to SVG elements.  For example, the `<use>` and
+    /// `<pattern>` elements allow referencing other elements, which
+    /// can in turn reference other elements.  This can be used to
+    /// create documents which would require exponential amounts of
+    /// CPU time to be rendered.
+    ///
+    /// Librsvg deals with both cases by placing a limit on how many
+    /// references will be resolved during the SVG rendering process,
+    /// that is, how many `url(#foo)` will be resolved.
+    ///
+    /// These malicious documents are similar to the XML
+    /// [billion laughs attack], but done with SVG's referencing features.
+    ///
+    /// See issues
+    /// [#323](https://gitlab.gnome.org/GNOME/librsvg/issues/323) and
+    /// [#515](https://gitlab.gnome.org/GNOME/librsvg/issues/515) for
+    /// examples for the `<use>` and `<pattern>` elements,
+    /// respectively.
+    ///
+    /// [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
+    TooManyReferencedElements,
+
+    /// Document exceeded the maximum number of elements that can be loaded.
+    ///
+    /// This is a mitigation for SVG files which create millions of
+    /// elements in an attempt to exhaust memory.  Librsvg does not't
+    /// allow loading more than a certain number of elements during
+    /// the initial loading process.
+    TooManyLoadedElements,
 }
 
 impl error::Error for LoadingError {}
@@ -358,7 +403,7 @@ impl fmt::Display for LoadingError {
             LoadingError::BadCss => write!(f, "invalid CSS"),
             LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
             LoadingError::Io(ref s) => write!(f, "I/O error: {}", s),
-            LoadingError::LimitExceeded(ref s) => write!(f, "limit exceeded: {}", s),
+            LoadingError::LimitExceeded(ref l) => write!(f, "{}", l),
             LoadingError::Other(ref s) => write!(f, "{}", s),
         }
     }
@@ -377,6 +422,24 @@ impl From<IoError> for LoadingError {
         match e {
             IoError::BadDataUrl => LoadingError::BadUrl,
             IoError::Glib(e) => LoadingError::Io(format!("{}", e)),
+        }
+    }
+}
+
+impl fmt::Display for ImplementationLimit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            ImplementationLimit::TooManyReferencedElements => write!(
+                f,
+                "exceeded more than {} referenced elements",
+                limits::MAX_REFERENCED_ELEMENTS
+            ),
+
+            ImplementationLimit::TooManyLoadedElements => write!(
+                f,
+                "cannot load more than {} XML elements",
+                limits::MAX_LOADED_ELEMENTS
+            ),
         }
     }
 }

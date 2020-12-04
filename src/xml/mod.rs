@@ -21,7 +21,7 @@ use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerO
 
 use crate::attributes::Attributes;
 use crate::document::{Document, DocumentBuilder};
-use crate::error::LoadingError;
+use crate::error::{ImplementationLimit, LoadingError};
 use crate::io::{self, IoError};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
@@ -165,10 +165,9 @@ impl XmlState {
 
     fn check_limits(&self) -> Result<(), ()> {
         if self.inner.borrow().num_loaded_elements > MAX_LOADED_ELEMENTS {
-            self.error(LoadingError::LimitExceeded(format!(
-                "cannot load more than {} XML elements",
-                MAX_LOADED_ELEMENTS
-            )));
+            self.error(LoadingError::LimitExceeded(
+                ImplementationLimit::TooManyLoadedElements,
+            ));
             Err(())
         } else {
             Ok(())
