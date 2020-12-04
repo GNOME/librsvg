@@ -121,7 +121,7 @@ impl fmt::Display for DefsLookupErrorKind {
 
 /// Errors that can happen while rendering or measuring an SVG document.
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum RenderingError {
     /// An error from the rendering backend.
     Rendering(String),
