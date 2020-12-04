@@ -86,7 +86,7 @@ impl fmt::Display for ElementError {
 }
 
 /// Errors returned when looking up a resource by URL reference.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum DefsLookupErrorKind {
     /// Error when parsing an [`Href`].
     ///
@@ -278,7 +278,7 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
 }
 
 /// Errors returned when creating an `Href` out of a string
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum HrefError {
     /// The href is an invalid URI or has empty components.
     ParseError,

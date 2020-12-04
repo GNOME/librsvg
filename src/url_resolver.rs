@@ -363,9 +363,9 @@ mod tests {
             ))
         );
 
-        assert_eq!(Href::parse(""), Err(HrefError::ParseError));
-        assert_eq!(Href::parse("#"), Err(HrefError::ParseError));
-        assert_eq!(Href::parse("uri#"), Err(HrefError::ParseError));
+        assert!(matches!(Href::parse(""), Err(HrefError::ParseError)));
+        assert!(matches!(Href::parse("#"), Err(HrefError::ParseError)));
+        assert!(matches!(Href::parse("uri#"), Err(HrefError::ParseError)));
     }
 
     #[test]
@@ -380,6 +380,9 @@ mod tests {
             Fragment::new(Some("uri".to_string()), "foo".to_string())
         );
 
-        assert_eq!(Fragment::parse("uri"), Err(HrefError::FragmentRequired));
+        assert!(matches!(
+            Fragment::parse("uri"),
+            Err(HrefError::FragmentRequired)
+        ));
     }
 }
