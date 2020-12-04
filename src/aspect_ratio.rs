@@ -7,8 +7,8 @@
 //! # use librsvg::doctest_only::AspectRatio;
 //! # use librsvg::doctest_only::Parse;
 //! assert_eq!(
-//!     AspectRatio::parse_str("xMidYMid"),
-//!     Ok(AspectRatio::default())
+//!     AspectRatio::parse_str("xMidYMid").unwrap(),
+//!     AspectRatio::default()
 //! );
 //! ```
 //!
@@ -260,71 +260,71 @@ mod tests {
     #[test]
     fn parses_valid_strings() {
         assert_eq!(
-            AspectRatio::parse_str("defer none"),
-            Ok(AspectRatio {
+            AspectRatio::parse_str("defer none").unwrap(),
+            AspectRatio {
                 defer: true,
                 align: None,
-            },)
+            }
         );
 
         assert_eq!(
-            AspectRatio::parse_str("xMidYMid"),
-            Ok(AspectRatio {
+            AspectRatio::parse_str("xMidYMid").unwrap(),
+            AspectRatio {
                 defer: false,
                 align: Some(Align {
                     x: X(Align1D::Mid),
                     y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 },),
-            },)
+            }
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMidYMid"),
-            Ok(AspectRatio {
+            AspectRatio::parse_str("defer xMidYMid").unwrap(),
+            AspectRatio {
                 defer: true,
                 align: Some(Align {
                     x: X(Align1D::Mid),
                     y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 },),
-            },)
+            }
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMinYMax"),
-            Ok(AspectRatio {
+            AspectRatio::parse_str("defer xMinYMax").unwrap(),
+            AspectRatio {
                 defer: true,
                 align: Some(Align {
                     x: X(Align1D::Min),
                     y: Y(Align1D::Max),
                     fit: FitMode::Meet,
                 },),
-            },)
+            }
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMaxYMid meet"),
-            Ok(AspectRatio {
+            AspectRatio::parse_str("defer xMaxYMid meet").unwrap(),
+            AspectRatio {
                 defer: true,
                 align: Some(Align {
                     x: X(Align1D::Max),
                     y: Y(Align1D::Mid),
                     fit: FitMode::Meet,
                 },),
-            },)
+            }
         );
 
         assert_eq!(
-            AspectRatio::parse_str("defer xMinYMax slice"),
-            Ok(AspectRatio {
+            AspectRatio::parse_str("defer xMinYMax slice").unwrap(),
+            AspectRatio {
                 defer: true,
                 align: Some(Align {
                     x: X(Align1D::Min),
                     y: Y(Align1D::Max),
                     fit: FitMode::Slice,
                 },),
-            },)
+            }
         );
     }
 

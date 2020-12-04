@@ -74,23 +74,23 @@ mod tests {
     #[test]
     fn parses_number_list() {
         assert_eq!(
-            NumberList::parse_str("5", NumberListLength::Exact(1)),
-            Ok(NumberList(vec![5.0]))
+            NumberList::parse_str("5", NumberListLength::Exact(1)).unwrap(),
+            NumberList(vec![5.0])
         );
 
         assert_eq!(
-            NumberList::parse_str("1 2 3 4", NumberListLength::Exact(4)),
-            Ok(NumberList(vec![1.0, 2.0, 3.0, 4.0]))
+            NumberList::parse_str("1 2 3 4", NumberListLength::Exact(4)).unwrap(),
+            NumberList(vec![1.0, 2.0, 3.0, 4.0])
         );
 
         assert_eq!(
-            NumberList::parse_str("", NumberListLength::Unbounded),
-            Ok(NumberList(vec![]))
+            NumberList::parse_str("", NumberListLength::Unbounded).unwrap(),
+            NumberList(vec![])
         );
 
         assert_eq!(
-            NumberList::parse_str("1, 2, 3.0, 4, 5", NumberListLength::Unbounded),
-            Ok(NumberList(vec![1.0, 2.0, 3.0, 4.0, 5.0]))
+            NumberList::parse_str("1, 2, 3.0, 4, 5", NumberListLength::Unbounded).unwrap(),
+            NumberList(vec![1.0, 2.0, 3.0, 4.0, 5.0])
         );
     }
 

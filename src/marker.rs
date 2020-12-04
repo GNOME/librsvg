@@ -812,12 +812,12 @@ mod parser_tests {
     #[test]
     fn parses_marker_units() {
         assert_eq!(
-            MarkerUnits::parse_str("userSpaceOnUse"),
-            Ok(MarkerUnits::UserSpaceOnUse)
+            MarkerUnits::parse_str("userSpaceOnUse").unwrap(),
+            MarkerUnits::UserSpaceOnUse
         );
         assert_eq!(
-            MarkerUnits::parse_str("strokeWidth"),
-            Ok(MarkerUnits::StrokeWidth)
+            MarkerUnits::parse_str("strokeWidth").unwrap(),
+            MarkerUnits::StrokeWidth
         );
     }
 
@@ -830,27 +830,27 @@ mod parser_tests {
 
     #[test]
     fn parses_marker_orient() {
-        assert_eq!(MarkerOrient::parse_str("auto"), Ok(MarkerOrient::Auto));
+        assert_eq!(MarkerOrient::parse_str("auto").unwrap(), MarkerOrient::Auto);
 
         assert_eq!(
-            MarkerOrient::parse_str("0"),
-            Ok(MarkerOrient::Angle(Angle::new(0.0)))
+            MarkerOrient::parse_str("0").unwrap(),
+            MarkerOrient::Angle(Angle::new(0.0))
         );
         assert_eq!(
-            MarkerOrient::parse_str("180"),
-            Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
+            MarkerOrient::parse_str("180").unwrap(),
+            MarkerOrient::Angle(Angle::from_degrees(180.0))
         );
         assert_eq!(
-            MarkerOrient::parse_str("180deg"),
-            Ok(MarkerOrient::Angle(Angle::from_degrees(180.0)))
+            MarkerOrient::parse_str("180deg").unwrap(),
+            MarkerOrient::Angle(Angle::from_degrees(180.0))
         );
         assert_eq!(
-            MarkerOrient::parse_str("-400grad"),
-            Ok(MarkerOrient::Angle(Angle::from_degrees(-360.0)))
+            MarkerOrient::parse_str("-400grad").unwrap(),
+            MarkerOrient::Angle(Angle::from_degrees(-360.0))
         );
         assert_eq!(
-            MarkerOrient::parse_str("1rad"),
-            Ok(MarkerOrient::Angle(Angle::new(1.0)))
+            MarkerOrient::parse_str("1rad").unwrap(),
+            MarkerOrient::Angle(Angle::new(1.0))
         );
     }
 }

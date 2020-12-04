@@ -242,11 +242,8 @@ mod tests {
         let f1 = Fragment::new(Some("foo.svg".to_string()), "bar".to_string());
         let f2 = Fragment::new(Some("test.svg".to_string()), "baz".to_string());
         assert_eq!(
-            FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)"),
-            Ok(FilterValueList(vec![
-                FilterValue::URL(f1),
-                FilterValue::URL(f2)
-            ]))
+            FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)").unwrap(),
+            FilterValueList(vec![FilterValue::URL(f1), FilterValue::URL(f2)])
         );
     }
 

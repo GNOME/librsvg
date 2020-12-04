@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn parses_style_type() {
-        assert_eq!(StyleType::parse("text/css"), Ok(StyleType::TextCss));
+        assert_eq!(StyleType::parse("text/css").unwrap(), StyleType::TextCss);
     }
 
     #[test]

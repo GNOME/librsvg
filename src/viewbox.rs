@@ -67,13 +67,13 @@ mod tests {
     #[test]
     fn parses_valid_viewboxes() {
         assert_eq!(
-            ViewBox::parse_str("  1 2 3 4"),
-            Ok(ViewBox(Rect::new(1.0, 2.0, 4.0, 6.0)))
+            ViewBox::parse_str("  1 2 3 4").unwrap(),
+            ViewBox(Rect::new(1.0, 2.0, 4.0, 6.0))
         );
 
         assert_eq!(
-            ViewBox::parse_str(" -1.5 -2.5e1,34,56e2  "),
-            Ok(ViewBox(Rect::new(-1.5, -25.0, 32.5, 5575.0)))
+            ViewBox::parse_str(" -1.5 -2.5e1,34,56e2  ").unwrap(),
+            ViewBox(Rect::new(-1.5, -25.0, 32.5, 5575.0))
         );
     }
 

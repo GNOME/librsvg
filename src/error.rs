@@ -22,7 +22,7 @@ use crate::url_resolver::Fragment;
 pub type ParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
 
 /// A simple error which refers to an attribute's value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum ValueErrorKind {
     /// A property with the specified name was not found
     UnknownProperty,
@@ -73,7 +73,7 @@ impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
 }
 
 /// A complete error for an attribute and its erroneous value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct ElementError {
     pub attr: QualName,
     pub err: ValueErrorKind,

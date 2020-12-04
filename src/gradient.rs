@@ -755,12 +755,15 @@ mod tests {
 
     #[test]
     fn parses_spread_method() {
-        assert_eq!(SpreadMethod::parse_str("pad"), Ok(SpreadMethod::Pad));
+        assert_eq!(SpreadMethod::parse_str("pad").unwrap(), SpreadMethod::Pad);
         assert_eq!(
-            SpreadMethod::parse_str("reflect"),
-            Ok(SpreadMethod::Reflect)
+            SpreadMethod::parse_str("reflect").unwrap(),
+            SpreadMethod::Reflect
         );
-        assert_eq!(SpreadMethod::parse_str("repeat"), Ok(SpreadMethod::Repeat));
+        assert_eq!(
+            SpreadMethod::parse_str("repeat").unwrap(),
+            SpreadMethod::Repeat
+        );
         assert!(SpreadMethod::parse_str("foobar").is_err());
     }
 

@@ -281,6 +281,6 @@ mod tests {
         assert_eq!(<Foo as Default>::default(), Foo::Def);
         assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
         assert!(<Foo as Parse>::parse_str("blargh").is_err());
-        assert_eq!(<Foo as Parse>::parse_str("bar"), Ok(Foo::Bar));
+        assert_eq!(<Foo as Parse>::parse_str("bar").unwrap(), Foo::Bar);
     }
 }

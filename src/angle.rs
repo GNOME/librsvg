@@ -104,13 +104,16 @@ mod tests {
 
     #[test]
     fn parses_angle() {
-        assert_eq!(Angle::parse_str("0"), Ok(Angle::new(0.0)));
-        assert_eq!(Angle::parse_str("15"), Ok(Angle::from_degrees(15.0)));
-        assert_eq!(Angle::parse_str("180.5deg"), Ok(Angle::from_degrees(180.5)));
-        assert_eq!(Angle::parse_str("1rad"), Ok(Angle::new(1.0)));
+        assert_eq!(Angle::parse_str("0").unwrap(), Angle::new(0.0));
+        assert_eq!(Angle::parse_str("15").unwrap(), Angle::from_degrees(15.0));
         assert_eq!(
-            Angle::parse_str("-400grad"),
-            Ok(Angle::from_degrees(-360.0))
+            Angle::parse_str("180.5deg").unwrap(),
+            Angle::from_degrees(180.5)
+        );
+        assert_eq!(Angle::parse_str("1rad").unwrap(), Angle::new(1.0));
+        assert_eq!(
+            Angle::parse_str("-400grad").unwrap(),
+            Angle::from_degrees(-360.0)
         );
 
         assert!(Angle::parse_str("").is_err());
