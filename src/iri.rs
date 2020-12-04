@@ -65,35 +65,29 @@ mod tests {
 
     #[test]
     fn parses_none() {
-        assert_eq!(IRI::parse_str("none"), Ok(IRI::None));
+        assert_eq!(IRI::parse_str("none").unwrap(), IRI::None);
     }
 
     #[test]
     fn parses_url() {
         assert_eq!(
-            IRI::parse_str("url(#bar)"),
-            Ok(IRI::Resource(Fragment::new(None, "bar".to_string())))
+            IRI::parse_str("url(#bar)").unwrap(),
+            IRI::Resource(Fragment::new(None, "bar".to_string()))
         );
 
         assert_eq!(
-            IRI::parse_str("url(foo#bar)"),
-            Ok(IRI::Resource(Fragment::new(
-                Some("foo".to_string()),
-                "bar".to_string()
-            )))
+            IRI::parse_str("url(foo#bar)").unwrap(),
+            IRI::Resource(Fragment::new(Some("foo".to_string()), "bar".to_string()))
         );
 
         // be permissive if the closing ) is missing
         assert_eq!(
-            IRI::parse_str("url(#bar"),
-            Ok(IRI::Resource(Fragment::new(None, "bar".to_string())))
+            IRI::parse_str("url(#bar").unwrap(),
+            IRI::Resource(Fragment::new(None, "bar".to_string()))
         );
         assert_eq!(
-            IRI::parse_str("url(foo#bar"),
-            Ok(IRI::Resource(Fragment::new(
-                Some("foo".to_string()),
-                "bar".to_string()
-            )))
+            IRI::parse_str("url(foo#bar").unwrap(),
+            IRI::Resource(Fragment::new(Some("foo".to_string()), "bar".to_string()))
         );
 
         assert!(IRI::parse_str("").is_err());

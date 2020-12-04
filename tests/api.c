@@ -1255,32 +1255,25 @@ empty_write_close (void)
 static void
 cannot_request_external_elements (void)
 {
-    if (g_test_subprocess ()) {
-        /* We want to test that using one of the _sub() functions will fail
-         * if the element's id is within an external file.  First, ensure
-         * that the main file and the external file actually exist.
-         */
+    /* We want to test that using one of the _sub() functions will fail
+     * if the element's id is within an external file.
+     */
 
-        char *filename = get_test_filename ("example.svg");
+    char *filename = get_test_filename ("example.svg");
 
-        RsvgHandle *handle;
-        GError *error = NULL;
-        RsvgPositionData pos;
+    RsvgHandle *handle;
+    GError *error = NULL;
+    RsvgPositionData pos;
 
-        handle = rsvg_handle_new_from_file (filename, &error);
-        g_free (filename);
+    handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
 
-        g_assert_nonnull (handle);
-        g_assert_no_error (error);
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
 
-        g_assert_false (rsvg_handle_get_position_sub (handle, &pos, "dpi.svg#one"));
+    g_assert_false (rsvg_handle_get_position_sub (handle, &pos, "dpi.svg#one"));
 
-        g_object_unref (handle);
-    }
-
-    g_test_trap_subprocess (NULL, 0, 0);
-    g_test_trap_assert_failed ();
-    g_test_trap_assert_stderr ("*WARNING*the public API is not allowed to look up external references*");
+    g_object_unref (handle);
 }
 
 static void

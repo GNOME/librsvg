@@ -1,10 +1,9 @@
-use std::error::Error;
 use std::fmt;
 
 use crate::error::RenderingError;
 
 /// An enumeration of errors that can occur during filter primitive rendering.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum FilterError {
     /// The units on the filter bounds are invalid
     InvalidUnits,
@@ -17,6 +16,8 @@ pub enum FilterError {
     /// This means that either a failed intermediate surface creation or bad intermediate surface
     /// status.
     CairoError(cairo::Status),
+    /// Error from the rendering backend.
+    Rendering(RenderingError),
     /// A lighting filter has none or multiple light sources.
     InvalidLightSourceCount,
     /// A lighting filter input surface is too small.
@@ -24,8 +25,6 @@ pub enum FilterError {
     /// Child node was in error.
     ChildNodeInError,
 }
-
-impl Error for FilterError {}
 
 impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -39,6 +38,7 @@ impl fmt::Display for FilterError {
                 write!(f, "invalid status of the input surface: {}", status)
             }
             FilterError::CairoError(ref status) => write!(f, "Cairo error: {}", status),
+            FilterError::Rendering(ref e) => write!(f, "Rendering error: {}", e),
             FilterError::InvalidLightSourceCount => write!(f, "invalid light source count"),
             FilterError::LightingInputTooSmall => write!(
                 f,
@@ -59,12 +59,6 @@ impl From<cairo::Status> for FilterError {
 impl From<RenderingError> for FilterError {
     #[inline]
     fn from(e: RenderingError) -> Self {
-        if let RenderingError::Cairo(status) = e {
-            FilterError::CairoError(status)
-        } else {
-            // FIXME: this is just a dummy value; we should probably have a way to indicate
-            // an error in the underlying drawing process.
-            FilterError::CairoError(cairo::Status::InvalidStatus)
-        }
+        FilterError::Rendering(e)
     }
 }

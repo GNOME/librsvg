@@ -23,7 +23,8 @@ use crate::{
 fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
     assert!(width > 0 && height > 0);
 
-    Pixbuf::new(Colorspace::Rgb, true, 8, width, height).ok_or(RenderingError::OutOfMemory)
+    Pixbuf::new(Colorspace::Rgb, true, 8, width, height)
+        .ok_or_else(|| RenderingError::OutOfMemory(String::from("creating a Pixbuf")))
 }
 
 pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {

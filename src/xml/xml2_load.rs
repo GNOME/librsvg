@@ -433,7 +433,9 @@ impl Xml2Parser {
             if parser.is_null() {
                 // on error, xmlCreateIOParserCtxt() frees our ctx via the
                 // stream_ctx_close function
-                Err(LoadingError::CouldNotCreateXmlParser)
+                Err(LoadingError::OutOfMemory(String::from(
+                    "could not create XML parser",
+                )))
             } else {
                 xml2_parser.parser.set(parser);
 
@@ -455,7 +457,7 @@ impl Xml2Parser {
             let io_error = err_ref.take();
 
             if let Some(io_error) = io_error {
-                Err(LoadingError::Glib(io_error))
+                Err(LoadingError::from(io_error))
             } else if !xml_parse_success {
                 let xerr = xmlCtxtGetLastError(parser as *mut _);
                 let msg = xml2_error_to_string(xerr);

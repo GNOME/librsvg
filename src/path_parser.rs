@@ -1,6 +1,5 @@
 //! Parser for SVG path data.
 
-use std::error::Error;
 use std::fmt;
 use std::iter::Enumerate;
 use std::str;
@@ -852,8 +851,6 @@ pub struct ParseError {
     pub position: usize,
     pub kind: ErrorKind,
 }
-
-impl Error for ParseError {}
 
 impl ParseError {
     fn new(pos: usize, k: ErrorKind) -> ParseError {

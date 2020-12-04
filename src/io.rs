@@ -1,27 +1,42 @@
 //! Utilities to acquire streams and data from from URLs.
 
-use gio::{
-    BufferedInputStream, BufferedInputStreamExt, Cancellable, ConverterInputStream, File as GFile,
-    FileExt, InputStream, MemoryInputStream, ZlibCompressorFormat, ZlibDecompressor,
-};
-use glib::{Bytes as GBytes, Cast};
+use gio::{Cancellable, File as GFile, FileExt, InputStream, MemoryInputStream};
+use glib::{self, Bytes as GBytes, Cast};
+use std::fmt;
 
-use crate::error::LoadingError;
 use crate::url_resolver::AllowedUrl;
+
+pub enum IoError {
+    BadDataUrl,
+    Glib(glib::Error),
+}
+
+impl From<glib::Error> for IoError {
+    fn from(e: glib::Error) -> IoError {
+        IoError::Glib(e)
+    }
+}
+
+impl fmt::Display for IoError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            IoError::BadDataUrl => write!(f, "invalid data: URL"),
+            IoError::Glib(ref e) => e.fmt(f),
+        }
+    }
+}
 
 pub struct BinaryData {
     pub data: Vec<u8>,
     pub content_type: Option<String>,
 }
 
-fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
-    let data_url = data_url::DataUrl::process(uri).map_err(|_| LoadingError::BadDataUrl)?;
+fn decode_data_uri(uri: &str) -> Result<BinaryData, IoError> {
+    let data_url = data_url::DataUrl::process(uri).map_err(|_| IoError::BadDataUrl)?;
 
     let mime_type = data_url.mime_type().to_string();
 
-    let (bytes, fragment_id) = data_url
-        .decode_to_vec()
-        .map_err(|_| LoadingError::BadDataUrl)?;
+    let (bytes, fragment_id) = data_url.decode_to_vec().map_err(|_| IoError::BadDataUrl)?;
 
     // See issue #377 - per the data: URL spec
     // (https://fetch.spec.whatwg.org/#data-urls), those URLs cannot
@@ -29,7 +44,7 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
     // one.  This probably indicates mis-quoted SVG data inside the
     // data: URL.
     if fragment_id.is_some() {
-        return Err(LoadingError::BadDataUrl);
+        return Err(IoError::BadDataUrl);
     }
 
     Ok(BinaryData {
@@ -38,41 +53,11 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, LoadingError> {
     })
 }
 
-// Header of a gzip data stream
-const GZ_MAGIC_0: u8 = 0x1f;
-const GZ_MAGIC_1: u8 = 0x8b;
-
-pub fn get_input_stream_for_loading(
-    stream: &InputStream,
-    cancellable: Option<&Cancellable>,
-) -> Result<InputStream, LoadingError> {
-    // detect gzipped streams (svgz)
-
-    let buffered = BufferedInputStream::new(stream);
-    let num_read = buffered.fill(2, cancellable)?;
-    if num_read < 2 {
-        // FIXME: this string was localized in the original; localize it
-        return Err(LoadingError::XmlParseError(String::from(
-            "Input file is too short",
-        )));
-    }
-
-    let buf = buffered.peek_buffer();
-    assert!(buf.len() >= 2);
-    if buf[0..2] == [GZ_MAGIC_0, GZ_MAGIC_1] {
-        let decomp = ZlibDecompressor::new(ZlibCompressorFormat::Gzip);
-        let converter = ConverterInputStream::new(&buffered, &decomp);
-        Ok(converter.upcast::<InputStream>())
-    } else {
-        Ok(buffered.upcast::<InputStream>())
-    }
-}
-
 /// Returns an input stream.  The url can be a data: URL or a plain URI
 pub fn acquire_stream(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
-) -> Result<InputStream, LoadingError> {
+) -> Result<InputStream, IoError> {
     let uri = aurl.as_str();
 
     if uri.starts_with("data:") {
@@ -100,7 +85,7 @@ pub fn acquire_stream(
 pub fn acquire_data(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
-) -> Result<BinaryData, LoadingError> {
+) -> Result<BinaryData, IoError> {
     let uri = aurl.as_str();
 
     if uri.starts_with("data:") {

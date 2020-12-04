@@ -16,7 +16,7 @@ use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::dpi::Dpi;
 use crate::element::Element;
-use crate::error::{AcquireError, RenderingError};
+use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filter::FilterValue;
 use crate::filters;
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -1644,7 +1644,9 @@ impl DrawingCtx {
             }
 
             Err(AcquireError::MaxReferencesExceeded) => {
-                return Err(RenderingError::InstancingLimit);
+                return Err(RenderingError::LimitExceeded(
+                    ImplementationLimit::TooManyReferencedElements,
+                ));
             }
 
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),

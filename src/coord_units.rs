@@ -75,12 +75,12 @@ mod tests {
     #[test]
     fn parses_paint_server_units() {
         assert_eq!(
-            MyUnits::parse_str("userSpaceOnUse"),
-            Ok(MyUnits(CoordUnits::UserSpaceOnUse))
+            MyUnits::parse_str("userSpaceOnUse").unwrap(),
+            MyUnits(CoordUnits::UserSpaceOnUse)
         );
         assert_eq!(
-            MyUnits::parse_str("objectBoundingBox"),
-            Ok(MyUnits(CoordUnits::ObjectBoundingBox))
+            MyUnits::parse_str("objectBoundingBox").unwrap(),
+            MyUnits(CoordUnits::ObjectBoundingBox)
         );
     }
 

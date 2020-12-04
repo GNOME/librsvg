@@ -144,7 +144,7 @@
 #![warn(missing_docs)]
 
 pub use crate::{
-    error::{DefsLookupErrorKind, HrefError, LoadingError, RenderingError},
+    error::{ImplementationLimit, LoadingError, RenderingError},
     length::{LengthUnit, RsvgLength as Length},
 };
 

@@ -605,26 +605,29 @@ mod tests {
 
     #[test]
     fn parses_points() {
-        assert_eq!(Points::parse_str(" 1 2 "), Ok(Points(vec![(1.0, 2.0)])));
         assert_eq!(
-            Points::parse_str("1 2 3 4"),
-            Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
+            Points::parse_str(" 1 2 ").unwrap(),
+            Points(vec![(1.0, 2.0)])
         );
         assert_eq!(
-            Points::parse_str("1,2,3,4"),
-            Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
+            Points::parse_str("1 2 3 4").unwrap(),
+            Points(vec![(1.0, 2.0), (3.0, 4.0)])
         );
         assert_eq!(
-            Points::parse_str("1,2 3,4"),
-            Ok(Points(vec![(1.0, 2.0), (3.0, 4.0)]))
+            Points::parse_str("1,2,3,4").unwrap(),
+            Points(vec![(1.0, 2.0), (3.0, 4.0)])
         );
         assert_eq!(
-            Points::parse_str("1,2 -3,4"),
-            Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
+            Points::parse_str("1,2 3,4").unwrap(),
+            Points(vec![(1.0, 2.0), (3.0, 4.0)])
         );
         assert_eq!(
-            Points::parse_str("1,2,-3,4"),
-            Ok(Points(vec![(1.0, 2.0), (-3.0, 4.0)]))
+            Points::parse_str("1,2 -3,4").unwrap(),
+            Points(vec![(1.0, 2.0), (-3.0, 4.0)])
+        );
+        assert_eq!(
+            Points::parse_str("1,2,-3,4").unwrap(),
+            Points(vec![(1.0, 2.0), (-3.0, 4.0)])
         );
     }
 

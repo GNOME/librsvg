@@ -149,37 +149,41 @@ mod tests {
     #[test]
     fn required_extensions() {
         assert_eq!(
-            RequiredExtensions::from_attribute("http://test.org/NotExisting/1.0"),
-            Ok(RequiredExtensions(false))
+            RequiredExtensions::from_attribute("http://test.org/NotExisting/1.0").unwrap(),
+            RequiredExtensions(false)
         );
     }
 
     #[test]
     fn required_features() {
         assert_eq!(
-            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#NotExisting"),
-            Ok(RequiredFeatures(false))
+            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#NotExisting")
+                .unwrap(),
+            RequiredFeatures(false)
         );
 
         assert_eq!(
-            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#BasicFilter"),
-            Ok(RequiredFeatures(true))
+            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#BasicFilter")
+                .unwrap(),
+            RequiredFeatures(true)
         );
 
         assert_eq!(
             RequiredFeatures::from_attribute(
                 "http://www.w3.org/TR/SVG11/feature#BasicFilter \
                  http://www.w3.org/TR/SVG11/feature#NotExisting",
-            ),
-            Ok(RequiredFeatures(false))
+            )
+            .unwrap(),
+            RequiredFeatures(false)
         );
 
         assert_eq!(
             RequiredFeatures::from_attribute(
                 "http://www.w3.org/TR/SVG11/feature#BasicFilter \
                  http://www.w3.org/TR/SVG11/feature#BasicText",
-            ),
-            Ok(RequiredFeatures(true))
+            )
+            .unwrap(),
+            RequiredFeatures(true)
         );
     }
 
@@ -192,43 +196,43 @@ mod tests {
         assert!(SystemLanguage::from_attribute("12345", &user_prefers).is_err());
 
         assert_eq!(
-            SystemLanguage::from_attribute("fr", &user_prefers),
-            Ok(SystemLanguage(false))
+            SystemLanguage::from_attribute("fr", &user_prefers).unwrap(),
+            SystemLanguage(false)
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("en", &user_prefers),
-            Ok(SystemLanguage(false))
+            SystemLanguage::from_attribute("en", &user_prefers).unwrap(),
+            SystemLanguage(false)
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("de", &user_prefers),
-            Ok(SystemLanguage(true))
+            SystemLanguage::from_attribute("de", &user_prefers).unwrap(),
+            SystemLanguage(true)
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("en-US", &user_prefers),
-            Ok(SystemLanguage(true))
+            SystemLanguage::from_attribute("en-US", &user_prefers).unwrap(),
+            SystemLanguage(true)
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("en-GB", &user_prefers),
-            Ok(SystemLanguage(false))
+            SystemLanguage::from_attribute("en-GB", &user_prefers).unwrap(),
+            SystemLanguage(false)
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("DE", &user_prefers),
-            Ok(SystemLanguage(true))
+            SystemLanguage::from_attribute("DE", &user_prefers).unwrap(),
+            SystemLanguage(true)
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("de-LU", &user_prefers),
-            Ok(SystemLanguage(true))
+            SystemLanguage::from_attribute("de-LU", &user_prefers).unwrap(),
+            SystemLanguage(true)
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("fr, de", &user_prefers),
-            Ok(SystemLanguage(true))
+            SystemLanguage::from_attribute("fr, de", &user_prefers).unwrap(),
+            SystemLanguage(true)
         );
     }
 }

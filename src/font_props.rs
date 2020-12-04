@@ -586,16 +586,16 @@ mod tests {
     #[test]
     fn parses_font_weight() {
         assert_eq!(
-            <FontWeight as Parse>::parse_str("normal"),
-            Ok(FontWeight::Normal)
+            <FontWeight as Parse>::parse_str("normal").unwrap(),
+            FontWeight::Normal
         );
         assert_eq!(
-            <FontWeight as Parse>::parse_str("bold"),
-            Ok(FontWeight::Bold)
+            <FontWeight as Parse>::parse_str("bold").unwrap(),
+            FontWeight::Bold
         );
         assert_eq!(
-            <FontWeight as Parse>::parse_str("100"),
-            Ok(FontWeight::Weight(100))
+            <FontWeight as Parse>::parse_str("100").unwrap(),
+            FontWeight::Weight(100)
         );
     }
 
@@ -612,33 +612,28 @@ mod tests {
     #[test]
     fn parses_letter_spacing() {
         assert_eq!(
-            <LetterSpacing as Parse>::parse_str("normal"),
-            Ok(LetterSpacing::Normal)
+            <LetterSpacing as Parse>::parse_str("normal").unwrap(),
+            LetterSpacing::Normal
         );
         assert_eq!(
-            <LetterSpacing as Parse>::parse_str("10em"),
-            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
-                10.0,
-                LengthUnit::Em,
-            )))
+            <LetterSpacing as Parse>::parse_str("10em").unwrap(),
+            LetterSpacing::Value(Length::<Horizontal>::new(10.0, LengthUnit::Em,))
         );
     }
 
     #[test]
     fn computes_letter_spacing() {
         assert_eq!(
-            <LetterSpacing as Parse>::parse_str("normal").map(|s| s.compute()),
-            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
-                0.0,
-                LengthUnit::Px,
-            )))
+            <LetterSpacing as Parse>::parse_str("normal")
+                .map(|s| s.compute())
+                .unwrap(),
+            LetterSpacing::Value(Length::<Horizontal>::new(0.0, LengthUnit::Px,))
         );
         assert_eq!(
-            <LetterSpacing as Parse>::parse_str("10em").map(|s| s.compute()),
-            Ok(LetterSpacing::Value(Length::<Horizontal>::new(
-                10.0,
-                LengthUnit::Em,
-            )))
+            <LetterSpacing as Parse>::parse_str("10em")
+                .map(|s| s.compute())
+                .unwrap(),
+            LetterSpacing::Value(Length::<Horizontal>::new(10.0, LengthUnit::Em,))
         );
     }
 
@@ -650,38 +645,37 @@ mod tests {
     #[test]
     fn parses_font_family() {
         assert_eq!(
-            <FontFamily as Parse>::parse_str("'Hello world'"),
-            Ok(FontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("'Hello world'").unwrap(),
+            FontFamily("Hello world".to_owned())
         );
 
         assert_eq!(
-            <FontFamily as Parse>::parse_str("\"Hello world\""),
-            Ok(FontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("\"Hello world\"").unwrap(),
+            FontFamily("Hello world".to_owned())
         );
 
         assert_eq!(
-            <FontFamily as Parse>::parse_str("\"Hello world  with  spaces\""),
-            Ok(FontFamily("Hello world  with  spaces".to_owned()))
+            <FontFamily as Parse>::parse_str("\"Hello world  with  spaces\"").unwrap(),
+            FontFamily("Hello world  with  spaces".to_owned())
         );
 
         assert_eq!(
-            <FontFamily as Parse>::parse_str("  Hello  world  "),
-            Ok(FontFamily("Hello world".to_owned()))
+            <FontFamily as Parse>::parse_str("  Hello  world  ").unwrap(),
+            FontFamily("Hello world".to_owned())
         );
 
         assert_eq!(
-            <FontFamily as Parse>::parse_str("Plonk"),
-            Ok(FontFamily("Plonk".to_owned()))
+            <FontFamily as Parse>::parse_str("Plonk").unwrap(),
+            FontFamily("Plonk".to_owned())
         );
     }
 
     #[test]
     fn parses_multiple_font_family() {
         assert_eq!(
-            <FontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces "),
-            Ok(FontFamily(
-                "serif,monospace,Hello world,with spaces".to_owned()
-            ))
+            <FontFamily as Parse>::parse_str("serif,monospace,\"Hello world\", with  spaces ")
+                .unwrap(),
+            FontFamily("serif,monospace,Hello world,with spaces".to_owned())
         );
     }
 
@@ -695,23 +689,23 @@ mod tests {
     #[test]
     fn parses_line_height() {
         assert_eq!(
-            <LineHeight as Parse>::parse_str("normal"),
-            Ok(LineHeight::Normal),
+            <LineHeight as Parse>::parse_str("normal").unwrap(),
+            LineHeight::Normal
         );
 
         assert_eq!(
-            <LineHeight as Parse>::parse_str("2"),
-            Ok(LineHeight::Number(2.0)),
+            <LineHeight as Parse>::parse_str("2").unwrap(),
+            LineHeight::Number(2.0)
         );
 
         assert_eq!(
-            <LineHeight as Parse>::parse_str("2cm"),
-            Ok(LineHeight::Length(Length::new(2.0, LengthUnit::Cm))),
+            <LineHeight as Parse>::parse_str("2cm").unwrap(),
+            LineHeight::Length(Length::new(2.0, LengthUnit::Cm))
         );
 
         assert_eq!(
-            <LineHeight as Parse>::parse_str("150%"),
-            Ok(LineHeight::Percentage(1.5)),
+            <LineHeight as Parse>::parse_str("150%").unwrap(),
+            LineHeight::Percentage(1.5)
         );
     }
 

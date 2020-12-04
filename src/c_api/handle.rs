@@ -24,6 +24,7 @@
 
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::ffi::{CStr, CString};
+use std::fmt;
 use std::ops;
 use std::path::PathBuf;
 use std::ptr;
@@ -53,10 +54,7 @@ use glib::types::instance_of;
 
 use gobject_sys::{GEnumValue, GFlagsValue};
 
-use crate::api::{
-    CairoRenderer, DefsLookupErrorKind, IntrinsicDimensions, Loader, LoadingError, RenderingError,
-    SvgHandle,
-};
+use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
 
 use crate::{
     length::RsvgLength,
@@ -70,6 +68,30 @@ use super::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
 use super::sizing::LegacySize;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
+
+// This is basically the same as api::RenderingError but with extra cases for
+// the peculiarities of the C API.
+enum RenderingError {
+    RenderingError(api::RenderingError),
+
+    // The RsvgHandle is created, but hasn't been loaded yet.
+    HandleIsNotLoaded,
+}
+
+impl<T: Into<api::RenderingError>> From<T> for RenderingError {
+    fn from(e: T) -> RenderingError {
+        RenderingError::RenderingError(e.into())
+    }
+}
+
+impl fmt::Display for RenderingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            RenderingError::RenderingError(ref e) => e.fmt(f),
+            RenderingError::HandleIsNotLoaded => write!(f, "SVG data is not loaded into handle"),
+        }
+    }
+}
 
 mod handle_flags {
     // The following is entirely stolen from the auto-generated code
@@ -766,7 +788,9 @@ impl CHandle {
         match *state {
             LoadState::Start => {
                 *state = LoadState::ClosedError;
-                Err(LoadingError::NoDataPassedToParser)
+                Err(LoadingError::XmlParseError(String::from(
+                    "caller did not write any data",
+                )))
             }
 
             LoadState::Loading { ref buffer } => {
@@ -802,7 +826,7 @@ impl CHandle {
                     "handle must not be already loaded in order to call \
                      rsvg_handle_read_stream_sync()",
                 );
-                Err(LoadingError::Unknown)
+                Err(LoadingError::Other(String::from("API ordering")))
             }
         }
     }
@@ -858,7 +882,7 @@ impl CHandle {
 
     fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
         let handle = self.get_handle_ref()?;
-        handle.has_element_with_id(id).map_err(warn_on_invalid_id)
+        Ok(handle.has_element_with_id(id)?)
     }
 
     fn get_dimensions_or_empty(&self) -> RsvgDimensionData {
@@ -906,7 +930,7 @@ impl CHandle {
 
         inner.size_callback.end_loop();
 
-        res.map_err(warn_on_invalid_id)
+        res
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
@@ -931,7 +955,6 @@ impl CHandle {
                     y: checked_i32(ink_r.y)?,
                 })
             })
-            .map_err(warn_on_invalid_id)
     }
 
     fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
@@ -954,12 +977,12 @@ impl CHandle {
         let renderer = self.make_renderer(&handle);
 
         match id {
-            Some(id) => renderer.geometry_for_layer(Some(id), &unit_rectangle()),
+            Some(id) => Ok(renderer.geometry_for_layer(Some(id), &unit_rectangle())?),
 
-            None => renderer.legacy_document_size_in_pixels().map(|(w, h)| {
+            None => Ok(renderer.legacy_document_size_in_pixels().map(|(w, h)| {
                 let rect = cairo::Rectangle::from_size(w, h);
                 (rect, rect)
-            }),
+            })?),
         }
     }
 
@@ -972,7 +995,7 @@ impl CHandle {
                     "handle must already be loaded in order to call \
                      rsvg_handle_set_stylesheet()",
                 );
-                Err(LoadingError::Unknown)
+                Err(LoadingError::Other(String::from("API ordering")))
             }
         }
     }
@@ -1004,7 +1027,7 @@ impl CHandle {
         let dimensions = self.get_dimensions_sub(None)?;
 
         if dimensions.width == 0 || dimensions.height == 0 {
-            return empty_pixbuf();
+            return Ok(empty_pixbuf()?);
         }
 
         let surface = cairo::ImageSurface::create(
@@ -1020,7 +1043,7 @@ impl CHandle {
 
         let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
 
-        pixbuf_from_surface(&surface)
+        Ok(pixbuf_from_surface(&surface)?)
     }
 
     fn render_document(
@@ -1033,7 +1056,7 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
-        renderer.render_document(cr, viewport)
+        Ok(renderer.render_document(cr, viewport)?)
     }
 
     fn get_geometry_for_layer(
@@ -1044,10 +1067,9 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let renderer = self.make_renderer(&handle);
 
-        renderer
+        Ok(renderer
             .geometry_for_layer(id, viewport)
-            .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
-            .map_err(warn_on_invalid_id)
+            .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))?)
     }
 
     fn render_layer(
@@ -1062,9 +1084,7 @@ impl CHandle {
 
         let renderer = self.make_renderer(&handle);
 
-        renderer
-            .render_layer(cr, id, viewport)
-            .map_err(warn_on_invalid_id)
+        Ok(renderer.render_layer(cr, id, viewport)?)
     }
 
     fn get_geometry_for_element(
@@ -1075,10 +1095,9 @@ impl CHandle {
 
         let renderer = self.make_renderer(&handle);
 
-        renderer
+        Ok(renderer
             .geometry_for_element(id)
-            .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))
-            .map_err(warn_on_invalid_id)
+            .map(|(i, l)| (RsvgRectangle::from(i), RsvgRectangle::from(l)))?)
     }
 
     fn render_element(
@@ -1093,9 +1112,7 @@ impl CHandle {
 
         let renderer = self.make_renderer(&handle);
 
-        renderer
-            .render_element(cr, id, element_viewport)
-            .map_err(warn_on_invalid_id)
+        Ok(renderer.render_element(cr, id, element_viewport)?)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
@@ -2163,16 +2180,8 @@ fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
         );
 
         rsvg_g_warning(&msg);
-        Err(RenderingError::Cairo(status))
+        Err(RenderingError::from(status))
     }
-}
-
-fn warn_on_invalid_id(e: RenderingError) -> RenderingError {
-    if e == RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences) {
-        rsvg_g_warning("the public API is not allowed to look up external references");
-    }
-
-    e
 }
 
 pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {

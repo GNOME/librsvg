@@ -6,7 +6,9 @@ use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
-use crate::error::*;
+use crate::error::{
+    AcquireError, HrefError, ImplementationLimit, ParseError, RenderingError, ValueErrorKind,
+};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
@@ -103,8 +105,10 @@ impl PaintServer {
                 })
                 .or_else(|err| match (err, alternate) {
                     (AcquireError::MaxReferencesExceeded, _) => {
-                        rsvg_log!("maximum number of references exceeded");
-                        Err(RenderingError::InstancingLimit)
+                        rsvg_log!("exceeded maximum number of referenced objects");
+                        Err(RenderingError::LimitExceeded(
+                            ImplementationLimit::TooManyReferencedElements,
+                        ))
                     }
 
                     // The following two cases catch AcquireError::CircularReference, which for
@@ -177,68 +181,68 @@ mod tests {
 
     #[test]
     fn parses_none() {
-        assert_eq!(PaintServer::parse_str("none"), Ok(PaintServer::None));
+        assert_eq!(PaintServer::parse_str("none").unwrap(), PaintServer::None);
     }
 
     #[test]
     fn parses_solid_color() {
         assert_eq!(
-            PaintServer::parse_str("rgb(255, 128, 64, 0.5)"),
-            Ok(PaintServer::SolidColor(cssparser::Color::RGBA(
-                cssparser::RGBA::new(255, 128, 64, 128)
+            PaintServer::parse_str("rgb(255, 128, 64, 0.5)").unwrap(),
+            PaintServer::SolidColor(cssparser::Color::RGBA(cssparser::RGBA::new(
+                255, 128, 64, 128
             )))
         );
 
         assert_eq!(
-            PaintServer::parse_str("currentColor"),
-            Ok(PaintServer::SolidColor(cssparser::Color::CurrentColor))
+            PaintServer::parse_str("currentColor").unwrap(),
+            PaintServer::SolidColor(cssparser::Color::CurrentColor)
         );
     }
 
     #[test]
     fn parses_iri() {
         assert_eq!(
-            PaintServer::parse_str("url(#link)"),
-            Ok(PaintServer::Iri {
+            PaintServer::parse_str("url(#link)").unwrap(),
+            PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: None,
-            },)
+            }
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(foo#link) none"),
-            Ok(PaintServer::Iri {
+            PaintServer::parse_str("url(foo#link) none").unwrap(),
+            PaintServer::Iri {
                 iri: Fragment::new(Some("foo".to_string()), "link".to_string()),
                 alternate: None,
-            },)
+            }
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(#link) #ff8040"),
-            Ok(PaintServer::Iri {
+            PaintServer::parse_str("url(#link) #ff8040").unwrap(),
+            PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
                     255, 128, 64, 255
                 ))),
-            },)
+            }
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)"),
-            Ok(PaintServer::Iri {
+            PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)").unwrap(),
+            PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
                     255, 128, 64, 128
                 ))),
-            },)
+            }
         );
 
         assert_eq!(
-            PaintServer::parse_str("url(#link) currentColor"),
-            Ok(PaintServer::Iri {
+            PaintServer::parse_str("url(#link) currentColor").unwrap(),
+            PaintServer::Iri {
                 iri: Fragment::new(None, "link".to_string()),
                 alternate: Some(cssparser::Color::CurrentColor),
-            },)
+            }
         );
 
         assert!(PaintServer::parse_str("url(#link) invalid").is_err());

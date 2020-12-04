@@ -1,5 +1,5 @@
 use cairo;
-use librsvg::{CairoRenderer, DefsLookupErrorKind, HrefError, RenderingError};
+use librsvg::{CairoRenderer, RenderingError};
 
 use librsvg::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
@@ -22,26 +22,20 @@ fn has_element_with_id_works() {
     assert!(svg.has_element_with_id("#foo").unwrap());
     assert!(!svg.has_element_with_id("#bar").unwrap());
 
-    assert_eq!(
+    assert!(matches!(
         svg.has_element_with_id(""),
-        Err(RenderingError::InvalidId(DefsLookupErrorKind::HrefError(
-            HrefError::ParseError
-        )))
-    );
+        Err(RenderingError::InvalidId(_))
+    ));
 
-    assert_eq!(
+    assert!(matches!(
         svg.has_element_with_id("not a fragment"),
-        Err(RenderingError::InvalidId(
-            DefsLookupErrorKind::CannotLookupExternalReferences
-        ))
-    );
+        Err(RenderingError::InvalidId(_))
+    ));
 
-    assert_eq!(
+    assert!(matches!(
         svg.has_element_with_id("notfragment#fragment"),
-        Err(RenderingError::InvalidId(
-            DefsLookupErrorKind::CannotLookupExternalReferences
-        ))
-    );
+        Err(RenderingError::InvalidId(_))
+    ));
 }
 
 #[test]

@@ -1,6 +1,5 @@
 //! Determine which URLs are allowed for loading.
 
-use std::error;
 use std::fmt;
 use std::io;
 use std::ops::Deref;
@@ -144,8 +143,6 @@ impl fmt::Display for AllowedUrl {
         self.0.fmt(f)
     }
 }
-
-impl error::Error for AllowedUrlError {}
 
 impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -366,9 +363,9 @@ mod tests {
             ))
         );
 
-        assert_eq!(Href::parse(""), Err(HrefError::ParseError));
-        assert_eq!(Href::parse("#"), Err(HrefError::ParseError));
-        assert_eq!(Href::parse("uri#"), Err(HrefError::ParseError));
+        assert!(matches!(Href::parse(""), Err(HrefError::ParseError)));
+        assert!(matches!(Href::parse("#"), Err(HrefError::ParseError)));
+        assert!(matches!(Href::parse("uri#"), Err(HrefError::ParseError)));
     }
 
     #[test]
@@ -383,6 +380,9 @@ mod tests {
             Fragment::new(Some("uri".to_string()), "foo".to_string())
         );
 
-        assert_eq!(Fragment::parse("uri"), Err(HrefError::FragmentRequired));
+        assert!(matches!(
+            Fragment::parse("uri"),
+            Err(HrefError::FragmentRequired)
+        ));
     }
 }

@@ -188,29 +188,29 @@ mod tests {
     #[test]
     fn parses_number_optional_number() {
         assert_eq!(
-            NumberOptionalNumber::parse_str("1, 2"),
-            Ok(NumberOptionalNumber(1.0, 2.0))
+            NumberOptionalNumber::parse_str("1, 2").unwrap(),
+            NumberOptionalNumber(1.0, 2.0)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("1 2"),
-            Ok(NumberOptionalNumber(1.0, 2.0))
+            NumberOptionalNumber::parse_str("1 2").unwrap(),
+            NumberOptionalNumber(1.0, 2.0)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("1"),
-            Ok(NumberOptionalNumber(1.0, 1.0))
+            NumberOptionalNumber::parse_str("1").unwrap(),
+            NumberOptionalNumber(1.0, 1.0)
         );
 
         assert_eq!(
-            NumberOptionalNumber::parse_str("-1, -2"),
-            Ok(NumberOptionalNumber(-1.0, -2.0))
+            NumberOptionalNumber::parse_str("-1, -2").unwrap(),
+            NumberOptionalNumber(-1.0, -2.0)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("-1 -2"),
-            Ok(NumberOptionalNumber(-1.0, -2.0))
+            NumberOptionalNumber::parse_str("-1 -2").unwrap(),
+            NumberOptionalNumber(-1.0, -2.0)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("-1"),
-            Ok(NumberOptionalNumber(-1.0, -1.0))
+            NumberOptionalNumber::parse_str("-1").unwrap(),
+            NumberOptionalNumber(-1.0, -1.0)
         );
     }
 
@@ -227,8 +227,8 @@ mod tests {
 
     #[test]
     fn parses_integer() {
-        assert_eq!(i32::parse_str("1"), Ok(1));
-        assert_eq!(i32::parse_str("-1"), Ok(-1));
+        assert_eq!(i32::parse_str("1").unwrap(), 1);
+        assert_eq!(i32::parse_str("-1").unwrap(), -1);
     }
 
     #[test]
@@ -241,29 +241,29 @@ mod tests {
     #[test]
     fn parses_integer_optional_integer() {
         assert_eq!(
-            NumberOptionalNumber::parse_str("1, 2"),
-            Ok(NumberOptionalNumber(1, 2))
+            NumberOptionalNumber::parse_str("1, 2").unwrap(),
+            NumberOptionalNumber(1, 2)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("1 2"),
-            Ok(NumberOptionalNumber(1, 2))
+            NumberOptionalNumber::parse_str("1 2").unwrap(),
+            NumberOptionalNumber(1, 2)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("1"),
-            Ok(NumberOptionalNumber(1, 1))
+            NumberOptionalNumber::parse_str("1").unwrap(),
+            NumberOptionalNumber(1, 1)
         );
 
         assert_eq!(
-            NumberOptionalNumber::parse_str("-1, -2"),
-            Ok(NumberOptionalNumber(-1, -2))
+            NumberOptionalNumber::parse_str("-1, -2").unwrap(),
+            NumberOptionalNumber(-1, -2)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("-1 -2"),
-            Ok(NumberOptionalNumber(-1, -2))
+            NumberOptionalNumber::parse_str("-1 -2").unwrap(),
+            NumberOptionalNumber(-1, -2)
         );
         assert_eq!(
-            NumberOptionalNumber::parse_str("-1"),
-            Ok(NumberOptionalNumber(-1, -1))
+            NumberOptionalNumber::parse_str("-1").unwrap(),
+            NumberOptionalNumber(-1, -1)
         );
     }
 
@@ -284,8 +284,8 @@ mod tests {
     #[test]
     fn parses_custom_ident() {
         assert_eq!(
-            CustomIdent::parse_str("hello"),
-            Ok(CustomIdent("hello".to_string()))
+            CustomIdent::parse_str("hello").unwrap(),
+            CustomIdent("hello".to_string())
         );
     }
 

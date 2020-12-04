@@ -407,65 +407,65 @@ mod tests {
     #[test]
     fn parses_default() {
         assert_eq!(
-            Length::<Horizontal>::parse_str("42"),
-            Ok(Length::<Horizontal>::new(42.0, LengthUnit::Px))
+            Length::<Horizontal>::parse_str("42").unwrap(),
+            Length::<Horizontal>::new(42.0, LengthUnit::Px)
         );
 
         assert_eq!(
-            Length::<Horizontal>::parse_str("-42px"),
-            Ok(Length::<Horizontal>::new(-42.0, LengthUnit::Px))
+            Length::<Horizontal>::parse_str("-42px").unwrap(),
+            Length::<Horizontal>::new(-42.0, LengthUnit::Px)
         );
     }
 
     #[test]
     fn parses_percent() {
         assert_eq!(
-            Length::<Horizontal>::parse_str("50.0%"),
-            Ok(Length::<Horizontal>::new(0.5, LengthUnit::Percent))
+            Length::<Horizontal>::parse_str("50.0%").unwrap(),
+            Length::<Horizontal>::new(0.5, LengthUnit::Percent)
         );
     }
 
     #[test]
     fn parses_font_em() {
         assert_eq!(
-            Length::<Vertical>::parse_str("22.5em"),
-            Ok(Length::<Vertical>::new(22.5, LengthUnit::Em))
+            Length::<Vertical>::parse_str("22.5em").unwrap(),
+            Length::<Vertical>::new(22.5, LengthUnit::Em)
         );
     }
 
     #[test]
     fn parses_font_ex() {
         assert_eq!(
-            Length::<Vertical>::parse_str("22.5ex"),
-            Ok(Length::<Vertical>::new(22.5, LengthUnit::Ex))
+            Length::<Vertical>::parse_str("22.5ex").unwrap(),
+            Length::<Vertical>::new(22.5, LengthUnit::Ex)
         );
     }
 
     #[test]
     fn parses_physical_units() {
         assert_eq!(
-            Length::<Both>::parse_str("72pt"),
-            Ok(Length::<Both>::new(72.0, LengthUnit::Pt))
+            Length::<Both>::parse_str("72pt").unwrap(),
+            Length::<Both>::new(72.0, LengthUnit::Pt)
         );
 
         assert_eq!(
-            Length::<Both>::parse_str("-22.5in"),
-            Ok(Length::<Both>::new(-22.5, LengthUnit::In))
+            Length::<Both>::parse_str("-22.5in").unwrap(),
+            Length::<Both>::new(-22.5, LengthUnit::In)
         );
 
         assert_eq!(
-            Length::<Both>::parse_str("-254cm"),
-            Ok(Length::<Both>::new(-254.0, LengthUnit::Cm))
+            Length::<Both>::parse_str("-254cm").unwrap(),
+            Length::<Both>::new(-254.0, LengthUnit::Cm)
         );
 
         assert_eq!(
-            Length::<Both>::parse_str("254mm"),
-            Ok(Length::<Both>::new(254.0, LengthUnit::Mm))
+            Length::<Both>::parse_str("254mm").unwrap(),
+            Length::<Both>::new(254.0, LengthUnit::Mm)
         );
 
         assert_eq!(
-            Length::<Both>::parse_str("60pc"),
-            Ok(Length::<Both>::new(60.0, LengthUnit::Pc))
+            Length::<Both>::parse_str("60pc").unwrap(),
+            Length::<Both>::new(60.0, LengthUnit::Pc)
         );
     }
 

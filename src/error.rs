@@ -6,6 +6,8 @@ use std::fmt;
 use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
+use crate::io::IoError;
+use crate::limits;
 use crate::node::Node;
 use crate::url_resolver::Fragment;
 
@@ -21,7 +23,7 @@ use crate::url_resolver::Fragment;
 pub type ParseError<'i> = cssparser::ParseError<'i, ValueErrorKind>;
 
 /// A simple error which refers to an attribute's value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum ValueErrorKind {
     /// A property with the specified name was not found
     UnknownProperty,
@@ -72,20 +74,10 @@ impl<'a> From<BasicParseError<'a>> for ValueErrorKind {
 }
 
 /// A complete error for an attribute and its erroneous value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct ElementError {
     pub attr: QualName,
     pub err: ValueErrorKind,
-}
-
-impl error::Error for ElementError {
-    fn description(&self) -> &str {
-        match self.err {
-            ValueErrorKind::UnknownProperty => "unknown property",
-            ValueErrorKind::Parse(_) => "parse error",
-            ValueErrorKind::Value(_) => "invalid attribute value",
-        }
-    }
 }
 
 impl fmt::Display for ElementError {
@@ -95,7 +87,7 @@ impl fmt::Display for ElementError {
 }
 
 /// Errors returned when looking up a resource by URL reference.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum DefsLookupErrorKind {
     /// Error when parsing an [`Href`].
     ///
@@ -116,34 +108,45 @@ pub enum DefsLookupErrorKind {
     NotFound,
 }
 
+impl fmt::Display for DefsLookupErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            DefsLookupErrorKind::HrefError(_) => write!(f, "invalid URL"),
+            DefsLookupErrorKind::CannotLookupExternalReferences => {
+                write!(f, "cannot lookup references to elements in external files")
+            }
+            DefsLookupErrorKind::NotFound => write!(f, "not found"),
+        }
+    }
+}
+
 /// Errors that can happen while rendering or measuring an SVG document.
-#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+#[derive(Debug, Clone)]
 pub enum RenderingError {
-    /// A Cairo error happened during rendering.
-    Cairo(cairo::Status),
+    /// An error from the rendering backend.
+    Rendering(String),
 
-    /// There is a circular reference between elements.
-    // FIXME: should be internal only.
-    CircularReference,
+    /// A particular implementation-defined limit was exceeded.
+    LimitExceeded(ImplementationLimit),
 
-    /// The maximum number of rendered objects was reached.
-    ///
-    /// Librsvg has a limit on the number of rendered objects, so that malicious
-    /// files cannot consume CPU time arbitrarily.
-    InstancingLimit,
+    /// Tried to reference an SVG element that does not exist.
+    IdNotFound,
 
     /// Tried to reference an SVG element from a fragment identifier that is incorrect.
-    InvalidId(DefsLookupErrorKind),
-
-    // FIXME: unused.
-    InvalidHref,
+    InvalidId(String),
 
     /// Not enough memory was available for rendering.
-    // FIXME: right now this is only returned from pixbuf_utils.rs
-    OutOfMemory,
+    OutOfMemory(String),
+}
 
-    /// Cannot occur from librsvg_crate; this is just for the C API.
-    HandleIsNotLoaded,
+impl From<DefsLookupErrorKind> for RenderingError {
+    fn from(e: DefsLookupErrorKind) -> RenderingError {
+        match e {
+            DefsLookupErrorKind::NotFound => RenderingError::IdNotFound,
+            _ => RenderingError::InvalidId(format!("{}", e)),
+        }
+    }
 }
 
 impl error::Error for RenderingError {}
@@ -151,13 +154,11 @@ impl error::Error for RenderingError {}
 impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            RenderingError::CircularReference => write!(f, "circular reference"),
-            RenderingError::InstancingLimit => write!(f, "instancing limit"),
-            RenderingError::InvalidHref => write!(f, "invalid href"),
-            RenderingError::OutOfMemory => write!(f, "out of memory"),
-            RenderingError::HandleIsNotLoaded => write!(f, "SVG data is not loaded into handle"),
-            RenderingError::Cairo(ref status) => write!(f, "cairo error: {:?}", status),
-            RenderingError::InvalidId(ref id) => write!(f, "invalid id: {:?}", id),
+            RenderingError::Rendering(ref s) => write!(f, "rendering error: {}", s),
+            RenderingError::LimitExceeded(ref l) => write!(f, "{}", l),
+            RenderingError::IdNotFound => write!(f, "element id not found"),
+            RenderingError::InvalidId(ref s) => write!(f, "invalid id: {:?}", s),
+            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
         }
     }
 }
@@ -166,7 +167,7 @@ impl From<cairo::Status> for RenderingError {
     fn from(e: cairo::Status) -> RenderingError {
         assert!(e != cairo::Status::Success);
 
-        RenderingError::Cairo(e)
+        RenderingError::Rendering(format!("{:?}", e))
     }
 }
 
@@ -278,7 +279,7 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
 }
 
 /// Errors returned when creating an `Href` out of a string
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum HrefError {
     /// The href is an invalid URI or has empty components.
     ParseError,
@@ -319,46 +320,76 @@ impl From<HrefError> for ValueErrorKind {
 ///
 /// I/O errors get reported in the `Glib` variant, since librsvg uses GIO internally for
 /// all input/output.
+#[non_exhaustive]
 #[derive(Debug, Clone)]
 pub enum LoadingError {
-    // FIXME: C API only
-    NoDataPassedToParser,
-
     /// XML syntax error.
     XmlParseError(String),
 
-    // FIXME: this is OOM in libxml2; we shouldn't expose it.
-    CouldNotCreateXmlParser,
+    /// Not enough memory to load the document.
+    OutOfMemory(String),
 
     /// A malformed or disallowed URL was used.
     BadUrl,
 
-    /// A `data:` URL could not be decoded.
-    BadDataUrl,
-
-    // FIXME: used only if XML processing instruction cannot find the stylesheet.
-    BadStylesheet,
-
     /// An invalid stylesheet was used.
     BadCss,
 
-    /// A Cairo error happened during loading.
-    Cairo(cairo::Status),
+    /// There is no `<svg>` root element in the XML.
+    NoSvgRoot,
 
-    // FIXME: only used in load_image()
-    EmptyData,
+    /// I/O error.
+    Io(String),
 
-    /// There are no SVG elements in the document.
-    SvgHasNoElements,
+    /// A particular implementation-defined limit was exceeded.
+    LimitExceeded(ImplementationLimit),
 
-    /// The outermost element in the document is not `<svg>`.
-    RootElementIsNotSvg,
+    /// Catch-all for loading errors.
+    Other(String),
+}
 
-    /// Generally an I/O error, or another error from GIO.
-    Glib(glib::Error),
+/// Errors for implementation-defined limits, to mitigate malicious SVG documents.
+///
+/// These get emitted as `LoadingError::LimitExceeded` or `RenderingError::LimitExceeded`.
+/// The limits are present to mitigate malicious SVG documents which may try to exhaust
+/// all available memory, or which would use large amounts of CPU time.
+#[non_exhaustive]
+#[derive(Debug, Copy, Clone)]
+pub enum ImplementationLimit {
+    /// Document exceeded the maximum number of times that elements
+    /// can be referenced through URL fragments.
+    ///
+    /// This is a mitigation for malicious documents that attempt to
+    /// consume exponential amounts of CPU time by creating millions
+    /// of references to SVG elements.  For example, the `<use>` and
+    /// `<pattern>` elements allow referencing other elements, which
+    /// can in turn reference other elements.  This can be used to
+    /// create documents which would require exponential amounts of
+    /// CPU time to be rendered.
+    ///
+    /// Librsvg deals with both cases by placing a limit on how many
+    /// references will be resolved during the SVG rendering process,
+    /// that is, how many `url(#foo)` will be resolved.
+    ///
+    /// These malicious documents are similar to the XML
+    /// [billion laughs attack], but done with SVG's referencing features.
+    ///
+    /// See issues
+    /// [#323](https://gitlab.gnome.org/GNOME/librsvg/issues/323) and
+    /// [#515](https://gitlab.gnome.org/GNOME/librsvg/issues/515) for
+    /// examples for the `<use>` and `<pattern>` elements,
+    /// respectively.
+    ///
+    /// [billion laughs attack]: https://bitbucket.org/tiran/defusedxml
+    TooManyReferencedElements,
 
-    // FIXME: only used internally when loading pixbufs, and temporarily in c_api.
-    Unknown,
+    /// Document exceeded the maximum number of elements that can be loaded.
+    ///
+    /// This is a mitigation for SVG files which create millions of
+    /// elements in an attempt to exhaust memory.  Librsvg does not't
+    /// allow loading more than a certain number of elements during
+    /// the initial loading process.
+    TooManyLoadedElements,
 }
 
 impl error::Error for LoadingError {}
@@ -366,33 +397,49 @@ impl error::Error for LoadingError {}
 impl fmt::Display for LoadingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            LoadingError::NoDataPassedToParser => write!(f, "no data passed to parser"),
             LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
-            LoadingError::CouldNotCreateXmlParser => write!(f, "could not create XML parser"),
+            LoadingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
             LoadingError::BadUrl => write!(f, "invalid URL"),
-            LoadingError::BadDataUrl => write!(f, "invalid data: URL"),
-            LoadingError::BadStylesheet => write!(f, "invalid stylesheet"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
-            LoadingError::Cairo(status) => write!(f, "cairo error: {:?}", status),
-            LoadingError::EmptyData => write!(f, "empty data"),
-            LoadingError::SvgHasNoElements => write!(f, "SVG has no elements"),
-            LoadingError::RootElementIsNotSvg => write!(f, "root element is not <svg>"),
-            LoadingError::Glib(ref e) => e.fmt(f),
-            LoadingError::Unknown => write!(f, "unknown error"),
+            LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
+            LoadingError::Io(ref s) => write!(f, "I/O error: {}", s),
+            LoadingError::LimitExceeded(ref l) => write!(f, "{}", l),
+            LoadingError::Other(ref s) => write!(f, "{}", s),
         }
-    }
-}
-
-impl From<cairo::Status> for LoadingError {
-    fn from(e: cairo::Status) -> LoadingError {
-        assert!(e != cairo::Status::Success);
-
-        LoadingError::Cairo(e)
     }
 }
 
 impl From<glib::Error> for LoadingError {
     fn from(e: glib::Error) -> LoadingError {
-        LoadingError::Glib(e)
+        // FIXME: this is somewhat fishy; not all GError are I/O errors, but in librsvg
+        // most GError do come from gio.  Some come from GdkPixbufLoader, though.
+        LoadingError::Io(format!("{}", e))
+    }
+}
+
+impl From<IoError> for LoadingError {
+    fn from(e: IoError) -> LoadingError {
+        match e {
+            IoError::BadDataUrl => LoadingError::BadUrl,
+            IoError::Glib(e) => LoadingError::Io(format!("{}", e)),
+        }
+    }
+}
+
+impl fmt::Display for ImplementationLimit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            ImplementationLimit::TooManyReferencedElements => write!(
+                f,
+                "exceeded more than {} referenced elements",
+                limits::MAX_REFERENCED_ELEMENTS
+            ),
+
+            ImplementationLimit::TooManyLoadedElements => write!(
+                f,
+                "cannot load more than {} XML elements",
+                limits::MAX_LOADED_ELEMENTS
+            ),
+        }
     }
 }

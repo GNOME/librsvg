@@ -11,10 +11,7 @@ use crate::utils::{load_svg, render_document, SurfaceSize};
 // https://gitlab.gnome.org/GNOME/librsvg/issues/335
 #[test]
 fn non_svg_root() {
-    assert!(matches!(
-        load_svg(b"<x></x>"),
-        Err(LoadingError::RootElementIsNotSvg)
-    ));
+    assert!(matches!(load_svg(b"<x></x>"), Err(LoadingError::NoSvgRoot)));
 }
 
 // https://gitlab.gnome.org/GNOME/librsvg/issues/496

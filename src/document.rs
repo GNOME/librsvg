@@ -156,6 +156,7 @@ impl Resources {
                 let aurl = e.key();
                 // FIXME: pass a cancellable to these
                 let doc = io::acquire_stream(aurl, None)
+                    .map_err(LoadingError::from)
                     .and_then(|stream| {
                         Document::load_from_stream(
                             &load_options.copy_with_base_url(aurl),
@@ -208,7 +209,7 @@ fn load_image(
     } = io::acquire_data(&aurl, None)?;
 
     if bytes.is_empty() {
-        return Err(LoadingError::EmptyData);
+        return Err(LoadingError::Other(String::from("no image data")));
     }
 
     // See issue #548 - data: URLs without a MIME-type automatically
@@ -229,7 +230,9 @@ fn load_image(
     loader.write(&bytes)?;
     loader.close()?;
 
-    let pixbuf = loader.get_pixbuf().ok_or(LoadingError::Unknown)?;
+    let pixbuf = loader.get_pixbuf().ok_or_else(|| {
+        LoadingError::Other(format!("loading image: {}", human_readable_url(aurl)))
+    })?;
 
     let bytes = if load_options.keep_image_data {
         Some(bytes)
@@ -237,9 +240,29 @@ fn load_image(
         None
     };
 
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_deref())?;
+    let surface = SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_deref())
+        .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
     Ok(surface)
+}
+
+fn human_readable_url(aurl: &AllowedUrl) -> &str {
+    if aurl.scheme() == "data" {
+        // avoid printing a huge data: URL for image data
+        "data URL"
+    } else {
+        aurl.as_ref()
+    }
+}
+
+fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> LoadingError {
+    let url = human_readable_url(aurl);
+
+    match status {
+        cairo::Status::NoMemory => LoadingError::OutOfMemory(format!("loading image: {}", url)),
+        cairo::Status::InvalidSize => LoadingError::Other(format!("image too big: {}", url)),
+        _ => LoadingError::Other(format!("cairo error: {}", status)),
+    }
 }
 
 pub struct AcquiredNode {
@@ -389,7 +412,9 @@ impl DocumentBuilder {
         if type_.as_deref() != Some("text/css")
             || (alternate.is_some() && alternate.as_deref() != Some("no"))
         {
-            return Err(LoadingError::BadStylesheet);
+            return Err(LoadingError::Other(String::from(
+                "invalid parameters in XML processing instruction for stylesheet",
+            )));
         }
 
         // FIXME: handle CSS errors
@@ -482,10 +507,10 @@ impl DocumentBuilder {
 
                     Ok(document)
                 } else {
-                    Err(LoadingError::RootElementIsNotSvg)
+                    Err(LoadingError::NoSvgRoot)
                 }
             }
-            _ => Err(LoadingError::SvgHasNoElements),
+            _ => Err(LoadingError::NoSvgRoot),
         }
     }
 }

@@ -3,8 +3,7 @@ use cairo;
 use librsvg::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     test_utils::compare_to_surface,
-    CairoRenderer, DefsLookupErrorKind, HrefError, IntrinsicDimensions, Length, LengthUnit,
-    RenderingError,
+    CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError,
 };
 
 use crate::utils::{load_svg, render_document, SurfaceSize};
@@ -387,10 +386,10 @@ fn layer_geometry_for_nonexistent_element() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    match renderer.geometry_for_layer(Some("#foo"), &viewport) {
-        Err(RenderingError::InvalidId(DefsLookupErrorKind::NotFound)) => (),
-        _ => panic!(),
-    }
+    assert!(matches!(
+        renderer.geometry_for_layer(Some("#foo"), &viewport),
+        Err(RenderingError::IdNotFound)
+    ));
 }
 
 #[test]
@@ -410,20 +409,20 @@ fn layer_geometry_for_invalid_id() {
     };
 
     let renderer = CairoRenderer::new(&svg);
-    match renderer.geometry_for_layer(Some("foo"), &viewport) {
-        Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
-        _ => panic!(),
-    }
+    assert!(matches!(
+        renderer.geometry_for_layer(Some("foo"), &viewport),
+        Err(RenderingError::InvalidId(_))
+    ));
 
-    match renderer.geometry_for_layer(Some("foo.svg#foo"), &viewport) {
-        Err(RenderingError::InvalidId(DefsLookupErrorKind::CannotLookupExternalReferences)) => (),
-        _ => panic!(),
-    }
+    assert!(matches!(
+        renderer.geometry_for_layer(Some("foo.svg#foo"), &viewport),
+        Err(RenderingError::InvalidId(_))
+    ));
 
-    match renderer.geometry_for_layer(Some(""), &viewport) {
-        Err(RenderingError::InvalidId(DefsLookupErrorKind::HrefError(HrefError::ParseError))) => (),
-        _ => panic!(),
-    }
+    assert!(matches!(
+        renderer.geometry_for_layer(Some(""), &viewport),
+        Err(RenderingError::InvalidId(_))
+    ));
 }
 
 #[test]
