@@ -264,10 +264,6 @@ impl FilterContext {
         self.effects_region
     }
 
-    pub fn get_computed_from_node_being_filtered(&self) -> &ComputedValues {
-        &self.computed_from_node_being_filtered
-    }
-
     /// Retrieves the filter input surface according to the SVG rules.
     ///
     /// Does not take `processing_linear_rgb` into account.
