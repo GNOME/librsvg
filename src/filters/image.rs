@@ -10,6 +10,7 @@ use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::url_resolver::{Fragment, Href};
 use crate::viewbox::ViewBox;
 
@@ -44,7 +45,7 @@ impl FeImage {
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
         fragment: &Fragment,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<SharedImageSurface, FilterError> {
         let acquired_drawable = acquired_nodes
             .acquire(fragment)
             .map_err(|_| FilterError::InvalidInput)?;
@@ -64,13 +65,7 @@ impl FeImage {
 
         let surface = ctx.source_graphic().paint_image(bounds, &image, None)?;
 
-        Ok(FilterResult {
-            name: self.base.result.clone(),
-            output: FilterOutput {
-                surface,
-                bounds: bounds.into(),
-            },
-        })
+        Ok(surface)
     }
 
     /// Renders the filter if the source is an external image.
@@ -82,7 +77,7 @@ impl FeImage {
         bounds: Rect,
         unclipped_bounds: &Rect,
         url: &str,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<SharedImageSurface, FilterError> {
         // FIXME: translate the error better here
         let image = acquired_nodes
             .lookup_image(url)
@@ -100,13 +95,7 @@ impl FeImage {
             .source_graphic()
             .paint_image(bounds, &image, Some(rect))?;
 
-        Ok(FilterResult {
-            name: self.base.result.clone(),
-            output: FilterOutput {
-                surface,
-                bounds: bounds.into(),
-            },
-        })
+        Ok(surface)
     }
 }
 
@@ -146,8 +135,8 @@ impl FilterEffect for FeImage {
         let bounds_builder = self.base.get_bounds(ctx, node.parent().as_ref())?;
         let bounds = bounds_builder.into_rect(draw_ctx);
 
-        match self.href.as_ref() {
-            Some(Href::PlainUrl(url)) => {
+        let surface = match self.href {
+            Some(Href::PlainUrl(ref url)) => {
                 let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
                 self.render_external_image(
                     ctx,
@@ -162,7 +151,15 @@ impl FilterEffect for FeImage {
                 self.render_node(ctx, acquired_nodes, draw_ctx, bounds, frag)
             }
             _ => Err(FilterError::InvalidInput),
-        }
+        }?;
+
+        Ok(FilterResult {
+            name: self.base.result.clone(),
+            output: FilterOutput {
+                surface,
+                bounds: bounds.into(),
+            },
+        })
     }
 
     #[inline]
