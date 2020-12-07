@@ -231,45 +231,46 @@ const PICA_PER_INCH: f64 = 6.0;
 
 impl<N: Normalize> Parse for Length<N> {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Length<N>, ParseError<'i>> {
-        let length = {
-            let token = parser.next()?.clone();
+        let l_value;
+        let l_unit;
 
-            match token {
-                Token::Number { value, .. } => Length::new(
-                    f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?),
-                    LengthUnit::Px,
-                ),
+        let token = parser.next()?.clone();
 
-                Token::Percentage { unit_value, .. } => Length::new(
-                    f64::from(finite_f32(unit_value).map_err(|e| parser.new_custom_error(e))?),
-                    LengthUnit::Percent,
-                ),
-
-                Token::Dimension {
-                    value, ref unit, ..
-                } => {
-                    let value =
-                        f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?);
-
-                    match unit.as_ref() {
-                        "px" => Length::new(value, LengthUnit::Px),
-                        "em" => Length::new(value, LengthUnit::Em),
-                        "ex" => Length::new(value, LengthUnit::Ex),
-                        "in" => Length::new(value, LengthUnit::In),
-                        "cm" => Length::new(value, LengthUnit::Cm),
-                        "mm" => Length::new(value, LengthUnit::Mm),
-                        "pt" => Length::new(value, LengthUnit::Pt),
-                        "pc" => Length::new(value, LengthUnit::Pc),
-
-                        _ => return Err(parser.new_unexpected_token_error(token.clone())),
-                    }
-                }
-
-                _ => return Err(parser.new_unexpected_token_error(token.clone())),
+        match token {
+            Token::Number { value, .. } => {
+                l_value = f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?);
+                l_unit = LengthUnit::Px;
             }
-        };
 
-        Ok(length)
+            Token::Percentage { unit_value, .. } => {
+                l_value =
+                    f64::from(finite_f32(unit_value).map_err(|e| parser.new_custom_error(e))?);
+                l_unit = LengthUnit::Percent;
+            }
+
+            Token::Dimension {
+                value, ref unit, ..
+            } => {
+                l_value = f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?);
+
+                l_unit = match unit.as_ref() {
+                    "px" => LengthUnit::Px,
+                    "em" => LengthUnit::Em,
+                    "ex" => LengthUnit::Ex,
+                    "in" => LengthUnit::In,
+                    "cm" => LengthUnit::Cm,
+                    "mm" => LengthUnit::Mm,
+                    "pt" => LengthUnit::Pt,
+                    "pc" => LengthUnit::Pc,
+
+                    _ => return Err(parser.new_unexpected_token_error(token.clone())),
+                };
+            }
+
+            _ => return Err(parser.new_unexpected_token_error(token.clone())),
+        }
+
+        Ok(Length::new(l_value, l_unit))
     }
 }
 
