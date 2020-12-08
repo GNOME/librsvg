@@ -238,20 +238,19 @@ impl<N: Normalize> Parse for Length<N> {
 
         match token {
             Token::Number { value, .. } => {
-                l_value = f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?);
+                l_value = value;
                 l_unit = LengthUnit::Px;
             }
 
             Token::Percentage { unit_value, .. } => {
-                l_value =
-                    f64::from(finite_f32(unit_value).map_err(|e| parser.new_custom_error(e))?);
+                l_value = unit_value;
                 l_unit = LengthUnit::Percent;
             }
 
             Token::Dimension {
                 value, ref unit, ..
             } => {
-                l_value = f64::from(finite_f32(value).map_err(|e| parser.new_custom_error(e))?);
+                l_value = value;
 
                 l_unit = match unit.as_ref() {
                     "px" => LengthUnit::Px,
@@ -269,6 +268,8 @@ impl<N: Normalize> Parse for Length<N> {
 
             _ => return Err(parser.new_unexpected_token_error(token.clone())),
         }
+
+        let l_value = f64::from(finite_f32(l_value).map_err(|e| parser.new_custom_error(e))?);
 
         Ok(Length::new(l_value, l_unit))
     }
