@@ -262,11 +262,11 @@ impl<N: Normalize> Parse for Length<N> {
                     "pt" => LengthUnit::Pt,
                     "pc" => LengthUnit::Pc,
 
-                    _ => return Err(parser.new_unexpected_token_error(token.clone())),
+                    _ => return Err(parser.new_unexpected_token_error(token)),
                 };
             }
 
-            _ => return Err(parser.new_unexpected_token_error(token.clone())),
+            _ => return Err(parser.new_unexpected_token_error(token)),
         }
 
         let l_value = f64::from(finite_f32(l_value).map_err(|e| parser.new_custom_error(e))?);
