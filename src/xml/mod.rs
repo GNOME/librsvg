@@ -491,7 +491,7 @@ impl XmlState {
                 .unwrap()
                 .resolve_href(href)
                 .map_err(|e| {
-                    // FIXME: should AlloweUrlError::HrefParseError be a fatal error,
+                    // FIXME: should AlloweUrlError::UrlParseError be a fatal error,
                     // not a resource error?
                     rsvg_log!("could not acquire \"{}\": {}", href, e);
                     AcquireError::ResourceError

@@ -89,10 +89,8 @@ impl fmt::Display for ElementError {
 /// Errors returned when looking up a resource by URL reference.
 #[derive(Debug, Clone)]
 pub enum DefsLookupErrorKind {
-    /// Error when parsing an [`Href`].
-    ///
-    /// [`Href`]: allowed_url/enum.Href.html
-    HrefError(HrefError),
+    /// Error when parsing the id to lookup.
+    InvalidId,
 
     /// Used when the public API tries to look up an external URL, which is not allowed.
     ///
@@ -111,7 +109,7 @@ pub enum DefsLookupErrorKind {
 impl fmt::Display for DefsLookupErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            DefsLookupErrorKind::HrefError(_) => write!(f, "invalid URL"),
+            DefsLookupErrorKind::InvalidId => write!(f, "invalid id"),
             DefsLookupErrorKind::CannotLookupExternalReferences => {
                 write!(f, "cannot lookup references to elements in external files")
             }
@@ -282,7 +280,7 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
 #[derive(Debug, Clone)]
 pub enum AllowedUrlError {
     /// parsing error from `Url::parse()`
-    HrefParseError(url::ParseError),
+    UrlParseError(url::ParseError),
 
     /// A base file/uri was not set
     BaseRequired,
@@ -310,7 +308,7 @@ pub enum AllowedUrlError {
 impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            AllowedUrlError::HrefParseError(e) => write!(f, "href parse error: {}", e),
+            AllowedUrlError::UrlParseError(e) => write!(f, "URL parse error: {}", e),
             AllowedUrlError::BaseRequired => write!(f, "base required"),
             AllowedUrlError::DifferentURISchemes => write!(f, "different URI schemes"),
             AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
@@ -324,32 +322,16 @@ impl fmt::Display for AllowedUrlError {
     }
 }
 
-/// Errors returned when creating an `Href` out of a string
+/// Errors returned when creating a `Fragment` out of a string
 #[derive(Debug, Clone)]
-pub enum HrefError {
-    /// The href is an invalid URI or has empty components.
-    ParseError,
-
-    /// A fragment identifier ("`#foo`") is not allowed here
-    ///
-    /// For example, the SVG `<image>` element only allows referencing
-    /// resources without fragment identifiers like
-    /// `xlink:href="foo.png"`.
-    FragmentForbidden,
-
-    /// A fragment identifier ("`#foo`") was required but not found.  For example,
-    /// the SVG `<use>` element requires one, as in `<use xlink:href="foo.svg#bar">`.
+pub enum FragmentError {
     FragmentRequired,
 }
 
-impl From<HrefError> for ValueErrorKind {
-    fn from(e: HrefError) -> ValueErrorKind {
+impl From<FragmentError> for ValueErrorKind {
+    fn from(e: FragmentError) -> ValueErrorKind {
         match e {
-            HrefError::ParseError => ValueErrorKind::parse_error("url parse error"),
-            HrefError::FragmentForbidden => {
-                ValueErrorKind::value_error("fragment identifier not allowed")
-            }
-            HrefError::FragmentRequired => {
+            FragmentError::FragmentRequired => {
                 ValueErrorKind::value_error("fragment identifier required")
             }
         }

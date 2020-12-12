@@ -7,7 +7,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
 use crate::error::{
-    AcquireError, HrefError, ImplementationLimit, ParseError, RenderingError, ValueErrorKind,
+    AcquireError, FragmentError, ImplementationLimit, ParseError, RenderingError, ValueErrorKind,
 };
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
@@ -65,7 +65,7 @@ impl Parse for PaintServer {
 
             Ok(PaintServer::Iri {
                 iri: Fragment::parse(&url)
-                    .map_err(|e: HrefError| -> ValueErrorKind { e.into() })
+                    .map_err(|e: FragmentError| -> ValueErrorKind { e.into() })
                     .map_err(|e| loc.new_custom_error(e))?,
                 alternate,
             })

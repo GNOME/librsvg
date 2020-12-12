@@ -6,7 +6,7 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use url::Url;
 
-use crate::error::{AllowedUrlError, HrefError};
+use crate::error::{AllowedUrlError, FragmentError};
 
 /// Currently only contains the base URL.
 ///
@@ -33,7 +33,7 @@ impl UrlResolver {
         let url = Url::options()
             .base_url(self.base_url.as_ref())
             .parse(href)
-            .map_err(AllowedUrlError::HrefParseError)?;
+            .map_err(AllowedUrlError::UrlParseError)?;
 
         // Allow loads of data: from any location
         if url.scheme() == "data" {
@@ -127,34 +127,28 @@ fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
     Ok(path.as_ref().to_path_buf())
 }
 
-/// Parsed result of an href from an SVG or CSS file
-///
-/// Sometimes in SVG element references (e.g. the `href` in the `<feImage>` element) we
-/// must decide between referencing an external file, or using a plain fragment identifier
-/// like `href="#foo"` as a reference to an SVG element in the same file as the one being
-/// processed.  This enum makes that distinction.
-#[derive(Debug, PartialEq)]
-pub enum Href {
-    PlainUrl(String),
-    WithFragment(Fragment),
-}
-
 /// Optional URI, mandatory fragment id
 #[derive(Debug, PartialEq, Clone)]
 pub struct Fragment(Option<String>, String);
 
 impl Fragment {
     // Outside of testing, we don't want code creating Fragments by hand;
-    // they should get them from Href.
+    // they are obtained by parsing a href string.
     #[cfg(test)]
     pub fn new(uri: Option<String>, fragment: String) -> Fragment {
         Fragment(uri, fragment)
     }
 
-    pub fn parse(href: &str) -> Result<Fragment, HrefError> {
-        match Href::parse(&href)? {
-            Href::PlainUrl(_) => Err(HrefError::FragmentRequired),
-            Href::WithFragment(f) => Ok(f),
+    pub fn parse(href: &str) -> Result<Fragment, FragmentError> {
+        let (uri, fragment) = match href.rfind('#') {
+            None => (Some(href), None),
+            Some(p) if p == 0 => (None, Some(&href[1..])),
+            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
+        };
+
+        match (uri, fragment) {
+            (u, Some(f)) if !f.is_empty() => Ok(Fragment(u.map(String::from), String::from(f))),
+            _ => Err(FragmentError::FragmentRequired),
         }
     }
 
@@ -173,35 +167,6 @@ impl fmt::Display for Fragment {
     }
 }
 
-impl Href {
-    /// Parses a string into an Href, or returns an error
-    ///
-    /// An href can come from an `xlink:href` attribute in an SVG
-    /// element.  This function determines if the provided href is a
-    /// plain absolute or relative URL ("`foo.png`"), or one with a
-    /// fragment identifier ("`foo.svg#bar`").
-    pub fn parse(href: &str) -> Result<Href, HrefError> {
-        let (uri, fragment) = match href.rfind('#') {
-            None => (Some(href), None),
-            Some(p) if p == 0 => (None, Some(&href[1..])),
-            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
-        };
-
-        match (uri, fragment) {
-            (None, Some(f)) if f.is_empty() => Err(HrefError::ParseError),
-            (None, Some(f)) => Ok(Href::WithFragment(Fragment(None, f.to_string()))),
-            (Some(u), _) if u.is_empty() => Err(HrefError::ParseError),
-            (Some(u), None) => Ok(Href::PlainUrl(u.to_string())),
-            (Some(_u), Some(f)) if f.is_empty() => Err(HrefError::ParseError),
-            (Some(u), Some(f)) => Ok(Href::WithFragment(Fragment(
-                Some(u.to_string()),
-                f.to_string(),
-            ))),
-            (_, _) => Err(HrefError::ParseError),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,7 +176,7 @@ mod tests {
         let url_resolver = UrlResolver::new(None);
         assert!(matches!(
             url_resolver.resolve_href("foo.svg"),
-            Err(AllowedUrlError::HrefParseError(
+            Err(AllowedUrlError::UrlParseError(
                 url::ParseError::RelativeUrlWithoutBase
             ))
         ));
@@ -301,29 +266,6 @@ mod tests {
     }
 
     #[test]
-    fn parses_href() {
-        assert_eq!(
-            Href::parse("uri").unwrap(),
-            Href::PlainUrl("uri".to_string())
-        );
-        assert_eq!(
-            Href::parse("#fragment").unwrap(),
-            Href::WithFragment(Fragment::new(None, "fragment".to_string()))
-        );
-        assert_eq!(
-            Href::parse("uri#fragment").unwrap(),
-            Href::WithFragment(Fragment::new(
-                Some("uri".to_string()),
-                "fragment".to_string()
-            ))
-        );
-
-        assert!(matches!(Href::parse(""), Err(HrefError::ParseError)));
-        assert!(matches!(Href::parse("#"), Err(HrefError::ParseError)));
-        assert!(matches!(Href::parse("uri#"), Err(HrefError::ParseError)));
-    }
-
-    #[test]
     fn parses_fragment() {
         assert_eq!(
             Fragment::parse("#foo").unwrap(),
@@ -337,7 +279,7 @@ mod tests {
 
         assert!(matches!(
             Fragment::parse("uri"),
-            Err(HrefError::FragmentRequired)
+            Err(FragmentError::FragmentRequired)
         ));
     }
 }

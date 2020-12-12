@@ -192,7 +192,7 @@ impl Handle {
     }
 
     fn lookup_node(&self, id: &str) -> Result<Node, DefsLookupErrorKind> {
-        let fragment = Fragment::parse(&id).map_err(DefsLookupErrorKind::HrefError)?;
+        let fragment = Fragment::parse(&id).map_err(|_| DefsLookupErrorKind::InvalidId)?;
 
         // The public APIs to get geometries of individual elements, or to render
         // them, should only allow referencing elements within the main handle's
