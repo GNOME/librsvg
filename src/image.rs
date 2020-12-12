@@ -14,7 +14,6 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
-use crate::url_resolver::Href;
 
 #[derive(Default)]
 pub struct Image {
@@ -23,7 +22,7 @@ pub struct Image {
     width: Length<Horizontal>,
     height: Length<Vertical>,
     aspect: AspectRatio,
-    href: Option<Href>,
+    href: Option<String>,
 }
 
 impl SetAttributes for Image {
@@ -42,11 +41,7 @@ impl SetAttributes for Image {
 
                 // "path" is used by some older Adobe Illustrator versions
                 ref a if is_href(a) || *a == expanded_name!("", "path") => {
-                    let href = Href::parse(value)
-                        .map_err(|_| ValueErrorKind::parse_error("could not parse href"))
-                        .attribute(attr.clone())?;
-
-                    set_href(a, &mut self.href, href);
+                    set_href(a, &mut self.href, value.to_string())
                 }
 
                 _ => (),
@@ -67,21 +62,13 @@ impl Draw for Image {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let surface = match self.href {
-            Some(Href::PlainUrl(ref url)) => match acquired_nodes.lookup_image(url) {
+            Some(ref url) => match acquired_nodes.lookup_image(url) {
                 Ok(surf) => surf,
                 Err(e) => {
                     rsvg_log!("could not load image \"{}\": {}", url, e);
                     return Ok(draw_ctx.empty_bbox());
                 }
             },
-            Some(_) => {
-                rsvg_log!(
-                    "not rendering {} because its href cannot contain a fragment identifier",
-                    node
-                );
-
-                return Ok(draw_ctx.empty_bbox());
-            }
             None => return Ok(draw_ctx.empty_bbox()),
         };
 
