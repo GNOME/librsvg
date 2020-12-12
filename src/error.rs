@@ -278,6 +278,52 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
     }
 }
 
+/// Errors returned when resolving an URL
+#[derive(Debug, Clone)]
+pub enum AllowedUrlError {
+    /// parsing error from `Url::parse()`
+    HrefParseError(url::ParseError),
+
+    /// A base file/uri was not set
+    BaseRequired,
+
+    /// Cannot reference a file with a different URI scheme from the base file
+    DifferentURISchemes,
+
+    /// Some scheme we don't allow loading
+    DisallowedScheme,
+
+    /// The requested file is not in the same directory as the base file,
+    /// or in one directory below the base file.
+    NotSiblingOrChildOfBaseFile,
+
+    /// Error when obtaining the file path or the base file path
+    InvalidPath,
+
+    /// The base file cannot be the root of the file system
+    BaseIsRoot,
+
+    /// Error when canonicalizing either the file path or the base file path
+    CanonicalizationError,
+}
+
+impl fmt::Display for AllowedUrlError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            AllowedUrlError::HrefParseError(e) => write!(f, "href parse error: {}", e),
+            AllowedUrlError::BaseRequired => write!(f, "base required"),
+            AllowedUrlError::DifferentURISchemes => write!(f, "different URI schemes"),
+            AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
+            AllowedUrlError::NotSiblingOrChildOfBaseFile => {
+                write!(f, "not sibling or child of base file")
+            }
+            AllowedUrlError::InvalidPath => write!(f, "invalid path"),
+            AllowedUrlError::BaseIsRoot => write!(f, "base is root"),
+            AllowedUrlError::CanonicalizationError => write!(f, "canonicalization error"),
+        }
+    }
+}
+
 /// Errors returned when creating an `Href` out of a string
 #[derive(Debug, Clone)]
 pub enum HrefError {

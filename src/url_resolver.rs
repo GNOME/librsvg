@@ -6,7 +6,7 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use url::Url;
 
-use crate::error::HrefError;
+use crate::error::{AllowedUrlError, HrefError};
 
 /// Currently only contains the base URL.
 ///
@@ -102,34 +102,6 @@ impl UrlResolver {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AllowedUrl(Url);
 
-#[derive(Debug, PartialEq)]
-pub enum AllowedUrlError {
-    /// parsing error from `Url::parse()`
-    HrefParseError(url::ParseError),
-
-    /// A base file/uri was not set
-    BaseRequired,
-
-    /// Cannot reference a file with a different URI scheme from the base file
-    DifferentURISchemes,
-
-    /// Some scheme we don't allow loading
-    DisallowedScheme,
-
-    /// The requested file is not in the same directory as the base file,
-    /// or in one directory below the base file.
-    NotSiblingOrChildOfBaseFile,
-
-    /// Error when obtaining the file path or the base file path
-    InvalidPath,
-
-    /// The base file cannot be the root of the file system
-    BaseIsRoot,
-
-    /// Error when canonicalizing either the file path or the base file path
-    CanonicalizationError,
-}
-
 impl Deref for AllowedUrl {
     type Target = Url;
 
@@ -141,23 +113,6 @@ impl Deref for AllowedUrl {
 impl fmt::Display for AllowedUrl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
-    }
-}
-
-impl fmt::Display for AllowedUrlError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            AllowedUrlError::HrefParseError(e) => write!(f, "href parse error: {}", e),
-            AllowedUrlError::BaseRequired => write!(f, "base required"),
-            AllowedUrlError::DifferentURISchemes => write!(f, "different URI schemes"),
-            AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
-            AllowedUrlError::NotSiblingOrChildOfBaseFile => {
-                write!(f, "not sibling or child of base file")
-            }
-            AllowedUrlError::InvalidPath => write!(f, "invalid path"),
-            AllowedUrlError::BaseIsRoot => write!(f, "base is root"),
-            AllowedUrlError::CanonicalizationError => write!(f, "canonicalization error"),
-        }
     }
 }
 
@@ -254,12 +209,12 @@ mod tests {
     #[test]
     fn disallows_relative_file_with_no_base_file() {
         let url_resolver = UrlResolver::new(None);
-        assert_eq!(
+        assert!(matches!(
             url_resolver.resolve_href("foo.svg"),
             Err(AllowedUrlError::HrefParseError(
                 url::ParseError::RelativeUrlWithoutBase
             ))
-        );
+        ));
     }
 
     #[test]
@@ -267,28 +222,28 @@ mod tests {
         let url_resolver = UrlResolver::new(Some(
             Url::parse("http://example.com/malicious.svg").unwrap(),
         ));
-        assert_eq!(
+        assert!(matches!(
             url_resolver.resolve_href("file:///etc/passwd"),
             Err(AllowedUrlError::DifferentURISchemes)
-        );
+        ));
     }
 
     #[test]
     fn disallows_base_is_root() {
         let url_resolver = UrlResolver::new(Some(Url::parse("file:///").unwrap()));
-        assert_eq!(
+        assert!(matches!(
             url_resolver.resolve_href("foo.svg"),
             Err(AllowedUrlError::BaseIsRoot)
-        );
+        ));
     }
 
     #[test]
     fn disallows_non_file_scheme() {
         let url_resolver = UrlResolver::new(Some(Url::parse("http://foo.bar/baz.svg").unwrap()));
-        assert_eq!(
+        assert!(matches!(
             url_resolver.resolve_href("foo.svg"),
             Err(AllowedUrlError::DisallowedScheme)
-        );
+        ));
     }
 
     #[test]
@@ -339,10 +294,10 @@ mod tests {
     #[test]
     fn disallows_non_sibling() {
         let url_resolver = UrlResolver::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
-        assert_eq!(
+        assert!(matches!(
             url_resolver.resolve_href("file:///etc/passwd"),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
-        );
+        ));
     }
 
     #[test]

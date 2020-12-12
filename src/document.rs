@@ -11,13 +11,13 @@ use std::rc::Rc;
 
 use crate::attributes::Attributes;
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::{AcquireError, LoadingError};
+use crate::error::{AcquireError, AllowedUrlError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::url_resolver::{AllowedUrl, AllowedUrlError, Fragment, UrlResolver};
+use crate::url_resolver::{AllowedUrl, Fragment, UrlResolver};
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
 static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
