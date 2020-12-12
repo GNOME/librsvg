@@ -4,7 +4,7 @@ use cssparser::Parser;
 
 use crate::error::*;
 use crate::parsers::Parse;
-use crate::url_resolver::{Fragment, Href};
+use crate::url_resolver::Fragment;
 
 /// Used where style properties take a funciri or "none"
 ///
@@ -43,18 +43,11 @@ impl Parse for IRI {
             Ok(IRI::None)
         } else {
             let loc = parser.current_source_location();
-
             let url = parser.expect_url()?;
+            let fragment =
+                Fragment::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
 
-            let href =
-                Href::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
-
-            match href {
-                Href::PlainUrl(_) => Err(loc.new_custom_error(ValueErrorKind::parse_error(
-                    "href requires a fragment identifier",
-                ))),
-                Href::WithFragment(f) => Ok(IRI::Resource(f)),
-            }
+            Ok(IRI::Resource(fragment))
         }
     }
 }
