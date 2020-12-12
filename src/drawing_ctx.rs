@@ -860,10 +860,10 @@ impl DrawingCtx {
                         .try_fold(
                             child_surface,
                             |surface, filter| -> Result<_, RenderingError> {
-                                let FilterValue::URL(filter_uri) = filter;
+                                let FilterValue::Url(f) = filter;
                                 self.run_filter(
                                     acquired_nodes,
-                                    &filter_uri,
+                                    &f,
                                     node,
                                     values,
                                     surface,
