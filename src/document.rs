@@ -73,24 +73,16 @@ impl Document {
         self.tree.clone()
     }
 
-    /// Looks up an element node by its URL.
-    ///
-    /// This is also used to find elements in referenced resources, as in
-    /// `xlink:href="subresource.svg#element_name".
-    pub fn lookup(&self, fragment: &Fragment) -> Result<Node, LoadingError> {
-        if fragment.uri().is_some() {
-            self.externs
+    /// Looks up a node in this document or one of its resources by its `id` attribute.
+    pub fn lookup_node(&self, url: Option<&str>, id: &str) -> Option<Node> {
+        match url {
+            Some(u) => self
+                .externs
                 .borrow_mut()
-                .lookup(&self.load_options, fragment)
-        } else {
-            self.lookup_node_by_id(fragment.fragment())
-                .ok_or(LoadingError::BadUrl)
+                .lookup(&self.load_options, u, id)
+                .ok(),
+            _ => self.ids.get(id).map(|n| (*n).clone()),
         }
-    }
-
-    /// Looks up a node only in this document fragment by its `id` attribute.
-    pub fn lookup_node_by_id(&self, id: &str) -> Option<Node> {
-        self.ids.get(id).map(|n| (*n).clone())
     }
 
     /// Loads an image by URL, or returns a pre-loaded one.
@@ -127,17 +119,11 @@ impl Resources {
     pub fn lookup(
         &mut self,
         load_options: &LoadOptions,
-        fragment: &Fragment,
+        url: &str,
+        id: &str,
     ) -> Result<Node, LoadingError> {
-        if let Some(ref href) = fragment.uri() {
-            self.get_extern_document(load_options, href)
-                .and_then(|doc| {
-                    doc.lookup_node_by_id(fragment.fragment())
-                        .ok_or(LoadingError::BadUrl)
-                })
-        } else {
-            unreachable!();
-        }
+        self.get_extern_document(load_options, url)
+            .and_then(|doc| doc.lookup_node(None, id).ok_or(LoadingError::BadUrl))
     }
 
     fn get_extern_document(
@@ -325,17 +311,18 @@ impl<'i> AcquiredNodes<'i> {
             return Err(AcquireError::MaxReferencesExceeded);
         }
 
-        let node = self.document.lookup(fragment).map_err(|_| {
-            // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
-            // Maybe we should have the following stages:
-            //   - load main SVG XML
-            //
-            //   - load secondary SVG XML and other files like images; all document::Resources and
-            //     document::Images loaded
-            //
-            //   - Now that all files are loaded, resolve URL references
-            AcquireError::LinkNotFound(fragment.clone())
-        })?;
+        // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
+        // Maybe we should have the following stages:
+        //   - load main SVG XML
+        //
+        //   - load secondary SVG XML and other files like images; all document::Resources and
+        //     document::Images loaded
+        //
+        //   - Now that all files are loaded, resolve URL references
+        let node = self
+            .document
+            .lookup_node(fragment.uri(), fragment.fragment())
+            .ok_or_else(|| AcquireError::LinkNotFound(fragment.clone()))?;
 
         if !node.is_element() {
             return Err(AcquireError::InvalidLinkType(fragment.clone()));
