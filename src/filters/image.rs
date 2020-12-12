@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::AspectRatio;
 use crate::attributes::Attributes;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, Fragment};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::href::{is_href, set_href};
@@ -10,7 +10,6 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::url_resolver::Fragment;
 use crate::viewbox::ViewBox;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};

@@ -6,7 +6,7 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use url::Url;
 
-use crate::error::{AllowedUrlError, FragmentError};
+use crate::error::AllowedUrlError;
 
 /// Currently only contains the base URL.
 ///
@@ -127,46 +127,6 @@ fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
     Ok(path.as_ref().to_path_buf())
 }
 
-/// Optional URI, mandatory fragment id
-#[derive(Debug, PartialEq, Clone)]
-pub struct Fragment(Option<String>, String);
-
-impl Fragment {
-    // Outside of testing, we don't want code creating Fragments by hand;
-    // they are obtained by parsing a href string.
-    #[cfg(test)]
-    pub fn new(uri: Option<String>, fragment: String) -> Fragment {
-        Fragment(uri, fragment)
-    }
-
-    pub fn parse(href: &str) -> Result<Fragment, FragmentError> {
-        let (uri, fragment) = match href.rfind('#') {
-            None => (Some(href), None),
-            Some(p) if p == 0 => (None, Some(&href[1..])),
-            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
-        };
-
-        match (uri, fragment) {
-            (u, Some(f)) if !f.is_empty() => Ok(Fragment(u.map(String::from), String::from(f))),
-            _ => Err(FragmentError::FragmentRequired),
-        }
-    }
-
-    pub fn uri(&self) -> Option<&str> {
-        self.0.as_deref()
-    }
-
-    pub fn fragment(&self) -> &str {
-        &self.1
-    }
-}
-
-impl fmt::Display for Fragment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}#{}", self.uri().unwrap_or(""), self.fragment())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -262,24 +222,6 @@ mod tests {
         assert!(matches!(
             url_resolver.resolve_href("file:///etc/passwd"),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
-        ));
-    }
-
-    #[test]
-    fn parses_fragment() {
-        assert_eq!(
-            Fragment::parse("#foo").unwrap(),
-            Fragment::new(None, "foo".to_string())
-        );
-
-        assert_eq!(
-            Fragment::parse("uri#foo").unwrap(),
-            Fragment::new(Some("uri".to_string()), "foo".to_string())
-        );
-
-        assert!(matches!(
-            Fragment::parse("uri"),
-            Err(FragmentError::FragmentRequired)
         ));
     }
 }

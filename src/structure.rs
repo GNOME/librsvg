@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, Fragment};
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
@@ -16,7 +16,6 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
-use crate::url_resolver::Fragment;
 use crate::viewbox::*;
 
 #[derive(Default)]

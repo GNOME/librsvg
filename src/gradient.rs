@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNodes, NodeStack};
+use crate::document::{AcquiredNodes, Fragment, NodeStack};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -21,7 +21,6 @@ use crate::properties::ComputedValues;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
-use crate::url_resolver::Fragment;
 
 /// Contents of a <stop> element for gradient color stops
 #[derive(Copy, Clone)]

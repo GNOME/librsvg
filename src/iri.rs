@@ -2,9 +2,9 @@
 
 use cssparser::Parser;
 
+use crate::document::Fragment;
 use crate::error::*;
 use crate::parsers::Parse;
-use crate::url_resolver::Fragment;
 
 /// Used where style properties take a funciri or "none"
 ///

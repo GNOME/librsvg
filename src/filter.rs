@@ -6,7 +6,7 @@ use std::slice::Iter;
 
 use crate::attributes::Attributes;
 use crate::coord_units::CoordUnits;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, Fragment};
 use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
@@ -16,7 +16,6 @@ use crate::node::{Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
-use crate::url_resolver::Fragment;
 
 /// The <filter> node.
 pub struct Filter {

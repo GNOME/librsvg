@@ -13,7 +13,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, Fragment};
 use crate::dpi::Dpi;
 use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
@@ -40,7 +40,6 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
-use crate::url_resolver::Fragment;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.

@@ -6,18 +6,19 @@ use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::fmt;
 use std::include_str;
 use std::rc::Rc;
 
 use crate::attributes::Attributes;
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::{AcquireError, AllowedUrlError, LoadingError};
+use crate::error::{AcquireError, AllowedUrlError, FragmentError, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::url_resolver::{AllowedUrl, Fragment, UrlResolver};
+use crate::url_resolver::{AllowedUrl, UrlResolver};
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
 static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
@@ -248,6 +249,46 @@ fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> L
         cairo::Status::NoMemory => LoadingError::OutOfMemory(format!("loading image: {}", url)),
         cairo::Status::InvalidSize => LoadingError::Other(format!("image too big: {}", url)),
         _ => LoadingError::Other(format!("cairo error: {}", status)),
+    }
+}
+
+/// Optional URI, mandatory fragment id
+#[derive(Debug, PartialEq, Clone)]
+pub struct Fragment(Option<String>, String);
+
+impl Fragment {
+    // Outside of testing, we don't want code creating Fragments by hand;
+    // they are obtained by parsing a href string.
+    #[cfg(test)]
+    pub fn new(uri: Option<String>, fragment: String) -> Fragment {
+        Fragment(uri, fragment)
+    }
+
+    pub fn parse(href: &str) -> Result<Fragment, FragmentError> {
+        let (uri, fragment) = match href.rfind('#') {
+            None => (Some(href), None),
+            Some(p) if p == 0 => (None, Some(&href[1..])),
+            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
+        };
+
+        match (uri, fragment) {
+            (u, Some(f)) if !f.is_empty() => Ok(Fragment(u.map(String::from), String::from(f))),
+            _ => Err(FragmentError::FragmentRequired),
+        }
+    }
+
+    pub fn uri(&self) -> Option<&str> {
+        self.0.as_deref()
+    }
+
+    pub fn fragment(&self) -> &str {
+        &self.1
+    }
+}
+
+impl fmt::Display for Fragment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}#{}", self.uri().unwrap_or(""), self.fragment())
     }
 }
 
@@ -499,5 +540,28 @@ impl DocumentBuilder {
             }
             _ => Err(LoadingError::NoSvgRoot),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_fragment() {
+        assert_eq!(
+            Fragment::parse("#foo").unwrap(),
+            Fragment::new(None, "foo".to_string())
+        );
+
+        assert_eq!(
+            Fragment::parse("uri#foo").unwrap(),
+            Fragment::new(Some("uri".to_string()), "foo".to_string())
+        );
+
+        assert!(matches!(
+            Fragment::parse("uri"),
+            Err(FragmentError::FragmentRequired)
+        ));
     }
 }

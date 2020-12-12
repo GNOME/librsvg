@@ -3,7 +3,7 @@
 use cssparser::Parser;
 
 use crate::bbox::BoundingBox;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, Fragment};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
 use crate::error::{
@@ -14,7 +14,6 @@ use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::{ResolvedPattern, UserSpacePattern};
 use crate::properties::ComputedValues;
-use crate::url_resolver::Fragment;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {

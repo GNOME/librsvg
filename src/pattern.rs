@@ -7,7 +7,7 @@ use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNodes, NodeStack};
+use crate::document::{AcquiredNodes, Fragment, NodeStack};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -18,7 +18,6 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
-use crate::url_resolver::Fragment;
 use crate::viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);

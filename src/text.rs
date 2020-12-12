@@ -5,7 +5,7 @@ use std::cell::RefCell;
 
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, Fragment};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -19,7 +19,6 @@ use crate::property_defs::{
     XmlSpace,
 };
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
-use crate::url_resolver::Fragment;
 
 /// An absolutely-positioned array of `Span`s
 ///

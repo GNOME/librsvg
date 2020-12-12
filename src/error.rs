@@ -6,10 +6,10 @@ use std::fmt;
 use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
+use crate::document::Fragment;
 use crate::io::IoError;
 use crate::limits;
 use crate::node::Node;
-use crate::url_resolver::Fragment;
 
 /// A short-lived error.
 ///
