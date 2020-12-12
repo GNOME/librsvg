@@ -5,7 +5,7 @@ use std::cell::RefCell;
 
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
-use crate::document::{AcquiredNodes, Fragment};
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -527,7 +527,7 @@ impl Draw for Text {
 
 #[derive(Default)]
 pub struct TRef {
-    link: Option<Fragment>,
+    link: Option<NodeId>,
 }
 
 impl TRef {
@@ -584,7 +584,7 @@ impl SetAttributes for TRef {
             // Unlike other elements which use `href` in SVG2 versus `xlink:href` in SVG1.1,
             // the <tref> element got removed in SVG2.  So, here we still use a match
             // against the full namespaced version of the attribute.
-            .and_then(|(attr, value)| Fragment::parse(value).attribute(attr).ok());
+            .and_then(|(attr, value)| NodeId::parse(value).attribute(attr).ok());
 
         Ok(())
     }

@@ -2,7 +2,7 @@
 
 use cssparser::Parser;
 
-use crate::document::Fragment;
+use crate::document::NodeId;
 use crate::error::*;
 use crate::parsers::Parse;
 
@@ -15,7 +15,7 @@ use crate::parsers::Parse;
 #[derive(Debug, Clone, PartialEq)]
 pub enum IRI {
     None,
-    Resource(Fragment),
+    Resource(NodeId),
 }
 
 impl Default for IRI {
@@ -26,7 +26,7 @@ impl Default for IRI {
 
 impl IRI {
     /// Returns the contents of an `IRI::Resource`, or `None`
-    pub fn get(&self) -> Option<&Fragment> {
+    pub fn get(&self) -> Option<&NodeId> {
         match *self {
             IRI::None => None,
             IRI::Resource(ref f) => Some(f),
@@ -44,10 +44,10 @@ impl Parse for IRI {
         } else {
             let loc = parser.current_source_location();
             let url = parser.expect_url()?;
-            let fragment =
-                Fragment::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
+            let node_id =
+                NodeId::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
 
-            Ok(IRI::Resource(fragment))
+            Ok(IRI::Resource(node_id))
         }
     }
 }
@@ -65,22 +65,22 @@ mod tests {
     fn parses_url() {
         assert_eq!(
             IRI::parse_str("url(#bar)").unwrap(),
-            IRI::Resource(Fragment::new(None, "bar".to_string()))
+            IRI::Resource(NodeId::Internal("bar".to_string()))
         );
 
         assert_eq!(
             IRI::parse_str("url(foo#bar)").unwrap(),
-            IRI::Resource(Fragment::new(Some("foo".to_string()), "bar".to_string()))
+            IRI::Resource(NodeId::External("foo".to_string(), "bar".to_string()))
         );
 
         // be permissive if the closing ) is missing
         assert_eq!(
             IRI::parse_str("url(#bar").unwrap(),
-            IRI::Resource(Fragment::new(None, "bar".to_string()))
+            IRI::Resource(NodeId::Internal("bar".to_string()))
         );
         assert_eq!(
             IRI::parse_str("url(foo#bar").unwrap(),
-            IRI::Resource(Fragment::new(Some("foo".to_string()), "bar".to_string()))
+            IRI::Resource(NodeId::External("foo".to_string(), "bar".to_string()))
         );
 
         assert!(IRI::parse_str("").is_err());

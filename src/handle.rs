@@ -4,7 +4,7 @@
 
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
-use crate::document::{AcquiredNodes, Document, Fragment};
+use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{draw_tree, DrawingMode, ViewParams};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
@@ -192,7 +192,7 @@ impl Handle {
     }
 
     fn lookup_node(&self, id: &str) -> Result<Node, DefsLookupErrorKind> {
-        let fragment = Fragment::parse(&id).map_err(|_| DefsLookupErrorKind::InvalidId)?;
+        let node_id = NodeId::parse(&id).map_err(|_| DefsLookupErrorKind::InvalidId)?;
 
         // The public APIs to get geometries of individual elements, or to render
         // them, should only allow referencing elements within the main handle's
@@ -202,18 +202,20 @@ impl Handle {
         // resources that the main SVG actually references.  In the future we may
         // relax this requirement to allow lookups within that set, but not to
         // other random files.
-        if fragment.uri().is_some() {
-            rsvg_log!(
-                "the public API is not allowed to look up external references: {}",
-                fragment
-            );
+        match node_id {
+            NodeId::Internal(id) => self
+                .document
+                .lookup_internal_node(&id)
+                .ok_or(DefsLookupErrorKind::NotFound),
+            NodeId::External(_, _) => {
+                rsvg_log!(
+                    "the public API is not allowed to look up external references: {}",
+                    node_id
+                );
 
-            return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
+                Err(DefsLookupErrorKind::CannotLookupExternalReferences)
+            }
         }
-
-        self.document
-            .lookup_node(None, fragment.fragment())
-            .ok_or(DefsLookupErrorKind::NotFound)
     }
 
     pub fn render_document(

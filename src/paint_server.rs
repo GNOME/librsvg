@@ -3,11 +3,11 @@
 use cssparser::Parser;
 
 use crate::bbox::BoundingBox;
-use crate::document::{AcquiredNodes, Fragment};
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
 use crate::error::{
-    AcquireError, FragmentError, ImplementationLimit, ParseError, RenderingError, ValueErrorKind,
+    AcquireError, ImplementationLimit, NodeIdError, ParseError, RenderingError, ValueErrorKind,
 };
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
@@ -19,7 +19,7 @@ use crate::properties::ComputedValues;
 pub enum PaintServer {
     None,
     Iri {
-        iri: Fragment,
+        iri: NodeId,
         alternate: Option<cssparser::Color>,
     },
     SolidColor(cssparser::Color),
@@ -63,8 +63,8 @@ impl Parse for PaintServer {
             };
 
             Ok(PaintServer::Iri {
-                iri: Fragment::parse(&url)
-                    .map_err(|e: FragmentError| -> ValueErrorKind { e.into() })
+                iri: NodeId::parse(&url)
+                    .map_err(|e: NodeIdError| -> ValueErrorKind { e.into() })
                     .map_err(|e| loc.new_custom_error(e))?,
                 alternate,
             })
@@ -203,7 +203,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link)").unwrap(),
             PaintServer::Iri {
-                iri: Fragment::new(None, "link".to_string()),
+                iri: NodeId::Internal("link".to_string()),
                 alternate: None,
             }
         );
@@ -211,7 +211,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(foo#link) none").unwrap(),
             PaintServer::Iri {
-                iri: Fragment::new(Some("foo".to_string()), "link".to_string()),
+                iri: NodeId::External("foo".to_string(), "link".to_string()),
                 alternate: None,
             }
         );
@@ -219,7 +219,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link) #ff8040").unwrap(),
             PaintServer::Iri {
-                iri: Fragment::new(None, "link".to_string()),
+                iri: NodeId::Internal("link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
                     255, 128, 64, 255
                 ))),
@@ -229,7 +229,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)").unwrap(),
             PaintServer::Iri {
-                iri: Fragment::new(None, "link".to_string()),
+                iri: NodeId::Internal("link".to_string()),
                 alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
                     255, 128, 64, 128
                 ))),
@@ -239,7 +239,7 @@ mod tests {
         assert_eq!(
             PaintServer::parse_str("url(#link) currentColor").unwrap(),
             PaintServer::Iri {
-                iri: Fragment::new(None, "link".to_string()),
+                iri: NodeId::Internal("link".to_string()),
                 alternate: Some(cssparser::Color::CurrentColor),
             }
         );

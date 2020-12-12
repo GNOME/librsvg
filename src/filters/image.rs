@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::AspectRatio;
 use crate::attributes::Attributes;
-use crate::document::{AcquiredNodes, Fragment};
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::href::{is_href, set_href};
@@ -42,10 +42,10 @@ impl FeImage {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
-        fragment: &Fragment,
+        node_id: &NodeId,
     ) -> Result<SharedImageSurface, FilterError> {
         let acquired_drawable = acquired_nodes
-            .acquire(fragment)
+            .acquire(node_id)
             .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
@@ -131,9 +131,9 @@ impl FilterEffect for FeImage {
 
         let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
 
-        let surface = if let Ok(fragment) = Fragment::parse(href) {
-            // if there is a fragment, render as a node
-            self.render_node(ctx, acquired_nodes, draw_ctx, bounds, &fragment)
+        let surface = if let Ok(node_id) = NodeId::parse(href) {
+            // if href has a fragment specified, render as a node
+            self.render_node(ctx, acquired_nodes, draw_ctx, bounds, &node_id)
         } else {
             // if there is no fragment, render as an image
             let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);

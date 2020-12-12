@@ -10,7 +10,7 @@ use crate::angle::Angle;
 use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
-use crate::document::{AcquiredNodes, Fragment};
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -556,7 +556,7 @@ enum MarkerType {
 fn emit_marker_by_name(
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
-    name: &Fragment,
+    name: &NodeId,
     xpos: f64,
     ypos: f64,
     computed_angle: Angle,

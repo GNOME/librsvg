@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNodes, Fragment, NodeStack};
+use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -309,7 +309,7 @@ struct Common {
     transform: Option<Transform>,
     spread: Option<SpreadMethod>,
 
-    fallback: Option<Fragment>,
+    fallback: Option<NodeId>,
 
     resolved: RefCell<Option<ResolvedGradient>>,
 }
@@ -513,7 +513,7 @@ impl UnresolvedGradient {
 /// resolved gradient yet.
 struct Unresolved {
     gradient: UnresolvedGradient,
-    fallback: Option<Fragment>,
+    fallback: Option<NodeId>,
 }
 
 impl LinearGradient {
@@ -553,7 +553,7 @@ impl SetAttributes for Common {
                     set_href(
                         a,
                         &mut self.fallback,
-                        Fragment::parse(value).attribute(attr.clone())?,
+                        NodeId::parse(value).attribute(attr.clone())?,
                     );
                 }
                 _ => (),
@@ -623,8 +623,8 @@ macro_rules! impl_gradient {
                 let mut stack = NodeStack::new();
 
                 while !gradient.is_resolved() {
-                    if let Some(fragment) = fallback {
-                        let acquired = acquired_nodes.acquire(&fragment)?;
+                    if let Some(node_id) = fallback {
+                        let acquired = acquired_nodes.acquire(&node_id)?;
                         let acquired_node = acquired.get();
 
                         if stack.contains(acquired_node) {
@@ -634,7 +634,7 @@ macro_rules! impl_gradient {
                         let unresolved = match *acquired_node.borrow_element() {
                             Element::$gradient_type(ref g) => g.get_unresolved(&acquired_node),
                             Element::$other_type(ref g) => g.get_unresolved(&acquired_node),
-                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
+                            _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
                         };
 
                         gradient = gradient.resolve_from_fallback(&unresolved.gradient);

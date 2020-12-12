@@ -6,7 +6,7 @@ use std::slice::Iter;
 
 use crate::attributes::Attributes;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNodes, Fragment};
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
@@ -151,7 +151,7 @@ impl Draw for Filter {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterValue {
-    URL(Fragment),
+    URL(NodeId),
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct FilterValueList(Vec<FilterValue>);
@@ -238,11 +238,11 @@ mod tests {
 
     #[test]
     fn parses_filter_value_list() {
-        let f1 = Fragment::new(Some("foo.svg".to_string()), "bar".to_string());
-        let f2 = Fragment::new(Some("test.svg".to_string()), "baz".to_string());
+        let n1 = NodeId::External("foo.svg".to_string(), "bar".to_string());
+        let n2 = NodeId::External("test.svg".to_string(), "baz".to_string());
         assert_eq!(
             FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)").unwrap(),
-            FilterValueList(vec![FilterValue::URL(f1), FilterValue::URL(f2)])
+            FilterValueList(vec![FilterValue::URL(n1), FilterValue::URL(n2)])
         );
     }
 

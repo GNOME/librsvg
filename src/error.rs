@@ -6,7 +6,7 @@ use std::fmt;
 use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
-use crate::document::Fragment;
+use crate::document::NodeId;
 use crate::io::IoError;
 use crate::limits;
 use crate::node::Node;
@@ -170,8 +170,8 @@ impl From<cairo::Status> for RenderingError {
 }
 
 pub enum AcquireError {
-    LinkNotFound(Fragment),
-    InvalidLinkType(Fragment),
+    LinkNotFound(NodeId),
+    InvalidLinkType(NodeId),
     CircularReference(Node),
     MaxReferencesExceeded,
 }
@@ -322,16 +322,16 @@ impl fmt::Display for AllowedUrlError {
     }
 }
 
-/// Errors returned when creating a `Fragment` out of a string
+/// Errors returned when creating a `NodeId` out of a string
 #[derive(Debug, Clone)]
-pub enum FragmentError {
-    FragmentRequired,
+pub enum NodeIdError {
+    NodeIdRequired,
 }
 
-impl From<FragmentError> for ValueErrorKind {
-    fn from(e: FragmentError) -> ValueErrorKind {
+impl From<NodeIdError> for ValueErrorKind {
+    fn from(e: NodeIdError) -> ValueErrorKind {
         match e {
-            FragmentError::FragmentRequired => {
+            NodeIdError::NodeIdRequired => {
                 ValueErrorKind::value_error("fragment identifier required")
             }
         }

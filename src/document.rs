@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 use crate::attributes::Attributes;
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::{AcquireError, AllowedUrlError, FragmentError, LoadingError};
+use crate::error::{AcquireError, AllowedUrlError, LoadingError, NodeIdError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
@@ -29,6 +29,42 @@ static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
     )
     .unwrap()]
 });
+
+/// Identifier of a node
+#[derive(Debug, PartialEq, Clone)]
+pub enum NodeId {
+    /// element id
+    Internal(String),
+    /// url, element id
+    External(String, String),
+}
+
+impl NodeId {
+    pub fn parse(href: &str) -> Result<NodeId, NodeIdError> {
+        let (url, id) = match href.rfind('#') {
+            None => (Some(href), None),
+            Some(p) if p == 0 => (None, Some(&href[1..])),
+            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
+        };
+
+        match (url, id) {
+            (None, Some(id)) if !id.is_empty() => Ok(NodeId::Internal(String::from(id))),
+            (Some(url), Some(id)) if !id.is_empty() => {
+                Ok(NodeId::External(String::from(url), String::from(id)))
+            }
+            _ => Err(NodeIdError::NodeIdRequired),
+        }
+    }
+}
+
+impl fmt::Display for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NodeId::Internal(id) => write!(f, "#{}", id),
+            NodeId::External(url, id) => write!(f, "{}#{}", url, id),
+        }
+    }
+}
 
 /// A loaded SVG file and its derived data.
 pub struct Document {
@@ -75,23 +111,28 @@ impl Document {
     }
 
     /// Looks up a node in this document or one of its resources by its `id` attribute.
-    pub fn lookup_node(&self, url: Option<&str>, id: &str) -> Option<Node> {
-        match url {
-            Some(u) => self
+    pub fn lookup_node(&self, node_id: &NodeId) -> Option<Node> {
+        match node_id {
+            NodeId::Internal(id) => self.lookup_internal_node(id),
+            NodeId::External(url, id) => self
                 .externs
                 .borrow_mut()
-                .lookup(&self.load_options, u, id)
+                .lookup(&self.load_options, url, id)
                 .ok(),
-            _ => self.ids.get(id).map(|n| (*n).clone()),
         }
     }
 
+    /// Looks up a node in this document by its `id` attribute.
+    pub fn lookup_internal_node(&self, id: &str) -> Option<Node> {
+        self.ids.get(id).map(|n| (*n).clone())
+    }
+
     /// Loads an image by URL, or returns a pre-loaded one.
-    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
+    pub fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
         let aurl = self
             .load_options
             .url_resolver
-            .resolve_href(href)
+            .resolve_href(url)
             .map_err(|_| LoadingError::BadUrl)?;
 
         self.images.borrow_mut().lookup(&self.load_options, &aurl)
@@ -124,7 +165,7 @@ impl Resources {
         id: &str,
     ) -> Result<Node, LoadingError> {
         self.get_extern_document(load_options, url)
-            .and_then(|doc| doc.lookup_node(None, id).ok_or(LoadingError::BadUrl))
+            .and_then(|doc| doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl))
     }
 
     fn get_extern_document(
@@ -252,46 +293,6 @@ fn image_loading_error_from_cairo(status: cairo::Status, aurl: &AllowedUrl) -> L
     }
 }
 
-/// Optional URI, mandatory fragment id
-#[derive(Debug, PartialEq, Clone)]
-pub struct Fragment(Option<String>, String);
-
-impl Fragment {
-    // Outside of testing, we don't want code creating Fragments by hand;
-    // they are obtained by parsing a href string.
-    #[cfg(test)]
-    pub fn new(uri: Option<String>, fragment: String) -> Fragment {
-        Fragment(uri, fragment)
-    }
-
-    pub fn parse(href: &str) -> Result<Fragment, FragmentError> {
-        let (uri, fragment) = match href.rfind('#') {
-            None => (Some(href), None),
-            Some(p) if p == 0 => (None, Some(&href[1..])),
-            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
-        };
-
-        match (uri, fragment) {
-            (u, Some(f)) if !f.is_empty() => Ok(Fragment(u.map(String::from), String::from(f))),
-            _ => Err(FragmentError::FragmentRequired),
-        }
-    }
-
-    pub fn uri(&self) -> Option<&str> {
-        self.0.as_deref()
-    }
-
-    pub fn fragment(&self) -> &str {
-        &self.1
-    }
-}
-
-impl fmt::Display for Fragment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}#{}", self.uri().unwrap_or(""), self.fragment())
-    }
-}
-
 pub struct AcquiredNode {
     stack: Option<Rc<RefCell<NodeStack>>>,
     node: Node,
@@ -343,7 +344,7 @@ impl<'i> AcquiredNodes<'i> {
 
     /// Acquires a node.
     /// Nodes acquired by this function must be released in reverse acquiring order.
-    pub fn acquire(&mut self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+    pub fn acquire(&mut self, node_id: &NodeId) -> Result<AcquiredNode, AcquireError> {
         self.num_elements_acquired += 1;
 
         // This is a mitigation for SVG files that try to instance a huge number of
@@ -362,11 +363,11 @@ impl<'i> AcquiredNodes<'i> {
         //   - Now that all files are loaded, resolve URL references
         let node = self
             .document
-            .lookup_node(fragment.uri(), fragment.fragment())
-            .ok_or_else(|| AcquireError::LinkNotFound(fragment.clone()))?;
+            .lookup_node(node_id)
+            .ok_or_else(|| AcquireError::LinkNotFound(node_id.clone()))?;
 
         if !node.is_element() {
-            return Err(AcquireError::InvalidLinkType(fragment.clone()));
+            return Err(AcquireError::InvalidLinkType(node_id.clone()));
         }
 
         if node.borrow_element().is_accessed_by_reference() {
@@ -548,20 +549,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_fragment() {
+    fn parses_node_id() {
         assert_eq!(
-            Fragment::parse("#foo").unwrap(),
-            Fragment::new(None, "foo".to_string())
+            NodeId::parse("#foo").unwrap(),
+            NodeId::Internal("foo".to_string())
         );
 
         assert_eq!(
-            Fragment::parse("uri#foo").unwrap(),
-            Fragment::new(Some("uri".to_string()), "foo".to_string())
+            NodeId::parse("uri#foo").unwrap(),
+            NodeId::External("uri".to_string(), "foo".to_string())
         );
 
         assert!(matches!(
-            Fragment::parse("uri"),
-            Err(FragmentError::FragmentRequired)
+            NodeId::parse("uri"),
+            Err(NodeIdError::NodeIdRequired)
         ));
     }
 }

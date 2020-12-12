@@ -826,10 +826,10 @@ mod tests {
 "#,
         );
 
-        let a = document.lookup_node(None, "a").unwrap();
-        let b = document.lookup_node(None, "b").unwrap();
-        let c = document.lookup_node(None, "c").unwrap();
-        let d = document.lookup_node(None, "d").unwrap();
+        let a = document.lookup_internal_node("a").unwrap();
+        let b = document.lookup_internal_node("b").unwrap();
+        let c = document.lookup_internal_node("c").unwrap();
+        let d = document.lookup_internal_node("d").unwrap();
 
         // Node types
         assert!(is_element_of_type!(a, Svg));
