@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
@@ -16,7 +16,6 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
-use crate::url_resolver::Fragment;
 use crate::viewbox::*;
 
 #[derive(Default)]
@@ -251,7 +250,7 @@ impl Draw for Svg {
 
 #[derive(Default)]
 pub struct Use {
-    link: Option<Fragment>,
+    link: Option<NodeId>,
     x: Length<Horizontal>,
     y: Length<Vertical>,
     w: Option<Length<Horizontal>>,
@@ -288,7 +287,7 @@ impl SetAttributes for Use {
                 ref a if is_href(a) => set_href(
                     a,
                     &mut self.link,
-                    Fragment::parse(value).attribute(attr.clone())?,
+                    NodeId::parse(value).attribute(attr.clone())?,
                 ),
 
                 expanded_name!("", "x") => self.x = attr.parse(value)?,

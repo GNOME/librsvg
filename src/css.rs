@@ -801,7 +801,6 @@ mod tests {
 
     use crate::document::Document;
     use crate::handle::LoadOptions;
-    use crate::url_resolver::Fragment;
 
     fn load_document(input: &'static [u8]) -> Document {
         let bytes = glib::Bytes::from_static(input);
@@ -827,18 +826,10 @@ mod tests {
 "#,
         );
 
-        let a = document
-            .lookup(&Fragment::new(None, "a".to_string()))
-            .unwrap();
-        let b = document
-            .lookup(&Fragment::new(None, "b".to_string()))
-            .unwrap();
-        let c = document
-            .lookup(&Fragment::new(None, "c".to_string()))
-            .unwrap();
-        let d = document
-            .lookup(&Fragment::new(None, "d".to_string()))
-            .unwrap();
+        let a = document.lookup_internal_node("a").unwrap();
+        let b = document.lookup_internal_node("b").unwrap();
+        let c = document.lookup_internal_node("c").unwrap();
+        let d = document.lookup_internal_node("d").unwrap();
 
         // Node types
         assert!(is_element_of_type!(a, Svg));

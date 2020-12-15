@@ -13,7 +13,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
 use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
@@ -40,7 +40,6 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
-use crate::url_resolver::Fragment;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `Length` values to a current viewport.
@@ -666,8 +665,8 @@ impl DrawingCtx {
 
                     // Mask
 
-                    if let Some(fragment) = mask {
-                        if let Ok(acquired) = acquired_nodes.acquire(fragment) {
+                    if let Some(node_id) = mask {
+                        if let Ok(acquired) = acquired_nodes.acquire(node_id) {
                             let mask_node = acquired.get();
 
                             match *mask_node.borrow_element() {
@@ -693,7 +692,7 @@ impl DrawingCtx {
                                     rsvg_log!(
                                         "element {} references \"{}\" which is not a mask",
                                         node,
-                                        fragment
+                                        node_id
                                     );
                                 }
                             }
@@ -701,7 +700,7 @@ impl DrawingCtx {
                             rsvg_log!(
                                 "element {} references nonexistent mask \"{}\"",
                                 node,
-                                fragment
+                                node_id
                             );
                         }
                     } else {
@@ -861,10 +860,10 @@ impl DrawingCtx {
                         .try_fold(
                             child_surface,
                             |surface, filter| -> Result<_, RenderingError> {
-                                let FilterValue::URL(filter_uri) = filter;
+                                let FilterValue::Url(f) = filter;
                                 self.run_filter(
                                     acquired_nodes,
-                                    &filter_uri,
+                                    &f,
                                     node,
                                     values,
                                     surface,
@@ -886,7 +885,7 @@ impl DrawingCtx {
     fn run_filter(
         &mut self,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        filter_uri: &Fragment,
+        filter_uri: &NodeId,
         node: &Node,
         values: &ComputedValues,
         child_surface: SharedImageSurface,
@@ -1610,7 +1609,7 @@ impl DrawingCtx {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        link: Option<&Fragment>,
+        link: Option<&NodeId>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         // <use> is an element that is used directly, unlike
@@ -1651,8 +1650,8 @@ impl DrawingCtx {
 
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
 
-            Err(AcquireError::LinkNotFound(fragment)) => {
-                rsvg_log!("element {} references nonexistent \"{}\"", node, fragment);
+            Err(AcquireError::LinkNotFound(node_id)) => {
+                rsvg_log!("element {} references nonexistent \"{}\"", node, node_id);
                 return Ok(self.empty_bbox());
             }
         };
@@ -1770,12 +1769,12 @@ impl CompositingAffines {
 // Returns (clip_in_user_space, clip_in_object_space), both Option<Node>
 fn get_clip_in_user_and_object_space(
     acquired_nodes: &mut AcquiredNodes<'_>,
-    clip_uri: Option<&Fragment>,
+    clip_uri: Option<&NodeId>,
 ) -> (Option<Node>, Option<Node>) {
     clip_uri
-        .and_then(|fragment| {
+        .and_then(|node_id| {
             acquired_nodes
-                .acquire(fragment)
+                .acquire(node_id)
                 .ok()
                 .filter(|a| is_element_of_type!(*a.get(), ClipPath))
         })

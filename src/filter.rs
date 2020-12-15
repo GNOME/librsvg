@@ -6,17 +6,15 @@ use std::slice::Iter;
 
 use crate::attributes::Attributes;
 use crate::coord_units::CoordUnits;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
-use crate::iri::IRI;
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
-use crate::url_resolver::Fragment;
 
 /// The <filter> node.
 pub struct Filter {
@@ -152,8 +150,10 @@ impl Draw for Filter {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterValue {
-    URL(Fragment),
+    Url(NodeId),
+    // TODO: add functions from https://www.w3.org/TR/filter-effects-1/#filter-functions
 }
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FilterValueList(Vec<FilterValue>);
 
@@ -179,8 +179,11 @@ impl FilterValueList {
             return false;
         }
 
-        self.iter().all(|filter| match filter {
-            FilterValue::URL(filter_uri) => match acquired_nodes.acquire(filter_uri) {
+        self.iter()
+            .map(|v| match v {
+                FilterValue::Url(v) => v,
+            })
+            .all(|v| match acquired_nodes.acquire(v) {
                 Ok(acquired) => {
                     let filter_node = acquired.get();
 
@@ -190,7 +193,7 @@ impl FilterValueList {
                             rsvg_log!(
                                 "element {} will not be filtered since \"{}\" is not a filter",
                                 node,
-                                filter_uri,
+                                v,
                             );
                             false
                         }
@@ -200,12 +203,11 @@ impl FilterValueList {
                     rsvg_log!(
                         "element {} will not be filtered since its filter \"{}\" was not found",
                         node,
-                        filter_uri,
+                        v,
                     );
                     false
                 }
-            },
-        })
+            })
     }
 }
 
@@ -214,15 +216,12 @@ impl Parse for FilterValueList {
         let mut result = FilterValueList::default();
 
         loop {
-            let state = parser.state();
+            let loc = parser.current_source_location();
 
-            if let Ok(IRI::Resource(uri)) = parser.try_parse(|p| IRI::parse(p)) {
-                result.0.push(FilterValue::URL(uri));
-            } else {
-                parser.reset(&state);
-                let token = parser.next()?.clone();
-                return Err(parser.new_basic_unexpected_token_error(token).into());
-            }
+            let url = parser.expect_url()?;
+            let node_id =
+                NodeId::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
+            result.0.push(FilterValue::Url(node_id));
 
             if parser.is_exhausted() {
                 break;
@@ -239,11 +238,11 @@ mod tests {
 
     #[test]
     fn parses_filter_value_list() {
-        let f1 = Fragment::new(Some("foo.svg".to_string()), "bar".to_string());
-        let f2 = Fragment::new(Some("test.svg".to_string()), "baz".to_string());
+        let n1 = NodeId::External("foo.svg".to_string(), "bar".to_string());
+        let n2 = NodeId::External("test.svg".to_string(), "baz".to_string());
         assert_eq!(
             FilterValueList::parse_str("url(foo.svg#bar) url(test.svg#baz)").unwrap(),
-            FilterValueList(vec![FilterValue::URL(f1), FilterValue::URL(f2)])
+            FilterValueList(vec![FilterValue::Url(n1), FilterValue::Url(n2)])
         );
     }
 

@@ -6,18 +6,19 @@ use once_cell::sync::Lazy;
 use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::fmt;
 use std::include_str;
 use std::rc::Rc;
 
 use crate::attributes::Attributes;
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::{AcquireError, LoadingError};
+use crate::error::{AcquireError, AllowedUrlError, LoadingError, NodeIdError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::url_resolver::{AllowedUrl, AllowedUrlError, Fragment, UrlResolver};
+use crate::url_resolver::{AllowedUrl, UrlResolver};
 use crate::xml::xml_load_from_possibly_compressed_stream;
 
 static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
@@ -28,6 +29,42 @@ static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
     )
     .unwrap()]
 });
+
+/// Identifier of a node
+#[derive(Debug, PartialEq, Clone)]
+pub enum NodeId {
+    /// element id
+    Internal(String),
+    /// url, element id
+    External(String, String),
+}
+
+impl NodeId {
+    pub fn parse(href: &str) -> Result<NodeId, NodeIdError> {
+        let (url, id) = match href.rfind('#') {
+            None => (Some(href), None),
+            Some(p) if p == 0 => (None, Some(&href[1..])),
+            Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
+        };
+
+        match (url, id) {
+            (None, Some(id)) if !id.is_empty() => Ok(NodeId::Internal(String::from(id))),
+            (Some(url), Some(id)) if !id.is_empty() => {
+                Ok(NodeId::External(String::from(url), String::from(id)))
+            }
+            _ => Err(NodeIdError::NodeIdRequired),
+        }
+    }
+}
+
+impl fmt::Display for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NodeId::Internal(id) => write!(f, "#{}", id),
+            NodeId::External(url, id) => write!(f, "{}#{}", url, id),
+        }
+    }
+}
 
 /// A loaded SVG file and its derived data.
 pub struct Document {
@@ -73,32 +110,29 @@ impl Document {
         self.tree.clone()
     }
 
-    /// Looks up an element node by its URL.
-    ///
-    /// This is also used to find elements in referenced resources, as in
-    /// `xlink:href="subresource.svg#element_name".
-    pub fn lookup(&self, fragment: &Fragment) -> Result<Node, LoadingError> {
-        if fragment.uri().is_some() {
-            self.externs
+    /// Looks up a node in this document or one of its resources by its `id` attribute.
+    pub fn lookup_node(&self, node_id: &NodeId) -> Option<Node> {
+        match node_id {
+            NodeId::Internal(id) => self.lookup_internal_node(id),
+            NodeId::External(url, id) => self
+                .externs
                 .borrow_mut()
-                .lookup(&self.load_options, fragment)
-        } else {
-            self.lookup_node_by_id(fragment.fragment())
-                .ok_or(LoadingError::BadUrl)
+                .lookup(&self.load_options, url, id)
+                .ok(),
         }
     }
 
-    /// Looks up a node only in this document fragment by its `id` attribute.
-    pub fn lookup_node_by_id(&self, id: &str) -> Option<Node> {
+    /// Looks up a node in this document by its `id` attribute.
+    pub fn lookup_internal_node(&self, id: &str) -> Option<Node> {
         self.ids.get(id).map(|n| (*n).clone())
     }
 
     /// Loads an image by URL, or returns a pre-loaded one.
-    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
+    pub fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
         let aurl = self
             .load_options
             .url_resolver
-            .resolve_href(href)
+            .resolve_href(url)
             .map_err(|_| LoadingError::BadUrl)?;
 
         self.images.borrow_mut().lookup(&self.load_options, &aurl)
@@ -127,17 +161,11 @@ impl Resources {
     pub fn lookup(
         &mut self,
         load_options: &LoadOptions,
-        fragment: &Fragment,
+        url: &str,
+        id: &str,
     ) -> Result<Node, LoadingError> {
-        if let Some(ref href) = fragment.uri() {
-            self.get_extern_document(load_options, href)
-                .and_then(|doc| {
-                    doc.lookup_node_by_id(fragment.fragment())
-                        .ok_or(LoadingError::BadUrl)
-                })
-        } else {
-            unreachable!();
-        }
+        self.get_extern_document(load_options, url)
+            .and_then(|doc| doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl))
     }
 
     fn get_extern_document(
@@ -316,7 +344,7 @@ impl<'i> AcquiredNodes<'i> {
 
     /// Acquires a node.
     /// Nodes acquired by this function must be released in reverse acquiring order.
-    pub fn acquire(&mut self, fragment: &Fragment) -> Result<AcquiredNode, AcquireError> {
+    pub fn acquire(&mut self, node_id: &NodeId) -> Result<AcquiredNode, AcquireError> {
         self.num_elements_acquired += 1;
 
         // This is a mitigation for SVG files that try to instance a huge number of
@@ -325,20 +353,21 @@ impl<'i> AcquiredNodes<'i> {
             return Err(AcquireError::MaxReferencesExceeded);
         }
 
-        let node = self.document.lookup(fragment).map_err(|_| {
-            // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
-            // Maybe we should have the following stages:
-            //   - load main SVG XML
-            //
-            //   - load secondary SVG XML and other files like images; all document::Resources and
-            //     document::Images loaded
-            //
-            //   - Now that all files are loaded, resolve URL references
-            AcquireError::LinkNotFound(fragment.clone())
-        })?;
+        // FIXME: callers shouldn't have to know that get_node() can initiate a file load.
+        // Maybe we should have the following stages:
+        //   - load main SVG XML
+        //
+        //   - load secondary SVG XML and other files like images; all document::Resources and
+        //     document::Images loaded
+        //
+        //   - Now that all files are loaded, resolve URL references
+        let node = self
+            .document
+            .lookup_node(node_id)
+            .ok_or_else(|| AcquireError::LinkNotFound(node_id.clone()))?;
 
         if !node.is_element() {
-            return Err(AcquireError::InvalidLinkType(fragment.clone()));
+            return Err(AcquireError::InvalidLinkType(node_id.clone()));
         }
 
         if node.borrow_element().is_accessed_by_reference() {
@@ -512,5 +541,28 @@ impl DocumentBuilder {
             }
             _ => Err(LoadingError::NoSvgRoot),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_node_id() {
+        assert_eq!(
+            NodeId::parse("#foo").unwrap(),
+            NodeId::Internal("foo".to_string())
+        );
+
+        assert_eq!(
+            NodeId::parse("uri#foo").unwrap(),
+            NodeId::External("uri".to_string(), "foo".to_string())
+        );
+
+        assert!(matches!(
+            NodeId::parse("uri"),
+            Err(NodeIdError::NodeIdRequired)
+        ));
     }
 }

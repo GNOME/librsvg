@@ -2,16 +2,14 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::AspectRatio;
 use crate::attributes::Attributes;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
-use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
-use crate::url_resolver::{Fragment, Href};
 use crate::viewbox::ViewBox;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -21,7 +19,7 @@ use super::{FilterEffect, FilterError, Primitive};
 pub struct FeImage {
     base: Primitive,
     aspect: AspectRatio,
-    href: Option<Href>,
+    href: Option<String>,
 }
 
 impl Default for FeImage {
@@ -44,10 +42,10 @@ impl FeImage {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
-        fragment: &Fragment,
+        node_id: &NodeId,
     ) -> Result<SharedImageSurface, FilterError> {
         let acquired_drawable = acquired_nodes
-            .acquire(fragment)
+            .acquire(node_id)
             .map_err(|_| FilterError::InvalidInput)?;
         let drawable = acquired_drawable.get();
 
@@ -109,11 +107,7 @@ impl SetAttributes for FeImage {
 
                 // "path" is used by some older Adobe Illustrator versions
                 ref a if is_href(a) || *a == expanded_name!("", "path") => {
-                    let href = Href::parse(value)
-                        .map_err(ValueErrorKind::from)
-                        .attribute(attr.clone())?;
-
-                    set_href(a, &mut self.href, href);
+                    set_href(a, &mut self.href, value.to_string());
                 }
 
                 _ => (),
@@ -135,22 +129,22 @@ impl FilterEffect for FeImage {
         let bounds_builder = self.base.get_bounds(ctx, node.parent().as_ref())?;
         let bounds = bounds_builder.into_rect(draw_ctx);
 
-        let surface = match self.href {
-            Some(Href::PlainUrl(ref url)) => {
-                let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
-                self.render_external_image(
-                    ctx,
-                    acquired_nodes,
-                    draw_ctx,
-                    bounds,
-                    &unclipped_bounds,
-                    url,
-                )
-            }
-            Some(Href::WithFragment(ref frag)) => {
-                self.render_node(ctx, acquired_nodes, draw_ctx, bounds, frag)
-            }
-            _ => Err(FilterError::InvalidInput),
+        let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
+
+        let surface = if let Ok(node_id) = NodeId::parse(href) {
+            // if href has a fragment specified, render as a node
+            self.render_node(ctx, acquired_nodes, draw_ctx, bounds, &node_id)
+        } else {
+            // if there is no fragment, render as an image
+            let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
+            self.render_external_image(
+                ctx,
+                acquired_nodes,
+                draw_ctx,
+                bounds,
+                &unclipped_bounds,
+                href,
+            )
         }?;
 
         Ok(FilterResult {

@@ -4,14 +4,14 @@
 
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
-use crate::document::{AcquiredNodes, Document};
+use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{draw_tree, DrawingMode, ViewParams};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
-use crate::url_resolver::{AllowedUrl, Href, UrlResolver};
+use crate::url_resolver::{AllowedUrl, UrlResolver};
 
 /// Loading options for SVG documents.
 #[derive(Clone)]
@@ -192,34 +192,28 @@ impl Handle {
     }
 
     fn lookup_node(&self, id: &str) -> Result<Node, DefsLookupErrorKind> {
-        match Href::parse(&id).map_err(DefsLookupErrorKind::HrefError)? {
-            Href::PlainUrl(_) => Err(DefsLookupErrorKind::CannotLookupExternalReferences),
-            Href::WithFragment(fragment) => {
-                if let Some(uri) = fragment.uri() {
-                    // The public APIs to get geometries of individual elements, or to render
-                    // them, should only allow referencing elements within the main handle's
-                    // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
-                    // Otherwise, a calling program could request "another-file#foo" and cause
-                    // another-file to be loaded, even if it is not part of the set of
-                    // resources that the main SVG actually references.  In the future we may
-                    // relax this requirement to allow lookups within that set, but not to
-                    // other random files.
+        let node_id = NodeId::parse(&id).map_err(|_| DefsLookupErrorKind::InvalidId)?;
 
-                    let msg = format!(
-                        "the public API is not allowed to look up external references: {}#{}",
-                        uri,
-                        fragment.fragment()
-                    );
+        // The public APIs to get geometries of individual elements, or to render
+        // them, should only allow referencing elements within the main handle's
+        // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
+        // Otherwise, a calling program could request "another-file#foo" and cause
+        // another-file to be loaded, even if it is not part of the set of
+        // resources that the main SVG actually references.  In the future we may
+        // relax this requirement to allow lookups within that set, but not to
+        // other random files.
+        match node_id {
+            NodeId::Internal(id) => self
+                .document
+                .lookup_internal_node(&id)
+                .ok_or(DefsLookupErrorKind::NotFound),
+            NodeId::External(_, _) => {
+                rsvg_log!(
+                    "the public API is not allowed to look up external references: {}",
+                    node_id
+                );
 
-                    rsvg_log!("{}", msg);
-
-                    return Err(DefsLookupErrorKind::CannotLookupExternalReferences);
-                }
-
-                match self.document.lookup_node_by_id(fragment.fragment()) {
-                    Some(n) => Ok(n),
-                    None => Err(DefsLookupErrorKind::NotFound),
-                }
+                Err(DefsLookupErrorKind::CannotLookupExternalReferences)
             }
         }
     }

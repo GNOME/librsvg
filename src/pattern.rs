@@ -7,7 +7,7 @@ use crate::aspect_ratio::*;
 use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNodes, NodeStack};
+use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -18,7 +18,6 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
-use crate::url_resolver::Fragment;
 use crate::viewbox::*;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
@@ -48,7 +47,7 @@ struct Common {
 /// resolved pattern yet.
 struct Unresolved {
     pattern: UnresolvedPattern,
-    fallback: Option<Fragment>,
+    fallback: Option<NodeId>,
 }
 
 /// Keeps track of which Pattern provided a non-empty set of children during pattern resolution
@@ -119,7 +118,7 @@ pub struct UserSpacePattern {
 #[derive(Default)]
 pub struct Pattern {
     common: Common,
-    fallback: Option<Fragment>,
+    fallback: Option<NodeId>,
     resolved: RefCell<Option<ResolvedPattern>>,
 }
 
@@ -142,7 +141,7 @@ impl SetAttributes for Pattern {
                     set_href(
                         a,
                         &mut self.fallback,
-                        Fragment::parse(value).attribute(attr.clone())?,
+                        NodeId::parse(value).attribute(attr.clone())?,
                     );
                 }
                 expanded_name!("", "x") => self.common.x = Some(attr.parse(value)?),
@@ -388,8 +387,8 @@ impl Pattern {
         let mut stack = NodeStack::new();
 
         while !pattern.is_resolved() {
-            if let Some(ref fragment) = fallback {
-                match acquired_nodes.acquire(&fragment) {
+            if let Some(ref node_id) = fallback {
+                match acquired_nodes.acquire(&node_id) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -405,7 +404,7 @@ impl Pattern {
 
                                 stack.push(acquired_node);
                             }
-                            _ => return Err(AcquireError::InvalidLinkType(fragment.clone())),
+                            _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
                         }
                     }
 
