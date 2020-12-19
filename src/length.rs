@@ -46,6 +46,7 @@ use cssparser::{Parser, Token};
 use std::f64::consts::*;
 use std::marker::PhantomData;
 
+use crate::dpi::Dpi;
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
@@ -342,9 +343,9 @@ impl<N: Normalize> Length<N> {
                 self.length * <N as Normalize>::normalize(params.vbox.width(), params.vbox.height())
             }
 
-            LengthUnit::Em => self.length * font_size_from_values(values, params),
+            LengthUnit::Em => self.length * font_size_from_values(values, params.dpi),
 
-            LengthUnit::Ex => self.length * font_size_from_values(values, params) / 2.0,
+            LengthUnit::Ex => self.length * font_size_from_values(values, params.dpi) / 2.0,
 
             LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 
@@ -369,7 +370,7 @@ impl<N: Normalize> Length<N> {
     }
 }
 
-fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
+fn font_size_from_values(values: &ComputedValues, dpi: Dpi) -> f64 {
     let v = &values.font_size().value();
 
     match v.unit {
@@ -383,11 +384,11 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
         LengthUnit::Ex => v.length * 12.0 / 2.0,
 
         // FontSize always is a Both, per properties.rs
-        LengthUnit::In => v.length * Both::normalize(params.dpi.x, params.dpi.y),
-        LengthUnit::Cm => v.length * Both::normalize(params.dpi.x, params.dpi.y) / CM_PER_INCH,
-        LengthUnit::Mm => v.length * Both::normalize(params.dpi.x, params.dpi.y) / MM_PER_INCH,
-        LengthUnit::Pt => v.length * Both::normalize(params.dpi.x, params.dpi.y) / POINTS_PER_INCH,
-        LengthUnit::Pc => v.length * Both::normalize(params.dpi.x, params.dpi.y) / PICA_PER_INCH,
+        LengthUnit::In => v.length * Both::normalize(dpi.x, dpi.y),
+        LengthUnit::Cm => v.length * Both::normalize(dpi.x, dpi.y) / CM_PER_INCH,
+        LengthUnit::Mm => v.length * Both::normalize(dpi.x, dpi.y) / MM_PER_INCH,
+        LengthUnit::Pt => v.length * Both::normalize(dpi.x, dpi.y) / POINTS_PER_INCH,
+        LengthUnit::Pc => v.length * Both::normalize(dpi.x, dpi.y) / PICA_PER_INCH,
     }
 }
 
@@ -403,7 +404,6 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
 mod tests {
     use super::*;
 
-    use crate::dpi::Dpi;
     use crate::float_eq_cairo::ApproxEqCairo;
 
     #[test]
