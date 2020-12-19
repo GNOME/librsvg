@@ -301,12 +301,12 @@ impl BasicShape for Line {
 pub struct Rect {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    w: Length<Horizontal>,
-    h: Length<Vertical>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
 
     // Radiuses for rounded corners
-    rx: Option<Length<Horizontal>>,
-    ry: Option<Length<Vertical>>,
+    rx: Option<ULength<Horizontal>>,
+    ry: Option<ULength<Vertical>>,
 }
 
 impl_draw!(Rect);
@@ -317,24 +317,10 @@ impl SetAttributes for Rect {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => {
-                    self.w =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
-                }
-                expanded_name!("", "height") => {
-                    self.h =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
-                }
-                expanded_name!("", "rx") => {
-                    self.rx = attr
-                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
-                        .map(Some)?
-                }
-                expanded_name!("", "ry") => {
-                    self.ry = attr
-                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
-                        .map(Some)?
-                }
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
+                expanded_name!("", "rx") => self.rx = attr.parse(value).map(Some)?,
+                expanded_name!("", "ry") => self.ry = attr.parse(value).map(Some)?,
                 _ => (),
             }
         }
@@ -349,8 +335,8 @@ impl BasicShape for Rect {
 
         let x = self.x.normalize(values, &params);
         let y = self.y.normalize(values, &params);
-        let w = self.w.normalize(values, &params);
-        let h = self.h.normalize(values, &params);
+        let w = self.width.normalize(values, &params);
+        let h = self.height.normalize(values, &params);
 
         let mut rx;
         let mut ry;
@@ -520,7 +506,7 @@ impl BasicShape for Rect {
 pub struct Circle {
     cx: Length<Horizontal>,
     cy: Length<Vertical>,
-    r: Length<Both>,
+    r: ULength<Both>,
 }
 
 impl_draw!(Circle);
@@ -531,9 +517,7 @@ impl SetAttributes for Circle {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,
                 expanded_name!("", "cy") => self.cy = attr.parse(value)?,
-                expanded_name!("", "r") => {
-                    self.r = attr.parse_and_validate(value, Length::<Both>::check_nonnegative)?
-                }
+                expanded_name!("", "r") => self.r = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -558,8 +542,8 @@ impl BasicShape for Circle {
 pub struct Ellipse {
     cx: Length<Horizontal>,
     cy: Length<Vertical>,
-    rx: Length<Horizontal>,
-    ry: Length<Vertical>,
+    rx: ULength<Horizontal>,
+    ry: ULength<Vertical>,
 }
 
 impl_draw!(Ellipse);
@@ -570,14 +554,8 @@ impl SetAttributes for Ellipse {
             match attr.expanded() {
                 expanded_name!("", "cx") => self.cx = attr.parse(value)?,
                 expanded_name!("", "cy") => self.cy = attr.parse(value)?,
-                expanded_name!("", "rx") => {
-                    self.rx =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
-                }
-                expanded_name!("", "ry") => {
-                    self.ry =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
-                }
+                expanded_name!("", "rx") => self.rx = attr.parse(value)?,
+                expanded_name!("", "ry") => self.ry = attr.parse(value)?,
                 _ => (),
             }
         }

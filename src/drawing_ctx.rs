@@ -42,7 +42,7 @@ use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
-/// Holds values that are required to normalize `Length` values to a current viewport.
+/// Holds values that are required to normalize `CssLength` values to a current viewport.
 ///
 /// This struct is created by calling `DrawingCtx::push_view_box()` or
 /// `DrawingCtx::get_view_params()`.
@@ -371,7 +371,7 @@ impl DrawingCtx {
 
     /// Pushes a viewport size for normalizing `Length` values.
     ///
-    /// You should pass the returned `ViewParams` to all subsequent `Length.normalize()`
+    /// You should pass the returned `ViewParams` to all subsequent `CssLength.normalize()`
     /// calls that correspond to this viewport.
     ///
     /// The viewport will stay in place, and will be the one returned by

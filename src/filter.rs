@@ -20,8 +20,8 @@ use crate::rect::Rect;
 pub struct Filter {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    width: Length<Horizontal>,
-    height: Length<Vertical>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
     filterunits: CoordUnits,
     primitiveunits: CoordUnits,
 }
@@ -32,8 +32,8 @@ impl Default for Filter {
         Self {
             x: Length::<Horizontal>::parse_str("-10%").unwrap(),
             y: Length::<Vertical>::parse_str("-10%").unwrap(),
-            width: Length::<Horizontal>::parse_str("120%").unwrap(),
-            height: Length::<Vertical>::parse_str("120%").unwrap(),
+            width: ULength::<Horizontal>::parse_str("120%").unwrap(),
+            height: ULength::<Vertical>::parse_str("120%").unwrap(),
             filterunits: CoordUnits::ObjectBoundingBox,
             primitiveunits: CoordUnits::UserSpaceOnUse,
         }
@@ -86,56 +86,22 @@ impl SetAttributes for Filter {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         let no_units_allowed = self.filterunits == CoordUnits::ObjectBoundingBox;
 
-        let check_units_horizontal = |length: Length<Horizontal>| {
-            if !no_units_allowed {
-                return Ok(length);
-            }
-
-            match length.unit {
-                LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::parse_error(
-                    "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
-                )),
-            }
-        };
-
-        let check_units_vertical = |length: Length<Vertical>| {
-            if !no_units_allowed {
-                return Ok(length);
-            }
-
-            match length.unit {
-                LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(ValueErrorKind::parse_error(
-                    "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
-                )),
-            }
-        };
-
-        let check_units_horizontal_and_ensure_nonnegative = |length: Length<Horizontal>| {
-            check_units_horizontal(length).and_then(Length::<Horizontal>::check_nonnegative)
-        };
-
-        let check_units_vertical_and_ensure_nonnegative = |length: Length<Vertical>| {
-            check_units_vertical(length).and_then(Length::<Vertical>::check_nonnegative)
-        };
-
         // Parse the rest of the attributes.
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => {
-                    self.x = attr.parse_and_validate(value, check_units_horizontal)?
+                    self.x = attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
                 }
                 expanded_name!("", "y") => {
-                    self.y = attr.parse_and_validate(value, check_units_vertical)?
+                    self.y = attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
                 }
                 expanded_name!("", "width") => {
-                    self.width = attr
-                        .parse_and_validate(value, check_units_horizontal_and_ensure_nonnegative)?
+                    self.width =
+                        attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
                 }
                 expanded_name!("", "height") => {
                     self.height =
-                        attr.parse_and_validate(value, check_units_vertical_and_ensure_nonnegative)?
+                        attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
                 }
                 expanded_name!("", "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
                 _ => (),
@@ -143,6 +109,22 @@ impl SetAttributes for Filter {
         }
 
         Ok(())
+    }
+}
+
+fn check_units<N: Normalize, V: Validate>(
+    length: CssLength<N, V>,
+    no_units_allowed: bool,
+) -> Result<CssLength<N, V>, ValueErrorKind> {
+    if !no_units_allowed {
+        return Ok(length);
+    }
+
+    match length.unit {
+        LengthUnit::Px | LengthUnit::Percent => Ok(length),
+        _ => Err(ValueErrorKind::parse_error(
+            "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
+        )),
     }
 }
 

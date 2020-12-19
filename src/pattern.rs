@@ -36,8 +36,8 @@ struct Common {
     transform: Option<Transform>,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
-    width: Option<Length<Horizontal>>,
-    height: Option<Length<Vertical>>,
+    width: Option<ULength<Horizontal>>,
+    height: Option<ULength<Vertical>>,
 }
 
 /// State used during the pattern resolution process
@@ -96,8 +96,8 @@ pub struct ResolvedPattern {
     transform: Transform,
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    width: Length<Horizontal>,
-    height: Length<Vertical>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
 
     // Link to the node whose children are the pattern's resolved children.
     children: Children,
@@ -146,15 +146,8 @@ impl SetAttributes for Pattern {
                 }
                 expanded_name!("", "x") => self.common.x = Some(attr.parse(value)?),
                 expanded_name!("", "y") => self.common.y = Some(attr.parse(value)?),
-                expanded_name!("", "width") => {
-                    self.common.width = Some(
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
-                    )
-                }
-                expanded_name!("", "height") => {
-                    self.common.height =
-                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
-                }
+                expanded_name!("", "width") => self.common.width = Some(attr.parse(value)?),
+                expanded_name!("", "height") => self.common.height = Some(attr.parse(value)?),
                 _ => (),
             }
         }

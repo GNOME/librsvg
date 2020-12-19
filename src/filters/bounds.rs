@@ -21,8 +21,8 @@ pub struct BoundsBuilder<'a> {
     /// Filter primitive properties.
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
-    width: Option<Length<Horizontal>>,
-    height: Option<Length<Vertical>>,
+    width: Option<ULength<Horizontal>>,
+    height: Option<ULength<Vertical>>,
 }
 
 impl<'a> BoundsBuilder<'a> {
@@ -32,8 +32,8 @@ impl<'a> BoundsBuilder<'a> {
         ctx: &'a FilterContext,
         x: Option<Length<Horizontal>>,
         y: Option<Length<Vertical>>,
-        width: Option<Length<Horizontal>>,
-        height: Option<Length<Vertical>>,
+        width: Option<ULength<Horizontal>>,
+        height: Option<ULength<Vertical>>,
     ) -> Self {
         Self {
             ctx,
