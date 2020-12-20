@@ -421,8 +421,8 @@ impl Chars {
 pub struct Text {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    dx: Option<Length<Horizontal>>,
-    dy: Option<Length<Vertical>>,
+    dx: Length<Horizontal>,
+    dy: Length<Vertical>,
 }
 
 impl Text {
@@ -442,8 +442,8 @@ impl Text {
 
         chunks.push(Chunk::new(&values, Some(x), Some(y)));
 
-        let dx = self.dx.map_or(0.0, |l| l.normalize(&values, &params));
-        let dy = self.dy.map_or(0.0, |l| l.normalize(&values, &params));
+        let dx = self.dx.normalize(&values, &params);
+        let dy = self.dy.normalize(&values, &params);
 
         children_to_chunks(
             &mut chunks,
@@ -596,8 +596,8 @@ impl Draw for TRef {}
 pub struct TSpan {
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
-    dx: Option<Length<Horizontal>>,
-    dy: Option<Length<Vertical>>,
+    dx: Length<Horizontal>,
+    dy: Length<Vertical>,
 }
 
 impl TSpan {
@@ -618,8 +618,8 @@ impl TSpan {
         let x = self.x.map(|l| l.normalize(&values, &params));
         let y = self.y.map(|l| l.normalize(&values, &params));
 
-        let span_dx = dx + self.dx.map_or(0.0, |l| l.normalize(&values, &params));
-        let span_dy = dy + self.dy.map_or(0.0, |l| l.normalize(&values, &params));
+        let span_dx = dx + self.dx.normalize(&values, &params);
+        let span_dy = dy + self.dy.normalize(&values, &params);
 
         if x.is_some() || y.is_some() {
             chunks.push(Chunk::new(values, x, y));
