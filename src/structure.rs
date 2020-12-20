@@ -241,35 +241,34 @@ impl Draw for Svg {
     }
 }
 
-#[derive(Default)]
 pub struct Use {
     link: Option<NodeId>,
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    width: Option<ULength<Horizontal>>,
-    height: Option<ULength<Vertical>>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
 }
 
 impl Use {
     pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         let x = self.x.normalize(values, &params);
         let y = self.y.normalize(values, &params);
-
-        // If attributes ‘width’ and/or ‘height’ are not specified,
-        // [...] use values of '100%' for these attributes.
-        // From https://www.w3.org/TR/SVG/struct.html#UseElement in
-        // "If the ‘use’ element references a ‘symbol’ element"
-
-        let w = self
-            .width
-            .unwrap_or_else(|| ULength::<Horizontal>::parse_str("100%").unwrap())
-            .normalize(values, &params);
-        let h = self
-            .height
-            .unwrap_or_else(|| ULength::<Vertical>::parse_str("100%").unwrap())
-            .normalize(values, &params);
+        let w = self.width.normalize(values, &params);
+        let h = self.height.normalize(values, &params);
 
         Rect::new(x, y, x + w, y + h)
+    }
+}
+
+impl Default for Use {
+    fn default() -> Use {
+        Use {
+            link: None,
+            x: Default::default(),
+            y: Default::default(),
+            width: ULength::<Horizontal>::parse_str("100%").unwrap(),
+            height: ULength::<Vertical>::parse_str("100%").unwrap(),
+        }
     }
 }
 
@@ -303,7 +302,11 @@ impl Draw for Use {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, self.link.as_ref(), clipping)
+        if let Some(link) = self.link.as_ref() {
+            draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, link, clipping)
+        } else {
+            Ok(draw_ctx.empty_bbox())
+        }
     }
 }
 

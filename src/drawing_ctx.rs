@@ -1609,7 +1609,7 @@ impl DrawingCtx {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        link: Option<&NodeId>,
+        link: &NodeId,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         // <use> is an element that is used directly, unlike
@@ -1630,11 +1630,7 @@ impl DrawingCtx {
             _ => unreachable!(),
         };
 
-        if link.is_none() {
-            return Ok(self.empty_bbox());
-        }
-
-        let acquired = match acquired_nodes.acquire(link.unwrap()) {
+        let acquired = match acquired_nodes.acquire(link) {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(node)) => {
