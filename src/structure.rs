@@ -210,11 +210,11 @@ impl SetAttributes for Svg {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
-                expanded_name!("", "y") => self.y = Some(attr.parse(value)?),
-                expanded_name!("", "width") => self.width = Some(attr.parse(value)?),
-                expanded_name!("", "height") => self.height = Some(attr.parse(value)?),
-                expanded_name!("", "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -284,8 +284,8 @@ impl SetAttributes for Use {
                 ),
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value).map(Some)?,
-                expanded_name!("", "height") => self.height = attr.parse(value).map(Some)?,
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -330,7 +330,7 @@ impl SetAttributes for Symbol {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!("", "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
                 _ => (),
             }
         }

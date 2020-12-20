@@ -220,7 +220,7 @@ impl SetAttributes for FeSpotLight {
                 }
 
                 expanded_name!("", "limitingConeAngle") => {
-                    self.limiting_cone_angle = Some(attr.parse(value)?)
+                    self.limiting_cone_angle = attr.parse(value)?
                 }
 
                 _ => (),

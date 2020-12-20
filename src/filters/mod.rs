@@ -180,11 +180,11 @@ impl SetAttributes for Primitive {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value).map(Some)?,
-                expanded_name!("", "y") => self.y = attr.parse(value).map(Some)?,
-                expanded_name!("", "width") => self.width = attr.parse(value).map(Some)?,
-                expanded_name!("", "height") => self.height = attr.parse(value).map(Some)?,
-                expanded_name!("", "result") => self.result = attr.parse(value).map(Some)?,
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
+                expanded_name!("", "result") => self.result = attr.parse(value)?,
                 _ => (),
             }
         }

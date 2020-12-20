@@ -126,16 +126,16 @@ impl SetAttributes for Pattern {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "patternUnits") => self.common.units = Some(attr.parse(value)?),
+                expanded_name!("", "patternUnits") => self.common.units = attr.parse(value)?,
                 expanded_name!("", "patternContentUnits") => {
-                    self.common.content_units = Some(attr.parse(value)?)
+                    self.common.content_units = attr.parse(value)?
                 }
-                expanded_name!("", "viewBox") => self.common.vbox = Some(Some(attr.parse(value)?)),
+                expanded_name!("", "viewBox") => self.common.vbox = attr.parse(value)?,
                 expanded_name!("", "preserveAspectRatio") => {
-                    self.common.preserve_aspect_ratio = Some(attr.parse(value)?)
+                    self.common.preserve_aspect_ratio = attr.parse(value)?
                 }
                 expanded_name!("", "patternTransform") => {
-                    self.common.transform = Some(attr.parse(value)?)
+                    self.common.transform = attr.parse(value)?
                 }
                 ref a if is_href(a) => {
                     set_href(
@@ -144,10 +144,10 @@ impl SetAttributes for Pattern {
                         NodeId::parse(value).attribute(attr.clone())?,
                     );
                 }
-                expanded_name!("", "x") => self.common.x = Some(attr.parse(value)?),
-                expanded_name!("", "y") => self.common.y = Some(attr.parse(value)?),
-                expanded_name!("", "width") => self.common.width = Some(attr.parse(value)?),
-                expanded_name!("", "height") => self.common.height = Some(attr.parse(value)?),
+                expanded_name!("", "x") => self.common.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.common.y = attr.parse(value)?,
+                expanded_name!("", "width") => self.common.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.common.height = attr.parse(value)?,
                 _ => (),
             }
         }

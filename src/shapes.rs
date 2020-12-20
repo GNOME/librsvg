@@ -319,8 +319,8 @@ impl SetAttributes for Rect {
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
                 expanded_name!("", "width") => self.width = attr.parse(value)?,
                 expanded_name!("", "height") => self.height = attr.parse(value)?,
-                expanded_name!("", "rx") => self.rx = attr.parse(value).map(Some)?,
-                expanded_name!("", "ry") => self.ry = attr.parse(value).map(Some)?,
+                expanded_name!("", "rx") => self.rx = attr.parse(value)?,
+                expanded_name!("", "ry") => self.ry = attr.parse(value)?,
                 _ => (),
             }
         }

@@ -58,9 +58,7 @@ impl SetAttributes for FeBlend {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "in2") => {
-                    self.in2 = Some(attr.parse(value)?);
-                }
+                expanded_name!("", "in2") => self.in2 = attr.parse(value)?,
                 expanded_name!("", "mode") => self.mode = attr.parse(value)?,
                 _ => (),
             }

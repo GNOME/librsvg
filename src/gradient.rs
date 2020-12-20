@@ -544,11 +544,9 @@ impl SetAttributes for Common {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "gradientUnits") => self.units = Some(attr.parse(value)?),
-                expanded_name!("", "gradientTransform") => {
-                    self.transform = Some(attr.parse(value)?)
-                }
-                expanded_name!("", "spreadMethod") => self.spread = Some(attr.parse(value)?),
+                expanded_name!("", "gradientUnits") => self.units = attr.parse(value)?,
+                expanded_name!("", "gradientTransform") => self.transform = attr.parse(value)?,
+                expanded_name!("", "spreadMethod") => self.spread = attr.parse(value)?,
                 ref a if is_href(a) => {
                     set_href(
                         a,
@@ -570,10 +568,10 @@ impl SetAttributes for LinearGradient {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x1") => self.x1 = Some(attr.parse(value)?),
-                expanded_name!("", "y1") => self.y1 = Some(attr.parse(value)?),
-                expanded_name!("", "x2") => self.x2 = Some(attr.parse(value)?),
-                expanded_name!("", "y2") => self.y2 = Some(attr.parse(value)?),
+                expanded_name!("", "x1") => self.x1 = attr.parse(value)?,
+                expanded_name!("", "y1") => self.y1 = attr.parse(value)?,
+                expanded_name!("", "x2") => self.x2 = attr.parse(value)?,
+                expanded_name!("", "y2") => self.y2 = attr.parse(value)?,
 
                 _ => (),
             }
@@ -673,14 +671,14 @@ impl SetAttributes for RadialGradient {
             let attr_expanded = attr.expanded();
 
             if attr_expanded == expanded_name_fr {
-                self.fr = Some(attr.parse(value)?);
+                self.fr = attr.parse(value)?;
             } else {
                 match attr_expanded {
-                    expanded_name!("", "cx") => self.cx = Some(attr.parse(value)?),
-                    expanded_name!("", "cy") => self.cy = Some(attr.parse(value)?),
-                    expanded_name!("", "r") => self.r = Some(attr.parse(value)?),
-                    expanded_name!("", "fx") => self.fx = Some(attr.parse(value)?),
-                    expanded_name!("", "fy") => self.fy = Some(attr.parse(value)?),
+                    expanded_name!("", "cx") => self.cx = attr.parse(value)?,
+                    expanded_name!("", "cy") => self.cy = attr.parse(value)?,
+                    expanded_name!("", "r") => self.r = attr.parse(value)?,
+                    expanded_name!("", "fx") => self.fx = attr.parse(value)?,
+                    expanded_name!("", "fy") => self.fy = attr.parse(value)?,
 
                     _ => (),
                 }

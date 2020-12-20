@@ -465,8 +465,8 @@ impl SetAttributes for Text {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "dx") => self.dx = attr.parse(value).map(Some)?,
-                expanded_name!("", "dy") => self.dy = attr.parse(value).map(Some)?,
+                expanded_name!("", "dx") => self.dx = attr.parse(value)?,
+                expanded_name!("", "dy") => self.dy = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -642,10 +642,10 @@ impl SetAttributes for TSpan {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value).map(Some)?,
-                expanded_name!("", "y") => self.y = attr.parse(value).map(Some)?,
-                expanded_name!("", "dx") => self.dx = attr.parse(value).map(Some)?,
-                expanded_name!("", "dy") => self.dy = attr.parse(value).map(Some)?,
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "dx") => self.dx = attr.parse(value)?,
+                expanded_name!("", "dy") => self.dy = attr.parse(value)?,
                 _ => (),
             }
         }
