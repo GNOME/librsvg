@@ -9,7 +9,7 @@ use crate::parsers::{optional_comma, Parse};
 #[derive(Debug, PartialEq, Clone)]
 pub enum Dasharray {
     None,
-    Array(Vec<Length<Both>>),
+    Array(Vec<ULength<Both>>),
 }
 
 impl Default for Dasharray {
@@ -30,11 +30,7 @@ impl Parse for Dasharray {
         let mut dasharray = Vec::new();
 
         loop {
-            let loc = parser.current_source_location();
-
-            let d = Length::<Both>::parse(parser)?
-                .check_nonnegative()
-                .map_err(|e| loc.new_custom_error(e))?;
+            let d = ULength::<Both>::parse(parser)?;
             dasharray.push(d);
 
             if parser.is_exhausted() {
@@ -55,7 +51,7 @@ mod tests {
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
-        let length_parse = |s| Length::<Both>::parse_str(s).unwrap();
+        let length_parse = |s| ULength::<Both>::parse_str(s).unwrap();
 
         let expected = Dasharray::Array(vec![
             length_parse("1"),

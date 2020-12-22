@@ -73,8 +73,8 @@ pub struct Marker {
     units: MarkerUnits,
     ref_x: Length<Horizontal>,
     ref_y: Length<Vertical>,
-    width: Length<Horizontal>,
-    height: Length<Vertical>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
     orient: MarkerOrient,
     aspect: AspectRatio,
     vbox: Option<ViewBox>,
@@ -87,8 +87,8 @@ impl Default for Marker {
             ref_x: Default::default(),
             ref_y: Default::default(),
             // the following two are per the spec
-            width: Length::<Horizontal>::parse_str("3").unwrap(),
-            height: Length::<Vertical>::parse_str("3").unwrap(),
+            width: ULength::<Horizontal>::parse_str("3").unwrap(),
+            height: ULength::<Vertical>::parse_str("3").unwrap(),
             orient: MarkerOrient::default(),
             aspect: AspectRatio::default(),
             vbox: None,
@@ -181,14 +181,8 @@ impl SetAttributes for Marker {
                 expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,
                 expanded_name!("", "refX") => self.ref_x = attr.parse(value)?,
                 expanded_name!("", "refY") => self.ref_y = attr.parse(value)?,
-                expanded_name!("", "markerWidth") => {
-                    self.width =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
-                }
-                expanded_name!("", "markerHeight") => {
-                    self.height =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
-                }
+                expanded_name!("", "markerWidth") => self.width = attr.parse(value)?,
+                expanded_name!("", "markerHeight") => self.height = attr.parse(value)?,
                 expanded_name!("", "orient") => self.orient = attr.parse(value)?,
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
                 expanded_name!("", "viewBox") => self.vbox = Some(attr.parse(value)?),

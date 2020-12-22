@@ -19,8 +19,8 @@ use crate::rect::Rect;
 pub struct Image {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    width: Length<Horizontal>,
-    height: Length<Vertical>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
     aspect: AspectRatio,
     href: Option<String>,
 }
@@ -31,12 +31,8 @@ impl SetAttributes for Image {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => {
-                    self.width = attr.parse_and_validate(value, Length::check_nonnegative)?
-                }
-                expanded_name!("", "height") => {
-                    self.height = attr.parse_and_validate(value, Length::check_nonnegative)?
-                }
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions

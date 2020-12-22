@@ -89,10 +89,10 @@ impl Draw for Switch {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IntrinsicDimensions {
     /// Contents of the `width` attribute.
-    pub width: Option<Length<Horizontal>>,
+    pub width: Option<ULength<Horizontal>>,
 
     /// Contents of the `height` attribute.
-    pub height: Option<Length<Vertical>>,
+    pub height: Option<ULength<Vertical>>,
 
     /// Contents of the `viewBox` attribute.
     pub vbox: Option<ViewBox>,
@@ -103,16 +103,16 @@ pub struct Svg {
     preserve_aspect_ratio: AspectRatio,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
-    w: Option<Length<Horizontal>>,
-    h: Option<Length<Vertical>>,
+    width: Option<ULength<Horizontal>>,
+    height: Option<ULength<Vertical>>,
     vbox: Option<ViewBox>,
 }
 
 impl Svg {
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
         IntrinsicDimensions {
-            width: self.w,
-            height: self.h,
+            width: self.width,
+            height: self.height,
             vbox: self.vbox,
         }
     }
@@ -129,14 +129,14 @@ impl Svg {
         (x, y)
     }
 
-    fn get_unnormalized_size(&self) -> (Length<Horizontal>, Length<Vertical>) {
+    fn get_unnormalized_size(&self) -> (ULength<Horizontal>, ULength<Vertical>) {
         // these defaults are per the spec
         let w = self
-            .w
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap());
+            .width
+            .unwrap_or_else(|| ULength::<Horizontal>::parse_str("100%").unwrap());
         let h = self
-            .h
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap());
+            .height
+            .unwrap_or_else(|| ULength::<Vertical>::parse_str("100%").unwrap());
 
         (w, h)
     }
@@ -210,18 +210,11 @@ impl SetAttributes for Svg {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
-                expanded_name!("", "y") => self.y = Some(attr.parse(value)?),
-                expanded_name!("", "width") => {
-                    self.w = Some(
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
-                    )
-                }
-                expanded_name!("", "height") => {
-                    self.h =
-                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
-                }
-                expanded_name!("", "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -248,35 +241,34 @@ impl Draw for Svg {
     }
 }
 
-#[derive(Default)]
 pub struct Use {
     link: Option<NodeId>,
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    w: Option<Length<Horizontal>>,
-    h: Option<Length<Vertical>>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
 }
 
 impl Use {
     pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
         let x = self.x.normalize(values, &params);
         let y = self.y.normalize(values, &params);
-
-        // If attributes ‘width’ and/or ‘height’ are not specified,
-        // [...] use values of '100%' for these attributes.
-        // From https://www.w3.org/TR/SVG/struct.html#UseElement in
-        // "If the ‘use’ element references a ‘symbol’ element"
-
-        let w = self
-            .w
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("100%").unwrap())
-            .normalize(values, &params);
-        let h = self
-            .h
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("100%").unwrap())
-            .normalize(values, &params);
+        let w = self.width.normalize(values, &params);
+        let h = self.height.normalize(values, &params);
 
         Rect::new(x, y, x + w, y + h)
+    }
+}
+
+impl Default for Use {
+    fn default() -> Use {
+        Use {
+            link: None,
+            x: Default::default(),
+            y: Default::default(),
+            width: ULength::<Horizontal>::parse_str("100%").unwrap(),
+            height: ULength::<Vertical>::parse_str("100%").unwrap(),
+        }
     }
 }
 
@@ -289,19 +281,10 @@ impl SetAttributes for Use {
                     &mut self.link,
                     NodeId::parse(value).attribute(attr.clone())?,
                 ),
-
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => {
-                    self.w = attr
-                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
-                        .map(Some)?
-                }
-                expanded_name!("", "height") => {
-                    self.h = attr
-                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
-                        .map(Some)?
-                }
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -319,7 +302,11 @@ impl Draw for Use {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, self.link.as_ref(), clipping)
+        if let Some(link) = self.link.as_ref() {
+            draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, link, clipping)
+        } else {
+            Ok(draw_ctx.empty_bbox())
+        }
     }
 }
 
@@ -346,7 +333,7 @@ impl SetAttributes for Symbol {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!("", "viewBox") => self.vbox = attr.parse(value).map(Some)?,
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -392,8 +379,8 @@ coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
 pub struct Mask {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    width: Length<Horizontal>,
-    height: Length<Vertical>,
+    width: ULength<Horizontal>,
+    height: ULength<Vertical>,
 
     units: MaskUnits,
     content_units: MaskContentUnits,
@@ -405,8 +392,8 @@ impl Default for Mask {
             // these values are per the spec
             x: Length::<Horizontal>::parse_str("-10%").unwrap(),
             y: Length::<Vertical>::parse_str("-10%").unwrap(),
-            width: Length::<Horizontal>::parse_str("120%").unwrap(),
-            height: Length::<Vertical>::parse_str("120%").unwrap(),
+            width: ULength::<Horizontal>::parse_str("120%").unwrap(),
+            height: ULength::<Vertical>::parse_str("120%").unwrap(),
 
             units: MaskUnits::default(),
             content_units: MaskContentUnits::default(),
@@ -439,14 +426,8 @@ impl SetAttributes for Mask {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => {
-                    self.width =
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?
-                }
-                expanded_name!("", "height") => {
-                    self.height =
-                        attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
-                }
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
                 expanded_name!("", "maskUnits") => self.units = attr.parse(value)?,
                 expanded_name!("", "maskContentUnits") => self.content_units = attr.parse(value)?,
                 _ => (),

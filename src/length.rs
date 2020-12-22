@@ -1,51 +1,64 @@
 //! CSS length values.
 //!
-//! [`Length`] is the struct librsvg uses to represent CSS lengths.  See its documentation for
-//! an example of how to construct it.
+//! [`CssLength`] is the struct librsvg uses to represent CSS lengths.
+//! See its documentation for examples of how to construct it.
 //!
-//! Length values need to know whether they will be normalized with respect to the width,
-//! height, or both dimensions of the current viewport.  So, a `Length` has a type parameter
-//! [`Normalize`]; the full type is `Length<N: Normalize>`.  We provide [`Horizontal`],
+//! `CssLength` values need to know whether they will be normalized with respect to the width,
+//! height, or both dimensions of the current viewport.  `CssLength` values can be signed or
+//! unsigned.  So, a `CssLength` has two type parameters, [`Normalize`] and [`Validate`];
+//! the full type is `CssLength<N: Normalize, V: Validate>`.  We provide [`Horizontal`],
 //! [`Vertical`], and [`Both`] implementations of [`Normalize`]; these let length values know
-//! how to normalize themselves with respect to the current viewport.
+//! how to normalize themselves with respect to the current viewport.  We also provide
+//! [`Signed`] and [`Unsigned`] implementations of [`Validate`].
+//!
+//! For ease of use, we define two type aliases [`Length`] and [`ULength`] corresponding to
+//! signed and unsigned.
 //!
 //! For example, the implementation of [`Circle`] defines this structure with fields for the
 //! `(center_x, center_y, radius)`:
 //!
 //! ```
-//! # use librsvg::doctest_only::{Length,Horizontal,Vertical,Both};
+//! # use librsvg::doctest_only::{Length,ULength,Horizontal,Vertical,Both};
 //! pub struct Circle {
 //!     cx: Length<Horizontal>,
 //!     cy: Length<Vertical>,
-//!     r: Length<Both>,
+//!     r: ULength<Both>,
 //! }
 //! ```
 //!
 //! This means that:
 //!
-//! * `cx` and `cy` define the center of the circle, and they will be normalized with respect
-//! to the current viewport's width and height, respectively.  If the SVG document specified
-//! `<circle cx="50%" cy="30%">`, the values would be normalized to be at 50% of the the
-//! viewport's width, and 30% of the viewport's height.
+//! * `cx` and `cy` define the center of the circle, they can be positive or negative, and
+//! they will be normalized with respect to the current viewport's width and height,
+//! respectively.  If the SVG document specified `<circle cx="50%" cy="30%">`, the values
+//! would be normalized to be at 50% of the the viewport's width, and 30% of the viewport's
+//! height.
 //!
-//! * `r` needs to be resolved against the [normalized diagonal][diag] of the current viewport.
+//! * `r` is non-negative and needs to be resolved against the [normalized diagonal][diag]
+//! of the current viewport.
 //!
-//! The `N` type parameter of `Length<N>` is enough to know how to normalize a length value;
-//! the [`normalize`] method will handle it automatically.
+//! The `N` type parameter of `CssLength<N, I>` is enough to know how to normalize a length
+//! value; the [`normalize`] method will handle it automatically.
 //!
 //! [`Circle`]: ../shapes/struct.Circle.html
-//! [`Length`]: struct.Length.html
+//! [`CssLength`]: struct.CssLength.html
+//! [`Length`]: type.Length.html
+//! [`ULength`]: type.ULength.html
 //! [`Horizontal`]: struct.Horizontal.html
 //! [`Vertical`]: struct.Vertical.html
 //! [`Both`]: struct.Both.html
 //! [`Normalize`]: trait.Normalize.html
+//! [`Signed`]: struct.Signed.html
+//! [`Unsigned`]: struct.Unsigned.html
+//! [`Validate`]: trait.Validate.html
 //! [diag]: https://www.w3.org/TR/SVG/coords.html#Units
-//! [`normalize`]: struct.Length.html#method.normalize
+//! [`normalize`]: struct.CssLength.html#method.normalize
 
 use cssparser::{Parser, Token};
 use std::f64::consts::*;
 use std::marker::PhantomData;
 
+use crate::dpi::Dpi;
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
@@ -116,28 +129,28 @@ impl RsvgLength {
     }
 }
 
-/// Used for the type parameter of `Length<N: Normalize>`.
+/// Used for the `N` type parameter of `CssLength<N: Normalize, V: Validate>`.
 pub trait Normalize {
     /// Computes an orientation-based scaling factor.
     ///
-    /// This is used in the [`Length.normalize`] method to resolve lengths with percentage
+    /// This is used in the [`CssLength.normalize`] method to resolve lengths with percentage
     /// units; they need to be resolved with respect to the width, height, or [normalized
     /// diagonal][diag] of the current viewport.
     ///
-    /// [`Length.normalize`]: struct.Length.html#method.normalize
+    /// [`CssLength.normalize`]: struct.CssLength.html#method.normalize
     /// [diag]: https://www.w3.org/TR/SVG/coords.html#Units
     fn normalize(x: f64, y: f64) -> f64;
 }
 
-/// Allows declaring `Length<Horizontal>`.
+/// Allows declaring `CssLength<Horizontal>`.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Horizontal;
 
-/// Allows declaring `Length<Vertical>`.
+/// Allows declaring `CssLength<Vertical>`.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Vertical;
 
-/// Allows declaring `Length<Both>`.
+/// Allows declaring `CssLength<Both>`.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Both;
 
@@ -162,19 +175,51 @@ impl Normalize for Both {
     }
 }
 
+/// Used for the `V` type parameter of `CssLength<N: Normalize, V: Validate>`.
+pub trait Validate {
+    /// Checks if the specified value is acceptable
+    ///
+    /// This is used when parsing a length value
+    fn validate(v: f64) -> Result<f64, ValueErrorKind> {
+        Ok(v)
+    }
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Signed;
+
+impl Validate for Signed {}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Unsigned;
+
+impl Validate for Unsigned {
+    fn validate(v: f64) -> Result<f64, ValueErrorKind> {
+        if v >= 0.0 {
+            Ok(v)
+        } else {
+            Err(ValueErrorKind::Value(
+                "value must be non-negative".to_string(),
+            ))
+        }
+    }
+}
+
 /// A CSS length value.
 ///
 /// This is equivalent to [CSS lengths].
 ///
 /// [CSS lengths]: https://www.w3.org/TR/CSS22/syndata.html#length-units
 ///
-/// `Length` implements the [`Parse`] trait, so it can be parsed out of a
+/// `CssLength` implements the [`Parse`] trait, so it can be parsed out of a
 /// [`cssparser::Parser`].
+///
+/// This type will be normally used through the type aliases [`Length`] and [`ULength`]
 ///
 /// Examples of construction:
 ///
 /// ```
-/// # use librsvg::doctest_only::{Length,LengthUnit,Horizontal,Vertical,Both};
+/// # use librsvg::doctest_only::{Length,ULength,LengthUnit,Horizontal,Vertical,Both};
 /// # use librsvg::doctest_only::Parse;
 /// // Explicit type
 /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
@@ -183,12 +228,14 @@ impl Normalize for Both {
 /// let height = Length::<Vertical>::new(42.0, LengthUnit::Cm);
 ///
 /// // Parsed
-/// let radius = Length::<Both>::parse_str("5px").unwrap();
+/// let radius = ULength::<Both>::parse_str("5px").unwrap();
 /// ```
 ///
-/// During the rendering phase, a `Length` needs to be normalized into the current coordinate
-/// system's units with the [`normalize`] method.
+/// During the rendering phase, a `CssLength` needs to be normalized into the current
+/// coordinate system's units with the [`normalize`] method.
 ///
+/// [`Length`]: type.Length.html
+/// [`ULength`]: type.ULength.html
 /// [`Normalize`]: trait.Normalize.html
 /// [`Horizontal`]: struct.Horizontal.html
 /// [`Vertical`]: struct.Vertical.html
@@ -198,7 +245,7 @@ impl Normalize for Both {
 /// [`cssparser::Parser`]: https://docs.rs/cssparser/0.27.1/cssparser/struct.Parser.html
 /// [`Parse`]: ../parsers/trait.Parse.html
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub struct Length<N: Normalize> {
+pub struct CssLength<N: Normalize, V: Validate> {
     /// Numeric part of the length
     pub length: f64,
 
@@ -207,10 +254,13 @@ pub struct Length<N: Normalize> {
 
     /// Dummy; used internally for the type parameter `N`
     orientation: PhantomData<N>,
+
+    /// Dummy; used internally for the type parameter `V`
+    validation: PhantomData<V>,
 }
 
-impl<N: Normalize> From<Length<N>> for RsvgLength {
-    fn from(l: Length<N>) -> RsvgLength {
+impl<N: Normalize, V: Validate> From<CssLength<N, V>> for RsvgLength {
+    fn from(l: CssLength<N, V>) -> RsvgLength {
         RsvgLength {
             length: l.length,
             unit: l.unit,
@@ -218,9 +268,9 @@ impl<N: Normalize> From<Length<N>> for RsvgLength {
     }
 }
 
-impl<N: Normalize> Default for Length<N> {
+impl<N: Normalize, V: Validate> Default for CssLength<N, V> {
     fn default() -> Self {
-        Length::new(0.0, LengthUnit::Px)
+        CssLength::new(0.0, LengthUnit::Px)
     }
 }
 
@@ -229,8 +279,8 @@ const CM_PER_INCH: f64 = 2.54;
 const MM_PER_INCH: f64 = 25.4;
 const PICA_PER_INCH: f64 = 6.0;
 
-impl<N: Normalize> Parse for Length<N> {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Length<N>, ParseError<'i>> {
+impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<CssLength<N, V>, ParseError<'i>> {
         let l_value;
         let l_unit;
 
@@ -271,15 +321,18 @@ impl<N: Normalize> Parse for Length<N> {
 
         let l_value = f64::from(finite_f32(l_value).map_err(|e| parser.new_custom_error(e))?);
 
-        Ok(Length::new(l_value, l_unit))
+        <V as Validate>::validate(l_value)
+            .map_err(|e| parser.new_custom_error(e))
+            .map(|l_value| CssLength::new(l_value, l_unit))
     }
 }
 
-impl<N: Normalize> Length<N> {
-    /// Creates a Length.
+impl<N: Normalize, V: Validate> CssLength<N, V> {
+    /// Creates a CssLength.
     ///
-    /// The compiler needs to know the type parameter `N` which represents the length's
-    /// orientation.  You can specify it explicitly, or call the parametrized method:
+    /// The compiler needs to know the type parameters `N` and `V` which represents the
+    /// length's orientation and validation.
+    /// You can specify them explicitly, or call the parametrized method:
     ///
     /// ```
     /// # use librsvg::doctest_only::{Length,LengthUnit,Horizontal,Vertical};
@@ -289,42 +342,12 @@ impl<N: Normalize> Length<N> {
     /// // Inferred type
     /// let height = Length::<Vertical>::new(42.0, LengthUnit::Cm);
     /// ```
-    pub fn new(l: f64, unit: LengthUnit) -> Length<N> {
-        Length {
+    pub fn new(l: f64, unit: LengthUnit) -> CssLength<N, V> {
+        CssLength {
             length: l,
             unit,
             orientation: PhantomData,
-        }
-    }
-
-    /// Returns `Ok(self)` if the length is >= 0, or an error.
-    ///
-    /// This is usually used right after parsing a length value, as part of a validation step:
-    ///
-    /// ```
-    /// # use librsvg::doctest_only::{Length,Horizontal,LengthUnit};
-    /// # use librsvg::doctest_only::ElementError;
-    /// # use librsvg::doctest_only::ParseValue;
-    /// # use markup5ever::{QualName, Prefix, Namespace, LocalName};
-    /// # let attr = QualName::new(
-    /// #     Some(Prefix::from("")),
-    /// #     Namespace::from(""),
-    /// #     LocalName::from(""),
-    /// # );
-    /// let length: Length<Horizontal> = attr.parse_and_validate("0", Length::check_nonnegative)?;
-    /// assert_eq!(length, Length::new(0.0, LengthUnit::Px));
-    ///
-    /// let result: Result<Length<Horizontal>, ElementError> = attr.parse_and_validate("-2", Length::check_nonnegative);
-    /// assert!(result.is_err());
-    /// # Ok::<(), ElementError>(())
-    /// ```
-    pub fn check_nonnegative(self) -> Result<Self, ValueErrorKind> {
-        if self.length >= 0.0 {
-            Ok(self)
-        } else {
-            Err(ValueErrorKind::Value(
-                "value must be non-negative".to_string(),
-            ))
+            validation: PhantomData,
         }
     }
 
@@ -342,9 +365,9 @@ impl<N: Normalize> Length<N> {
                 self.length * <N as Normalize>::normalize(params.vbox.width(), params.vbox.height())
             }
 
-            LengthUnit::Em => self.length * font_size_from_values(values, params),
+            LengthUnit::Em => self.length * font_size_from_values(values, params.dpi),
 
-            LengthUnit::Ex => self.length * font_size_from_values(values, params) / 2.0,
+            LengthUnit::Ex => self.length * font_size_from_values(values, params.dpi) / 2.0,
 
             LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 
@@ -369,7 +392,7 @@ impl<N: Normalize> Length<N> {
     }
 }
 
-fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
+fn font_size_from_values(values: &ComputedValues, dpi: Dpi) -> f64 {
     let v = &values.font_size().value();
 
     match v.unit {
@@ -383,11 +406,11 @@ fn font_size_from_values(values: &ComputedValues, params: &ViewParams) -> f64 {
         LengthUnit::Ex => v.length * 12.0 / 2.0,
 
         // FontSize always is a Both, per properties.rs
-        LengthUnit::In => v.length * Both::normalize(params.dpi.x, params.dpi.y),
-        LengthUnit::Cm => v.length * Both::normalize(params.dpi.x, params.dpi.y) / CM_PER_INCH,
-        LengthUnit::Mm => v.length * Both::normalize(params.dpi.x, params.dpi.y) / MM_PER_INCH,
-        LengthUnit::Pt => v.length * Both::normalize(params.dpi.x, params.dpi.y) / POINTS_PER_INCH,
-        LengthUnit::Pc => v.length * Both::normalize(params.dpi.x, params.dpi.y) / PICA_PER_INCH,
+        LengthUnit::In => v.length * Both::normalize(dpi.x, dpi.y),
+        LengthUnit::Cm => v.length * Both::normalize(dpi.x, dpi.y) / CM_PER_INCH,
+        LengthUnit::Mm => v.length * Both::normalize(dpi.x, dpi.y) / MM_PER_INCH,
+        LengthUnit::Pt => v.length * Both::normalize(dpi.x, dpi.y) / POINTS_PER_INCH,
+        LengthUnit::Pc => v.length * Both::normalize(dpi.x, dpi.y) / PICA_PER_INCH,
     }
 }
 
@@ -399,11 +422,16 @@ fn viewport_percentage(x: f64, y: f64) -> f64 {
     (x * x + y * y).sqrt() / SQRT_2
 }
 
+/// Alias for `CssLength` types that can have negative values
+pub type Length<N> = CssLength<N, Signed>;
+
+/// Alias for `CssLength` types that are non negative
+pub type ULength<N> = CssLength<N, Unsigned>;
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::dpi::Dpi;
     use crate::float_eq_cairo::ApproxEqCairo;
 
     #[test]
@@ -472,6 +500,21 @@ mod tests {
     }
 
     #[test]
+    fn parses_unsigned() {
+        assert_eq!(
+            ULength::<Horizontal>::parse_str("42").unwrap(),
+            ULength::<Horizontal>::new(42.0, LengthUnit::Px)
+        );
+
+        assert_eq!(
+            ULength::<Both>::parse_str("0pt").unwrap(),
+            ULength::<Both>::new(0.0, LengthUnit::Pt)
+        );
+
+        assert!(ULength::<Horizontal>::parse_str("-42px").is_err());
+    }
+
+    #[test]
     fn empty_length_yields_error() {
         assert!(Length::<Both>::parse_str("").is_err());
     }
@@ -479,21 +522,6 @@ mod tests {
     #[test]
     fn invalid_unit_yields_error() {
         assert!(Length::<Both>::parse_str("8furlong").is_err());
-    }
-
-    #[test]
-    fn check_nonnegative_works() {
-        // and_then with anonymous function
-        assert!(Length::<Both>::parse_str("0")
-            .unwrap()
-            .check_nonnegative()
-            .is_ok());
-
-        // and_then with named function
-        assert!(Length::<Both>::parse_str("-10")
-            .unwrap()
-            .check_nonnegative()
-            .is_err());
     }
 
     #[test]

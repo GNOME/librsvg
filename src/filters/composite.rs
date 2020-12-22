@@ -56,7 +56,7 @@ impl SetAttributes for FeComposite {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "in2") => self.in2 = Some(attr.parse(value)?),
+                expanded_name!("", "in2") => self.in2 = attr.parse(value)?,
                 expanded_name!("", "operator") => self.operator = attr.parse(value)?,
                 expanded_name!("", "k1") => self.k1 = attr.parse(value)?,
                 expanded_name!("", "k2") => self.k2 = attr.parse(value)?,

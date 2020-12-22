@@ -78,6 +78,12 @@ impl<T: Parse> ParseValue<T> for QualName {
     }
 }
 
+impl<T: Parse> Parse for Option<T> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        T::parse(parser).map(Some)
+    }
+}
+
 impl Parse for f64 {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let loc = parser.current_source_location();

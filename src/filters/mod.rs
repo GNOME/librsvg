@@ -74,8 +74,8 @@ pub mod turbulence;
 struct Primitive {
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
-    width: Option<Length<Horizontal>>,
-    height: Option<Length<Vertical>>,
+    width: Option<ULength<Horizontal>>,
+    height: Option<ULength<Vertical>>,
     result: Option<CustomIdent>,
 }
 
@@ -149,44 +149,11 @@ impl Primitive {
             .unwrap_or(CoordUnits::UserSpaceOnUse);
 
         // With ObjectBoundingBox, only fractions and percents are allowed.
-        let no_units_allowed = primitiveunits == CoordUnits::ObjectBoundingBox;
-
-        let check_units_horizontal = |length: Length<Horizontal>| {
-            if !no_units_allowed {
-                return Ok(length);
-            }
-
-            match length.unit {
-                LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(FilterError::InvalidUnits),
-            }
-        };
-
-        let check_units_vertical = |length: Length<Vertical>| {
-            if !no_units_allowed {
-                return Ok(length);
-            }
-
-            match length.unit {
-                LengthUnit::Px | LengthUnit::Percent => Ok(length),
-                _ => Err(FilterError::InvalidUnits),
-            }
-        };
-
-        if let Some(x) = self.x {
-            check_units_horizontal(x)?;
-        }
-
-        if let Some(y) = self.y {
-            check_units_vertical(y)?;
-        }
-
-        if let Some(w) = self.width {
-            check_units_horizontal(w)?;
-        }
-
-        if let Some(h) = self.height {
-            check_units_vertical(h)?;
+        if primitiveunits == CoordUnits::ObjectBoundingBox {
+            check_units(self.x)?;
+            check_units(self.y)?;
+            check_units(self.width)?;
+            check_units(self.height)?;
         }
 
         Ok(BoundsBuilder::new(
@@ -199,22 +166,25 @@ impl Primitive {
     }
 }
 
+fn check_units<N: Normalize, V: Validate>(
+    length: Option<CssLength<N, V>>,
+) -> Result<(), FilterError> {
+    match length {
+        Some(l) if l.unit == LengthUnit::Px || l.unit == LengthUnit::Percent => Ok(()),
+        Some(_) => Err(FilterError::InvalidUnits),
+        None => Ok(()),
+    }
+}
+
 impl SetAttributes for Primitive {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = Some(attr.parse(value)?),
-                expanded_name!("", "y") => self.y = Some(attr.parse(value)?),
-                expanded_name!("", "width") => {
-                    self.width = Some(
-                        attr.parse_and_validate(value, Length::<Horizontal>::check_nonnegative)?,
-                    )
-                }
-                expanded_name!("", "height") => {
-                    self.height =
-                        Some(attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?)
-                }
-                expanded_name!("", "result") => self.result = Some(attr.parse(value)?),
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
+                expanded_name!("", "result") => self.result = attr.parse(value)?,
                 _ => (),
             }
         }
