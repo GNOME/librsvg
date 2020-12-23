@@ -93,13 +93,7 @@ impl SetAttributes for FeColorMatrix {
                         matrix
                     }
                     OperationType::Saturate => {
-                        let s: f64 = attr.parse_and_validate(value, |s| {
-                            if s < 0.0 || s > 1.0 {
-                                Err(ValueErrorKind::value_error("expected value from 0 to 1"))
-                            } else {
-                                Ok(s)
-                            }
-                        })?;
+                        let s: f64 = attr.parse(value)?;
 
                         Matrix5::new(
                             0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0.0, 0.0,
