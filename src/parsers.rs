@@ -157,6 +157,18 @@ impl Parse for i32 {
     }
 }
 
+impl Parse for u32 {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let n = parser.expect_integer()?;
+        if n >= 0 {
+            Ok(n as u32)
+        } else {
+            Err(loc.new_custom_error(ValueErrorKind::value_error("expected unsigned number")))
+        }
+    }
+}
+
 /// Parses a list of identifiers from a `cssparser::Parser`
 ///
 /// # Example
@@ -265,8 +277,12 @@ mod tests {
 
     #[test]
     fn parses_integer() {
+        assert_eq!(i32::parse_str("0").unwrap(), 0);
         assert_eq!(i32::parse_str("1").unwrap(), 1);
         assert_eq!(i32::parse_str("-1").unwrap(), -1);
+
+        assert_eq!(u32::parse_str("0").unwrap(), 0);
+        assert_eq!(u32::parse_str("1").unwrap(), 1);
     }
 
     #[test]
@@ -274,6 +290,11 @@ mod tests {
         assert!(i32::parse_str("").is_err());
         assert!(i32::parse_str("1x").is_err());
         assert!(i32::parse_str("1.5").is_err());
+
+        assert!(u32::parse_str("").is_err());
+        assert!(u32::parse_str("1x").is_err());
+        assert!(u32::parse_str("1.5").is_err());
+        assert!(u32::parse_str("-1").is_err());
     }
 
     #[test]

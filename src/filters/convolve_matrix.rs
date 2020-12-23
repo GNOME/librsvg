@@ -69,6 +69,8 @@ impl SetAttributes for FeConvolveMatrix {
                     self.divisor = Some(d);
                 }
                 expanded_name!("", "bias") => self.bias = attr.parse(value)?,
+                expanded_name!("", "targetX") => self.target_x = attr.parse(value)?,
+                expanded_name!("", "targetY") => self.target_y = attr.parse(value)?,
                 expanded_name!("", "edgeMode") => self.edge_mode = attr.parse(value)?,
                 expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
@@ -78,49 +80,6 @@ impl SetAttributes for FeConvolveMatrix {
 
                 _ => (),
             }
-        }
-
-        // target_x and target_y depend on order.
-        for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                expanded_name!("", "targetX") => {
-                    self.target_x = {
-                        let v = attr.parse_and_validate(value, |v: i32| {
-                            if v >= 0 && v < self.order.0 as i32 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "targetX must be greater or equal to zero and less than orderX",
-                                ))
-                            }
-                        })?;
-                        Some(v as u32)
-                    }
-                }
-                expanded_name!("", "targetY") => {
-                    self.target_y = {
-                        let v = attr.parse_and_validate(value, |v: i32| {
-                            if v >= 0 && v < self.order.1 as i32 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "targetY must be greater or equal to zero and less than orderY",
-                                ))
-                            }
-                        })?;
-                        Some(v as u32)
-                    }
-                }
-                _ => (),
-            }
-        }
-
-        // Default values for target_x and target_y.
-        if self.target_x.is_none() {
-            self.target_x = Some(self.order.0 / 2);
-        }
-        if self.target_y.is_none() {
-            self.target_y = Some(self.order.1 / 2);
         }
 
         // Finally, parse the kernel matrix.
@@ -189,6 +148,26 @@ impl FilterEffect for FeConvolveMatrix {
             .into_irect(draw_ctx);
         let original_bounds = bounds;
 
+        let target_x = match self.target_x {
+            Some(x) if x >= self.order.0 => {
+                return Err(FilterError::InvalidParameter(
+                    "targetX must be less than orderX".to_string(),
+                ))
+            }
+            Some(x) => x,
+            None => self.order.0 / 2,
+        };
+
+        let target_y = match self.target_y {
+            Some(y) if y >= self.order.1 => {
+                return Err(FilterError::InvalidParameter(
+                    "targetY must be less than orderY".to_string(),
+                ))
+            }
+            Some(y) => y,
+            None => self.order.1 / 2,
+        };
+
         let mut input_surface = if self.preserve_alpha {
             // preserve_alpha means we need to premultiply and unpremultiply the values.
             input.surface().unpremultiply(bounds)?
@@ -220,10 +199,10 @@ impl FilterEffect for FeConvolveMatrix {
             for (x, y, pixel) in Pixels::within(&input_surface, bounds) {
                 // Compute the convolution rectangle bounds.
                 let kernel_bounds = IRect::new(
-                    x as i32 - self.target_x.unwrap() as i32,
-                    y as i32 - self.target_y.unwrap() as i32,
-                    x as i32 - self.target_x.unwrap() as i32 + self.order.0 as i32,
-                    y as i32 - self.target_y.unwrap() as i32 + self.order.1 as i32,
+                    x as i32 - target_x as i32,
+                    y as i32 - target_y as i32,
+                    x as i32 - target_x as i32 + self.order.0 as i32,
+                    y as i32 - target_y as i32 + self.order.1 as i32,
                 );
 
                 // Do the convolution.
