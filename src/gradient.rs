@@ -63,6 +63,22 @@ impl Default for SpreadMethod {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct StopOffset(UnitInterval);
+
+impl Parse for StopOffset {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let l: Length<Both> = Parse::parse(parser)?;
+        match l.unit {
+            LengthUnit::Px | LengthUnit::Percent => Ok(StopOffset(UnitInterval::clamp(l.length))),
+            _ => Err(loc.new_custom_error(ValueErrorKind::value_error(
+                "stop offset must be in default or percent units",
+            ))),
+        }
+    }
+}
+
 /// Node for the <stop> element
 #[derive(Default)]
 pub struct Stop {
@@ -72,24 +88,13 @@ pub struct Stop {
      * they go into property_defs.rs */
 }
 
-fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind> {
-    match length.unit {
-        LengthUnit::Px | LengthUnit::Percent => Ok(length),
-        _ => Err(ValueErrorKind::Value(
-            "stop offset must be in default or percent units".to_string(),
-        )),
-    }
-}
-
 impl SetAttributes for Stop {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        let result = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "offset"))
-            .and_then(|(attr, value)| attr.parse_and_validate(value, validate_offset).ok())
-            .map(|l| UnitInterval::clamp(l.length));
-        if let Some(offset) = result {
-            self.offset = offset
+        for (attr, value) in attrs.iter() {
+            if let expanded_name!("", "offset") = attr.expanded() {
+                let StopOffset(o) = attr.parse(value)?;
+                self.offset = o;
+            }
         }
 
         Ok(())
