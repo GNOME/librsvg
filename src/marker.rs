@@ -185,7 +185,7 @@ impl SetAttributes for Marker {
                 expanded_name!("", "markerHeight") => self.height = attr.parse(value)?,
                 expanded_name!("", "orient") => self.orient = attr.parse(value)?,
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
-                expanded_name!("", "viewBox") => self.vbox = Some(attr.parse(value)?),
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
                 _ => (),
             }
         }
