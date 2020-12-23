@@ -61,8 +61,8 @@ impl SetAttributes for FeConvolveMatrix {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "order") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.order = (x as u32, y as u32);
+                    let NumberOptionalNumber(x, y) = attr.parse(value)?;
+                    self.order = (x, y);
                 }
                 expanded_name!("", "divisor") => {
                     let NonZero(d) = attr.parse(value)?;
