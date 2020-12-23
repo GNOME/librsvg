@@ -8,8 +8,9 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
-use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{
+    NonNegative, NumberList, NumberListLength, NumberOptionalNumber, Parse, ParseValue,
+};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},

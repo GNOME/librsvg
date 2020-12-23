@@ -85,7 +85,6 @@ LIBRSVG_SRC =					\
 	src/log.rs				\
 	src/marker.rs				\
 	src/node.rs				\
-	src/number_list.rs			\
 	src/paint_server.rs			\
 	src/parsers.rs				\
 	src/path_builder.rs			\

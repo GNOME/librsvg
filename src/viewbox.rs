@@ -4,8 +4,7 @@ use cssparser::Parser;
 use std::ops::Deref;
 
 use crate::error::*;
-use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::Parse;
+use crate::parsers::{NumberList, NumberListLength, Parse};
 use crate::rect::Rect;
 
 /// Newtype around a [`Rect`], used to represent the `viewBox` attribute.
