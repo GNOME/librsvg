@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
@@ -63,15 +63,7 @@ impl SetAttributes for FeTurbulence {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "baseFrequency") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                            if v.0 >= 0.0 && v.1 >= 0.0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error("values can't be negative"))
-                            }
-                        })?;
-
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.base_frequency = (x, y);
                 }
                 expanded_name!("", "numOctaves") => {
