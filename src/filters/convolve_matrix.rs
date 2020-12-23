@@ -9,7 +9,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NonNegative, NonZero, NumberOptionalNumber, Parse, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
@@ -61,39 +61,17 @@ impl SetAttributes for FeConvolveMatrix {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "order") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<i32>| {
-                            if v.0 > 0 && v.1 > 0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error("values must be greater than 0"))
-                            }
-                        })?;
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.order = (x as u32, y as u32);
                 }
                 expanded_name!("", "divisor") => {
-                    self.divisor = Some(attr.parse_and_validate(value, |x| {
-                        if x != 0.0 {
-                            Ok(x)
-                        } else {
-                            Err(ValueErrorKind::value_error("divisor cannot be equal to 0"))
-                        }
-                    })?)
+                    let NonZero(d) = attr.parse(value)?;
+                    self.divisor = Some(d);
                 }
                 expanded_name!("", "bias") => self.bias = attr.parse(value)?,
                 expanded_name!("", "edgeMode") => self.edge_mode = attr.parse(value)?,
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                            if v.0 > 0.0 && v.1 > 0.0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "kernelUnitLength can't be less or equal to zero",
-                                ))
-                            }
-                        })?;
-
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.kernel_unit_length = Some((x, y))
                 }
                 expanded_name!("", "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
