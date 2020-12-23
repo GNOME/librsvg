@@ -9,7 +9,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{NonNegative, NonZero, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
@@ -26,7 +26,7 @@ pub struct FeConvolveMatrix {
     base: PrimitiveWithInput,
     order: (u32, u32),
     kernel_matrix: Option<DMatrix<f64>>,
-    divisor: Option<f64>,
+    divisor: f64,
     bias: f64,
     target_x: Option<u32>,
     target_y: Option<u32>,
@@ -43,7 +43,7 @@ impl Default for FeConvolveMatrix {
             base: PrimitiveWithInput::new::<Self>(),
             order: (3, 3),
             kernel_matrix: None,
-            divisor: None,
+            divisor: 0.0,
             bias: 0.0,
             target_x: None,
             target_y: None,
@@ -64,10 +64,7 @@ impl SetAttributes for FeConvolveMatrix {
                     let NumberOptionalNumber(x, y) = attr.parse(value)?;
                     self.order = (x, y);
                 }
-                expanded_name!("", "divisor") => {
-                    let NonZero(d) = attr.parse(value)?;
-                    self.divisor = Some(d);
-                }
+                expanded_name!("", "divisor") => self.divisor = attr.parse(value)?,
                 expanded_name!("", "bias") => self.bias = attr.parse(value)?,
                 expanded_name!("", "targetX") => self.target_x = attr.parse(value)?,
                 expanded_name!("", "targetY") => self.target_y = attr.parse(value)?,
@@ -115,15 +112,6 @@ impl SetAttributes for FeConvolveMatrix {
         if self.kernel_matrix.is_none() {
             return Err(ValueErrorKind::value_error("the value must be set"))
                 .attribute(QualName::new(None, ns!(svg), local_name!("kernelMatrix")));
-        }
-
-        // Default value for the divisor.
-        if self.divisor.is_none() {
-            self.divisor = Some(self.kernel_matrix.as_ref().unwrap().iter().sum());
-
-            if self.divisor.unwrap() == 0.0 {
-                self.divisor = Some(1.0);
-            }
         }
 
         Ok(())
@@ -189,6 +177,18 @@ impl FilterEffect for FeConvolveMatrix {
 
         let matrix = self.kernel_matrix.as_ref().unwrap();
 
+        let divisor = if self.divisor != 0.0 {
+            self.divisor
+        } else {
+            let d = matrix.iter().sum();
+
+            if d != 0.0 {
+                d
+            } else {
+                1.0
+            }
+        };
+
         let mut surface = ExclusiveImageSurface::new(
             input_surface.width(),
             input_surface.height(),
@@ -230,13 +230,13 @@ impl FilterEffect for FeConvolveMatrix {
                 if self.preserve_alpha {
                     a = f64::from(pixel.a) / 255.0;
                 } else {
-                    a = a / self.divisor.unwrap() + self.bias;
+                    a = a / divisor + self.bias;
                 }
 
                 let clamped_a = clamp(a, 0.0, 1.0);
 
                 let compute = |x| {
-                    let x = x / self.divisor.unwrap() + self.bias * a;
+                    let x = x / divisor + self.bias * a;
 
                     let x = if self.preserve_alpha {
                         // Premultiply the output value.

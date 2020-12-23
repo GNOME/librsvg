@@ -74,22 +74,6 @@ impl Parse for f64 {
     }
 }
 
-/// Non-Zero number (for instance useful for "divisor")
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct NonZero(pub f64);
-
-impl Parse for NonZero {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        let loc = parser.current_source_location();
-        let n = Parse::parse(parser)?;
-        if n != 0.0 {
-            Ok(NonZero(n))
-        } else {
-            Err(loc.new_custom_error(ValueErrorKind::value_error("expected non zero number")))
-        }
-    }
-}
-
 /// Non-Negative number
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct NonNegative(pub f64);
