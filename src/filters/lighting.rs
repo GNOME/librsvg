@@ -1,5 +1,6 @@
 //! Lighting filters and light nodes.
 
+use cssparser::Parser;
 use float_cmp::approx_eq;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{Vector2, Vector3};
@@ -17,7 +18,7 @@ use crate::filters::{
     FilterEffect, FilterError, PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::parsers::{NumberOptionalNumber, ParseValue};
+use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
@@ -262,19 +263,8 @@ impl SetAttributes for Common {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "surfaceScale") => self.surface_scale = attr.parse(value)?,
-
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                            if v.0 > 0.0 && v.1 > 0.0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "kernelUnitLength can't be less or equal to zero",
-                                ))
-                            }
-                        })?;
-
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.kernel_unit_length = Some((x, y));
                 }
                 _ => (),
@@ -303,23 +293,12 @@ impl Default for FeDiffuseLighting {
 impl SetAttributes for FeDiffuseLighting {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         self.common.set_attributes(attrs)?;
-        let result = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "diffuseConstant"))
-            .and_then(|(attr, value)| {
-                attr.parse_and_validate(value, |x| {
-                    if x >= 0.0 {
-                        Ok(x)
-                    } else {
-                        Err(ValueErrorKind::value_error(
-                            "diffuseConstant can't be negative",
-                        ))
-                    }
-                })
-                .ok()
-            });
-        if let Some(diffuse_constant) = result {
-            self.diffuse_constant = diffuse_constant;
+
+        for (attr, value) in attrs.iter() {
+            if let expanded_name!("", "diffuseConstant") = attr.expanded() {
+                let NonNegative(c) = attr.parse(value)?;
+                self.diffuse_constant = c;
+            }
         }
 
         Ok(())
@@ -351,11 +330,28 @@ impl Lighting for FeDiffuseLighting {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct SpecularExponent(f64);
+
+impl Parse for SpecularExponent {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let e = Parse::parse(parser)?;
+        if e != 0.0 {
+            Ok(SpecularExponent(e))
+        } else {
+            Err(loc.new_custom_error(ValueErrorKind::value_error(
+                "value should be between 1.0 and 128.0",
+            )))
+        }
+    }
+}
+
 /// The `feSpecularLighting` filter primitives.
 pub struct FeSpecularLighting {
     common: Common,
     specular_constant: f64,
-    specular_exponent: f64,
+    specular_exponent: SpecularExponent,
 }
 
 impl Default for FeSpecularLighting {
@@ -363,7 +359,7 @@ impl Default for FeSpecularLighting {
         Self {
             common: Common::new(PrimitiveWithInput::new::<Self>()),
             specular_constant: 1.0,
-            specular_exponent: 1.0,
+            specular_exponent: SpecularExponent(1.0),
         }
     }
 }
@@ -375,26 +371,11 @@ impl SetAttributes for FeSpecularLighting {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "specularConstant") => {
-                    self.specular_constant = attr.parse_and_validate(value, |x| {
-                        if x >= 0.0 {
-                            Ok(x)
-                        } else {
-                            Err(ValueErrorKind::value_error(
-                                "specularConstant can't be negative",
-                            ))
-                        }
-                    })?;
+                    let NonNegative(c) = attr.parse(value)?;
+                    self.specular_constant = c;
                 }
                 expanded_name!("", "specularExponent") => {
-                    self.specular_exponent = attr.parse_and_validate(value, |x| {
-                        if x >= 1.0 && x <= 128.0 {
-                            Ok(x)
-                        } else {
-                            Err(ValueErrorKind::value_error(
-                                "specularExponent should be between 1.0 and 128.0",
-                            ))
-                        }
-                    })?;
+                    self.specular_exponent = attr.parse(value)?;
                 }
                 _ => (),
             }
@@ -419,13 +400,14 @@ impl Lighting for FeSpecularLighting {
             return 0.0;
         }
 
+        let SpecularExponent(se) = self.specular_exponent;
         let k = if normal.normal.is_zero() {
             // Common case of (0, 0, 1) normal.
             let n_dot_h = h.z / h_norm;
-            if approx_eq!(f64, self.specular_exponent, 1.0) {
+            if approx_eq!(f64, se, 1.0) {
                 n_dot_h
             } else {
-                n_dot_h.powf(self.specular_exponent)
+                n_dot_h.powf(se)
             }
         } else {
             let mut n = normal
@@ -435,10 +417,10 @@ impl Lighting for FeSpecularLighting {
             let normal = Vector3::new(n.x, n.y, 1.0);
 
             let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
-            if approx_eq!(f64, self.specular_exponent, 1.0) {
+            if approx_eq!(f64, se, 1.0) {
                 n_dot_h
             } else {
-                n_dot_h.powf(self.specular_exponent)
+                n_dot_h.powf(se)
             }
         };
 
