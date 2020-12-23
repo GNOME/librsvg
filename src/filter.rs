@@ -1,7 +1,7 @@
 //! The `filter` element.
 
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use std::slice::Iter;
 
 use crate::attributes::Attributes;
@@ -9,7 +9,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
-use crate::error::ValueErrorKind;
+use crate::error::{ElementError, ValueErrorKind};
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
@@ -84,24 +84,30 @@ impl SetAttributes for Filter {
         }
 
         // With ObjectBoundingBox, only fractions and percents are allowed.
-        let no_units_allowed = self.filterunits == CoordUnits::ObjectBoundingBox;
+        let units_allowed = self.filterunits != CoordUnits::ObjectBoundingBox;
 
         // Parse the rest of the attributes.
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => {
-                    self.x = attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
+                    self.x = attr
+                        .parse(value)
+                        .and_then(|v| check_units(v, units_allowed, attr))?
                 }
                 expanded_name!("", "y") => {
-                    self.y = attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
+                    self.y = attr
+                        .parse(value)
+                        .and_then(|v| check_units(v, units_allowed, attr))?
                 }
                 expanded_name!("", "width") => {
-                    self.width =
-                        attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
+                    self.width = attr
+                        .parse(value)
+                        .and_then(|v| check_units(v, units_allowed, attr))?
                 }
                 expanded_name!("", "height") => {
-                    self.height =
-                        attr.parse_and_validate(value, |v| check_units(v, no_units_allowed))?
+                    self.height = attr
+                        .parse(value)
+                        .and_then(|v| check_units(v, units_allowed, attr))?
                 }
                 expanded_name!("", "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
                 _ => (),
@@ -114,17 +120,21 @@ impl SetAttributes for Filter {
 
 fn check_units<N: Normalize, V: Validate>(
     length: CssLength<N, V>,
-    no_units_allowed: bool,
-) -> Result<CssLength<N, V>, ValueErrorKind> {
-    if !no_units_allowed {
+    units_allowed: bool,
+    attr: QualName,
+) -> Result<CssLength<N, V>, ElementError> {
+    if units_allowed {
         return Ok(length);
     }
 
     match length.unit {
         LengthUnit::Px | LengthUnit::Percent => Ok(length),
-        _ => Err(ValueErrorKind::parse_error(
-            "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
-        )),
+        _ => Err(ElementError {
+            attr,
+            err: ValueErrorKind::parse_error(
+                "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
+            ),
+        }),
     }
 }
 
