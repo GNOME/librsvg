@@ -8,9 +8,8 @@ use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
-use crate::error::*;
 use crate::node::Node;
-use crate::parsers::{NumberOptionalNumber, ParseValue};
+use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},
@@ -45,21 +44,12 @@ impl Default for FeGaussianBlur {
 impl SetAttributes for FeGaussianBlur {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         self.base.set_attributes(attrs)?;
-        let result = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "stdDeviation"))
-            .and_then(|(attr, value)| {
-                attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                    if v.0 >= 0.0 && v.1 >= 0.0 {
-                        Ok(v)
-                    } else {
-                        Err(ValueErrorKind::value_error("values can't be negative"))
-                    }
-                })
-                .ok()
-            });
-        if let Some(tuple) = result {
-            self.std_deviation = (tuple.0, tuple.1);
+
+        for (attr, value) in attrs.iter() {
+            if let expanded_name!("", "stdDeviation") = attr.expanded() {
+                let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
+                self.std_deviation = (x, y);
+            }
         }
 
         Ok(())
