@@ -1,6 +1,5 @@
 //! Lighting filters and light nodes.
 
-use cssparser::Parser;
 use float_cmp::approx_eq;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{Vector2, Vector3};
@@ -12,13 +11,12 @@ use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
-use crate::error::*;
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
     FilterEffect, FilterError, PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
@@ -330,28 +328,11 @@ impl Lighting for FeDiffuseLighting {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-struct SpecularExponent(f64);
-
-impl Parse for SpecularExponent {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        let loc = parser.current_source_location();
-        let e = Parse::parse(parser)?;
-        if e != 0.0 {
-            Ok(SpecularExponent(e))
-        } else {
-            Err(loc.new_custom_error(ValueErrorKind::value_error(
-                "value should be between 1.0 and 128.0",
-            )))
-        }
-    }
-}
-
 /// The `feSpecularLighting` filter primitives.
 pub struct FeSpecularLighting {
     common: Common,
     specular_constant: f64,
-    specular_exponent: SpecularExponent,
+    specular_exponent: f64,
 }
 
 impl Default for FeSpecularLighting {
@@ -359,7 +340,7 @@ impl Default for FeSpecularLighting {
         Self {
             common: Common::new(PrimitiveWithInput::new::<Self>()),
             specular_constant: 1.0,
-            specular_exponent: SpecularExponent(1.0),
+            specular_exponent: 1.0,
         }
     }
 }
@@ -400,31 +381,23 @@ impl Lighting for FeSpecularLighting {
             return 0.0;
         }
 
-        let SpecularExponent(se) = self.specular_exponent;
-        let k = if normal.normal.is_zero() {
+        let n_dot_h = if normal.normal.is_zero() {
             // Common case of (0, 0, 1) normal.
-            let n_dot_h = h.z / h_norm;
-            if approx_eq!(f64, se, 1.0) {
-                n_dot_h
-            } else {
-                n_dot_h.powf(se)
-            }
+            h.z / h_norm
         } else {
             let mut n = normal
                 .normal
                 .map(|x| f64::from(x) * self.common().surface_scale / 255.);
             n.component_mul_assign(&normal.factor);
             let normal = Vector3::new(n.x, n.y, 1.0);
-
-            let n_dot_h = normal.dot(&h) / normal.norm() / h_norm;
-            if approx_eq!(f64, se, 1.0) {
-                n_dot_h
-            } else {
-                n_dot_h.powf(se)
-            }
+            normal.dot(&h) / normal.norm() / h_norm
         };
 
-        self.specular_constant * k
+        if approx_eq!(f64, self.specular_exponent, 1.0) {
+            self.specular_constant * n_dot_h
+        } else {
+            self.specular_constant * n_dot_h.powf(self.specular_exponent)
+        }
     }
 }
 
