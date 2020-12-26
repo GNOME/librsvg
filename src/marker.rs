@@ -32,11 +32,7 @@ enum MarkerUnits {
     StrokeWidth,
 }
 
-impl Default for MarkerUnits {
-    fn default() -> MarkerUnits {
-        MarkerUnits::StrokeWidth
-    }
-}
+enum_default!(MarkerUnits, MarkerUnits::StrokeWidth);
 
 impl Parse for MarkerUnits {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerUnits, ParseError<'i>> {
@@ -55,11 +51,7 @@ enum MarkerOrient {
     Angle(Angle),
 }
 
-impl Default for MarkerOrient {
-    fn default() -> MarkerOrient {
-        MarkerOrient::Angle(Angle::new(0.0))
-    }
-}
+enum_default!(MarkerOrient, MarkerOrient::Angle(Angle::new(0.0)));
 
 impl Parse for MarkerOrient {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, ParseError<'i>> {

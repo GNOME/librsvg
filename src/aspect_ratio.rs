@@ -45,11 +45,7 @@ enum FitMode {
     Slice,
 }
 
-impl Default for FitMode {
-    fn default() -> FitMode {
-        FitMode::Meet
-    }
-}
+enum_default!(FitMode, FitMode::Meet);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct Align {

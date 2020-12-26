@@ -46,6 +46,8 @@ pub enum SpreadMethod {
     Repeat,
 }
 
+enum_default!(SpreadMethod, SpreadMethod::Pad);
+
 impl Parse for SpreadMethod {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, ParseError<'i>> {
         Ok(parse_identifiers!(
@@ -54,12 +56,6 @@ impl Parse for SpreadMethod {
             "reflect" => SpreadMethod::Reflect,
             "repeat" => SpreadMethod::Repeat,
         )?)
-    }
-}
-
-impl Default for SpreadMethod {
-    fn default() -> SpreadMethod {
-        SpreadMethod::Pad
     }
 }
 

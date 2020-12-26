@@ -89,6 +89,9 @@ mod node;
 #[macro_use]
 mod property_macros;
 
+#[macro_use]
+mod util;
+
 mod angle;
 mod api;
 mod aspect_ratio;
@@ -133,7 +136,6 @@ mod text;
 mod transform;
 mod unit_interval;
 mod url_resolver;
-mod util;
 mod viewbox;
 mod xml;
 

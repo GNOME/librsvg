@@ -33,6 +33,8 @@ enum Mode {
     HslLuminosity,
 }
 
+enum_default!(Mode, Mode::Normal);
+
 /// The `feBlend` filter primitive.
 pub struct FeBlend {
     base: PrimitiveWithInput,
@@ -47,7 +49,7 @@ impl Default for FeBlend {
         FeBlend {
             base: PrimitiveWithInput::new::<Self>(),
             in2: None,
-            mode: Mode::Normal,
+            mode: Mode::default(),
         }
     }
 }

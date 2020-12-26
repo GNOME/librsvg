@@ -26,11 +26,7 @@ enum OperationType {
     LuminanceToAlpha,
 }
 
-impl Default for OperationType {
-    fn default() -> Self {
-        OperationType::Matrix
-    }
-}
+enum_default!(OperationType, OperationType::Matrix);
 
 /// The `feColorMatrix` filter primitive.
 pub struct FeColorMatrix {

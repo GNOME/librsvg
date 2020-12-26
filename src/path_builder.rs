@@ -336,11 +336,10 @@ pub enum PathCommand {
     ClosePath,
 }
 
-impl Default for PathCommand {
-    fn default() -> Self {
-        PathCommand::CurveTo(CubicBezierCurve::default())
-    }
-}
+enum_default!(
+    PathCommand,
+    PathCommand::CurveTo(CubicBezierCurve::default())
+);
 
 impl PathCommand {
     fn to_cairo(&self, cr: &cairo::Context) {
