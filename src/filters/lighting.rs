@@ -232,29 +232,26 @@ impl SetAttributes for FeSpotLight {
 
 impl Draw for FeSpotLight {}
 
-trait Lighting {
-    fn common(&self) -> &Common;
-
-    fn compute_factor(&self, normal: Normal, light_vector: Vector3<f64>) -> f64;
-}
-
-struct Common {
+/// The `feDiffuseLighting` filter primitives.
+pub struct FeDiffuseLighting {
     base: PrimitiveWithInput,
     surface_scale: f64,
     kernel_unit_length: Option<(f64, f64)>,
+    diffuse_constant: f64,
 }
 
-impl Common {
-    fn new(base: PrimitiveWithInput) -> Self {
+impl Default for FeDiffuseLighting {
+    fn default() -> Self {
         Self {
-            base,
+            base: PrimitiveWithInput::new::<Self>(),
             surface_scale: 1.0,
             kernel_unit_length: None,
+            diffuse_constant: 1.0,
         }
     }
 }
 
-impl SetAttributes for Common {
+impl SetAttributes for FeDiffuseLighting {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         self.base.set_attributes(attrs)?;
 
@@ -265,6 +262,10 @@ impl SetAttributes for Common {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.kernel_unit_length = Some((x, y));
                 }
+                expanded_name!("", "diffuseConstant") => {
+                    let NonNegative(c) = attr.parse(value)?;
+                    self.diffuse_constant = c;
+                }
                 _ => (),
             }
         }
@@ -273,42 +274,7 @@ impl SetAttributes for Common {
     }
 }
 
-/// The `feDiffuseLighting` filter primitives.
-pub struct FeDiffuseLighting {
-    common: Common,
-    diffuse_constant: f64,
-}
-
-impl Default for FeDiffuseLighting {
-    fn default() -> Self {
-        Self {
-            common: Common::new(PrimitiveWithInput::new::<Self>()),
-            diffuse_constant: 1.0,
-        }
-    }
-}
-
-impl SetAttributes for FeDiffuseLighting {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.common.set_attributes(attrs)?;
-
-        for (attr, value) in attrs.iter() {
-            if let expanded_name!("", "diffuseConstant") = attr.expanded() {
-                let NonNegative(c) = attr.parse(value)?;
-                self.diffuse_constant = c;
-            }
-        }
-
-        Ok(())
-    }
-}
-
-impl Lighting for FeDiffuseLighting {
-    #[inline]
-    fn common(&self) -> &Common {
-        &self.common
-    }
-
+impl FeDiffuseLighting {
     #[inline]
     fn compute_factor(&self, normal: Normal, light_vector: Vector3<f64>) -> f64 {
         let k = if normal.normal.is_zero() {
@@ -317,7 +283,7 @@ impl Lighting for FeDiffuseLighting {
         } else {
             let mut n = normal
                 .normal
-                .map(|x| f64::from(x) * self.common().surface_scale / 255.);
+                .map(|x| f64::from(x) * self.surface_scale / 255.);
             n.component_mul_assign(&normal.factor);
             let normal = Vector3::new(n.x, n.y, 1.0);
 
@@ -330,7 +296,9 @@ impl Lighting for FeDiffuseLighting {
 
 /// The `feSpecularLighting` filter primitives.
 pub struct FeSpecularLighting {
-    common: Common,
+    base: PrimitiveWithInput,
+    surface_scale: f64,
+    kernel_unit_length: Option<(f64, f64)>,
     specular_constant: f64,
     specular_exponent: f64,
 }
@@ -338,7 +306,9 @@ pub struct FeSpecularLighting {
 impl Default for FeSpecularLighting {
     fn default() -> Self {
         Self {
-            common: Common::new(PrimitiveWithInput::new::<Self>()),
+            base: PrimitiveWithInput::new::<Self>(),
+            surface_scale: 1.0,
+            kernel_unit_length: None,
             specular_constant: 1.0,
             specular_exponent: 1.0,
         }
@@ -347,10 +317,15 @@ impl Default for FeSpecularLighting {
 
 impl SetAttributes for FeSpecularLighting {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.common.set_attributes(attrs)?;
+        self.base.set_attributes(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
+                expanded_name!("", "surfaceScale") => self.surface_scale = attr.parse(value)?,
+                expanded_name!("", "kernelUnitLength") => {
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
+                    self.kernel_unit_length = Some((x, y));
+                }
                 expanded_name!("", "specularConstant") => {
                     let NonNegative(c) = attr.parse(value)?;
                     self.specular_constant = c;
@@ -366,12 +341,7 @@ impl SetAttributes for FeSpecularLighting {
     }
 }
 
-impl Lighting for FeSpecularLighting {
-    #[inline]
-    fn common(&self) -> &Common {
-        &self.common
-    }
-
+impl FeSpecularLighting {
     #[inline]
     fn compute_factor(&self, normal: Normal, light_vector: Vector3<f64>) -> f64 {
         let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
@@ -387,7 +357,7 @@ impl Lighting for FeSpecularLighting {
         } else {
             let mut n = normal
                 .normal
-                .map(|x| f64::from(x) * self.common().surface_scale / 255.);
+                .map(|x| f64::from(x) * self.surface_scale / 255.);
             n.component_mul_assign(&normal.factor);
             let normal = Vector3::new(n.x, n.y, 1.0);
             normal.dot(&h) / normal.norm() / h_norm
@@ -413,12 +383,8 @@ macro_rules! impl_lighting_filter {
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterResult, FilterError> {
-                let input = self
-                    .common()
-                    .base
-                    .get_input(ctx, acquired_nodes, draw_ctx)?;
+                let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
                 let mut bounds = self
-                    .common()
                     .base
                     .get_bounds(ctx, node.parent().as_ref())?
                     .add_input(&input)
@@ -426,7 +392,6 @@ macro_rules! impl_lighting_filter {
                 let original_bounds = bounds;
 
                 let scale = self
-                    .common()
                     .kernel_unit_length
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
@@ -482,7 +447,7 @@ macro_rules! impl_lighting_filter {
 
                             let scaled_x = f64::from(x) * ox;
                             let scaled_y = f64::from(y) * oy;
-                            let z = f64::from(pixel.a) / 255.0 * self.common().surface_scale;
+                            let z = f64::from(pixel.a) / 255.0 * self.surface_scale;
                             let light_vector = light_source.vector(scaled_x, scaled_y, z);
                             let light_color = light_source.color(lighting_color, light_vector);
 
@@ -625,7 +590,7 @@ macro_rules! impl_lighting_filter {
                 }
 
                 Ok(FilterResult {
-                    name: self.common().base.result.clone(),
+                    name: self.base.result.clone(),
                     output: FilterOutput { surface, bounds },
                 })
             }
