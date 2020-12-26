@@ -26,6 +26,11 @@ pub struct Attributes(Vec<(QualName, AttributeValue)>);
 pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 
 impl Attributes {
+    #[cfg(test)]
+    pub fn new() -> Attributes {
+        Attributes(Vec::new())
+    }
+
     /// Creates an iterable `Attributes` from the C array of borrowed C strings.
     ///
     /// With libxml2's SAX parser, the caller's startElementNsSAX2Func

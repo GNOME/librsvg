@@ -430,15 +430,12 @@ mod tests {
     use super::*;
     use crate::node::NodeData;
     use markup5ever::{namespace_url, ns, QualName};
-    use std::ptr;
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
-
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("pattern")),
-            attrs,
+            Attributes::new(),
         ));
 
         let unresolved = borrow_element_as!(node, Pattern).get_unresolved(&node);

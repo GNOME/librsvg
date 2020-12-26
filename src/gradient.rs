@@ -749,7 +749,6 @@ mod tests {
     use super::*;
     use crate::node::{Node, NodeData};
     use markup5ever::{namespace_url, ns, QualName};
-    use std::ptr;
 
     #[test]
     fn parses_spread_method() {
@@ -767,22 +766,18 @@ mod tests {
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
-
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
-            attrs,
+            Attributes::new(),
         ));
 
         let unresolved = borrow_element_as!(node, LinearGradient).get_unresolved(&node);
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
-
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
-            attrs,
+            Attributes::new(),
         ));
 
         let unresolved = borrow_element_as!(node, RadialGradient).get_unresolved(&node);
