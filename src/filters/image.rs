@@ -1,7 +1,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::AspectRatio;
-use crate::attributes::Attributes;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
@@ -11,6 +10,7 @@ use crate::parsers::ParseValue;
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::viewbox::ViewBox;
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};

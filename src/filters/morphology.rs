@@ -3,7 +3,6 @@ use std::cmp::{max, min};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
@@ -16,6 +15,7 @@ use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface,
     EdgeMode, ImageSurfaceDataExt, Pixel,
 };
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};

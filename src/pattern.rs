@@ -4,7 +4,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 
 use crate::aspect_ratio::*;
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
@@ -19,6 +18,7 @@ use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::*;
+use crate::xml::Attributes;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);

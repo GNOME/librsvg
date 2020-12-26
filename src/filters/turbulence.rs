@@ -1,7 +1,6 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
@@ -13,6 +12,7 @@ use crate::surface_utils::{
     ImageSurfaceDataExt, Pixel, PixelOps,
 };
 use crate::util::clamp;
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};

@@ -19,7 +19,6 @@ use std::string::ToString;
 use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
-use crate::attributes::Attributes;
 use crate::document::{Document, DocumentBuilder};
 use crate::error::{ImplementationLimit, LoadingError};
 use crate::io::{self, IoError};
@@ -30,8 +29,11 @@ use crate::url_resolver::AllowedUrl;
 
 use xml2_load::Xml2Parser;
 
+mod attributes;
 mod xml2;
 mod xml2_load;
+
+pub use attributes::Attributes;
 
 #[derive(Clone)]
 enum Context {

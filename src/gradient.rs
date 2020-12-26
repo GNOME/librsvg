@@ -6,7 +6,6 @@ use markup5ever::{
 };
 use std::cell::RefCell;
 
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
@@ -21,6 +20,7 @@ use crate::properties::ComputedValues;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::xml::Attributes;
 
 /// Contents of a <stop> element for gradient color stops
 #[derive(Copy, Clone)]

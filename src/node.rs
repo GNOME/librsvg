@@ -15,7 +15,6 @@ use markup5ever::QualName;
 use std::cell::{Ref, RefMut};
 use std::fmt;
 
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -23,6 +22,7 @@ use crate::element::*;
 use crate::error::*;
 use crate::properties::ComputedValues;
 use crate::text::Chars;
+use crate::xml::Attributes;
 
 /// Strong reference to an element in the SVG tree.
 ///

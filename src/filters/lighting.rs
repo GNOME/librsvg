@@ -7,7 +7,6 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 use std::cmp::max;
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
@@ -23,6 +22,7 @@ use crate::surface_utils::{
     ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
+use crate::xml::Attributes;
 
 /// A light source with affine transformations applied.
 pub enum LightSource {

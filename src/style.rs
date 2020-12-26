@@ -2,9 +2,9 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::xml::Attributes;
 
 /// Represents the syntax used in the <style> node.
 ///

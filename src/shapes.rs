@@ -1,11 +1,11 @@
 //! Basic SVG shapes: the `path`, `polygon`, `polyline`, `line`,
 //! `rect`, `circle`, `ellipse` elements.
 
+use cssparser::{Parser, Token};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -17,7 +17,7 @@ use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
 use crate::properties::ComputedValues;
-use cssparser::{Parser, Token};
+use crate::xml::Attributes;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum Markers {

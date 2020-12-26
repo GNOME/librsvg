@@ -26,13 +26,13 @@ use markup5ever::{
 };
 use std::collections::HashSet;
 
-use crate::attributes::Attributes;
 use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::font_props::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::*;
 use crate::property_macros::Property;
+use crate::xml::Attributes;
 
 /// Representation of a single CSS property value.
 ///

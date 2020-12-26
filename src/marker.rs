@@ -8,7 +8,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
@@ -24,6 +23,7 @@ use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::*;
+use crate::xml::Attributes;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
 #[derive(Debug, Copy, Clone, PartialEq)]

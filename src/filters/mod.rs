@@ -5,7 +5,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::time::Instant;
 
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
@@ -19,6 +18,7 @@ use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
+use crate::xml::Attributes;
 
 mod bounds;
 use self::bounds::BoundsBuilder;

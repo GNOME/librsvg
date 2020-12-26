@@ -95,7 +95,6 @@ mod util;
 mod angle;
 mod api;
 mod aspect_ratio;
-mod attributes;
 mod bbox;
 pub mod c_api;
 mod color;
