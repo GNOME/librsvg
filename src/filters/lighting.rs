@@ -16,6 +16,7 @@ use crate::filters::{
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
@@ -41,11 +42,56 @@ pub enum LightSource {
     },
 }
 
-impl LightSource {
-    /// Returns the unit (or null) vector from the image sample to the light.
+struct Light {
+    source: LightSource,
+    lighting_color: cssparser::RGBA,
+    color_interpolation_filters: ColorInterpolationFilters,
+}
+
+impl Light {
+    pub fn new(node: &Node, ctx: &FilterContext) -> Result<Light, FilterError> {
+        let mut sources = node.children().rev().filter(|c| {
+            c.is_element() && matches!(*c.borrow_element(), Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_))
+        });
+
+        let source_node = sources.next();
+        if source_node.is_none() || sources.next().is_some() {
+            return Err(FilterError::InvalidLightSourceCount);
+        }
+
+        let source_node = source_node.unwrap();
+        let elt = source_node.borrow_element();
+
+        if elt.is_in_error() {
+            return Err(FilterError::ChildNodeInError);
+        }
+
+        let source = match *elt {
+            Element::FeDistantLight(ref l) => l.transform(ctx),
+            Element::FePointLight(ref l) => l.transform(ctx),
+            Element::FeSpotLight(ref l) => l.transform(ctx),
+            _ => unreachable!(),
+        };
+
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        let lighting_color = match values.lighting_color().0 {
+            cssparser::Color::CurrentColor => values.color().0,
+            cssparser::Color::RGBA(rgba) => rgba,
+        };
+
+        Ok(Light {
+            source,
+            lighting_color,
+            color_interpolation_filters: values.color_interpolation_filters(),
+        })
+    }
+
+    /// Returns the color and unit (or null) vector from the image sample to the light.
     #[inline]
-    pub fn vector(&self, x: f64, y: f64, z: f64) -> Vector3<f64> {
-        match self {
+    pub fn color_and_vector(&self, x: f64, y: f64, z: f64) -> (cssparser::RGBA, Vector3<f64>) {
+        let vector = match self.source {
             LightSource::Distant { azimuth, elevation } => {
                 let azimuth = azimuth.to_radians();
                 let elevation = elevation.to_radians();
@@ -60,46 +106,38 @@ impl LightSource {
                 let _ = v.try_normalize_mut(0.0);
                 v
             }
-        }
-    }
+        };
 
-    /// Returns the color of the light.
-    #[inline]
-    pub fn color(
-        &self,
-        lighting_color: cssparser::RGBA,
-        light_vector: Vector3<f64>,
-    ) -> cssparser::RGBA {
-        match self {
+        let color = match self.source {
             LightSource::Spot {
                 direction,
                 specular_exponent,
                 limiting_cone_angle,
                 ..
             } => {
-                let minus_l_dot_s = -light_vector.dot(&direction);
-                if minus_l_dot_s <= 0.0 {
-                    return cssparser::RGBA::transparent();
-                }
+                let minus_l_dot_s = -vector.dot(&direction);
+                match limiting_cone_angle {
+                    _ if minus_l_dot_s <= 0.0 => cssparser::RGBA::transparent(),
+                    Some(a) if minus_l_dot_s < a.to_radians().cos() => {
+                        cssparser::RGBA::transparent()
+                    }
+                    _ => {
+                        let factor = minus_l_dot_s.powf(specular_exponent);
+                        let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
 
-                if let Some(limiting_cone_angle) = limiting_cone_angle {
-                    if minus_l_dot_s < limiting_cone_angle.to_radians().cos() {
-                        return cssparser::RGBA::transparent();
+                        cssparser::RGBA {
+                            red: compute(self.lighting_color.red),
+                            green: compute(self.lighting_color.green),
+                            blue: compute(self.lighting_color.blue),
+                            alpha: 255,
+                        }
                     }
                 }
-
-                let factor = minus_l_dot_s.powf(*specular_exponent);
-                let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
-
-                cssparser::RGBA {
-                    red: compute(lighting_color.red),
-                    green: compute(lighting_color.green),
-                    blue: compute(lighting_color.blue),
-                    alpha: 255,
-                }
             }
-            _ => lighting_color,
-        }
+            _ => self.lighting_color,
+        };
+
+        (color, vector)
     }
 }
 
@@ -395,14 +433,6 @@ macro_rules! impl_lighting_filter {
                     .kernel_unit_length
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
-                let cascaded = CascadedValues::new_from_node(node);
-                let values = cascaded.get();
-                let lighting_color = match values.lighting_color().0 {
-                    cssparser::Color::CurrentColor => values.color().0,
-                    cssparser::Color::RGBA(rgba) => rgba,
-                };
-
-                let light_source = find_light_source(node, ctx)?;
                 let mut input_surface = input.surface().clone();
 
                 if let Some((ox, oy)) = scale {
@@ -424,11 +454,11 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let cascaded = CascadedValues::new_from_node(node);
-                let values = cascaded.get();
+                let light = Light::new(node, ctx)?;
+
                 // The generated color values are in the color space determined by
                 // color-interpolation-filters.
-                let surface_type = SurfaceType::from(values.color_interpolation_filters());
+                let surface_type = SurfaceType::from(light.color_interpolation_filters);
 
                 let mut surface = ExclusiveImageSurface::new(
                     input_surface.width(),
@@ -448,17 +478,17 @@ macro_rules! impl_lighting_filter {
                             let scaled_x = f64::from(x) * ox;
                             let scaled_y = f64::from(y) * oy;
                             let z = f64::from(pixel.a) / 255.0 * self.surface_scale;
-                            let light_vector = light_source.vector(scaled_x, scaled_y, z);
-                            let light_color = light_source.color(lighting_color, light_vector);
+
+                            let (color, vector) = light.color_and_vector(scaled_x, scaled_y, z);
 
                             // compute the factor just once for the three colors
-                            let factor = self.compute_factor(normal, light_vector);
+                            let factor = self.compute_factor(normal, vector);
                             let compute =
                                 |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
-                            let r = compute(light_color.red);
-                            let g = compute(light_color.green);
-                            let b = compute(light_color.blue);
+                            let r = compute(color.red);
+                            let g = compute(color.green);
+                            let b = compute(color.blue);
                             let a = $alpha_func(r, g, b);
 
                             let output_pixel = Pixel { r, g, b, a };
@@ -613,33 +643,6 @@ fn specular_alpha(r: u8, g: u8, b: u8) -> u8 {
 
 impl_lighting_filter!(FeDiffuseLighting, diffuse_alpha);
 impl_lighting_filter!(FeSpecularLighting, specular_alpha);
-
-fn find_light_source(node: &Node, ctx: &FilterContext) -> Result<LightSource, FilterError> {
-    let mut light_sources = node.children().rev().filter(|c| {
-        c.is_element() && matches!(*c.borrow_element(), Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_))
-    });
-
-    let node = light_sources.next();
-    if node.is_none() || light_sources.next().is_some() {
-        return Err(FilterError::InvalidLightSourceCount);
-    }
-
-    let node = node.unwrap();
-    let elt = node.borrow_element();
-
-    if elt.is_in_error() {
-        return Err(FilterError::ChildNodeInError);
-    }
-
-    let light_source = match *elt {
-        Element::FeDistantLight(ref l) => l.transform(ctx),
-        Element::FePointLight(ref l) => l.transform(ctx),
-        Element::FeSpotLight(ref l) => l.transform(ctx),
-        _ => unreachable!(),
-    };
-
-    Ok(light_source)
-}
 
 /// 2D normal and factor stored separately.
 ///
