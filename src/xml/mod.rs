@@ -368,9 +368,7 @@ impl XmlState {
         let mut inner = self.inner.borrow_mut();
         let current_node = inner.current_node.as_ref().unwrap();
 
-        let style_type = borrow_element_as!(current_node, Style)
-            .style_type()
-            .unwrap_or(StyleType::TextCss);
+        let style_type = borrow_element_as!(current_node, Style).style_type();
 
         if style_type == StyleType::TextCss {
             let stylesheet_text = current_node
