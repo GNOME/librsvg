@@ -62,7 +62,7 @@ pub struct FilterContext {
     /// Primtive units
     primitive_units: CoordUnits,
     /// The filter effects region.
-    effects_region: BoundingBox,
+    effects_region: Rect,
     /// Whether the currently rendered filter primitive uses linear RGB for color operations.
     ///
     /// This affects `get_input()` and `store_result()` which should perform linearization and
@@ -153,7 +153,7 @@ impl FilterContext {
             let other_bbox = BoundingBox::new().with_rect(rect);
             bbox.clip(&other_bbox);
 
-            bbox
+            bbox.rect.unwrap()
         };
 
         Self {
@@ -260,7 +260,7 @@ impl FilterContext {
 
     /// Returns the filter effects region.
     #[inline]
-    pub fn effects_region(&self) -> BoundingBox {
+    pub fn effects_region(&self) -> Rect {
         self.effects_region
     }
 
@@ -291,7 +291,7 @@ impl FilterContext {
 
             Input::SourceAlpha => self
                 .source_graphic()
-                .extract_alpha(self.effects_region().rect.unwrap().into())
+                .extract_alpha(self.effects_region().into())
                 .map_err(FilterError::CairoError)
                 .map(FilterInput::StandardInput),
 
@@ -303,7 +303,7 @@ impl FilterContext {
                 .background_image(draw_ctx)
                 .and_then(|surface| {
                     surface
-                        .extract_alpha(self.effects_region().rect.unwrap().into())
+                        .extract_alpha(self.effects_region().into())
                         .map_err(FilterError::CairoError)
                 })
                 .map(FilterInput::StandardInput),
@@ -356,9 +356,7 @@ impl FilterContext {
 
         // Convert the input surface to the desired format.
         let (surface, bounds) = match raw {
-            FilterInput::StandardInput(ref surface) => {
-                (surface, self.effects_region().rect.unwrap().into())
-            }
+            FilterInput::StandardInput(ref surface) => (surface, self.effects_region().into()),
             FilterInput::PrimitiveOutput(FilterOutput {
                 ref surface,
                 ref bounds,
