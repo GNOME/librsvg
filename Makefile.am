@@ -32,7 +32,6 @@ LIBRSVG_SRC =					\
 	src/angle.rs				\
 	src/api.rs				\
 	src/aspect_ratio.rs			\
-	src/attributes.rs			\
 	src/bbox.rs				\
 	src/c_api/color_utils.rs		\
 	src/c_api/dpi.rs			\
@@ -85,7 +84,6 @@ LIBRSVG_SRC =					\
 	src/log.rs				\
 	src/marker.rs				\
 	src/node.rs				\
-	src/number_list.rs			\
 	src/paint_server.rs			\
 	src/parsers.rs				\
 	src/path_builder.rs			\
@@ -113,6 +111,7 @@ LIBRSVG_SRC =					\
 	src/util.rs				\
 	src/viewbox.rs				\
 	src/ua.css				\
+	src/xml/attributes.rs			\
 	src/xml/mod.rs				\
 	src/xml/xml2_load.rs			\
 	src/xml/xml2.rs				\

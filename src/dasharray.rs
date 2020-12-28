@@ -12,11 +12,7 @@ pub enum Dasharray {
     Array(Vec<ULength<Both>>),
 }
 
-impl Default for Dasharray {
-    fn default() -> Dasharray {
-        Dasharray::None
-    }
-}
+enum_default!(Dasharray, Dasharray::None);
 
 impl Parse for Dasharray {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Dasharray, ParseError<'i>> {

@@ -1,8 +1,8 @@
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};
@@ -39,7 +39,7 @@ impl FilterEffect for FeFlood {
         let bounds = self
             .base
             .get_bounds(ctx, node.parent().as_ref())?
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();

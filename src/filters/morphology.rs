@@ -3,19 +3,19 @@ use std::cmp::{max, min};
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::ExclusiveImageSurface,
     EdgeMode, ImageSurfaceDataExt, Pixel,
 };
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
@@ -53,15 +53,7 @@ impl SetAttributes for FeMorphology {
             match attr.expanded() {
                 expanded_name!("", "operator") => self.operator = attr.parse(value)?,
                 expanded_name!("", "radius") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                            if v.0 >= 0.0 && v.1 >= 0.0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error("radius cannot be negative"))
-                            }
-                        })?;
-
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.radius = (x, y);
                 }
                 _ => (),
@@ -85,7 +77,7 @@ impl FilterEffect for FeMorphology {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let (rx, ry) = self.radius;
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);

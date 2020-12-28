@@ -1,6 +1,5 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
@@ -8,6 +7,7 @@ use crate::node::{Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, Primitive};
@@ -98,7 +98,7 @@ impl FilterEffect for FeMerge {
             }
         }
 
-        let bounds = bounds.into_irect(draw_ctx);
+        let bounds = bounds.into_irect(ctx, draw_ctx);
 
         // Now merge them all.
         let mut output_surface = None;

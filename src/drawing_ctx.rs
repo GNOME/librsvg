@@ -25,7 +25,7 @@ use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, UserSpacePaintSource};
 use crate::path_builder::*;
-use crate::pattern::{PatternContentUnits, PatternUnits, UserSpacePattern};
+use crate::pattern::UserSpacePattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintTarget, ShapeRendering,
@@ -981,87 +981,36 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
     ) -> Result<bool, RenderingError> {
-        // Work out the size of the rectangle so it takes into account the object bounding box
-        let (bbwscale, bbhscale) = match pattern.units {
-            PatternUnits(CoordUnits::ObjectBoundingBox) => pattern.bbox.rect.unwrap().size(),
-            PatternUnits(CoordUnits::UserSpaceOnUse) => (1.0, 1.0),
-        };
+        if approx_eq!(f64, pattern.width, 0.0) || approx_eq!(f64, pattern.height, 0.0) {
+            return Ok(false);
+        }
 
         let taffine = self.get_transform().pre_transform(&pattern.transform);
 
         let mut scwscale = (taffine.xx.powi(2) + taffine.xy.powi(2)).sqrt();
         let mut schscale = (taffine.yx.powi(2) + taffine.yy.powi(2)).sqrt();
 
-        let scaled_width = pattern.rect.width() * bbwscale;
-        let scaled_height = pattern.rect.height() * bbhscale;
-
-        if approx_eq!(f64, scaled_width, 0.0) || approx_eq!(f64, scaled_height, 0.0) {
-            return Ok(false);
-        }
-
-        let pw: i32 = (scaled_width * scwscale) as i32;
-        let ph: i32 = (scaled_height * schscale) as i32;
+        let pw: i32 = (pattern.width * scwscale) as i32;
+        let ph: i32 = (pattern.height * schscale) as i32;
 
         if pw < 1 || ph < 1 {
             return Ok(false);
         }
 
-        scwscale = f64::from(pw) / scaled_width;
-        schscale = f64::from(ph) / scaled_height;
-
-        // Create the pattern coordinate system
-        let mut affine = match pattern.units {
-            PatternUnits(CoordUnits::ObjectBoundingBox) => {
-                let bbrect = pattern.bbox.rect.unwrap();
-                Transform::new_translate(
-                    bbrect.x0 + pattern.rect.x0 * bbrect.width(),
-                    bbrect.y0 + pattern.rect.y0 * bbrect.height(),
-                )
-            }
-
-            PatternUnits(CoordUnits::UserSpaceOnUse) => {
-                Transform::new_translate(pattern.rect.x0, pattern.rect.y0)
-            }
-        };
+        scwscale = f64::from(pw) / pattern.width;
+        schscale = f64::from(ph) / pattern.height;
 
         // Apply the pattern transform
-        affine = affine.post_transform(&pattern.transform);
-
-        let mut caffine: Transform;
-
-        // Create the pattern contents coordinate system
-        let _params = if let Some(vbox) = pattern.vbox {
-            // If there is a vbox, use that
-            let r = pattern
-                .preserve_aspect_ratio
-                .compute(&vbox, &Rect::from_size(scaled_width, scaled_height));
-
-            let sw = r.width() / vbox.width();
-            let sh = r.height() / vbox.height();
-            let x = r.x0 - vbox.x0 * sw;
-            let y = r.y0 - vbox.y0 * sh;
-
-            caffine = Transform::new_scale(sw, sh).pre_translate(x, y);
-
-            self.push_view_box(vbox.width(), vbox.height())
+        let (affine, caffine) = if scwscale.approx_eq_cairo(1.0) && schscale.approx_eq_cairo(1.0) {
+            (pattern.coord_transform, pattern.content_transform)
         } else {
-            let PatternContentUnits(content_units) = pattern.content_units;
-
-            caffine = if content_units == CoordUnits::ObjectBoundingBox {
-                // If coords are in terms of the bounding box, use them
-                let (bbw, bbh) = pattern.bbox.rect.unwrap().size();
-                Transform::new_scale(bbw, bbh)
-            } else {
-                Transform::identity()
-            };
-
-            self.push_coord_units(content_units)
+            (
+                pattern
+                    .coord_transform
+                    .pre_scale(1.0 / scwscale, 1.0 / schscale),
+                pattern.content_transform.post_scale(scwscale, schscale),
+            )
         };
-
-        if !scwscale.approx_eq_cairo(1.0) || !schscale.approx_eq_cairo(1.0) {
-            caffine = caffine.post_scale(scwscale, schscale);
-            affine = affine.pre_scale(1.0 / scwscale, 1.0 / schscale);
-        }
 
         // Draw to another surface
 

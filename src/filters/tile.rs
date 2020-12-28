@@ -1,8 +1,8 @@
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
@@ -42,7 +42,7 @@ impl FilterEffect for FeTile {
         let bounds = self
             .base
             .get_bounds(ctx, node.parent().as_ref())?
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let surface = match input {
             FilterInput::StandardInput(input_surface) => input_surface,

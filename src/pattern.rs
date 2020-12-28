@@ -4,11 +4,10 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
 
 use crate::aspect_ratio::*;
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -19,6 +18,7 @@ use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::*;
+use crate::xml::Attributes;
 
 coord_units!(PatternUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(PatternContentUnits, CoordUnits::UserSpaceOnUse);
@@ -105,13 +105,11 @@ pub struct ResolvedPattern {
 
 /// Pattern normalized to user-space units.
 pub struct UserSpacePattern {
-    pub units: PatternUnits,
-    pub content_units: PatternContentUnits,
-    pub bbox: BoundingBox,
-    pub vbox: Option<ViewBox>,
-    pub preserve_aspect_ratio: AspectRatio,
+    pub width: f64,
+    pub height: f64,
     pub transform: Transform,
-    pub rect: Rect,
+    pub coord_transform: Transform,
+    pub content_transform: Transform,
     pub node_with_children: Node,
 }
 
@@ -315,6 +313,15 @@ impl ResolvedPattern {
         }
     }
 
+    fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+        let x = self.x.normalize(&values, &params);
+        let y = self.y.normalize(&values, &params);
+        let w = self.width.normalize(&values, &params);
+        let h = self.height.normalize(&values, &params);
+
+        Rect::new(x, y, x + w, y + h)
+    }
+
     pub fn to_user_space(
         &self,
         bbox: &BoundingBox,
@@ -325,25 +332,62 @@ impl ResolvedPattern {
 
         let params = draw_ctx.push_coord_units(self.units.0);
 
-        let x = self.x.normalize(&values, &params);
-        let y = self.y.normalize(&values, &params);
-        let w = self.width.normalize(&values, &params);
-        let h = self.height.normalize(&values, &params);
+        let rect = self.get_rect(values, &params);
+        let bbrect = bbox.rect.unwrap();
 
-        let rect = Rect::new(x, y, x + w, y + h);
+        // Create the pattern coordinate system
+        let (width, height, coord_transform) = match self.units {
+            PatternUnits(CoordUnits::ObjectBoundingBox) => (
+                rect.width() * bbrect.width(),
+                rect.height() * bbrect.height(),
+                Transform::new_translate(
+                    bbrect.x0 + rect.x0 * bbrect.width(),
+                    bbrect.y0 + rect.y0 * bbrect.height(),
+                ),
+            ),
+            PatternUnits(CoordUnits::UserSpaceOnUse) => (
+                rect.width(),
+                rect.height(),
+                Transform::new_translate(rect.x0, rect.y0),
+            ),
+        };
 
-        // FIXME: eventually UserSpacePattern should contain fewer fields; we should be able
-        // to figure out all the transforms in advance and just put them there, rather than
-        // leaving that responsibility to DrawingCtx.set_pattern().
+        let coord_transform = coord_transform.post_transform(&self.transform);
+
+        // Create the pattern contents coordinate system
+        let content_transform = if let Some(vbox) = self.vbox {
+            // If there is a vbox, use that
+            let r = self
+                .preserve_aspect_ratio
+                .compute(&vbox, &Rect::from_size(width, height));
+
+            let sw = r.width() / vbox.width();
+            let sh = r.height() / vbox.height();
+            let x = r.x0 - vbox.x0 * sw;
+            let y = r.y0 - vbox.y0 * sh;
+
+            let _params = draw_ctx.push_view_box(vbox.width(), vbox.height());
+
+            Transform::new_scale(sw, sh).pre_translate(x, y)
+        } else {
+            let PatternContentUnits(content_units) = self.content_units;
+
+            let _params = draw_ctx.push_coord_units(content_units);
+
+            match content_units {
+                CoordUnits::ObjectBoundingBox => {
+                    Transform::new_scale(bbrect.width(), bbrect.height())
+                }
+                CoordUnits::UserSpaceOnUse => Transform::identity(),
+            }
+        };
 
         Some(UserSpacePattern {
-            units: self.units,
-            content_units: self.content_units,
-            vbox: self.vbox,
-            bbox: *bbox,
-            preserve_aspect_ratio: self.preserve_aspect_ratio,
+            width,
+            height,
             transform: self.transform,
-            rect,
+            coord_transform,
+            content_transform,
             node_with_children,
         })
     }
@@ -430,15 +474,12 @@ mod tests {
     use super::*;
     use crate::node::NodeData;
     use markup5ever::{namespace_url, ns, QualName};
-    use std::ptr;
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
-
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("pattern")),
-            attrs,
+            Attributes::new(),
         ));
 
         let unresolved = borrow_element_as!(node, Pattern).get_unresolved(&node);

@@ -9,6 +9,8 @@ pub enum FilterError {
     InvalidUnits,
     /// The filter was passed invalid input (the `in` attribute).
     InvalidInput,
+    /// The filter was passed an invalid parameter.
+    InvalidParameter(String),
     /// The filter input surface has an unsuccessful status.
     BadInputSurfaceStatus(cairo::Status),
     /// A Cairo error.
@@ -34,6 +36,7 @@ impl fmt::Display for FilterError {
                 "unit identifiers are not allowed with primitiveUnits set to objectBoundingBox"
             ),
             FilterError::InvalidInput => write!(f, "invalid value of the `in` attribute"),
+            FilterError::InvalidParameter(ref s) => write!(f, "invalid parameter value: {}", s),
             FilterError::BadInputSurfaceStatus(ref status) => {
                 write!(f, "invalid status of the input surface: {}", status)
             }

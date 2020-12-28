@@ -2,14 +2,14 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
-use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{
+    NonNegative, NumberList, NumberListLength, NumberOptionalNumber, Parse, ParseValue,
+};
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
@@ -17,6 +17,7 @@ use crate::surface_utils::{
     EdgeMode, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
@@ -26,7 +27,7 @@ pub struct FeConvolveMatrix {
     base: PrimitiveWithInput,
     order: (u32, u32),
     kernel_matrix: Option<DMatrix<f64>>,
-    divisor: Option<f64>,
+    divisor: f64,
     bias: f64,
     target_x: Option<u32>,
     target_y: Option<u32>,
@@ -43,7 +44,7 @@ impl Default for FeConvolveMatrix {
             base: PrimitiveWithInput::new::<Self>(),
             order: (3, 3),
             kernel_matrix: None,
-            divisor: None,
+            divisor: 0.0,
             bias: 0.0,
             target_x: None,
             target_y: None,
@@ -61,88 +62,22 @@ impl SetAttributes for FeConvolveMatrix {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "order") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<i32>| {
-                            if v.0 > 0 && v.1 > 0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error("values must be greater than 0"))
-                            }
-                        })?;
-                    self.order = (x as u32, y as u32);
+                    let NumberOptionalNumber(x, y) = attr.parse(value)?;
+                    self.order = (x, y);
                 }
-                expanded_name!("", "divisor") => {
-                    self.divisor = Some(attr.parse_and_validate(value, |x| {
-                        if x != 0.0 {
-                            Ok(x)
-                        } else {
-                            Err(ValueErrorKind::value_error("divisor cannot be equal to 0"))
-                        }
-                    })?)
-                }
+                expanded_name!("", "divisor") => self.divisor = attr.parse(value)?,
                 expanded_name!("", "bias") => self.bias = attr.parse(value)?,
+                expanded_name!("", "targetX") => self.target_x = attr.parse(value)?,
+                expanded_name!("", "targetY") => self.target_y = attr.parse(value)?,
                 expanded_name!("", "edgeMode") => self.edge_mode = attr.parse(value)?,
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                            if v.0 > 0.0 && v.1 > 0.0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "kernelUnitLength can't be less or equal to zero",
-                                ))
-                            }
-                        })?;
-
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.kernel_unit_length = Some((x, y))
                 }
                 expanded_name!("", "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
 
                 _ => (),
             }
-        }
-
-        // target_x and target_y depend on order.
-        for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                expanded_name!("", "targetX") => {
-                    self.target_x = {
-                        let v = attr.parse_and_validate(value, |v: i32| {
-                            if v >= 0 && v < self.order.0 as i32 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "targetX must be greater or equal to zero and less than orderX",
-                                ))
-                            }
-                        })?;
-                        Some(v as u32)
-                    }
-                }
-                expanded_name!("", "targetY") => {
-                    self.target_y = {
-                        let v = attr.parse_and_validate(value, |v: i32| {
-                            if v >= 0 && v < self.order.1 as i32 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error(
-                                    "targetY must be greater or equal to zero and less than orderY",
-                                ))
-                            }
-                        })?;
-                        Some(v as u32)
-                    }
-                }
-                _ => (),
-            }
-        }
-
-        // Default values for target_x and target_y.
-        if self.target_x.is_none() {
-            self.target_x = Some(self.order.0 / 2);
-        }
-        if self.target_y.is_none() {
-            self.target_y = Some(self.order.1 / 2);
         }
 
         // Finally, parse the kernel matrix.
@@ -180,15 +115,6 @@ impl SetAttributes for FeConvolveMatrix {
                 .attribute(QualName::new(None, ns!(svg), local_name!("kernelMatrix")));
         }
 
-        // Default value for the divisor.
-        if self.divisor.is_none() {
-            self.divisor = Some(self.kernel_matrix.as_ref().unwrap().iter().sum());
-
-            if self.divisor.unwrap() == 0.0 {
-                self.divisor = Some(1.0);
-            }
-        }
-
         Ok(())
     }
 }
@@ -208,8 +134,28 @@ impl FilterEffect for FeConvolveMatrix {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
         let original_bounds = bounds;
+
+        let target_x = match self.target_x {
+            Some(x) if x >= self.order.0 => {
+                return Err(FilterError::InvalidParameter(
+                    "targetX must be less than orderX".to_string(),
+                ))
+            }
+            Some(x) => x,
+            None => self.order.0 / 2,
+        };
+
+        let target_y = match self.target_y {
+            Some(y) if y >= self.order.1 => {
+                return Err(FilterError::InvalidParameter(
+                    "targetY must be less than orderY".to_string(),
+                ))
+            }
+            Some(y) => y,
+            None => self.order.1 / 2,
+        };
 
         let mut input_surface = if self.preserve_alpha {
             // preserve_alpha means we need to premultiply and unpremultiply the values.
@@ -232,6 +178,18 @@ impl FilterEffect for FeConvolveMatrix {
 
         let matrix = self.kernel_matrix.as_ref().unwrap();
 
+        let divisor = if self.divisor != 0.0 {
+            self.divisor
+        } else {
+            let d = matrix.iter().sum();
+
+            if d != 0.0 {
+                d
+            } else {
+                1.0
+            }
+        };
+
         let mut surface = ExclusiveImageSurface::new(
             input_surface.width(),
             input_surface.height(),
@@ -242,10 +200,10 @@ impl FilterEffect for FeConvolveMatrix {
             for (x, y, pixel) in Pixels::within(&input_surface, bounds) {
                 // Compute the convolution rectangle bounds.
                 let kernel_bounds = IRect::new(
-                    x as i32 - self.target_x.unwrap() as i32,
-                    y as i32 - self.target_y.unwrap() as i32,
-                    x as i32 - self.target_x.unwrap() as i32 + self.order.0 as i32,
-                    y as i32 - self.target_y.unwrap() as i32 + self.order.1 as i32,
+                    x as i32 - target_x as i32,
+                    y as i32 - target_y as i32,
+                    x as i32 - target_x as i32 + self.order.0 as i32,
+                    y as i32 - target_y as i32 + self.order.1 as i32,
                 );
 
                 // Do the convolution.
@@ -273,13 +231,13 @@ impl FilterEffect for FeConvolveMatrix {
                 if self.preserve_alpha {
                     a = f64::from(pixel.a) / 255.0;
                 } else {
-                    a = a / self.divisor.unwrap() + self.bias;
+                    a = a / divisor + self.bias;
                 }
 
                 let clamped_a = clamp(a, 0.0, 1.0);
 
                 let compute = |x| {
-                    let x = x / self.divisor.unwrap() + self.bias * a;
+                    let x = x / divisor + self.bias * a;
 
                     let x = if self.preserve_alpha {
                         // Premultiply the output value.

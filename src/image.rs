@@ -3,7 +3,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::AspectRatio;
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -14,6 +13,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::xml::Attributes;
 
 #[derive(Default)]
 pub struct Image {

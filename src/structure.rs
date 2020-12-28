@@ -3,7 +3,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::*;
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
@@ -17,6 +16,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::viewbox::*;
+use crate::xml::Attributes;
 
 #[derive(Default)]
 pub struct Group();

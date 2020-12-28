@@ -10,7 +10,6 @@ use std::fmt;
 use std::include_str;
 use std::rc::Rc;
 
-use crate::attributes::Attributes;
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, AllowedUrlError, LoadingError, NodeIdError};
 use crate::handle::LoadOptions;
@@ -19,7 +18,7 @@ use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
-use crate::xml::xml_load_from_possibly_compressed_stream;
+use crate::xml::{xml_load_from_possibly_compressed_stream, Attributes};
 
 static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
     vec![Stylesheet::from_data(

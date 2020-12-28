@@ -89,10 +89,12 @@ mod node;
 #[macro_use]
 mod property_macros;
 
+#[macro_use]
+mod util;
+
 mod angle;
 mod api;
 mod aspect_ratio;
-mod attributes;
 mod bbox;
 pub mod c_api;
 mod color;
@@ -116,7 +118,6 @@ mod iri;
 mod length;
 mod limits;
 mod marker;
-mod number_list;
 mod paint_server;
 mod path_builder;
 mod path_parser;
@@ -134,7 +135,6 @@ mod text;
 mod transform;
 mod unit_interval;
 mod url_resolver;
-mod util;
 mod viewbox;
 mod xml;
 

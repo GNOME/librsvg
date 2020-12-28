@@ -6,7 +6,6 @@ use markup5ever::{
 };
 use std::cell::RefCell;
 
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
@@ -21,6 +20,7 @@ use crate::properties::ComputedValues;
 use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::xml::Attributes;
 
 /// Contents of a <stop> element for gradient color stops
 #[derive(Copy, Clone)]
@@ -46,6 +46,8 @@ pub enum SpreadMethod {
     Repeat,
 }
 
+enum_default!(SpreadMethod, SpreadMethod::Pad);
+
 impl Parse for SpreadMethod {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, ParseError<'i>> {
         Ok(parse_identifiers!(
@@ -57,9 +59,19 @@ impl Parse for SpreadMethod {
     }
 }
 
-impl Default for SpreadMethod {
-    fn default() -> SpreadMethod {
-        SpreadMethod::Pad
+#[derive(Debug, Copy, Clone, PartialEq)]
+struct StopOffset(UnitInterval);
+
+impl Parse for StopOffset {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let l: Length<Both> = Parse::parse(parser)?;
+        match l.unit {
+            LengthUnit::Px | LengthUnit::Percent => Ok(StopOffset(UnitInterval::clamp(l.length))),
+            _ => Err(loc.new_custom_error(ValueErrorKind::value_error(
+                "stop offset must be in default or percent units",
+            ))),
+        }
     }
 }
 
@@ -72,24 +84,13 @@ pub struct Stop {
      * they go into property_defs.rs */
 }
 
-fn validate_offset(length: Length<Both>) -> Result<Length<Both>, ValueErrorKind> {
-    match length.unit {
-        LengthUnit::Px | LengthUnit::Percent => Ok(length),
-        _ => Err(ValueErrorKind::Value(
-            "stop offset must be in default or percent units".to_string(),
-        )),
-    }
-}
-
 impl SetAttributes for Stop {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        let result = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "offset"))
-            .and_then(|(attr, value)| attr.parse_and_validate(value, validate_offset).ok())
-            .map(|l| UnitInterval::clamp(l.length));
-        if let Some(offset) = result {
-            self.offset = offset
+        for (attr, value) in attrs.iter() {
+            if let expanded_name!("", "offset") = attr.expanded() {
+                let StopOffset(o) = attr.parse(value)?;
+                self.offset = o;
+            }
         }
 
         Ok(())
@@ -748,7 +749,6 @@ mod tests {
     use super::*;
     use crate::node::{Node, NodeData};
     use markup5ever::{namespace_url, ns, QualName};
-    use std::ptr;
 
     #[test]
     fn parses_spread_method() {
@@ -766,22 +766,18 @@ mod tests {
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
-
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
-            attrs,
+            Attributes::new(),
         ));
 
         let unresolved = borrow_element_as!(node, LinearGradient).get_unresolved(&node);
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
-
         let node = Node::new(NodeData::new_element(
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
-            attrs,
+            Attributes::new(),
         ));
 
         let unresolved = borrow_element_as!(node, RadialGradient).get_unresolved(&node);

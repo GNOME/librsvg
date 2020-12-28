@@ -2,9 +2,9 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::xml::Attributes;
 
 /// Represents the syntax used in the <style> node.
 ///
@@ -16,6 +16,8 @@ use crate::error::*;
 pub enum StyleType {
     TextCss,
 }
+
+enum_default!(StyleType, StyleType::TextCss);
 
 impl StyleType {
     fn parse(value: &str) -> Result<StyleType, ValueErrorKind> {
@@ -41,11 +43,11 @@ impl StyleType {
 /// the code to use.
 #[derive(Default)]
 pub struct Style {
-    type_: Option<StyleType>,
+    type_: StyleType,
 }
 
 impl Style {
-    pub fn style_type(&self) -> Option<StyleType> {
+    pub fn style_type(&self) -> StyleType {
         self.type_
     }
 }
@@ -54,7 +56,7 @@ impl SetAttributes for Style {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "type") {
-                self.type_ = Some(StyleType::parse(value).attribute(attr)?);
+                self.type_ = StyleType::parse(value).attribute(attr)?;
             }
         }
 

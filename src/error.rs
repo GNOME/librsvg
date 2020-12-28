@@ -253,7 +253,7 @@ impl<'i, O> AttributeResultExt<O> for Result<O, ParseError<'i>> {
                 ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(tok)) => {
                     let mut s = String::from("unexpected token '");
                     tok.to_css(&mut s).unwrap(); // FIXME: what do we do with a fmt::Error?
-                    s.push_str("'");
+                    s.push('\'');
 
                     ElementError {
                         attr,

@@ -8,7 +8,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
@@ -24,6 +23,7 @@ use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::*;
+use crate::xml::Attributes;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -32,11 +32,7 @@ enum MarkerUnits {
     StrokeWidth,
 }
 
-impl Default for MarkerUnits {
-    fn default() -> MarkerUnits {
-        MarkerUnits::StrokeWidth
-    }
-}
+enum_default!(MarkerUnits, MarkerUnits::StrokeWidth);
 
 impl Parse for MarkerUnits {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerUnits, ParseError<'i>> {
@@ -55,11 +51,7 @@ enum MarkerOrient {
     Angle(Angle),
 }
 
-impl Default for MarkerOrient {
-    fn default() -> MarkerOrient {
-        MarkerOrient::Angle(Angle::new(0.0))
-    }
-}
+enum_default!(MarkerOrient, MarkerOrient::Angle(Angle::new(0.0)));
 
 impl Parse for MarkerOrient {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, ParseError<'i>> {
@@ -185,7 +177,7 @@ impl SetAttributes for Marker {
                 expanded_name!("", "markerHeight") => self.height = attr.parse(value)?,
                 expanded_name!("", "orient") => self.orient = attr.parse(value)?,
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
-                expanded_name!("", "viewBox") => self.vbox = Some(attr.parse(value)?),
+                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
                 _ => (),
             }
         }

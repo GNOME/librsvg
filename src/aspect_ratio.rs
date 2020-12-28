@@ -25,48 +25,12 @@ use crate::transform::Transform;
 use crate::viewbox::ViewBox;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct AspectRatio {
-    defer: bool,
-    align: Option<Align>,
-}
-
-impl Default for AspectRatio {
-    fn default() -> AspectRatio {
-        AspectRatio {
-            defer: false,
-            align: Some(Align::default()),
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum FitMode {
     Meet,
     Slice,
 }
 
-impl Default for FitMode {
-    fn default() -> FitMode {
-        FitMode::Meet
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct Align {
-    x: X,
-    y: Y,
-    fit: FitMode,
-}
-
-impl Default for Align {
-    fn default() -> Align {
-        Align {
-            x: X(Align1D::Mid),
-            y: Y(Align1D::Mid),
-            fit: FitMode::default(),
-        }
-    }
-}
+enum_default!(FitMode, FitMode::Meet);
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Align1D {
@@ -75,9 +39,11 @@ enum Align1D {
     Max,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum_default!(Align1D, Align1D::Mid);
+
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 struct X(Align1D);
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 struct Y(Align1D);
 
 impl Deref for X {
@@ -102,6 +68,28 @@ impl Align1D {
             Align1D::Min => dest_pos,
             Align1D::Mid => dest_pos + (dest_size - obj_size) / 2.0,
             Align1D::Max => dest_pos + dest_size - obj_size,
+        }
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+struct Align {
+    x: X,
+    y: Y,
+    fit: FitMode,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct AspectRatio {
+    defer: bool,
+    align: Option<Align>,
+}
+
+impl Default for AspectRatio {
+    fn default() -> AspectRatio {
+        AspectRatio {
+            defer: false,
+            align: Some(Align::default()),
         }
     }
 }
@@ -233,9 +221,7 @@ impl Parse for AspectRatio {
             .is_ok();
 
         let align_xy = parser.try_parse(|p| parse_align_xy(p))?;
-
         let fit = parser.try_parse(|p| parse_fit_mode(p)).unwrap_or_default();
-
         let align = align_xy.map(|(x, y)| Align { x, y, fit });
 
         Ok(AspectRatio { defer, align })

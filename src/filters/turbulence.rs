@@ -1,18 +1,18 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
 };
 use crate::util::clamp;
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive};
@@ -63,15 +63,7 @@ impl SetAttributes for FeTurbulence {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "baseFrequency") => {
-                    let NumberOptionalNumber(x, y) =
-                        attr.parse_and_validate(value, |v: NumberOptionalNumber<f64>| {
-                            if v.0 >= 0.0 && v.1 >= 0.0 {
-                                Ok(v)
-                            } else {
-                                Err(ValueErrorKind::value_error("values can't be negative"))
-                            }
-                        })?;
-
+                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.base_frequency = (x, y);
                 }
                 expanded_name!("", "numOctaves") => {
@@ -342,7 +334,7 @@ impl FilterEffect for FeTurbulence {
         let bounds = self
             .base
             .get_bounds(ctx, node.parent().as_ref())?
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let affine = ctx.paffine().invert().unwrap();
 

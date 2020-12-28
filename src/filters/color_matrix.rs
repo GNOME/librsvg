@@ -2,18 +2,17 @@ use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
-use crate::number_list::{NumberList, NumberListLength};
-use crate::parsers::{Parse, ParseValue};
+use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, PrimitiveWithInput};
@@ -27,11 +26,7 @@ enum OperationType {
     LuminanceToAlpha,
 }
 
-impl Default for OperationType {
-    fn default() -> Self {
-        OperationType::Matrix
-    }
-}
+enum_default!(OperationType, OperationType::Matrix);
 
 /// The `feColorMatrix` filter primitive.
 pub struct FeColorMatrix {
@@ -93,13 +88,7 @@ impl SetAttributes for FeColorMatrix {
                         matrix
                     }
                     OperationType::Saturate => {
-                        let s: f64 = attr.parse_and_validate(value, |s| {
-                            if s < 0.0 || s > 1.0 {
-                                Err(ValueErrorKind::value_error("expected value from 0 to 1"))
-                            } else {
-                                Ok(s)
-                            }
-                        })?;
+                        let s: f64 = attr.parse(value)?;
 
                         Matrix5::new(
                             0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0.0, 0.0,
@@ -161,7 +150,7 @@ impl FilterEffect for FeColorMatrix {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),

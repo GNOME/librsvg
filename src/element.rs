@@ -7,7 +7,6 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
 
-use crate::attributes::Attributes;
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::{Declaration, Origin};
@@ -45,6 +44,7 @@ use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, S
 use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 use crate::transform::Transform;
+use crate::xml::Attributes;
 
 // After creating/parsing a Element, it will be in a success or an error state.
 // We represent this with a Result, aliased as a ElementResult.  There is no

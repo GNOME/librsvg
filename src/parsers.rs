@@ -45,13 +45,6 @@ pub fn finite_f32(n: f32) -> Result<f32, ValueErrorKind> {
 pub trait ParseValue<T: Parse> {
     /// Parses a `value` string into a type `T`.
     fn parse(&self, value: &str) -> Result<T, ElementError>;
-
-    /// Parses a `value` string into a type `T` with an optional validation function.
-    fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
-        &self,
-        value: &str,
-        validate: F,
-    ) -> Result<T, ElementError>;
 }
 
 impl<T: Parse> ParseValue<T> for QualName {
@@ -60,21 +53,6 @@ impl<T: Parse> ParseValue<T> for QualName {
         let mut parser = Parser::new(&mut input);
 
         T::parse(&mut parser).attribute(self.clone())
-    }
-
-    fn parse_and_validate<F: FnOnce(T) -> Result<T, ValueErrorKind>>(
-        &self,
-        value: &str,
-        validate: F,
-    ) -> Result<T, ElementError> {
-        let mut input = ParserInput::new(value);
-        let mut parser = Parser::new(&mut input);
-
-        let v = T::parse(&mut parser).attribute(self.clone())?;
-
-        validate(v)
-            .map_err(|e| parser.new_custom_error(e))
-            .attribute(self.clone())
     }
 }
 
@@ -92,6 +70,22 @@ impl Parse for f64 {
             Ok(f64::from(n))
         } else {
             Err(loc.new_custom_error(ValueErrorKind::value_error("expected finite number")))
+        }
+    }
+}
+
+/// Non-Negative number
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct NonNegative(pub f64);
+
+impl Parse for NonNegative {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let n = Parse::parse(parser)?;
+        if n >= 0.0 {
+            Ok(NonNegative(n))
+        } else {
+            Err(loc.new_custom_error(ValueErrorKind::value_error("expected non negative number")))
         }
     }
 }
@@ -122,6 +116,81 @@ impl Parse for i32 {
     /// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parser.expect_integer()?)
+    }
+}
+
+impl Parse for u32 {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let n = parser.expect_integer()?;
+        if n >= 0 {
+            Ok(n as u32)
+        } else {
+            Err(loc.new_custom_error(ValueErrorKind::value_error("expected unsigned number")))
+        }
+    }
+}
+
+#[derive(Eq, PartialEq)]
+pub enum NumberListLength {
+    Exact(usize),
+    Unbounded,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct NumberList(pub Vec<f64>);
+
+/// CSS number-list values.
+impl NumberList {
+    pub fn parse<'i>(
+        parser: &mut Parser<'i, '_>,
+        length: NumberListLength,
+    ) -> Result<Self, ParseError<'i>> {
+        let mut v = match length {
+            NumberListLength::Exact(l) if l > 0 => Vec::<f64>::with_capacity(l),
+            NumberListLength::Exact(_) => unreachable!("NumberListLength::Exact cannot be 0"),
+            NumberListLength::Unbounded => Vec::<f64>::new(),
+        };
+
+        if parser.is_exhausted() && length == NumberListLength::Unbounded {
+            return Ok(NumberList(v));
+        }
+
+        for i in 0.. {
+            if i != 0 {
+                optional_comma(parser);
+            }
+
+            v.push(f64::parse(parser)?);
+
+            if let NumberListLength::Exact(l) = length {
+                if i + 1 == l {
+                    break;
+                }
+            }
+
+            if parser.is_exhausted() {
+                match length {
+                    NumberListLength::Exact(l) => {
+                        if i + 1 == l {
+                            break;
+                        }
+                    }
+                    _ => break,
+                }
+            }
+        }
+
+        Ok(NumberList(v))
+    }
+
+    pub fn parse_str(s: &str, length: NumberListLength) -> Result<NumberList, ParseError<'_>> {
+        let mut input = ParserInput::new(s);
+        let mut parser = Parser::new(&mut input);
+
+        let res = Self::parse(&mut parser, length)?;
+        parser.expect_exhausted()?;
+        Ok(res)
     }
 }
 
@@ -233,8 +302,12 @@ mod tests {
 
     #[test]
     fn parses_integer() {
+        assert_eq!(i32::parse_str("0").unwrap(), 0);
         assert_eq!(i32::parse_str("1").unwrap(), 1);
         assert_eq!(i32::parse_str("-1").unwrap(), -1);
+
+        assert_eq!(u32::parse_str("0").unwrap(), 0);
+        assert_eq!(u32::parse_str("1").unwrap(), 1);
     }
 
     #[test]
@@ -242,6 +315,11 @@ mod tests {
         assert!(i32::parse_str("").is_err());
         assert!(i32::parse_str("1x").is_err());
         assert!(i32::parse_str("1.5").is_err());
+
+        assert!(u32::parse_str("").is_err());
+        assert!(u32::parse_str("1x").is_err());
+        assert!(u32::parse_str("1.5").is_err());
+        assert!(u32::parse_str("-1").is_err());
     }
 
     #[test]
@@ -285,6 +363,54 @@ mod tests {
         assert!(NumberOptionalNumber::<i32>::parse_str("1.5").is_err());
         assert!(NumberOptionalNumber::<i32>::parse_str("1 2.5").is_err());
         assert!(NumberOptionalNumber::<i32>::parse_str("1, 2.5").is_err());
+    }
+
+    #[test]
+    fn parses_number_list() {
+        assert_eq!(
+            NumberList::parse_str("5", NumberListLength::Exact(1)).unwrap(),
+            NumberList(vec![5.0])
+        );
+
+        assert_eq!(
+            NumberList::parse_str("1 2 3 4", NumberListLength::Exact(4)).unwrap(),
+            NumberList(vec![1.0, 2.0, 3.0, 4.0])
+        );
+
+        assert_eq!(
+            NumberList::parse_str("", NumberListLength::Unbounded).unwrap(),
+            NumberList(vec![])
+        );
+
+        assert_eq!(
+            NumberList::parse_str("1, 2, 3.0, 4, 5", NumberListLength::Unbounded).unwrap(),
+            NumberList(vec![1.0, 2.0, 3.0, 4.0, 5.0])
+        );
+    }
+
+    #[test]
+    fn errors_on_invalid_number_list() {
+        // empty
+        assert!(NumberList::parse_str("", NumberListLength::Exact(1)).is_err());
+
+        // garbage
+        assert!(NumberList::parse_str("foo", NumberListLength::Exact(1)).is_err());
+        assert!(NumberList::parse_str("1foo", NumberListLength::Exact(2)).is_err());
+        assert!(NumberList::parse_str("1 foo", NumberListLength::Exact(2)).is_err());
+        assert!(NumberList::parse_str("1 foo 2", NumberListLength::Exact(2)).is_err());
+        assert!(NumberList::parse_str("1,foo", NumberListLength::Exact(2)).is_err());
+
+        // too many
+        assert!(NumberList::parse_str("1 2", NumberListLength::Exact(1)).is_err());
+
+        // extra token
+        assert!(NumberList::parse_str("1,", NumberListLength::Exact(1)).is_err());
+        assert!(NumberList::parse_str("1,", NumberListLength::Exact(1)).is_err());
+        assert!(NumberList::parse_str("1,", NumberListLength::Unbounded).is_err());
+
+        // too few
+        assert!(NumberList::parse_str("1", NumberListLength::Exact(2)).is_err());
+        assert!(NumberList::parse_str("1 2", NumberListLength::Exact(3)).is_err());
     }
 
     #[test]

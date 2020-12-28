@@ -3,7 +3,6 @@
 src/angle.rs
 src/api.rs
 src/aspect_ratio.rs
-src/attributes.rs
 src/bbox.rs
 src/c_api/color_utils.rs
 src/c_api/dpi.rs
@@ -56,7 +55,6 @@ src/limits.rs
 src/log.rs
 src/marker.rs
 src/node.rs
-src/number_list.rs
 src/paint_server.rs
 src/parsers.rs
 src/path_builder.rs
@@ -82,6 +80,7 @@ src/unit_interval.rs
 src/url_resolver.rs
 src/util.rs
 src/viewbox.rs
+src/xml/attributes.rs
 src/xml/mod.rs
 src/xml/xml2.rs
 src/xml/xml2_load.rs

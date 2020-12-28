@@ -1,49 +1,52 @@
 //! Filter primitive subregion computation.
-use crate::bbox::BoundingBox;
 use crate::drawing_ctx::DrawingCtx;
 use crate::length::*;
 use crate::rect::{IRect, Rect};
+use crate::transform::Transform;
 
 use super::context::{FilterContext, FilterInput};
 
 /// A helper type for filter primitive subregion computation.
-#[derive(Clone, Copy)]
-pub struct BoundsBuilder<'a> {
-    /// The filter context.
-    ctx: &'a FilterContext,
-
-    /// The current bounding box.
-    bbox: BoundingBox,
-
-    /// Whether one of the input nodes is standard input.
-    standard_input_was_referenced: bool,
-
+pub struct BoundsBuilder {
     /// Filter primitive properties.
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<ULength<Horizontal>>,
     height: Option<ULength<Vertical>>,
+
+    /// The transform to use when generating the rect
+    transform: Transform,
+
+    /// The inverse transform used when adding rects
+    inverse: Transform,
+
+    /// Whether one of the input nodes is standard input.
+    standard_input_was_referenced: bool,
+
+    /// The current bounding rectangle.
+    rect: Option<Rect>,
 }
 
-impl<'a> BoundsBuilder<'a> {
+impl BoundsBuilder {
     /// Constructs a new `BoundsBuilder`.
     #[inline]
     pub fn new(
-        ctx: &'a FilterContext,
         x: Option<Length<Horizontal>>,
         y: Option<Length<Vertical>>,
         width: Option<ULength<Horizontal>>,
         height: Option<ULength<Vertical>>,
+        transform: Transform,
     ) -> Self {
+        // We panic if transform is not invertible. This is checked in the caller.
         Self {
-            ctx,
-            // The transform is paffine because we're using that fact in apply_properties().
-            bbox: BoundingBox::new().with_transform(ctx.paffine()),
-            standard_input_was_referenced: false,
             x,
             y,
             width,
             height,
+            transform,
+            inverse: transform.invert().unwrap(),
+            standard_input_was_referenced: false,
+            rect: None,
         }
     }
 
@@ -51,8 +54,7 @@ impl<'a> BoundsBuilder<'a> {
     #[inline]
     pub fn add_input(mut self, input: &FilterInput) -> Self {
         // If a standard input was referenced, the default value is the filter effects region
-        // regardless of other referenced inputs. This means we can skip computing the bounding
-        // box.
+        // regardless of other referenced inputs. This means we can skip computing the bounds.
         if self.standard_input_was_referenced {
             return self;
         }
@@ -62,57 +64,30 @@ impl<'a> BoundsBuilder<'a> {
                 self.standard_input_was_referenced = true;
             }
             FilterInput::PrimitiveOutput(ref output) => {
-                let input_bbox = BoundingBox::new().with_rect(output.bounds.into());
-                self.bbox.insert(&input_bbox);
+                let input_rect = self.inverse.transform_rect(&Rect::from(output.bounds));
+                self.rect = Some(self.rect.map_or(input_rect, |r| input_rect.union(&r)));
             }
         }
 
         self
     }
 
-    /// Returns the final exact bounds.
-    pub fn into_rect(self, draw_ctx: &mut DrawingCtx) -> Rect {
-        let mut bbox = self.apply_properties(draw_ctx);
+    /// Returns the final exact bounds, both with and without clipping to the effects region.
+    pub fn into_rect(self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> (Rect, Rect) {
+        let effects_region = ctx.effects_region();
 
-        let effects_region = self.ctx.effects_region();
-        bbox.clip(&effects_region);
-
-        bbox.rect.unwrap()
-    }
-
-    /// Returns the final pixel bounds.
-    pub fn into_irect(self, draw_ctx: &mut DrawingCtx) -> IRect {
-        self.into_rect(draw_ctx).into()
-    }
-
-    /// Returns the final pixel bounds without clipping to the filter effects region.
-    ///
-    /// Used by feImage.
-    pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> Rect {
-        self.apply_properties(draw_ctx).rect.unwrap()
-    }
-
-    /// Applies the filter primitive properties.
-    fn apply_properties(mut self, draw_ctx: &mut DrawingCtx) -> BoundingBox {
-        if self.bbox.rect.is_none() || self.standard_input_was_referenced {
-            // The default value is the filter effects region.
-            let effects_region = self.ctx.effects_region();
-
-            // Clear out the rect.
-            self.bbox.clear();
-
-            // Convert into the paffine coordinate system.
-            self.bbox.insert(&effects_region);
-        }
+        // The default value is the filter effects region converted into
+        // the ptimitive coordinate system.
+        let mut rect = match self.rect {
+            Some(r) if !self.standard_input_was_referenced => r,
+            _ => self.inverse.transform_rect(&effects_region),
+        };
 
         // If any of the properties were specified, we need to respect them.
+        // These replacements are possible because of the primitive coordinate system.
         if self.x.is_some() || self.y.is_some() || self.width.is_some() || self.height.is_some() {
-            let params = draw_ctx.push_coord_units(self.ctx.primitive_units());
-            let values = self.ctx.get_computed_values_from_node_being_filtered();
-
-            // These replacements are correct only because self.bbox is used with the
-            // paffine transform.
-            let rect = self.bbox.rect.as_mut().unwrap();
+            let params = draw_ctx.push_coord_units(ctx.primitive_units());
+            let values = ctx.get_computed_values_from_node_being_filtered();
 
             if let Some(x) = self.x {
                 let w = rect.width();
@@ -133,8 +108,17 @@ impl<'a> BoundsBuilder<'a> {
         }
 
         // Convert into the surface coordinate system.
-        let mut bbox = BoundingBox::new();
-        bbox.insert(&self.bbox);
-        bbox
+        let unclipped_rect = self.transform.transform_rect(&rect);
+
+        let clipped_rect = unclipped_rect
+            .intersection(&effects_region)
+            .unwrap_or_else(Rect::default);
+
+        (clipped_rect, unclipped_rect)
+    }
+
+    /// Returns the final pixel bounds, clipped to the effects region.
+    pub fn into_irect(self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> IRect {
+        self.into_rect(ctx, draw_ctx).0.into()
     }
 }

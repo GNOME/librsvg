@@ -6,7 +6,7 @@ use crate::transform::Transform;
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct BoundingBox {
-    pub transform: Transform,
+    transform: Transform,
     pub rect: Option<Rect>,     // without stroke
     pub ink_rect: Option<Rect>, // with stroke
 }
@@ -63,14 +63,6 @@ impl BoundingBox {
         self.combine(src, true);
     }
 
-    pub fn rect_is_empty(&self) -> bool {
-        self.rect.map_or(true, |r| r.is_empty())
-    }
-
-    pub fn ink_rect_is_empty(&self) -> bool {
-        self.ink_rect.map_or(true, |r| r.is_empty())
-    }
-
     /// Creates a transform to map to the `self.rect`.
     ///
     /// This depends on a `CoordUnits` parameter.  When this is
@@ -85,7 +77,7 @@ impl BoundingBox {
         match units {
             CoordUnits::UserSpaceOnUse => Ok(Transform::identity()),
             CoordUnits::ObjectBoundingBox => {
-                if self.rect_is_empty() {
+                if self.rect.as_ref().map_or(true, |r| r.is_empty()) {
                     Err(())
                 } else {
                     let r = self.rect.as_ref().unwrap();

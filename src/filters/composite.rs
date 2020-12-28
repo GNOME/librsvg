@@ -1,13 +1,13 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::attributes::Attributes;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::parsers::{Parse, ParseValue};
+use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
@@ -85,7 +85,7 @@ impl FilterEffect for FeComposite {
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .add_input(&input_2)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let surface = if self.operator == Operator::Arithmetic {
             input.surface().compose_arithmetic(
