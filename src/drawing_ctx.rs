@@ -270,13 +270,20 @@ impl DrawingCtx {
         BoundingBox::new().with_transform(self.get_transform())
     }
 
-    // FIXME: Usage of this function is more less a hack... The caller
-    // manually saves and then restore the draw_ctx.cr.
+    // FIXME: Usage of this function is more less a hack...
     // It would be better to have an explicit push/pop for the cairo_t, or
     // pushing a temporary surface, or something that does not involve
     // monkeypatching the cr directly.
-    fn set_cairo_context(&mut self, cr: &cairo::Context) {
+    fn with_cairo_context(
+        &mut self,
+        cr: &cairo::Context,
+        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
+    ) -> Result<(), RenderingError> {
+        let cr_save = self.cr.clone();
         self.cr = cr.clone();
+        let res = draw_fn(self);
+        self.cr = cr_save;
+        res
     }
 
     // Temporary hack while we unify surface/cr/affine creation
@@ -1013,39 +1020,35 @@ impl DrawingCtx {
         };
 
         // Draw to another surface
-
-        let cr_save = self.cr.clone();
-
-        let surface = cr_save
+        let surface = self
+            .cr
             .get_target()
             .create_similar(cairo::Content::ColorAlpha, pw, ph)?;
 
         let cr_pattern = cairo::Context::new(&surface);
 
-        self.set_cairo_context(&cr_pattern);
-
         // Set up transformations to be determined by the contents units
         cr_pattern.set_matrix(caffine.into());
 
         // Draw everything
-        let res = self.with_alpha(opacity, &mut |dc| {
-            let pattern_cascaded = CascadedValues::new_from_node(&pattern.node_with_children);
-            let pattern_values = pattern_cascaded.get();
-            dc.with_discrete_layer(
-                &pattern.node_with_children,
-                acquired_nodes,
-                pattern_values,
-                false,
-                &mut |an, dc| {
-                    pattern
-                        .node_with_children
-                        .draw_children(an, &pattern_cascaded, dc, false)
-                },
-            )
-        });
-
-        // Return to the original coordinate system and rendering context
-        self.set_cairo_context(&cr_save);
+        self.with_cairo_context(&cr_pattern, &mut |dc| {
+            dc.with_alpha(opacity, &mut |dc| {
+                let pattern_cascaded = CascadedValues::new_from_node(&pattern.node_with_children);
+                let pattern_values = pattern_cascaded.get();
+                dc.with_discrete_layer(
+                    &pattern.node_with_children,
+                    acquired_nodes,
+                    pattern_values,
+                    false,
+                    &mut |an, dc| {
+                        pattern
+                            .node_with_children
+                            .draw_children(an, &pattern_cascaded, dc, false)
+                    },
+                )
+            })
+            .map(|_| ())
+        })?;
 
         // Set the final surface as a Cairo pattern into the Cairo context
         let pattern = cairo::SurfacePattern::create(&surface);
@@ -1055,9 +1058,9 @@ impl DrawingCtx {
         }
         pattern.set_extend(cairo::Extend::Repeat);
         pattern.set_filter(cairo::Filter::Best);
-        cr_save.set_source(&pattern);
+        self.cr.set_source(&pattern);
 
-        res.map(|_| true)
+        Ok(true)
     }
 
     fn set_color(
@@ -1134,12 +1137,9 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
-            let cr_save = self.cr.clone();
-            self.set_cairo_context(&cr);
-
             // FIXME: we are ignoring any error
-            let _ = self
-                .set_source_paint_server(
+            let _ = self.with_cairo_context(cr, &mut |dc| {
+                dc.set_source_paint_server(
                     acquired_nodes,
                     paint_server,
                     opacity,
@@ -1151,9 +1151,8 @@ impl DrawingCtx {
                     if had_paint_server {
                         cr.paint();
                     }
-                });
-
-            self.set_cairo_context(&cr_save);
+                })
+            });
 
             Ok(())
         })?;
