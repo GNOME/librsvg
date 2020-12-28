@@ -85,7 +85,7 @@ impl FilterEffect for FeBlend {
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .add_input(&input_2)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let surface =
             input

@@ -98,7 +98,7 @@ impl FilterEffect for FeMerge {
             }
         }
 
-        let bounds = bounds.into_irect(draw_ctx);
+        let bounds = bounds.into_irect(ctx, draw_ctx);
 
         // Now merge them all.
         let mut output_surface = None;

@@ -82,7 +82,7 @@ impl FilterEffect for FeDisplacementMap {
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
             .add_input(&displacement_input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         // Displacement map's values need to be non-premultiplied.
         let displacement_surface = displacement_input.surface().unpremultiply(bounds)?;

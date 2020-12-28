@@ -77,7 +77,7 @@ impl FilterEffect for FeMorphology {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let (rx, ry) = self.radius;
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);

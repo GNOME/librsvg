@@ -289,7 +289,7 @@ impl FilterEffect for FeComponentTransfer {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         // Create the output surface.
         let mut surface = ExclusiveImageSurface::new(

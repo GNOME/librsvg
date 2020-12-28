@@ -137,8 +137,8 @@ impl Primitive {
         &self,
         ctx: &'a FilterContext,
         parent: Option<&Node>,
-    ) -> Result<BoundsBuilder<'a>, FilterError> {
-        let primitiveunits = parent
+    ) -> Result<BoundsBuilder, FilterError> {
+        let primitive_units = parent
             .and_then(|parent| {
                 assert!(parent.is_element());
                 match *parent.borrow_element() {
@@ -149,19 +149,26 @@ impl Primitive {
             .unwrap_or(CoordUnits::UserSpaceOnUse);
 
         // With ObjectBoundingBox, only fractions and percents are allowed.
-        if primitiveunits == CoordUnits::ObjectBoundingBox {
+        if primitive_units == CoordUnits::ObjectBoundingBox {
             check_units(self.x)?;
             check_units(self.y)?;
             check_units(self.width)?;
             check_units(self.height)?;
         }
 
+        let transform = ctx.paffine();
+        if !transform.is_invertible() {
+            return Err(FilterError::InvalidParameter(
+                "transform is not invertible".to_string(),
+            ));
+        }
+
         Ok(BoundsBuilder::new(
-            ctx,
             self.x,
             self.y,
             self.width,
             self.height,
+            transform,
         ))
     }
 }

@@ -198,7 +198,7 @@ impl FilterEffect for FeGaussianBlur {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let (std_x, std_y) = self.std_deviation;
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);

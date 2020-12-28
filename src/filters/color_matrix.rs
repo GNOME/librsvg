@@ -150,7 +150,7 @@ impl FilterEffect for FeColorMatrix {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),

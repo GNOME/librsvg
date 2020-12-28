@@ -127,7 +127,7 @@ impl FilterEffect for FeImage {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let bounds_builder = self.base.get_bounds(ctx, node.parent().as_ref())?;
-        let bounds = bounds_builder.into_rect(draw_ctx);
+        let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx, draw_ctx);
 
         let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
 
@@ -135,8 +135,6 @@ impl FilterEffect for FeImage {
             // if href has a fragment specified, render as a node
             self.render_node(ctx, acquired_nodes, draw_ctx, bounds, &node_id)
         } else {
-            // if there is no fragment, render as an image
-            let unclipped_bounds = bounds_builder.into_rect_without_clipping(draw_ctx);
             self.render_external_image(
                 ctx,
                 acquired_nodes,

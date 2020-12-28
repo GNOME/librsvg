@@ -39,7 +39,7 @@ impl FilterEffect for FeFlood {
         let bounds = self
             .base
             .get_bounds(ctx, node.parent().as_ref())?
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
 
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();

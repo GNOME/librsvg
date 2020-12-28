@@ -7,10 +7,12 @@ use crate::transform::Transform;
 use super::context::{FilterContext, FilterInput};
 
 /// A helper type for filter primitive subregion computation.
-#[derive(Clone, Copy)]
-pub struct BoundsBuilder<'a> {
-    /// The filter context.
-    ctx: &'a FilterContext,
+pub struct BoundsBuilder {
+    /// Filter primitive properties.
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
+    width: Option<ULength<Horizontal>>,
+    height: Option<ULength<Vertical>>,
 
     /// The transform to use when generating the rect
     transform: Transform,
@@ -18,40 +20,33 @@ pub struct BoundsBuilder<'a> {
     /// The inverse transform used when adding rects
     inverse: Transform,
 
-    /// The current bounding rectangle.
-    rect: Option<Rect>,
-
     /// Whether one of the input nodes is standard input.
     standard_input_was_referenced: bool,
 
-    /// Filter primitive properties.
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
-    width: Option<ULength<Horizontal>>,
-    height: Option<ULength<Vertical>>,
+    /// The current bounding rectangle.
+    rect: Option<Rect>,
 }
 
-impl<'a> BoundsBuilder<'a> {
+impl BoundsBuilder {
     /// Constructs a new `BoundsBuilder`.
     #[inline]
     pub fn new(
-        ctx: &'a FilterContext,
         x: Option<Length<Horizontal>>,
         y: Option<Length<Vertical>>,
         width: Option<ULength<Horizontal>>,
         height: Option<ULength<Vertical>>,
+        transform: Transform,
     ) -> Self {
-        // FIXME: we panic if paffine is not invertible... do we need to check here?
+        // We panic if transform is not invertible. This is checked in the caller.
         Self {
-            ctx,
-            transform: ctx.paffine(),
-            inverse: ctx.paffine().invert().unwrap(),
-            rect: None,
-            standard_input_was_referenced: false,
             x,
             y,
             width,
             height,
+            transform,
+            inverse: transform.invert().unwrap(),
+            standard_input_was_referenced: false,
+            rect: None,
         }
     }
 
@@ -77,32 +72,22 @@ impl<'a> BoundsBuilder<'a> {
         self
     }
 
-    /// Returns the final exact bounds.
-    pub fn into_rect(self, draw_ctx: &mut DrawingCtx) -> Rect {
-        self.into_rect_without_clipping(draw_ctx)
-            .intersection(&self.ctx.effects_region())
-            .unwrap_or_else(Rect::default)
-    }
+    /// Returns the final exact bounds, both with and without clipping to the effects region.
+    pub fn into_rect(self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> (Rect, Rect) {
+        let effects_region = ctx.effects_region();
 
-    /// Returns the final pixel bounds.
-    pub fn into_irect(self, draw_ctx: &mut DrawingCtx) -> IRect {
-        self.into_rect(draw_ctx).into()
-    }
-
-    /// Returns the final exact bounds without clipping to the filter effects region.
-    pub fn into_rect_without_clipping(self, draw_ctx: &mut DrawingCtx) -> Rect {
         // The default value is the filter effects region converted into
-        // the paffine coordinate system.
+        // the ptimitive coordinate system.
         let mut rect = match self.rect {
             Some(r) if !self.standard_input_was_referenced => r,
-            _ => self.inverse.transform_rect(&self.ctx.effects_region()),
+            _ => self.inverse.transform_rect(&effects_region),
         };
 
         // If any of the properties were specified, we need to respect them.
-        // These replacements are possible because of the paffince coordinate system.
+        // These replacements are possible because of the primitive coordinate system.
         if self.x.is_some() || self.y.is_some() || self.width.is_some() || self.height.is_some() {
-            let params = draw_ctx.push_coord_units(self.ctx.primitive_units());
-            let values = self.ctx.get_computed_values_from_node_being_filtered();
+            let params = draw_ctx.push_coord_units(ctx.primitive_units());
+            let values = ctx.get_computed_values_from_node_being_filtered();
 
             if let Some(x) = self.x {
                 let w = rect.width();
@@ -123,6 +108,17 @@ impl<'a> BoundsBuilder<'a> {
         }
 
         // Convert into the surface coordinate system.
-        self.transform.transform_rect(&rect)
+        let unclipped_rect = self.transform.transform_rect(&rect);
+
+        let clipped_rect = unclipped_rect
+            .intersection(&effects_region)
+            .unwrap_or_else(Rect::default);
+
+        (clipped_rect, unclipped_rect)
+    }
+
+    /// Returns the final pixel bounds, clipped to the effects region.
+    pub fn into_irect(self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> IRect {
+        self.into_rect(ctx, draw_ctx).0.into()
     }
 }

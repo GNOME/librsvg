@@ -134,7 +134,7 @@ impl FilterEffect for FeConvolveMatrix {
             .base
             .get_bounds(ctx, node.parent().as_ref())?
             .add_input(&input)
-            .into_irect(draw_ctx);
+            .into_irect(ctx, draw_ctx);
         let original_bounds = bounds;
 
         let target_x = match self.target_x {
