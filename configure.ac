@@ -160,7 +160,7 @@ dnl ===========================================================================
 
 AC_MSG_CHECKING([for darwin])
 case "$host" in
-  darwin*)
+  *-*-darwin*)
     native_darwin=yes
     ;;
   *)
