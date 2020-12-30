@@ -22,6 +22,7 @@ use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
 };
+use crate::transform::Transform;
 use crate::util::clamp;
 use crate::xml::Attributes;
 
@@ -49,7 +50,7 @@ struct Light {
 }
 
 impl Light {
-    pub fn new(node: &Node, ctx: &FilterContext) -> Result<Light, FilterError> {
+    pub fn new(node: &Node, paffine: Transform) -> Result<Light, FilterError> {
         let mut sources = node.children().rev().filter(|c| {
             c.is_element() && matches!(*c.borrow_element(), Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_))
         });
@@ -67,9 +68,9 @@ impl Light {
         }
 
         let source = match *elt {
-            Element::FeDistantLight(ref l) => l.transform(ctx),
-            Element::FePointLight(ref l) => l.transform(ctx),
-            Element::FeSpotLight(ref l) => l.transform(ctx),
+            Element::FeDistantLight(ref l) => l.transform(),
+            Element::FePointLight(ref l) => l.transform(paffine),
+            Element::FeSpotLight(ref l) => l.transform(paffine),
             _ => unreachable!(),
         };
 
@@ -148,7 +149,7 @@ pub struct FeDistantLight {
 }
 
 impl FeDistantLight {
-    pub fn transform(&self, _ctx: &FilterContext) -> LightSource {
+    pub fn transform(&self) -> LightSource {
         LightSource::Distant {
             azimuth: self.azimuth,
             elevation: self.elevation,
@@ -180,9 +181,9 @@ pub struct FePointLight {
 }
 
 impl FePointLight {
-    pub fn transform(&self, ctx: &FilterContext) -> LightSource {
-        let (x, y) = ctx.paffine().transform_point(self.x, self.y);
-        let z = transform_dist(ctx, self.z);
+    pub fn transform(&self, paffine: Transform) -> LightSource {
+        let (x, y) = paffine.transform_point(self.x, self.y);
+        let z = transform_dist(paffine, self.z);
 
         LightSource::Point {
             origin: Vector3::new(x, y, z),
@@ -220,13 +221,12 @@ pub struct FeSpotLight {
 }
 
 impl FeSpotLight {
-    pub fn transform(&self, ctx: &FilterContext) -> LightSource {
-        let (x, y) = ctx.paffine().transform_point(self.x, self.y);
-        let z = transform_dist(ctx, self.z);
-        let (points_at_x, points_at_y) = ctx
-            .paffine()
-            .transform_point(self.points_at_x, self.points_at_y);
-        let points_at_z = transform_dist(ctx, self.points_at_z);
+    pub fn transform(&self, paffine: Transform) -> LightSource {
+        let (x, y) = paffine.transform_point(self.x, self.y);
+        let z = transform_dist(paffine, self.z);
+        let (points_at_x, points_at_y) =
+            paffine.transform_point(self.points_at_x, self.points_at_y);
+        let points_at_z = transform_dist(paffine, self.points_at_z);
 
         let origin = Vector3::new(x, y, z);
         let mut direction = Vector3::new(points_at_x, points_at_y, points_at_z) - origin;
@@ -272,8 +272,8 @@ impl Draw for FeSpotLight {}
 
 /// Applies the `primitiveUnits` coordinate transformation to a non-x or y distance.
 #[inline]
-fn transform_dist(ctx: &FilterContext, d: f64) -> f64 {
-    d * (ctx.paffine().xx.powi(2) + ctx.paffine().yy.powi(2)).sqrt() / std::f64::consts::SQRT_2
+fn transform_dist(t: Transform, d: f64) -> f64 {
+    d * (t.xx.powi(2) + t.yy.powi(2)).sqrt() / std::f64::consts::SQRT_2
 }
 
 /// The `feDiffuseLighting` filter primitives.
@@ -460,7 +460,7 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let light = Light::new(node, ctx)?;
+                let light = Light::new(node, ctx.paffine())?;
 
                 // The generated color values are in the color space determined by
                 // color-interpolation-filters.
