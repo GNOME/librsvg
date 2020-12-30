@@ -182,7 +182,7 @@ pub struct FePointLight {
 impl FePointLight {
     pub fn transform(&self, ctx: &FilterContext) -> LightSource {
         let (x, y) = ctx.paffine().transform_point(self.x, self.y);
-        let z = ctx.transform_dist(self.z);
+        let z = transform_dist(ctx, self.z);
 
         LightSource::Point {
             origin: Vector3::new(x, y, z),
@@ -222,11 +222,11 @@ pub struct FeSpotLight {
 impl FeSpotLight {
     pub fn transform(&self, ctx: &FilterContext) -> LightSource {
         let (x, y) = ctx.paffine().transform_point(self.x, self.y);
-        let z = ctx.transform_dist(self.z);
+        let z = transform_dist(ctx, self.z);
         let (points_at_x, points_at_y) = ctx
             .paffine()
             .transform_point(self.points_at_x, self.points_at_y);
-        let points_at_z = ctx.transform_dist(self.points_at_z);
+        let points_at_z = transform_dist(ctx, self.points_at_z);
 
         let origin = Vector3::new(x, y, z);
         let mut direction = Vector3::new(points_at_x, points_at_y, points_at_z) - origin;
@@ -269,6 +269,12 @@ impl SetAttributes for FeSpotLight {
 }
 
 impl Draw for FeSpotLight {}
+
+/// Applies the `primitiveUnits` coordinate transformation to a non-x or y distance.
+#[inline]
+fn transform_dist(ctx: &FilterContext, d: f64) -> f64 {
+    d * (ctx.paffine().xx.powi(2) + ctx.paffine().yy.powi(2)).sqrt() / std::f64::consts::SQRT_2
+}
 
 /// The `feDiffuseLighting` filter primitives.
 pub struct FeDiffuseLighting {
