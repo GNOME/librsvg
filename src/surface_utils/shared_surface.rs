@@ -305,6 +305,33 @@ impl ImageSurface<Shared> {
         surf.share()
     }
 
+    pub fn to_pixbuf(&self) -> Option<Pixbuf> {
+        let width = self.width();
+        let height = self.height();
+
+        let pixbuf = Pixbuf::new(Colorspace::Rgb, true, 8, width, height)?;
+
+        assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
+        assert!(pixbuf.get_bits_per_sample() == 8);
+        assert!(pixbuf.get_n_channels() == 4);
+
+        let pixbuf_data = unsafe { pixbuf.get_pixels() };
+        let stride = pixbuf.get_rowstride() as usize;
+
+        // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
+        // to make the last row *not* have the full stride (i.e. it is
+        // only as wide as the pixels in that row).
+        pixbuf_data
+            .chunks_mut(stride)
+            .take(height as usize)
+            .map(|row| row.as_rgba_mut())
+            .zip(self.rows())
+            .flat_map(|(dest_row, src_row)| src_row.iter().zip(dest_row.iter_mut()))
+            .for_each(|(src, dest)| *dest = Pixel::from(*src).unpremultiply());
+
+        Some(pixbuf)
+    }
+
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.
     #[inline]
     pub fn is_alpha_only(&self) -> bool {
