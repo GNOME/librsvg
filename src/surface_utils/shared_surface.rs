@@ -6,7 +6,7 @@ use std::slice;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
-use rgb::{FromSlice, RGB8};
+use rgb::FromSlice;
 
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
@@ -272,39 +272,30 @@ impl ImageSurface<Shared> {
 
         let width = pixbuf.get_width();
         let height = pixbuf.get_height();
-        assert!(width > 0 && height > 0);
-
-        let pixbuf_stride = pixbuf.get_rowstride() as usize;
-        assert!(pixbuf_stride > 0);
+        let stride = pixbuf.get_rowstride() as usize;
+        assert!(width > 0 && height > 0 && stride > 0);
 
         let pixbuf_data = unsafe { pixbuf.get_pixels() };
 
         let mut surf = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        {
-            // We use chunks(), not chunks_exact(), because gdk-pixbuf tends
-            // to make the last row *not* have the full stride (i.e. it is
-            // only as wide as the pixels in that row).
-            let pixbuf_rows = pixbuf_data.chunks(pixbuf_stride).take(height as usize);
-            let surf_rows = surf.rows_mut();
+        // We use chunks(), not chunks_exact(), because gdk-pixbuf tends
+        // to make the last row *not* have the full stride (i.e. it is
+        // only as wide as the pixels in that row).
+        let pixbuf_rows = pixbuf_data.chunks(stride).take(height as usize);
 
-            if has_alpha {
-                for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
-                    let pixbuf_row: &[Pixel] = pixbuf_row.as_rgba();
-
-                    for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
-                        *dest = src.premultiply().into();
-                    }
-                }
-            } else {
-                for (pixbuf_row, surf_row) in pixbuf_rows.zip(surf_rows) {
-                    let pixbuf_row: &[RGB8] = pixbuf_row.as_rgb();
-
-                    for (src, dest) in pixbuf_row.iter().zip(surf_row.iter_mut()) {
-                        *dest = src.alpha(0xff).into();
-                    }
-                }
-            }
+        if has_alpha {
+            pixbuf_rows
+                .map(|row| row.as_rgba())
+                .zip(surf.rows_mut())
+                .flat_map(|(src_row, dest_row)| src_row.iter().zip(dest_row.iter_mut()))
+                .for_each(|(src, dest)| *dest = src.premultiply().into());
+        } else {
+            pixbuf_rows
+                .map(|row| row.as_rgb())
+                .zip(surf.rows_mut())
+                .flat_map(|(src_row, dest_row)| src_row.iter().zip(dest_row.iter_mut()))
+                .for_each(|(src, dest)| *dest = src.alpha(0xff).into());
         }
 
         if let (Some(content_type), Some(bytes)) = (content_type, mime_data) {
