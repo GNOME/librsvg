@@ -260,8 +260,8 @@ impl ImageSurface<Shared> {
 
     pub fn from_pixbuf(
         pixbuf: &Pixbuf,
-        data: Option<Vec<u8>>,
         content_type: Option<&str>,
+        mime_data: Option<Vec<u8>>,
     ) -> Result<SharedImageSurface, cairo::Status> {
         assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
         assert!(pixbuf.get_bits_per_sample() == 8);
@@ -307,7 +307,7 @@ impl ImageSurface<Shared> {
             }
         }
 
-        if let (Some(bytes), Some(content_type)) = (data, content_type) {
+        if let (Some(content_type), Some(bytes)) = (content_type, mime_data) {
             surf.surface.set_mime_data(content_type, bytes)?;
         }
 
