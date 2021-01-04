@@ -1,7 +1,7 @@
 //! The `pattern` element.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use std::cell::RefCell;
+use once_cell::sync::OnceCell;
 
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
@@ -117,7 +117,7 @@ pub struct UserSpacePattern {
 pub struct Pattern {
     common: Common,
     fallback: Option<NodeId>,
-    resolved: RefCell<Option<ResolvedPattern>>,
+    resolved: OnceCell<ResolvedPattern>,
 }
 
 impl SetAttributes for Pattern {
@@ -406,16 +406,11 @@ impl Pattern {
         }
     }
 
-    pub fn resolve(
+    fn init_resolved(
         &self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<ResolvedPattern, AcquireError> {
-        let mut resolved = self.resolved.borrow_mut();
-        if let Some(ref pattern) = *resolved {
-            return Ok(pattern.clone());
-        }
-
         let Unresolved {
             mut pattern,
             mut fallback,
@@ -461,11 +456,17 @@ impl Pattern {
             }
         }
 
-        let pattern = pattern.into_resolved();
+        Ok(pattern.into_resolved())
+    }
 
-        *resolved = Some(pattern.clone());
-
-        Ok(pattern)
+    pub fn resolve(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+    ) -> Result<ResolvedPattern, AcquireError> {
+        self.resolved
+            .get_or_try_init(|| self.init_resolved(node, acquired_nodes))
+            .map(|r| r.clone())
     }
 }
 

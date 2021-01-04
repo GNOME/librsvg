@@ -4,7 +4,7 @@ use cssparser::Parser;
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
 };
-use std::cell::RefCell;
+use once_cell::sync::OnceCell;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -312,7 +312,7 @@ struct Common {
 
     fallback: Option<NodeId>,
 
-    resolved: RefCell<Option<ResolvedGradient>>,
+    resolved: OnceCell<ResolvedGradient>,
 }
 
 /// Node for the <linearGradient> element
@@ -604,16 +604,11 @@ macro_rules! impl_gradient {
                 }
             }
 
-            pub fn resolve(
+            fn init_resolved(
                 &self,
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
             ) -> Result<ResolvedGradient, AcquireError> {
-                let mut resolved = self.common.resolved.borrow_mut();
-                if let Some(ref gradient) = *resolved {
-                    return Ok(gradient.clone());
-                }
-
                 let Unresolved {
                     mut gradient,
                     mut fallback,
@@ -646,11 +641,18 @@ macro_rules! impl_gradient {
                     }
                 }
 
-                let gradient = gradient.into_resolved();
+                Ok(gradient.into_resolved())
+            }
 
-                *resolved = Some(gradient.clone());
-
-                Ok(gradient)
+            pub fn resolve(
+                &self,
+                node: &Node,
+                acquired_nodes: &mut AcquiredNodes<'_>,
+            ) -> Result<ResolvedGradient, AcquireError> {
+                self.common
+                    .resolved
+                    .get_or_try_init(|| self.init_resolved(node, acquired_nodes))
+                    .map(|r| r.clone())
             }
         }
     };

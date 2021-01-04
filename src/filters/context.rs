@@ -1,6 +1,5 @@
-use std::cell::RefCell;
+use once_cell::sync::OnceCell;
 use std::collections::HashMap;
-use std::f64;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -58,7 +57,7 @@ pub struct FilterContext {
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<CustomIdent, FilterOutput>,
     /// The background surface. Computed lazily.
-    background_surface: RefCell<Option<Result<SharedImageSurface, FilterError>>>,
+    background_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
     /// Primtive units
     primitive_units: CoordUnits,
     /// The filter effects region.
@@ -162,7 +161,7 @@ impl FilterContext {
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
-            background_surface: RefCell::new(None),
+            background_surface: OnceCell::new(),
             primitive_units,
             effects_region,
             processing_linear_rgb: false,
@@ -188,34 +187,14 @@ impl FilterContext {
         &self,
         draw_ctx: &DrawingCtx,
     ) -> Result<SharedImageSurface, FilterError> {
-        {
-            // At this point either no, or only immutable references to background_surface exist, so
-            // it's ok to make an immutable reference.
-            let bg = self.background_surface.borrow();
-
-            // If background_surface was already computed, return the immutable reference. It will
-            // get bound to the &self lifetime by the function return type.
-            if let Some(ref result) = *bg {
-                return result.clone();
-            }
-        }
-
-        // If we got here, then background_surface hasn't been computed yet. This means there are
-        // no references to it and we can create a mutable reference.
-        let mut bg = self.background_surface.borrow_mut();
-
-        *bg = Some(
+        let res = self.background_surface.get_or_init(|| {
             draw_ctx
                 .get_snapshot(self.source_surface.width(), self.source_surface.height())
-                .map_err(FilterError::CairoError),
-        );
+                .map_err(FilterError::CairoError)
+        });
 
         // Return the only existing reference as immutable.
-        bg.as_ref()
-            .unwrap()
-            .as_ref()
-            .map(|surf| surf.clone())
-            .map_err(|e| e.clone())
+        res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
     }
 
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter
@@ -385,12 +364,6 @@ impl FilterContext {
         let rv = f(self);
         self.processing_linear_rgb = false;
         rv
-    }
-
-    /// Applies the `primitiveUnits` coordinate transformation to a non-x or y distance.
-    #[inline]
-    pub fn transform_dist(&self, d: f64) -> f64 {
-        d * (self.paffine.xx.powi(2) + self.paffine.yy.powi(2)).sqrt() / f64::consts::SQRT_2
     }
 }
 
