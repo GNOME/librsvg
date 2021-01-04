@@ -1,7 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
 use librsvg::{
-    c_api::pixbuf_utils::pixbuf_from_surface,
     surface_utils::{
         shared_surface::{ExclusiveImageSurface, SurfaceType},
         ImageSurfaceDataExt, Pixel,
@@ -38,7 +37,7 @@ fn bench_pixbuf_from_surface(c: &mut Criterion) {
 
         let surface = surface.share().unwrap();
 
-        b.iter(|| pixbuf_from_surface(&surface).unwrap())
+        b.iter(|| surface.to_pixbuf().unwrap())
     });
 }
 

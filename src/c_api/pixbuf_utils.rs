@@ -7,62 +7,30 @@ use std::ptr;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::*;
-use rgb::FromSlice;
 
 use super::dpi::Dpi;
 use super::handle::{checked_i32, set_gerror};
 use super::sizing::LegacySize;
 use crate::api::{CairoRenderer, Loader};
 
-use crate::{
-    error::RenderingError,
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    surface_utils::{Pixel, PixelOps},
-};
-
-fn pixbuf_new(width: i32, height: i32) -> Result<Pixbuf, RenderingError> {
-    assert!(width > 0 && height > 0);
-
-    Pixbuf::new(Colorspace::Rgb, true, 8, width, height)
-        .ok_or_else(|| RenderingError::OutOfMemory(String::from("creating a Pixbuf")))
-}
+use crate::error::RenderingError;
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
     // GdkPixbuf does not allow zero-sized pixbufs, but Cairo allows zero-sized
     // surfaces.  In this case, return a 1-pixel transparent pixbuf.
 
-    let pixbuf = pixbuf_new(1, 1)?;
+    let pixbuf = Pixbuf::new(Colorspace::Rgb, true, 8, 1, 1)
+        .ok_or_else(|| RenderingError::OutOfMemory(String::from("creating a Pixbuf")))?;
     pixbuf.put_pixel(0, 0, 0, 0, 0, 0);
 
     Ok(pixbuf)
 }
 
 pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, RenderingError> {
-    let width = surface.width();
-    let height = surface.height();
-
-    let pixbuf = pixbuf_new(width, height)?;
-    assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
-    assert!(pixbuf.get_bits_per_sample() == 8);
-    assert!(pixbuf.get_n_channels() == 4);
-
-    let pixels = unsafe { pixbuf.get_pixels() };
-    let stride = pixbuf.get_rowstride() as usize;
-
-    // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
-    // to make the last row *not* have the full stride (i.e. it is
-    // only as wide as the pixels in that row).
-    let pixbuf_rows = pixels.chunks_mut(stride).take(height as usize);
-
-    for (src_row, dest_row) in surface.rows().zip(pixbuf_rows) {
-        let row: &mut [Pixel] = dest_row.as_rgba_mut();
-
-        for (src, dest) in src_row.iter().zip(row.iter_mut()) {
-            *dest = Pixel::from(*src).unpremultiply();
-        }
-    }
-
-    Ok(pixbuf)
+    surface
+        .to_pixbuf()
+        .ok_or_else(|| RenderingError::OutOfMemory(String::from("creating a Pixbuf")))
 }
 
 enum SizeKind {

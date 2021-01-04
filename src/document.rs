@@ -267,7 +267,7 @@ fn load_image(
         None
     };
 
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_deref())
+    let surface = SharedImageSurface::from_pixbuf(&pixbuf, content_type.as_deref(), bytes)
         .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
     Ok(surface)
