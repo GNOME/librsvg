@@ -1254,8 +1254,10 @@ impl DrawingCtx {
                 PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
 
             if clipping {
-                cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
-                path_helper.set()?;
+                if values.is_visible() {
+                    cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
+                    path_helper.set()?;
+                }
                 return Ok(dc.empty_bbox());
             }
 
@@ -1278,10 +1280,12 @@ impl DrawingCtx {
                         let bbox = bounding_box
                             .get_or_insert_with(|| compute_stroke_and_fill_box(&cr, &values));
 
-                        if target == PaintTarget::Stroke {
-                            dc.stroke(&cr, an, values, &bbox, current_color)?;
-                        } else {
-                            dc.fill(&cr, an, values, &bbox, current_color)?;
+                        if values.is_visible() {
+                            if target == PaintTarget::Stroke {
+                                dc.stroke(&cr, an, values, &bbox, current_color)?;
+                            } else {
+                                dc.fill(&cr, an, values, &bbox, current_color)?;
+                            }
                         }
                     }
                     PaintTarget::Markers if shape.markers == Markers::Yes => {
@@ -1295,6 +1299,26 @@ impl DrawingCtx {
             path_helper.unset();
             Ok(bounding_box.unwrap())
         })
+    }
+
+    fn paint_surface(&mut self, surface: &SharedImageSurface, width: f64, height: f64) {
+        let cr = self.cr.clone();
+
+        // We need to set extend appropriately, so can't use cr.set_source_surface().
+        //
+        // If extend is left at its default value (None), then bilinear scaling uses
+        // transparency outside of the image producing incorrect results.
+        // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
+        // opaque 100×1 image of a gradient scaled to 100×98 which ends up
+        // transparent almost everywhere without this fix (which it shouldn't).
+        let ptn = surface.to_cairo_pattern();
+        ptn.set_extend(cairo::Extend::Pad);
+        cr.set_source(&ptn);
+
+        // Clip is needed due to extend being set to pad.
+        clip_to_rectangle(&cr, &Rect::from_size(width, height));
+
+        cr.paint();
     }
 
     pub fn draw_image(
@@ -1326,23 +1350,9 @@ impl DrawingCtx {
         self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |_an, dc| {
             dc.with_saved_cr(&mut |dc| {
                 if let Some(_params) = dc.push_new_viewport(Some(vbox), rect, aspect, clip_mode) {
-                    let cr = dc.cr.clone();
-
-                    // We need to set extend appropriately, so can't use cr.set_source_surface().
-                    //
-                    // If extend is left at its default value (None), then bilinear scaling uses
-                    // transparency outside of the image producing incorrect results.
-                    // For example, in svg1.1/filters-blend-01-b.svgthere's a completely
-                    // opaque 100×1 image of a gradient scaled to 100×98 which ends up
-                    // transparent almost everywhere without this fix (which it shouldn't).
-                    let ptn = surface.to_cairo_pattern();
-                    ptn.set_extend(cairo::Extend::Pad);
-                    cr.set_source(&ptn);
-
-                    // Clip is needed due to extend being set to pad.
-                    clip_to_rectangle(&cr, &Rect::from_size(image_width, image_height));
-
-                    cr.paint();
+                    if values.is_visible() {
+                        dc.paint_surface(surface, image_width, image_height);
+                    }
                 }
 
                 // The bounding box for <image> is decided by the values of x, y, w, h
@@ -1402,7 +1412,9 @@ impl DrawingCtx {
                 .map(|had_paint_server| {
                     if had_paint_server {
                         pangocairo::functions::update_layout(&cr, &layout);
-                        pangocairo::functions::show_layout(&cr, &layout);
+                        if values.is_visible() {
+                            pangocairo::functions::show_layout(&cr, &layout);
+                        }
                     };
                 })
             } else {
@@ -1440,8 +1452,10 @@ impl DrawingCtx {
                         let ib = BoundingBox::new()
                             .with_transform(transform)
                             .with_ink_rect(r);
-                        cr.stroke();
                         bbox.insert(&ib);
+                        if values.is_visible() {
+                            cr.stroke();
+                        }
                     }
                 }
             }

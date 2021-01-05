@@ -109,12 +109,18 @@ impl ComputedValues {
         matches!(self.overflow(), Overflow::Auto | Overflow::Visible)
     }
 
+    /// Whether we should draw the element or skip both space allocation
+    /// and drawing.
+    /// https://www.w3.org/TR/SVG2/render.html#VisibilityControl
+    pub fn is_displayed(&self) -> bool {
+        self.display() != Display::None
+    }
+
+    /// Whether we should draw the element or allocate its space but
+    /// skip drawing.
+    /// https://www.w3.org/TR/SVG2/render.html#VisibilityControl
     pub fn is_visible(&self) -> bool {
-        match (self.display(), self.visibility()) {
-            (Display::None, _) => false,
-            (_, Visibility::Visible) => true,
-            _ => false,
-        }
+        self.visibility() == Visibility::Visible
     }
 }
 

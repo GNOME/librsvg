@@ -309,7 +309,7 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
     ) -> Result<BoundingBox, RenderingError> {
         if !self.is_in_error() {
             let values = cascaded.get();
-            if values.is_visible() {
+            if values.is_displayed() {
                 draw_ctx.with_saved_transform(Some(self.get_transform()), &mut |dc| {
                     self.element_impl
                         .draw(node, acquired_nodes, cascaded, dc, clipping)
