@@ -334,7 +334,7 @@ impl ImageSurface<Shared> {
 
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.
     #[inline]
-    pub fn is_alpha_only(&self) -> bool {
+    fn is_alpha_only(&self) -> bool {
         self.surface_type == SurfaceType::AlphaOnly
     }
 
@@ -519,20 +519,18 @@ impl ImageSurface<Shared> {
     /// Converts the surface to the linear sRGB color space.
     #[inline]
     pub fn to_linear_rgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
-        if self.surface_type == SurfaceType::LinearRgb {
-            Ok(self.clone())
-        } else {
-            srgb::linearize_surface(self, bounds)
+        match self.surface_type {
+            SurfaceType::LinearRgb | SurfaceType::AlphaOnly => Ok(self.clone()),
+            _ => srgb::linearize_surface(self, bounds),
         }
     }
 
     /// Converts the surface to the sRGB color space.
     #[inline]
     pub fn to_srgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
-        if self.surface_type == SurfaceType::SRgb {
-            Ok(self.clone())
-        } else {
-            srgb::unlinearize_surface(self, bounds)
+        match self.surface_type {
+            SurfaceType::SRgb | SurfaceType::AlphaOnly => Ok(self.clone()),
+            _ => srgb::unlinearize_surface(self, bounds),
         }
     }
 
