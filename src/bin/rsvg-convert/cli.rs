@@ -39,7 +39,7 @@ pub struct Args {
 impl Args {
     pub fn new() -> Result<Self, clap::Error> {
         let app = clap::App::new("rsvg-convert")
-            .version(crate_version!())
+            .version(concat!("version ", crate_version!()))
             .about("SVG converter")
             .help_short("?")
             .version_short("v")
