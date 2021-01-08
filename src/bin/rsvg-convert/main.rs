@@ -9,11 +9,11 @@ mod surface;
 
 use cssparser::Color;
 use librsvg::rsvg_convert_only::LegacySize;
-use librsvg::{CairoRenderer, Loader, RenderingError, SvgHandle};
+use librsvg::{CairoRenderer, Loader, RenderingError};
 
 use crate::cli::Args;
 use crate::output::Stream;
-use crate::size::Size;
+use crate::size::{ResizeStrategy, Size};
 use crate::surface::Surface;
 
 #[macro_export]
@@ -40,16 +40,6 @@ fn load_stylesheet(args: &Args) -> std::io::Result<Option<String>> {
     }
 }
 
-fn get_size(
-    _handle: &SvgHandle,
-    renderer: &CairoRenderer,
-    args: &Args,
-) -> Result<Size, RenderingError> {
-    renderer
-        .legacy_document_size_in_pixels()
-        .map(|(w, h)| Size::new(w, h).scale(args.zoom()))
-}
-
 fn main() {
     let args = Args::new().unwrap_or_else(|e| e.exit());
 
@@ -74,16 +64,33 @@ fn main() {
         let renderer = CairoRenderer::new(&handle).with_dpi(args.dpi.x, args.dpi.y);
 
         if target.is_none() {
-            let size = get_size(&handle, &renderer, &args)
+            let (width, height) = renderer
+                .legacy_document_size_in_pixels()
                 .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
 
-            if size.w == 0.0 && size.h == 0.0 {
-                exit!("The SVG {} has no dimensions", input);
-            }
+            let strategy = match (args.width, args.height) {
+                // when w and h are not specified, scale to the requested zoom (if any)
+                (None, None) => ResizeStrategy::Scale(args.zoom),
+
+                // when w and h are specified, but zoom is not, scale to the requested size
+                (Some(w), Some(h)) if args.zoom.is_identity() => ResizeStrategy::Fit(w, h),
+
+                // if only one between w and h is specified and there is no zoom, scale to the
+                // requested w or h and use the same scaling factor for the other
+                (Some(w), None) if args.zoom.is_identity() => ResizeStrategy::FitWidth(w),
+                (None, Some(h)) if args.zoom.is_identity() => ResizeStrategy::FitHeight(h),
+
+                // otherwise scale the image, but cap the zoom to match the requested size
+                _ => ResizeStrategy::FitLargestScale(args.zoom, args.width, args.height),
+            };
 
             target = {
                 let output = Stream::new(args.output())
                     .unwrap_or_else(|e| exit!("Error opening output: {}", e));
+
+                let size = strategy
+                    .apply(Size::new(width, height), args.keep_aspect_ratio)
+                    .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
 
                 match Surface::new(args.format, size, output) {
                     Ok(surface) => Some(surface),
@@ -105,8 +112,7 @@ fn main() {
                 );
             }
 
-            let scale = args.zoom();
-            cr.scale(scale.x, scale.y);
+            cr.scale(args.zoom.x, args.zoom.y);
 
             surface
                 .render(&renderer, &cr, args.export_id())
