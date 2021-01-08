@@ -21,8 +21,7 @@ arg_enum! {
 #[derive(Debug)]
 pub struct Args {
     pub dpi: Dpi,
-    zoom_x: Option<f64>,
-    zoom_y: Option<f64>,
+    pub zoom: Scale,
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub format: Format,
@@ -209,8 +208,10 @@ impl Args {
                 x: value_t!(matches, "res_x", f64)?,
                 y: value_t!(matches, "res_y", f64)?,
             },
-            zoom_x: zoom.or(zoom_x),
-            zoom_y: zoom.or(zoom_y),
+            zoom: Scale {
+                x: zoom.or(zoom_x).unwrap_or(1.0),
+                y: zoom.or(zoom_y).unwrap_or(1.0),
+            },
             width: value_t!(matches, "size_x", u32).or_none()?,
             height: value_t!(matches, "size_y", u32).or_none()?,
             format,
@@ -254,15 +255,6 @@ impl Args {
 
     pub fn input(&self) -> Input<'_> {
         Input::new(&self.input)
-    }
-
-    pub fn zoom(&self) -> Scale {
-        match (self.zoom_x, self.zoom_y) {
-            (None, None) => Scale { x: 1.0, y: 1.0 },
-            (Some(x), None) => Scale { x, y: x },
-            (None, Some(y)) => Scale { x: y, y },
-            (Some(x), Some(y)) => Scale { x, y },
-        }
     }
 }
 

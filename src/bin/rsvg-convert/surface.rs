@@ -75,9 +75,9 @@ impl Surface {
                 w: surface.get_width() as f64,
                 h: surface.get_height() as f64,
             },
-            Self::Pdf(_, size) => size.clone(),
-            Self::Ps(_, size) => size.clone(),
-            Self::Svg(_, size) => size.clone(),
+            Self::Pdf(_, size) => *size,
+            Self::Ps(_, size) => *size,
+            Self::Svg(_, size) => *size,
         }
     }
 
