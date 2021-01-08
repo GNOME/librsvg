@@ -661,7 +661,7 @@ fn no_keep_image_data_option() {
 }
 
 fn is_version_output() -> AndPredicate<StartsWithPredicate, TrimPredicate<EndsWithPredicate>, str> {
-    starts_with("rsvg-convert ").and(ends_with_pkg_version().trim())
+    starts_with("rsvg-convert version ").and(ends_with_pkg_version().trim())
 }
 
 #[test]
