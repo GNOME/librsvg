@@ -40,7 +40,7 @@ impl Args {
     pub fn new() -> Result<Self, clap::Error> {
         let app = clap::App::new("rsvg-convert")
             .version(concat!("version ", crate_version!()))
-            .about("SVG converter")
+            .about("Convert SVG files to other image formats")
             .help_short("?")
             .version_short("v")
             .arg(
