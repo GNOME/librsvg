@@ -77,6 +77,10 @@ fn main() {
             let size = get_size(&handle, &renderer, &args)
                 .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
 
+            if size.w == 0.0 && size.h == 0.0 {
+                exit!("The SVG {} has no dimensions", input);
+            }
+
             target = {
                 let output = Stream::new(args.output())
                     .unwrap_or_else(|e| exit!("Error opening output: {}", e));
