@@ -544,7 +544,11 @@ impl TRef {
         }
 
         let link = self.link.as_ref().unwrap();
+
         let values = cascaded.get();
+        if !values.is_displayed() {
+            return;
+        }
 
         if let Ok(acquired) = acquired_nodes.acquire(link) {
             let c = acquired.get();
@@ -613,6 +617,9 @@ impl TSpan {
         depth: usize,
     ) {
         let values = cascaded.get();
+        if !values.is_displayed() {
+            return;
+        }
 
         let params = draw_ctx.get_view_params();
         let x = self.x.map(|l| l.normalize(&values, &params));
