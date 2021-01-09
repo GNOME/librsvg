@@ -8,10 +8,13 @@ mod size;
 mod surface;
 
 use cssparser::Color;
+use gio::prelude::*;
+use gio::{Cancellable, FileExt, InputStream, UnixInputStream};
 use librsvg::rsvg_convert_only::LegacySize;
 use librsvg::{CairoRenderer, Loader, RenderingError};
 
 use crate::cli::Args;
+use crate::input::Input;
 use crate::output::Stream;
 use crate::size::{ResizeStrategy, Size};
 use crate::surface::Surface;
@@ -48,11 +51,25 @@ fn main() {
 
     let mut target = None;
 
-    for input in args.input() {
+    for input in &args.input {
+        let (stream, basefile) = match input {
+            Input::Stdin => {
+                let stream = unsafe { UnixInputStream::new(0) };
+                (stream.upcast::<InputStream>(), None)
+            }
+            Input::Path(p) => {
+                let file = gio::File::new_for_path(p);
+                let stream = file
+                    .read(None::<&Cancellable>)
+                    .unwrap_or_else(|e| exit!("Error reading file \"{}\": {}", input, e));
+                (stream.upcast::<InputStream>(), Some(file))
+            }
+        };
+
         let mut handle = Loader::new()
             .with_unlimited_size(args.unlimited)
             .keep_image_data(args.keep_image_data)
-            .read_stream(input.stream(), input.file(), None::<&gio::Cancellable>)
+            .read_stream(&stream, basefile.as_ref(), None::<&Cancellable>)
             .unwrap_or_else(|e| exit!("Error reading SVG {}: {}", input, e));
 
         if let Some(ref css) = stylesheet {

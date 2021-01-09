@@ -32,7 +32,7 @@ pub struct Args {
     pub unlimited: bool,
     pub keep_image_data: bool,
     output: Option<PathBuf>,
-    input: Vec<PathBuf>,
+    pub input: Vec<Input>,
 }
 
 impl Args {
@@ -225,8 +225,8 @@ impl Args {
             keep_image_data,
             output: matches.value_of_os("output").map(PathBuf::from),
             input: match matches.values_of_os("FILE") {
-                Some(values) => values.map(PathBuf::from).collect(),
-                None => Vec::new(),
+                Some(values) => values.map(PathBuf::from).map(Input::Path).collect(),
+                None => vec![Input::Stdin],
             },
         };
 
@@ -251,10 +251,6 @@ impl Args {
 
     pub fn output(&self) -> Option<&Path> {
         self.output.as_deref()
-    }
-
-    pub fn input(&self) -> Input<'_> {
-        Input::new(&self.input)
     }
 }
 
