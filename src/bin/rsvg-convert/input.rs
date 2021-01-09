@@ -3,20 +3,13 @@
 use core::ops::Deref;
 use gio::FileExt;
 use std::fmt;
-use std::os::unix::io::RawFd;
 use std::path::PathBuf;
 
 struct Stdin;
 
 impl Stdin {
     pub fn stream() -> gio::UnixInputStream {
-        unsafe { gio::UnixInputStream::new(Self {}) }
-    }
-}
-
-impl std::os::unix::io::IntoRawFd for Stdin {
-    fn into_raw_fd(self) -> RawFd {
-        0 as RawFd
+        unsafe { gio::UnixInputStream::new(0) }
     }
 }
 
