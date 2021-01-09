@@ -319,7 +319,7 @@ arg_enum! {
 }
 
 #[derive(Debug)]
-struct Args {
+struct Converter {
     pub dpi: (f64, f64),
     pub zoom: Scale,
     pub width: Option<u32>,
@@ -331,223 +331,340 @@ struct Args {
     pub stylesheet: Option<PathBuf>,
     pub unlimited: bool,
     pub keep_image_data: bool,
-    pub output: Output,
     pub input: Vec<Input>,
+    pub output: Output,
 }
 
-impl Args {
-    pub fn new() -> Result<Self, clap::Error> {
-        let app = clap::App::new("rsvg-convert")
-            .version(concat!("version ", crate_version!()))
-            .about("Convert SVG files to other image formats")
-            .help_short("?")
-            .version_short("v")
-            .arg(
-                clap::Arg::with_name("res_x")
-                    .short("d")
-                    .long("dpi-x")
-                    .takes_value(true)
-                    .value_name("float")
-                    .default_value("90")
-                    .validator(is_valid_resolution)
-                    .help("Pixels per inch"),
-            )
-            .arg(
-                clap::Arg::with_name("res_y")
-                    .short("p")
-                    .long("dpi-y")
-                    .takes_value(true)
-                    .value_name("float")
-                    .default_value("90")
-                    .validator(is_valid_resolution)
-                    .help("Pixels per inch"),
-            )
-            .arg(
-                clap::Arg::with_name("zoom_x")
-                    .short("x")
-                    .long("x-zoom")
-                    .takes_value(true)
-                    .value_name("float")
-                    .conflicts_with("zoom")
-                    .validator(is_valid_zoom_factor)
-                    .help("Horizontal zoom factor"),
-            )
-            .arg(
-                clap::Arg::with_name("zoom_y")
-                    .short("y")
-                    .long("y-zoom")
-                    .takes_value(true)
-                    .value_name("float")
-                    .conflicts_with("zoom")
-                    .validator(is_valid_zoom_factor)
-                    .help("Vertical zoom factor"),
-            )
-            .arg(
-                clap::Arg::with_name("zoom")
-                    .short("z")
-                    .long("zoom")
-                    .takes_value(true)
-                    .value_name("float")
-                    .validator(is_valid_zoom_factor)
-                    .help("Zoom factor"),
-            )
-            .arg(
-                clap::Arg::with_name("size_x")
-                    .short("w")
-                    .long("width")
-                    .takes_value(true)
-                    .value_name("pixels")
-                    .help("Width [defaults to the width of the SVG]"),
-            )
-            .arg(
-                clap::Arg::with_name("size_y")
-                    .short("h")
-                    .long("height")
-                    .takes_value(true)
-                    .value_name("pixels")
-                    .help("Height [defaults to the height of the SVG]"),
-            )
-            .arg(
-                clap::Arg::with_name("format")
-                    .short("f")
-                    .long("format")
-                    .takes_value(true)
-                    .possible_values(&Format::variants())
-                    .case_insensitive(true)
-                    .default_value("png")
-                    .help("Output format"),
-            )
-            .arg(
-                clap::Arg::with_name("output")
-                    .short("o")
-                    .long("output")
-                    .empty_values(false)
-                    .help("Output filename [defaults to stdout]"),
-            )
-            .arg(
-                clap::Arg::with_name("export_id")
-                    .short("i")
-                    .long("export-id")
-                    .empty_values(false)
-                    .value_name("object id")
-                    .help("SVG id of object to export [default is to export all objects]"),
-            )
-            .arg(
-                clap::Arg::with_name("keep_aspect")
-                    .short("a")
-                    .long("keep-aspect-ratio")
-                    .help("Preserve the aspect ratio"),
-            )
-            .arg(
-                clap::Arg::with_name("background")
-                    .short("b")
-                    .long("background-color")
-                    .takes_value(true)
-                    .value_name("color")
-                    .help("Set the background color using a CSS color spec"),
-            )
-            .arg(
-                clap::Arg::with_name("stylesheet")
-                    .short("s")
-                    .long("stylesheet")
-                    .empty_values(false)
-                    .help("Filename of CSS stylesheet to apply"),
-            )
-            .arg(
-                clap::Arg::with_name("unlimited")
-                    .short("u")
-                    .long("unlimited")
-                    .help("Allow huge SVG files"),
-            )
-            .arg(
-                clap::Arg::with_name("keep_image_data")
-                    .long("keep-image-data")
-                    .help("Keep image data"),
-            )
-            .arg(
-                clap::Arg::with_name("no_keep_image_data")
-                    .long("no-keep-image-data")
-                    .help("Do not keep image data"),
-            )
-            .arg(
-                clap::Arg::with_name("FILE")
-                    .help("The input file(s) to convert")
-                    .multiple(true),
-            );
-
-        let matches = app.get_matches();
-
-        let format = value_t!(matches, "format", Format)?;
-
-        let keep_image_data = match format {
-            Format::Ps | Format::Eps | Format::Pdf => !matches.is_present("no_keep_image_data"),
-            _ => matches.is_present("keep_image_data"),
+impl Converter {
+    pub fn convert(self) {
+        let stylesheet = match self.stylesheet {
+            Some(ref p) => std::fs::read_to_string(p)
+                .map(Some)
+                .unwrap_or_else(|e| exit!("Error reading stylesheet: {}", e)),
+            None => None,
         };
 
-        let background_color = value_t!(matches, "background", String).and_then(parse_color_string);
+        let mut target = None;
 
-        let lookup_id = |id: String| {
-            // RsvgHandle::has_sub() expects ids to have a '#' prepended to them,
-            // so it can lookup ids in externs like "subfile.svg#subid".  For the
-            // user's convenience, we include this '#' automatically; we only
-            // support specifying ids from the toplevel, and don't expect users to
-            // lookup things in externs.
-            if id.starts_with('#') {
-                id
-            } else {
-                format!("#{}", id)
-            }
-        };
-
-        let zoom = value_t!(matches, "zoom", f64).or_none()?;
-        let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
-        let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
-
-        let args = Args {
-            dpi: (
-                value_t!(matches, "res_x", f64)?,
-                value_t!(matches, "res_y", f64)?,
-            ),
-            zoom: Scale {
-                x: zoom.or(zoom_x).unwrap_or(1.0),
-                y: zoom.or(zoom_y).unwrap_or(1.0),
-            },
-            width: value_t!(matches, "size_x", u32).or_none()?,
-            height: value_t!(matches, "size_y", u32).or_none()?,
-            format,
-            export_id: value_t!(matches, "export_id", String)
-                .or_none()?
-                .map(lookup_id),
-            keep_aspect_ratio: matches.is_present("keep_aspect"),
-            background_color: background_color.or_none()?,
-            stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
-            unlimited: matches.is_present("unlimited"),
-            keep_image_data,
-            output: matches
-                .value_of_os("output")
-                .map(PathBuf::from)
-                .map(Output::Path)
-                .unwrap_or(Output::Stdout),
-            input: match matches.values_of_os("FILE") {
-                Some(values) => values.map(PathBuf::from).map(Input::Path).collect(),
-                None => vec![Input::Stdin],
-            },
-        };
-
-        if args.input.len() > 1 {
-            match args.format {
-                Format::Ps | Format::Eps | Format::Pdf => (),
-                _ => {
-                    return Err(clap::Error::with_description(
-                        "Multiple SVG files are only allowed for PDF and (E)PS output.",
-                        clap::ErrorKind::TooManyValues,
-                    ))
+        for input in &self.input {
+            let (stream, basefile) = match input {
+                Input::Stdin => (Stdin::stream().upcast::<InputStream>(), None),
+                Input::Path(p) => {
+                    let file = gio::File::new_for_path(p);
+                    let stream = file
+                        .read(None::<&Cancellable>)
+                        .unwrap_or_else(|e| exit!("Error reading file \"{}\": {}", input, e));
+                    (stream.upcast::<InputStream>(), Some(file))
                 }
+            };
+
+            let mut handle = Loader::new()
+                .with_unlimited_size(self.unlimited)
+                .keep_image_data(self.keep_image_data)
+                .read_stream(&stream, basefile.as_ref(), None::<&Cancellable>)
+                .unwrap_or_else(|e| exit!("Error reading SVG {}: {}", input, e));
+
+            if let Some(ref css) = stylesheet {
+                handle
+                    .set_stylesheet(&css)
+                    .unwrap_or_else(|e| exit!("Error applying stylesheet: {}", e));
+            }
+
+            let renderer = CairoRenderer::new(&handle).with_dpi(self.dpi.0, self.dpi.1);
+
+            if target.is_none() {
+                let (width, height) = renderer
+                    .legacy_layer_size_in_pixels(self.export_id.as_deref())
+                    .unwrap_or_else(|e| match e {
+                        RenderingError::IdNotFound => exit!(
+                            "File {} does not have an object with id \"{}\")",
+                            input,
+                            self.export_id.as_deref().unwrap()
+                        ),
+                        _ => exit!("Error rendering SVG {}: {}", input, e),
+                    });
+
+                let strategy = match (self.width, self.height) {
+                    // when w and h are not specified, scale to the requested zoom (if any)
+                    (None, None) => ResizeStrategy::Scale(self.zoom),
+
+                    // when w and h are specified, but zoom is not, scale to the requested size
+                    (Some(w), Some(h)) if self.zoom.is_identity() => ResizeStrategy::Fit(w, h),
+
+                    // if only one between w and h is specified and there is no zoom, scale to the
+                    // requested w or h and use the same scaling factor for the other
+                    (Some(w), None) if self.zoom.is_identity() => ResizeStrategy::FitWidth(w),
+                    (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
+
+                    // otherwise scale the image, but cap the zoom to match the requested size
+                    _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
+                };
+
+                target = {
+                    let size = strategy
+                        .apply(Size::new(width, height), self.keep_aspect_ratio)
+                        .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
+
+                    let output_stream = match self.output {
+                        Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
+                        Output::Path(ref p) => {
+                            let file = gio::File::new_for_path(p);
+                            let stream = file
+                                .create(FileCreateFlags::NONE, None::<&Cancellable>)
+                                .unwrap_or_else(|e| {
+                                    exit!("Error opening output \"{}\": {}", self.output, e)
+                                });
+                            stream.upcast::<OutputStream>()
+                        }
+                    };
+
+                    match Surface::new(self.format, size, output_stream) {
+                        Ok(surface) => Some(surface),
+                        Err(cairo::Status::InvalidSize) => size_limit_exceeded(),
+                        Err(e) => exit!("Error creating output surface: {}", e),
+                    }
+                };
+            }
+
+            if let Some(ref surface) = target {
+                let cr = cairo::Context::new(surface);
+
+                if let Some(Color::RGBA(rgba)) = self.background_color {
+                    cr.set_source_rgba(
+                        rgba.red_f32().into(),
+                        rgba.green_f32().into(),
+                        rgba.blue_f32().into(),
+                        rgba.alpha_f32().into(),
+                    );
+                }
+
+                cr.scale(self.zoom.x, self.zoom.y);
+
+                surface
+                    .render(&renderer, &cr, self.export_id.as_deref())
+                    .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
             }
         }
 
-        Ok(args)
+        if let Some(surface) = target {
+            surface
+                .finish()
+                .unwrap_or_else(|e| exit!("Error saving output: {}", e));
+        }
     }
+}
+
+fn parse_args() -> Result<Converter, clap::Error> {
+    let app = clap::App::new("rsvg-convert")
+        .version(concat!("version ", crate_version!()))
+        .about("Convert SVG files to other image formats")
+        .help_short("?")
+        .version_short("v")
+        .arg(
+            clap::Arg::with_name("res_x")
+                .short("d")
+                .long("dpi-x")
+                .takes_value(true)
+                .value_name("float")
+                .default_value("90")
+                .validator(is_valid_resolution)
+                .help("Pixels per inch"),
+        )
+        .arg(
+            clap::Arg::with_name("res_y")
+                .short("p")
+                .long("dpi-y")
+                .takes_value(true)
+                .value_name("float")
+                .default_value("90")
+                .validator(is_valid_resolution)
+                .help("Pixels per inch"),
+        )
+        .arg(
+            clap::Arg::with_name("zoom_x")
+                .short("x")
+                .long("x-zoom")
+                .takes_value(true)
+                .value_name("float")
+                .conflicts_with("zoom")
+                .validator(is_valid_zoom_factor)
+                .help("Horizontal zoom factor"),
+        )
+        .arg(
+            clap::Arg::with_name("zoom_y")
+                .short("y")
+                .long("y-zoom")
+                .takes_value(true)
+                .value_name("float")
+                .conflicts_with("zoom")
+                .validator(is_valid_zoom_factor)
+                .help("Vertical zoom factor"),
+        )
+        .arg(
+            clap::Arg::with_name("zoom")
+                .short("z")
+                .long("zoom")
+                .takes_value(true)
+                .value_name("float")
+                .validator(is_valid_zoom_factor)
+                .help("Zoom factor"),
+        )
+        .arg(
+            clap::Arg::with_name("size_x")
+                .short("w")
+                .long("width")
+                .takes_value(true)
+                .value_name("pixels")
+                .help("Width [defaults to the width of the SVG]"),
+        )
+        .arg(
+            clap::Arg::with_name("size_y")
+                .short("h")
+                .long("height")
+                .takes_value(true)
+                .value_name("pixels")
+                .help("Height [defaults to the height of the SVG]"),
+        )
+        .arg(
+            clap::Arg::with_name("format")
+                .short("f")
+                .long("format")
+                .takes_value(true)
+                .possible_values(&Format::variants())
+                .case_insensitive(true)
+                .default_value("png")
+                .help("Output format"),
+        )
+        .arg(
+            clap::Arg::with_name("output")
+                .short("o")
+                .long("output")
+                .empty_values(false)
+                .help("Output filename [defaults to stdout]"),
+        )
+        .arg(
+            clap::Arg::with_name("export_id")
+                .short("i")
+                .long("export-id")
+                .empty_values(false)
+                .value_name("object id")
+                .help("SVG id of object to export [default is to export all objects]"),
+        )
+        .arg(
+            clap::Arg::with_name("keep_aspect")
+                .short("a")
+                .long("keep-aspect-ratio")
+                .help("Preserve the aspect ratio"),
+        )
+        .arg(
+            clap::Arg::with_name("background")
+                .short("b")
+                .long("background-color")
+                .takes_value(true)
+                .value_name("color")
+                .help("Set the background color using a CSS color spec"),
+        )
+        .arg(
+            clap::Arg::with_name("stylesheet")
+                .short("s")
+                .long("stylesheet")
+                .empty_values(false)
+                .help("Filename of CSS stylesheet to apply"),
+        )
+        .arg(
+            clap::Arg::with_name("unlimited")
+                .short("u")
+                .long("unlimited")
+                .help("Allow huge SVG files"),
+        )
+        .arg(
+            clap::Arg::with_name("keep_image_data")
+                .long("keep-image-data")
+                .help("Keep image data"),
+        )
+        .arg(
+            clap::Arg::with_name("no_keep_image_data")
+                .long("no-keep-image-data")
+                .help("Do not keep image data"),
+        )
+        .arg(
+            clap::Arg::with_name("FILE")
+                .help("The input file(s) to convert")
+                .multiple(true),
+        );
+
+    let matches = app.get_matches();
+
+    let format = value_t!(matches, "format", Format)?;
+
+    let keep_image_data = match format {
+        Format::Ps | Format::Eps | Format::Pdf => !matches.is_present("no_keep_image_data"),
+        _ => matches.is_present("keep_image_data"),
+    };
+
+    let background_color = value_t!(matches, "background", String).and_then(parse_color_string);
+
+    let lookup_id = |id: String| {
+        // RsvgHandle::has_sub() expects ids to have a '#' prepended to them,
+        // so it can lookup ids in externs like "subfile.svg#subid".  For the
+        // user's convenience, we include this '#' automatically; we only
+        // support specifying ids from the toplevel, and don't expect users to
+        // lookup things in externs.
+        if id.starts_with('#') {
+            id
+        } else {
+            format!("#{}", id)
+        }
+    };
+
+    let zoom = value_t!(matches, "zoom", f64).or_none()?;
+    let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
+    let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
+
+    let input = match matches.values_of_os("FILE") {
+        Some(values) => values.map(PathBuf::from).map(Input::Path).collect(),
+        None => vec![Input::Stdin],
+    };
+
+    if input.len() > 1 {
+        match format {
+            Format::Ps | Format::Eps | Format::Pdf => (),
+            _ => {
+                return Err(clap::Error::with_description(
+                    "Multiple SVG files are only allowed for PDF and (E)PS output.",
+                    clap::ErrorKind::TooManyValues,
+                ))
+            }
+        }
+    }
+
+    Ok(Converter {
+        dpi: (
+            value_t!(matches, "res_x", f64)?,
+            value_t!(matches, "res_y", f64)?,
+        ),
+        zoom: Scale {
+            x: zoom.or(zoom_x).unwrap_or(1.0),
+            y: zoom.or(zoom_y).unwrap_or(1.0),
+        },
+        width: value_t!(matches, "size_x", u32).or_none()?,
+        height: value_t!(matches, "size_y", u32).or_none()?,
+        format,
+        export_id: value_t!(matches, "export_id", String)
+            .or_none()?
+            .map(lookup_id),
+        keep_aspect_ratio: matches.is_present("keep_aspect"),
+        background_color: background_color.or_none()?,
+        stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
+        unlimited: matches.is_present("unlimited"),
+        keep_image_data,
+        input,
+        output: matches
+            .value_of_os("output")
+            .map(PathBuf::from)
+            .map(Output::Path)
+            .unwrap_or(Output::Stdout),
+    })
 }
 
 fn is_valid_resolution(v: String) -> Result<(), String> {
@@ -626,126 +743,8 @@ fn size_limit_exceeded() -> ! {
     );
 }
 
-fn load_stylesheet(args: &Args) -> std::io::Result<Option<String>> {
-    match args.stylesheet {
-        Some(ref filename) => std::fs::read_to_string(filename).map(Some),
-        None => Ok(None),
-    }
-}
-
 fn main() {
-    let args = Args::new().unwrap_or_else(|e| e.exit());
-
-    let stylesheet =
-        load_stylesheet(&args).unwrap_or_else(|e| exit!("Error reading stylesheet: {}", e));
-
-    let mut target = None;
-
-    for input in &args.input {
-        let (stream, basefile) = match input {
-            Input::Stdin => (Stdin::stream().upcast::<InputStream>(), None),
-            Input::Path(p) => {
-                let file = gio::File::new_for_path(p);
-                let stream = file
-                    .read(None::<&Cancellable>)
-                    .unwrap_or_else(|e| exit!("Error reading file \"{}\": {}", input, e));
-                (stream.upcast::<InputStream>(), Some(file))
-            }
-        };
-
-        let mut handle = Loader::new()
-            .with_unlimited_size(args.unlimited)
-            .keep_image_data(args.keep_image_data)
-            .read_stream(&stream, basefile.as_ref(), None::<&Cancellable>)
-            .unwrap_or_else(|e| exit!("Error reading SVG {}: {}", input, e));
-
-        if let Some(ref css) = stylesheet {
-            handle
-                .set_stylesheet(&css)
-                .unwrap_or_else(|e| exit!("Error applying stylesheet: {}", e));
-        }
-
-        let renderer = CairoRenderer::new(&handle).with_dpi(args.dpi.0, args.dpi.1);
-
-        if target.is_none() {
-            let (width, height) = renderer
-                .legacy_layer_size_in_pixels(args.export_id.as_deref())
-                .unwrap_or_else(|e| match e {
-                    RenderingError::IdNotFound => exit!(
-                        "File {} does not have an object with id \"{}\")",
-                        input,
-                        args.export_id.as_deref().unwrap()
-                    ),
-                    _ => exit!("Error rendering SVG {}: {}", input, e),
-                });
-
-            let strategy = match (args.width, args.height) {
-                // when w and h are not specified, scale to the requested zoom (if any)
-                (None, None) => ResizeStrategy::Scale(args.zoom),
-
-                // when w and h are specified, but zoom is not, scale to the requested size
-                (Some(w), Some(h)) if args.zoom.is_identity() => ResizeStrategy::Fit(w, h),
-
-                // if only one between w and h is specified and there is no zoom, scale to the
-                // requested w or h and use the same scaling factor for the other
-                (Some(w), None) if args.zoom.is_identity() => ResizeStrategy::FitWidth(w),
-                (None, Some(h)) if args.zoom.is_identity() => ResizeStrategy::FitHeight(h),
-
-                // otherwise scale the image, but cap the zoom to match the requested size
-                _ => ResizeStrategy::FitLargestScale(args.zoom, args.width, args.height),
-            };
-
-            target = {
-                let size = strategy
-                    .apply(Size::new(width, height), args.keep_aspect_ratio)
-                    .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
-
-                let output_stream = match args.output {
-                    Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
-                    Output::Path(ref p) => {
-                        let file = gio::File::new_for_path(p);
-                        let stream = file
-                            .create(FileCreateFlags::NONE, None::<&Cancellable>)
-                            .unwrap_or_else(|e| {
-                                exit!("Error opening output \"{}\": {}", args.output, e)
-                            });
-                        stream.upcast::<OutputStream>()
-                    }
-                };
-
-                match Surface::new(args.format, size, output_stream) {
-                    Ok(surface) => Some(surface),
-                    Err(cairo::Status::InvalidSize) => size_limit_exceeded(),
-                    Err(e) => exit!("Error creating output surface: {}", e),
-                }
-            };
-        }
-
-        if let Some(ref surface) = target {
-            let cr = cairo::Context::new(surface);
-
-            if let Some(Color::RGBA(rgba)) = args.background_color {
-                cr.set_source_rgba(
-                    rgba.red_f32().into(),
-                    rgba.green_f32().into(),
-                    rgba.blue_f32().into(),
-                    rgba.alpha_f32().into(),
-                );
-            }
-
-            cr.scale(args.zoom.x, args.zoom.y);
-
-            surface
-                .render(&renderer, &cr, args.export_id.as_deref())
-                .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
-        }
-    }
-
-    if let Some(surface) = target {
-        surface
-            .finish()
-            .unwrap_or_else(|e| exit!("Error saving output: {}", e));
-    }
+    parse_args().map_or_else(|e| e.exit(), |converter| converter.convert());
 }
 
 #[cfg(test)]
