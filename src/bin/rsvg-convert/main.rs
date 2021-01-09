@@ -117,7 +117,7 @@ fn main() {
             surface
                 .render(&renderer, &cr, args.export_id())
                 .unwrap_or_else(|e| match e {
-                    RenderingError::InvalidId(_) => exit!(
+                    RenderingError::IdNotFound => exit!(
                         "File {} does not have an object with id \"{}\")",
                         input,
                         args.export_id().unwrap()
