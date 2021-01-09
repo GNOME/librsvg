@@ -658,8 +658,7 @@ impl Drop for SizeCallback {
         }
     }
 }
-
-trait CairoRectangleExt {
+pub trait CairoRectangleExt {
     fn from_size(width: f64, height: f64) -> Self;
 }
 
@@ -976,14 +975,10 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let renderer = self.make_renderer(&handle);
 
-        match id {
-            Some(id) => Ok(renderer.geometry_for_layer(Some(id), &unit_rectangle())?),
-
-            None => Ok(renderer.legacy_document_size_in_pixels().map(|(w, h)| {
-                let rect = cairo::Rectangle::from_size(w, h);
-                (rect, rect)
-            })?),
-        }
+        Ok(renderer.legacy_layer_size_in_pixels(id).map(|(w, h)| {
+            let rect = cairo::Rectangle::from_size(w, h);
+            (rect, rect)
+        })?)
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
@@ -1131,10 +1126,6 @@ impl CHandle {
         let mut inner = self.inner.borrow_mut();
         inner.is_testing = is_testing;
     }
-}
-
-pub(crate) fn unit_rectangle() -> cairo::Rectangle {
-    cairo::Rectangle::from_size(1.0, 1.0)
 }
 
 fn is_rsvg_handle(obj: *const RsvgHandle) -> bool {

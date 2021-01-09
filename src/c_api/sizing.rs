@@ -1,7 +1,7 @@
 use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
 use float_cmp::approx_eq;
 
-use super::handle::unit_rectangle;
+use super::handle::CairoRectangleExt;
 
 pub trait LegacySize {
     /// Returns the SVG's size suitable for the legacy C API.
@@ -13,6 +13,9 @@ pub trait LegacySize {
     ///
     /// See https://www.w3.org/TR/css-images-3/#sizing-terms for terminology and logic.
     fn legacy_document_size_in_pixels(&self) -> Result<(f64, f64), RenderingError>;
+
+    /// Returns the specified layer's size suitable for the legacy C API.
+    fn legacy_layer_size_in_pixels(&self, id: Option<&str>) -> Result<(f64, f64), RenderingError>;
 }
 
 impl<'a> LegacySize for CairoRenderer<'a> {
@@ -25,11 +28,24 @@ impl<'a> LegacySize for CairoRenderer<'a> {
             // We have a size directly computed from the <svg> attributes
             Ok(dim)
         } else {
-            // Compute the extents of all objects in the SVG
             let (ink_r, _) = self.geometry_for_layer(None, &unit_rectangle())?;
             Ok((ink_r.width, ink_r.height))
         }
     }
+
+    fn legacy_layer_size_in_pixels(&self, id: Option<&str>) -> Result<(f64, f64), RenderingError> {
+        match id {
+            Some(_) => {
+                let (ink_r, _) = self.geometry_for_layer(id, &unit_rectangle())?;
+                Ok((ink_r.width, ink_r.height))
+            }
+            None => self.legacy_document_size_in_pixels(),
+        }
+    }
+}
+
+fn unit_rectangle() -> cairo::Rectangle {
+    cairo::Rectangle::from_size(1.0, 1.0)
 }
 
 /// If the width and height are in percentage units, computes a size equal to the

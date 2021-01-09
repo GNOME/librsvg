@@ -65,8 +65,15 @@ fn main() {
 
         if target.is_none() {
             let (width, height) = renderer
-                .legacy_document_size_in_pixels()
-                .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
+                .legacy_layer_size_in_pixels(args.export_id())
+                .unwrap_or_else(|e| match e {
+                    RenderingError::IdNotFound => exit!(
+                        "File {} does not have an object with id \"{}\")",
+                        input,
+                        args.export_id().unwrap()
+                    ),
+                    _ => exit!("Error rendering SVG {}: {}", input, e),
+                });
 
             let strategy = match (args.width, args.height) {
                 // when w and h are not specified, scale to the requested zoom (if any)
@@ -116,14 +123,7 @@ fn main() {
 
             surface
                 .render(&renderer, &cr, args.export_id())
-                .unwrap_or_else(|e| match e {
-                    RenderingError::IdNotFound => exit!(
-                        "File {} does not have an object with id \"{}\")",
-                        input,
-                        args.export_id().unwrap()
-                    ),
-                    _ => exit!("Error rendering SVG {}: {}", input, e),
-                });
+                .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
         }
     }
 
