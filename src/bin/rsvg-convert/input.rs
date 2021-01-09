@@ -49,24 +49,6 @@ pub struct Item {
 }
 
 impl Item {
-    fn from_file(file: gio::File) -> Self {
-        Self {
-            // TODO: unwrap
-            stream: Stream::File(file.read(None::<&gio::Cancellable>).unwrap()),
-            file: Some(file),
-        }
-    }
-    fn from_path(path: &PathBuf) -> Self {
-        Self::from_file(gio::File::new_for_path(path))
-    }
-
-    fn from_unix_stream(stream: gio::UnixInputStream) -> Self {
-        Self {
-            stream: Stream::Unix(stream),
-            file: None,
-        }
-    }
-
     pub fn stream(&self) -> &gio::InputStream {
         self.stream.deref()
     }
@@ -90,8 +72,19 @@ impl Iterator for Input<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Input::Paths(paths) => paths.next().map(Item::from_path),
-            Input::Stdin(iter) => iter.next().map(Item::from_unix_stream),
+            Input::Paths(paths) => paths.next().and_then(|p| {
+                let file = gio::File::new_for_path(p);
+                let stream = file.read(None::<&gio::Cancellable>).ok()?;
+                Some(Item {
+                    stream: Stream::File(stream),
+                    file: Some(file),
+                })
+            }),
+
+            Input::Stdin(iter) => iter.next().map(|s| Item {
+                stream: Stream::Unix(s),
+                file: None,
+            }),
         }
     }
 }
