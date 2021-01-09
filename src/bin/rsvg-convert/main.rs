@@ -95,10 +95,8 @@ impl ResizeStrategy {
         };
 
         if !keep_aspect_ratio {
-            return Ok(output);
-        }
-
-        if output.w < output.h {
+            Ok(output)
+        } else if output.w < output.h {
             Ok(Size {
                 w: output.w,
                 h: input.h * (output.w / input.w),
@@ -205,7 +203,7 @@ impl Surface {
 
     pub fn show_page(&self, cr: &cairo::Context) -> Result<(), RenderingError> {
         match self {
-            Self::Png(_, _) => (),
+            Self::Png(_, _) => {}
             _ => cr.show_page(),
         }
         Ok(())
@@ -565,20 +563,16 @@ impl<T> NotFound for Result<T, clap::Error> {
     }
 }
 
-fn parse_color_string(str: String) -> Result<Color, clap::Error> {
-    parse_color_str(&str)
-}
-
-fn parse_color_str(str: &str) -> Result<Color, clap::Error> {
-    match str {
+fn parse_color_string<T: AsRef<str> + std::fmt::Display>(s: T) -> Result<Color, clap::Error> {
+    match s.as_ref() {
         "none" | "None" => Err(clap::Error::with_description(
-            str,
+            s.as_ref(),
             clap::ErrorKind::ArgumentNotFound,
         )),
-        _ => <Color as Parse>::parse_str(str).map_err(|_| {
+        _ => <Color as Parse>::parse_str(s.as_ref()).map_err(|_| {
             let desc = format!(
                 "Invalid value: The argument '{}' can not be parsed as a CSS color value",
-                str
+                s
             );
             clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
         }),
@@ -737,13 +731,13 @@ mod tests {
 
         #[test]
         fn valid_color_is_ok() {
-            assert!(parse_color_str("Red").is_ok());
+            assert!(parse_color_string("Red").is_ok());
         }
 
         #[test]
         fn none_is_handled_as_not_found() {
             assert_eq!(
-                parse_color_str("None").map_err(|e| e.kind),
+                parse_color_string("None").map_err(|e| e.kind),
                 Err(clap::ErrorKind::ArgumentNotFound)
             );
         }
@@ -751,7 +745,7 @@ mod tests {
         #[test]
         fn invalid_is_handled_as_invalid_value() {
             assert_eq!(
-                parse_color_str("foo").map_err(|e| e.kind),
+                parse_color_string("foo").map_err(|e| e.kind),
                 Err(clap::ErrorKind::InvalidValue)
             );
         }
