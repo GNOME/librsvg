@@ -47,7 +47,7 @@ enum ResizeStrategy {
 
 impl ResizeStrategy {
     pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Result<Size, ()> {
-        if input.w == 0.0 && input.h == 0.0 {
+        if input.w == 0.0 || input.h == 0.0 {
             return Err(());
         }
 
