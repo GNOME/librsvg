@@ -247,6 +247,36 @@ mod metadata {
     }
 }
 
+// These Stdin and Stdout types can be removed once we depend on Rust 1.48
+
+struct Stdin;
+
+impl Stdin {
+    pub fn stream() -> UnixInputStream {
+        unsafe { UnixInputStream::new(Self {}) }
+    }
+}
+
+impl std::os::unix::io::IntoRawFd for Stdin {
+    fn into_raw_fd(self) -> std::os::unix::io::RawFd {
+        0 as std::os::unix::io::RawFd
+    }
+}
+
+struct Stdout;
+
+impl Stdout {
+    pub fn stream() -> UnixOutputStream {
+        unsafe { UnixOutputStream::new(Self {}) }
+    }
+}
+
+impl std::os::unix::io::IntoRawFd for Stdout {
+    fn into_raw_fd(self) -> std::os::unix::io::RawFd {
+        1 as std::os::unix::io::RawFd
+    }
+}
+
 #[derive(Clone, Debug)]
 enum Input {
     Stdin,
@@ -613,10 +643,7 @@ fn main() {
 
     for input in &args.input {
         let (stream, basefile) = match input {
-            Input::Stdin => {
-                let stream = unsafe { UnixInputStream::new(0) };
-                (stream.upcast::<InputStream>(), None)
-            }
+            Input::Stdin => (Stdin::stream().upcast::<InputStream>(), None),
             Input::Path(p) => {
                 let file = gio::File::new_for_path(p);
                 let stream = file
@@ -674,10 +701,7 @@ fn main() {
                     .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
 
                 let output_stream = match args.output {
-                    Output::Stdout => {
-                        let stream = unsafe { UnixOutputStream::new(1) };
-                        stream.upcast::<OutputStream>()
-                    }
+                    Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
                     Output::Path(ref p) => {
                         let file = gio::File::new_for_path(p);
                         let stream = file
