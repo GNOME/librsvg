@@ -1,10 +1,11 @@
 // command-line interface for rsvg-convert
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use librsvg::{Color, Parse};
 
 use crate::input::Input;
+use crate::output::Output;
 use crate::size::{Dpi, Scale};
 
 arg_enum! {
@@ -31,7 +32,7 @@ pub struct Args {
     pub stylesheet: Option<PathBuf>,
     pub unlimited: bool,
     pub keep_image_data: bool,
-    output: Option<PathBuf>,
+    pub output: Output,
     pub input: Vec<Input>,
 }
 
@@ -223,7 +224,11 @@ impl Args {
             stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
             unlimited: matches.is_present("unlimited"),
             keep_image_data,
-            output: matches.value_of_os("output").map(PathBuf::from),
+            output: matches
+                .value_of_os("output")
+                .map(PathBuf::from)
+                .map(Output::Path)
+                .unwrap_or(Output::Stdout),
             input: match matches.values_of_os("FILE") {
                 Some(values) => values.map(PathBuf::from).map(Input::Path).collect(),
                 None => vec![Input::Stdin],
@@ -247,10 +252,6 @@ impl Args {
 
     pub fn export_id(&self) -> Option<&str> {
         self.export_id.as_deref()
-    }
-
-    pub fn output(&self) -> Option<&Path> {
-        self.output.as_deref()
     }
 }
 

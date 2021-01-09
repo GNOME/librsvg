@@ -1,10 +1,11 @@
 use core::ops::Deref;
 use std::io;
 
+use gio::prelude::*;
+use gio::OutputStream;
 use librsvg::{CairoRenderer, RenderingError};
 
 use crate::cli::Format;
-use crate::output::Stream;
 use crate::size::Size;
 
 // TODO: use from src/lib/handle.rs
@@ -13,7 +14,7 @@ fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
 }
 
 pub enum Surface {
-    Png(cairo::ImageSurface, Stream),
+    Png(cairo::ImageSurface, OutputStream),
     Pdf(cairo::PdfSurface, Size),
     Ps(cairo::PsSurface, Size),
     Svg(cairo::SvgSurface, Size),
@@ -33,7 +34,7 @@ impl Deref for Surface {
 }
 
 impl Surface {
-    pub fn new(format: Format, size: Size, stream: Stream) -> Result<Self, cairo::Status> {
+    pub fn new(format: Format, size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
         match format {
             Format::Png => Self::new_for_png(size, stream),
             Format::Pdf => Self::new_for_pdf(size, stream),
@@ -43,29 +44,29 @@ impl Surface {
         }
     }
 
-    fn new_for_png(size: Size, stream: Stream) -> Result<Self, cairo::Status> {
+    fn new_for_png(size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
         let w = checked_i32(size.w.round())?;
         let h = checked_i32(size.h.round())?;
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
         Ok(Self::Png(surface, stream))
     }
 
-    fn new_for_pdf(size: Size, stream: Stream) -> Result<Self, cairo::Status> {
-        let surface = cairo::PdfSurface::for_stream(size.w, size.h, stream)?;
+    fn new_for_pdf(size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
+        let surface = cairo::PdfSurface::for_stream(size.w, size.h, stream.into_write())?;
         if let Some(date) = metadata::creation_date() {
             surface.set_metadata(cairo::PdfMetadata::CreateDate, &date)?;
         }
         Ok(Self::Pdf(surface, size))
     }
 
-    fn new_for_ps(size: Size, stream: Stream, eps: bool) -> Result<Self, cairo::Status> {
-        let surface = cairo::PsSurface::for_stream(size.w, size.h, stream)?;
+    fn new_for_ps(size: Size, stream: OutputStream, eps: bool) -> Result<Self, cairo::Status> {
+        let surface = cairo::PsSurface::for_stream(size.w, size.h, stream.into_write())?;
         surface.set_eps(eps);
         Ok(Self::Ps(surface, size))
     }
 
-    fn new_for_svg(size: Size, stream: Stream) -> Result<Self, cairo::Status> {
-        let surface = cairo::SvgSurface::for_stream(size.w, size.h, stream)?;
+    fn new_for_svg(size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
+        let surface = cairo::SvgSurface::for_stream(size.w, size.h, stream.into_write())?;
         Ok(Self::Svg(surface, size))
     }
 
@@ -111,17 +112,13 @@ impl Surface {
         Ok(())
     }
 
-    fn finish_output_stream(surface: &cairo::Surface) -> Result<(), cairo::IoError> {
-        match surface.finish_output_stream() {
-            Ok(_) => Ok(()),
-            Err(e) => Err(cairo::IoError::Io(io::Error::from(e))),
-        }
-    }
-
-    pub fn finish(&mut self) -> Result<(), cairo::IoError> {
+    pub fn finish(self) -> Result<(), cairo::IoError> {
         match self {
-            Self::Png(surface, stream) => surface.write_to_png(stream),
-            _ => Self::finish_output_stream(self),
+            Self::Png(surface, stream) => surface.write_to_png(&mut stream.into_write()),
+            _ => match self.finish_output_stream() {
+                Ok(_) => Ok(()),
+                Err(e) => Err(cairo::IoError::Io(io::Error::from(e))),
+            },
         }
     }
 }
