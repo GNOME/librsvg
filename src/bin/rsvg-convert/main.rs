@@ -9,13 +9,16 @@ mod surface;
 
 use cssparser::Color;
 use gio::prelude::*;
-use gio::{Cancellable, FileExt, InputStream, UnixInputStream};
+use gio::{
+    Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream, UnixInputStream,
+    UnixOutputStream,
+};
 use librsvg::rsvg_convert_only::LegacySize;
 use librsvg::{CairoRenderer, Loader, RenderingError};
 
 use crate::cli::Args;
 use crate::input::Input;
-use crate::output::Stream;
+use crate::output::Output;
 use crate::size::{ResizeStrategy, Size};
 use crate::surface::Surface;
 
@@ -109,14 +112,27 @@ fn main() {
             };
 
             target = {
-                let output = Stream::new(args.output())
-                    .unwrap_or_else(|e| exit!("Error opening output: {}", e));
-
                 let size = strategy
                     .apply(Size::new(width, height), args.keep_aspect_ratio)
                     .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
 
-                match Surface::new(args.format, size, output) {
+                let output_stream = match args.output {
+                    Output::Stdout => {
+                        let stream = unsafe { UnixOutputStream::new(1) };
+                        stream.upcast::<OutputStream>()
+                    }
+                    Output::Path(ref p) => {
+                        let file = gio::File::new_for_path(p);
+                        let stream = file
+                            .create(FileCreateFlags::NONE, None::<&Cancellable>)
+                            .unwrap_or_else(|e| {
+                                exit!("Error opening output \"{}\": {}", args.output, e)
+                            });
+                        stream.upcast::<OutputStream>()
+                    }
+                };
+
+                match Surface::new(args.format, size, output_stream) {
                     Ok(surface) => Some(surface),
                     Err(cairo::Status::InvalidSize) => size_limit_exceeded(),
                     Err(e) => exit!("Error creating output surface: {}", e),
@@ -144,7 +160,7 @@ fn main() {
         }
     }
 
-    if let Some(ref mut surface) = target {
+    if let Some(surface) = target {
         surface
             .finish()
             .unwrap_or_else(|e| exit!("Error saving output: {}", e));
