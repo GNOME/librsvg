@@ -8,6 +8,7 @@ use gio::{
 };
 use librsvg::rsvg_convert_only::LegacySize;
 use librsvg::{CairoRenderer, Color, Loader, Parse, RenderingError};
+use once_cell::unsync::OnceCell;
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -348,7 +349,7 @@ impl Converter {
             None => None,
         };
 
-        let mut target = None;
+        let mut surface: OnceCell<Surface> = OnceCell::new();
 
         for input in &self.input {
             let (stream, basefile) = match input {
@@ -376,77 +377,71 @@ impl Converter {
 
             let renderer = CairoRenderer::new(&handle).with_dpi(self.dpi.0, self.dpi.1);
 
-            if target.is_none() {
-                let (width, height) = renderer
-                    .legacy_layer_size_in_pixels(self.export_id.as_deref())
-                    .unwrap_or_else(|e| match e {
-                        RenderingError::IdNotFound => exit!(
-                            "File {} does not have an object with id \"{}\")",
-                            input,
-                            self.export_id.as_deref().unwrap()
-                        ),
-                        _ => exit!("Error rendering SVG {}: {}", input, e),
-                    });
+            // Create the surface once on the first input
+            let s = surface.get_or_init(|| self.create_surface(&renderer, input));
 
-                let strategy = match (self.width, self.height) {
-                    // when w and h are not specified, scale to the requested zoom (if any)
-                    (None, None) => ResizeStrategy::Scale(self.zoom),
-
-                    // when w and h are specified, but zoom is not, scale to the requested size
-                    (Some(w), Some(h)) if self.zoom.is_identity() => ResizeStrategy::Fit(w, h),
-
-                    // if only one between w and h is specified and there is no zoom, scale to the
-                    // requested w or h and use the same scaling factor for the other
-                    (Some(w), None) if self.zoom.is_identity() => ResizeStrategy::FitWidth(w),
-                    (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
-
-                    // otherwise scale the image, but cap the zoom to match the requested size
-                    _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
-                };
-
-                target = {
-                    let size = strategy
-                        .apply(Size::new(width, height), self.keep_aspect_ratio)
-                        .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
-
-                    let output_stream = match self.output {
-                        Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
-                        Output::Path(ref p) => {
-                            let file = gio::File::new_for_path(p);
-                            let stream = file
-                                .create(FileCreateFlags::NONE, None::<&Cancellable>)
-                                .unwrap_or_else(|e| {
-                                    exit!("Error opening output \"{}\": {}", self.output, e)
-                                });
-                            stream.upcast::<OutputStream>()
-                        }
-                    };
-
-                    match Surface::new(self.format, size, output_stream) {
-                        Ok(surface) => Some(surface),
-                        Err(cairo::Status::InvalidSize) => size_limit_exceeded(),
-                        Err(e) => exit!("Error creating output surface: {}", e),
-                    }
-                };
-            }
-
-            if let Some(ref surface) = target {
-                surface
-                    .render(
-                        &renderer,
-                        self.zoom,
-                        self.background_color,
-                        self.export_id.as_deref(),
-                    )
-                    .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
-            }
+            s.render(
+                &renderer,
+                self.zoom,
+                self.background_color,
+                self.export_id.as_deref(),
+            )
+            .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e))
         }
 
-        if let Some(surface) = target {
-            surface
-                .finish()
-                .unwrap_or_else(|e| exit!("Error saving output: {}", e));
-        }
+        if let Some(s) = surface.take() {
+            s.finish()
+                .unwrap_or_else(|e| exit!("Error saving output: {}", e))
+        };
+    }
+
+    fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
+        let (width, height) = renderer
+            .legacy_layer_size_in_pixels(self.export_id.as_deref())
+            .unwrap_or_else(|e| match e {
+                RenderingError::IdNotFound => exit!(
+                    "File {} does not have an object with id \"{}\")",
+                    input,
+                    self.export_id.as_deref().unwrap()
+                ),
+                _ => exit!("Error rendering SVG {}: {}", input, e),
+            });
+
+        let strategy = match (self.width, self.height) {
+            // when w and h are not specified, scale to the requested zoom (if any)
+            (None, None) => ResizeStrategy::Scale(self.zoom),
+
+            // when w and h are specified, but zoom is not, scale to the requested size
+            (Some(w), Some(h)) if self.zoom.is_identity() => ResizeStrategy::Fit(w, h),
+
+            // if only one between w and h is specified and there is no zoom, scale to the
+            // requested w or h and use the same scaling factor for the other
+            (Some(w), None) if self.zoom.is_identity() => ResizeStrategy::FitWidth(w),
+            (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
+
+            // otherwise scale the image, but cap the zoom to match the requested size
+            _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
+        };
+
+        let size = strategy
+            .apply(Size::new(width, height), self.keep_aspect_ratio)
+            .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
+
+        let output_stream = match self.output {
+            Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
+            Output::Path(ref p) => {
+                let file = gio::File::new_for_path(p);
+                let stream = file
+                    .create(FileCreateFlags::NONE, None::<&Cancellable>)
+                    .unwrap_or_else(|e| exit!("Error opening output \"{}\": {}", self.output, e));
+                stream.upcast::<OutputStream>()
+            }
+        };
+
+        Surface::new(self.format, size, output_stream).unwrap_or_else(|e| match e {
+            cairo::Status::InvalidSize => size_limit_exceeded(),
+            e => exit!("Error creating output surface: {}", e),
+        })
     }
 }
 
