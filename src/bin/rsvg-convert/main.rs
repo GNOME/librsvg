@@ -167,25 +167,22 @@ impl Surface {
         Ok(Self::Svg(surface, size))
     }
 
-    fn size(&self) -> Size {
-        match self {
-            Self::Png(surface, _) => Size {
-                w: surface.get_width() as f64,
-                h: surface.get_height() as f64,
-            },
-            Self::Pdf(_, size) => *size,
-            Self::Ps(_, size) => *size,
-            Self::Svg(_, size) => *size,
-        }
-    }
-
     fn bounds(&self) -> cairo::Rectangle {
-        let size = self.size();
+        let (w, h) = match self {
+            Self::Png(surface, _) => (
+                f64::from(surface.get_width()),
+                f64::from(surface.get_height()),
+            ),
+            Self::Pdf(_, size) => (size.w, size.h),
+            Self::Ps(_, size) => (size.w, size.h),
+            Self::Svg(_, size) => (size.w, size.h),
+        };
+
         cairo::Rectangle {
             x: 0.0,
             y: 0.0,
-            width: size.w,
-            height: size.h,
+            width: w,
+            height: h,
         }
     }
 
@@ -195,18 +192,13 @@ impl Surface {
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
-        let show_page = |_| self.show_page(cr);
         renderer
             .render_layer(cr, id, &self.bounds())
-            .and_then(show_page)
-    }
-
-    pub fn show_page(&self, cr: &cairo::Context) -> Result<(), RenderingError> {
-        match self {
-            Self::Png(_, _) => {}
-            _ => cr.show_page(),
-        }
-        Ok(())
+            .map(|_| {
+                if !matches!(self, Self::Png(_, _)) {
+                    cr.show_page();
+                }
+            })
     }
 
     pub fn finish(self) -> Result<(), cairo::IoError> {
