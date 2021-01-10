@@ -189,16 +189,28 @@ impl Surface {
     pub fn render(
         &self,
         renderer: &CairoRenderer,
-        cr: &cairo::Context,
+        scale: Scale,
+        background_color: Option<Color>,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
-        renderer
-            .render_layer(cr, id, &self.bounds())
-            .map(|_| {
-                if !matches!(self, Self::Png(_, _)) {
-                    cr.show_page();
-                }
-            })
+        let cr = cairo::Context::new(self);
+
+        if let Some(Color::RGBA(rgba)) = background_color {
+            cr.set_source_rgba(
+                rgba.red_f32().into(),
+                rgba.green_f32().into(),
+                rgba.blue_f32().into(),
+                rgba.alpha_f32().into(),
+            );
+        }
+
+        cr.scale(scale.x, scale.y);
+
+        renderer.render_layer(&cr, id, &self.bounds()).map(|_| {
+            if !matches!(self, Self::Png(_, _)) {
+                cr.show_page();
+            }
+        })
     }
 
     pub fn finish(self) -> Result<(), cairo::IoError> {
@@ -419,21 +431,13 @@ impl Converter {
             }
 
             if let Some(ref surface) = target {
-                let cr = cairo::Context::new(surface);
-
-                if let Some(Color::RGBA(rgba)) = self.background_color {
-                    cr.set_source_rgba(
-                        rgba.red_f32().into(),
-                        rgba.green_f32().into(),
-                        rgba.blue_f32().into(),
-                        rgba.alpha_f32().into(),
-                    );
-                }
-
-                cr.scale(self.zoom.x, self.zoom.y);
-
                 surface
-                    .render(&renderer, &cr, self.export_id.as_deref())
+                    .render(
+                        &renderer,
+                        self.zoom,
+                        self.background_color,
+                        self.export_id.as_deref(),
+                    )
                     .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e));
             }
         }
