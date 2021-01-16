@@ -47,9 +47,9 @@ enum ResizeStrategy {
 }
 
 impl ResizeStrategy {
-    pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Result<Size, ()> {
+    pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Option<Size> {
         if input.w == 0.0 || input.h == 0.0 {
-            return Err(());
+            return None;
         }
 
         let output = match self {
@@ -96,14 +96,14 @@ impl ResizeStrategy {
         };
 
         if !keep_aspect_ratio {
-            Ok(output)
+            Some(output)
         } else if output.w < output.h {
-            Ok(Size {
+            Some(Size {
                 w: output.w,
                 h: input.h * (output.w / input.w),
             })
         } else {
-            Ok(Size {
+            Some(Size {
                 w: input.w * (output.h / input.h),
                 h: output.h,
             })
@@ -425,7 +425,7 @@ impl Converter {
 
         let size = strategy
             .apply(Size::new(width, height), self.keep_aspect_ratio)
-            .unwrap_or_else(|_| exit!("The SVG {} has no dimensions", input));
+            .unwrap_or_else(|| exit!("The SVG {} has no dimensions", input));
 
         let output_stream = match self.output {
             Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
