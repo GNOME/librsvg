@@ -595,12 +595,10 @@ fn parse_args() -> Result<Converter, clap::Error> {
 
     let background_color = value_t!(matches, "background", String).and_then(parse_color_string);
 
+    // librsvg expects ids starting with '#', so it can lookup ids in externs like "subfile.svg#subid".
+    // For the user's convenience, we prepend '#' automatically; we only support specifying ids from
+    // the toplevel, and don't expect users to lookup things in externs.
     let lookup_id = |id: String| {
-        // RsvgHandle::has_sub() expects ids to have a '#' prepended to them,
-        // so it can lookup ids in externs like "subfile.svg#subid".  For the
-        // user's convenience, we include this '#' automatically; we only
-        // support specifying ids from the toplevel, and don't expect users to
-        // lookup things in externs.
         if id.starts_with('#') {
             id
         } else {
