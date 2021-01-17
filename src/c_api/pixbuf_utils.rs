@@ -166,7 +166,7 @@ unsafe fn pixbuf_from_file_with_size_mode(
     let dpi = Dpi::default();
     let renderer = CairoRenderer::new(&handle).with_dpi(dpi.x(), dpi.y());
 
-    let (document_width, document_height) = match renderer.legacy_document_size_in_pixels() {
+    let (document_width, document_height) = match renderer.legacy_document_size() {
         Ok(dim) => dim,
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));

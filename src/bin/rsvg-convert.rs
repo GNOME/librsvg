@@ -397,7 +397,7 @@ impl Converter {
 
     fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
         let (width, height) = renderer
-            .legacy_layer_size_in_pixels(self.export_id.as_deref())
+            .legacy_layer_size(self.export_id.as_deref())
             .unwrap_or_else(|e| match e {
                 RenderingError::IdNotFound => exit!(
                     "File {} does not have an object with id \"{}\")",
