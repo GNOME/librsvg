@@ -223,7 +223,7 @@ CLEANFILES += $(bin_SCRIPTS)
 
 RSVG_CONVERT_BIN=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/rsvg-convert$(EXEEXT)
 
-RSVG_CONVERT_SRC = src/bin/rsvg-convert/main.rs
+RSVG_CONVERT_SRC = src/bin/rsvg-convert.rs
 
 $(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC)
 	+cd $(top_srcdir) &&							\
