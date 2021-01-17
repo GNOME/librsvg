@@ -17,7 +17,7 @@ _rsvg_dummy.c:
 # See LIBRSVG_SRC below for the real list of Rust sources.
 librsvg_c_api_la_SOURCES = _rsvg_dummy.c
 
-bin_PROGRAMS = rsvg-convert
+CLEANFILES = $(BUILT_SOURCES)
 
 include rsvg-c-srcs.mk
 
@@ -188,7 +188,7 @@ librsvg_c_api.la: $(librsvg_c_api_la_OBJECTS) $(LIBRSVG_SRC)
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
-	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) \
+	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --lib \
 	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && mv $(RUST_LIB) .libs/librsvg_c_api.a
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = $(AM_CPPFLAGS)
@@ -216,28 +216,26 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_LIBADD = \
 librsvgincdir = $(includedir)/librsvg-$(RSVG_API_VERSION)/librsvg
 librsvginc_HEADERS = $(librsvg_public_headers)
 
+# Use SCRIPTS instead of PROGRAMS since we build it on our own
+bin_SCRIPTS = rsvg-convert$(EXEEXT)
+
+CLEANFILES += $(bin_SCRIPTS)
+
+RSVG_CONVERT_BIN=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/rsvg-convert$(EXEEXT)
+
+RSVG_CONVERT_SRC = src/bin/rsvg-convert/main.rs
+
+$(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC)
+	+cd $(top_srcdir) &&							\
+	PKG_CONFIG_ALLOW_CROSS=1						\
+	PKG_CONFIG='$(PKG_CONFIG)'						\
+	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
+	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --bin rsvg-convert
+
+rsvg-convert$(EXEEXT): $(RSVG_CONVERT_BIN)
+	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert
+
 dist_man_MANS = rsvg-convert.1
-
-rsvg_convert_SOURCES =			\
-	$(rsvg_convert_srcs)		\
-	$(NULL)
-
-rsvg_convert_CPPFLAGS = \
-	-I$(top_srcdir)/include			\
-	-I$(top_builddir)/include		\
-	-DLIBRSVG_DATADIR="\"$(datadir)\""	\
-	$(AM_CPPFLAGS)
-
-rsvg_convert_CFLAGS =\
-	$(RSVG_CONVERT_CFLAGS) \
-	$(AM_CFLAGS)
-
-rsvg_convert_LDFLAGS = $(AM_LDFLAGS)
-
-rsvg_convert_LDADD = \
-	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
-	$(RSVG_CONVERT_LIBS) \
-	$(LIBM)
 
 dist_doc_DATA =				\
 	COMPILING.md			\
@@ -248,6 +246,7 @@ dist_doc_DATA =				\
 EXTRA_DIST =				\
 	$(LIBRSVG_SRC)			\
 	$(RUST_EXTRA)			\
+	$(RSVG_CONVERT_SRC)		\
 	librsvg.doap			\
 	AUTHORS				\
 	NEWS				\
@@ -259,9 +258,6 @@ EXTRA_DIST =				\
 	glib-tap.mk			\
 	tap-driver.sh			\
 	tap-test
-
-## Put `exec' in the name because this should be installed by
-## `install-exec', not `install-data'.
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librsvg-$(RSVG_API_VERSION).pc
@@ -301,7 +297,7 @@ nodist_gir_DATA = $(INTROSPECTION_GIRS)
 typelibsdir = $(libdir)/girepository-1.0
 nodist_typelibs_DATA = $(INTROSPECTION_GIRS:.gir=.typelib)
 
-CLEANFILES = $(BUILT_SOURCES) $(nodist_gir_DATA) $(nodist_typelibs_DATA)
+CLEANFILES += $(nodist_gir_DATA) $(nodist_typelibs_DATA)
 
 if ENABLE_VAPIGEN
 include $(VAPIGEN_MAKEFILE)

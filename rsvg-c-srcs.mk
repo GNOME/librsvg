@@ -8,5 +8,3 @@ librsvg_public_headers =		\
 librsvg_private_headers =	 	\
 	include/librsvg/rsvg-css.h	\
 	$(NULL)
-
-rsvg_convert_srcs = rsvg-convert.c
