@@ -62,9 +62,7 @@ EXTRA_HFILES = $(top_builddir)/include/librsvg/rsvg-version.h
 
 # Header files to ignore when scanning. Use base file name, no paths
 # e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
-IGNORE_HFILES =			\
-	config.h		\
-	rsvg-css.h
+IGNORE_HFILES = config.h
 
 # Images to copy into HTML directory.
 # e.g. HTML_IMAGES=$(top_srcdir)/gtk/stock-icons/stock_about_24.png

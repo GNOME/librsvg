@@ -23,7 +23,6 @@ include rsvg-c-srcs.mk
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 	$(librsvg_public_headers)		\
-	$(librsvg_private_headers)		\
 	$(NULL)
 
 LIBRSVG_SRC =					\
@@ -33,7 +32,6 @@ LIBRSVG_SRC =					\
 	src/api.rs				\
 	src/aspect_ratio.rs			\
 	src/bbox.rs				\
-	src/c_api/color_utils.rs		\
 	src/c_api/dpi.rs			\
 	src/c_api/handle.rs			\
 	src/c_api/messages.rs			\

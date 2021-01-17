@@ -4,7 +4,6 @@ src/angle.rs
 src/api.rs
 src/aspect_ratio.rs
 src/bbox.rs
-src/c_api/color_utils.rs
 src/c_api/dpi.rs
 src/c_api/handle.rs
 src/c_api/messages.rs
