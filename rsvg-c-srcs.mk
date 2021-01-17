@@ -4,7 +4,3 @@ librsvg_public_headers =		\
 	include/librsvg/rsvg-features.h \
 	include/librsvg/rsvg-version.h	\
 	$(NULL)
-
-librsvg_private_headers =	 	\
-	include/librsvg/rsvg-css.h	\
-	$(NULL)
