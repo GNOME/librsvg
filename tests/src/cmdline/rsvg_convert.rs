@@ -334,17 +334,6 @@ fn zoom_factor() {
         .stdout(file::is_png().with_size(160, 80));
 }
 
-// TODO: Is this a bug in rsvg-convert or the desired behavior ?
-#[test]
-fn zoom_factor_and_width_conflicts() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
-        .arg("--width=400")
-        .arg("--zoom=1.5")
-        .assert()
-        .failure()
-        .stderr(ends_with("Could not render file stdin").trim());
-}
-
 #[test]
 fn zoom_factor_and_larger_size() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
