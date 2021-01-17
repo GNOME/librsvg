@@ -975,10 +975,7 @@ impl CHandle {
         let handle = self.get_handle_ref()?;
         let renderer = self.make_renderer(&handle);
 
-        Ok(renderer.legacy_layer_size_in_pixels(id).map(|(w, h)| {
-            let rect = cairo::Rectangle::from_size(w, h);
-            (rect, rect)
-        })?)
+        Ok(renderer.legacy_layer_geometry(id)?)
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
