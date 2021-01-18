@@ -439,7 +439,11 @@ impl Converter {
         };
 
         Surface::new(self.format, size, output_stream).unwrap_or_else(|e| match e {
-            cairo::Status::InvalidSize => size_limit_exceeded(),
+            cairo::Status::InvalidSize => exit!(concat!(
+                "The resulting image would be larger than 32767 pixels on either dimension.\n",
+                "Librsvg currently cannot render to images bigger than that.\n",
+                "Please specify a smaller size."
+            )),
             e => exit!("Error creating output surface: {}", e),
         })
     }
@@ -615,16 +619,11 @@ fn parse_args() -> Result<Converter, clap::Error> {
         None => vec![Input::Stdin],
     };
 
-    if input.len() > 1 {
-        match format {
-            Format::Ps | Format::Eps | Format::Pdf => (),
-            _ => {
-                return Err(clap::Error::with_description(
-                    "Multiple SVG files are only allowed for PDF and (E)PS output.",
-                    clap::ErrorKind::TooManyValues,
-                ))
-            }
-        }
+    if input.len() > 1 && !matches!(format, Format::Ps | Format::Eps | Format::Pdf) {
+        return Err(clap::Error::with_description(
+            "Multiple SVG files are only allowed for PDF and (E)PS output.",
+            clap::ErrorKind::TooManyValues,
+        ));
     }
 
     Ok(Converter {
@@ -722,14 +721,6 @@ macro_rules! exit {
         std::eprintln!("{}", std::format_args!($($arg)*));
         std::process::exit(1);
     })
-}
-
-fn size_limit_exceeded() -> ! {
-    exit!(
-        "The resulting image would be larger than 32767 pixels on either dimension.\n\
-           Librsvg currently cannot render to images bigger than that.\n\
-           Please specify a smaller size."
-    );
 }
 
 fn main() {
