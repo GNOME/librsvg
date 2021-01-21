@@ -14,6 +14,7 @@ use predicates::prelude::*;
 use predicates::str::*;
 use std::path::Path;
 use tempfile::Builder;
+use url::Url;
 
 // What should be tested here?
 // The goal is to test the code in rsvg-convert, not the entire library.
@@ -84,6 +85,22 @@ fn argument_is_input_filename() {
     let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
     RsvgConvert::new()
         .arg(input)
+        .assert()
+        .success()
+        .stdout(file::is_png());
+}
+
+#[test]
+fn argument_is_url() {
+    let path = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .canonicalize()
+        .unwrap();
+    let url = Url::from_file_path(path).unwrap();
+    let stringified = url.as_str();
+    assert!(stringified.starts_with("file://"));
+
+    RsvgConvert::new()
+        .arg(stringified)
         .assert()
         .success()
         .stdout(file::is_png());
