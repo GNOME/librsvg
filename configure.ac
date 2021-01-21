@@ -92,6 +92,9 @@ AM_PROG_CC_C_O
 AC_C_BIGENDIAN
 
 PKG_PROG_PKG_CONFIG
+AS_IF([test -z "$PKG_CONFIG"],
+  [AC_MSG_WARN([pkg-config is needed for auto-configuration of dependencies])
+   PKG_CONFIG=false])
 
 LT_INIT([win32-dll])
 LT_LIB_M
