@@ -158,5 +158,6 @@ pub mod doctest_only {
 
 #[doc(hidden)]
 pub mod rsvg_convert_only {
+    pub use crate::c_api::handle::PathOrUrl;
     pub use crate::c_api::sizing::LegacySize;
 }

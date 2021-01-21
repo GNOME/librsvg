@@ -48,6 +48,6 @@ pub use pixbuf_utils::{
 mod messages;
 
 mod dpi;
-mod handle;
+pub mod handle;
 pub mod pixbuf_utils;
 pub mod sizing;

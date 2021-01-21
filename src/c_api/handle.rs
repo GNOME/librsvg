@@ -2131,7 +2131,8 @@ pub unsafe extern "C" fn rsvg_cleanup() {}
 /// `gio::File::new_for_path()` or `gio::File::new_for_uri()` as appropriate.
 ///
 /// This enum does the magic heuristics to figure this out.
-enum PathOrUrl {
+#[derive(Clone, Debug)]
+pub enum PathOrUrl {
     Path(PathBuf),
     Url(Url),
 }
@@ -2169,6 +2170,15 @@ impl PathOrUrl {
         match *self {
             PathOrUrl::Path(ref p) => gio::File::new_for_path(p),
             PathOrUrl::Url(ref u) => gio::File::new_for_uri(u.as_str()),
+        }
+    }
+}
+
+impl fmt::Display for PathOrUrl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            PathOrUrl::Path(ref p) => p.display().fmt(f),
+            PathOrUrl::Url(ref u) => u.fmt(f),
         }
     }
 }
