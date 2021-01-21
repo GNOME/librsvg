@@ -23,7 +23,7 @@
 //! [`CHandle`]: struct.CHandle.html
 
 use std::cell::{Cell, Ref, RefCell, RefMut};
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr, CString, OsStr};
 use std::fmt;
 use std::ops;
 use std::path::PathBuf;
@@ -2157,6 +2157,14 @@ impl PathOrUrl {
                 Ok(PathOrUrl::Path(url.to_file_path()?))
             }
         })
+    }
+
+    pub fn from_os_str(osstr: &OsStr) -> PathOrUrl {
+        osstr
+            .to_str()
+            .ok_or(())
+            .and_then(Self::try_from_str)
+            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from(osstr.to_os_string())))
     }
 }
 
