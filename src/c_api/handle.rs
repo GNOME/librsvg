@@ -2145,15 +2145,18 @@ impl PathOrUrl {
         Ok(cstr
             .to_str()
             .map_err(|_| ())
-            .and_then(|utf8| Url::parse(utf8).map_err(|_| ()))
-            .and_then(|url| {
-                if url.origin().is_tuple() || url.scheme() == "file" {
-                    Ok(PathOrUrl::Url(url))
-                } else {
-                    Ok(PathOrUrl::Path(url.to_file_path()?))
-                }
-            })
+            .and_then(Self::try_from_str)
             .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s))))
+    }
+
+    fn try_from_str(s: &str) -> Result<PathOrUrl, ()> {
+        Url::parse(s).map_err(|_| ()).and_then(|url| {
+            if url.origin().is_tuple() || url.scheme() == "file" {
+                Ok(PathOrUrl::Url(url))
+            } else {
+                Ok(PathOrUrl::Path(url.to_file_path()?))
+            }
+        })
     }
 }
 
