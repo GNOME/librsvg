@@ -1652,9 +1652,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
     }
 
     let file = match PathOrUrl::new(filename) {
-        Ok(PathOrUrl::Path(path)) => gio::File::new_for_path(path),
-
-        Ok(PathOrUrl::Url(url)) => gio::File::new_for_uri(url.as_str()),
+        Ok(p) => p.get_gfile(),
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
@@ -2165,6 +2163,13 @@ impl PathOrUrl {
             .ok_or(())
             .and_then(Self::try_from_str)
             .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from(osstr.to_os_string())))
+    }
+
+    pub fn get_gfile(&self) -> gio::File {
+        match *self {
+            PathOrUrl::Path(ref p) => gio::File::new_for_path(p),
+            PathOrUrl::Url(ref u) => gio::File::new_for_uri(u.as_str()),
+        }
     }
 }
 
