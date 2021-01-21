@@ -6,7 +6,7 @@ use gio::{
     Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream, UnixInputStream,
     UnixOutputStream,
 };
-use librsvg::rsvg_convert_only::LegacySize;
+use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
 use librsvg::{CairoRenderer, Color, Loader, Parse, RenderingError};
 use once_cell::unsync::OnceCell;
 use std::ops::Deref;
@@ -285,14 +285,14 @@ impl std::os::unix::io::IntoRawFd for Stdout {
 #[derive(Clone, Debug)]
 enum Input {
     Stdin,
-    Path(PathBuf),
+    Named(PathOrUrl),
 }
 
 impl std::fmt::Display for Input {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Input::Stdin => "stdin".fmt(f),
-            Input::Path(p) => p.display().fmt(f),
+            Input::Named(p) => p.fmt(f),
         }
     }
 }
@@ -354,8 +354,8 @@ impl Converter {
         for input in &self.input {
             let (stream, basefile) = match input {
                 Input::Stdin => (Stdin::stream().upcast::<InputStream>(), None),
-                Input::Path(p) => {
-                    let file = gio::File::new_for_path(p);
+                Input::Named(p) => {
+                    let file = p.get_gfile();
                     let stream = file
                         .read(None::<&Cancellable>)
                         .unwrap_or_else(|e| exit!("Error reading file \"{}\": {}", input, e));
@@ -615,7 +615,10 @@ fn parse_args() -> Result<Converter, clap::Error> {
     let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
 
     let input = match matches.values_of_os("FILE") {
-        Some(values) => values.map(PathBuf::from).map(Input::Path).collect(),
+        Some(values) => values
+            .map(PathOrUrl::from_os_str)
+            .map(Input::Named)
+            .collect(),
         None => vec![Input::Stdin],
     };
 
