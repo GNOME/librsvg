@@ -203,6 +203,8 @@ impl Surface {
                 rgba.blue_f32().into(),
                 rgba.alpha_f32().into(),
             );
+
+            cr.paint();
         }
 
         cr.scale(scale.x, scale.y);
