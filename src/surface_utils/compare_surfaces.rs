@@ -3,7 +3,6 @@ use super::{
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
 };
-use crate::error::RenderingError;
 
 use rgb::{ComponentMap, RGB};
 
@@ -35,7 +34,7 @@ fn emphasize(p: &Pixel) -> Pixel {
 pub fn compare_surfaces(
     surf_a: &SharedImageSurface,
     surf_b: &SharedImageSurface,
-) -> Result<BufferDiff, RenderingError> {
+) -> Result<BufferDiff, cairo::Status> {
     let a_width = surf_a.width();
     let a_height = surf_a.height();
 

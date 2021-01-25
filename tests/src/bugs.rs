@@ -1,11 +1,8 @@
 use cairo;
-use librsvg::{
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    test_utils::compare_to_surface,
-    LoadingError, SvgHandle,
-};
+use librsvg::{LoadingError, SvgHandle};
 use matches::matches;
 
+use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{load_svg, render_document, SurfaceSize};
 
 // https://gitlab.gnome.org/GNOME/librsvg/issues/335
@@ -76,13 +73,9 @@ fn nonexistent_image_shouldnt_cancel_rendering() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "nonexistent_image_shouldnt_cancel_rendering",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "nonexistent_image_shouldnt_cancel_rendering");
 }
 
 // https://gitlab.gnome.org/GNOME/librsvg/-/issues/568
@@ -129,13 +122,9 @@ fn href_attribute_overrides_xlink_href() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "href_attribute_overrides_xlink_href",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "href_attribute_overrides_xlink_href");
 }
 
 // https://gitlab.gnome.org/GNOME/librsvg/-/issues/560
@@ -174,13 +163,9 @@ fn nonexistent_filter_leaves_object_unfiltered() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "nonexistent_filter_leaves_object_unfiltered",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "nonexistent_filter_leaves_object_unfiltered");
 }
 
 // https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint says this:
@@ -243,13 +228,9 @@ fn recursive_paint_servers_fallback_to_color() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "recursive_paint_servers_fallback_to_color",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "recursive_paint_servers_fallback_to_color");
 }
 
 fn test_renders_as_empty(svg: &SvgHandle, test_name: &str) {
@@ -267,9 +248,10 @@ fn test_renders_as_empty(svg: &SvgHandle, test_name: &str) {
     .unwrap();
 
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
 
-    compare_to_surface(&output_surf, &reference_surf, test_name);
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, test_name);
 }
 
 // https://gitlab.gnome.org/GNOME/librsvg/-/issues/308

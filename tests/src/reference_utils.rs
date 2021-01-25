@@ -1,0 +1,172 @@
+//! Utilities for the reference image test suite.
+//!
+//! This module has utility functions that are used in the test suite
+//! to compare rendered surfaces to reference images.
+
+use std::convert::TryFrom;
+use std::env;
+use std::fs::{self, File};
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
+use std::sync::Once;
+
+use librsvg::surface_utils::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
+use librsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+
+pub struct Reference(SharedImageSurface);
+
+impl Reference {
+    pub fn from_png<P>(path: P) -> Result<Self, cairo::IoError>
+    where
+        P: AsRef<Path>,
+    {
+        let file = File::open(path).map_err(|e| cairo::IoError::Io(e))?;
+        let mut reader = BufReader::new(file);
+        let png = cairo::ImageSurface::create_from_png(&mut reader)?;
+        let argb =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, png.get_width(), png.get_height())?;
+        {
+            // convert to ARGB; the PNG may come as Rgb24
+            let cr = cairo::Context::new(&argb);
+            cr.set_source_surface(&png, 0.0, 0.0);
+            cr.paint();
+        }
+
+        Self::from_surface(argb)
+    }
+
+    pub fn from_surface(surface: cairo::ImageSurface) -> Result<Self, cairo::IoError> {
+        let shared = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
+        Ok(Self(shared))
+    }
+}
+
+pub trait Compare {
+    fn compare(self, surface: &SharedImageSurface) -> Result<BufferDiff, cairo::IoError>;
+}
+
+impl Compare for Reference {
+    fn compare(self, surface: &SharedImageSurface) -> Result<BufferDiff, cairo::IoError> {
+        compare_surfaces(&self.0, surface).map_err(cairo::IoError::from)
+    }
+}
+
+impl Compare for Result<Reference, cairo::IoError> {
+    fn compare(self, surface: &SharedImageSurface) -> Result<BufferDiff, cairo::IoError> {
+        self.map(|reference| reference.compare(surface))
+            .and_then(std::convert::identity)
+    }
+}
+
+pub trait Evaluate {
+    fn evaluate(&self, output_surface: &SharedImageSurface, output_base_name: &str);
+}
+
+impl Evaluate for BufferDiff {
+    /// Evaluates a BufferDiff and panics if there are relevant differences
+    ///
+    /// The `output_base_name` is used to write test results if the
+    /// surfaces are different.  If this is `foo`, this will write
+    /// `foo-out.png` with the `output_surf` and `foo-diff.png` with a
+    /// visual diff between `output_surf` and the `Reference` that this
+    /// diff was created from.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if the surfaces are too different to be acceptable.
+    fn evaluate(&self, output_surf: &SharedImageSurface, output_base_name: &str) {
+        match self {
+            BufferDiff::DifferentSizes => unreachable!("surfaces should be of the same size"),
+
+            BufferDiff::Diff(diff) => {
+                if diff.distinguishable() {
+                    println!(
+                        "{}: {} pixels changed with maximum difference of {}",
+                        output_base_name, diff.num_pixels_changed, diff.max_diff,
+                    );
+
+                    write_to_file(output_surf, output_base_name, "out");
+                    write_to_file(&diff.surface, output_base_name, "diff");
+
+                    if diff.inacceptable() {
+                        panic!("surfaces are too different");
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Evaluate for Result<BufferDiff, cairo::IoError> {
+    fn evaluate(&self, output_surface: &SharedImageSurface, output_base_name: &str) {
+        self.as_ref()
+            .map(|diff| diff.evaluate(output_surface, output_base_name))
+            .unwrap();
+    }
+}
+
+fn write_to_file(input: &SharedImageSurface, output_base_name: &str, suffix: &str) {
+    let path = output_dir().join(&format!("{}-{}.png", output_base_name, suffix));
+    println!("{}: {}", suffix, path.to_string_lossy());
+    let mut output_file = File::create(path).unwrap();
+    input
+        .clone()
+        .into_image_surface()
+        .unwrap()
+        .write_to_png(&mut output_file)
+        .unwrap();
+}
+
+/// Creates a directory for test output and returns its path.
+///
+/// The location for the output directory is taken from the `OUT_DIR` environment
+/// variable if that is set. Otherwise std::env::temp_dir() will be used, which is
+/// a platform dependent location for temporary files.
+///
+/// # Panics
+///
+/// Will panic if the output directory can not be created.
+pub fn output_dir() -> PathBuf {
+    let tempdir = || {
+        let mut path = env::temp_dir();
+        path.push("rsvg-test-output");
+        path
+    };
+    let path = env::var_os("OUT_DIR").map_or_else(tempdir, PathBuf::from);
+
+    fs::create_dir_all(&path).expect("could not create output directory for tests");
+
+    path
+}
+
+fn tolerable_difference() -> u8 {
+    static mut TOLERANCE: u8 = 2;
+
+    static ONCE: Once = Once::new();
+    ONCE.call_once(|| unsafe {
+        if let Ok(str) = env::var("RSVG_TEST_TOLERANCE") {
+            let value: usize = str
+                .parse()
+                .expect("Can not parse RSVG_TEST_TOLERANCE as a number");
+            TOLERANCE =
+                u8::try_from(value).expect("RSVG_TEST_TOLERANCE should be between 0 and 255");
+        }
+    });
+
+    unsafe { TOLERANCE }
+}
+
+trait Deviation {
+    fn distinguishable(&self) -> bool;
+    fn inacceptable(&self) -> bool;
+}
+
+impl Deviation for Diff {
+    fn distinguishable(&self) -> bool {
+        self.max_diff > 2
+    }
+
+    fn inacceptable(&self) -> bool {
+        self.max_diff > tolerable_difference()
+    }
+}

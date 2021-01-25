@@ -1,11 +1,8 @@
 use cairo;
 
-use librsvg::{
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    test_utils::compare_to_surface,
-    CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError,
-};
+use librsvg::{CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError};
 
+use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{load_svg, render_document, SurfaceSize};
 
 #[test]
@@ -461,13 +458,9 @@ fn render_to_viewport_with_different_size() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "render_to_viewport_with_different_size",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "render_to_viewport_with_different_size");
 }
 
 #[test]
@@ -506,9 +499,9 @@ fn render_to_offsetted_viewport() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "render_to_offseted_viewport");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "render_to_offsetted_viewport");
 }
 
 #[test]
@@ -550,13 +543,9 @@ fn render_to_viewport_with_transform() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "render_to_viewport_with_transform",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "render_to_viewport_with_transform");
 }
 
 #[test]
@@ -620,13 +609,9 @@ fn clip_on_transformed_viewport() {
         cr.paint();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "clip_on_transformed_viewport",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "clip_on_transformed_viewport");
 }
 
 #[test]
@@ -690,11 +675,7 @@ fn mask_on_transformed_viewport() {
         cr.paint();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "mask_on_transformed_viewport",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "mask_on_transformed_viewport");
 }
