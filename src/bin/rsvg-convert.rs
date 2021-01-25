@@ -434,7 +434,7 @@ impl Converter {
             Output::Path(ref p) => {
                 let file = gio::File::new_for_path(p);
                 let stream = file
-                    .create(FileCreateFlags::NONE, None::<&Cancellable>)
+                    .replace(None, false, FileCreateFlags::NONE, None::<&Cancellable>)
                     .unwrap_or_else(|e| exit!("Error opening output \"{}\": {}", self.output, e));
                 stream.upcast::<OutputStream>()
             }

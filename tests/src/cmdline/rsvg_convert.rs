@@ -190,6 +190,27 @@ fn output_file_short_option() {
 }
 
 #[test]
+fn overwrites_existing_output_file() {
+    let output = {
+        let tempfile = Builder::new().suffix(".png").tempfile().unwrap();
+        tempfile.path().to_path_buf()
+    };
+    assert!(predicates::path::is_file().not().eval(&output));
+
+    for _ in 0..2 {
+        RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+            .arg(format!("--output={}", output.display()))
+            .assert()
+            .success()
+            .stdout(is_empty());
+
+        assert!(predicates::path::is_file().eval(&output));
+    }
+
+    std::fs::remove_file(&output).unwrap();
+}
+
+#[test]
 fn empty_input_yields_error() {
     let starts_with = starts_with("Error reading SVG");
     let ends_with = ends_with("Input file is too short").trim();
