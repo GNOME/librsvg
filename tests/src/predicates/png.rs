@@ -3,6 +3,7 @@ extern crate png;
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::fmt;
+use std::path::{Path, PathBuf};
 
 /// Checks that the variable of type [u8] can be parsed as a PNG file.
 #[derive(Debug)]
@@ -11,6 +12,15 @@ pub struct PngPredicate {}
 impl PngPredicate {
     pub fn with_size(self: Self, w: u32, h: u32) -> SizePredicate<Self> {
         SizePredicate::<Self> { p: self, w, h }
+    }
+
+    pub fn with_contents<P: AsRef<Path>>(self: Self, reference: P) -> ReferencePredicate<Self> {
+        let mut reference_path = PathBuf::new();
+        reference_path.push(reference);
+        ReferencePredicate::<Self> {
+            p: self,
+            reference_path,
+        }
     }
 }
 
@@ -97,5 +107,72 @@ impl PredicateReflection for SizePredicate<PngPredicate> {
 impl fmt::Display for SizePredicate<PngPredicate> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "is a PNG with size {} x {}", self.w, self.h)
+    }
+}
+
+/// Extends a PngPredicate by a comparison to the contents of a reference file
+#[derive(Debug)]
+pub struct ReferencePredicate<PngPredicate> {
+    p: PngPredicate,
+    reference_path: PathBuf,
+}
+
+impl ReferencePredicate<PngPredicate> {
+    fn eval_info(&self, info: &png::OutputInfo) -> bool {
+        // info.width == self.w && info.height == self.h
+        false
+    }
+
+    fn find_case_for_info<'a>(
+        &'a self,
+        expected: bool,
+        info: &png::OutputInfo,
+    ) -> Option<Case<'a>> {
+        if self.eval_info(info) == expected {
+            let product = self.product_for_info(info);
+            Some(Case::new(Some(self), false).add_product(product))
+        } else {
+            None
+        }
+    }
+
+    fn product_for_info(&self, info: &png::OutputInfo) -> Product {
+        let actual_size = format!("{} x {}", info.width, info.height);
+        Product::new("actual size", actual_size)
+    }
+}
+
+impl Predicate<[u8]> for ReferencePredicate<PngPredicate> {
+    fn eval(&self, data: &[u8]) -> bool {
+        let decoder = png::Decoder::new(data);
+        match decoder.read_info() {
+            Ok((info, _)) => self.eval_info(&info),
+            _ => false,
+        }
+    }
+
+    fn find_case<'a>(&'a self, expected: bool, data: &[u8]) -> Option<Case<'a>> {
+        let decoder = png::Decoder::new(data);
+        match decoder.read_info() {
+            Ok((info, _)) => self.find_case_for_info(expected, &info),
+            Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
+        }
+    }
+}
+
+impl PredicateReflection for ReferencePredicate<PngPredicate> {
+    fn children<'a>(&'a self) -> Box<dyn Iterator<Item = Child<'a>> + 'a> {
+        let params = vec![Child::new("predicate", &self.p)];
+        Box::new(params.into_iter())
+    }
+}
+
+impl fmt::Display for ReferencePredicate<PngPredicate> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "is a PNG that matches the reference {}",
+            self.reference_path.display()
+        )
     }
 }
