@@ -397,8 +397,8 @@ impl Converter {
         };
     }
 
-    fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> (f64, f64) {
-        renderer
+    fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> Size {
+        let (w, h) = renderer
             .legacy_layer_size(self.export_id.as_deref())
             .unwrap_or_else(|e| match e {
                 RenderingError::IdNotFound => exit!(
@@ -407,11 +407,13 @@ impl Converter {
                     self.export_id.as_deref().unwrap()
                 ),
                 _ => exit!("Error rendering SVG {}: {}", input, e),
-            })
+            });
+
+        Size::new(w, h)
     }
 
     fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
-        let (natural_width, natural_height) = self.natural_size(renderer, input);
+        let natural_size = self.natural_size(renderer, input);
 
         let strategy = match (self.width, self.height) {
             // when w and h are not specified, scale to the requested zoom (if any)
@@ -430,7 +432,10 @@ impl Converter {
         };
 
         let final_size = strategy
-            .apply(Size::new(natural_width, natural_height), self.keep_aspect_ratio)
+            .apply(
+                Size::new(natural_size.w, natural_size.h),
+                self.keep_aspect_ratio,
+            )
             .unwrap_or_else(|| exit!("The SVG {} has no dimensions", input));
 
         let output_stream = match self.output {
