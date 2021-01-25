@@ -379,8 +379,27 @@ impl Converter {
 
             let renderer = CairoRenderer::new(&handle).with_dpi(self.dpi.0, self.dpi.1);
 
+            let natural_size = self.natural_size(&renderer, input);
+            let strategy = match (self.width, self.height) {
+                // when w and h are not specified, scale to the requested zoom (if any)
+                (None, None) => ResizeStrategy::Scale(self.zoom),
+
+                // when w and h are specified, but zoom is not, scale to the requested size
+                (Some(w), Some(h)) if self.zoom.is_identity() => ResizeStrategy::Fit(w, h),
+
+                // if only one between w and h is specified and there is no zoom, scale to the
+                // requested w or h and use the same scaling factor for the other
+                (Some(w), None) if self.zoom.is_identity() => ResizeStrategy::FitWidth(w),
+                (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
+
+                // otherwise scale the image, but cap the zoom to match the requested size
+                _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
+            };
+
+            let final_size = self.final_size(&strategy, &natural_size, input);
+
             // Create the surface once on the first input
-            let s = surface.get_or_init(|| self.create_surface(&renderer, input));
+            let s = surface.get_or_init(|| self.create_surface(final_size));
 
             s.render(
                 &renderer,
@@ -421,27 +440,7 @@ impl Converter {
             .unwrap_or_else(|| exit!("The SVG {} has no dimensions", input))
     }
 
-    fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
-        let natural_size = self.natural_size(renderer, input);
-
-        let strategy = match (self.width, self.height) {
-            // when w and h are not specified, scale to the requested zoom (if any)
-            (None, None) => ResizeStrategy::Scale(self.zoom),
-
-            // when w and h are specified, but zoom is not, scale to the requested size
-            (Some(w), Some(h)) if self.zoom.is_identity() => ResizeStrategy::Fit(w, h),
-
-            // if only one between w and h is specified and there is no zoom, scale to the
-            // requested w or h and use the same scaling factor for the other
-            (Some(w), None) if self.zoom.is_identity() => ResizeStrategy::FitWidth(w),
-            (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
-
-            // otherwise scale the image, but cap the zoom to match the requested size
-            _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
-        };
-
-        let final_size = self.final_size(&strategy, &natural_size, input);
-
+    fn create_surface(&self, size: Size) -> Surface {
         let output_stream = match self.output {
             Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
             Output::Path(ref p) => {
@@ -453,7 +452,7 @@ impl Converter {
             }
         };
 
-        Surface::new(self.format, final_size, output_stream).unwrap_or_else(|e| match e {
+        Surface::new(self.format, size, output_stream).unwrap_or_else(|e| match e {
             cairo::Status::InvalidSize => exit!(concat!(
                 "The resulting image would be larger than 32767 pixels on either dimension.\n",
                 "Librsvg currently cannot render to images bigger than that.\n",
