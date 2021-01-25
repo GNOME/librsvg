@@ -398,7 +398,7 @@ impl Converter {
     }
 
     fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
-        let (width, height) = renderer
+        let (natural_width, natural_height) = renderer
             .legacy_layer_size(self.export_id.as_deref())
             .unwrap_or_else(|e| match e {
                 RenderingError::IdNotFound => exit!(
@@ -425,8 +425,8 @@ impl Converter {
             _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
         };
 
-        let size = strategy
-            .apply(Size::new(width, height), self.keep_aspect_ratio)
+        let final_size = strategy
+            .apply(Size::new(natural_width, natural_height), self.keep_aspect_ratio)
             .unwrap_or_else(|| exit!("The SVG {} has no dimensions", input));
 
         let output_stream = match self.output {
@@ -440,7 +440,7 @@ impl Converter {
             }
         };
 
-        Surface::new(self.format, size, output_stream).unwrap_or_else(|e| match e {
+        Surface::new(self.format, final_size, output_stream).unwrap_or_else(|e| match e {
             cairo::Status::InvalidSize => exit!(concat!(
                 "The resulting image would be larger than 32767 pixels on either dimension.\n",
                 "Librsvg currently cannot render to images bigger than that.\n",
