@@ -397,8 +397,8 @@ impl Converter {
         };
     }
 
-    fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
-        let (natural_width, natural_height) = renderer
+    fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> (f64, f64) {
+        renderer
             .legacy_layer_size(self.export_id.as_deref())
             .unwrap_or_else(|e| match e {
                 RenderingError::IdNotFound => exit!(
@@ -407,7 +407,11 @@ impl Converter {
                     self.export_id.as_deref().unwrap()
                 ),
                 _ => exit!("Error rendering SVG {}: {}", input, e),
-            });
+            })
+    }
+
+    fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
+        let (natural_width, natural_height) = self.natural_size(renderer, input);
 
         let strategy = match (self.width, self.height) {
             // when w and h are not specified, scale to the requested zoom (if any)
