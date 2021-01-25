@@ -16,6 +16,7 @@ test_sources =				\
 	src/predicates/png.rs		\
 	src/primitives.rs		\
 	src/reference.rs		\
+	src/reference_utils.rs		\
 	src/render_crash.rs		\
 	src/utils.rs			\
 	$(NULL)
