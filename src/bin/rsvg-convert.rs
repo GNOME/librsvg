@@ -412,6 +412,15 @@ impl Converter {
         Size::new(w, h)
     }
 
+    fn final_size(&self, strategy: &ResizeStrategy, natural_size: &Size, input: &Input) -> Size {
+        strategy
+            .apply(
+                Size::new(natural_size.w, natural_size.h),
+                self.keep_aspect_ratio,
+            )
+            .unwrap_or_else(|| exit!("The SVG {} has no dimensions", input))
+    }
+
     fn create_surface(&self, renderer: &CairoRenderer, input: &Input) -> Surface {
         let natural_size = self.natural_size(renderer, input);
 
@@ -431,12 +440,7 @@ impl Converter {
             _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
         };
 
-        let final_size = strategy
-            .apply(
-                Size::new(natural_size.w, natural_size.h),
-                self.keep_aspect_ratio,
-            )
-            .unwrap_or_else(|| exit!("The SVG {} has no dimensions", input));
+        let final_size = self.final_size(&strategy, &natural_size, input);
 
         let output_stream = match self.output {
             Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
