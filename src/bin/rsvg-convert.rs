@@ -168,28 +168,10 @@ impl Surface {
         Ok(Self::Svg(surface, size))
     }
 
-    fn bounds(&self) -> cairo::Rectangle {
-        let (w, h) = match self {
-            Self::Png(surface, _) => (
-                f64::from(surface.get_width()),
-                f64::from(surface.get_height()),
-            ),
-            Self::Pdf(_, size) => (size.w, size.h),
-            Self::Ps(_, size) => (size.w, size.h),
-            Self::Svg(_, size) => (size.w, size.h),
-        };
-
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: w,
-            height: h,
-        }
-    }
-
     pub fn render(
         &self,
         renderer: &CairoRenderer,
+        natural_size: Size,
         scale: Scale,
         background_color: Option<Color>,
         id: Option<&str>,
@@ -207,9 +189,21 @@ impl Surface {
             cr.paint();
         }
 
+        // Note that we don't scale the viewport; we change the cr's transform instead.  This
+        // is because SVGs are rendered proportionally to fit within the viewport, regardless
+        // of the viewport's proportions.  Rsvg-convert allows non-proportional scaling, so
+        // we do that with a separate transform.
+
         cr.scale(scale.x, scale.y);
 
-        renderer.render_layer(&cr, id, &self.bounds()).map(|_| {
+        let viewport = cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: natural_size.w,
+            height: natural_size.h,
+        };
+
+        renderer.render_layer(&cr, id, &viewport).map(|_| {
             if !matches!(self, Self::Png(_, _)) {
                 cr.show_page();
             }
@@ -403,6 +397,7 @@ impl Converter {
 
             s.render(
                 &renderer,
+                natural_size,
                 self.zoom,
                 self.background_color,
                 self.export_id.as_deref(),
