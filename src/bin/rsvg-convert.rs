@@ -309,6 +309,7 @@ impl std::fmt::Display for Output {
 }
 
 arg_enum! {
+    // Keep this enum in sync with supported_formats in parse_args()
     #[derive(Clone, Copy, Debug)]
     enum Format {
         Png,
@@ -459,6 +460,18 @@ impl Converter {
 }
 
 fn parse_args() -> Result<Converter, clap::Error> {
+    let supported_formats = vec![
+        "Png",
+        #[cfg(have_cairo_pdf)]
+        "Pdf",
+        #[cfg(have_cairo_ps)]
+        "Ps",
+        #[cfg(have_cairo_ps)]
+        "Eps",
+        #[cfg(have_cairo_svg)]
+        "Svg",
+    ];
+
     let app = clap::App::new("rsvg-convert")
         .version(concat!("version ", crate_version!()))
         .about("Convert SVG files to other image formats")
@@ -534,7 +547,7 @@ fn parse_args() -> Result<Converter, clap::Error> {
                 .short("f")
                 .long("format")
                 .takes_value(true)
-                .possible_values(&Format::variants())
+                .possible_values(supported_formats.as_slice())
                 .case_insensitive(true)
                 .default_value("png")
                 .help("Output format"),

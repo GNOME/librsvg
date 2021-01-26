@@ -8,15 +8,20 @@ use std::process;
 
 use pkg_config::{Config, Error};
 
+const CAIRO_REQUIRED_VERSION: &str = "1.16";
+const PANGO_REQUIRED_VERSION: &str = "1.38";
+const LIBXML_REQUIRED_VERSION: &str = "2.9.0";
+
 fn main() {
     find_libxml2();
     check_for_pangoft2();
+    check_for_cairo_surface_backends();
     generate_srgb_tables();
     write_version();
 }
 
 fn find_libxml2() {
-    if let Err(s) = find("libxml-2.0", "2.9.0", &["xml2"]) {
+    if let Err(s) = find("libxml-2.0", LIBXML_REQUIRED_VERSION, &["xml2"]) {
         let _ = writeln!(io::stderr(), "{}", s);
         process::exit(1);
     }
@@ -73,11 +78,29 @@ fn find(package_name: &str, version: &str, shared_libs: &[&str]) -> Result<(), E
 
 fn check_for_pangoft2() {
     if pkg_config::Config::new()
-        .atleast_version("1.38")
+        .atleast_version(PANGO_REQUIRED_VERSION)
         .probe("pangoft2")
         .is_ok()
     {
         println!("cargo:rustc-cfg=have_pangoft2");
+    }
+}
+
+fn check_for_cairo_surface_backend(backend: &str) {
+    let pkg_name = ["cairo", backend].join("-");
+    if pkg_config::Config::new()
+        .atleast_version(CAIRO_REQUIRED_VERSION)
+        .probe(&pkg_name)
+        .is_ok()
+    {
+        println!("cargo:rustc-cfg=have_cairo_{}", backend);
+    }
+}
+
+fn check_for_cairo_surface_backends() {
+    let backends = ["pdf", "ps", "svg", "xml"];
+    for name in &backends {
+        check_for_cairo_surface_backend(name);
     }
 }
 
