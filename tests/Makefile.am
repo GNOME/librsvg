@@ -47,6 +47,8 @@ test_resources =	\
 
 test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/api/*.svg)			\
+	$(wildcard $(srcdir)/fixtures/cmdline/*.svg)			\
+	$(wildcard $(srcdir)/fixtures/cmdline/*.png)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
