@@ -81,7 +81,7 @@ fn render_layer() {
 
     Reference::from_surface(reference_surf)
         .compare(&output_surf)
-        .evaluate(&output_surf, "renderer_layer");
+        .evaluate(&output_surf, "render_layer");
 }
 
 #[test]
