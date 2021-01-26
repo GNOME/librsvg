@@ -100,7 +100,6 @@ LIBRSVG_SRC =					\
 	src/surface_utils/mod.rs		\
 	src/surface_utils/shared_surface.rs	\
 	src/surface_utils/srgb.rs		\
-	src/test_utils.rs			\
 	src/text.rs				\
 	src/transform.rs			\
 	src/ua.css				\

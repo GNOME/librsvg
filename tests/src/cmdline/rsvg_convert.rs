@@ -532,7 +532,7 @@ fn pdf_page_size() {
 
 #[test]
 fn background_color_option_with_valid_color() {
-    RsvgConvert::accepts_arg("--background-color=purple");
+    RsvgConvert::accepts_arg("--background-color=LimeGreen");
 }
 
 #[test]
@@ -556,6 +556,15 @@ fn background_color_option_invalid_color_yields_error() {
         .assert()
         .failure()
         .stderr(contains("Invalid").and(contains("color")));
+}
+
+#[test]
+fn background_color_is_rendered() {
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/gimp-wilber.svg")
+        .arg("--background-color=purple")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/cmdline/gimp-wilber-ref.png"));
 }
 
 #[test]

@@ -1,9 +1,10 @@
+use std::fmt;
+
 use super::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
 };
-use crate::error::RenderingError;
 
 use rgb::{ComponentMap, RGB};
 
@@ -16,6 +17,25 @@ pub struct Diff {
     pub num_pixels_changed: usize,
     pub max_diff: u8,
     pub surface: SharedImageSurface,
+}
+
+impl fmt::Display for BufferDiff {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BufferDiff::DifferentSizes => write!(f, "different sizes"),
+            BufferDiff::Diff(diff) => diff.fmt(f),
+        }
+    }
+}
+
+impl fmt::Display for Diff {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} pixels are different, with a maximum difference of {}",
+            self.num_pixels_changed, self.max_diff
+        )
+    }
 }
 
 #[inline]
@@ -35,7 +55,7 @@ fn emphasize(p: &Pixel) -> Pixel {
 pub fn compare_surfaces(
     surf_a: &SharedImageSurface,
     surf_b: &SharedImageSurface,
-) -> Result<BufferDiff, RenderingError> {
+) -> Result<BufferDiff, cairo::Status> {
     let a_width = surf_a.width();
     let a_height = surf_a.height();
 

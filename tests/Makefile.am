@@ -16,6 +16,7 @@ test_sources =				\
 	src/predicates/png.rs		\
 	src/primitives.rs		\
 	src/reference.rs		\
+	src/reference_utils.rs		\
 	src/render_crash.rs		\
 	src/utils.rs			\
 	$(NULL)
@@ -46,6 +47,8 @@ test_resources =	\
 
 test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/api/*.svg)			\
+	$(wildcard $(srcdir)/fixtures/cmdline/*.svg)			\
+	$(wildcard $(srcdir)/fixtures/cmdline/*.png)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
