@@ -6,7 +6,7 @@
 use std::convert::TryFrom;
 use std::env;
 use std::fs::{self, File};
-use std::io::BufReader;
+use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 
@@ -22,17 +22,8 @@ impl Reference {
     {
         let file = File::open(path).map_err(|e| cairo::IoError::Io(e))?;
         let mut reader = BufReader::new(file);
-        let png = cairo::ImageSurface::create_from_png(&mut reader)?;
-        let argb =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, png.get_width(), png.get_height())?;
-        {
-            // convert to ARGB; the PNG may come as Rgb24
-            let cr = cairo::Context::new(&argb);
-            cr.set_source_surface(&png, 0.0, 0.0);
-            cr.paint();
-        }
-
-        Self::from_surface(argb)
+        let surface = surface_from_png(&mut reader)?;
+        Self::from_surface(surface)
     }
 
     pub fn from_surface(surface: cairo::ImageSurface) -> Result<Self, cairo::IoError> {
@@ -45,7 +36,7 @@ pub trait Compare {
     fn compare(self, surface: &SharedImageSurface) -> Result<BufferDiff, cairo::IoError>;
 }
 
-impl Compare for Reference {
+impl Compare for &Reference {
     fn compare(self, surface: &SharedImageSurface) -> Result<BufferDiff, cairo::IoError> {
         compare_surfaces(&self.0, surface).map_err(cairo::IoError::from)
     }
@@ -156,7 +147,7 @@ fn tolerable_difference() -> u8 {
     unsafe { TOLERANCE }
 }
 
-trait Deviation {
+pub trait Deviation {
     fn distinguishable(&self) -> bool;
     fn inacceptable(&self) -> bool;
 }
@@ -169,4 +160,23 @@ impl Deviation for Diff {
     fn inacceptable(&self) -> bool {
         self.max_diff > tolerable_difference()
     }
+}
+
+/// Creates a cairo::ImageSurface from a stream of PNG data.
+///
+/// The surface is converted to ARGB if needed. Use this helper function with `Reference`.
+pub fn surface_from_png<R>(stream: &mut R) -> Result<cairo::ImageSurface, cairo::IoError>
+where
+    R: Read,
+{
+    let png = cairo::ImageSurface::create_from_png(stream)?;
+    let argb =
+        cairo::ImageSurface::create(cairo::Format::ARgb32, png.get_width(), png.get_height())?;
+    {
+        // convert to ARGB; the PNG may come as Rgb24
+        let cr = cairo::Context::new(&argb);
+        cr.set_source_surface(&png, 0.0, 0.0);
+        cr.paint();
+    }
+    Ok(argb)
 }
