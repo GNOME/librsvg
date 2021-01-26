@@ -3,7 +3,13 @@ extern crate png;
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::fmt;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
+
+use librsvg::surface_utils::compare_surfaces::BufferDiff;
+use librsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+
+use crate::reference_utils::{surface_from_png, Compare, Deviation, Reference};
 
 /// Checks that the variable of type [u8] can be parsed as a PNG file.
 #[derive(Debug)]
@@ -15,12 +21,9 @@ impl PngPredicate {
     }
 
     pub fn with_contents<P: AsRef<Path>>(self: Self, reference: P) -> ReferencePredicate<Self> {
-        let mut reference_path = PathBuf::new();
-        reference_path.push(reference);
-        ReferencePredicate::<Self> {
-            p: self,
-            reference_path,
-        }
+        let mut path = PathBuf::new();
+        path.push(reference);
+        ReferencePredicate::<Self> { p: self, path }
     }
 }
 
@@ -114,47 +117,63 @@ impl fmt::Display for SizePredicate<PngPredicate> {
 #[derive(Debug)]
 pub struct ReferencePredicate<PngPredicate> {
     p: PngPredicate,
-    reference_path: PathBuf,
+    path: PathBuf,
 }
 
 impl ReferencePredicate<PngPredicate> {
-    fn eval_info(&self, info: &png::OutputInfo) -> bool {
-        // info.width == self.w && info.height == self.h
-        false
+    fn diff_acceptable(diff: &BufferDiff) -> bool {
+        match diff {
+            BufferDiff::DifferentSizes => false,
+            BufferDiff::Diff(diff) => !diff.inacceptable(),
+        }
     }
 
-    fn find_case_for_info<'a>(
+    fn diff_surface(&self, surface: &SharedImageSurface) -> Option<BufferDiff> {
+        let reference = Reference::from_png(&self.path).unwrap();
+        if let Ok(diff) = reference.compare(&surface) {
+            if !Self::diff_acceptable(&diff) {
+                return Some(diff);
+            }
+        }
+        None
+    }
+
+    fn find_case_for_surface<'a>(
         &'a self,
         expected: bool,
-        info: &png::OutputInfo,
+        surface: &SharedImageSurface,
     ) -> Option<Case<'a>> {
-        if self.eval_info(info) == expected {
-            let product = self.product_for_info(info);
+        let diff = self.diff_surface(&surface);
+        if diff.is_some() != expected {
+            let product = self.product_for_diff(&diff.unwrap());
             Some(Case::new(Some(self), false).add_product(product))
         } else {
             None
         }
     }
 
-    fn product_for_info(&self, info: &png::OutputInfo) -> Product {
-        let actual_size = format!("{} x {}", info.width, info.height);
-        Product::new("actual size", actual_size)
+    fn product_for_diff(&self, diff: &BufferDiff) -> Product {
+        let difference = format!("{}", diff);
+        Product::new("images differ", difference)
     }
 }
 
 impl Predicate<[u8]> for ReferencePredicate<PngPredicate> {
     fn eval(&self, data: &[u8]) -> bool {
-        let decoder = png::Decoder::new(data);
-        match decoder.read_info() {
-            Ok((info, _)) => self.eval_info(&info),
-            _ => false,
+        if let Ok(surface) = surface_from_png(&mut BufReader::new(data)) {
+            let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
+            self.diff_surface(&surface).is_some()
+        } else {
+            false
         }
     }
 
     fn find_case<'a>(&'a self, expected: bool, data: &[u8]) -> Option<Case<'a>> {
-        let decoder = png::Decoder::new(data);
-        match decoder.read_info() {
-            Ok((info, _)) => self.find_case_for_info(expected, &info),
+        match surface_from_png(&mut BufReader::new(data)) {
+            Ok(surface) => {
+                let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
+                self.find_case_for_surface(expected, &surface)
+            }
             Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
         }
     }
@@ -172,7 +191,7 @@ impl fmt::Display for ReferencePredicate<PngPredicate> {
         write!(
             f,
             "is a PNG that matches the reference {}",
-            self.reference_path.display()
+            self.path.display()
         )
     }
 }

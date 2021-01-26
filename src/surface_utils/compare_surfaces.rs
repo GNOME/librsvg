@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
@@ -15,6 +17,25 @@ pub struct Diff {
     pub num_pixels_changed: usize,
     pub max_diff: u8,
     pub surface: SharedImageSurface,
+}
+
+impl fmt::Display for BufferDiff {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BufferDiff::DifferentSizes => write!(f, "different sizes"),
+            BufferDiff::Diff(diff) => diff.fmt(f),
+        }
+    }
+}
+
+impl fmt::Display for Diff {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} pixels are different, with a maximum difference of {}",
+            self.num_pixels_changed, self.max_diff
+        )
+    }
 }
 
 #[inline]
