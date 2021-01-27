@@ -34,7 +34,7 @@ impl CubicBezierCurve {
         cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
     }
 
-    fn from_coords<'a>(coords: &mut slice::Iter<'a, f64>) -> CubicBezierCurve {
+    fn from_coords(coords: &mut slice::Iter<'_, f64>) -> CubicBezierCurve {
         let pt1 = take_two(coords);
         let pt2 = take_two(coords);
         let to = take_two(coords);
@@ -245,10 +245,10 @@ impl EllipticalArc {
         }
     }
 
-    fn from_coords<'a>(
+    fn from_coords(
         large_arc: LargeArc,
         sweep: Sweep,
-        coords: &mut slice::Iter<'a, f64>,
+        coords: &mut slice::Iter<'_, f64>,
     ) -> EllipticalArc {
         let r = take_two(coords);
         let x_axis_rotation = take_one(coords);
@@ -385,7 +385,7 @@ impl PathCommand {
         }
     }
 
-    fn from_packed<'a>(packed: PackedCommand, coords: &mut slice::Iter<'a, f64>) -> PathCommand {
+    fn from_packed(packed: PackedCommand, coords: &mut slice::Iter<'_, f64>) -> PathCommand {
         match packed {
             PackedCommand::MoveTo => {
                 let x = take_one(coords);
@@ -623,7 +623,7 @@ impl Path {
         }
     }
 
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = PathCommand> + 'a {
+    pub fn iter(&self) -> impl Iterator<Item = PathCommand> + '_ {
         let commands = self.commands.iter();
         let mut coords = self.coords.iter();
 
@@ -690,11 +690,11 @@ impl Path {
     }
 }
 
-fn take_one<'a>(iter: &mut slice::Iter<'a, f64>) -> f64 {
+fn take_one(iter: &mut slice::Iter<'_, f64>) -> f64 {
     *iter.next().unwrap()
 }
 
-fn take_two<'a>(iter: &mut slice::Iter<'a, f64>) -> (f64, f64) {
+fn take_two(iter: &mut slice::Iter<'_, f64>) -> (f64, f64) {
     (take_one(iter), take_one(iter))
 }
 

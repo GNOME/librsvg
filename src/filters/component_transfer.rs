@@ -330,7 +330,7 @@ impl FilterEffect for FeComponentTransfer {
         let func_a = func_or_default!(func_a_node, FeFuncA, func_a_element, func_a_default);
 
         #[inline]
-        fn compute_func<'a, F>(func: &'a F) -> impl Fn(u8, f64, f64) -> u8 + 'a
+        fn compute_func<F>(func: &F) -> impl Fn(u8, f64, f64) -> u8 + '_
         where
             F: FeComponentTransferFunc,
         {
