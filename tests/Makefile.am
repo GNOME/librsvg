@@ -49,6 +49,7 @@ test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
+	$(wildcard $(srcdir)/fixtures/gir/*.gir)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.css)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\

@@ -15,6 +15,9 @@ mod cmdline;
 mod errors;
 
 #[cfg(test)]
+mod gir;
+
+#[cfg(test)]
 mod intrinsic_dimensions;
 
 #[cfg(test)]
