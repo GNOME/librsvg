@@ -1,3 +1,9 @@
+Version 2.50.3
+
+- #601 - Compute correct bounds for objects with stroke-width=0.
+
+- #545 - Fix MacOS build (Ignacio Casal Quinteiro, Christian Hergert).
+
 Version 2.50.2
 
 - #642 - Fix dx/dy offsets in nested <tspan> elements.
