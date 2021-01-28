@@ -12,6 +12,47 @@ use once_cell::unsync::OnceCell;
 use std::ops::Deref;
 use std::path::PathBuf;
 
+#[derive(Debug)]
+pub struct Error(String);
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<cairo::Status> for Error {
+    fn from(s: cairo::Status) -> Self {
+        match s {
+            cairo::Status::InvalidSize => Self(String::from(
+                "The resulting image would be larger than 32767 pixels on either dimension.\n\
+                Librsvg currently cannot render to images bigger than that.\n\
+                Please specify a smaller size.",
+            )),
+            e => Self(format!("{}", e)),
+        }
+    }
+}
+
+macro_rules! impl_error_from {
+    ($err:ty) => {
+        impl From<$err> for Error {
+            fn from(e: $err) -> Self {
+                Self(format!("{}", e))
+            }
+        }
+    };
+}
+
+impl_error_from!(RenderingError);
+impl_error_from!(cairo::IoError);
+impl_error_from!(cairo::StreamWithError);
+impl_error_from!(clap::Error);
+
+macro_rules! error {
+    ($($arg:tt)*) => (Error(std::format!($($arg)*)));
+}
+
 #[derive(Clone, Copy, Debug)]
 struct Scale {
     pub x: f64,
@@ -132,7 +173,7 @@ impl Deref for Surface {
 }
 
 impl Surface {
-    pub fn new(format: Format, size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
+    pub fn new(format: Format, size: Size, stream: OutputStream) -> Result<Self, Error> {
         match format {
             Format::Png => Self::new_for_png(size, stream),
             Format::Pdf => Self::new_for_pdf(size, stream),
@@ -142,28 +183,28 @@ impl Surface {
         }
     }
 
-    fn new_for_png(size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
+    fn new_for_png(size: Size, stream: OutputStream) -> Result<Self, Error> {
         let w = checked_i32(size.w.round())?;
         let h = checked_i32(size.h.round())?;
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
         Ok(Self::Png(surface, stream))
     }
 
-    fn new_for_pdf(size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
+    fn new_for_pdf(size: Size, stream: OutputStream) -> Result<Self, Error> {
         let surface = cairo::PdfSurface::for_stream(size.w, size.h, stream.into_write())?;
-        if let Some(date) = metadata::creation_date() {
+        if let Some(date) = metadata::creation_date()? {
             surface.set_metadata(cairo::PdfMetadata::CreateDate, &date)?;
         }
         Ok(Self::Pdf(surface, size))
     }
 
-    fn new_for_ps(size: Size, stream: OutputStream, eps: bool) -> Result<Self, cairo::Status> {
+    fn new_for_ps(size: Size, stream: OutputStream, eps: bool) -> Result<Self, Error> {
         let surface = cairo::PsSurface::for_stream(size.w, size.h, stream.into_write())?;
         surface.set_eps(eps);
         Ok(Self::Ps(surface, size))
     }
 
-    fn new_for_svg(size: Size, stream: OutputStream) -> Result<Self, cairo::Status> {
+    fn new_for_svg(size: Size, stream: OutputStream) -> Result<Self, Error> {
         let surface = cairo::SvgSurface::for_stream(size.w, size.h, stream.into_write())?;
         Ok(Self::Svg(surface, size))
     }
@@ -175,7 +216,7 @@ impl Surface {
         scale: Scale,
         background_color: Option<Color>,
         id: Option<&str>,
-    ) -> Result<(), RenderingError> {
+    ) -> Result<(), Error> {
         let cr = cairo::Context::new(self);
 
         if let Some(Color::RGBA(rgba)) = background_color {
@@ -207,17 +248,18 @@ impl Surface {
             if !matches!(self, Self::Png(_, _)) {
                 cr.show_page();
             }
-        })
+        })?;
+
+        Ok(())
     }
 
-    pub fn finish(self) -> Result<(), cairo::IoError> {
+    pub fn finish(self) -> Result<(), Error> {
         match self {
-            Self::Png(surface, stream) => surface.write_to_png(&mut stream.into_write()),
-            _ => match self.finish_output_stream() {
-                Ok(_) => Ok(()),
-                Err(e) => Err(cairo::IoError::Io(std::io::Error::from(e))),
-            },
+            Self::Png(surface, stream) => surface.write_to_png(&mut stream.into_write())?,
+            _ => self.finish_output_stream().map(|_| ())?,
         }
+
+        Ok(())
     }
 }
 
@@ -226,24 +268,24 @@ fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
 }
 
 mod metadata {
+    use crate::Error;
     use chrono::prelude::*;
     use std::env;
     use std::str::FromStr;
 
-    use super::exit;
-
-    pub fn creation_date() -> Option<String> {
+    pub fn creation_date() -> Result<Option<String>, Error> {
         match env::var("SOURCE_DATE_EPOCH") {
-            Ok(epoch) => {
-                let seconds = i64::from_str(&epoch)
-                    .unwrap_or_else(|e| exit!("Environment variable $SOURCE_DATE_EPOCH: {}", e));
-                let datetime = Utc.timestamp(seconds, 0);
-                Some(datetime.to_rfc3339())
-            }
-            Err(env::VarError::NotPresent) => None,
-            Err(env::VarError::NotUnicode(_)) => {
-                exit!("Environment variable $SOURCE_DATE_EPOCH is not valid Unicode")
-            }
+            Ok(epoch) => match i64::from_str(&epoch) {
+                Ok(seconds) => {
+                    let datetime = Utc.timestamp(seconds, 0);
+                    Ok(Some(datetime.to_rfc3339()))
+                }
+                Err(e) => Err(error!("Environment variable $SOURCE_DATE_EPOCH: {}", e)),
+            },
+            Err(env::VarError::NotPresent) => Ok(None),
+            Err(env::VarError::NotUnicode(_)) => Err(error!(
+                "Environment variable $SOURCE_DATE_EPOCH is not valid Unicode"
+            )),
         }
     }
 }
@@ -338,11 +380,11 @@ struct Converter {
 }
 
 impl Converter {
-    pub fn convert(self) {
+    pub fn convert(self) -> Result<(), Error> {
         let stylesheet = match self.stylesheet {
             Some(ref p) => std::fs::read_to_string(p)
                 .map(Some)
-                .unwrap_or_else(|e| exit!("Error reading stylesheet: {}", e)),
+                .map_err(|e| error!("Error reading stylesheet: {}", e))?,
             None => None,
         };
 
@@ -355,7 +397,7 @@ impl Converter {
                     let file = p.get_gfile();
                     let stream = file
                         .read(None::<&Cancellable>)
-                        .unwrap_or_else(|e| exit!("Error reading file \"{}\": {}", input, e));
+                        .map_err(|e| error!("Error reading file \"{}\": {}", input, e))?;
                     (stream.upcast::<InputStream>(), Some(file))
                 }
             };
@@ -364,17 +406,18 @@ impl Converter {
                 .with_unlimited_size(self.unlimited)
                 .keep_image_data(self.keep_image_data)
                 .read_stream(&stream, basefile.as_ref(), None::<&Cancellable>)
-                .unwrap_or_else(|e| exit!("Error reading SVG {}: {}", input, e));
+                .map_err(|e| error!("Error reading SVG {}: {}", input, e))?;
 
             if let Some(ref css) = stylesheet {
                 handle
                     .set_stylesheet(&css)
-                    .unwrap_or_else(|e| exit!("Error applying stylesheet: {}", e));
+                    .map_err(|e| error!("Error applying stylesheet: {}", e))?;
             }
 
             let renderer = CairoRenderer::new(&handle).with_dpi(self.dpi.0, self.dpi.1);
 
-            let natural_size = self.natural_size(&renderer, input);
+            let natural_size = self.natural_size(&renderer, input)?;
+
             let strategy = match (self.width, self.height) {
                 // when w and h are not specified, scale to the requested zoom (if any)
                 (None, None) => ResizeStrategy::Scale(self.zoom),
@@ -391,10 +434,10 @@ impl Converter {
                 _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
             };
 
-            let final_size = self.final_size(&strategy, &natural_size, input);
+            let final_size = self.final_size(&strategy, &natural_size, input)?;
 
             // Create the surface once on the first input
-            let s = surface.get_or_init(|| self.create_surface(final_size));
+            let s = surface.get_or_try_init(|| self.create_surface(final_size))?;
 
             s.render(
                 &renderer,
@@ -403,63 +446,63 @@ impl Converter {
                 self.background_color,
                 self.export_id.as_deref(),
             )
-            .unwrap_or_else(|e| exit!("Error rendering SVG {}: {}", input, e))
+            .map_err(|e| error!("Error rendering SVG {}: {}", input, e))?
         }
 
         if let Some(s) = surface.take() {
             s.finish()
-                .unwrap_or_else(|e| exit!("Error saving output: {}", e))
+                .map_err(|e| error!("Error saving output {}: {}", self.output, e))?
         };
+
+        Ok(())
     }
 
-    fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> Size {
+    fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> Result<Size, Error> {
         let (w, h) = renderer
             .legacy_layer_size(self.export_id.as_deref())
-            .unwrap_or_else(|e| match e {
-                RenderingError::IdNotFound => exit!(
+            .map_err(|e| match e {
+                RenderingError::IdNotFound => error!(
                     "File {} does not have an object with id \"{}\")",
                     input,
                     self.export_id.as_deref().unwrap()
                 ),
-                _ => exit!("Error rendering SVG {}: {}", input, e),
-            });
+                _ => error!("Error rendering SVG {}: {}", input, e),
+            })?;
 
-        Size::new(w, h)
+        Ok(Size::new(w, h))
     }
 
-    fn final_size(&self, strategy: &ResizeStrategy, natural_size: &Size, input: &Input) -> Size {
+    fn final_size(
+        &self,
+        strategy: &ResizeStrategy,
+        natural_size: &Size,
+        input: &Input,
+    ) -> Result<Size, Error> {
         strategy
             .apply(
                 Size::new(natural_size.w, natural_size.h),
                 self.keep_aspect_ratio,
             )
-            .unwrap_or_else(|| exit!("The SVG {} has no dimensions", input))
+            .ok_or_else(|| error!("The SVG {} has no dimensions", input))
     }
 
-    fn create_surface(&self, size: Size) -> Surface {
+    fn create_surface(&self, size: Size) -> Result<Surface, Error> {
         let output_stream = match self.output {
             Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
             Output::Path(ref p) => {
                 let file = gio::File::new_for_path(p);
                 let stream = file
                     .replace(None, false, FileCreateFlags::NONE, None::<&Cancellable>)
-                    .unwrap_or_else(|e| exit!("Error opening output \"{}\": {}", self.output, e));
+                    .map_err(|e| error!("Error opening output \"{}\": {}", self.output, e))?;
                 stream.upcast::<OutputStream>()
             }
         };
 
-        Surface::new(self.format, size, output_stream).unwrap_or_else(|e| match e {
-            cairo::Status::InvalidSize => exit!(concat!(
-                "The resulting image would be larger than 32767 pixels on either dimension.\n",
-                "Librsvg currently cannot render to images bigger than that.\n",
-                "Please specify a smaller size."
-            )),
-            e => exit!("Error creating output surface: {}", e),
-        })
+        Surface::new(self.format, size, output_stream)
     }
 }
 
-fn parse_args() -> Result<Converter, clap::Error> {
+fn parse_args() -> Result<Converter, Error> {
     let supported_formats = vec![
         "Png",
         #[cfg(have_cairo_pdf)]
@@ -645,9 +688,8 @@ fn parse_args() -> Result<Converter, clap::Error> {
     };
 
     if input.len() > 1 && !matches!(format, Format::Ps | Format::Eps | Format::Pdf) {
-        return Err(clap::Error::with_description(
-            "Multiple SVG files are only allowed for PDF and (E)PS output.",
-            clap::ErrorKind::TooManyValues,
+        return Err(error!(
+            "Multiple SVG files are only allowed for PDF and (E)PS output."
         ));
     }
 
@@ -739,17 +781,11 @@ fn parse_color_string<T: AsRef<str> + std::fmt::Display>(s: T) -> Result<Color, 
     }
 }
 
-#[macro_export]
-macro_rules! exit {
-    () => (exit!("Error"));
-    ($($arg:tt)*) => ({
-        std::eprintln!("{}", std::format_args!($($arg)*));
-        std::process::exit(1);
-    })
-}
-
 fn main() {
-    parse_args().map_or_else(|e| e.exit(), |converter| converter.convert());
+    if let Err(e) = parse_args().and_then(|converter| converter.convert()) {
+        std::eprintln!("{}", e);
+        std::process::exit(1);
+    }
 }
 
 #[cfg(test)]
