@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <g id="foo">
+    <rect x="50" y="50" width="10" height="10" style="stroke-width: 0; stroke: black; fill: blue"/>
+  </g>
+</svg>

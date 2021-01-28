@@ -603,6 +603,26 @@ fn export_id_option() {
 }
 
 #[test]
+fn export_id_with_zero_stroke_width() {
+    // https://gitlab.gnome.org/GNOME/librsvg/-/issues/601
+    //
+    // This tests a bug that manifested itself easily with the --export-id option, but it
+    // is not a bug with the option itself.  An object with stroke_width=0 was causing
+    // an extra point at the origin to be put in the bounding box, so the final image
+    // spanned the origin to the actual visible bounds of the rendered object.
+    //
+    // We can probably test this more cleanly once we have a render tree.
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/601-zero-stroke-width.svg")
+        .arg("--export-id=foo")
+        .assert()
+        .success()
+        .stdout(
+            file::is_png()
+                .with_contents("tests/fixtures/cmdline/601-zero-stroke-width-render-only-foo.png"),
+        );
+}
+
+#[test]
 fn export_id_short_option() {
     RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("-i")
