@@ -29,7 +29,7 @@ pub trait Parse: Sized {
 }
 
 /// Consumes a comma if it exists, or does nothing.
-pub fn optional_comma<'i, 't>(parser: &mut Parser<'i, 't>) {
+pub fn optional_comma(parser: &mut Parser<'_, '_>) {
     let _ = parser.try_parse(|p| p.expect_comma());
 }
 
