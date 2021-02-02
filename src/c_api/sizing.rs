@@ -17,11 +17,6 @@ pub trait LegacySize {
         Ok((ink_r.width, ink_r.height))
     }
 
-    fn legacy_layer_size(&self, id: Option<&str>) -> Result<(f64, f64), RenderingError> {
-        let (ink_r, _) = self.legacy_layer_geometry(id)?;
-        Ok((ink_r.width, ink_r.height))
-    }
-
     fn legacy_layer_geometry(
         &self,
         id: Option<&str>,

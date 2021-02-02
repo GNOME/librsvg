@@ -459,7 +459,8 @@ impl Converter {
 
     fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> Result<Size, Error> {
         let (w, h) = renderer
-            .legacy_layer_size(self.export_id.as_deref())
+            .legacy_layer_geometry(self.export_id.as_deref())
+            .map(|(ink_r, _)| (ink_r.width, ink_r.height))
             .map_err(|e| match e {
                 RenderingError::IdNotFound => error!(
                     "File {} does not have an object with id \"{}\")",
