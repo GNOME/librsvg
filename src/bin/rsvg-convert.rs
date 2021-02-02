@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate clap;
 
+use cairo;
 use gio::prelude::*;
 use gio::{
     Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream, UnixInputStream,
@@ -416,7 +417,8 @@ impl Converter {
 
             let renderer = CairoRenderer::new(&handle).with_dpi(self.dpi.0, self.dpi.1);
 
-            let natural_size = self.natural_size(&renderer, input)?;
+            let geometry = self.natural_geometry(&renderer, input)?;
+            let natural_size = Size::new(geometry.width, geometry.height);
 
             let strategy = match (self.width, self.height) {
                 // when w and h are not specified, scale to the requested zoom (if any)
@@ -457,10 +459,14 @@ impl Converter {
         Ok(())
     }
 
-    fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> Result<Size, Error> {
+    fn natural_geometry(
+        &self,
+        renderer: &CairoRenderer,
+        input: &Input,
+    ) -> Result<cairo::Rectangle, Error> {
         renderer
             .legacy_layer_geometry(self.export_id.as_deref())
-            .map(|(ink_r, _)| Size::new(ink_r.width, ink_r.height))
+            .map(|(ink_r, _)| ink_r)
             .map_err(|e| match e {
                 RenderingError::IdNotFound => error!(
                     "File {} does not have an object with id \"{}\")",
