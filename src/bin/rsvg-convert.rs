@@ -458,9 +458,9 @@ impl Converter {
     }
 
     fn natural_size(&self, renderer: &CairoRenderer, input: &Input) -> Result<Size, Error> {
-        let (w, h) = renderer
+        renderer
             .legacy_layer_geometry(self.export_id.as_deref())
-            .map(|(ink_r, _)| (ink_r.width, ink_r.height))
+            .map(|(ink_r, _)| Size::new(ink_r.width, ink_r.height))
             .map_err(|e| match e {
                 RenderingError::IdNotFound => error!(
                     "File {} does not have an object with id \"{}\")",
@@ -468,9 +468,7 @@ impl Converter {
                     self.export_id.as_deref().unwrap()
                 ),
                 _ => error!("Error rendering SVG {}: {}", input, e),
-            })?;
-
-        Ok(Size::new(w, h))
+            })
     }
 
     fn final_size(
