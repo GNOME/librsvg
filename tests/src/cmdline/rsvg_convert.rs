@@ -599,7 +599,7 @@ fn export_id_option() {
         .arg("--export-id=foo")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(127, 127));
+        .stdout(file::is_png().with_size(40, 50));
 }
 
 #[test]
