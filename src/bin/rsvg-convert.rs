@@ -213,8 +213,8 @@ impl Surface {
     pub fn render(
         &self,
         renderer: &CairoRenderer,
-        natural_size: Size,
-        scale: Scale,
+        final_size: Size,
+        geometry: cairo::Rectangle,
         background_color: Option<Color>,
         id: Option<&str>,
     ) -> Result<(), Error> {
@@ -236,20 +236,28 @@ impl Surface {
         // of the viewport's proportions.  Rsvg-convert allows non-proportional scaling, so
         // we do that with a separate transform.
 
+        let scale = Scale {
+            x: final_size.w / geometry.width,
+            y: final_size.h / geometry.height,
+        };
+
         cr.scale(scale.x, scale.y);
 
         let viewport = cairo::Rectangle {
             x: 0.0,
             y: 0.0,
-            width: natural_size.w,
-            height: natural_size.h,
+            width: geometry.width,
+            height: geometry.height,
         };
 
-        renderer.render_layer(&cr, id, &viewport).map(|_| {
-            if !matches!(self, Self::Png(_, _)) {
-                cr.show_page();
-            }
-        })?;
+        match id {
+            None => renderer.render_document(&cr, &viewport)?,
+            Some(_) => renderer.render_element(&cr, id, &viewport)?,
+        }
+
+        if !matches!(self, Self::Png(_, _)) {
+            cr.show_page();
+        }
 
         Ok(())
     }
@@ -443,8 +451,8 @@ impl Converter {
 
             s.render(
                 &renderer,
-                natural_size,
-                self.zoom,
+                final_size,
+                geometry,
                 self.background_color,
                 self.export_id.as_deref(),
             )
@@ -464,17 +472,19 @@ impl Converter {
         renderer: &CairoRenderer,
         input: &Input,
     ) -> Result<cairo::Rectangle, Error> {
-        renderer
-            .legacy_layer_geometry(self.export_id.as_deref())
-            .map(|(ink_r, _)| ink_r)
-            .map_err(|e| match e {
-                RenderingError::IdNotFound => error!(
-                    "File {} does not have an object with id \"{}\")",
-                    input,
-                    self.export_id.as_deref().unwrap()
-                ),
-                _ => error!("Error rendering SVG {}: {}", input, e),
-            })
+        match self.export_id {
+            None => renderer.legacy_layer_geometry(None),
+            Some(ref id) => renderer.geometry_for_element(Some(&id)),
+        }
+        .map(|(ink_r, _)| ink_r)
+        .map_err(|e| match e {
+            RenderingError::IdNotFound => error!(
+                "File {} does not have an object with id \"{}\")",
+                input,
+                self.export_id.as_deref().unwrap()
+            ),
+            _ => error!("Error rendering SVG {}: {}", input, e),
+        })
     }
 
     fn final_size(
