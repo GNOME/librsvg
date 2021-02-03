@@ -16,6 +16,7 @@
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
 use cssparser::{BasicParseError, Parser};
+use std::fmt;
 use std::ops::Deref;
 
 use crate::error::*;
@@ -78,6 +79,17 @@ struct Align {
     y: Y,
     fit: FitMode,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct NonInvertibleTransform;
+
+impl fmt::Display for NonInvertibleTransform {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Not invertible")
+    }
+}
+
+impl std::error::Error for NonInvertibleTransform {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
@@ -148,7 +160,7 @@ impl AspectRatio {
         &self,
         vbox: Option<ViewBox>,
         viewport: &Rect,
-    ) -> Result<Option<Transform>, ()> {
+    ) -> Result<Option<Transform>, NonInvertibleTransform> {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -179,7 +191,7 @@ impl AspectRatio {
         if transform.is_invertible() {
             Ok(Some(transform))
         } else {
-            Err(())
+            Err(NonInvertibleTransform)
         }
     }
 }
@@ -447,6 +459,6 @@ mod tests {
             &Rect::new(1.0, 1.0, 2.0, 2.0),
         );
 
-        assert_eq!(t, Err(()));
+        assert_eq!(t, Err(NonInvertibleTransform));
     }
 }

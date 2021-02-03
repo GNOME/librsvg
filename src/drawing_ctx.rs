@@ -409,7 +409,7 @@ impl DrawingCtx {
 
         preserve_aspect_ratio
             .viewport_to_viewbox_transform(vbox, &viewport)
-            .unwrap_or_else(|_e: ()| {
+            .unwrap_or_else(|_e| {
                 match vbox {
                     None => unreachable!(
                         "viewport_to_viewbox_transform only returns errors when vbox != None"
