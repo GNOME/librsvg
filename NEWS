@@ -1,5 +1,81 @@
 Version 2.51.0
 
+There are many changes in this development release!  This experimental
+release is meant for early testing, with the understanding that some
+things may be broken, especially since we have large changes to the
+way librsvg's artifacts are built.
+
+The biggest user-visible change is that rsvg-convert has been ported
+to Rust (Sven Neumann, Paolo Borelli).
+
+Please file bugs at https://gitlab.gnome.org/GNOME/librsvg/-/issues/new
+if these changes break your scripts; they are experimental for the
+2.51.x development series:
+
+- #646 - rsvg-convert's default DPI is now 96, to better match W3C
+  standards.  It was 90 before for historical reasons.  We can change
+  this back to 90 if it breaks too many scripts.  You can use the
+  options "--dpi-x=90 --dpi-y=90" to restore the old behavior.
+
+- rsvg-convert's --export-id (-i) option should now have more useful
+  behavior.  This extracts a particular element from the SVG document
+  and renders it scaled to the size specified by the --width/--height
+  arguments, or to the pixel size of the element as if it had no
+  transformations applied.
+
+- rsvg-convert no longer supports the "xml" or "recording" output
+  formats.  These are useful only for debugging Cairo, not for general
+  usage.
+
+Known missing features, which should be restored for the stable release:
+
+- rsvg-convert does not allow stdin/stdout streams on Windows; this is
+  being tracked in issue #676.
+
+The following are changes related to porting to Rust; they are not
+necessarily user-visible, but important for developers of the library:
+
+- There is no leftover C code in the library; all of the
+  implementation and the publically-visible symbols are defined in the
+  Rust code.  The remaining .h files are all public and do not reflect
+  any .c code.  (Sven Neumann)
+
+- The test suite is now ported to Rust.  The only remaining tests in C
+  are for the C API itself (tests/api.c).  With the test suite in
+  Rust, the tests are automatically run in parallel across CPU cores,
+  making test runs much faster.  (Sven Neumann, Dunja Lalic)
+
+- "cargo build", "cargo test" should now work without running
+  autotools first.
+
+- The C API is now implemented on top of the public Rust API, without
+  special hooks into the library's internals.
+
+The following APIs are deprecated but still available:
+
+- rsvg_handle_render_cairo() - use rsvg_handle_render_document() instead.
+
+- rsvg_handle_render_cairo_sub() - use rsvg_handle_render_layer() or
+  rsvg_handle_render_element() depending on what you want to do.
+
+- These deprecations are because the new APIs conform with the web
+  world's view of how SVGs should be positioned and scaled in
+  surrounding content.  Whereas the old APIs were about rendering SVGs
+  to whatever current transformation matrix a Cairo context may
+  contain, the new APIs take a rectangular viewport and librsvg
+  automatically scales the SVG document to fit in it.  The "natural
+  sizing" that was implicit in the deprecated APIs is now explicitly
+  documented, and available through the new API
+  rsvg_handle_get_intrinsic_size_in_pixels().
+
+New APIs:
+
+- rsvg_handle_get_intrinsic_size_in_pixels() converts an SVG
+  document's intrinsic dimensions to pixels, i.e. transforms the SVG
+  document's "width" and "height" attributes to CSS pixels.
+
+New features and bug fixes:
+
 - #615: SVG2: Support a chain of uri() filters in the "filter" property
   (John Ledbetter, Sven Neumann).
 
@@ -10,11 +86,44 @@ Version 2.51.0
 - Fixed CSS "import" so it allows only files from the same base directory
   (Lars Schmertmann).
 
+- #642 - Fix dx/dy offsets in nested <tspan> elements.
+
+- #601 - Compute correct bounds for objects with stroke-width=0.
+
+- Slight speed improvements in the RGBA premultiplication code (Sven Neumann).
+
 - #623 - The pkg-config files (*.pc) do not define the 'svgz_supported' and
   'css_supported' variables anymore.  These variables were hardcoded
   to 'true' and unchanged since 2011.
 
 - #624 - The source repository no longer produces a librsvg-uninstalled.pc file.
+
+- Fix the MacOS build (Christian Hergert, Ignacio Casal Quinteiro).
+
+- Deal with missing pkg-config (Ismael Luceno).
+
+- For cross-compilation, check for target-specific prefixed tools like
+  rustc/cargo (Heiko Becker).
+
+Changes in the Rust API:
+
+- #597 - The LoadingError and RenderingError enums have changed, and
+  are now marked #[non_exhaustive].  They will probably change again
+  to hide details of error variants before we make librsvg available
+  as a crate on crates.io.
+
+Special thanks for this release:
+
+- Dunja Lalic for revamping the CI infrastructure and making our CI
+  runs much, much faster - !398.
+
+- Sven Neumann, Dunja Lalic for porting the test suite to Rust.
+
+- Sven Neumann, Paolo Borelli for porting rsvg-convert to Rust and
+  unraveling all the little historical details that were embedded in
+  it.
+
+- Paolo Borelli for constant refactoring.
 
 Version 2.49.5
 
