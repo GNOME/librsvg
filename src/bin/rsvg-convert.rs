@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate clap;
 
-use cairo;
 use gio::prelude::*;
 use gio::{
     Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream, UnixInputStream,
