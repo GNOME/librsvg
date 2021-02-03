@@ -23,7 +23,7 @@
 //! [`CHandle`]: struct.CHandle.html
 
 use std::cell::{Cell, Ref, RefCell, RefMut};
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr, CString, OsStr};
 use std::fmt;
 use std::ops;
 use std::path::PathBuf;
@@ -1664,9 +1664,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
     }
 
     let file = match PathOrUrl::new(filename) {
-        Ok(PathOrUrl::Path(path)) => gio::File::new_for_path(path),
-
-        Ok(PathOrUrl::Url(url)) => gio::File::new_for_uri(url.as_str()),
+        Ok(p) => p.get_gfile(),
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
@@ -2145,7 +2143,8 @@ pub unsafe extern "C" fn rsvg_cleanup() {}
 /// `gio::File::new_for_path()` or `gio::File::new_for_uri()` as appropriate.
 ///
 /// This enum does the magic heuristics to figure this out.
-enum PathOrUrl {
+#[derive(Clone, Debug)]
+pub enum PathOrUrl {
     Path(PathBuf),
     Url(Url),
 }
@@ -2157,15 +2156,42 @@ impl PathOrUrl {
         Ok(cstr
             .to_str()
             .map_err(|_| ())
-            .and_then(|utf8| Url::parse(utf8).map_err(|_| ()))
-            .and_then(|url| {
-                if url.origin().is_tuple() || url.scheme() == "file" {
-                    Ok(PathOrUrl::Url(url))
-                } else {
-                    Ok(PathOrUrl::Path(url.to_file_path()?))
-                }
-            })
+            .and_then(Self::try_from_str)
             .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s))))
+    }
+
+    fn try_from_str(s: &str) -> Result<PathOrUrl, ()> {
+        Url::parse(s).map_err(|_| ()).and_then(|url| {
+            if url.origin().is_tuple() || url.scheme() == "file" {
+                Ok(PathOrUrl::Url(url))
+            } else {
+                Ok(PathOrUrl::Path(url.to_file_path()?))
+            }
+        })
+    }
+
+    pub fn from_os_str(osstr: &OsStr) -> PathOrUrl {
+        osstr
+            .to_str()
+            .ok_or(())
+            .and_then(Self::try_from_str)
+            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from(osstr.to_os_string())))
+    }
+
+    pub fn get_gfile(&self) -> gio::File {
+        match *self {
+            PathOrUrl::Path(ref p) => gio::File::new_for_path(p),
+            PathOrUrl::Url(ref u) => gio::File::new_for_uri(u.as_str()),
+        }
+    }
+}
+
+impl fmt::Display for PathOrUrl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            PathOrUrl::Path(ref p) => p.display().fmt(f),
+            PathOrUrl::Url(ref u) => u.fmt(f),
+        }
     }
 }
 

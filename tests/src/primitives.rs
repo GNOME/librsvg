@@ -1,10 +1,6 @@
 use cairo;
 
-use librsvg::{
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    test_utils::compare_to_surface,
-};
-
+use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{load_svg, render_document, SurfaceSize};
 
 #[test]
@@ -44,13 +40,9 @@ fn simple_opacity_with_transform() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "simple_opacity_with_transform",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "simple_opacity_with_transform");
 }
 
 #[test]
@@ -90,13 +82,9 @@ fn simple_opacity_with_offset_viewport() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "simple_opacity_with_offset_viewport",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "simple_opacity_with_offset_viewport");
 }
 
 #[test]
@@ -141,9 +129,9 @@ fn simple_opacity_with_scale() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "simple_opacity_with_scale");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "simple_opacity_with_scale");
 }
 
 #[test]
@@ -200,9 +188,9 @@ fn markers_with_scale() {
         }
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "markers_with_scale");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "markers_with_scale");
 }
 
 #[test]
@@ -242,13 +230,9 @@ fn opacity_inside_transformed_group() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(
-        &output_surf,
-        &reference_surf,
-        "opacity_inside_transformed_group",
-    );
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "opacity_inside_transformed_group");
 }
 
 #[test]
@@ -303,9 +287,9 @@ fn compound_opacity() {
         cr.paint_with_alpha(0.5);
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "compound_opacity");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "compound_opacity");
 }
 
 #[test]
@@ -370,7 +354,7 @@ fn nested_masks() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "nested_masks");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "nested_masks");
 }

@@ -30,6 +30,9 @@ mod primitives;
 mod reference;
 
 #[cfg(test)]
+mod reference_utils;
+
+#[cfg(test)]
 mod render_crash;
 
 #[cfg(test)]

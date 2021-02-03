@@ -1,11 +1,8 @@
 use cairo;
+use librsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use librsvg::{CairoRenderer, RenderingError};
 
-use librsvg::{
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    test_utils::compare_to_surface,
-};
-
+use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::load_svg;
 
 #[test]
@@ -82,9 +79,9 @@ fn render_layer() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "render_layer");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "render_layer");
 }
 
 #[test]
@@ -168,9 +165,9 @@ fn untransformed_element() {
         cr.stroke();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "untransformed_element");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "untransformed_element");
 }
 
 #[test]
@@ -218,7 +215,7 @@ fn set_stylesheet() {
         cr.fill();
     }
 
-    let reference_surf = SharedImageSurface::wrap(reference_surf, SurfaceType::SRgb).unwrap();
-
-    compare_to_surface(&output_surf, &reference_surf, "set_stylesheet");
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "set_stylesheet");
 }

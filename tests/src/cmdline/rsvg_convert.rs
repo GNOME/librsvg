@@ -183,11 +183,11 @@ fn output_file_short_option() {
 #[test]
 fn empty_input_yields_error() {
     let starts_with = starts_with("Error reading SVG");
-    let ends_with = ends_with("Input file is too short");
+    let ends_with = ends_with("Input file is too short").trim();
     RsvgConvert::new()
         .assert()
         .failure()
-        .stderr(starts_with.and(ends_with).trim());
+        .stderr(starts_with.and(ends_with));
 }
 
 #[test]
@@ -513,7 +513,7 @@ fn pdf_page_size() {
 
 #[test]
 fn background_color_option_with_valid_color() {
-    RsvgConvert::accepts_arg("--background-color=purple");
+    RsvgConvert::accepts_arg("--background-color=LimeGreen");
 }
 
 #[test]
@@ -537,6 +537,15 @@ fn background_color_option_invalid_color_yields_error() {
         .assert()
         .failure()
         .stderr(contains("Invalid").and(contains("color")));
+}
+
+#[test]
+fn background_color_is_rendered() {
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/gimp-wilber.svg")
+        .arg("--background-color=purple")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/cmdline/gimp-wilber-ref.png"));
 }
 
 #[test]
@@ -657,10 +666,8 @@ fn no_keep_image_data_option() {
     RsvgConvert::accepts_arg("--no-keep-image-data");
 }
 
-fn is_version_output() -> TrimPredicate<AndPredicate<StartsWithPredicate, EndsWithPredicate, str>> {
-    starts_with("rsvg-convert ")
-        .and(ends_with_pkg_version())
-        .trim()
+fn is_version_output() -> AndPredicate<StartsWithPredicate, TrimPredicate<EndsWithPredicate>, str> {
+    starts_with("rsvg-convert ").and(ends_with_pkg_version().trim())
 }
 
 #[test]

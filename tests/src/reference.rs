@@ -12,11 +12,11 @@ use test_generator::test_resources;
 use cairo;
 use librsvg::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    test_utils::compare_to_file,
     CairoRenderer, IntrinsicDimensions, Length, Loader,
 };
 use std::path::PathBuf;
 
+use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{setup_font_map, setup_language};
 
 // The original reference images from the SVG1.1 test suite are at 72 DPI.
@@ -83,7 +83,9 @@ fn reference_test(path: &str) {
 
     let output_surf = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
 
-    compare_to_file(&output_surf, &path_base_name, &reference);
+    Reference::from_png(&reference)
+        .compare(&output_surf)
+        .evaluate(&output_surf, &path_base_name);
 }
 
 /// Turns `/foo/bar/baz.svg` into `/foo/bar/baz-ref.svg`.
