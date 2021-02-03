@@ -629,7 +629,7 @@ fn export_id_short_option() {
         .arg("two")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(90, 180));
+        .stdout(file::is_png().with_size(100, 200));
 }
 
 #[test]
