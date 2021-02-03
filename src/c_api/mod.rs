@@ -33,8 +33,6 @@ pub use handle::{
     rsvg_handle_write,
 };
 
-pub use color_utils::rsvg_css_parse_color;
-
 pub use dpi::{rsvg_set_default_dpi, rsvg_set_default_dpi_x_y};
 
 #[rustfmt::skip]
@@ -49,8 +47,7 @@ pub use pixbuf_utils::{
 #[macro_use]
 mod messages;
 
-mod color_utils;
 mod dpi;
 pub mod handle;
 pub mod pixbuf_utils;
-mod sizing;
+pub mod sizing;

@@ -8,12 +8,14 @@ use crate::predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
+#[cfg(have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
 use predicates::boolean::*;
 use predicates::prelude::*;
 use predicates::str::*;
 use std::path::Path;
 use tempfile::Builder;
+use url::Url;
 
 // What should be tested here?
 // The goal is to test the code in rsvg-convert, not the entire library.
@@ -21,7 +23,7 @@ use tempfile::Builder;
 //  - command-line options that affect size (width, height, zoom, resolution) ✔
 //  - pixel dimensions of the output (should be sufficient to do that for PNG) ✔
 //  - limit on output size (32767 pixels) ✔
-//  - output formats (PNG, PDF, PS, EPS, SVG), okay to ignore XML and recording ✔
+//  - output formats (PNG, PDF, PS, EPS, SVG) ✔
 //  - multi-page output (for PDF) ✔
 //  - output file option ✔
 //  - SOURCE_DATA_EPOCH environment variable for PDF output ✔
@@ -34,16 +36,8 @@ use tempfile::Builder;
 struct RsvgConvert {}
 
 impl RsvgConvert {
-    fn binary_location() -> &'static Path {
-        match option_env!("LIBRSVG_BUILD_DIR") {
-            Some(dir) => Path::new(dir),
-            None => Path::new(env!("CARGO_MANIFEST_DIR")),
-        }
-    }
-
     fn new() -> Command {
-        let path = Self::binary_location().join("rsvg-convert");
-        let mut command = Command::new(path);
+        let mut command = Command::cargo_bin("rsvg-convert").unwrap();
         command.env_clear();
         command
     }
@@ -98,6 +92,22 @@ fn argument_is_input_filename() {
 }
 
 #[test]
+fn argument_is_url() {
+    let path = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .canonicalize()
+        .unwrap();
+    let url = Url::from_file_path(path).unwrap();
+    let stringified = url.as_str();
+    assert!(stringified.starts_with("file://"));
+
+    RsvgConvert::new()
+        .arg(stringified)
+        .assert()
+        .success()
+        .stdout(file::is_png());
+}
+
+#[test]
 fn output_format_png() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--format=png")
@@ -106,6 +116,7 @@ fn output_format_png() {
         .stdout(file::is_png());
 }
 
+#[cfg(have_cairo_ps)]
 #[test]
 fn output_format_ps() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -115,6 +126,7 @@ fn output_format_ps() {
         .stdout(file::is_ps());
 }
 
+#[cfg(have_cairo_ps)]
 #[test]
 fn output_format_eps() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -124,6 +136,7 @@ fn output_format_eps() {
         .stdout(file::is_eps());
 }
 
+#[cfg(have_cairo_pdf)]
 #[test]
 fn output_format_pdf() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -133,6 +146,7 @@ fn output_format_pdf() {
         .stdout(file::is_pdf());
 }
 
+#[cfg(have_cairo_svg)]
 #[test]
 fn output_format_svg_short_option() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -181,6 +195,27 @@ fn output_file_short_option() {
 }
 
 #[test]
+fn overwrites_existing_output_file() {
+    let output = {
+        let tempfile = Builder::new().suffix(".png").tempfile().unwrap();
+        tempfile.path().to_path_buf()
+    };
+    assert!(predicates::path::is_file().not().eval(&output));
+
+    for _ in 0..2 {
+        RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+            .arg(format!("--output={}", output.display()))
+            .assert()
+            .success()
+            .stdout(is_empty());
+
+        assert!(predicates::path::is_file().eval(&output));
+    }
+
+    std::fs::remove_file(&output).unwrap();
+}
+
+#[test]
 fn empty_input_yields_error() {
     let starts_with = starts_with("Error reading SVG");
     let ends_with = ends_with("Input file is too short").trim();
@@ -212,6 +247,7 @@ fn multiple_input_files_not_allowed_for_png_output() {
         ));
 }
 
+#[cfg(have_cairo_ps)]
 #[test]
 fn multiple_input_files_accepted_for_eps_output() {
     let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -225,6 +261,7 @@ fn multiple_input_files_accepted_for_eps_output() {
         .stdout(file::is_eps());
 }
 
+#[cfg(have_cairo_ps)]
 #[test]
 fn multiple_input_files_accepted_for_ps_output() {
     let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -238,6 +275,7 @@ fn multiple_input_files_accepted_for_ps_output() {
         .stdout(file::is_ps());
 }
 
+#[cfg(have_cairo_pdf)]
 #[test]
 fn multiple_input_files_create_multi_page_pdf_output() {
     let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -253,6 +291,7 @@ fn multiple_input_files_create_multi_page_pdf_output() {
         .stdout(file::is_pdf().with_page_count(3));
 }
 
+#[cfg(have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_controls_pdf_creation_date() {
     let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -266,6 +305,7 @@ fn env_source_data_epoch_controls_pdf_creation_date() {
         .stdout(file::is_pdf().with_creation_date(Utc.timestamp(date, 0)));
 }
 
+#[cfg(have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_no_digits() {
     // intentionally not testing for the full error string here
@@ -279,6 +319,7 @@ fn env_source_data_epoch_no_digits() {
         .stderr(starts_with("Environment variable $SOURCE_DATE_EPOCH"));
 }
 
+#[cfg(have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_trailing_garbage() {
     // intentionally not testing for the full error string here
@@ -292,6 +333,7 @@ fn env_source_data_epoch_trailing_garbage() {
         .stderr(starts_with("Environment variable $SOURCE_DATE_EPOCH"));
 }
 
+#[cfg(have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_empty() {
     // intentionally not testing for the full error string here
@@ -340,17 +382,6 @@ fn zoom_factor() {
         .assert()
         .success()
         .stdout(file::is_png().with_size(160, 80));
-}
-
-// TODO: Is this a bug in rsvg-convert or the desired behavior ?
-#[test]
-fn zoom_factor_and_width_conflicts() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
-        .arg("--width=400")
-        .arg("--zoom=1.5")
-        .assert()
-        .failure()
-        .stderr(ends_with("Could not render file stdin").trim());
 }
 
 #[test]
@@ -415,13 +446,13 @@ fn y_short_option() {
 
 #[test]
 fn huge_zoom_factor_yields_error() {
-    let starts_with = starts_with("The resulting image would be larger than 32767 pixels");
-    let ends_with = ends_with("Please specify a smaller size.");
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--zoom=1000")
         .assert()
         .failure()
-        .stderr(starts_with.and(ends_with).trim());
+        .stderr(starts_with(
+            "The resulting image would be larger than 32767 pixels",
+        ));
 }
 
 #[test]
@@ -500,6 +531,7 @@ fn negative_resolution_is_invalid() {
         .stderr(contains("Invalid resolution"));
 }
 
+#[cfg(have_cairo_pdf)]
 #[test]
 fn pdf_page_size() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -580,7 +612,27 @@ fn export_id_option() {
         .arg("--export-id=foo")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(127, 127));
+        .stdout(file::is_png().with_size(40, 50));
+}
+
+#[test]
+fn export_id_with_zero_stroke_width() {
+    // https://gitlab.gnome.org/GNOME/librsvg/-/issues/601
+    //
+    // This tests a bug that manifested itself easily with the --export-id option, but it
+    // is not a bug with the option itself.  An object with stroke_width=0 was causing
+    // an extra point at the origin to be put in the bounding box, so the final image
+    // spanned the origin to the actual visible bounds of the rendered object.
+    //
+    // We can probably test this more cleanly once we have a render tree.
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/601-zero-stroke-width.svg")
+        .arg("--export-id=foo")
+        .assert()
+        .success()
+        .stdout(
+            file::is_png()
+                .with_contents("tests/fixtures/cmdline/601-zero-stroke-width-render-only-foo.png"),
+        );
 }
 
 #[test]
@@ -590,7 +642,7 @@ fn export_id_short_option() {
         .arg("two")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(90, 180));
+        .stdout(file::is_png().with_size(100, 200));
 }
 
 #[test]
@@ -653,7 +705,9 @@ fn overflowing_size_is_detected() {
     RsvgConvert::new_with_input("tests/fixtures/render-crash/591-vbox-overflow.svg")
         .assert()
         .failure()
-        .stderr(contains("Could not get dimensions").trim());
+        .stderr(starts_with(
+            "The resulting image would be larger than 32767 pixels",
+        ));
 }
 
 #[test]
@@ -667,7 +721,7 @@ fn no_keep_image_data_option() {
 }
 
 fn is_version_output() -> AndPredicate<StartsWithPredicate, TrimPredicate<EndsWithPredicate>, str> {
-    starts_with("rsvg-convert ").and(ends_with_pkg_version().trim())
+    starts_with("rsvg-convert version ").and(ends_with_pkg_version().trim())
 }
 
 #[test]

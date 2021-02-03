@@ -13,9 +13,11 @@ crate-type = [ "staticlib", "rlib" ]
 bitflags = "1.0"
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
-cairo-rs = { version="0.8.0", features=["v1_16", "png", "pdf", "svg"] }
+cairo-rs = { version="0.8.0", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cairo-sys-rs = "0.9.0"
 cast = "0.2.3"
+chrono = "0.4.0" # rsvg-convert
+clap = "~2.33.0" # rsvg-convert
 cssparser = "0.27.1"
 data-url = "0.1"
 encoding = "0.2.33"
