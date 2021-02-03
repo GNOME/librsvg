@@ -456,11 +456,11 @@ fn huge_zoom_factor_yields_error() {
 }
 
 #[test]
-fn default_resolution_is_90dpi() {
+fn default_resolution_is_96dpi() {
     RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(90, 360));
+        .stdout(file::is_png().with_size(96, 384));
 }
 
 #[test]
@@ -469,7 +469,7 @@ fn x_resolution() {
         .arg("--dpi-x=300")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(300, 360));
+        .stdout(file::is_png().with_size(300, 384));
 }
 
 #[test]
@@ -479,7 +479,7 @@ fn x_resolution_short_option() {
         .arg("45")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(45, 360));
+        .stdout(file::is_png().with_size(45, 384));
 }
 
 #[test]
@@ -488,7 +488,7 @@ fn y_resolution() {
         .arg("--dpi-y=300")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(90, 1200));
+        .stdout(file::is_png().with_size(96, 1200));
 }
 
 #[test]
@@ -498,7 +498,7 @@ fn y_resolution_short_option() {
         .arg("45")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(90, 180));
+        .stdout(file::is_png().with_size(96, 180));
 }
 
 #[test]

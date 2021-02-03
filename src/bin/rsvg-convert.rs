@@ -540,7 +540,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("dpi-x")
                 .takes_value(true)
                 .value_name("float")
-                .default_value("90")
+                .default_value("96")
                 .validator(is_valid_resolution)
                 .help("Pixels per inch"),
         )
@@ -550,7 +550,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("dpi-y")
                 .takes_value(true)
                 .value_name("float")
-                .default_value("90")
+                .default_value("96")
                 .validator(is_valid_resolution)
                 .help("Pixels per inch"),
         )
