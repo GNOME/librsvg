@@ -95,7 +95,6 @@ LIBRSVG_SRC =					\
 	src/space.rs				\
 	src/structure.rs			\
 	src/style.rs				\
-	src/surface_utils/compare_surfaces.rs	\
 	src/surface_utils/iterators.rs		\
 	src/surface_utils/mod.rs		\
 	src/surface_utils/shared_surface.rs	\
