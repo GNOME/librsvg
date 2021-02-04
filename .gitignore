@@ -2,7 +2,6 @@
 ChangeLog
 Makefile
 Makefile.in
-ABOUT-NLS
 TAGS
 aclocal.m4
 autom4te.cache
@@ -71,18 +70,6 @@ m4/nls.m4
 m4/pkg.m4
 m4/po.m4
 m4/progtest.m4
-po/Makefile.in.in
-po/Makevars.template
-po/POTFILES
-po/Rules-quot
-po/boldquot.sed
-po/en@boldquot.header
-po/en@quot.header
-po/insert-header.sin
-po/quot.sed
-po/remove-potcdate.sin
-po/stamp-po
-po/*.gmo
 target/
 tests/api
 tests/rsvg-test

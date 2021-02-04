@@ -55,18 +55,6 @@ AC_SUBST([LIBRSVG_MINOR_VERSION],[rsvg_minor_version])
 AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
 dnl ===========================================================================
-dnl Gettext stuff
-dnl ===========================================================================
-
-# FIXME: Remove AM_GNU_GETTEXT_VERSION once autoreconf supports REQUIRE_VERSION
-AM_GNU_GETTEXT_VERSION([0.19.8])
-AM_GNU_GETTEXT_REQUIRE_VERSION([0.19.8])
-AM_GNU_GETTEXT([external])
-
-AC_SUBST([GETTEXT_PACKAGE], [librsvg])
-AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], "$GETTEXT_PACKAGE", [Define to the gettext package name.])
-
-dnl ===========================================================================
 dnl Please update COMPILING.md with version numbers if these change
 CAIRO_REQUIRED=1.16.0
 dnl This corresponds to Freetype2 2.8
@@ -391,7 +379,6 @@ doc/version.xml
 win32/Makefile
 win32/config.h.win32
 win32/config-msvc.mak
-po/Makefile.in
 ])
 
 AC_CONFIG_FILES([librsvg-${RSVG_API_VERSION}.pc:librsvg.pc.in],[],[RSVG_API_VERSION=$RSVG_API_VERSION])
