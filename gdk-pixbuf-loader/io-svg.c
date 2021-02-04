@@ -31,9 +31,6 @@
 #include <librsvg/rsvg.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-#define N_(string) (string)
-#define _(string) (string)
-
 typedef struct {
         RsvgHandle                 *handle;
 
@@ -121,7 +118,7 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
                 context->handle = rsvg_handle_new ();
 
                 if (!context->handle) {
-                        rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                        rsvg_propagate_error (error, "Error displaying image", ERROR_DISPLAYING_IMAGE);
                         return FALSE;
                 }
 
@@ -129,13 +126,13 @@ gdk_pixbuf__svg_image_load_increment (gpointer data,
         }
 
         if (!context->handle) {
-                rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                rsvg_propagate_error (error, "Error displaying image", ERROR_DISPLAYING_IMAGE);
                 return FALSE;
         }
 
         if (!rsvg_handle_write (context->handle, buf, size, error)) {
                 g_clear_error(error);
-                rsvg_propagate_error (error, _("Error writing"), ERROR_WRITING);
+                rsvg_propagate_error (error, "Error writing", ERROR_WRITING);
                 return FALSE;
         }
 
@@ -153,7 +150,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                 *error = NULL;
 
         if (!context->handle) {
-                rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                rsvg_propagate_error (error, "Error displaying image", ERROR_DISPLAYING_IMAGE);
                 return FALSE;
         }
 
@@ -171,7 +168,7 @@ gdk_pixbuf__svg_image_stop_load (gpointer data, GError **error)
                 g_object_unref (pixbuf);
         }
         else {
-                rsvg_propagate_error (error, _("Error displaying image"), ERROR_DISPLAYING_IMAGE);
+                rsvg_propagate_error (error, "Error displaying image", ERROR_DISPLAYING_IMAGE);
                 result = FALSE;
         }
 
@@ -216,7 +213,7 @@ fill_info (GdkPixbufFormat *info)
 
         info->name        = "svg";
         info->signature   = (GdkPixbufModulePattern *) signature;
-        info->description = _("Scalable Vector Graphics");
+        info->description = "Scalable Vector Graphics";
         info->mime_types  = (gchar **) mime_types;
         info->extensions  = (gchar **) extensions;
         info->flags       = GDK_PIXBUF_FORMAT_SCALABLE | GDK_PIXBUF_FORMAT_THREADSAFE;
