@@ -35,8 +35,26 @@ freetype2 = "20.0.14"
 libxml2 = { name = "libxml-2.0", version = "2.9" }
 
 [lib]
+name = "rsvg"
+
+[features]
+default = []
+capi = []
+
+[package.metadata.capi.header]
+# For now we have hand-written .h files, so disable generation of headers
+enabled = false
+
+[package.metadata.capi.pkg_config]
 name = "librsvg"
-crate-type = [ "staticlib", "rlib" ]
+description = "library that renders svg files"
+# version = "..." # defaults to the crate version
+requires = "glib-2.0, gio-2.0, gdk-pixbuf-2.0, cairo"
+# requires_private = ""
+
+[package.metadata.capi.library]
+name = "rsvg"
+# version = "..."
 
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
