@@ -58,9 +58,8 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
 
 ```sh
 apt-get install -y gcc make rustc cargo \
-automake autoconf libtool gettext itstool \
+automake autoconf libtool gtk-doc-tools git \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
-gtk-doc-tools git \
 libxml2-dev libcairo2-dev libpango1.0-dev
 ```
 
@@ -74,9 +73,8 @@ PATH="$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0"
 
 ```sh
 dnf install -y gcc rust rust-std-static cargo make \
-automake autoconf libtool gettext itstool \
+automake autoconf libtool gtk-doc git redhat-rpm-config \
 gdk-pixbuf2-devel gobject-introspection-devel \
-gtk-doc git redhat-rpm-config gettext-devel \
 libxml2-devel cairo-devel pango-devel
 ```
 
@@ -84,10 +82,9 @@ libxml2-devel cairo-devel pango-devel
 
 ```sh
 zypper install -y gcc rust rust-std cargo make \
-automake autoconf libtool gettext itstool git \
-gtk-doc gobject-introspection-devel \
-libxml2-devel cairo-devel \
-pango-devel gdk-pixbuf-devel
+automake autoconf libtool gtk-doc git \
+gdk-pixbuf-devel gobject-introspection-devel \
+libxml2-devel cairo-devel pango-devel 
 ```
 
 ### macOS systems
