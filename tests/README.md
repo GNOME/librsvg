@@ -71,7 +71,8 @@ These are built as a Rust binary in this tests/ directory, and are
 runnable with `cargo test`.
 
 Note that this test binary includes tests for the rsvg-convert
-program.  It needs to be compiled before running the tests with a plain `cargo test`.
+program.  It needs to be compiled before running the tests with a
+plain `cargo test`.
 
 To just run the integration tests without testing rsvg-convert, you
 can use this:

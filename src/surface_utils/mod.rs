@@ -4,7 +4,6 @@ use std::mem;
 use std::ops::DerefMut;
 use std::slice;
 
-pub mod compare_surfaces;
 pub mod iterators;
 pub mod shared_surface;
 pub mod srgb;

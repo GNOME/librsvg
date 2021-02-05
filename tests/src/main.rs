@@ -12,6 +12,9 @@ mod bugs;
 mod cmdline;
 
 #[cfg(test)]
+mod compare_surfaces;
+
+#[cfg(test)]
 mod errors;
 
 #[cfg(test)]

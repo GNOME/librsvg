@@ -4,21 +4,22 @@ test_sources =				\
 	build.rs			\
 	src/api.rs			\
 	src/bugs.rs			\
-	src/cmdline/mod.rs		\
-	src/cmdline/rsvg_convert.rs	\
+	src/compare_surfaces.rs		\
 	src/errors.rs			\
 	src/intrinsic_dimensions.rs	\
 	src/loading_crash.rs		\
 	src/main.rs			\
-	src/predicates/file.rs		\
-	src/predicates/mod.rs		\
-	src/predicates/pdf.rs		\
-	src/predicates/png.rs		\
 	src/primitives.rs		\
 	src/reference.rs		\
 	src/reference_utils.rs		\
 	src/render_crash.rs		\
 	src/utils.rs			\
+	src/cmdline/mod.rs		\
+	src/cmdline/rsvg_convert.rs	\
+	src/predicates/file.rs		\
+	src/predicates/mod.rs		\
+	src/predicates/pdf.rs		\
+	src/predicates/png.rs		\
 	$(NULL)
 
 test_programs = api

@@ -10,8 +10,9 @@ use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 
-use librsvg::surface_utils::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
 use librsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+
+use crate::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
 
 pub struct Reference(SharedImageSurface);
 
