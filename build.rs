@@ -98,7 +98,7 @@ fn check_for_cairo_surface_backend(backend: &str) {
 }
 
 fn check_for_cairo_surface_backends() {
-    let backends = ["pdf", "ps", "svg", "xml"];
+    let backends = ["pdf", "ps", "svg"];
     for name in &backends {
         check_for_cairo_surface_backend(name);
     }

@@ -154,8 +154,11 @@ impl ResizeStrategy {
 
 enum Surface {
     Png(cairo::ImageSurface, OutputStream),
+    #[cfg(have_cairo_pdf)]
     Pdf(cairo::PdfSurface, Size),
+    #[cfg(have_cairo_ps)]
     Ps(cairo::PsSurface, Size),
+    #[cfg(have_cairo_svg)]
     Svg(cairo::SvgSurface, Size),
 }
 
@@ -165,8 +168,11 @@ impl Deref for Surface {
     fn deref(&self) -> &cairo::Surface {
         match self {
             Self::Png(surface, _) => &surface,
+            #[cfg(have_cairo_pdf)]
             Self::Pdf(surface, _) => &surface,
+            #[cfg(have_cairo_ps)]
             Self::Ps(surface, _) => &surface,
+            #[cfg(have_cairo_svg)]
             Self::Svg(surface, _) => &surface,
         }
     }
@@ -190,6 +196,7 @@ impl Surface {
         Ok(Self::Png(surface, stream))
     }
 
+    #[cfg(have_cairo_pdf)]
     fn new_for_pdf(size: Size, stream: OutputStream) -> Result<Self, Error> {
         let surface = cairo::PdfSurface::for_stream(size.w, size.h, stream.into_write())?;
         if let Some(date) = metadata::creation_date()? {
@@ -198,15 +205,32 @@ impl Surface {
         Ok(Self::Pdf(surface, size))
     }
 
+    #[cfg(not(have_cairo_pdf))]
+    fn new_for_pdf(_size: Size, _stream: OutputStream) -> Result<Self, Error> {
+        Err(Error("unsupported format".to_string()))
+    }
+
+    #[cfg(have_cairo_ps)]
     fn new_for_ps(size: Size, stream: OutputStream, eps: bool) -> Result<Self, Error> {
         let surface = cairo::PsSurface::for_stream(size.w, size.h, stream.into_write())?;
         surface.set_eps(eps);
         Ok(Self::Ps(surface, size))
     }
 
+    #[cfg(not(have_cairo_ps))]
+    fn new_for_ps(_size: Size, _stream: OutputStream, _eps: bool) -> Result<Self, Error> {
+        Err(Error("unsupported format".to_string()))
+    }
+
+    #[cfg(have_cairo_svg)]
     fn new_for_svg(size: Size, stream: OutputStream) -> Result<Self, Error> {
         let surface = cairo::SvgSurface::for_stream(size.w, size.h, stream.into_write())?;
         Ok(Self::Svg(surface, size))
+    }
+
+    #[cfg(not(have_cairo_svg))]
+    fn new_for_svg(_size: Size, _stream: OutputStream) -> Result<Self, Error> {
+        Err(Error("unsupported format".to_string()))
     }
 
     pub fn render(
