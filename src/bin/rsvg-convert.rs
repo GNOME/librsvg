@@ -322,19 +322,11 @@ mod metadata {
     }
 }
 
-// These Stdin and Stdout types can be removed once we depend on Rust 1.48
-
 struct Stdin;
 
 impl Stdin {
     pub fn stream() -> UnixInputStream {
-        unsafe { UnixInputStream::new(Self {}) }
-    }
-}
-
-impl std::os::unix::io::IntoRawFd for Stdin {
-    fn into_raw_fd(self) -> std::os::unix::io::RawFd {
-        0 as std::os::unix::io::RawFd
+        unsafe { UnixInputStream::new(0) }
     }
 }
 
@@ -342,13 +334,7 @@ struct Stdout;
 
 impl Stdout {
     pub fn stream() -> UnixOutputStream {
-        unsafe { UnixOutputStream::new(Self {}) }
-    }
-}
-
-impl std::os::unix::io::IntoRawFd for Stdout {
-    fn into_raw_fd(self) -> std::os::unix::io::RawFd {
-        1 as std::os::unix::io::RawFd
+        unsafe { UnixOutputStream::new(1) }
     }
 }
 
