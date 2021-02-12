@@ -62,6 +62,8 @@ impl Transform {
 
     #[must_use]
     pub fn multiply(t1: &Transform, t2: &Transform) -> Self {
+        #[allow(clippy::unknown_clippy_lints)]
+        #[allow(clippy::suspicious_operation_groupings)]
         Transform {
             xx: t1.xx * t2.xx + t1.yx * t2.xy,
             yx: t1.xx * t2.yx + t1.yx * t2.yy,
