@@ -275,18 +275,20 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     /// Applies CSS styles from the saved value of the "style" attribute
     fn set_style_attribute(&mut self) {
-        if !self.style_attr.is_empty() {
+        let style = &self.style_attr;
+
+        if !style.is_empty() {
             if let Err(e) = self.specified_values.parse_style_declarations(
-                self.style_attr.as_str(),
+                style,
                 Origin::Author,
                 &mut self.important_styles,
             ) {
                 self.set_error(e);
             }
-
-            self.style_attr.clear();
-            self.style_attr.shrink_to_fit();
         }
+
+        self.style_attr.clear();
+        self.style_attr.shrink_to_fit();
     }
 
     fn set_error(&mut self, error: ElementError) {
