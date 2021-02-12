@@ -105,7 +105,6 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     transform: Transform,
     values: ComputedValues,
     cond: bool,
-    style_attr: String,
     pub element_impl: T,
 }
 
@@ -129,11 +128,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             transform: Default::default(),
             values: Default::default(),
             cond: true,
-            style_attr: String::new(),
             element_impl,
         };
-
-        e.save_style_attribute();
 
         let mut set_attributes = || -> Result<(), ElementError> {
             e.set_transform_attribute()?;
@@ -183,16 +179,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     fn get_transform(&self) -> Transform {
         self.transform
-    }
-
-    fn save_style_attribute(&mut self) {
-        self.style_attr.push_str(
-            self.attributes
-                .iter()
-                .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
-                .map(|(_, value)| value)
-                .unwrap_or(""),
-        );
     }
 
     fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
@@ -272,19 +258,22 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         );
     }
 
-    /// Applies CSS styles from the saved value of the "style" attribute
+    /// Applies CSS styles from the "style" attribute
     fn set_style_attribute(&mut self) {
-        if !self.style_attr.is_empty() {
+        let style = self
+            .attributes
+            .iter()
+            .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
+            .map(|(_, value)| value);
+
+        if let Some(style) = style {
             if let Err(e) = self.specified_values.parse_style_declarations(
-                self.style_attr.as_str(),
+                style,
                 Origin::Author,
                 &mut self.important_styles,
             ) {
                 self.set_error(e);
             }
-
-            self.style_attr.clear();
-            self.style_attr.shrink_to_fit();
         }
     }
 
