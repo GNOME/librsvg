@@ -264,10 +264,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             .attributes
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "style"))
-            .map(|(_, value)| value)
-            .unwrap_or("");
+            .map(|(_, value)| value);
 
-        if !style.is_empty() {
+        if let Some(style) = style {
             if let Err(e) = self.specified_values.parse_style_declarations(
                 style,
                 Origin::Author,

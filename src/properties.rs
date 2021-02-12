@@ -940,4 +940,13 @@ mod tests {
 
         assert_eq!(computed.opacity(), half_opacity.clone());
     }
+
+    #[test]
+    fn empty_style_attribute_parses_ok() {
+        let mut specified = SpecifiedValues::default();
+
+        assert!(specified
+            .parse_style_declarations("", Origin::Author, &mut HashSet::new())
+            .is_ok())
+    }
 }
