@@ -2313,6 +2313,21 @@ mod tests {
     }
 
     #[test]
+    fn path_or_url_empty_str() {
+        unsafe {
+            let path = PathOrUrl::new(b"\0" as *const u8 as *const _);
+
+            match &path {
+                PathOrUrl::Path(_) => (),
+                _ => panic!("empty string should be a PathOrUrl::Path"),
+            }
+
+            let file = path.get_gfile();
+            assert_eq!(file.get_basename(), Some(PathBuf::new()))
+        }
+    }
+
+    #[test]
     fn base_url_works() {
         let mut u = BaseUrl::default();
 
