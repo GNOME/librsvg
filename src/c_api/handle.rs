@@ -1651,14 +1651,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
         error.is_null() || (*error).is_null(),
     }
 
-    let file = match PathOrUrl::new(filename) {
-        Ok(p) => p.get_gfile(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            return ptr::null_mut();
-        }
-    };
+    let file = PathOrUrl::new(filename).get_gfile();
 
     rsvg_handle_new_from_gfile_sync(file.to_glib_none().0, 0, ptr::null_mut(), error)
 }
@@ -2138,14 +2131,13 @@ pub enum PathOrUrl {
 }
 
 impl PathOrUrl {
-    unsafe fn new(s: *const libc::c_char) -> Result<PathOrUrl, LoadingError> {
+    unsafe fn new(s: *const libc::c_char) -> PathOrUrl {
         let cstr = CStr::from_ptr(s);
 
-        Ok(cstr
-            .to_str()
+        cstr.to_str()
             .map_err(|_| ())
             .and_then(Self::try_from_str)
-            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s))))
+            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s)))
     }
 
     fn try_from_str(s: &str) -> Result<PathOrUrl, ()> {
@@ -2258,12 +2250,12 @@ mod tests {
     #[test]
     fn path_or_url_unix() {
         unsafe {
-            match PathOrUrl::new(b"/foo/bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"/foo/bar\0" as *const u8 as *const _) {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("unix filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"foo/bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"foo/bar\0" as *const u8 as *const _) {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("unix filename should be a PathOrUrl::Path"),
             }
@@ -2273,22 +2265,22 @@ mod tests {
     #[test]
     fn path_or_url_windows() {
         unsafe {
-            match PathOrUrl::new(b"c:/foo/bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"c:/foo/bar\0" as *const u8 as *const _) {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"C:/foo/bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"C:/foo/bar\0" as *const u8 as *const _) {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"c:\\foo\\bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"c:\\foo\\bar\0" as *const u8 as *const _) {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"C:\\foo\\bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"C:\\foo\\bar\0" as *const u8 as *const _) {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
@@ -2298,7 +2290,7 @@ mod tests {
     #[test]
     fn path_or_url_unix_url() {
         unsafe {
-            match PathOrUrl::new(b"file:///foo/bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"file:///foo/bar\0" as *const u8 as *const _) {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// unix filename should be a PathOrUrl::Url"),
             }
@@ -2308,12 +2300,12 @@ mod tests {
     #[test]
     fn path_or_url_windows_url() {
         unsafe {
-            match PathOrUrl::new(b"file://c:/foo/bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"file://c:/foo/bar\0" as *const u8 as *const _) {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// windows filename should be a PathOrUrl::Url"),
             }
 
-            match PathOrUrl::new(b"file://C:/foo/bar\0" as *const u8 as *const _).unwrap() {
+            match PathOrUrl::new(b"file://C:/foo/bar\0" as *const u8 as *const _) {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// windows filename should be a PathOrUrl::Url"),
             }
