@@ -163,9 +163,6 @@ AM_CONDITIONAL(OS_DARWIN, test "$native_darwin" = "yes")
 
 dnl ===========================================================================
 
-GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
-AC_SUBST(GLIB_MKENUMS)
-
 PKG_CHECK_MODULES(LIBRSVG,                     \
 	cairo >= $CAIRO_REQUIRED               \
 	cairo-png >= $CAIRO_REQUIRED           \
