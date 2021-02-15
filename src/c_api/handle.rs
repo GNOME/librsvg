@@ -2131,6 +2131,10 @@ pub unsafe extern "C" fn rsvg_cleanup() {}
 /// `gio::File::new_for_path()` or `gio::File::new_for_uri()` as appropriate.
 ///
 /// This enum does the magic heuristics to figure this out.
+///
+/// The `from_os_str` version is for using the same logic on rsvg-convert's command-line
+/// arguments: we want `rsvg-convert http://example.com/foo.svg` to go to a URL, not to a
+/// local file with that name.
 #[derive(Clone, Debug)]
 pub enum PathOrUrl {
     Path(PathBuf),
