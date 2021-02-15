@@ -705,9 +705,10 @@ fn parse_args() -> Result<Converter, Error> {
 
     let input = match matches.values_of_os("FILE") {
         Some(values) => values
-            .map(PathOrUrl::from_os_str)
-            .map(Input::Named)
-            .collect(),
+            .map(|f| PathOrUrl::from_os_str(f).map_err(Error))
+            .map(|r| r.map(Input::Named))
+            .collect::<Result<Vec<Input>, Error>>()?,
+
         None => vec![Input::Stdin],
     };
 

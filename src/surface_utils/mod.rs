@@ -75,9 +75,9 @@ pub type Pixel = rgb::RGBA8;
 pub trait PixelOps {
     fn premultiply(self) -> Self;
     fn unpremultiply(self) -> Self;
-    fn to_mask(self, opacity: u8) -> Self;
-    fn diff(self, other: &Self) -> Self;
-    fn to_u32(self) -> u32;
+    fn diff(&self, other: &Self) -> Self;
+    fn to_mask(&self, opacity: u8) -> Self;
+    fn to_u32(&self) -> u32;
     fn from_u32(x: u32) -> Self;
 }
 
@@ -107,6 +107,14 @@ impl PixelOps for Pixel {
         self.map_rgb(|x| (((x as u32) * a + 127) / 255) as u8)
     }
 
+    #[inline]
+    fn diff(&self, other: &Pixel) -> Pixel {
+        self.iter()
+            .zip(other.iter())
+            .map(|(l, r)| (l as i32 - r as i32).abs() as u8)
+            .collect()
+    }
+
     /// Returns a 'mask' pixel with only the alpha channel
     ///
     /// Assuming, the pixel is linear RGB (not sRGB)
@@ -128,7 +136,7 @@ impl PixelOps for Pixel {
 
     /// if pixel = 0x00000000, pixel' = 0x00......
     #[inline]
-    fn to_mask(self, opacity: u8) -> Self {
+    fn to_mask(&self, opacity: u8) -> Self {
         let r = u32::from(self.r);
         let g = u32::from(self.g);
         let b = u32::from(self.b);
@@ -142,17 +150,9 @@ impl PixelOps for Pixel {
         }
     }
 
-    #[inline]
-    fn diff(self, other: &Pixel) -> Pixel {
-        self.iter()
-            .zip(other.iter())
-            .map(|(l, r)| (l as i32 - r as i32).abs() as u8)
-            .collect()
-    }
-
     /// Returns the pixel value as a `u32`, in the same format as `cairo::Format::ARgb32`.
     #[inline]
-    fn to_u32(self) -> u32 {
+    fn to_u32(&self) -> u32 {
         (u32::from(self.a) << 24)
             | (u32::from(self.r) << 16)
             | (u32::from(self.g) << 8)
