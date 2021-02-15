@@ -1651,7 +1651,14 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
         error.is_null() || (*error).is_null(),
     }
 
-    let file = PathOrUrl::new(filename).get_gfile();
+    let file = match PathOrUrl::new(filename) {
+        Ok(p) => p.get_gfile(),
+
+        Err(s) => {
+            set_gerror(error, 0, &s);
+            return ptr::null_mut();
+        }
+    };
 
     rsvg_handle_new_from_gfile_sync(file.to_glib_none().0, 0, ptr::null_mut(), error)
 }
@@ -2131,16 +2138,23 @@ pub enum PathOrUrl {
 }
 
 impl PathOrUrl {
-    unsafe fn new(s: *const libc::c_char) -> PathOrUrl {
+    unsafe fn new(s: *const libc::c_char) -> Result<PathOrUrl, String> {
         let cstr = CStr::from_ptr(s);
 
-        cstr.to_str()
+        if cstr.to_bytes().is_empty() {
+            return Err("invalid empty filename".to_string());
+        }
+
+        Ok(cstr
+            .to_str()
             .map_err(|_| ())
             .and_then(Self::try_from_str)
-            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s)))
+            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from_glib_none(s))))
     }
 
     fn try_from_str(s: &str) -> Result<PathOrUrl, ()> {
+        assert!(!s.is_empty());
+
         Url::parse(s).map_err(|_| ()).and_then(|url| {
             if url.origin().is_tuple() || url.scheme() == "file" {
                 Ok(PathOrUrl::Url(url))
@@ -2150,12 +2164,16 @@ impl PathOrUrl {
         })
     }
 
-    pub fn from_os_str(osstr: &OsStr) -> PathOrUrl {
-        osstr
+    pub fn from_os_str(osstr: &OsStr) -> Result<PathOrUrl, String> {
+        if osstr.is_empty() {
+            return Err("invalid empty filename".to_string());
+        }
+
+        Ok(osstr
             .to_str()
             .ok_or(())
             .and_then(Self::try_from_str)
-            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from(osstr.to_os_string())))
+            .unwrap_or_else(|_| PathOrUrl::Path(PathBuf::from(osstr.to_os_string()))))
     }
 
     pub fn get_gfile(&self) -> gio::File {
@@ -2250,12 +2268,12 @@ mod tests {
     #[test]
     fn path_or_url_unix() {
         unsafe {
-            match PathOrUrl::new(b"/foo/bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"/foo/bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("unix filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"foo/bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"foo/bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("unix filename should be a PathOrUrl::Path"),
             }
@@ -2265,22 +2283,22 @@ mod tests {
     #[test]
     fn path_or_url_windows() {
         unsafe {
-            match PathOrUrl::new(b"c:/foo/bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"c:/foo/bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"C:/foo/bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"C:/foo/bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"c:\\foo\\bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"c:\\foo\\bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(b"C:\\foo\\bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"C:\\foo\\bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
@@ -2290,7 +2308,7 @@ mod tests {
     #[test]
     fn path_or_url_unix_url() {
         unsafe {
-            match PathOrUrl::new(b"file:///foo/bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"file:///foo/bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// unix filename should be a PathOrUrl::Url"),
             }
@@ -2300,12 +2318,12 @@ mod tests {
     #[test]
     fn path_or_url_windows_url() {
         unsafe {
-            match PathOrUrl::new(b"file://c:/foo/bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"file://c:/foo/bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// windows filename should be a PathOrUrl::Url"),
             }
 
-            match PathOrUrl::new(b"file://C:/foo/bar\0" as *const u8 as *const _) {
+            match PathOrUrl::new(b"file://C:/foo/bar\0" as *const u8 as *const _).unwrap() {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// windows filename should be a PathOrUrl::Url"),
             }
@@ -2315,16 +2333,10 @@ mod tests {
     #[test]
     fn path_or_url_empty_str() {
         unsafe {
-            let path = PathOrUrl::new(b"\0" as *const u8 as *const _);
-
-            match &path {
-                PathOrUrl::Path(_) => (),
-                _ => panic!("empty string should be a PathOrUrl::Path"),
-            }
-
-            let file = path.get_gfile();
-            assert_eq!(file.get_basename(), Some(PathBuf::new()))
+            assert!(PathOrUrl::new(b"\0" as *const u8 as *const _).is_err());
         }
+
+        assert!(PathOrUrl::from_os_str(OsStr::new("")).is_err());
     }
 
     #[test]
