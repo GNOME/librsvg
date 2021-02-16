@@ -181,7 +181,73 @@ look up things like the element's stroke width or fill color.
 
 ## Parsing
 
-FIXME
+### XML into a tree of Node
+
+Librsvg uses an XML parser (libxml2 at the time of this writing) to do
+the first-stage parsing of the SVG document.  `XmlState` contains the
+XML parsing state, which is a stack of contexts depending on the XML
+nesting structure.  `XmlState` has public methods, called from the XML
+parser as it goes.  The most important one is `create_element`; this
+is responsible for creating new `Node` structures in the tree, within
+the `DocumentBuilder` being built.
+
+### CSS
+
+Librsvg uses Servo's `cssparser` crate as a CSS tokenizer, and
+`selectors` as a high-level parser for CSS style data.
+
+With the `cssparser` crate, the caller is responsible for providing an
+implementation of the `DeclarationParser` trait.  Its `parse_value`
+method takes the name of a CSS property name like `fill`, plus a value
+like `rgb(255, 0, 0)`, and it must return a value that represents a
+parsed declaration.  Librsvg uses the `Declaration` struct for this.
+
+The core of parsing CSS is the `parse_property` function, which returns a `ParsedProperty`:
+
+```rust
+pub enum ParsedProperty {
+    BaselineShift(SpecifiedValue<BaselineShift>),
+    ClipPath(SpecifiedValue<ClipPath>),
+    Color(SpecifiedValue<Color>),
+    // etc.
+}
+```
+
+What is `SpecifiedValue`?  It is the parsed value for a CSS property directly as it comes out of the SVG document:
+
+```rust
+pub enum SpecifiedValue<T>
+where
+    T: Property<ComputedValues> + Clone + Default,
+{
+    Unspecified,
+    Inherit,
+    Specified(T),
+}
+```
+
+A property declaration can look like `opacity: inherit;` - this would
+create a `ParsedProperty::Opacity(SpecifiedValue::Inherit)`.
+
+Or it can look like `opacity: 0.5;` - this would create a
+`ParsedProperty::Opacity(SpecifiedValue::Specified(Opacity(UnitInterval(0.5))))`.
+Let's break this down:
+
+* `ParsedProperty::Opacity` - which property did we parse?
+
+* `SpecifiedValue::Specified` - it actually was specified by the
+  document with a value; the other interesting alternative is
+  `Inherit`, which corresponds to the value `inherit` that all CSS
+  property declarations can have.
+
+* `Opacity(UnitInterval(0.5))` - This is the type `Opacity` property,
+  which is a newtype around an internal `UnitInterval` type, which in
+  turn guarantees that we have a float in the range `[0.0, 1.0]`.
+
+There is a Rust type for every CSS property that librsvg supports;
+many of these types are newtypes around primitive types like `f64`.
+
+FIXME: continue here
 
 ## Translating SVG data into Nodes
 
