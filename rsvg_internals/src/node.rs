@@ -106,10 +106,9 @@ pub struct CascadedValues<'a> {
     inner: CascadedInner<'a>,
 }
 
-#[allow(clippy::large_enum_variant)]
 enum CascadedInner<'a> {
     FromNode(Ref<'a, Element>),
-    FromValues(ComputedValues),
+    FromValues(Box<ComputedValues>),
 }
 
 impl<'a> CascadedValues<'a> {
@@ -124,7 +123,7 @@ impl<'a> CascadedValues<'a> {
                 inner: CascadedInner::FromNode(node.borrow_element()),
             },
 
-            CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, v),
+            CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, &*v),
         }
     }
 
@@ -145,7 +144,7 @@ impl<'a> CascadedValues<'a> {
     /// This is for the `<use>` element, which draws the element which it references with the
     /// `<use>`'s own cascade, not with the element's original cascade.
     pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
-        let mut v = values.clone();
+        let mut v = Box::new(values.clone());
         node.borrow_element()
             .get_specified_values()
             .to_computed_values(&mut v);
@@ -162,7 +161,7 @@ impl<'a> CascadedValues<'a> {
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {
             CascadedInner::FromNode(ref e) => e.get_computed_values(),
-            CascadedInner::FromValues(ref v) => v,
+            CascadedInner::FromValues(ref v) => &*v,
         }
     }
 }
