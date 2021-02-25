@@ -549,7 +549,7 @@ impl SpecifiedValues {
 
     pub fn to_computed_values(&self, computed: &mut ComputedValues) {
         macro_rules! compute {
-            ($name:ident, $field:ident) => {
+            ($name:ident, $field:ident) => {{
                 let prop_val = self.get_property(PropertyId::$name);
                 if let ParsedProperty::$name(s) = prop_val {
                     computed.set_value(ComputedValue::$name(
@@ -558,7 +558,7 @@ impl SpecifiedValues {
                 } else {
                     unreachable!();
                 }
-            };
+            }};
         }
 
         // First, compute font_size.  It needs to be done before everything
