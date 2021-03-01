@@ -678,7 +678,7 @@ where
     enum SubpathState {
         NoSubpath,
         InSubpath,
-    };
+    }
 
     let mut bbox = empty_bbox;
 
