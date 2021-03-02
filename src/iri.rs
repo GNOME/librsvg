@@ -15,7 +15,7 @@ use crate::parsers::Parse;
 #[derive(Debug, Clone, PartialEq)]
 pub enum IRI {
     None,
-    Resource(NodeId),
+    Resource(Box<NodeId>),
 }
 
 impl Default for IRI {
@@ -29,7 +29,7 @@ impl IRI {
     pub fn get(&self) -> Option<&NodeId> {
         match *self {
             IRI::None => None,
-            IRI::Resource(ref f) => Some(f),
+            IRI::Resource(ref f) => Some(&*f),
         }
     }
 }
@@ -47,7 +47,7 @@ impl Parse for IRI {
             let node_id =
                 NodeId::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
 
-            Ok(IRI::Resource(node_id))
+            Ok(IRI::Resource(Box::new(node_id)))
         }
     }
 }
@@ -65,22 +65,28 @@ mod tests {
     fn parses_url() {
         assert_eq!(
             IRI::parse_str("url(#bar)").unwrap(),
-            IRI::Resource(NodeId::Internal("bar".to_string()))
+            IRI::Resource(Box::new(NodeId::Internal("bar".to_string())))
         );
 
         assert_eq!(
             IRI::parse_str("url(foo#bar)").unwrap(),
-            IRI::Resource(NodeId::External("foo".to_string(), "bar".to_string()))
+            IRI::Resource(Box::new(NodeId::External(
+                "foo".to_string(),
+                "bar".to_string()
+            )))
         );
 
         // be permissive if the closing ) is missing
         assert_eq!(
             IRI::parse_str("url(#bar").unwrap(),
-            IRI::Resource(NodeId::Internal("bar".to_string()))
+            IRI::Resource(Box::new(NodeId::Internal("bar".to_string())))
         );
         assert_eq!(
             IRI::parse_str("url(foo#bar").unwrap(),
-            IRI::Resource(NodeId::External("foo".to_string(), "bar".to_string()))
+            IRI::Resource(Box::new(NodeId::External(
+                "foo".to_string(),
+                "bar".to_string()
+            )))
         );
 
         assert!(IRI::parse_str("").is_err());
