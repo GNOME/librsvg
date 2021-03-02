@@ -442,9 +442,10 @@ impl UnresolvedGradient {
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
     fn add_color_stops_from_node(&mut self, node: &Node) {
-        assert!(
-            matches!(*node.borrow_element(), Element::LinearGradient(_) | Element::RadialGradient(_))
-        );
+        assert!(matches!(
+            *node.borrow_element(),
+            Element::LinearGradient(_) | Element::RadialGradient(_)
+        ));
 
         for child in node.children().filter(|c| c.is_element()) {
             let elt = child.borrow_element();

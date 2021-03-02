@@ -70,7 +70,10 @@ mod tests {
 
         assert_eq!(
             IRI::parse_str("url(foo#bar)").unwrap(),
-            IRI::Resource(Box::new(NodeId::External("foo".to_string(), "bar".to_string())))
+            IRI::Resource(Box::new(NodeId::External(
+                "foo".to_string(),
+                "bar".to_string()
+            )))
         );
 
         // be permissive if the closing ) is missing
@@ -80,7 +83,10 @@ mod tests {
         );
         assert_eq!(
             IRI::parse_str("url(foo#bar").unwrap(),
-            IRI::Resource(Box::new(NodeId::External("foo".to_string(), "bar".to_string())))
+            IRI::Resource(Box::new(NodeId::External(
+                "foo".to_string(),
+                "bar".to_string()
+            )))
         );
 
         assert!(IRI::parse_str("").is_err());

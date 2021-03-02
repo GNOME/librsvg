@@ -590,13 +590,13 @@ impl Element {
     pub fn is_accessed_by_reference(&self) -> bool {
         matches!(
             self,
-            Element::ClipPath(_) |
-            Element::Filter(_) |
-            Element::LinearGradient(_) |
-            Element::Marker(_) |
-            Element::Mask(_) |
-            Element::Pattern(_) |
-            Element::RadialGradient(_)
+            Element::ClipPath(_)
+                | Element::Filter(_)
+                | Element::LinearGradient(_)
+                | Element::Marker(_)
+                | Element::Mask(_)
+                | Element::Pattern(_)
+                | Element::RadialGradient(_)
         )
     }
 }

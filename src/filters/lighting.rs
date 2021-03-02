@@ -52,7 +52,11 @@ struct Light {
 impl Light {
     pub fn new(node: &Node, paffine: Transform) -> Result<Light, FilterError> {
         let mut sources = node.children().rev().filter(|c| {
-            c.is_element() && matches!(*c.borrow_element(), Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_))
+            c.is_element()
+                && matches!(
+                    *c.borrow_element(),
+                    Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_)
+                )
         });
 
         let source_node = sources.next();
