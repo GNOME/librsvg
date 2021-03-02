@@ -9,7 +9,7 @@ use crate::parsers::{optional_comma, Parse};
 #[derive(Debug, PartialEq, Clone)]
 pub enum Dasharray {
     None,
-    Array(Vec<ULength<Both>>),
+    Array(Box<[ULength<Both>]>),
 }
 
 enum_default!(Dasharray, Dasharray::None);
@@ -36,7 +36,7 @@ impl Parse for Dasharray {
             optional_comma(parser);
         }
 
-        Ok(Dasharray::Array(dasharray))
+        Ok(Dasharray::Array(dasharray.into_boxed_slice()))
     }
 }
 
@@ -44,42 +44,47 @@ impl Parse for Dasharray {
 mod tests {
     use super::*;
 
+    fn dasharray(l: &[ULength<Both>]) -> Dasharray {
+        Dasharray::Array(
+            l.iter()
+                .cloned()
+                .collect::<Vec<ULength<Both>>>()
+                .into_boxed_slice(),
+        )
+    }
+
     #[test]
     fn parses_dash_array() {
         // helper to cut down boilderplate
         let length_parse = |s| ULength::<Both>::parse_str(s).unwrap();
 
-        let expected = Dasharray::Array(vec![
+        let expected = dasharray(&[
             length_parse("1"),
             length_parse("2in"),
             length_parse("3"),
             length_parse("4%"),
         ]);
 
-        let sample_1 = Dasharray::Array(vec![length_parse("10"), length_parse("6")]);
+        let sample_1 = dasharray(&[length_parse("10"), length_parse("6")]);
 
-        let sample_2 = Dasharray::Array(vec![
-            length_parse("5"),
-            length_parse("5"),
-            length_parse("20"),
-        ]);
+        let sample_2 = dasharray(&[length_parse("5"), length_parse("5"), length_parse("20")]);
 
-        let sample_3 = Dasharray::Array(vec![
+        let sample_3 = dasharray(&[
             length_parse("10px"),
             length_parse("20px"),
             length_parse("20px"),
         ]);
 
-        let sample_4 = Dasharray::Array(vec![
+        let sample_4 = dasharray(&[
             length_parse("25"),
             length_parse("5"),
             length_parse("5"),
             length_parse("5"),
         ]);
 
-        let sample_5 = Dasharray::Array(vec![length_parse("3.1415926"), length_parse("8")]);
-        let sample_6 = Dasharray::Array(vec![length_parse("5"), length_parse("3.14")]);
-        let sample_7 = Dasharray::Array(vec![length_parse("2")]);
+        let sample_5 = dasharray(&[length_parse("3.1415926"), length_parse("8")]);
+        let sample_6 = dasharray(&[length_parse("5"), length_parse("3.14")]);
+        let sample_7 = dasharray(&[length_parse("2")]);
 
         assert_eq!(Dasharray::parse_str("none").unwrap(), Dasharray::None);
         assert_eq!(Dasharray::parse_str("1 2in,3 4%").unwrap(), expected);
