@@ -157,7 +157,7 @@ impl Svg {
         Rect::new(nx, ny, nx + nw, ny + nh)
     }
 
-    pub fn push_viewport(
+    fn push_viewport(
         &self,
         node: &Node,
         cascaded: &CascadedValues<'_>,
