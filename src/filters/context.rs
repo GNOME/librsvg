@@ -295,7 +295,7 @@ impl FilterContext {
                     &values.fill().0,
                     values.fill_opacity().0,
                     &self.node_bbox,
-                    self.computed_from_node_being_filtered.color().0,
+                    values.color().0,
                     &values,
                 )
                 .map_err(FilterError::CairoError)
@@ -309,7 +309,7 @@ impl FilterContext {
                     &values.stroke().0,
                     values.stroke_opacity().0,
                     &self.node_bbox,
-                    self.computed_from_node_being_filtered.color().0,
+                    values.color().0,
                     &values,
                 )
                 .map_err(FilterError::CairoError)
