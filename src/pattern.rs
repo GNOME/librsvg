@@ -16,6 +16,7 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
+use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 use crate::xml::Attributes;
 
@@ -97,6 +98,7 @@ pub struct ResolvedPattern {
     y: Length<Vertical>,
     width: ULength<Horizontal>,
     height: ULength<Vertical>,
+    opacity: UnitInterval,
 
     // Link to the node whose children are the pattern's resolved children.
     children: Children,
@@ -109,6 +111,7 @@ pub struct UserSpacePattern {
     pub transform: Transform,
     pub coord_transform: Transform,
     pub content_transform: Transform,
+    pub opacity: UnitInterval,
     pub node_with_children: Node,
 }
 
@@ -155,7 +158,7 @@ impl SetAttributes for Pattern {
 impl Draw for Pattern {}
 
 impl UnresolvedPattern {
-    fn into_resolved(self) -> ResolvedPattern {
+    fn into_resolved(self, opacity: UnitInterval) -> ResolvedPattern {
         assert!(self.is_resolved());
 
         ResolvedPattern {
@@ -168,6 +171,7 @@ impl UnresolvedPattern {
             y: self.common.y.unwrap(),
             width: self.common.width.unwrap(),
             height: self.common.height.unwrap(),
+            opacity,
 
             children: self.children.to_resolved(),
         }
@@ -386,6 +390,7 @@ impl ResolvedPattern {
             transform: self.transform,
             coord_transform,
             content_transform,
+            opacity: self.opacity,
             node_with_children,
         })
     }
@@ -408,6 +413,7 @@ impl Pattern {
         &self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        opacity: UnitInterval,
     ) -> Result<ResolvedPattern, AcquireError> {
         let Unresolved {
             mut pattern,
@@ -454,7 +460,7 @@ impl Pattern {
             }
         }
 
-        Ok(pattern.into_resolved())
+        Ok(pattern.into_resolved(opacity))
     }
 }
 

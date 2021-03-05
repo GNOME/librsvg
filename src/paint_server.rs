@@ -104,12 +104,14 @@ impl PaintServer {
                                 )
                             })
                         }
-                        Element::Pattern(ref p) => p.resolve(&node, acquired_nodes).map(|p| {
-                            PaintSource::Pattern(
-                                p,
-                                alternate.map(|c| resolve_color(&c, opacity, current_color)),
-                            )
-                        }),
+                        Element::Pattern(ref p) => {
+                            p.resolve(&node, acquired_nodes, opacity).map(|p| {
+                                PaintSource::Pattern(
+                                    p,
+                                    alternate.map(|c| resolve_color(&c, opacity, current_color)),
+                                )
+                            })
+                        }
                         Element::RadialGradient(ref g) => {
                             g.resolve(&node, acquired_nodes, opacity).map(|g| {
                                 PaintSource::Gradient(

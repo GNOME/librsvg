@@ -1022,7 +1022,6 @@ impl DrawingCtx {
         &mut self,
         pattern: &UserSpacePattern,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        opacity: UnitInterval,
     ) -> Result<bool, RenderingError> {
         if approx_eq!(f64, pattern.width, 0.0) || approx_eq!(f64, pattern.height, 0.0) {
             return Ok(false);
@@ -1068,7 +1067,7 @@ impl DrawingCtx {
 
         // Draw everything
         self.with_cairo_context(&cr_pattern, &mut |dc| {
-            dc.with_alpha(opacity, &mut |dc| {
+            dc.with_alpha(pattern.opacity, &mut |dc| {
                 let pattern_cascaded = CascadedValues::new_from_node(&pattern.node_with_children);
                 let pattern_values = pattern_cascaded.get();
                 dc.with_discrete_layer(
@@ -1113,7 +1112,6 @@ impl DrawingCtx {
     fn set_paint_source(
         &mut self,
         paint_source: &UserSpacePaintSource,
-        opacity: UnitInterval,
         acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<bool, RenderingError> {
         match *paint_source {
@@ -1127,7 +1125,7 @@ impl DrawingCtx {
                 }
             }
             UserSpacePaintSource::Pattern(ref pattern, c) => {
-                if self.set_pattern(pattern, acquired_nodes, opacity)? {
+                if self.set_pattern(pattern, acquired_nodes)? {
                     Ok(true)
                 } else if let Some(c) = c {
                     self.set_color(c)
@@ -1147,7 +1145,6 @@ impl DrawingCtx {
         height: i32,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
-        opacity: UnitInterval,
     ) -> Result<SharedImageSurface, cairo::Status> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
@@ -1155,7 +1152,7 @@ impl DrawingCtx {
             // FIXME: we are ignoring any error
 
             let _ = self.with_cairo_context(cr, &mut |dc| {
-                dc.set_paint_source(paint_source, opacity, acquired_nodes)
+                dc.set_paint_source(paint_source, acquired_nodes)
                     .map(|had_paint_server| {
                         if had_paint_server {
                             cr.paint();
@@ -1207,7 +1204,7 @@ impl DrawingCtx {
             .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
             .to_user_space(bbox, self, values);
 
-        self.set_paint_source(&paint_source, values.stroke_opacity().0, acquired_nodes)
+        self.set_paint_source(&paint_source, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
                     cr.stroke_preserve();
@@ -1230,7 +1227,7 @@ impl DrawingCtx {
             .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
             .to_user_space(bbox, self, values);
 
-        self.set_paint_source(&paint_source, values.fill_opacity().0, acquired_nodes)
+        self.set_paint_source(&paint_source, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
                     cr.fill_preserve();
@@ -1420,7 +1417,7 @@ impl DrawingCtx {
 
             saved_cr
                 .draw_ctx
-                .set_paint_source(&paint_source, values.fill_opacity().0, acquired_nodes)
+                .set_paint_source(&paint_source, acquired_nodes)
                 .map(|had_paint_server| {
                     if had_paint_server {
                         pangocairo::functions::update_layout(&cr, &layout);
@@ -1445,7 +1442,7 @@ impl DrawingCtx {
 
                 saved_cr
                     .draw_ctx
-                    .set_paint_source(&paint_source, values.stroke_opacity().0, acquired_nodes)
+                    .set_paint_source(&paint_source, acquired_nodes)
                     .map(|had_paint_server| {
                         if had_paint_server {
                             need_layout_path = true;

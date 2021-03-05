@@ -300,7 +300,6 @@ impl FilterContext {
                         self.source_surface.height(),
                         acquired_nodes,
                         &fill_paint_source,
-                        values.fill_opacity().0,
                     )
                     .map_err(FilterError::CairoError)
                     .map(FilterInput::StandardInput)
@@ -319,7 +318,6 @@ impl FilterContext {
                         self.source_surface.height(),
                         acquired_nodes,
                         &stroke_paint_source,
-                        values.stroke_opacity().0,
                     )
                     .map_err(FilterError::CairoError)
                     .map(FilterInput::StandardInput)
