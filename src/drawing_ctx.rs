@@ -1187,21 +1187,24 @@ impl DrawingCtx {
 
         surface.draw(&mut |cr| {
             // FIXME: we are ignoring any error
-            let _ = self.with_cairo_context(cr, &mut |dc| {
-                dc.set_source_paint_server(
-                    acquired_nodes,
-                    paint_server,
-                    opacity,
-                    bbox,
-                    current_color,
-                    values,
-                )
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        cr.paint();
-                    }
-                })
-            });
+
+            if let Ok(resolved) = paint_server.resolve(acquired_nodes) {
+                let paint_source = resolved.to_user_space(bbox, self, values);
+
+                let _ = self.with_cairo_context(cr, &mut |dc| {
+                    dc.set_paint_source(
+                        &paint_source,
+                        opacity,
+                        current_color,
+                        acquired_nodes,
+                    )
+                        .map(|had_paint_server| {
+                            if had_paint_server {
+                                cr.paint();
+                            }
+                        })
+                });
+            }
 
             Ok(())
         })?;
