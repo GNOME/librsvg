@@ -1418,13 +1418,11 @@ impl DrawingCtx {
             cr.rotate(-rotation);
         }
 
-        let current_color = values.color().0;
-
         let res = if !clipping {
             let paint_source = values
                 .fill()
                 .0
-                .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
+                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
                 .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
             saved_cr
@@ -1449,7 +1447,7 @@ impl DrawingCtx {
                 let paint_source = values
                     .stroke()
                     .0
-                    .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
+                    .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
                     .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
                 saved_cr
