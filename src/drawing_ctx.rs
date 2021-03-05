@@ -1147,22 +1147,6 @@ impl DrawingCtx {
         }
     }
 
-    fn set_source_paint_server(
-        &mut self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        paint_server: &PaintServer,
-        opacity: UnitInterval,
-        bbox: &BoundingBox,
-        current_color: cssparser::RGBA,
-        values: &ComputedValues,
-    ) -> Result<bool, RenderingError> {
-        let paint_source = paint_server
-            .resolve(acquired_nodes)?
-            .to_user_space(bbox, self, values);
-
-        self.set_paint_source(&paint_source, opacity, current_color, acquired_nodes)
-    }
-
     /// Computes and returns a surface corresponding to the given paint server.
     pub fn get_paint_source_surface(
         &mut self,
@@ -1226,13 +1210,17 @@ impl DrawingCtx {
         bbox: &BoundingBox,
         current_color: cssparser::RGBA,
     ) -> Result<(), RenderingError> {
-        self.set_source_paint_server(
-            acquired_nodes,
-            &values.stroke().0,
+        let paint_source = values
+            .stroke()
+            .0
+            .resolve(acquired_nodes)?
+            .to_user_space(bbox, self, values);
+
+        self.set_paint_source(
+            &paint_source,
             values.stroke_opacity().0,
-            bbox,
             current_color,
-            values,
+            acquired_nodes,
         )
         .map(|had_paint_server| {
             if had_paint_server {
@@ -1251,13 +1239,17 @@ impl DrawingCtx {
         bbox: &BoundingBox,
         current_color: cssparser::RGBA,
     ) -> Result<(), RenderingError> {
-        self.set_source_paint_server(
-            acquired_nodes,
-            &values.fill().0,
+        let paint_source = values
+            .fill()
+            .0
+            .resolve(acquired_nodes)?
+            .to_user_space(bbox, self, values);
+
+        self.set_paint_source(
+            &paint_source,
             values.fill_opacity().0,
-            bbox,
             current_color,
-            values,
+            acquired_nodes,
         )
         .map(|had_paint_server| {
             if had_paint_server {
@@ -1444,15 +1436,19 @@ impl DrawingCtx {
         let current_color = values.color().0;
 
         let res = if !clipping {
+            let paint_source = values.fill().0.resolve(acquired_nodes)?.to_user_space(
+                &bbox,
+                saved_cr.draw_ctx,
+                values,
+            );
+
             saved_cr
                 .draw_ctx
-                .set_source_paint_server(
-                    acquired_nodes,
-                    &values.fill().0,
+                .set_paint_source(
+                    &paint_source,
                     values.fill_opacity().0,
-                    &bbox,
                     current_color,
-                    values,
+                    acquired_nodes,
                 )
                 .map(|had_paint_server| {
                     if had_paint_server {
@@ -1470,15 +1466,19 @@ impl DrawingCtx {
             let mut need_layout_path = clipping;
 
             let res = if !clipping {
+                let paint_source = values.stroke().0.resolve(acquired_nodes)?.to_user_space(
+                    &bbox,
+                    saved_cr.draw_ctx,
+                    values,
+                );
+
                 saved_cr
                     .draw_ctx
-                    .set_source_paint_server(
-                        acquired_nodes,
-                        &values.stroke().0,
+                    .set_paint_source(
+                        &paint_source,
                         values.stroke_opacity().0,
-                        &bbox,
                         current_color,
-                        values,
+                        acquired_nodes,
                     )
                     .map(|had_paint_server| {
                         if had_paint_server {
