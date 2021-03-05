@@ -715,8 +715,8 @@ impl DrawingCtx {
 
                 // Mask
 
-                if let Some(node_id) = mask {
-                    if let Ok(acquired) = acquired_nodes.acquire(node_id) {
+                if let Some(mask_id) = mask {
+                    if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
                         let mask_node = acquired.get();
 
                         match *mask_node.borrow_element() {
@@ -747,7 +747,7 @@ impl DrawingCtx {
                                 rsvg_log!(
                                     "element {} references \"{}\" which is not a mask",
                                     node_name,
-                                    node_id
+                                    mask_id
                                 );
                             }
                         }
@@ -755,7 +755,7 @@ impl DrawingCtx {
                         rsvg_log!(
                             "element {} references nonexistent mask \"{}\"",
                             node_name,
-                            node_id
+                            mask_id
                         );
                     }
                 } else {
