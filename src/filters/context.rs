@@ -183,7 +183,7 @@ impl FilterContext {
     }
 
     /// Returns the surface corresponding to the background image snapshot.
-    pub fn background_image(
+    fn background_image(
         &self,
         draw_ctx: &DrawingCtx,
     ) -> Result<SharedImageSurface, FilterError> {
