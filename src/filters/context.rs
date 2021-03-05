@@ -56,8 +56,16 @@ pub struct FilterContext {
     last_result: Option<FilterOutput>,
     /// Surfaces of the previous filter primitives by name.
     previous_results: HashMap<CustomIdent, FilterOutput>,
-    /// The background surface. Computed lazily.
+
+    /// Input surface for primitives that require an input of `BackgroundImage` or `BackgroundAlpha`. Computed lazily.
     background_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
+
+    // Input surface for primitives that require an input of `StrokePaint`, Computed lazily.
+    stroke_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
+
+    // Input surface for primitives that require an input of `FillPaint`, Computed lazily.
+    fill_paint_surface: OnceCell<Result<SharedImageSurface, FilterError>>,
+
     /// Primtive units
     primitive_units: CoordUnits,
     /// The filter effects region.
@@ -162,6 +170,8 @@ impl FilterContext {
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: OnceCell::new(),
+            stroke_paint_surface: OnceCell::new(),
+            fill_paint_surface: OnceCell::new(),
             primitive_units,
             effects_region,
             processing_linear_rgb: false,
@@ -183,17 +193,73 @@ impl FilterContext {
     }
 
     /// Returns the surface corresponding to the background image snapshot.
-    fn background_image(
-        &self,
-        draw_ctx: &DrawingCtx,
-    ) -> Result<SharedImageSurface, FilterError> {
+    fn background_image(&self, draw_ctx: &DrawingCtx) -> Result<SharedImageSurface, FilterError> {
         let res = self.background_surface.get_or_init(|| {
             draw_ctx
                 .get_snapshot(self.source_surface.width(), self.source_surface.height())
                 .map_err(FilterError::CairoError)
         });
 
-        // Return the only existing reference as immutable.
+        res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
+    }
+
+    /// Returns a surface filled with the current stroke's paint, for `StrokePaint` inputs in primitives.
+    ///
+    /// https://www.w3.org/TR/filter-effects/#attr-valuedef-in-strokepaint
+    fn stroke_paint_image(
+        &self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<SharedImageSurface, FilterError> {
+        let res = self.stroke_paint_surface.get_or_init(|| {
+            let values = &self.computed_from_node_being_filtered;
+
+            let stroke_paint_source = values
+                .stroke()
+                .0
+                .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+                .to_user_space(&self.node_bbox, draw_ctx, values);
+
+            draw_ctx
+                .get_paint_source_surface(
+                    self.source_surface.width(),
+                    self.source_surface.height(),
+                    acquired_nodes,
+                    &stroke_paint_source,
+                )
+                .map_err(FilterError::CairoError)
+        });
+
+        res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
+    }
+
+    /// Returns a surface filled with the current fill's paint, for `FillPaint` inputs in primitives.
+    ///
+    /// https://www.w3.org/TR/filter-effects/#attr-valuedef-in-fillpaint
+    fn fill_paint_image(
+        &self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<SharedImageSurface, FilterError> {
+        let res = self.fill_paint_surface.get_or_init(|| {
+            let values = &self.computed_from_node_being_filtered;
+
+            let fill_paint_source = values
+                .fill()
+                .0
+                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+                .to_user_space(&self.node_bbox, draw_ctx, values);
+
+            draw_ctx
+                .get_paint_source_surface(
+                    self.source_surface.width(),
+                    self.source_surface.height(),
+                    acquired_nodes,
+                    &fill_paint_source,
+                )
+                .map_err(FilterError::CairoError)
+        });
+
         res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
     }
 
@@ -263,8 +329,6 @@ impl FilterContext {
             }
         }
 
-        let values = &self.computed_from_node_being_filtered;
-
         match *in_.unwrap() {
             Input::SourceGraphic => Ok(FilterInput::StandardInput(self.source_graphic().clone())),
 
@@ -287,41 +351,13 @@ impl FilterContext {
                 })
                 .map(FilterInput::StandardInput),
 
-            Input::FillPaint => {
-                let fill_paint_source = values
-                    .fill()
-                    .0
-                    .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-                    .to_user_space(&self.node_bbox, draw_ctx, values);
+            Input::FillPaint => self
+                .fill_paint_image(acquired_nodes, draw_ctx)
+                .map(FilterInput::StandardInput),
 
-                draw_ctx
-                    .get_paint_source_surface(
-                        self.source_surface.width(),
-                        self.source_surface.height(),
-                        acquired_nodes,
-                        &fill_paint_source,
-                    )
-                    .map_err(FilterError::CairoError)
-                    .map(FilterInput::StandardInput)
-            }
-
-            Input::StrokePaint => {
-                let stroke_paint_source = values
-                    .stroke()
-                    .0
-                    .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-                    .to_user_space(&self.node_bbox, draw_ctx, values);
-
-                draw_ctx
-                    .get_paint_source_surface(
-                        self.source_surface.width(),
-                        self.source_surface.height(),
-                        acquired_nodes,
-                        &stroke_paint_source,
-                    )
-                    .map_err(FilterError::CairoError)
-                    .map(FilterInput::StandardInput)
-            }
+            Input::StrokePaint => self
+                .stroke_paint_image(acquired_nodes, draw_ctx)
+                .map(FilterInput::StandardInput),
 
             Input::FilterOutput(ref name) => self
                 .previous_results
