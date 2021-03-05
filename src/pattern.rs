@@ -1,7 +1,6 @@
 //! The `pattern` element.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use once_cell::sync::OnceCell;
 
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
@@ -117,7 +116,6 @@ pub struct UserSpacePattern {
 pub struct Pattern {
     common: Common,
     fallback: Option<NodeId>,
-    resolved: OnceCell<ResolvedPattern>,
 }
 
 impl SetAttributes for Pattern {
@@ -406,7 +404,7 @@ impl Pattern {
         }
     }
 
-    fn init_resolved(
+    pub fn resolve(
         &self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -457,16 +455,6 @@ impl Pattern {
         }
 
         Ok(pattern.into_resolved())
-    }
-
-    pub fn resolve(
-        &self,
-        node: &Node,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-    ) -> Result<ResolvedPattern, AcquireError> {
-        self.resolved
-            .get_or_try_init(|| self.init_resolved(node, acquired_nodes))
-            .map(|r| r.clone())
     }
 }
 
