@@ -1004,14 +1004,13 @@ impl DrawingCtx {
         for stop in &gradient.stops {
             let UnitInterval(stop_offset) = stop.offset;
             let UnitInterval(o) = opacity;
-            let UnitInterval(stop_opacity) = stop.opacity;
 
             g.add_color_stop_rgba(
                 stop_offset,
                 f64::from(stop.rgba.red_f32()),
                 f64::from(stop.rgba.green_f32()),
                 f64::from(stop.rgba.blue_f32()),
-                f64::from(stop.rgba.alpha_f32()) * stop_opacity * o,
+                f64::from(stop.rgba.alpha_f32()) * o,
             );
         }
 

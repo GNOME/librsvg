@@ -194,7 +194,7 @@ impl PaintSource {
     }
 }
 
-fn resolve_color(
+pub fn resolve_color(
     color: &cssparser::Color,
     opacity: UnitInterval,
     current_color: cssparser::RGBA,

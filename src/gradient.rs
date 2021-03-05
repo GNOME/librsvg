@@ -15,9 +15,9 @@ use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::xml::Attributes;
@@ -28,11 +28,8 @@ pub struct ColorStop {
     /// <stop offset="..."/>
     pub offset: UnitInterval,
 
-    /// <stop stop-color="..."/>
+    /// <stop stop-color="..." stop-opacity="..."/>
     pub rgba: cssparser::RGBA,
-
-    /// <stop stop-opacity="..."/>
-    pub opacity: UnitInterval,
 }
 
 // gradientUnits attribute; its default is objectBoundingBox
@@ -406,12 +403,7 @@ impl UnresolvedGradient {
     }
 
     /// Helper for add_color_stops_from_node()
-    fn add_color_stop(
-        &mut self,
-        offset: UnitInterval,
-        rgba: cssparser::RGBA,
-        opacity: UnitInterval,
-    ) {
+    fn add_color_stop(&mut self, offset: UnitInterval, rgba: cssparser::RGBA) {
         if self.stops.is_none() {
             self.stops = Some(Vec::<ColorStop>::new());
         }
@@ -429,11 +421,7 @@ impl UnresolvedGradient {
                 last_offset
             };
 
-            stops.push(ColorStop {
-                offset,
-                rgba,
-                opacity,
-            });
+            stops.push(ColorStop { offset, rgba });
         } else {
             unreachable!();
         }
@@ -456,12 +444,13 @@ impl UnresolvedGradient {
                 } else {
                     let cascaded = CascadedValues::new_from_node(&child);
                     let values = cascaded.get();
-                    let rgba = match values.stop_color() {
-                        StopColor(cssparser::Color::CurrentColor) => values.color().0,
-                        StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
-                    };
+                    let rgba = resolve_color(
+                        &values.stop_color().0,
+                        values.stop_opacity().0,
+                        values.color().0,
+                    );
 
-                    self.add_color_stop(stop.offset, rgba, values.stop_opacity().0);
+                    self.add_color_stop(stop.offset, rgba);
                 }
             }
         }
