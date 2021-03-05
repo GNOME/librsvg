@@ -288,11 +288,11 @@ impl FilterContext {
                 .map(FilterInput::StandardInput),
 
             Input::FillPaint => {
-                let fill_paint_source = values.fill().0.resolve(acquired_nodes)?.to_user_space(
-                    &self.node_bbox,
-                    draw_ctx,
-                    values,
-                );
+                let fill_paint_source = values
+                    .fill()
+                    .0
+                    .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+                    .to_user_space(&self.node_bbox, draw_ctx, values);
 
                 draw_ctx
                     .get_paint_source_surface(
@@ -301,18 +301,17 @@ impl FilterContext {
                         acquired_nodes,
                         &fill_paint_source,
                         values.fill_opacity().0,
-                        values.color().0,
                     )
                     .map_err(FilterError::CairoError)
                     .map(FilterInput::StandardInput)
             }
 
             Input::StrokePaint => {
-                let stroke_paint_source = values.stroke().0.resolve(acquired_nodes)?.to_user_space(
-                    &self.node_bbox,
-                    draw_ctx,
-                    values,
-                );
+                let stroke_paint_source = values
+                    .stroke()
+                    .0
+                    .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+                    .to_user_space(&self.node_bbox, draw_ctx, values);
 
                 draw_ctx
                     .get_paint_source_surface(
@@ -321,7 +320,6 @@ impl FilterContext {
                         acquired_nodes,
                         &stroke_paint_source,
                         values.stroke_opacity().0,
-                        values.color().0,
                     )
                     .map_err(FilterError::CairoError)
                     .map(FilterInput::StandardInput)

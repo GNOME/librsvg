@@ -23,7 +23,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
-use crate::paint_server::{resolve_color, PaintServer, UserSpacePaintSource};
+use crate::paint_server::{PaintServer, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::ComputedValues;
@@ -1117,7 +1117,6 @@ impl DrawingCtx {
         &mut self,
         paint_source: &UserSpacePaintSource,
         opacity: UnitInterval,
-        current_color: cssparser::RGBA,
         acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<bool, RenderingError> {
         match *paint_source {
@@ -1125,7 +1124,7 @@ impl DrawingCtx {
                 if self.set_gradient(gradient, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(resolve_color(&c, opacity, current_color))
+                    self.set_color(c)
                 } else {
                     Ok(false)
                 }
@@ -1134,14 +1133,12 @@ impl DrawingCtx {
                 if self.set_pattern(pattern, acquired_nodes, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(resolve_color(&c, opacity, current_color))
+                    self.set_color(c)
                 } else {
                     Ok(false)
                 }
             }
-            UserSpacePaintSource::SolidColor(c) => {
-                self.set_color(resolve_color(&c, opacity, current_color))
-            }
+            UserSpacePaintSource::SolidColor(c) => self.set_color(c),
             UserSpacePaintSource::None => Ok(false),
         }
     }
@@ -1154,7 +1151,6 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
         opacity: UnitInterval,
-        current_color: cssparser::RGBA,
     ) -> Result<SharedImageSurface, cairo::Status> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
@@ -1162,7 +1158,7 @@ impl DrawingCtx {
             // FIXME: we are ignoring any error
 
             let _ = self.with_cairo_context(cr, &mut |dc| {
-                dc.set_paint_source(paint_source, opacity, current_color, acquired_nodes)
+                dc.set_paint_source(paint_source, opacity, acquired_nodes)
                     .map(|had_paint_server| {
                         if had_paint_server {
                             cr.paint();
@@ -1212,20 +1208,15 @@ impl DrawingCtx {
         let paint_source = values
             .stroke()
             .0
-            .resolve(acquired_nodes)?
+            .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
             .to_user_space(bbox, self, values);
 
-        self.set_paint_source(
-            &paint_source,
-            values.stroke_opacity().0,
-            current_color,
-            acquired_nodes,
-        )
-        .map(|had_paint_server| {
-            if had_paint_server {
-                cr.stroke_preserve();
-            }
-        })?;
+        self.set_paint_source(&paint_source, values.stroke_opacity().0, acquired_nodes)
+            .map(|had_paint_server| {
+                if had_paint_server {
+                    cr.stroke_preserve();
+                }
+            })?;
 
         Ok(())
     }
@@ -1241,20 +1232,15 @@ impl DrawingCtx {
         let paint_source = values
             .fill()
             .0
-            .resolve(acquired_nodes)?
+            .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
             .to_user_space(bbox, self, values);
 
-        self.set_paint_source(
-            &paint_source,
-            values.fill_opacity().0,
-            current_color,
-            acquired_nodes,
-        )
-        .map(|had_paint_server| {
-            if had_paint_server {
-                cr.fill_preserve();
-            }
-        })?;
+        self.set_paint_source(&paint_source, values.fill_opacity().0, acquired_nodes)
+            .map(|had_paint_server| {
+                if had_paint_server {
+                    cr.fill_preserve();
+                }
+            })?;
 
         Ok(())
     }
@@ -1435,20 +1421,15 @@ impl DrawingCtx {
         let current_color = values.color().0;
 
         let res = if !clipping {
-            let paint_source = values.fill().0.resolve(acquired_nodes)?.to_user_space(
-                &bbox,
-                saved_cr.draw_ctx,
-                values,
-            );
+            let paint_source = values
+                .fill()
+                .0
+                .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
+                .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
             saved_cr
                 .draw_ctx
-                .set_paint_source(
-                    &paint_source,
-                    values.fill_opacity().0,
-                    current_color,
-                    acquired_nodes,
-                )
+                .set_paint_source(&paint_source, values.fill_opacity().0, acquired_nodes)
                 .map(|had_paint_server| {
                     if had_paint_server {
                         pangocairo::functions::update_layout(&cr, &layout);
@@ -1465,20 +1446,15 @@ impl DrawingCtx {
             let mut need_layout_path = clipping;
 
             let res = if !clipping {
-                let paint_source = values.stroke().0.resolve(acquired_nodes)?.to_user_space(
-                    &bbox,
-                    saved_cr.draw_ctx,
-                    values,
-                );
+                let paint_source = values
+                    .stroke()
+                    .0
+                    .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
+                    .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
                 saved_cr
                     .draw_ctx
-                    .set_paint_source(
-                        &paint_source,
-                        values.stroke_opacity().0,
-                        current_color,
-                        acquired_nodes,
-                    )
+                    .set_paint_source(&paint_source, values.stroke_opacity().0, acquired_nodes)
                     .map(|had_paint_server| {
                         if had_paint_server {
                             need_layout_path = true;

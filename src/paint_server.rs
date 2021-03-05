@@ -29,16 +29,16 @@ pub enum PaintServer {
 
 pub enum PaintSource {
     None,
-    Gradient(ResolvedGradient, Option<cssparser::Color>),
-    Pattern(ResolvedPattern, Option<cssparser::Color>),
-    SolidColor(cssparser::Color),
+    Gradient(ResolvedGradient, Option<cssparser::RGBA>),
+    Pattern(ResolvedPattern, Option<cssparser::RGBA>),
+    SolidColor(cssparser::RGBA),
 }
 
 pub enum UserSpacePaintSource {
     None,
-    Gradient(UserSpaceGradient, Option<cssparser::Color>),
-    Pattern(UserSpacePattern, Option<cssparser::Color>),
-    SolidColor(cssparser::Color),
+    Gradient(UserSpaceGradient, Option<cssparser::RGBA>),
+    Pattern(UserSpacePattern, Option<cssparser::RGBA>),
+    SolidColor(cssparser::RGBA),
 }
 
 impl Parse for PaintServer {
@@ -82,6 +82,8 @@ impl PaintServer {
     pub fn resolve(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        opacity: UnitInterval,
+        current_color: cssparser::RGBA,
     ) -> Result<PaintSource, RenderingError> {
         match self {
             PaintServer::Iri {
@@ -94,15 +96,28 @@ impl PaintServer {
                     assert!(node.is_element());
 
                     match *node.borrow_element() {
-                        Element::LinearGradient(ref g) => g
-                            .resolve(&node, acquired_nodes)
-                            .map(|g| PaintSource::Gradient(g, *alternate)),
-                        Element::Pattern(ref p) => p
-                            .resolve(&node, acquired_nodes)
-                            .map(|p| PaintSource::Pattern(p, *alternate)),
-                        Element::RadialGradient(ref g) => g
-                            .resolve(&node, acquired_nodes)
-                            .map(|g| PaintSource::Gradient(g, *alternate)),
+                        Element::LinearGradient(ref g) => {
+                            g.resolve(&node, acquired_nodes).map(|g| {
+                                PaintSource::Gradient(
+                                    g,
+                                    alternate.map(|c| resolve_color(&c, opacity, current_color)),
+                                )
+                            })
+                        }
+                        Element::Pattern(ref p) => p.resolve(&node, acquired_nodes).map(|p| {
+                            PaintSource::Pattern(
+                                p,
+                                alternate.map(|c| resolve_color(&c, opacity, current_color)),
+                            )
+                        }),
+                        Element::RadialGradient(ref g) => {
+                            g.resolve(&node, acquired_nodes).map(|g| {
+                                PaintSource::Gradient(
+                                    g,
+                                    alternate.map(|c| resolve_color(&c, opacity, current_color)),
+                                )
+                            })
+                        }
                         _ => Err(AcquireError::InvalidLinkType(iri.as_ref().clone())),
                     }
                 })
@@ -125,7 +140,11 @@ impl PaintServer {
                             iri
                         );
 
-                        Ok(PaintSource::SolidColor(*color))
+                        Ok(PaintSource::SolidColor(resolve_color(
+                            color,
+                            opacity,
+                            current_color,
+                        )))
                     }
 
                     (_, _) => {
@@ -138,7 +157,11 @@ impl PaintServer {
                     }
                 }),
 
-            PaintServer::SolidColor(color) => Ok(PaintSource::SolidColor(*color)),
+            PaintServer::SolidColor(color) => Ok(PaintSource::SolidColor(resolve_color(
+                color,
+                opacity,
+                current_color,
+            ))),
 
             PaintServer::None => Ok(PaintSource::None),
         }
