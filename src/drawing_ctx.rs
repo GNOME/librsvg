@@ -1203,12 +1203,11 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         bbox: &BoundingBox,
-        current_color: cssparser::RGBA,
     ) -> Result<(), RenderingError> {
         let paint_source = values
             .stroke()
             .0
-            .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
+            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
             .to_user_space(bbox, self, values);
 
         self.set_paint_source(&paint_source, values.stroke_opacity().0, acquired_nodes)
@@ -1227,12 +1226,11 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         bbox: &BoundingBox,
-        current_color: cssparser::RGBA,
     ) -> Result<(), RenderingError> {
         let paint_source = values
             .fill()
             .0
-            .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
+            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
             .to_user_space(bbox, self, values);
 
         self.set_paint_source(&paint_source, values.fill_opacity().0, acquired_nodes)
@@ -1271,8 +1269,6 @@ impl DrawingCtx {
                 return Ok(dc.empty_bbox());
             }
 
-            let current_color = values.color().0;
-
             cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
             dc.setup_cr_for_stroke(&cr, values);
 
@@ -1295,9 +1291,9 @@ impl DrawingCtx {
 
                         if values.is_visible() {
                             if target == PaintTarget::Stroke {
-                                dc.stroke(&cr, an, values, &bbox, current_color)?;
+                                dc.stroke(&cr, an, values, &bbox)?;
                             } else {
-                                dc.fill(&cr, an, values, &bbox, current_color)?;
+                                dc.fill(&cr, an, values, &bbox)?;
                             }
                         }
                     }
