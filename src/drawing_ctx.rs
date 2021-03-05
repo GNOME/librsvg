@@ -1124,6 +1124,37 @@ impl DrawingCtx {
         Ok(true)
     }
 
+    fn set_paint_source(
+        &mut self,
+        paint_source: &UserSpacePaintSource,
+        opacity: UnitInterval,
+        current_color: cssparser::RGBA,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+    ) -> Result<bool, RenderingError> {
+        match *paint_source {
+            UserSpacePaintSource::Gradient(ref gradient, c) => {
+                if self.set_gradient(gradient, opacity)? {
+                    Ok(true)
+                } else if let Some(c) = c {
+                    self.set_color(c, opacity, current_color)
+                } else {
+                    Ok(false)
+                }
+            }
+            UserSpacePaintSource::Pattern(ref pattern, c) => {
+                if self.set_pattern(pattern, acquired_nodes, opacity)? {
+                    Ok(true)
+                } else if let Some(c) = c {
+                    self.set_color(c, opacity, current_color)
+                } else {
+                    Ok(false)
+                }
+            }
+            UserSpacePaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
+            UserSpacePaintSource::None => Ok(false),
+        }
+    }
+
     fn set_source_paint_server(
         &mut self,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -1137,28 +1168,7 @@ impl DrawingCtx {
             .resolve(acquired_nodes)?
             .to_user_space(bbox, self, values);
 
-        match paint_source {
-            UserSpacePaintSource::Gradient(gradient, c) => {
-                if self.set_gradient(&gradient, opacity)? {
-                    Ok(true)
-                } else if let Some(c) = c {
-                    self.set_color(c, opacity, current_color)
-                } else {
-                    Ok(false)
-                }
-            }
-            UserSpacePaintSource::Pattern(pattern, c) => {
-                if self.set_pattern(&pattern, acquired_nodes, opacity)? {
-                    Ok(true)
-                } else if let Some(c) = c {
-                    self.set_color(c, opacity, current_color)
-                } else {
-                    Ok(false)
-                }
-            }
-            UserSpacePaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
-            UserSpacePaintSource::None => Ok(false),
-        }
+        self.set_paint_source(&paint_source, opacity, current_color, acquired_nodes)
     }
 
     /// Computes and returns a surface corresponding to the given paint server.
