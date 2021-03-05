@@ -297,4 +297,32 @@ mod tests {
 
         assert!(PaintServer::parse_str("url(#link) invalid").is_err());
     }
+
+    #[test]
+    fn resolves_explicit_color() {
+        use cssparser::{Color, RGBA};
+
+        assert_eq!(
+            resolve_color(
+                &Color::RGBA(RGBA::new(255, 0, 0, 128)),
+                UnitInterval::clamp(0.5),
+                RGBA::new(0, 255, 0, 255)
+            ),
+            RGBA::new(255, 0, 0, 64),
+        );
+    }
+
+    #[test]
+    fn resolves_current_color() {
+        use cssparser::{Color, RGBA};
+
+        assert_eq!(
+            resolve_color(
+                &Color::CurrentColor,
+                UnitInterval::clamp(0.5),
+                RGBA::new(0, 255, 0, 128)
+            ),
+            RGBA::new(0, 255, 0, 64),
+        );
+    }
 }
