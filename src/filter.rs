@@ -10,7 +10,7 @@ use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::{ElementError, ValueErrorKind};
 use crate::length::*;
-use crate::node::{Node, NodeBorrow};
+use crate::node::NodeBorrow;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
@@ -166,7 +166,11 @@ impl FilterValueList {
 
     /// Check that at least one filter URI exists and that all contained
     /// URIs reference existing <filter> elements.
-    pub fn is_applicable(&self, node: &Node, acquired_nodes: &mut AcquiredNodes<'_>) -> bool {
+    ///
+    /// The `node_name` refers to the node being filtered; it is just
+    /// to log an error in case the filter value list is not
+    /// applicable.
+    pub fn is_applicable(&self, node_name: &str, acquired_nodes: &mut AcquiredNodes<'_>) -> bool {
         if self.is_empty() {
             return false;
         }
@@ -184,7 +188,7 @@ impl FilterValueList {
                         _ => {
                             rsvg_log!(
                                 "element {} will not be filtered since \"{}\" is not a filter",
-                                node,
+                                node_name,
                                 v,
                             );
                             false
@@ -194,7 +198,7 @@ impl FilterValueList {
                 _ => {
                     rsvg_log!(
                         "element {} will not be filtered since its filter \"{}\" was not found",
-                        node,
+                        node_name,
                         v,
                     );
                     false

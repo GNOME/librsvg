@@ -4,7 +4,6 @@ use cssparser::Parser;
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
 };
-use once_cell::sync::OnceCell;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -15,9 +14,9 @@ use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::property_defs::StopColor;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::xml::Attributes;
@@ -28,11 +27,8 @@ pub struct ColorStop {
     /// <stop offset="..."/>
     pub offset: UnitInterval,
 
-    /// <stop stop-color="..."/>
+    /// <stop stop-color="..." stop-opacity="..."/>
     pub rgba: cssparser::RGBA,
-
-    /// <stop stop-opacity="..."/>
-    pub opacity: UnitInterval,
 }
 
 // gradientUnits attribute; its default is objectBoundingBox
@@ -311,8 +307,6 @@ struct Common {
     spread: Option<SpreadMethod>,
 
     fallback: Option<NodeId>,
-
-    resolved: OnceCell<ResolvedGradient>,
 }
 
 /// Node for the <linearGradient> element
@@ -406,12 +400,7 @@ impl UnresolvedGradient {
     }
 
     /// Helper for add_color_stops_from_node()
-    fn add_color_stop(
-        &mut self,
-        offset: UnitInterval,
-        rgba: cssparser::RGBA,
-        opacity: UnitInterval,
-    ) {
+    fn add_color_stop(&mut self, offset: UnitInterval, rgba: cssparser::RGBA) {
         if self.stops.is_none() {
             self.stops = Some(Vec::<ColorStop>::new());
         }
@@ -429,11 +418,7 @@ impl UnresolvedGradient {
                 last_offset
             };
 
-            stops.push(ColorStop {
-                offset,
-                rgba,
-                opacity,
-            });
+            stops.push(ColorStop { offset, rgba });
         } else {
             unreachable!();
         }
@@ -441,7 +426,7 @@ impl UnresolvedGradient {
 
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
-    fn add_color_stops_from_node(&mut self, node: &Node) {
+    fn add_color_stops_from_node(&mut self, node: &Node, opacity: UnitInterval) {
         assert!(matches!(
             *node.borrow_element(),
             Element::LinearGradient(_) | Element::RadialGradient(_)
@@ -456,12 +441,16 @@ impl UnresolvedGradient {
                 } else {
                     let cascaded = CascadedValues::new_from_node(&child);
                     let values = cascaded.get();
-                    let rgba = match values.stop_color() {
-                        StopColor(cssparser::Color::CurrentColor) => values.color().0,
-                        StopColor(cssparser::Color::RGBA(ref rgba)) => *rgba,
-                    };
 
-                    self.add_color_stop(stop.offset, rgba, values.stop_opacity().0);
+                    let UnitInterval(stop_opacity) = values.stop_opacity().0;
+                    let UnitInterval(o) = opacity;
+
+                    let composed_opacity = UnitInterval(stop_opacity * o);
+
+                    let rgba =
+                        resolve_color(&values.stop_color().0, composed_opacity, values.color().0);
+
+                    self.add_color_stop(stop.offset, rgba);
                 }
             }
         }
@@ -588,7 +577,7 @@ impl Draw for LinearGradient {}
 macro_rules! impl_gradient {
     ($gradient_type:ident, $other_type:ident) => {
         impl $gradient_type {
-            fn get_unresolved(&self, node: &Node) -> Unresolved {
+            fn get_unresolved(&self, node: &Node, opacity: UnitInterval) -> Unresolved {
                 let mut gradient = UnresolvedGradient {
                     units: self.common.units,
                     transform: self.common.transform,
@@ -597,7 +586,7 @@ macro_rules! impl_gradient {
                     variant: self.get_unresolved_variant(),
                 };
 
-                gradient.add_color_stops_from_node(node);
+                gradient.add_color_stops_from_node(node, opacity);
 
                 Unresolved {
                     gradient,
@@ -605,15 +594,16 @@ macro_rules! impl_gradient {
                 }
             }
 
-            fn init_resolved(
+            pub fn resolve(
                 &self,
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
+                opacity: UnitInterval,
             ) -> Result<ResolvedGradient, AcquireError> {
                 let Unresolved {
                     mut gradient,
                     mut fallback,
-                } = self.get_unresolved(node);
+                } = self.get_unresolved(node, opacity);
 
                 let mut stack = NodeStack::new();
 
@@ -627,8 +617,12 @@ macro_rules! impl_gradient {
                         }
 
                         let unresolved = match *acquired_node.borrow_element() {
-                            Element::$gradient_type(ref g) => g.get_unresolved(&acquired_node),
-                            Element::$other_type(ref g) => g.get_unresolved(&acquired_node),
+                            Element::$gradient_type(ref g) => {
+                                g.get_unresolved(&acquired_node, opacity)
+                            }
+                            Element::$other_type(ref g) => {
+                                g.get_unresolved(&acquired_node, opacity)
+                            }
                             _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
                         };
 
@@ -643,17 +637,6 @@ macro_rules! impl_gradient {
                 }
 
                 Ok(gradient.into_resolved())
-            }
-
-            pub fn resolve(
-                &self,
-                node: &Node,
-                acquired_nodes: &mut AcquiredNodes<'_>,
-            ) -> Result<ResolvedGradient, AcquireError> {
-                self.common
-                    .resolved
-                    .get_or_try_init(|| self.init_resolved(node, acquired_nodes))
-                    .map(|r| r.clone())
             }
         }
     };
@@ -774,7 +757,8 @@ mod tests {
             Attributes::new(),
         ));
 
-        let unresolved = borrow_element_as!(node, LinearGradient).get_unresolved(&node);
+        let unresolved = borrow_element_as!(node, LinearGradient)
+            .get_unresolved(&node, UnitInterval::clamp(1.0));
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
@@ -783,7 +767,8 @@ mod tests {
             Attributes::new(),
         ));
 
-        let unresolved = borrow_element_as!(node, RadialGradient).get_unresolved(&node);
+        let unresolved = borrow_element_as!(node, RadialGradient)
+            .get_unresolved(&node, UnitInterval::clamp(1.0));
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
     }
