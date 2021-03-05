@@ -682,10 +682,16 @@ impl DrawingCtx {
                 };
 
                 // Filter
-                let source_surface =
-                    saved_cr
-                        .draw_ctx
-                        .run_filters(&filters, acquired_nodes, node, values, bbox)?;
+
+                let node_name = format!("{}", node);
+
+                let source_surface = saved_cr.draw_ctx.run_filters(
+                    &filters,
+                    acquired_nodes,
+                    &node_name,
+                    values,
+                    bbox,
+                )?;
 
                 saved_cr.draw_ctx.pop_cairo_context();
 
@@ -880,15 +886,13 @@ impl DrawingCtx {
         &mut self,
         filters: &Filter,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        node: &Node,
+        node_name: &str,
         values: &ComputedValues,
         node_bbox: BoundingBox,
     ) -> Result<cairo::Surface, RenderingError> {
         let surface = match filters {
             Filter::None => self.cr.get_target(),
             Filter::List(filter_list) => {
-                let node_name = format!("{}", node);
-
                 if filter_list.is_applicable(&node_name, acquired_nodes) {
                     // The target surface has multiple references.
                     // We need to copy it to a new surface to have a unique
