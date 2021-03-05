@@ -23,7 +23,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
-use crate::paint_server::{PaintServer, UserSpacePaintSource};
+use crate::paint_server::{resolve_color, PaintServer, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::ComputedValues;
@@ -40,7 +40,6 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
-use crate::util;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `CssLength` values to a current viewport.
@@ -1719,30 +1718,6 @@ impl DrawingCtx {
             })
         }
     }
-}
-
-fn resolve_color(
-    color: &cssparser::Color,
-    opacity: UnitInterval,
-    current_color: cssparser::RGBA,
-) -> cssparser::RGBA {
-    let rgba = match *color {
-        cssparser::Color::RGBA(rgba) => rgba,
-        cssparser::Color::CurrentColor => current_color,
-    };
-
-    let UnitInterval(o) = opacity;
-
-    let alpha = (f64::from(rgba.alpha) * o).round();
-    let alpha = util::clamp(alpha, 0.0, 255.0);
-
-    // For the following I'd prefer to use `cast::u8(alpha).unwrap()`
-    // but the cast crate is erroneously returning Overflow for `u8(255.0)`:
-    // https://github.com/japaric/cast.rs/issues/23
-
-    let alpha = alpha as u8;
-
-    cssparser::RGBA { alpha, ..rgba }
 }
 
 #[derive(Debug)]
