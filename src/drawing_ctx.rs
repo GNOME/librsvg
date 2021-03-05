@@ -40,6 +40,7 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::util;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `CssLength` values to a current viewport.
@@ -1102,23 +1103,12 @@ impl DrawingCtx {
         Ok(true)
     }
 
-    fn set_color(
-        &self,
-        color: cssparser::Color,
-        opacity: UnitInterval,
-        current_color: cssparser::RGBA,
-    ) -> Result<bool, RenderingError> {
-        let rgba = match color {
-            cssparser::Color::RGBA(rgba) => rgba,
-            cssparser::Color::CurrentColor => current_color,
-        };
-
-        let UnitInterval(o) = opacity;
+    fn set_color(&self, rgba: cssparser::RGBA) -> Result<bool, RenderingError> {
         self.cr.clone().set_source_rgba(
             f64::from(rgba.red_f32()),
             f64::from(rgba.green_f32()),
             f64::from(rgba.blue_f32()),
-            f64::from(rgba.alpha_f32()) * o,
+            f64::from(rgba.alpha_f32()),
         );
 
         Ok(true)
@@ -1136,7 +1126,7 @@ impl DrawingCtx {
                 if self.set_gradient(gradient, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(c, opacity, current_color)
+                    self.set_color(resolve_color(&c, opacity, current_color))
                 } else {
                     Ok(false)
                 }
@@ -1145,12 +1135,14 @@ impl DrawingCtx {
                 if self.set_pattern(pattern, acquired_nodes, opacity)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(c, opacity, current_color)
+                    self.set_color(resolve_color(&c, opacity, current_color))
                 } else {
                     Ok(false)
                 }
             }
-            UserSpacePaintSource::SolidColor(c) => self.set_color(c, opacity, current_color),
+            UserSpacePaintSource::SolidColor(c) => {
+                self.set_color(resolve_color(&c, opacity, current_color))
+            }
             UserSpacePaintSource::None => Ok(false),
         }
     }
@@ -1727,6 +1719,30 @@ impl DrawingCtx {
             })
         }
     }
+}
+
+fn resolve_color(
+    color: &cssparser::Color,
+    opacity: UnitInterval,
+    current_color: cssparser::RGBA,
+) -> cssparser::RGBA {
+    let rgba = match *color {
+        cssparser::Color::RGBA(rgba) => rgba,
+        cssparser::Color::CurrentColor => current_color,
+    };
+
+    let UnitInterval(o) = opacity;
+
+    let alpha = (f64::from(rgba.alpha) * o).round();
+    let alpha = util::clamp(alpha, 0.0, 255.0);
+
+    // For the following I'd prefer to use `cast::u8(alpha).unwrap()`
+    // but the cast crate is erroneously returning Overflow for `u8(255.0)`:
+    // https://github.com/japaric/cast.rs/issues/23
+
+    let alpha = alpha as u8;
+
+    cssparser::RGBA { alpha, ..rgba }
 }
 
 #[derive(Debug)]
