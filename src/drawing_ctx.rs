@@ -906,7 +906,7 @@ impl DrawingCtx {
                                 self.run_filter(
                                     acquired_nodes,
                                     &f,
-                                    node,
+                                    &node_name,
                                     values,
                                     surface,
                                     node_bbox,
@@ -928,7 +928,7 @@ impl DrawingCtx {
         &mut self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         filter_uri: &NodeId,
-        node: &Node,
+        node_name: &str,
         values: &ComputedValues,
         child_surface: SharedImageSurface,
         node_bbox: BoundingBox,
@@ -955,7 +955,7 @@ impl DrawingCtx {
                     _ => {
                         rsvg_log!(
                             "element {} will not be filtered since \"{}\" is not a filter",
-                            node,
+                            node_name,
                             filter_uri,
                         );
                     }
@@ -964,7 +964,7 @@ impl DrawingCtx {
             _ => {
                 rsvg_log!(
                     "element {} will not be filtered since its filter \"{}\" was not found",
-                    node,
+                    node_name,
                     filter_uri,
                 );
             }
