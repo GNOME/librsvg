@@ -1172,39 +1172,28 @@ impl DrawingCtx {
     }
 
     /// Computes and returns a surface corresponding to the given paint server.
-    pub fn get_paint_server_surface(
+    pub fn get_paint_source_surface(
         &mut self,
         width: i32,
         height: i32,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        paint_server: &PaintServer,
+        paint_source: &UserSpacePaintSource,
         opacity: UnitInterval,
-        bbox: &BoundingBox,
         current_color: cssparser::RGBA,
-        values: &ComputedValues,
     ) -> Result<SharedImageSurface, cairo::Status> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
             // FIXME: we are ignoring any error
 
-            if let Ok(resolved) = paint_server.resolve(acquired_nodes) {
-                let paint_source = resolved.to_user_space(bbox, self, values);
-
-                let _ = self.with_cairo_context(cr, &mut |dc| {
-                    dc.set_paint_source(
-                        &paint_source,
-                        opacity,
-                        current_color,
-                        acquired_nodes,
-                    )
-                        .map(|had_paint_server| {
-                            if had_paint_server {
-                                cr.paint();
-                            }
-                        })
-                });
-            }
+            let _ = self.with_cairo_context(cr, &mut |dc| {
+                dc.set_paint_source(paint_source, opacity, current_color, acquired_nodes)
+                    .map(|had_paint_server| {
+                        if had_paint_server {
+                            cr.paint();
+                        }
+                    })
+            });
 
             Ok(())
         })?;

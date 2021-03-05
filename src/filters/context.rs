@@ -287,33 +287,45 @@ impl FilterContext {
                 })
                 .map(FilterInput::StandardInput),
 
-            Input::FillPaint => draw_ctx
-                .get_paint_server_surface(
-                    self.source_surface.width(),
-                    self.source_surface.height(),
-                    acquired_nodes,
-                    &values.fill().0,
-                    values.fill_opacity().0,
+            Input::FillPaint => {
+                let fill_paint_source = values.fill().0.resolve(acquired_nodes)?.to_user_space(
                     &self.node_bbox,
-                    values.color().0,
-                    &values,
-                )
-                .map_err(FilterError::CairoError)
-                .map(FilterInput::StandardInput),
+                    draw_ctx,
+                    values,
+                );
 
-            Input::StrokePaint => draw_ctx
-                .get_paint_server_surface(
-                    self.source_surface.width(),
-                    self.source_surface.height(),
-                    acquired_nodes,
-                    &values.stroke().0,
-                    values.stroke_opacity().0,
+                draw_ctx
+                    .get_paint_source_surface(
+                        self.source_surface.width(),
+                        self.source_surface.height(),
+                        acquired_nodes,
+                        &fill_paint_source,
+                        values.fill_opacity().0,
+                        values.color().0,
+                    )
+                    .map_err(FilterError::CairoError)
+                    .map(FilterInput::StandardInput)
+            }
+
+            Input::StrokePaint => {
+                let stroke_paint_source = values.stroke().0.resolve(acquired_nodes)?.to_user_space(
                     &self.node_bbox,
-                    values.color().0,
-                    &values,
-                )
-                .map_err(FilterError::CairoError)
-                .map(FilterInput::StandardInput),
+                    draw_ctx,
+                    values,
+                );
+
+                draw_ctx
+                    .get_paint_source_surface(
+                        self.source_surface.width(),
+                        self.source_surface.height(),
+                        acquired_nodes,
+                        &stroke_paint_source,
+                        values.stroke_opacity().0,
+                        values.color().0,
+                    )
+                    .map_err(FilterError::CairoError)
+                    .map(FilterInput::StandardInput)
+            }
 
             Input::FilterOutput(ref name) => self
                 .previous_results
