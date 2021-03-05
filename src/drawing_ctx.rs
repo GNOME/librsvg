@@ -746,7 +746,7 @@ impl DrawingCtx {
                             _ => {
                                 rsvg_log!(
                                     "element {} references \"{}\" which is not a mask",
-                                    node,
+                                    node_name,
                                     node_id
                                 );
                             }
@@ -754,7 +754,7 @@ impl DrawingCtx {
                     } else {
                         rsvg_log!(
                             "element {} references nonexistent mask \"{}\"",
-                            node,
+                            node_name,
                             node_id
                         );
                     }
