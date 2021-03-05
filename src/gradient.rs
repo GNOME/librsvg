@@ -4,7 +4,6 @@ use cssparser::Parser;
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
 };
-use once_cell::sync::OnceCell;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -308,8 +307,6 @@ struct Common {
     spread: Option<SpreadMethod>,
 
     fallback: Option<NodeId>,
-
-    resolved: OnceCell<ResolvedGradient>,
 }
 
 /// Node for the <linearGradient> element
@@ -594,7 +591,7 @@ macro_rules! impl_gradient {
                 }
             }
 
-            fn init_resolved(
+            pub fn resolve(
                 &self,
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
@@ -632,17 +629,6 @@ macro_rules! impl_gradient {
                 }
 
                 Ok(gradient.into_resolved())
-            }
-
-            pub fn resolve(
-                &self,
-                node: &Node,
-                acquired_nodes: &mut AcquiredNodes<'_>,
-            ) -> Result<ResolvedGradient, AcquireError> {
-                self.common
-                    .resolved
-                    .get_or_try_init(|| self.init_resolved(node, acquired_nodes))
-                    .map(|r| r.clone())
             }
         }
     };
