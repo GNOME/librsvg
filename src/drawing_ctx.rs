@@ -887,7 +887,9 @@ impl DrawingCtx {
         let surface = match filters {
             Filter::None => self.cr.get_target(),
             Filter::List(filter_list) => {
-                if filter_list.is_applicable(node, acquired_nodes) {
+                let node_name = format!("{}", node);
+
+                if filter_list.is_applicable(&node_name, acquired_nodes) {
                     // The target surface has multiple references.
                     // We need to copy it to a new surface to have a unique
                     // reference to be able to safely access the pixel data.
