@@ -981,7 +981,6 @@ impl DrawingCtx {
     fn set_gradient(
         self: &mut DrawingCtx,
         gradient: &UserSpaceGradient,
-        opacity: UnitInterval,
     ) -> Result<bool, RenderingError> {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
@@ -1003,14 +1002,13 @@ impl DrawingCtx {
 
         for stop in &gradient.stops {
             let UnitInterval(stop_offset) = stop.offset;
-            let UnitInterval(o) = opacity;
 
             g.add_color_stop_rgba(
                 stop_offset,
                 f64::from(stop.rgba.red_f32()),
                 f64::from(stop.rgba.green_f32()),
                 f64::from(stop.rgba.blue_f32()),
-                f64::from(stop.rgba.alpha_f32()) * o,
+                f64::from(stop.rgba.alpha_f32()),
             );
         }
 
@@ -1120,7 +1118,7 @@ impl DrawingCtx {
     ) -> Result<bool, RenderingError> {
         match *paint_source {
             UserSpacePaintSource::Gradient(ref gradient, c) => {
-                if self.set_gradient(gradient, opacity)? {
+                if self.set_gradient(gradient)? {
                     Ok(true)
                 } else if let Some(c) = c {
                     self.set_color(c)
