@@ -16,7 +16,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
 
 /// The `feComponentTransfer` filter primitive.
 pub struct FeComponentTransfer {
@@ -276,7 +276,7 @@ macro_rules! get_func_x_node {
     };
 }
 
-impl FilterEffect for FeComponentTransfer {
+impl FilterRender for FeComponentTransfer {
     fn render(
         &self,
         node: &Node,
@@ -383,7 +383,9 @@ impl FilterEffect for FeComponentTransfer {
             },
         })
     }
+}
 
+impl FilterEffect for FeComponentTransfer {
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }

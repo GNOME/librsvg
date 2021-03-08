@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, PrimitiveWithInput};
 
 /// Enumeration of the possible blending modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -70,7 +70,7 @@ impl SetAttributes for FeBlend {
     }
 }
 
-impl FilterEffect for FeBlend {
+impl FilterRender for FeBlend {
     fn render(
         &self,
         node: &Node,
@@ -97,7 +97,9 @@ impl FilterEffect for FeBlend {
             output: FilterOutput { surface, bounds },
         })
     }
+}
 
+impl FilterEffect for FeBlend {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true

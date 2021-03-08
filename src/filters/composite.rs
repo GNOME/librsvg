@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, PrimitiveWithInput};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -70,7 +70,7 @@ impl SetAttributes for FeComposite {
     }
 }
 
-impl FilterEffect for FeComposite {
+impl FilterRender for FeComposite {
     fn render(
         &self,
         node: &Node,
@@ -109,7 +109,9 @@ impl FilterEffect for FeComposite {
             output: FilterOutput { surface, bounds },
         })
     }
+}
 
+impl FilterEffect for FeComposite {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true

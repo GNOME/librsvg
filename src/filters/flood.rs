@@ -5,7 +5,7 @@ use crate::node::{CascadedValues, Node};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Primitive};
 
 /// The `feFlood` filter primitive.
 pub struct FeFlood {
@@ -28,7 +28,7 @@ impl SetAttributes for FeFlood {
     }
 }
 
-impl FilterEffect for FeFlood {
+impl FilterRender for FeFlood {
     fn render(
         &self,
         node: &Node,
@@ -57,7 +57,9 @@ impl FilterEffect for FeFlood {
             output: FilterOutput { surface, bounds },
         })
     }
+}
 
+impl FilterEffect for FeFlood {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         false

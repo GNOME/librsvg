@@ -29,8 +29,8 @@ use self::context::{FilterContext, FilterInput, FilterResult};
 mod error;
 use self::error::FilterError;
 
-/// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw {
+/// Trait to render filter effect primitives.
+pub trait FilterRender {
     /// Renders this filter primitive.
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
@@ -42,7 +42,10 @@ pub trait FilterEffect: SetAttributes + Draw {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError>;
+}
 
+/// A filter primitive interface.
+pub trait FilterEffect: SetAttributes + Draw + FilterRender {
     /// Returns `true` if this filter primitive is affected by the `color-interpolation-filters`
     /// property.
     ///

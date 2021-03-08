@@ -11,7 +11,7 @@ use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurf
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, PrimitiveWithInput};
 
 /// Enumeration of the color channels the displacement map can source.
 #[derive(Clone, Copy)]
@@ -67,7 +67,7 @@ impl SetAttributes for FeDisplacementMap {
     }
 }
 
-impl FilterEffect for FeDisplacementMap {
+impl FilterRender for FeDisplacementMap {
     fn render(
         &self,
         node: &Node,
@@ -135,7 +135,9 @@ impl FilterEffect for FeDisplacementMap {
             },
         })
     }
+}
 
+impl FilterEffect for FeDisplacementMap {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         // Performance TODO: this converts in back and forth to linear RGB while technically it's

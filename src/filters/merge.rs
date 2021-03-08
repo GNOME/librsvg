@@ -10,7 +10,7 @@ use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// The `feMerge` filter primitive.
 pub struct FeMerge {
@@ -75,7 +75,7 @@ impl FeMergeNode {
     }
 }
 
-impl FilterEffect for FeMerge {
+impl FilterRender for FeMerge {
     fn render(
         &self,
         node: &Node,
@@ -124,7 +124,9 @@ impl FilterEffect for FeMerge {
             output: FilterOutput { surface, bounds },
         })
     }
+}
 
+impl FilterEffect for FeMerge {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
