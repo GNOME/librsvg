@@ -104,6 +104,22 @@ impl Document {
         )
     }
 
+    /// Utility function to load a document from a static string in tests.
+    #[cfg(test)]
+    pub fn load_from_bytes(input: &'static [u8]) -> Document {
+        use glib::prelude::*;
+
+        let bytes = glib::Bytes::from_static(input);
+        let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+
+        Document::load_from_stream(
+            &LoadOptions::new(UrlResolver::new(None)),
+            &stream.upcast(),
+            None::<&gio::Cancellable>,
+        )
+        .unwrap()
+    }
+
     /// Gets the root node.  This is guaranteed to be an `<svg>` element.
     pub fn root(&self) -> Node {
         self.tree.clone()
