@@ -9,7 +9,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ParseError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -136,11 +136,7 @@ impl Primitive {
 
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
-    fn get_bounds<'a>(
-        &self,
-        ctx: &'a FilterContext,
-        parent: Option<&Node>,
-    ) -> Result<BoundsBuilder, FilterError> {
+    fn get_bounds<'a>(&self, ctx: &'a FilterContext) -> Result<BoundsBuilder, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
             check_units(self.x)?;

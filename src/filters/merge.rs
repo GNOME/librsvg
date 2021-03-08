@@ -84,7 +84,7 @@ impl FilterRender for FeMerge {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each child node's input into account.
-        let mut bounds = self.base.get_bounds(ctx, node.parent().as_ref())?;
+        let mut bounds = self.base.get_bounds(ctx)?;
         for child in node.children().filter(|c| c.is_element()) {
             let elt = child.borrow_element();
 

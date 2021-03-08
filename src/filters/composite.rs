@@ -82,7 +82,7 @@ impl FilterRender for FeComposite {
         let input_2 = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
-            .get_bounds(ctx, node.parent().as_ref())?
+            .get_bounds(ctx)?
             .add_input(&input)
             .add_input(&input_2)
             .into_irect(ctx, draw_ctx);

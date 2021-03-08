@@ -79,7 +79,7 @@ impl FilterRender for FeDisplacementMap {
         let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
-            .get_bounds(ctx, node.parent().as_ref())?
+            .get_bounds(ctx)?
             .add_input(&input)
             .add_input(&displacement_input)
             .into_irect(ctx, draw_ctx);

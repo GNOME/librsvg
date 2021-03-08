@@ -126,7 +126,7 @@ impl FilterRender for FeImage {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds_builder = self.base.get_bounds(ctx, node.parent().as_ref())?;
+        let bounds_builder = self.base.get_bounds(ctx)?;
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx, draw_ctx);
 
         let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;

@@ -331,10 +331,7 @@ impl FilterRender for FeTurbulence {
         _acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds = self
-            .base
-            .get_bounds(ctx, node.parent().as_ref())?
-            .into_irect(ctx, draw_ctx);
+        let bounds = self.base.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
 
         let affine = ctx.paffine().invert().unwrap();
 
