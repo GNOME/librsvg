@@ -141,18 +141,8 @@ impl Primitive {
         ctx: &'a FilterContext,
         parent: Option<&Node>,
     ) -> Result<BoundsBuilder, FilterError> {
-        let primitive_units = parent
-            .and_then(|parent| {
-                assert!(parent.is_element());
-                match *parent.borrow_element() {
-                    Element::Filter(ref f) => Some(f.get_primitive_units()),
-                    _ => None,
-                }
-            })
-            .unwrap_or(CoordUnits::UserSpaceOnUse);
-
         // With ObjectBoundingBox, only fractions and percents are allowed.
-        if primitive_units == CoordUnits::ObjectBoundingBox {
+        if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
             check_units(self.x)?;
             check_units(self.y)?;
             check_units(self.width)?;
