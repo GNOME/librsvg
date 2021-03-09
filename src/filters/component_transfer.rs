@@ -71,8 +71,8 @@ impl Parse for FunctionType {
 }
 
 /// The compute function parameters.
-struct FunctionParameters<'a> {
-    table_values: &'a Vec<f64>,
+struct FunctionParameters {
+    table_values: Vec<f64>,
     slope: f64,
     intercept: f64,
     amplitude: f64,
@@ -81,15 +81,15 @@ struct FunctionParameters<'a> {
 }
 
 /// The compute function type.
-type Function = fn(&FunctionParameters<'_>, f64) -> f64;
+type Function = fn(&FunctionParameters, f64) -> f64;
 
 /// The identity component transfer function.
-fn identity(_: &FunctionParameters<'_>, value: f64) -> f64 {
+fn identity(_: &FunctionParameters, value: f64) -> f64 {
     value
 }
 
 /// The table component transfer function.
-fn table(params: &FunctionParameters<'_>, value: f64) -> f64 {
+fn table(params: &FunctionParameters, value: f64) -> f64 {
     let n = params.table_values.len() - 1;
     let k = (value * (n as f64)).floor() as usize;
 
@@ -108,7 +108,7 @@ fn table(params: &FunctionParameters<'_>, value: f64) -> f64 {
 }
 
 /// The discrete component transfer function.
-fn discrete(params: &FunctionParameters<'_>, value: f64) -> f64 {
+fn discrete(params: &FunctionParameters, value: f64) -> f64 {
     let n = params.table_values.len();
     let k = (value * (n as f64)).floor() as usize;
 
@@ -116,12 +116,12 @@ fn discrete(params: &FunctionParameters<'_>, value: f64) -> f64 {
 }
 
 /// The linear component transfer function.
-fn linear(params: &FunctionParameters<'_>, value: f64) -> f64 {
+fn linear(params: &FunctionParameters, value: f64) -> f64 {
     params.slope * value + params.intercept
 }
 
 /// The gamma component transfer function.
-fn gamma(params: &FunctionParameters<'_>, value: f64) -> f64 {
+fn gamma(params: &FunctionParameters, value: f64) -> f64 {
     params.amplitude * value.powf(params.exponent) + params.offset
 }
 
@@ -130,7 +130,7 @@ trait FeComponentTransferFunc {
     fn function(&self) -> Function;
 
     /// Returns the component transfer function parameters.
-    fn function_parameters(&self) -> FunctionParameters<'_>;
+    fn function_parameters(&self) -> FunctionParameters;
 
     /// Returns the channel.
     fn channel(&self) -> Channel;
@@ -167,9 +167,9 @@ macro_rules! func_x {
 
         impl FeComponentTransferFunc for $func_name {
             #[inline]
-            fn function_parameters(&self) -> FunctionParameters<'_> {
+            fn function_parameters(&self) -> FunctionParameters {
                 FunctionParameters {
-                    table_values: &self.table_values,
+                    table_values: self.table_values.clone(),
                     slope: self.slope,
                     intercept: self.intercept,
                     amplitude: self.amplitude,
