@@ -26,6 +26,13 @@ use crate::transform::Transform;
 use crate::util::clamp;
 use crate::xml::Attributes;
 
+/// A light source before applying affine transformations, straight out of the SVG.
+enum UntransformedLightSource {
+    Distant(FeDistantLight),
+    Point(FePointLight),
+    Spot(FeSpotLight),
+}
+
 /// A light source with affine transformations applied.
 pub enum LightSource {
     Distant {
@@ -43,14 +50,24 @@ pub enum LightSource {
     },
 }
 
+impl UntransformedLightSource {
+    fn transform(&self, paffine: Transform) -> LightSource {
+        match *self {
+            UntransformedLightSource::Distant(ref l) => l.transform(),
+            UntransformedLightSource::Point(ref l) => l.transform(paffine),
+            UntransformedLightSource::Spot(ref l) => l.transform(paffine),
+        }
+    }
+}
+
 struct Light {
-    source: LightSource,
+    source: UntransformedLightSource,
     lighting_color: cssparser::RGBA,
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Light {
-    pub fn new(node: &Node, paffine: Transform) -> Result<Light, FilterError> {
+    pub fn new(node: &Node) -> Result<Light, FilterError> {
         let mut sources = node.children().rev().filter(|c| {
             c.is_element()
                 && matches!(
@@ -72,9 +89,11 @@ impl Light {
         }
 
         let source = match *elt {
-            Element::FeDistantLight(ref l) => l.transform(),
-            Element::FePointLight(ref l) => l.transform(paffine),
-            Element::FeSpotLight(ref l) => l.transform(paffine),
+            Element::FeDistantLight(ref l) => {
+                UntransformedLightSource::Distant(l.element_impl.clone())
+            }
+            Element::FePointLight(ref l) => UntransformedLightSource::Point(l.element_impl.clone()),
+            Element::FeSpotLight(ref l) => UntransformedLightSource::Spot(l.element_impl.clone()),
             _ => unreachable!(),
         };
 
@@ -95,8 +114,14 @@ impl Light {
 
     /// Returns the color and unit (or null) vector from the image sample to the light.
     #[inline]
-    pub fn color_and_vector(&self, x: f64, y: f64, z: f64) -> (cssparser::RGBA, Vector3<f64>) {
-        let vector = match self.source {
+    pub fn color_and_vector(
+        &self,
+        source: &LightSource,
+        x: f64,
+        y: f64,
+        z: f64,
+    ) -> (cssparser::RGBA, Vector3<f64>) {
+        let vector = match *source {
             LightSource::Distant { azimuth, elevation } => {
                 let azimuth = azimuth.to_radians();
                 let elevation = elevation.to_radians();
@@ -113,7 +138,7 @@ impl Light {
             }
         };
 
-        let color = match self.source {
+        let color = match *source {
             LightSource::Spot {
                 direction,
                 specular_exponent,
@@ -146,7 +171,7 @@ impl Light {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct FeDistantLight {
     azimuth: f64,
     elevation: f64,
@@ -177,7 +202,7 @@ impl SetAttributes for FeDistantLight {
 
 impl Draw for FeDistantLight {}
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct FePointLight {
     x: f64,
     y: f64,
@@ -212,7 +237,7 @@ impl SetAttributes for FePointLight {
 
 impl Draw for FePointLight {}
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct FeSpotLight {
     x: f64,
     y: f64,
@@ -464,7 +489,9 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let light = Light::new(node, ctx.paffine())?;
+                let light = Light::new(node)?;
+
+                let source = light.source.transform(ctx.paffine());
 
                 // The generated color values are in the color space determined by
                 // color-interpolation-filters.
@@ -489,7 +516,8 @@ macro_rules! impl_lighting_filter {
                             let scaled_y = f64::from(y) * oy;
                             let z = f64::from(pixel.a) / 255.0 * self.surface_scale;
 
-                            let (color, vector) = light.color_and_vector(scaled_x, scaled_y, z);
+                            let (color, vector) =
+                                light.color_and_vector(&source, scaled_x, scaled_y, z);
 
                             // compute the factor just once for the three colors
                             let factor = self.compute_factor(normal, vector);
