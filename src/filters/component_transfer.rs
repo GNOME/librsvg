@@ -49,6 +49,7 @@ enum Channel {
 }
 
 /// Component transfer function types.
+#[derive(Clone)]
 enum FunctionType {
     Identity,
     Table,
@@ -78,6 +79,13 @@ struct FunctionParameters {
     amplitude: f64,
     exponent: f64,
     offset: f64,
+}
+
+struct Functions {
+    r: FeFuncR,
+    g: FeFuncG,
+    b: FeFuncB,
+    a: FeFuncA,
 }
 
 /// The compute function type.
@@ -138,6 +146,7 @@ trait FeComponentTransferFunc {
 
 macro_rules! func_x {
     ($func_name:ident, $channel:expr) => {
+        #[derive(Clone)]
         pub struct $func_name {
             channel: Channel,
             function_type: FunctionType,
@@ -254,11 +263,11 @@ macro_rules! func_or_default {
             Some(ref f) => {
                 $func_data = f.borrow_element();
                 match *$func_data {
-                    Element::$func_type(ref e) => &*e,
+                    Element::$func_type(ref e) => e.element_impl.clone(),
                     _ => unreachable!(),
                 }
             }
-            _ => &$func_default,
+            _ => $func_default,
         };
     };
 }
@@ -284,6 +293,8 @@ impl FilterRender for FeComponentTransfer {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
+        let functions = get_parameters(node)?;
+
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
@@ -297,37 +308,6 @@ impl FilterRender for FeComponentTransfer {
             ctx.source_graphic().height(),
             input.surface().surface_type(),
         )?;
-
-        let func_r_node = get_func_x_node!(node, FeFuncR, Channel::R);
-        let func_g_node = get_func_x_node!(node, FeFuncG, Channel::G);
-        let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
-        let func_a_node = get_func_x_node!(node, FeFuncA, Channel::A);
-
-        for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
-            .iter()
-            .filter_map(|x| x.as_ref())
-        {
-            if node.borrow_element().is_in_error() {
-                return Err(FilterError::ChildNodeInError);
-            }
-        }
-
-        // These are the default funcs that perform an identity transformation.
-        let func_r_default = FeFuncR::default();
-        let func_g_default = FeFuncG::default();
-        let func_b_default = FeFuncB::default();
-        let func_a_default = FeFuncA::default();
-
-        // We need to tell the borrow checker that these live long enough
-        let func_r_element;
-        let func_g_element;
-        let func_b_element;
-        let func_a_element;
-
-        let func_r = func_or_default!(func_r_node, FeFuncR, func_r_element, func_r_default);
-        let func_g = func_or_default!(func_g_node, FeFuncG, func_g_element, func_g_default);
-        let func_b = func_or_default!(func_b_node, FeFuncB, func_b_element, func_b_default);
-        let func_a = func_or_default!(func_a_node, FeFuncA, func_a_element, func_a_default);
 
         #[inline]
         fn compute_func<F>(func: &F) -> impl Fn(u8, f64, f64) -> u8 + '_
@@ -349,13 +329,13 @@ impl FilterRender for FeComponentTransfer {
             }
         }
 
-        let compute_r = compute_func::<FeFuncR>(&func_r);
-        let compute_g = compute_func::<FeFuncG>(&func_g);
-        let compute_b = compute_func::<FeFuncB>(&func_b);
+        let compute_r = compute_func::<FeFuncR>(&functions.r);
+        let compute_g = compute_func::<FeFuncG>(&functions.g);
+        let compute_b = compute_func::<FeFuncB>(&functions.b);
 
         // Alpha gets special handling since everything else depends on it.
-        let compute_a = func_a.function();
-        let params_a = func_a.function_parameters();
+        let compute_a = functions.a.function();
+        let params_a = functions.a.function_parameters();
         let compute_a = |alpha| compute_a(&params_a, alpha);
 
         // Do the actual processing.
@@ -389,4 +369,40 @@ impl FilterEffect for FeComponentTransfer {
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true
     }
+}
+
+/// Takes a feComponentTransfer and walks its children to produce the feFuncX arguments.
+fn get_parameters(node: &Node) -> Result<Functions, FilterError> {
+    let func_r_node = get_func_x_node!(node, FeFuncR, Channel::R);
+    let func_g_node = get_func_x_node!(node, FeFuncG, Channel::G);
+    let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
+    let func_a_node = get_func_x_node!(node, FeFuncA, Channel::A);
+
+    for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
+        .iter()
+        .filter_map(|x| x.as_ref())
+    {
+        if node.borrow_element().is_in_error() {
+            return Err(FilterError::ChildNodeInError);
+        }
+    }
+
+    // These are the default funcs that perform an identity transformation.
+    let func_r_default = FeFuncR::default();
+    let func_g_default = FeFuncG::default();
+    let func_b_default = FeFuncB::default();
+    let func_a_default = FeFuncA::default();
+
+    // We need to tell the borrow checker that these live long enough
+    let func_r_element;
+    let func_g_element;
+    let func_b_element;
+    let func_a_element;
+
+    let r = func_or_default!(func_r_node, FeFuncR, func_r_element, func_r_default);
+    let g = func_or_default!(func_g_node, FeFuncG, func_g_element, func_g_default);
+    let b = func_or_default!(func_b_node, FeFuncB, func_b_element, func_b_default);
+    let a = func_or_default!(func_a_node, FeFuncA, func_a_element, func_a_default);
+
+    Ok(Functions { r, g, b, a })
 }
