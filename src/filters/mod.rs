@@ -136,7 +136,7 @@ impl Primitive {
 
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
-    fn get_bounds<'a>(&self, ctx: &'a FilterContext) -> Result<BoundsBuilder, FilterError> {
+    fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
             check_units(self.x)?;
