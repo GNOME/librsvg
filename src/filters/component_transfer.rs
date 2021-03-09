@@ -308,7 +308,7 @@ impl FilterRender for FeComponentTransfer {
         )?;
 
         #[inline]
-        fn compute_func<F>(func: &F) -> impl Fn(u8, f64, f64) -> u8 + '_
+        fn compute_func<F>(func: &F) -> impl Fn(u8, f64, f64) -> u8
         where
             F: FeComponentTransferFunc,
         {
