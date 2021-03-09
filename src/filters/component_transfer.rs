@@ -258,16 +258,13 @@ func_x!(FeFuncB, Channel::B);
 func_x!(FeFuncA, Channel::A);
 
 macro_rules! func_or_default {
-    ($func_node:ident, $func_type:ident, $func_data:ident, $func_default:ident) => {
+    ($func_node:ident, $func_type:ident) => {
         match $func_node {
-            Some(ref f) => {
-                $func_data = f.borrow_element();
-                match *$func_data {
-                    Element::$func_type(ref e) => e.element_impl.clone(),
-                    _ => unreachable!(),
-                }
-            }
-            _ => $func_default,
+            Some(ref f) => match *f.borrow_element() {
+                Element::$func_type(ref e) => e.element_impl.clone(),
+                _ => unreachable!(),
+            },
+            _ => $func_type::default(),
         };
     };
 }
@@ -387,22 +384,10 @@ fn get_parameters(node: &Node) -> Result<Functions, FilterError> {
         }
     }
 
-    // These are the default funcs that perform an identity transformation.
-    let func_r_default = FeFuncR::default();
-    let func_g_default = FeFuncG::default();
-    let func_b_default = FeFuncB::default();
-    let func_a_default = FeFuncA::default();
-
-    // We need to tell the borrow checker that these live long enough
-    let func_r_element;
-    let func_g_element;
-    let func_b_element;
-    let func_a_element;
-
-    let r = func_or_default!(func_r_node, FeFuncR, func_r_element, func_r_default);
-    let g = func_or_default!(func_g_node, FeFuncG, func_g_element, func_g_default);
-    let b = func_or_default!(func_b_node, FeFuncB, func_b_element, func_b_default);
-    let a = func_or_default!(func_a_node, FeFuncA, func_a_element, func_a_default);
+    let r = func_or_default!(func_r_node, FeFuncR);
+    let g = func_or_default!(func_g_node, FeFuncG);
+    let b = func_or_default!(func_b_node, FeFuncB);
+    let a = func_or_default!(func_a_node, FeFuncA);
 
     Ok(Functions { r, g, b, a })
 }
