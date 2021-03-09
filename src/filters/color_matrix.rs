@@ -15,7 +15,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
 
 /// Color matrix operation types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -137,10 +137,10 @@ impl SetAttributes for FeColorMatrix {
     }
 }
 
-impl FilterEffect for FeColorMatrix {
+impl FilterRender for FeColorMatrix {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -148,7 +148,7 @@ impl FilterEffect for FeColorMatrix {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
-            .get_bounds(ctx, node.parent().as_ref())?
+            .get_bounds(ctx)?
             .add_input(&input)
             .into_irect(ctx, draw_ctx);
 
@@ -199,7 +199,9 @@ impl FilterEffect for FeColorMatrix {
             },
         })
     }
+}
 
+impl FilterEffect for FeColorMatrix {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true

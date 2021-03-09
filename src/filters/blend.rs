@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, PrimitiveWithInput};
 
 /// Enumeration of the possible blending modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -70,10 +70,10 @@ impl SetAttributes for FeBlend {
     }
 }
 
-impl FilterEffect for FeBlend {
+impl FilterRender for FeBlend {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -82,7 +82,7 @@ impl FilterEffect for FeBlend {
         let input_2 = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
         let bounds = self
             .base
-            .get_bounds(ctx, node.parent().as_ref())?
+            .get_bounds(ctx)?
             .add_input(&input)
             .add_input(&input_2)
             .into_irect(ctx, draw_ctx);
@@ -97,7 +97,9 @@ impl FilterEffect for FeBlend {
             output: FilterOutput { surface, bounds },
         })
     }
+}
 
+impl FilterEffect for FeBlend {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true

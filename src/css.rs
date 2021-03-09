@@ -795,28 +795,13 @@ pub fn cascade(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gio;
-    use glib::{self, prelude::*};
     use selectors::Element;
 
     use crate::document::Document;
-    use crate::handle::LoadOptions;
-
-    fn load_document(input: &'static [u8]) -> Document {
-        let bytes = glib::Bytes::from_static(input);
-        let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
-
-        Document::load_from_stream(
-            &LoadOptions::new(UrlResolver::new(None)),
-            &stream.upcast(),
-            None::<&gio::Cancellable>,
-        )
-        .unwrap()
-    }
 
     #[test]
     fn impl_element() {
-        let document = load_document(
+        let document = Document::load_from_bytes(
             br#"<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" id="a">
   <rect id="b" x="10" y="10" width="30" height="30"/>

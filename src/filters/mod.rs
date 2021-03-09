@@ -9,7 +9,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ParseError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -29,8 +29,8 @@ use self::context::{FilterContext, FilterInput, FilterResult};
 mod error;
 use self::error::FilterError;
 
-/// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw {
+/// Trait to render filter effect primitives.
+pub trait FilterRender {
     /// Renders this filter primitive.
     ///
     /// If this filter primitive can't be rendered for whatever reason (for instance, a required
@@ -42,7 +42,10 @@ pub trait FilterEffect: SetAttributes + Draw {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError>;
+}
 
+/// A filter primitive interface.
+pub trait FilterEffect: SetAttributes + Draw + FilterRender {
     /// Returns `true` if this filter primitive is affected by the `color-interpolation-filters`
     /// property.
     ///
@@ -133,23 +136,9 @@ impl Primitive {
 
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
-    fn get_bounds<'a>(
-        &self,
-        ctx: &'a FilterContext,
-        parent: Option<&Node>,
-    ) -> Result<BoundsBuilder, FilterError> {
-        let primitive_units = parent
-            .and_then(|parent| {
-                assert!(parent.is_element());
-                match *parent.borrow_element() {
-                    Element::Filter(ref f) => Some(f.get_primitive_units()),
-                    _ => None,
-                }
-            })
-            .unwrap_or(CoordUnits::UserSpaceOnUse);
-
+    fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
-        if primitive_units == CoordUnits::ObjectBoundingBox {
+        if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
             check_units(self.x)?;
             check_units(self.y)?;
             check_units(self.width)?;

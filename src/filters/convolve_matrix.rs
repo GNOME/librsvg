@@ -20,7 +20,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
 
 /// The `feConvolveMatrix` filter primitive.
 pub struct FeConvolveMatrix {
@@ -119,10 +119,10 @@ impl SetAttributes for FeConvolveMatrix {
     }
 }
 
-impl FilterEffect for FeConvolveMatrix {
+impl FilterRender for FeConvolveMatrix {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -132,7 +132,7 @@ impl FilterEffect for FeConvolveMatrix {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let mut bounds = self
             .base
-            .get_bounds(ctx, node.parent().as_ref())?
+            .get_bounds(ctx)?
             .add_input(&input)
             .into_irect(ctx, draw_ctx);
         let original_bounds = bounds;
@@ -280,7 +280,9 @@ impl FilterEffect for FeConvolveMatrix {
             output: FilterOutput { surface, bounds },
         })
     }
+}
 
+impl FilterEffect for FeConvolveMatrix {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         true

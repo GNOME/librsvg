@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, PrimitiveWithInput,
+    FilterEffect, FilterError, FilterRender, PrimitiveWithInput,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
@@ -25,6 +25,14 @@ use crate::surface_utils::{
 use crate::transform::Transform;
 use crate::util::clamp;
 use crate::xml::Attributes;
+
+/// A light source before applying affine transformations, straight out of the SVG.
+#[derive(Debug, PartialEq)]
+enum UntransformedLightSource {
+    Distant(FeDistantLight),
+    Point(FePointLight),
+    Spot(FeSpotLight),
+}
 
 /// A light source with affine transformations applied.
 pub enum LightSource {
@@ -43,14 +51,24 @@ pub enum LightSource {
     },
 }
 
+impl UntransformedLightSource {
+    fn transform(&self, paffine: Transform) -> LightSource {
+        match *self {
+            UntransformedLightSource::Distant(ref l) => l.transform(),
+            UntransformedLightSource::Point(ref l) => l.transform(paffine),
+            UntransformedLightSource::Spot(ref l) => l.transform(paffine),
+        }
+    }
+}
+
 struct Light {
-    source: LightSource,
+    source: UntransformedLightSource,
     lighting_color: cssparser::RGBA,
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Light {
-    pub fn new(node: &Node, paffine: Transform) -> Result<Light, FilterError> {
+    pub fn new(node: &Node) -> Result<Light, FilterError> {
         let mut sources = node.children().rev().filter(|c| {
             c.is_element()
                 && matches!(
@@ -72,9 +90,11 @@ impl Light {
         }
 
         let source = match *elt {
-            Element::FeDistantLight(ref l) => l.transform(),
-            Element::FePointLight(ref l) => l.transform(paffine),
-            Element::FeSpotLight(ref l) => l.transform(paffine),
+            Element::FeDistantLight(ref l) => {
+                UntransformedLightSource::Distant(l.element_impl.clone())
+            }
+            Element::FePointLight(ref l) => UntransformedLightSource::Point(l.element_impl.clone()),
+            Element::FeSpotLight(ref l) => UntransformedLightSource::Spot(l.element_impl.clone()),
             _ => unreachable!(),
         };
 
@@ -95,8 +115,14 @@ impl Light {
 
     /// Returns the color and unit (or null) vector from the image sample to the light.
     #[inline]
-    pub fn color_and_vector(&self, x: f64, y: f64, z: f64) -> (cssparser::RGBA, Vector3<f64>) {
-        let vector = match self.source {
+    pub fn color_and_vector(
+        &self,
+        source: &LightSource,
+        x: f64,
+        y: f64,
+        z: f64,
+    ) -> (cssparser::RGBA, Vector3<f64>) {
+        let vector = match *source {
             LightSource::Distant { azimuth, elevation } => {
                 let azimuth = azimuth.to_radians();
                 let elevation = elevation.to_radians();
@@ -113,7 +139,7 @@ impl Light {
             }
         };
 
-        let color = match self.source {
+        let color = match *source {
             LightSource::Spot {
                 direction,
                 specular_exponent,
@@ -146,7 +172,7 @@ impl Light {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct FeDistantLight {
     azimuth: f64,
     elevation: f64,
@@ -177,7 +203,7 @@ impl SetAttributes for FeDistantLight {
 
 impl Draw for FeDistantLight {}
 
-#[derive(Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct FePointLight {
     x: f64,
     y: f64,
@@ -212,7 +238,7 @@ impl SetAttributes for FePointLight {
 
 impl Draw for FePointLight {}
 
-#[derive(Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct FeSpotLight {
     x: f64,
     y: f64,
@@ -423,7 +449,7 @@ impl FeSpecularLighting {
 // not want to make the Lighting trait public, so we use a macro
 macro_rules! impl_lighting_filter {
     ($lighting_type:ty, $alpha_func:ident) => {
-        impl FilterEffect for $lighting_type {
+        impl FilterRender for $lighting_type {
             fn render(
                 &self,
                 node: &Node,
@@ -434,7 +460,7 @@ macro_rules! impl_lighting_filter {
                 let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
                 let mut bounds = self
                     .base
-                    .get_bounds(ctx, node.parent().as_ref())?
+                    .get_bounds(ctx)?
                     .add_input(&input)
                     .into_irect(ctx, draw_ctx);
                 let original_bounds = bounds;
@@ -464,7 +490,9 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let light = Light::new(node, ctx.paffine())?;
+                let light = Light::new(node)?;
+
+                let source = light.source.transform(ctx.paffine());
 
                 // The generated color values are in the color space determined by
                 // color-interpolation-filters.
@@ -489,7 +517,8 @@ macro_rules! impl_lighting_filter {
                             let scaled_y = f64::from(y) * oy;
                             let z = f64::from(pixel.a) / 255.0 * self.surface_scale;
 
-                            let (color, vector) = light.color_and_vector(scaled_x, scaled_y, z);
+                            let (color, vector) =
+                                light.color_and_vector(&source, scaled_x, scaled_y, z);
 
                             // compute the factor just once for the three colors
                             let factor = self.compute_factor(normal, vector);
@@ -634,7 +663,9 @@ macro_rules! impl_lighting_filter {
                     output: FilterOutput { surface, bounds },
                 })
             }
+        }
 
+        impl FilterEffect for $lighting_type {
             #[inline]
             fn is_affected_by_color_interpolation_filters(&self) -> bool {
                 true
@@ -892,5 +923,73 @@ impl Normal {
             2. / 3.,
             -top_left - 2 * top + left + 2 * center,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::document::Document;
+
+    #[test]
+    fn extracts_light_source() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <filter id="filter">
+    <feDiffuseLighting id="diffuse_distant">
+      <feDistantLight azimuth="0.0" elevation="45.0"/>
+    </feDiffuseLighting>
+
+    <feSpecularLighting id="specular_point">
+      <fePointLight x="1.0" y="2.0" z="3.0"/>
+    </feSpecularLighting>
+
+    <feDiffuseLighting id="diffuse_spot">
+      <feSpotLight x="1.0" y="2.0" z="3.0"
+                   pointsAtX="4.0" pointsAtY="5.0" pointsAtZ="6.0"
+                   specularExponent="7.0" limitingConeAngle="8.0"/>
+    </feDiffuseLighting>
+  </filter>
+</svg>
+"#,
+        );
+
+        let lighting = document.lookup_internal_node("diffuse_distant").unwrap();
+        let light = Light::new(&lighting).unwrap();
+        assert_eq!(
+            light.source,
+            UntransformedLightSource::Distant(FeDistantLight {
+                azimuth: 0.0,
+                elevation: 45.0,
+            })
+        );
+
+        let lighting = document.lookup_internal_node("specular_point").unwrap();
+        let light = Light::new(&lighting).unwrap();
+        assert_eq!(
+            light.source,
+            UntransformedLightSource::Point(FePointLight {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+            })
+        );
+
+        let lighting = document.lookup_internal_node("diffuse_spot").unwrap();
+        let light = Light::new(&lighting).unwrap();
+        assert_eq!(
+            light.source,
+            UntransformedLightSource::Spot(FeSpotLight {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+                points_at_x: 4.0,
+                points_at_y: 5.0,
+                points_at_z: 6.0,
+                specular_exponent: 7.0,
+                limiting_cone_angle: Some(8.0),
+            })
+        );
     }
 }

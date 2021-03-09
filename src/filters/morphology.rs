@@ -18,7 +18,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
 
 /// Enumeration of the possible morphology operations.
 enum Operator {
@@ -64,10 +64,10 @@ impl SetAttributes for FeMorphology {
     }
 }
 
-impl FilterEffect for FeMorphology {
+impl FilterRender for FeMorphology {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -75,7 +75,7 @@ impl FilterEffect for FeMorphology {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
-            .get_bounds(ctx, node.parent().as_ref())?
+            .get_bounds(ctx)?
             .add_input(&input)
             .into_irect(ctx, draw_ctx);
 
@@ -140,7 +140,9 @@ impl FilterEffect for FeMorphology {
             },
         })
     }
+}
 
+impl FilterEffect for FeMorphology {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         false

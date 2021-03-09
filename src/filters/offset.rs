@@ -8,7 +8,7 @@ use crate::parsers::ParseValue;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
 
 /// The `feOffset` filter primitive.
 pub struct FeOffset {
@@ -45,10 +45,10 @@ impl SetAttributes for FeOffset {
     }
 }
 
-impl FilterEffect for FeOffset {
+impl FilterRender for FeOffset {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -56,7 +56,7 @@ impl FilterEffect for FeOffset {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
         let bounds = self
             .base
-            .get_bounds(ctx, node.parent().as_ref())?
+            .get_bounds(ctx)?
             .add_input(&input)
             .into_irect(ctx, draw_ctx);
 
@@ -69,7 +69,9 @@ impl FilterEffect for FeOffset {
             output: FilterOutput { surface, bounds },
         })
     }
+}
 
+impl FilterEffect for FeOffset {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         false

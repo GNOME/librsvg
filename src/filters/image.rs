@@ -13,7 +13,7 @@ use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Primitive};
 
 /// The `feImage` filter primitive.
 pub struct FeImage {
@@ -118,15 +118,15 @@ impl SetAttributes for FeImage {
     }
 }
 
-impl FilterEffect for FeImage {
+impl FilterRender for FeImage {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds_builder = self.base.get_bounds(ctx, node.parent().as_ref())?;
+        let bounds_builder = self.base.get_bounds(ctx)?;
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx, draw_ctx);
 
         let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
@@ -153,7 +153,9 @@ impl FilterEffect for FeImage {
             },
         })
     }
+}
 
+impl FilterEffect for FeImage {
     #[inline]
     fn is_affected_by_color_interpolation_filters(&self) -> bool {
         false
