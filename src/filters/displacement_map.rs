@@ -70,7 +70,7 @@ impl SetAttributes for FeDisplacementMap {
 impl FilterRender for FeDisplacementMap {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,

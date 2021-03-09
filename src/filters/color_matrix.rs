@@ -140,7 +140,7 @@ impl SetAttributes for FeColorMatrix {
 impl FilterRender for FeColorMatrix {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,

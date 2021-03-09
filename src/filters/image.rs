@@ -121,7 +121,7 @@ impl SetAttributes for FeImage {
 impl FilterRender for FeImage {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,

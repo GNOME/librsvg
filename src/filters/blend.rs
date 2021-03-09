@@ -73,7 +73,7 @@ impl SetAttributes for FeBlend {
 impl FilterRender for FeBlend {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,

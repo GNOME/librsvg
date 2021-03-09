@@ -67,7 +67,7 @@ impl SetAttributes for FeMorphology {
 impl FilterRender for FeMorphology {
     fn render(
         &self,
-        node: &Node,
+        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
