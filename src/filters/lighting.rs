@@ -27,6 +27,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 /// A light source before applying affine transformations, straight out of the SVG.
+#[derive(Debug, PartialEq)]
 enum UntransformedLightSource {
     Distant(FeDistantLight),
     Point(FePointLight),
@@ -171,7 +172,7 @@ impl Light {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct FeDistantLight {
     azimuth: f64,
     elevation: f64,
@@ -202,7 +203,7 @@ impl SetAttributes for FeDistantLight {
 
 impl Draw for FeDistantLight {}
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct FePointLight {
     x: f64,
     y: f64,
@@ -237,7 +238,7 @@ impl SetAttributes for FePointLight {
 
 impl Draw for FePointLight {}
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct FeSpotLight {
     x: f64,
     y: f64,
@@ -922,5 +923,73 @@ impl Normal {
             2. / 3.,
             -top_left - 2 * top + left + 2 * center,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::document::Document;
+
+    #[test]
+    fn extracts_light_source() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <filter id="filter">
+    <feDiffuseLighting id="diffuse_distant">
+      <feDistantLight azimuth="0.0" elevation="45.0"/>
+    </feDiffuseLighting>
+
+    <feSpecularLighting id="specular_point">
+      <fePointLight x="1.0" y="2.0" z="3.0"/>
+    </feSpecularLighting>
+
+    <feDiffuseLighting id="diffuse_spot">
+      <feSpotLight x="1.0" y="2.0" z="3.0"
+                   pointsAtX="4.0" pointsAtY="5.0" pointsAtZ="6.0"
+                   specularExponent="7.0" limitingConeAngle="8.0"/>
+    </feDiffuseLighting>
+  </filter>
+</svg>
+"#,
+        );
+
+        let lighting = document.lookup_internal_node("diffuse_distant").unwrap();
+        let light = Light::new(&lighting).unwrap();
+        assert_eq!(
+            light.source,
+            UntransformedLightSource::Distant(FeDistantLight {
+                azimuth: 0.0,
+                elevation: 45.0,
+            })
+        );
+
+        let lighting = document.lookup_internal_node("specular_point").unwrap();
+        let light = Light::new(&lighting).unwrap();
+        assert_eq!(
+            light.source,
+            UntransformedLightSource::Point(FePointLight {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+            })
+        );
+
+        let lighting = document.lookup_internal_node("diffuse_spot").unwrap();
+        let light = Light::new(&lighting).unwrap();
+        assert_eq!(
+            light.source,
+            UntransformedLightSource::Spot(FeSpotLight {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+                points_at_x: 4.0,
+                points_at_y: 5.0,
+                points_at_z: 6.0,
+                specular_exponent: 7.0,
+                limiting_cone_angle: Some(8.0),
+            })
+        );
     }
 }
