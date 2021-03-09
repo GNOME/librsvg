@@ -49,7 +49,7 @@ enum Channel {
 }
 
 /// Component transfer function types.
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 enum FunctionType {
     Identity,
     Table,
@@ -81,6 +81,7 @@ struct FunctionParameters {
     offset: f64,
 }
 
+#[derive(Debug, PartialEq)]
 struct Functions {
     r: FeFuncR,
     g: FeFuncG,
@@ -146,7 +147,7 @@ trait FeComponentTransferFunc {
 
 macro_rules! func_x {
     ($func_name:ident, $channel:expr) => {
-        #[derive(Clone)]
+        #[derive(Clone, Debug, PartialEq)]
         pub struct $func_name {
             channel: Channel,
             function_type: FunctionType,
@@ -390,4 +391,62 @@ fn get_parameters(node: &Node) -> Result<Functions, FilterError> {
     let a = func_or_default!(func_a_node, FeFuncA);
 
     Ok(Functions { r, g, b, a })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::document::Document;
+
+    #[test]
+    fn extracts_functions() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg">
+  <filter id="filter">
+    <feComponentTransfer id="component_transfer">
+      <!-- no feFuncR so it should get the defaults -->
+
+      <feFuncG type="table" tableValues="0.0 1.0 2.0"/>
+
+      <feFuncB type="table"/>
+      <!-- duplicate this to test that last-one-wins -->
+      <feFuncB type="discrete" tableValues="0.0, 1.0" slope="1.0" intercept="2.0" amplitude="3.0" exponent="4.0" offset="5.0"/>
+
+      <!-- no feFuncA so it should get the defaults -->
+    </feComponentTransfer>
+  </filter>
+</svg>
+"#
+        );
+
+        let component_transfer = document.lookup_internal_node("component_transfer").unwrap();
+        let functions = get_parameters(&component_transfer).unwrap();
+
+        assert_eq!(
+            functions,
+            Functions {
+                r: FeFuncR::default(),
+
+                g: FeFuncG {
+                    function_type: FunctionType::Table,
+                    table_values: vec![0.0, 1.0, 2.0],
+                    ..FeFuncG::default()
+                },
+
+                b: FeFuncB {
+                    function_type: FunctionType::Discrete,
+                    table_values: vec![0.0, 1.0],
+                    slope: 1.0,
+                    intercept: 2.0,
+                    amplitude: 3.0,
+                    exponent: 4.0,
+                    offset: 5.0,
+                    ..FeFuncB::default()
+                },
+
+                a: FeFuncA::default(),
+            }
+        );
+    }
 }
