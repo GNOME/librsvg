@@ -224,7 +224,8 @@ impl Surface {
 
     #[cfg(have_cairo_svg)]
     fn new_for_svg(size: Size, stream: OutputStream) -> Result<Self, Error> {
-        let surface = cairo::SvgSurface::for_stream(size.w, size.h, stream.into_write())?;
+        let mut surface = cairo::SvgSurface::for_stream(size.w, size.h, stream.into_write())?;
+        surface.set_document_unit(cairo::SvgUnit::User);
         Ok(Self::Svg(surface, size))
     }
 
