@@ -36,7 +36,7 @@ impl Default for FeDisplacementMap {
     #[inline]
     fn default() -> FeDisplacementMap {
         FeDisplacementMap {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
             in2: None,
             scale: 0.0,
             x_channel_selector: ColorChannel::A,

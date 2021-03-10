@@ -22,7 +22,7 @@ impl Default for FeOffset {
     #[inline]
     fn default() -> FeOffset {
         FeOffset {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
             dx: 0f64,
             dy: 0f64,
         }

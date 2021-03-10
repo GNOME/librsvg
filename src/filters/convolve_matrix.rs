@@ -41,7 +41,7 @@ impl Default for FeConvolveMatrix {
     #[inline]
     fn default() -> FeConvolveMatrix {
         FeConvolveMatrix {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
             order: (3, 3),
             kernel_matrix: None,
             divisor: 0.0,

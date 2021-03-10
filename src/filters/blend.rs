@@ -47,7 +47,7 @@ impl Default for FeBlend {
     #[inline]
     fn default() -> FeBlend {
         FeBlend {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
             in2: None,
             mode: Mode::default(),
         }

@@ -317,7 +317,7 @@ pub struct FeDiffuseLighting {
 impl Default for FeDiffuseLighting {
     fn default() -> Self {
         Self {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
             surface_scale: 1.0,
             kernel_unit_length: None,
             diffuse_constant: 1.0,
@@ -380,7 +380,7 @@ pub struct FeSpecularLighting {
 impl Default for FeSpecularLighting {
     fn default() -> Self {
         Self {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
             surface_scale: 1.0,
             kernel_unit_length: None,
             specular_constant: 1.0,

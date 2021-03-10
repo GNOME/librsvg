@@ -28,7 +28,7 @@ impl Default for FeComponentTransfer {
     #[inline]
     fn default() -> FeComponentTransfer {
         FeComponentTransfer {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
         }
     }
 }

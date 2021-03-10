@@ -17,7 +17,7 @@ impl Default for FeTile {
     #[inline]
     fn default() -> FeTile {
         FeTile {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: PrimitiveWithInput::new(),
         }
     }
 }

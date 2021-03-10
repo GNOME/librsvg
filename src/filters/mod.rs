@@ -124,7 +124,7 @@ struct PrimitiveWithInput {
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
-    fn new<T: FilterEffect>() -> Primitive {
+    fn new() -> Primitive {
         Primitive {
             x: None,
             y: None,
@@ -192,9 +192,9 @@ impl SetAttributes for Primitive {
 impl PrimitiveWithInput {
     /// Constructs a new `PrimitiveWithInput` with empty properties.
     #[inline]
-    fn new<T: FilterEffect>() -> PrimitiveWithInput {
+    fn new() -> PrimitiveWithInput {
         PrimitiveWithInput {
-            base: Primitive::new::<T>(),
+            base: Primitive::new(),
             in_: None,
         }
     }

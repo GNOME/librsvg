@@ -28,7 +28,7 @@ impl Default for FeMerge {
     #[inline]
     fn default() -> FeMerge {
         FeMerge {
-            base: Primitive::new::<Self>(),
+            base: Primitive::new(),
         }
     }
 }
