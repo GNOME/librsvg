@@ -16,11 +16,12 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// The `feComponentTransfer` filter primitive.
 pub struct FeComponentTransfer {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
 }
 
 impl Default for FeComponentTransfer {
@@ -28,14 +29,16 @@ impl Default for FeComponentTransfer {
     #[inline]
     fn default() -> FeComponentTransfer {
         FeComponentTransfer {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
         }
     }
 }
 
 impl SetAttributes for FeComponentTransfer {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)
+        self.in1 = self.base.parse_one_input(attrs)?;
+        Ok(())
     }
 }
 
@@ -293,18 +296,18 @@ impl FilterRender for FeComponentTransfer {
     ) -> Result<FilterResult, FilterError> {
         let functions = get_parameters(node)?;
 
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
 
         // Create the output surface.
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-            input.surface().surface_type(),
+            input_1.surface().surface_type(),
         )?;
 
         #[inline]
@@ -338,7 +341,7 @@ impl FilterRender for FeComponentTransfer {
 
         // Do the actual processing.
         surface.modify(&mut |data, stride| {
-            for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
+            for (x, y, pixel) in Pixels::within(input_1.surface(), bounds) {
                 let alpha = f64::from(pixel.a) / 255f64;
                 let new_alpha = compute_a(alpha);
 

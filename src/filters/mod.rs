@@ -2,7 +2,6 @@
 
 use cssparser::{BasicParseError, Parser};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use std::ops::Deref;
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
@@ -10,7 +9,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
-use crate::error::{ParseError, RenderingError};
+use crate::error::{ElementError, ParseError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{CustomIdent, Parse, ParseValue};
@@ -24,7 +23,7 @@ mod bounds;
 use self::bounds::BoundsBuilder;
 
 pub mod context;
-use self::context::{FilterContext, FilterInput, FilterResult};
+use self::context::{FilterContext, FilterResult};
 
 mod error;
 use self::error::FilterError;
@@ -122,12 +121,6 @@ impl Parse for Input {
     }
 }
 
-/// The base node for filter primitives which accept input.
-struct PrimitiveWithInput {
-    base: Primitive,
-    in1: Input,
-}
-
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
@@ -179,8 +172,14 @@ fn check_units<N: Normalize, V: Validate>(
     }
 }
 
-impl SetAttributes for Primitive {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+impl Primitive {
+    fn parse_standard_attributes(
+        &mut self,
+        attrs: &Attributes,
+    ) -> Result<(Input, Input), ElementError> {
+        let mut input_1 = Input::Unspecified;
+        let mut input_2 = Input::Unspecified;
+
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -188,56 +187,27 @@ impl SetAttributes for Primitive {
                 expanded_name!("", "width") => self.width = attr.parse(value)?,
                 expanded_name!("", "height") => self.height = attr.parse(value)?,
                 expanded_name!("", "result") => self.result = attr.parse(value)?,
+                expanded_name!("", "in") => input_1 = attr.parse(value)?,
+                expanded_name!("", "in2") => input_2 = attr.parse(value)?,
                 _ => (),
             }
         }
 
+        Ok((input_1, input_2))
+    }
+
+    pub fn parse_no_inputs(&mut self, attrs: &Attributes) -> ElementResult {
+        let (_, _) = self.parse_standard_attributes(attrs)?;
         Ok(())
     }
-}
 
-impl PrimitiveWithInput {
-    /// Constructs a new `PrimitiveWithInput` with empty properties.
-    #[inline]
-    fn new() -> PrimitiveWithInput {
-        PrimitiveWithInput {
-            base: Primitive::new(),
-            in1: Default::default(),
-        }
+    pub fn parse_one_input(&mut self, attrs: &Attributes) -> Result<Input, ElementError> {
+        let (input_1, _) = self.parse_standard_attributes(attrs)?;
+        Ok(input_1)
     }
 
-    /// Returns the input Cairo surface for this filter primitive.
-    #[inline]
-    fn get_input(
-        &self,
-        ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterInput, FilterError> {
-        ctx.get_input(acquired_nodes, draw_ctx, &self.in1)
-    }
-}
-
-impl SetAttributes for PrimitiveWithInput {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
-
-        for (attr, value) in attrs.iter() {
-            if let expanded_name!("", "in") = attr.expanded() {
-                self.in1 = attr.parse(value)?;
-            }
-        }
-
-        Ok(())
-    }
-}
-
-impl Deref for PrimitiveWithInput {
-    type Target = Primitive;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.base
+    pub fn parse_two_inputs(&mut self, attrs: &Attributes) -> Result<(Input, Input), ElementError> {
+        self.parse_standard_attributes(attrs)
     }
 }
 

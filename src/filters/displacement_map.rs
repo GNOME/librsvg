@@ -11,7 +11,7 @@ use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurf
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// Enumeration of the color channels the displacement map can source.
 #[derive(Clone, Copy)]
@@ -24,7 +24,8 @@ enum ColorChannel {
 
 /// The `feDisplacementMap` filter primitive.
 pub struct FeDisplacementMap {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     in2: Input,
     scale: f64,
     x_channel_selector: ColorChannel,
@@ -36,7 +37,8 @@ impl Default for FeDisplacementMap {
     #[inline]
     fn default() -> FeDisplacementMap {
         FeDisplacementMap {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
             in2: Default::default(),
             scale: 0.0,
             x_channel_selector: ColorChannel::A,
@@ -47,11 +49,12 @@ impl Default for FeDisplacementMap {
 
 impl SetAttributes for FeDisplacementMap {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        let (in1, in2) = self.base.parse_two_inputs(attrs)?;
+        self.in1 = in1;
+        self.in2 = in2;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "in2") => self.in2 = attr.parse(value)?,
                 expanded_name!("", "scale") => self.scale = attr.parse(value)?,
                 expanded_name!("", "xChannelSelector") => {
                     self.x_channel_selector = attr.parse(value)?
@@ -75,12 +78,12 @@ impl FilterRender for FeDisplacementMap {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
         let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, &self.in2)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .add_input(&displacement_input)
             .into_irect(ctx, draw_ctx);
 
@@ -92,7 +95,7 @@ impl FilterRender for FeDisplacementMap {
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-            input.surface().surface_type(),
+            input_1.surface().surface_type(),
         )?;
 
         surface.draw(&mut |cr| {
@@ -120,7 +123,7 @@ impl FilterRender for FeDisplacementMap {
                 cr.reset_clip();
                 cr.clip();
 
-                input.surface().set_as_source_surface(&cr, -ox, -oy);
+                input_1.surface().set_as_source_surface(&cr, -ox, -oy);
                 cr.paint();
             }
 

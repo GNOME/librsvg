@@ -24,7 +24,7 @@ impl Default for FeFlood {
 
 impl SetAttributes for FeFlood {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)
+        self.base.parse_no_inputs(attrs)
     }
 }
 

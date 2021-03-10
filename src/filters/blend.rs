@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// Enumeration of the possible blending modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -37,7 +37,8 @@ enum_default!(Mode, Mode::Normal);
 
 /// The `feBlend` filter primitive.
 pub struct FeBlend {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     in2: Input,
     mode: Mode,
 }
@@ -47,7 +48,8 @@ impl Default for FeBlend {
     #[inline]
     fn default() -> FeBlend {
         FeBlend {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
             in2: Default::default(),
             mode: Mode::default(),
         }
@@ -56,13 +58,13 @@ impl Default for FeBlend {
 
 impl SetAttributes for FeBlend {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        let (in1, in2) = self.base.parse_two_inputs(attrs)?;
+        self.in1 = in1;
+        self.in2 = in2;
 
         for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                expanded_name!("", "in2") => self.in2 = attr.parse(value)?,
-                expanded_name!("", "mode") => self.mode = attr.parse(value)?,
-                _ => (),
+            if let expanded_name!("", "mode") = attr.expanded() {
+                self.mode = attr.parse(value)?;
             }
         }
 
@@ -78,19 +80,20 @@ impl FilterRender for FeBlend {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
         let input_2 = ctx.get_input(acquired_nodes, draw_ctx, &self.in2)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .add_input(&input_2)
             .into_irect(ctx, draw_ctx);
 
-        let surface =
-            input
-                .surface()
-                .compose(input_2.surface(), bounds, cairo::Operator::from(self.mode))?;
+        let surface = input_1.surface().compose(
+            input_2.surface(),
+            bounds,
+            cairo::Operator::from(self.mode),
+        )?;
 
         Ok(FilterResult {
             name: self.base.result.clone(),

@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, FilterRender, PrimitiveWithInput,
+    FilterEffect, FilterError, FilterRender, Input, Primitive,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
@@ -308,7 +308,8 @@ fn transform_dist(t: Transform, d: f64) -> f64 {
 
 /// The `feDiffuseLighting` filter primitives.
 pub struct FeDiffuseLighting {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     surface_scale: f64,
     kernel_unit_length: Option<(f64, f64)>,
     diffuse_constant: f64,
@@ -317,7 +318,8 @@ pub struct FeDiffuseLighting {
 impl Default for FeDiffuseLighting {
     fn default() -> Self {
         Self {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,
             diffuse_constant: 1.0,
@@ -327,7 +329,7 @@ impl Default for FeDiffuseLighting {
 
 impl SetAttributes for FeDiffuseLighting {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -370,7 +372,8 @@ impl FeDiffuseLighting {
 
 /// The `feSpecularLighting` filter primitives.
 pub struct FeSpecularLighting {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     surface_scale: f64,
     kernel_unit_length: Option<(f64, f64)>,
     specular_constant: f64,
@@ -380,7 +383,8 @@ pub struct FeSpecularLighting {
 impl Default for FeSpecularLighting {
     fn default() -> Self {
         Self {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,
             specular_constant: 1.0,
@@ -391,7 +395,7 @@ impl Default for FeSpecularLighting {
 
 impl SetAttributes for FeSpecularLighting {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -457,11 +461,11 @@ macro_rules! impl_lighting_filter {
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterResult, FilterError> {
-                let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+                let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
                 let mut bounds = self
                     .base
                     .get_bounds(ctx)?
-                    .add_input(&input)
+                    .add_input(&input_1)
                     .into_irect(ctx, draw_ctx);
                 let original_bounds = bounds;
 
@@ -469,7 +473,7 @@ macro_rules! impl_lighting_filter {
                     .kernel_unit_length
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
-                let mut input_surface = input.surface().clone();
+                let mut input_surface = input_1.surface().clone();
 
                 if let Some((ox, oy)) = scale {
                     // Scale the input surface to match kernel_unit_length.

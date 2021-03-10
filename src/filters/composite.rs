@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -25,7 +25,8 @@ enum Operator {
 
 /// The `feComposite` filter primitive.
 pub struct FeComposite {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     in2: Input,
     operator: Operator,
     k1: f64,
@@ -39,7 +40,8 @@ impl Default for FeComposite {
     #[inline]
     fn default() -> FeComposite {
         FeComposite {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
             in2: Default::default(),
             operator: Operator::Over,
             k1: 0.0,
@@ -52,11 +54,12 @@ impl Default for FeComposite {
 
 impl SetAttributes for FeComposite {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        let (in1, in2) = self.base.parse_two_inputs(attrs)?;
+        self.in1 = in1;
+        self.in2 = in2;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "in2") => self.in2 = attr.parse(value)?,
                 expanded_name!("", "operator") => self.operator = attr.parse(value)?,
                 expanded_name!("", "k1") => self.k1 = attr.parse(value)?,
                 expanded_name!("", "k2") => self.k2 = attr.parse(value)?,
@@ -78,17 +81,17 @@ impl FilterRender for FeComposite {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
         let input_2 = ctx.get_input(acquired_nodes, draw_ctx, &self.in2)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .add_input(&input_2)
             .into_irect(ctx, draw_ctx);
 
         let surface = if self.operator == Operator::Arithmetic {
-            input.surface().compose_arithmetic(
+            input_1.surface().compose_arithmetic(
                 input_2.surface(),
                 bounds,
                 self.k1,
@@ -97,7 +100,7 @@ impl FilterRender for FeComposite {
                 self.k4,
             )?
         } else {
-            input.surface().compose(
+            input_1.surface().compose(
                 input_2.surface(),
                 bounds,
                 cairo::Operator::from(self.operator),

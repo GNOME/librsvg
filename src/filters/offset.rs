@@ -8,11 +8,12 @@ use crate::parsers::ParseValue;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// The `feOffset` filter primitive.
 pub struct FeOffset {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     dx: f64,
     dy: f64,
 }
@@ -22,7 +23,8 @@ impl Default for FeOffset {
     #[inline]
     fn default() -> FeOffset {
         FeOffset {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
             dx: 0f64,
             dy: 0f64,
         }
@@ -31,7 +33,7 @@ impl Default for FeOffset {
 
 impl SetAttributes for FeOffset {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -53,16 +55,16 @@ impl FilterRender for FeOffset {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
-        let surface = input.surface().offset(bounds, dx, dy)?;
+        let surface = input_1.surface().offset(bounds, dx, dy)?;
 
         Ok(FilterResult {
             name: self.base.result.clone(),

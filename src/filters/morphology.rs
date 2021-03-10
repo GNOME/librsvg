@@ -18,7 +18,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// Enumeration of the possible morphology operations.
 enum Operator {
@@ -28,7 +28,8 @@ enum Operator {
 
 /// The `feMorphology` filter primitive.
 pub struct FeMorphology {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     operator: Operator,
     radius: (f64, f64),
 }
@@ -38,7 +39,8 @@ impl Default for FeMorphology {
     #[inline]
     fn default() -> FeMorphology {
         FeMorphology {
-            base: PrimitiveWithInput::new(),
+            base: Primitive::new(),
+            in1: Default::default(),
             operator: Operator::Erode,
             radius: (0.0, 0.0),
         }
@@ -47,7 +49,7 @@ impl Default for FeMorphology {
 
 impl SetAttributes for FeMorphology {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -72,11 +74,11 @@ impl FilterRender for FeMorphology {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
 
         let (rx, ry) = self.radius;
@@ -88,11 +90,11 @@ impl FilterRender for FeMorphology {
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-            input.surface().surface_type(),
+            input_1.surface().surface_type(),
         )?;
 
         surface.modify(&mut |data, stride| {
-            for (x, y, _pixel) in Pixels::within(input.surface(), bounds) {
+            for (x, y, _pixel) in Pixels::within(input_1.surface(), bounds) {
                 // Compute the kernel rectangle bounds.
                 let kernel_bounds = IRect::new(
                     (f64::from(x) - rx).floor() as i32,
@@ -114,9 +116,12 @@ impl FilterRender for FeMorphology {
                     a: initial,
                 };
 
-                for (_x, _y, pixel) in
-                    PixelRectangle::within(&input.surface(), bounds, kernel_bounds, EdgeMode::None)
-                {
+                for (_x, _y, pixel) in PixelRectangle::within(
+                    &input_1.surface(),
+                    bounds,
+                    kernel_bounds,
+                    EdgeMode::None,
+                ) {
                     let op = match self.operator {
                         Operator::Erode => min,
                         Operator::Dilate => max,
