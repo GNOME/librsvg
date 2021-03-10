@@ -20,7 +20,7 @@ pub struct FeMerge {
 /// The `<feMergeNode>` element.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FeMergeNode {
-    in_: Option<Input>,
+    in1: Option<Input>,
 }
 
 impl Default for FeMerge {
@@ -42,7 +42,7 @@ impl SetAttributes for FeMerge {
 impl SetAttributes for FeMergeNode {
     #[inline]
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in_ = attrs
+        self.in1 = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
             .and_then(|(attr, value)| attr.parse(value).ok());
@@ -62,7 +62,7 @@ impl FeMergeNode {
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
-        let input = ctx.get_input(acquired_nodes, draw_ctx, self.in_.as_ref())?;
+        let input = ctx.get_input(acquired_nodes, draw_ctx, self.in1.as_ref())?;
 
         if output_surface.is_none() {
             return Ok(input.surface().clone());
@@ -88,7 +88,7 @@ impl FilterRender for FeMerge {
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds = self.base.get_bounds(ctx)?;
         for merge_node in &parameters {
-            let input = ctx.get_input(acquired_nodes, draw_ctx, merge_node.in_.as_ref())?;
+            let input = ctx.get_input(acquired_nodes, draw_ctx, merge_node.in1.as_ref())?;
             bounds = bounds.add_input(&input);
         }
 
@@ -172,10 +172,10 @@ mod tests {
             &params[..],
             vec![
                 FeMergeNode {
-                    in_: Some(Input::SourceGraphic)
+                    in1: Some(Input::SourceGraphic)
                 },
                 FeMergeNode {
-                    in_: Some(Input::SourceAlpha)
+                    in1: Some(Input::SourceAlpha)
                 },
             ]
         );

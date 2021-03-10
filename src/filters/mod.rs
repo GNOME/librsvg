@@ -118,7 +118,7 @@ impl Parse for Input {
 /// The base node for filter primitives which accept input.
 struct PrimitiveWithInput {
     base: Primitive,
-    in_: Option<Input>,
+    in1: Option<Input>,
 }
 
 impl Primitive {
@@ -195,7 +195,7 @@ impl PrimitiveWithInput {
     fn new() -> PrimitiveWithInput {
         PrimitiveWithInput {
             base: Primitive::new(),
-            in_: None,
+            in1: None,
         }
     }
 
@@ -207,7 +207,7 @@ impl PrimitiveWithInput {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterInput, FilterError> {
-        ctx.get_input(acquired_nodes, draw_ctx, self.in_.as_ref())
+        ctx.get_input(acquired_nodes, draw_ctx, self.in1.as_ref())
     }
 }
 
@@ -215,7 +215,7 @@ impl SetAttributes for PrimitiveWithInput {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         self.base.set_attributes(attrs)?;
 
-        self.in_ = attrs
+        self.in1 = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
             .and_then(|(attr, value)| attr.parse(value).ok());
