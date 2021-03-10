@@ -316,20 +316,20 @@ impl FilterContext {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-        in_: Option<&Input>,
+        in_: &Input,
     ) -> Result<FilterInput, FilterError> {
-        if in_.is_none() {
-            // No value => use the last result.
-            // As per the SVG spec, if the filter primitive is the first in the chain, return the
-            // source graphic.
-            if let Some(output) = self.last_result.as_ref() {
-                return Ok(FilterInput::PrimitiveOutput(output.clone()));
-            } else {
-                return Ok(FilterInput::StandardInput(self.source_graphic().clone()));
+        match *in_ {
+            Input::Unspecified => {
+                // No value => use the last result.
+                // As per the SVG spec, if the filter primitive is the first in the chain, return the
+                // source graphic.
+                if let Some(output) = self.last_result.as_ref() {
+                    Ok(FilterInput::PrimitiveOutput(output.clone()))
+                } else {
+                    Ok(FilterInput::StandardInput(self.source_graphic().clone()))
+                }
             }
-        }
 
-        match *in_.unwrap() {
             Input::SourceGraphic => Ok(FilterInput::StandardInput(self.source_graphic().clone())),
 
             Input::SourceAlpha => self
@@ -373,7 +373,7 @@ impl FilterContext {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-        in_: Option<&Input>,
+        in_: &Input,
     ) -> Result<FilterInput, FilterError> {
         let raw = self.get_input_raw(acquired_nodes, draw_ctx, in_)?;
 

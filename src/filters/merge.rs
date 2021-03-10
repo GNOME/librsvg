@@ -20,7 +20,7 @@ pub struct FeMerge {
 /// The `<feMergeNode>` element.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FeMergeNode {
-    in1: Option<Input>,
+    in1: Input,
 }
 
 impl Default for FeMerge {
@@ -42,10 +42,11 @@ impl SetAttributes for FeMerge {
 impl SetAttributes for FeMergeNode {
     #[inline]
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
-            .and_then(|(attr, value)| attr.parse(value).ok());
+        for (attr, value) in attrs.iter() {
+            if let expanded_name!("", "in") = attr.expanded() {
+                self.in1 = attr.parse(value)?;
+            }
+        }
 
         Ok(())
     }
@@ -62,7 +63,7 @@ impl FeMergeNode {
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
-        let input = ctx.get_input(acquired_nodes, draw_ctx, self.in1.as_ref())?;
+        let input = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
 
         if output_surface.is_none() {
             return Ok(input.surface().clone());
@@ -88,7 +89,7 @@ impl FilterRender for FeMerge {
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds = self.base.get_bounds(ctx)?;
         for merge_node in &parameters {
-            let input = ctx.get_input(acquired_nodes, draw_ctx, merge_node.in1.as_ref())?;
+            let input = ctx.get_input(acquired_nodes, draw_ctx, &merge_node.in1)?;
             bounds = bounds.add_input(&input);
         }
 
@@ -172,10 +173,10 @@ mod tests {
             &params[..],
             vec![
                 FeMergeNode {
-                    in1: Some(Input::SourceGraphic)
+                    in1: Input::SourceGraphic
                 },
                 FeMergeNode {
-                    in1: Some(Input::SourceAlpha)
+                    in1: Input::SourceAlpha
                 },
             ]
         );

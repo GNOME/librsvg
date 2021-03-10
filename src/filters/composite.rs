@@ -26,7 +26,7 @@ enum Operator {
 /// The `feComposite` filter primitive.
 pub struct FeComposite {
     base: PrimitiveWithInput,
-    in2: Option<Input>,
+    in2: Input,
     operator: Operator,
     k1: f64,
     k2: f64,
@@ -40,7 +40,7 @@ impl Default for FeComposite {
     fn default() -> FeComposite {
         FeComposite {
             base: PrimitiveWithInput::new(),
-            in2: None,
+            in2: Default::default(),
             operator: Operator::Over,
             k1: 0.0,
             k2: 0.0,
@@ -79,7 +79,7 @@ impl FilterRender for FeComposite {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
-        let input_2 = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
+        let input_2 = ctx.get_input(acquired_nodes, draw_ctx, &self.in2)?;
         let bounds = self
             .base
             .get_bounds(ctx)?

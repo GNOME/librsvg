@@ -85,6 +85,7 @@ struct Primitive {
 /// An enumeration of possible inputs for a filter primitive.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Input {
+    Unspecified,
     SourceGraphic,
     SourceAlpha,
     BackgroundImage,
@@ -92,6 +93,12 @@ pub enum Input {
     FillPaint,
     StrokePaint,
     FilterOutput(CustomIdent),
+}
+
+impl Default for Input {
+    fn default() -> Self {
+        Input::Unspecified
+    }
 }
 
 impl Parse for Input {
@@ -118,7 +125,7 @@ impl Parse for Input {
 /// The base node for filter primitives which accept input.
 struct PrimitiveWithInput {
     base: Primitive,
-    in1: Option<Input>,
+    in1: Input,
 }
 
 impl Primitive {
@@ -195,7 +202,7 @@ impl PrimitiveWithInput {
     fn new() -> PrimitiveWithInput {
         PrimitiveWithInput {
             base: Primitive::new(),
-            in1: None,
+            in1: Default::default(),
         }
     }
 
@@ -207,7 +214,7 @@ impl PrimitiveWithInput {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterInput, FilterError> {
-        ctx.get_input(acquired_nodes, draw_ctx, self.in1.as_ref())
+        ctx.get_input(acquired_nodes, draw_ctx, &self.in1)
     }
 }
 
@@ -215,10 +222,11 @@ impl SetAttributes for PrimitiveWithInput {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         self.base.set_attributes(attrs)?;
 
-        self.in1 = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
-            .and_then(|(attr, value)| attr.parse(value).ok());
+        for (attr, value) in attrs.iter() {
+            if let expanded_name!("", "in") = attr.expanded() {
+                self.in1 = attr.parse(value)?;
+            }
+        }
 
         Ok(())
     }

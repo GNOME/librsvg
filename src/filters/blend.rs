@@ -38,7 +38,7 @@ enum_default!(Mode, Mode::Normal);
 /// The `feBlend` filter primitive.
 pub struct FeBlend {
     base: PrimitiveWithInput,
-    in2: Option<Input>,
+    in2: Input,
     mode: Mode,
 }
 
@@ -48,7 +48,7 @@ impl Default for FeBlend {
     fn default() -> FeBlend {
         FeBlend {
             base: PrimitiveWithInput::new(),
-            in2: None,
+            in2: Default::default(),
             mode: Mode::default(),
         }
     }
@@ -79,7 +79,7 @@ impl FilterRender for FeBlend {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
-        let input_2 = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
+        let input_2 = ctx.get_input(acquired_nodes, draw_ctx, &self.in2)?;
         let bounds = self
             .base
             .get_bounds(ctx)?

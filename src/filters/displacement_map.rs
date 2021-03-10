@@ -25,7 +25,7 @@ enum ColorChannel {
 /// The `feDisplacementMap` filter primitive.
 pub struct FeDisplacementMap {
     base: PrimitiveWithInput,
-    in2: Option<Input>,
+    in2: Input,
     scale: f64,
     x_channel_selector: ColorChannel,
     y_channel_selector: ColorChannel,
@@ -37,7 +37,7 @@ impl Default for FeDisplacementMap {
     fn default() -> FeDisplacementMap {
         FeDisplacementMap {
             base: PrimitiveWithInput::new(),
-            in2: None,
+            in2: Default::default(),
             scale: 0.0,
             x_channel_selector: ColorChannel::A,
             y_channel_selector: ColorChannel::A,
@@ -76,7 +76,7 @@ impl FilterRender for FeDisplacementMap {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
-        let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, self.in2.as_ref())?;
+        let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, &self.in2)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
