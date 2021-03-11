@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use lighting::{FeDiffuseLighting, FeSpecularLighting};
 use merge::FeMerge;
 use morphology::FeMorphology;
 use offset::FeOffset;
@@ -71,7 +70,7 @@ pub enum PrimitiveParams {
     ComponentTransfer(component_transfer::ComponentTransfer),
     Composite(composite::Composite),
     ConvolveMatrix(convolve_matrix::ConvolveMatrix),
-    DiffuseLighting(Node),
+    DiffuseLighting(lighting::DiffuseLighting),
     DisplacementMap(displacement_map::DisplacementMap),
     Flood(flood::Flood),
     GaussianBlur(gaussian_blur::GaussianBlur),
@@ -79,7 +78,7 @@ pub enum PrimitiveParams {
     Merge(Node),
     Morphology(Node),
     Offset(Node),
-    SpecularLighting(Node),
+    SpecularLighting(lighting::SpecularLighting),
     Tile(Node),
     Turbulence(Node),
 }
@@ -322,7 +321,7 @@ fn render_primitive(
         (Element::FeComponentTransfer(_), ComponentTransfer(p)) => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeComposite(_), Composite(p))                 => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeConvolveMatrix(_), ConvolveMatrix(p))       => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeDiffuseLighting(ref inner), DiffuseLighting(node))     => FeDiffuseLighting::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeDiffuseLighting(_), DiffuseLighting(p))     => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeDisplacementMap(_), DisplacementMap(p))     => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeFlood(_), Flood(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeGaussianBlur(_), GaussianBlur(p))           => p.render(ctx, acquired_nodes, draw_ctx),
@@ -330,7 +329,7 @@ fn render_primitive(
         (Element::FeMerge(ref inner), Merge(node))                         => FeMerge::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeMorphology(ref inner), Morphology(node))               => FeMorphology::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeOffset(ref inner), Offset(node))                       => FeOffset::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
-        (Element::FeSpecularLighting(ref inner), SpecularLighting(node))   => FeSpecularLighting::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeSpecularLighting(_), SpecularLighting(p))   => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeTile(ref inner), Tile(node))                           => FeTile::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeTurbulence(ref inner), Turbulence(node))               => FeTurbulence::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (_, _) => unreachable!(),
