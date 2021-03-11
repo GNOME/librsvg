@@ -11,7 +11,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::node::{Node, NodeBorrow};
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
@@ -258,45 +258,24 @@ pub fn render(
             !in_error
         })
         // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow_element().as_filter_effect().is_some())
-        // Check if the node wants linear RGB.
-        .map(|c| {
-            let linear_rgb = {
-                let cascaded = CascadedValues::new_from_node(&c);
-                let values = cascaded.get();
+        .filter(|c| c.borrow_element().as_filter_effect().is_some());
 
-                values.color_interpolation_filters() == ColorInterpolationFilters::LinearRgb
-            };
-
-            (c, linear_rgb)
-        });
-
-    for (c, linear_rgb) in primitives {
+    for c in primitives {
         let elt = c.borrow_element();
         let filter = elt.as_filter_effect().unwrap();
 
-        let mut render = |filter_ctx: &mut FilterContext| {
-            if let Err(err) = filter
-                .render(&c, filter_ctx, acquired_nodes, draw_ctx)
-                .and_then(|result| filter_ctx.store_result(result))
-            {
-                rsvg_log!("(filter primitive {} returned an error: {})", c, err);
-
-                // Exit early on Cairo errors. Continue rendering otherwise.
-                if let FilterError::CairoError(status) = err {
-                    return Err(status);
-                }
-            }
-
-            Ok(())
-        };
-
         let start = Instant::now();
 
-        if filter.is_affected_by_color_interpolation_filters() && linear_rgb {
-            filter_ctx.with_linear_rgb(render)?;
-        } else {
-            render(&mut filter_ctx)?;
+        if let Err(err) = filter
+            .render(&c, &mut filter_ctx, acquired_nodes, draw_ctx)
+            .and_then(|result| filter_ctx.store_result(result))
+        {
+            rsvg_log!("(filter primitive {} returned an error: {})", c, err);
+
+            // Exit early on Cairo errors. Continue rendering otherwise.
+            if let FilterError::CairoError(status) = err {
+                return Err(RenderingError::from(status));
+            }
         }
 
         let elapsed = start.elapsed();

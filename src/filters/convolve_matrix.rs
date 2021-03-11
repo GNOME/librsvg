@@ -6,7 +6,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
-use crate::node::Node;
+use crate::node::{CascadedValues, Node};
 use crate::parsers::{
     NonNegative, NumberList, NumberListLength, NumberOptionalNumber, Parse, ParseValue,
 };
@@ -124,14 +124,18 @@ impl SetAttributes for FeConvolveMatrix {
 impl FilterRender for FeConvolveMatrix {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         #![allow(clippy::many_single_char_names)]
 
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
         let mut bounds = self
             .base
             .get_bounds(ctx)?

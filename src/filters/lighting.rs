@@ -461,7 +461,14 @@ macro_rules! impl_lighting_filter {
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterResult, FilterError> {
-                let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
+                let light = Light::new(node)?;
+
+                let input_1 = ctx.get_input(
+                    acquired_nodes,
+                    draw_ctx,
+                    &self.in1,
+                    light.color_interpolation_filters,
+                )?;
                 let mut bounds = self
                     .base
                     .get_bounds(ctx)?
@@ -494,18 +501,12 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let light = Light::new(node)?;
-
                 let source = light.source.transform(ctx.paffine());
-
-                // The generated color values are in the color space determined by
-                // color-interpolation-filters.
-                let surface_type = SurfaceType::from(light.color_interpolation_filters);
 
                 let mut surface = ExclusiveImageSurface::new(
                     input_surface.width(),
                     input_surface.height(),
-                    surface_type,
+                    SurfaceType::from(light.color_interpolation_filters),
                 )?;
 
                 {

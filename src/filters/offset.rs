@@ -5,6 +5,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::parsers::ParseValue;
+use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -55,7 +56,19 @@ impl FilterRender for FeOffset {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
+        // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
+        //
+        // "Note: The color-interpolation-filters property just has an
+        // effect on filter operations. Therefore, it has no effect on
+        // filter primitives like feOffset"
+        //
+        // This is why we pass Auto here.
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            ColorInterpolationFilters::Auto,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?

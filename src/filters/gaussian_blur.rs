@@ -7,7 +7,7 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
-use crate::node::Node;
+use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -190,12 +190,16 @@ fn gaussian_blur(
 impl FilterRender for FeGaussianBlur {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
         let bounds = self
             .base
             .get_bounds(ctx)?

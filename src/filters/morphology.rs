@@ -9,6 +9,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
@@ -74,7 +75,20 @@ impl FilterRender for FeMorphology {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
+        // Although https://www.w3.org/TR/filter-effects/#propdef-color-interpolation-filters does not mention
+        // feMorphology as being one of the primitives that does *not* use that property,
+        // the SVG1.1 test for filters-morph-01-f.svg fails if we pass the value from the ComputedValues here (that
+        // document does not specify the color-interpolation-filters property, so it defaults to linearRGB).
+        // So, we pass Auto, which will get resolved to SRGB, and that makes that test pass.
+        //
+        // I suppose erosion/dilation doesn't care about the color space of the source image?
+
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            ColorInterpolationFilters::Auto,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?

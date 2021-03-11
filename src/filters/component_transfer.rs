@@ -7,7 +7,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::node::{Node, NodeBorrow};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
@@ -294,9 +294,13 @@ impl FilterRender for FeComponentTransfer {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
         let functions = get_parameters(node)?;
 
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
         let bounds = self
             .base
             .get_bounds(ctx)?

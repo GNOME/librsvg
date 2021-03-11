@@ -8,6 +8,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::filter::Filter;
 use crate::parsers::CustomIdent;
 use crate::properties::ComputedValues;
+use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
@@ -70,11 +71,6 @@ pub struct FilterContext {
     primitive_units: CoordUnits,
     /// The filter effects region.
     effects_region: Rect,
-    /// Whether the currently rendered filter primitive uses linear RGB for color operations.
-    ///
-    /// This affects `get_input()` and `store_result()` which should perform linearization and
-    /// unlinearization respectively when this is set to `true`.
-    processing_linear_rgb: bool,
 
     /// The filter element affine matrix.
     ///
@@ -174,7 +170,6 @@ impl FilterContext {
             fill_paint_surface: OnceCell::new(),
             primitive_units,
             effects_region,
-            processing_linear_rgb: false,
             _affine: affine,
             paffine,
         }
@@ -310,8 +305,6 @@ impl FilterContext {
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
-    ///
-    /// Does not take `processing_linear_rgb` into account.
     fn get_input_raw(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -369,11 +362,14 @@ impl FilterContext {
     }
 
     /// Retrieves the filter input surface according to the SVG rules.
+    ///
+    /// The surface will be converted to the color space specified by `color_interpolation_filters`.
     pub fn get_input(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         in_: &Input,
+        color_interpolation_filters: ColorInterpolationFilters,
     ) -> Result<FilterInput, FilterError> {
         let raw = self.get_input_raw(acquired_nodes, draw_ctx, in_)?;
 
@@ -386,11 +382,12 @@ impl FilterContext {
             }) => (surface, *bounds),
         };
 
-        let surface = if self.processing_linear_rgb {
-            surface.to_linear_rgb(bounds)
-        } else {
-            surface.to_srgb(bounds)
+        let surface = match color_interpolation_filters {
+            ColorInterpolationFilters::Auto => Ok(surface.clone()),
+            ColorInterpolationFilters::LinearRgb => surface.to_linear_rgb(bounds),
+            ColorInterpolationFilters::Srgb => surface.to_srgb(bounds),
         };
+
         surface
             .map_err(FilterError::CairoError)
             .map(|surface| match raw {
@@ -399,15 +396,6 @@ impl FilterContext {
                     FilterInput::PrimitiveOutput(FilterOutput { surface, ..*output })
                 }
             })
-    }
-
-    /// Calls the given closure with linear RGB processing enabled.
-    #[inline]
-    pub fn with_linear_rgb<T, F: FnOnce(&mut FilterContext) -> T>(&mut self, f: F) -> T {
-        self.processing_linear_rgb = true;
-        let rv = f(self);
-        self.processing_linear_rgb = false;
-        rv
     }
 }
 

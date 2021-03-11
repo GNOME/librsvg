@@ -5,8 +5,9 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
-use crate::node::Node;
+use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface};
 use crate::xml::Attributes;
 
@@ -73,13 +74,28 @@ impl SetAttributes for FeDisplacementMap {
 impl FilterRender for FeDisplacementMap {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1)?;
-        let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, &self.in2)?;
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
+        // https://www.w3.org/TR/filter-effects/#feDisplacementMapElement
+        // "The color-interpolation-filters property only applies to
+        // the in2 source image and does not apply to the in source
+        // image. The in source image must remain in its current color
+        // space.
+
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            ColorInterpolationFilters::Auto,
+        )?;
+        let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, &self.in2, cif)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
