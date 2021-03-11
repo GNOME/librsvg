@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use convolve_matrix::FeConvolveMatrix;
 use displacement_map::FeDisplacementMap;
 use flood::FeFlood;
 use gaussian_blur::FeGaussianBlur;
@@ -75,7 +74,7 @@ pub enum PrimitiveParams {
     ColorMatrix(color_matrix::ColorMatrix),
     ComponentTransfer(component_transfer::ComponentTransfer),
     Composite(composite::Composite),
-    ConvolveMatrix(Node),
+    ConvolveMatrix(convolve_matrix::ConvolveMatrix),
     DiffuseLighting(Node),
     DisplacementMap(Node),
     Flood(Node),
@@ -326,7 +325,7 @@ fn render_primitive(
         (Element::FeColorMatrix(_), ColorMatrix(p))             => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeComponentTransfer(_), ComponentTransfer(p)) => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeComposite(_), Composite(p))                 => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeConvolveMatrix(ref inner), ConvolveMatrix(node))       => FeConvolveMatrix::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeConvolveMatrix(_), ConvolveMatrix(p))       => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeDiffuseLighting(ref inner), DiffuseLighting(node))     => FeDiffuseLighting::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeDisplacementMap(ref inner), DisplacementMap(node))     => FeDisplacementMap::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeFlood(ref inner), Flood(node))                         => FeFlood::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),

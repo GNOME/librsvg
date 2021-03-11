@@ -10,6 +10,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{
     NonNegative, NumberList, NumberListLength, NumberOptionalNumber, Parse, ParseValue,
 };
+use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
@@ -35,6 +36,21 @@ pub struct FeConvolveMatrix {
     edge_mode: EdgeMode,
     kernel_unit_length: Option<(f64, f64)>,
     preserve_alpha: bool,
+}
+
+pub struct ConvolveMatrix {
+    base: Primitive,
+    in1: Input,
+    order: (u32, u32),
+    kernel_matrix: Option<DMatrix<f64>>,
+    divisor: f64,
+    bias: f64,
+    target_x: Option<u32>,
+    target_y: Option<u32>,
+    edge_mode: EdgeMode,
+    kernel_unit_length: Option<(f64, f64)>,
+    preserve_alpha: bool,
+    color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeConvolveMatrix {
@@ -121,21 +137,21 @@ impl SetAttributes for FeConvolveMatrix {
     }
 }
 
-impl FeConvolveMatrix {
+impl ConvolveMatrix {
     pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         #![allow(clippy::many_single_char_names)]
 
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-        let cif = values.color_interpolation_filters();
-
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            self.color_interpolation_filters,
+        )?;
         let mut bounds = self
             .base
             .get_bounds(ctx)?
@@ -290,7 +306,23 @@ impl FeConvolveMatrix {
 
 impl FilterEffect for FeConvolveMatrix {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::ConvolveMatrix(node.clone()))
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::ConvolveMatrix(ConvolveMatrix {
+            base: self.base.clone(),
+            in1: self.in1.clone(),
+            order: self.order.clone(),
+            kernel_matrix: self.kernel_matrix.clone(),
+            divisor: self.divisor.clone(),
+            bias: self.bias.clone(),
+            target_x: self.target_x.clone(),
+            target_y: self.target_y.clone(),
+            edge_mode: self.edge_mode.clone(),
+            kernel_unit_length: self.kernel_unit_length.clone(),
+            preserve_alpha: self.preserve_alpha.clone(),
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
     }
 }
 
