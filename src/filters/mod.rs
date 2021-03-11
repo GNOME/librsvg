@@ -65,6 +65,31 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
+/// Resolved parameters for each filter primitive.
+///
+/// These gather all the data that a primitive may need during rendering:
+/// the `feFoo` element's attributes, any computed values from its properties,
+/// and parameters extracted from the element's children (for example,
+/// `feMerge` gathers info from its `feMergNode` children).
+pub enum PrimitiveParams {
+    Blend(Node),
+    ColorMatrix(Node),
+    ComponentTransfer(Node),
+    Composite(Node),
+    ConvolveMatrix(Node),
+    DiffuseLighting(Node),
+    DisplacementMap(Node),
+    Flood(Node),
+    GaussianBlur(Node),
+    Image(Node),
+    Merge(Node),
+    Morphology(Node),
+    Offset(Node),
+    SpecularLighting(Node),
+    Tile(Node),
+    Turbulence(Node),
+}
+
 /// The base filter primitive node containing common properties.
 struct Primitive {
     x: Option<Length<Horizontal>>,
