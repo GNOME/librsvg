@@ -28,23 +28,10 @@ use self::context::{FilterContext, FilterResult};
 mod error;
 use self::error::FilterError;
 
-/// Trait to render filter effect primitives.
-pub trait FilterRender {
-    /// Renders this filter primitive.
-    ///
-    /// If this filter primitive can't be rendered for whatever reason (for instance, a required
-    /// property hasn't been provided), an error is returned.
-    fn render(
-        &self,
-        node: &Node,
-        ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError>;
-}
-
 /// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw + FilterRender {}
+pub trait FilterEffect: SetAttributes + Draw {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError>;
+}
 
 // Filter Effects do not need to draw themselves
 impl<T: FilterEffect> Draw for T {}
@@ -65,7 +52,33 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
+/// Resolved parameters for each filter primitive.
+///
+/// These gather all the data that a primitive may need during rendering:
+/// the `feFoo` element's attributes, any computed values from its properties,
+/// and parameters extracted from the element's children (for example,
+/// `feMerge` gathers info from its `feMergNode` children).
+pub enum PrimitiveParams {
+    Blend(blend::Blend),
+    ColorMatrix(color_matrix::ColorMatrix),
+    ComponentTransfer(component_transfer::ComponentTransfer),
+    Composite(composite::Composite),
+    ConvolveMatrix(convolve_matrix::ConvolveMatrix),
+    DiffuseLighting(lighting::DiffuseLighting),
+    DisplacementMap(displacement_map::DisplacementMap),
+    Flood(flood::Flood),
+    GaussianBlur(gaussian_blur::GaussianBlur),
+    Image(image::Image),
+    Merge(merge::Merge),
+    Morphology(morphology::Morphology),
+    Offset(offset::Offset),
+    SpecularLighting(lighting::SpecularLighting),
+    Tile(tile::Tile),
+    Turbulence(turbulence::Turbulence),
+}
+
 /// The base filter primitive node containing common properties.
+#[derive(Clone)]
 struct Primitive {
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
@@ -260,7 +273,8 @@ pub fn render(
         let start = Instant::now();
 
         if let Err(err) = filter
-            .render(&c, &filter_ctx, acquired_nodes, draw_ctx)
+            .resolve(&c)
+            .and_then(|params| render_primitive(&params, &filter_ctx, acquired_nodes, draw_ctx))
             .and_then(|result| filter_ctx.store_result(result))
         {
             rsvg_log!("(filter primitive {} returned an error: {})", c, err);
@@ -280,6 +294,35 @@ pub fn render(
     }
 
     Ok(filter_ctx.into_output()?)
+}
+
+#[rustfmt::skip]
+fn render_primitive(
+    params: &PrimitiveParams,
+    ctx: &FilterContext,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    draw_ctx: &mut DrawingCtx,
+) -> Result<FilterResult, FilterError> {
+    use PrimitiveParams::*;
+
+    match params {
+        Blend(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(p)       => p.render(ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(p) => p.render(ctx, acquired_nodes, draw_ctx),
+        Composite(p)         => p.render(ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(p)    => p.render(ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(p)   => p.render(ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(p)   => p.render(ctx, acquired_nodes, draw_ctx),
+        Flood(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(p)      => p.render(ctx, acquired_nodes, draw_ctx),
+        Image(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        Merge(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        Morphology(p)        => p.render(ctx, acquired_nodes, draw_ctx),
+        Offset(p)            => p.render(ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(p)  => p.render(ctx, acquired_nodes, draw_ctx),
+        Tile(p)              => p.render(ctx, acquired_nodes, draw_ctx),
+        Turbulence(p)        => p.render(ctx, acquired_nodes, draw_ctx),
+    }
 }
 
 impl From<ColorInterpolationFilters> for SurfaceType {

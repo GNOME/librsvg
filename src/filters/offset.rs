@@ -9,15 +9,19 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feOffset` filter primitive.
+#[derive(Clone)]
 pub struct FeOffset {
     base: Primitive,
     in1: Input,
     dx: f64,
     dy: f64,
 }
+
+/// Resolved `feOffset` primitive for rendering.
+pub type Offset = FeOffset;
 
 impl Default for FeOffset {
     /// Constructs a new `Offset` with empty properties.
@@ -48,10 +52,9 @@ impl SetAttributes for FeOffset {
     }
 }
 
-impl FilterRender for FeOffset {
-    fn render(
+impl FeOffset {
+    pub fn render(
         &self,
-        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -86,4 +89,8 @@ impl FilterRender for FeOffset {
     }
 }
 
-impl FilterEffect for FeOffset {}
+impl FilterEffect for FeOffset {
+    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Offset(self.clone()))
+    }
+}

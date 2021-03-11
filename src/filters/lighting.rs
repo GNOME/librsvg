@@ -12,9 +12,10 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, FilterRender, Input, Primitive,
+    FilterEffect, FilterError, Input, Primitive, PrimitiveParams,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::paint_server::resolve_color;
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
@@ -23,6 +24,7 @@ use crate::surface_utils::{
     ImageSurfaceDataExt, Pixel,
 };
 use crate::transform::Transform;
+use crate::unit_interval::UnitInterval;
 use crate::util::clamp;
 use crate::xml::Attributes;
 
@@ -35,7 +37,7 @@ enum UntransformedLightSource {
 }
 
 /// A light source with affine transformations applied.
-pub enum LightSource {
+enum LightSource {
     Distant {
         azimuth: f64,
         elevation: f64,
@@ -67,52 +69,28 @@ struct Light {
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
+/// Resolved `feDiffuseLighting` primitive for rendering.
+pub struct DiffuseLighting {
+    base: Primitive,
+    in1: Input,
+    surface_scale: f64,
+    kernel_unit_length: Option<(f64, f64)>,
+    diffuse_constant: f64,
+    light: Light,
+}
+
+/// Resolved `feSpecularLighting` primitive for rendering.
+pub struct SpecularLighting {
+    base: Primitive,
+    in1: Input,
+    surface_scale: f64,
+    kernel_unit_length: Option<(f64, f64)>,
+    specular_constant: f64,
+    specular_exponent: f64,
+    light: Light,
+}
+
 impl Light {
-    pub fn new(node: &Node) -> Result<Light, FilterError> {
-        let mut sources = node.children().rev().filter(|c| {
-            c.is_element()
-                && matches!(
-                    *c.borrow_element(),
-                    Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_)
-                )
-        });
-
-        let source_node = sources.next();
-        if source_node.is_none() || sources.next().is_some() {
-            return Err(FilterError::InvalidLightSourceCount);
-        }
-
-        let source_node = source_node.unwrap();
-        let elt = source_node.borrow_element();
-
-        if elt.is_in_error() {
-            return Err(FilterError::ChildNodeInError);
-        }
-
-        let source = match *elt {
-            Element::FeDistantLight(ref l) => {
-                UntransformedLightSource::Distant(l.element_impl.clone())
-            }
-            Element::FePointLight(ref l) => UntransformedLightSource::Point(l.element_impl.clone()),
-            Element::FeSpotLight(ref l) => UntransformedLightSource::Spot(l.element_impl.clone()),
-            _ => unreachable!(),
-        };
-
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-
-        let lighting_color = match values.lighting_color().0 {
-            cssparser::Color::CurrentColor => values.color().0,
-            cssparser::Color::RGBA(rgba) => rgba,
-        };
-
-        Ok(Light {
-            source,
-            lighting_color,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        })
-    }
-
     /// Returns the color and unit (or null) vector from the image sample to the light.
     #[inline]
     pub fn color_and_vector(
@@ -179,7 +157,7 @@ pub struct FeDistantLight {
 }
 
 impl FeDistantLight {
-    pub fn transform(&self) -> LightSource {
+    fn transform(&self) -> LightSource {
         LightSource::Distant {
             azimuth: self.azimuth,
             elevation: self.elevation,
@@ -211,7 +189,7 @@ pub struct FePointLight {
 }
 
 impl FePointLight {
-    pub fn transform(&self, paffine: Transform) -> LightSource {
+    fn transform(&self, paffine: Transform) -> LightSource {
         let (x, y) = paffine.transform_point(self.x, self.y);
         let z = transform_dist(paffine, self.z);
 
@@ -251,7 +229,7 @@ pub struct FeSpotLight {
 }
 
 impl FeSpotLight {
-    pub fn transform(&self, paffine: Transform) -> LightSource {
+    fn transform(&self, paffine: Transform) -> LightSource {
         let (x, y) = paffine.transform_point(self.x, self.y);
         let z = transform_dist(paffine, self.z);
         let (points_at_x, points_at_y) =
@@ -350,7 +328,7 @@ impl SetAttributes for FeDiffuseLighting {
     }
 }
 
-impl FeDiffuseLighting {
+impl DiffuseLighting {
     #[inline]
     fn compute_factor(&self, normal: Normal, light_vector: Vector3<f64>) -> f64 {
         let k = if normal.normal.is_zero() {
@@ -419,7 +397,7 @@ impl SetAttributes for FeSpecularLighting {
     }
 }
 
-impl FeSpecularLighting {
+impl SpecularLighting {
     #[inline]
     fn compute_factor(&self, normal: Normal, light_vector: Vector3<f64>) -> f64 {
         let h = light_vector + Vector3::new(0.0, 0.0, 1.0);
@@ -449,25 +427,20 @@ impl FeSpecularLighting {
     }
 }
 
-// We cannot use a blanket impl<T: Lighting> Filter for T because we do
-// not want to make the Lighting trait public, so we use a macro
 macro_rules! impl_lighting_filter {
-    ($lighting_type:ty, $alpha_func:ident) => {
-        impl FilterRender for $lighting_type {
-            fn render(
+    ($lighting_type:ty, $params_name:ident, $alpha_func:ident, $($specific_fields:ident,)+) => {
+        impl $params_name {
+            pub fn render(
                 &self,
-                node: &Node,
                 ctx: &FilterContext,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
             ) -> Result<FilterResult, FilterError> {
-                let light = Light::new(node)?;
-
                 let input_1 = ctx.get_input(
                     acquired_nodes,
                     draw_ctx,
                     &self.in1,
-                    light.color_interpolation_filters,
+                    self.light.color_interpolation_filters,
                 )?;
                 let mut bounds = self
                     .base
@@ -501,12 +474,12 @@ macro_rules! impl_lighting_filter {
 
                 let (ox, oy) = scale.unwrap_or((1.0, 1.0));
 
-                let source = light.source.transform(ctx.paffine());
+                let source = self.light.source.transform(ctx.paffine());
 
                 let mut surface = ExclusiveImageSurface::new(
                     input_surface.width(),
                     input_surface.height(),
-                    SurfaceType::from(light.color_interpolation_filters),
+                    SurfaceType::from(self.light.color_interpolation_filters),
                 )?;
 
                 {
@@ -523,7 +496,7 @@ macro_rules! impl_lighting_filter {
                             let z = f64::from(pixel.a) / 255.0 * self.surface_scale;
 
                             let (color, vector) =
-                                light.color_and_vector(&source, scaled_x, scaled_y, z);
+                                self.light.color_and_vector(&source, scaled_x, scaled_y, z);
 
                             // compute the factor just once for the three colors
                             let factor = self.compute_factor(normal, vector);
@@ -670,7 +643,56 @@ macro_rules! impl_lighting_filter {
             }
         }
 
-        impl FilterEffect for $lighting_type {}
+        impl FilterEffect for $lighting_type {
+            fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+                let mut sources = node.children().rev().filter(|c| {
+                    c.is_element()
+                        && matches!(
+                            *c.borrow_element(),
+                            Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_)
+                        )
+                });
+
+                let source_node = sources.next();
+                if source_node.is_none() || sources.next().is_some() {
+                    return Err(FilterError::InvalidLightSourceCount);
+                }
+
+                let source_node = source_node.unwrap();
+                let elt = source_node.borrow_element();
+
+                if elt.is_in_error() {
+                    return Err(FilterError::ChildNodeInError);
+                }
+
+                let source = match *elt {
+                    Element::FeDistantLight(ref l) => {
+                        UntransformedLightSource::Distant(l.element_impl.clone())
+                    }
+                    Element::FePointLight(ref l) => UntransformedLightSource::Point(l.element_impl.clone()),
+                    Element::FeSpotLight(ref l) => UntransformedLightSource::Spot(l.element_impl.clone()),
+                    _ => unreachable!(),
+                };
+
+                let cascaded = CascadedValues::new_from_node(node);
+                let values = cascaded.get();
+
+                Ok(PrimitiveParams::$params_name($params_name {
+                    base: self.base.clone(),
+                    in1: self.in1.clone(),
+                    surface_scale: self.surface_scale.clone(),
+                    kernel_unit_length: self.kernel_unit_length.clone(),
+
+                    $($specific_fields: self.$specific_fields.clone(),)+
+
+                    light: Light {
+                        source,
+                        lighting_color: resolve_color(&values.lighting_color().0, UnitInterval::clamp(1.0), values.color().0),
+                        color_interpolation_filters: values.color_interpolation_filters(),
+                    }
+                }))
+            }
+        }
     };
 }
 
@@ -682,8 +704,20 @@ fn specular_alpha(r: u8, g: u8, b: u8) -> u8 {
     max(max(r, g), b)
 }
 
-impl_lighting_filter!(FeDiffuseLighting, diffuse_alpha);
-impl_lighting_filter!(FeSpecularLighting, specular_alpha);
+impl_lighting_filter!(
+    FeDiffuseLighting,
+    DiffuseLighting,
+    diffuse_alpha,
+    diffuse_constant,
+);
+
+impl_lighting_filter!(
+    FeSpecularLighting,
+    SpecularLighting,
+    specular_alpha,
+    specular_constant,
+    specular_exponent,
+);
 
 /// 2D normal and factor stored separately.
 ///
@@ -955,20 +989,30 @@ mod tests {
 "#,
         );
 
-        let lighting = document.lookup_internal_node("diffuse_distant").unwrap();
-        let light = Light::new(&lighting).unwrap();
+        let node = document.lookup_internal_node("diffuse_distant").unwrap();
+        let lighting = borrow_element_as!(node, FeDiffuseLighting);
+        let params = lighting.resolve(&node).unwrap();
+        let diffuse_lighting = match params {
+            PrimitiveParams::DiffuseLighting(l) => l,
+            _ => unreachable!(),
+        };
         assert_eq!(
-            light.source,
+            diffuse_lighting.light.source,
             UntransformedLightSource::Distant(FeDistantLight {
                 azimuth: 0.0,
                 elevation: 45.0,
             })
         );
 
-        let lighting = document.lookup_internal_node("specular_point").unwrap();
-        let light = Light::new(&lighting).unwrap();
+        let node = document.lookup_internal_node("specular_point").unwrap();
+        let lighting = borrow_element_as!(node, FeSpecularLighting);
+        let params = lighting.resolve(&node).unwrap();
+        let specular_lighting = match params {
+            PrimitiveParams::SpecularLighting(l) => l,
+            _ => unreachable!(),
+        };
         assert_eq!(
-            light.source,
+            specular_lighting.light.source,
             UntransformedLightSource::Point(FePointLight {
                 x: 1.0,
                 y: 2.0,
@@ -976,10 +1020,15 @@ mod tests {
             })
         );
 
-        let lighting = document.lookup_internal_node("diffuse_spot").unwrap();
-        let light = Light::new(&lighting).unwrap();
+        let node = document.lookup_internal_node("diffuse_spot").unwrap();
+        let lighting = borrow_element_as!(node, FeDiffuseLighting);
+        let params = lighting.resolve(&node).unwrap();
+        let diffuse_lighting = match params {
+            PrimitiveParams::DiffuseLighting(l) => l,
+            _ => unreachable!(),
+        };
         assert_eq!(
-            light.source,
+            diffuse_lighting.light.source,
             UntransformedLightSource::Spot(FeSpotLight {
                 x: 1.0,
                 y: 2.0,

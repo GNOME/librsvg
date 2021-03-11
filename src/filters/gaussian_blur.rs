@@ -9,6 +9,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},
@@ -17,7 +18,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The maximum gaussian blur kernel size.
 ///
@@ -29,6 +30,14 @@ pub struct FeGaussianBlur {
     base: Primitive,
     in1: Input,
     std_deviation: (f64, f64),
+}
+
+/// Resolved `feGaussianBlur` primitive for rendering.
+pub struct GaussianBlur {
+    base: Primitive,
+    in1: Input,
+    std_deviation: (f64, f64),
+    color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeGaussianBlur {
@@ -187,19 +196,19 @@ fn gaussian_blur(
     )?)
 }
 
-impl FilterRender for FeGaussianBlur {
-    fn render(
+impl GaussianBlur {
+    pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-        let cif = values.color_interpolation_filters();
-
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            self.color_interpolation_filters,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?
@@ -247,4 +256,16 @@ impl FilterRender for FeGaussianBlur {
     }
 }
 
-impl FilterEffect for FeGaussianBlur {}
+impl FilterEffect for FeGaussianBlur {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::GaussianBlur(GaussianBlur {
+            base: self.base.clone(),
+            in1: self.in1.clone(),
+            std_deviation: self.std_deviation,
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
+    }
+}

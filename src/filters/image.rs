@@ -13,14 +13,17 @@ use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Primitive};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// The `feImage` filter primitive.
+#[derive(Clone)]
 pub struct FeImage {
     base: Primitive,
     aspect: AspectRatio,
     href: Option<String>,
 }
+
+pub type Image = FeImage;
 
 impl Default for FeImage {
     /// Constructs a new `FeImage` with empty properties.
@@ -118,10 +121,9 @@ impl SetAttributes for FeImage {
     }
 }
 
-impl FilterRender for FeImage {
-    fn render(
+impl FeImage {
+    pub fn render(
         &self,
-        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -155,4 +157,8 @@ impl FilterRender for FeImage {
     }
 }
 
-impl FilterEffect for FeImage {}
+impl FilterEffect for FeImage {
+    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Image(self.clone()))
+    }
+}

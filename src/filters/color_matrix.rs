@@ -8,6 +8,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
@@ -15,7 +16,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// Color matrix operation types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -33,6 +34,14 @@ pub struct FeColorMatrix {
     base: Primitive,
     in1: Input,
     matrix: Matrix5<f64>,
+}
+
+/// Resolved `feColorMatrix` primitive for rendering.
+pub struct ColorMatrix {
+    base: Primitive,
+    in1: Input,
+    matrix: Matrix5<f64>,
+    color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeColorMatrix {
@@ -139,19 +148,19 @@ impl SetAttributes for FeColorMatrix {
     }
 }
 
-impl FilterRender for FeColorMatrix {
-    fn render(
+impl ColorMatrix {
+    pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-        let cif = values.color_interpolation_filters();
-
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            self.color_interpolation_filters,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?
@@ -207,7 +216,19 @@ impl FilterRender for FeColorMatrix {
     }
 }
 
-impl FilterEffect for FeColorMatrix {}
+impl FilterEffect for FeColorMatrix {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::ColorMatrix(ColorMatrix {
+            base: self.base.clone(),
+            in1: self.in1.clone(),
+            matrix: self.matrix,
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
+    }
+}
 
 impl Parse for OperationType {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
