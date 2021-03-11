@@ -19,8 +19,20 @@ pub struct FeMerge {
 }
 
 /// The `<feMergeNode>` element.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Default)]
 pub struct FeMergeNode {
+    in1: Input,
+}
+
+/// Resolved `feMerge` primitive for rendering.
+pub struct Merge {
+    base: Primitive,
+    merge_nodes: Vec<MergeNode>,
+}
+
+/// Resolved `feMergeNode` for rendering.
+#[derive(Debug, PartialEq)]
+struct MergeNode {
     in1: Input,
     color_interpolation_filters: ColorInterpolationFilters,
 }
@@ -56,7 +68,7 @@ impl SetAttributes for FeMergeNode {
 
 impl Draw for FeMergeNode {}
 
-impl FeMergeNode {
+impl MergeNode {
     fn render(
         &self,
         ctx: &FilterContext,
@@ -83,19 +95,16 @@ impl FeMergeNode {
     }
 }
 
-impl FeMerge {
+impl Merge {
     pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let parameters = get_parameters(node)?;
-
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds = self.base.get_bounds(ctx)?;
-        for merge_node in &parameters {
+        for merge_node in &self.merge_nodes {
             let input = ctx.get_input(
                 acquired_nodes,
                 draw_ctx,
@@ -109,7 +118,7 @@ impl FeMerge {
 
         // Now merge them all.
         let mut output_surface = None;
-        for merge_node in &parameters {
+        for merge_node in &self.merge_nodes {
             output_surface = merge_node
                 .render(ctx, acquired_nodes, draw_ctx, bounds, output_surface)
                 .ok();
@@ -133,12 +142,15 @@ impl FeMerge {
 
 impl FilterEffect for FeMerge {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Merge(node.clone()))
+        Ok(PrimitiveParams::Merge(Merge {
+            base: self.base.clone(),
+            merge_nodes: resolve_merge_nodes(node)?,
+        }))
     }
 }
 
 /// Takes a feMerge and walks its children to produce a list of feMergeNode arguments.
-fn get_parameters(node: &Node) -> Result<Vec<FeMergeNode>, FilterError> {
+fn resolve_merge_nodes(node: &Node) -> Result<Vec<MergeNode>, FilterError> {
     let mut merge_nodes = Vec::new();
 
     for child in node.children().filter(|c| c.is_element()) {
@@ -150,12 +162,11 @@ fn get_parameters(node: &Node) -> Result<Vec<FeMergeNode>, FilterError> {
 
         let cascaded = CascadedValues::new_from_node(&child);
         let values = cascaded.get();
-        let color_interpolation_filters = values.color_interpolation_filters();
 
         if let Element::FeMergeNode(ref merge_node) = *elt {
-            merge_nodes.push(FeMergeNode {
-                color_interpolation_filters,
-                ..merge_node.element_impl.clone()
+            merge_nodes.push(MergeNode {
+                in1: merge_node.element_impl.in1.clone(),
+                color_interpolation_filters: values.color_interpolation_filters(),
             });
         }
     }
@@ -183,18 +194,21 @@ mod tests {
 "#,
         );
 
-        let merge = document.lookup_internal_node("merge").unwrap();
-
-        let params = get_parameters(&merge).unwrap();
-
+        let node = document.lookup_internal_node("merge").unwrap();
+        let merge = borrow_element_as!(node, FeMerge);
+        let params = merge.resolve(&node).unwrap();
+        let params = match params {
+            PrimitiveParams::Merge(m) => m,
+            _ => unreachable!(),
+        };
         assert_eq!(
-            &params[..],
+            &params.merge_nodes[..],
             vec![
-                FeMergeNode {
+                MergeNode {
                     in1: Input::SourceGraphic,
                     color_interpolation_filters: Default::default(),
                 },
-                FeMergeNode {
+                MergeNode {
                     in1: Input::SourceAlpha,
                     color_interpolation_filters: ColorInterpolationFilters::Srgb,
                 },

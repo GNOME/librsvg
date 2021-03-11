@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use merge::FeMerge;
 use morphology::FeMorphology;
 use offset::FeOffset;
 use tile::FeTile;
@@ -75,7 +74,7 @@ pub enum PrimitiveParams {
     Flood(flood::Flood),
     GaussianBlur(gaussian_blur::GaussianBlur),
     Image(image::Image),
-    Merge(Node),
+    Merge(merge::Merge),
     Morphology(Node),
     Offset(Node),
     SpecularLighting(lighting::SpecularLighting),
@@ -326,7 +325,7 @@ fn render_primitive(
         (Element::FeFlood(_), Flood(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeGaussianBlur(_), GaussianBlur(p))           => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeImage(_), Image(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeMerge(ref inner), Merge(node))                         => FeMerge::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeMerge(_), Merge(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeMorphology(ref inner), Morphology(node))               => FeMorphology::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeOffset(ref inner), Offset(node))                       => FeOffset::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeSpecularLighting(_), SpecularLighting(p))   => p.render(ctx, acquired_nodes, draw_ctx),
