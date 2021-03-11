@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, FilterRender, Input, Primitive,
+    FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
@@ -450,7 +450,7 @@ impl FeSpecularLighting {
 }
 
 macro_rules! impl_lighting_filter {
-    ($lighting_type:ty, $alpha_func:ident) => {
+    ($lighting_type:ty, $params_name:ident, $alpha_func:ident) => {
         impl FilterRender for $lighting_type {
             fn render(
                 &self,
@@ -668,7 +668,11 @@ macro_rules! impl_lighting_filter {
             }
         }
 
-        impl FilterEffect for $lighting_type {}
+        impl FilterEffect for $lighting_type {
+            fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+                Ok(PrimitiveParams::$params_name(node.clone()))
+            }
+        }
     };
 }
 
@@ -680,8 +684,8 @@ fn specular_alpha(r: u8, g: u8, b: u8) -> u8 {
     max(max(r, g), b)
 }
 
-impl_lighting_filter!(FeDiffuseLighting, diffuse_alpha);
-impl_lighting_filter!(FeSpecularLighting, specular_alpha);
+impl_lighting_filter!(FeDiffuseLighting, DiffuseLighting, diffuse_alpha);
+impl_lighting_filter!(FeSpecularLighting, SpecularLighting, specular_alpha);
 
 /// 2D normal and factor stored separately.
 ///

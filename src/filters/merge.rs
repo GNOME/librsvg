@@ -11,7 +11,7 @@ use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
 
 /// The `feMerge` filter primitive.
 pub struct FeMerge {
@@ -131,7 +131,11 @@ impl FilterRender for FeMerge {
     }
 }
 
-impl FilterEffect for FeMerge {}
+impl FilterEffect for FeMerge {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Merge(node.clone()))
+    }
+}
 
 /// Takes a feMerge and walks its children to produce a list of feMergeNode arguments.
 fn get_parameters(node: &Node) -> Result<Vec<FeMergeNode>, FilterError> {

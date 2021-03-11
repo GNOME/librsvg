@@ -15,7 +15,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Primitive, PrimitiveParams};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -402,7 +402,11 @@ impl FilterRender for FeTurbulence {
     }
 }
 
-impl FilterEffect for FeTurbulence {}
+impl FilterEffect for FeTurbulence {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Turbulence(node.clone()))
+    }
+}
 
 impl Parse for StitchTiles {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

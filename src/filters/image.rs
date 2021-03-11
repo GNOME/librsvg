@@ -13,7 +13,7 @@ use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Primitive, PrimitiveParams};
 
 /// The `feImage` filter primitive.
 pub struct FeImage {
@@ -155,4 +155,8 @@ impl FilterRender for FeImage {
     }
 }
 
-impl FilterEffect for FeImage {}
+impl FilterEffect for FeImage {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Image(node.clone()))
+    }
+}

@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -118,7 +118,11 @@ impl FilterRender for FeComposite {
     }
 }
 
-impl FilterEffect for FeComposite {}
+impl FilterEffect for FeComposite {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Composite(node.clone()))
+    }
+}
 
 impl Parse for Operator {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

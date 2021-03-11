@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the possible blending modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -106,7 +106,11 @@ impl FilterRender for FeBlend {
     }
 }
 
-impl FilterEffect for FeBlend {}
+impl FilterEffect for FeBlend {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Blend(node.clone()))
+    }
+}
 
 impl Parse for Mode {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

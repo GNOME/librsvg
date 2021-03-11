@@ -5,7 +5,7 @@ use crate::node::{CascadedValues, Node};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Primitive, PrimitiveParams};
 
 /// The `feFlood` filter primitive.
 pub struct FeFlood {
@@ -56,4 +56,8 @@ impl FilterRender for FeFlood {
     }
 }
 
-impl FilterEffect for FeFlood {}
+impl FilterEffect for FeFlood {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Flood(node.clone()))
+    }
+}

@@ -16,7 +16,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
 
 /// The `feComponentTransfer` filter primitive.
 pub struct FeComponentTransfer {
@@ -370,7 +370,11 @@ impl FilterRender for FeComponentTransfer {
     }
 }
 
-impl FilterEffect for FeComponentTransfer {}
+impl FilterEffect for FeComponentTransfer {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::ComponentTransfer(node.clone()))
+    }
+}
 
 /// Takes a feComponentTransfer and walks its children to produce the feFuncX arguments.
 fn get_parameters(node: &Node) -> Result<Functions, FilterError> {

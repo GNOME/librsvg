@@ -19,7 +19,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the possible morphology operations.
 enum Operator {
@@ -161,7 +161,11 @@ impl FilterRender for FeMorphology {
     }
 }
 
-impl FilterEffect for FeMorphology {}
+impl FilterEffect for FeMorphology {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Morphology(node.clone()))
+    }
+}
 
 impl Parse for Operator {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

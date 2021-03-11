@@ -6,7 +6,7 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
 
 /// The `feTile` filter primitive.
 pub struct FeTile {
@@ -81,4 +81,8 @@ impl FilterRender for FeTile {
     }
 }
 
-impl FilterEffect for FeTile {}
+impl FilterEffect for FeTile {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Tile(node.clone()))
+    }
+}

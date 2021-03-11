@@ -44,7 +44,9 @@ pub trait FilterRender {
 }
 
 /// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw + FilterRender {}
+pub trait FilterEffect: SetAttributes + Draw + FilterRender {
+    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError>;
+}
 
 // Filter Effects do not need to draw themselves
 impl<T: FilterEffect> Draw for T {}
