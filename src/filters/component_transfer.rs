@@ -9,6 +9,7 @@ use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
@@ -22,6 +23,14 @@ use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 pub struct FeComponentTransfer {
     base: Primitive,
     in1: Input,
+}
+
+/// Resolved `feComponentTransfer` primitive for rendering.
+pub struct ComponentTransfer {
+    base: Primitive,
+    in1: Input,
+    functions: Functions,
+    color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeComponentTransfer {
@@ -286,21 +295,19 @@ macro_rules! get_func_x_node {
     };
 }
 
-impl FeComponentTransfer {
+impl ComponentTransfer {
     pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-        let cif = values.color_interpolation_filters();
-
-        let functions = get_parameters(node)?;
-
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            self.color_interpolation_filters,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?
@@ -334,13 +341,13 @@ impl FeComponentTransfer {
             }
         }
 
-        let compute_r = compute_func::<FeFuncR>(&functions.r);
-        let compute_g = compute_func::<FeFuncG>(&functions.g);
-        let compute_b = compute_func::<FeFuncB>(&functions.b);
+        let compute_r = compute_func::<FeFuncR>(&self.functions.r);
+        let compute_g = compute_func::<FeFuncG>(&self.functions.g);
+        let compute_b = compute_func::<FeFuncB>(&self.functions.b);
 
         // Alpha gets special handling since everything else depends on it.
-        let compute_a = functions.a.function();
-        let params_a = functions.a.function_parameters();
+        let compute_a = self.functions.a.function();
+        let params_a = self.functions.a.function_parameters();
         let compute_a = |alpha| compute_a(&params_a, alpha);
 
         // Do the actual processing.
@@ -372,12 +379,20 @@ impl FeComponentTransfer {
 
 impl FilterEffect for FeComponentTransfer {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::ComponentTransfer(node.clone()))
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::ComponentTransfer(ComponentTransfer {
+            base: self.base.clone(),
+            in1: self.in1.clone(),
+            functions: get_functions(node)?,
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
     }
 }
 
 /// Takes a feComponentTransfer and walks its children to produce the feFuncX arguments.
-fn get_parameters(node: &Node) -> Result<Functions, FilterError> {
+fn get_functions(node: &Node) -> Result<Functions, FilterError> {
     let func_r_node = get_func_x_node!(node, FeFuncR, Channel::R);
     let func_g_node = get_func_x_node!(node, FeFuncG, Channel::G);
     let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
@@ -428,7 +443,7 @@ mod tests {
         );
 
         let component_transfer = document.lookup_internal_node("component_transfer").unwrap();
-        let functions = get_parameters(&component_transfer).unwrap();
+        let functions = get_functions(&component_transfer).unwrap();
 
         assert_eq!(
             functions,

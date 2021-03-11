@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use component_transfer::FeComponentTransfer;
 use composite::FeComposite;
 use convolve_matrix::FeConvolveMatrix;
 use displacement_map::FeDisplacementMap;
@@ -75,7 +74,7 @@ use turbulence::FeTurbulence;
 pub enum PrimitiveParams {
     Blend(blend::Blend),
     ColorMatrix(color_matrix::ColorMatrix),
-    ComponentTransfer(Node),
+    ComponentTransfer(component_transfer::ComponentTransfer),
     Composite(Node),
     ConvolveMatrix(Node),
     DiffuseLighting(Node),
@@ -326,7 +325,7 @@ fn render_primitive(
     match (elt, params) {
         (Element::FeBlend(_), Blend(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeColorMatrix(_), ColorMatrix(p))             => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeComponentTransfer(ref inner), ComponentTransfer(node)) => FeComponentTransfer::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeComponentTransfer(_), ComponentTransfer(p)) => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeComposite(ref inner), Composite(node))                 => FeComposite::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeConvolveMatrix(ref inner), ConvolveMatrix(node))       => FeConvolveMatrix::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeDiffuseLighting(ref inner), DiffuseLighting(node))     => FeDiffuseLighting::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
