@@ -22,18 +22,23 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the possible morphology operations.
+#[derive(Clone)]
 enum Operator {
     Erode,
     Dilate,
 }
 
 /// The `feMorphology` filter primitive.
+#[derive(Clone)]
 pub struct FeMorphology {
     base: Primitive,
     in1: Input,
     operator: Operator,
     radius: (f64, f64),
 }
+
+/// Resolved `feMorphology` primitive for rendering.
+pub type Morphology = FeMorphology;
 
 impl Default for FeMorphology {
     /// Constructs a new `Morphology` with empty properties.
@@ -70,7 +75,6 @@ impl SetAttributes for FeMorphology {
 impl FeMorphology {
     pub fn render(
         &self,
-        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -162,8 +166,8 @@ impl FeMorphology {
 }
 
 impl FilterEffect for FeMorphology {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Morphology(node.clone()))
+    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Morphology(self.clone()))
     }
 }
 
