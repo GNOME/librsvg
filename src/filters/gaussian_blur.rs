@@ -264,7 +264,7 @@ impl FilterEffect for FeGaussianBlur {
         Ok(PrimitiveParams::GaussianBlur(GaussianBlur {
             base: self.base.clone(),
             in1: self.in1.clone(),
-            std_deviation: self.std_deviation.clone(),
+            std_deviation: self.std_deviation,
             color_interpolation_filters: values.color_interpolation_filters(),
         }))
     }

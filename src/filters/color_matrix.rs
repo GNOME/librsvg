@@ -224,7 +224,7 @@ impl FilterEffect for FeColorMatrix {
         Ok(PrimitiveParams::ColorMatrix(ColorMatrix {
             base: self.base.clone(),
             in1: self.in1.clone(),
-            matrix: self.matrix.clone(),
+            matrix: self.matrix,
             color_interpolation_filters: values.color_interpolation_filters(),
         }))
     }

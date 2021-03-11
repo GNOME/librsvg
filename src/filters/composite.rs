@@ -146,11 +146,11 @@ impl FilterEffect for FeComposite {
             base: self.base.clone(),
             in1: self.in1.clone(),
             in2: self.in2.clone(),
-            operator: self.operator.clone(),
-            k1: self.k1.clone(),
-            k2: self.k2.clone(),
-            k3: self.k3.clone(),
-            k4: self.k4.clone(),
+            operator: self.operator,
+            k1: self.k1,
+            k2: self.k2,
+            k3: self.k3,
+            k4: self.k4,
             color_interpolation_filters: values.color_interpolation_filters(),
         }))
     }

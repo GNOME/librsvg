@@ -130,7 +130,7 @@ impl FilterEffect for FeBlend {
             base: self.base.clone(),
             in1: self.in1.clone(),
             in2: self.in2.clone(),
-            mode: self.mode.clone(),
+            mode: self.mode,
             color_interpolation_filters: values.color_interpolation_filters(),
         }))
     }

@@ -176,9 +176,9 @@ impl FilterEffect for FeDisplacementMap {
             base: self.base.clone(),
             in1: self.in1.clone(),
             in2: self.in2.clone(),
-            scale: self.scale.clone(),
-            x_channel_selector: self.x_channel_selector.clone(),
-            y_channel_selector: self.y_channel_selector.clone(),
+            scale: self.scale,
+            x_channel_selector: self.x_channel_selector,
+            y_channel_selector: self.y_channel_selector,
             color_interpolation_filters: values.color_interpolation_filters(),
         }))
     }

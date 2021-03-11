@@ -418,11 +418,11 @@ impl FilterEffect for FeTurbulence {
 
         Ok(PrimitiveParams::Turbulence(Turbulence {
             base: self.base.clone(),
-            base_frequency: self.base_frequency.clone(),
-            num_octaves: self.num_octaves.clone(),
-            seed: self.seed.clone(),
-            stitch_tiles: self.stitch_tiles.clone(),
-            type_: self.type_.clone(),
+            base_frequency: self.base_frequency,
+            num_octaves: self.num_octaves,
+            seed: self.seed,
+            stitch_tiles: self.stitch_tiles,
+            type_: self.type_,
             color_interpolation_filters: values.color_interpolation_filters(),
         }))
     }

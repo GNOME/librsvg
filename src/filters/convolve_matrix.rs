@@ -312,15 +312,15 @@ impl FilterEffect for FeConvolveMatrix {
         Ok(PrimitiveParams::ConvolveMatrix(ConvolveMatrix {
             base: self.base.clone(),
             in1: self.in1.clone(),
-            order: self.order.clone(),
+            order: self.order,
             kernel_matrix: self.kernel_matrix.clone(),
-            divisor: self.divisor.clone(),
-            bias: self.bias.clone(),
-            target_x: self.target_x.clone(),
-            target_y: self.target_y.clone(),
-            edge_mode: self.edge_mode.clone(),
-            kernel_unit_length: self.kernel_unit_length.clone(),
-            preserve_alpha: self.preserve_alpha.clone(),
+            divisor: self.divisor,
+            bias: self.bias,
+            target_x: self.target_x,
+            target_y: self.target_y,
+            edge_mode: self.edge_mode,
+            kernel_unit_length: self.kernel_unit_length,
+            preserve_alpha: self.preserve_alpha,
             color_interpolation_filters: values.color_interpolation_filters(),
         }))
     }
