@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use color_matrix::FeColorMatrix;
 use component_transfer::FeComponentTransfer;
 use composite::FeComposite;
 use convolve_matrix::FeConvolveMatrix;
@@ -75,7 +74,7 @@ use turbulence::FeTurbulence;
 /// `feMerge` gathers info from its `feMergNode` children).
 pub enum PrimitiveParams {
     Blend(blend::Blend),
-    ColorMatrix(Node),
+    ColorMatrix(color_matrix::ColorMatrix),
     ComponentTransfer(Node),
     Composite(Node),
     ConvolveMatrix(Node),
@@ -326,7 +325,7 @@ fn render_primitive(
 
     match (elt, params) {
         (Element::FeBlend(_), Blend(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeColorMatrix(ref inner), ColorMatrix(node))             => FeColorMatrix::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeColorMatrix(_), ColorMatrix(p))             => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeComponentTransfer(ref inner), ComponentTransfer(node)) => FeComponentTransfer::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeComposite(ref inner), Composite(node))                 => FeComposite::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeConvolveMatrix(ref inner), ConvolveMatrix(node))       => FeConvolveMatrix::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
