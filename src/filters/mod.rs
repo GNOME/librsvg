@@ -260,7 +260,7 @@ pub fn render(
         let start = Instant::now();
 
         if let Err(err) = filter
-            .render(&c, &mut filter_ctx, acquired_nodes, draw_ctx)
+            .render(&c, &filter_ctx, acquired_nodes, draw_ctx)
             .and_then(|result| filter_ctx.store_result(result))
         {
             rsvg_log!("(filter primitive {} returned an error: {})", c, err);
