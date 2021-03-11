@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use flood::FeFlood;
 use gaussian_blur::FeGaussianBlur;
 use image::FeImage;
 use lighting::{FeDiffuseLighting, FeSpecularLighting};
@@ -76,7 +75,7 @@ pub enum PrimitiveParams {
     ConvolveMatrix(convolve_matrix::ConvolveMatrix),
     DiffuseLighting(Node),
     DisplacementMap(displacement_map::DisplacementMap),
-    Flood(Node),
+    Flood(flood::Flood),
     GaussianBlur(Node),
     Image(Node),
     Merge(Node),
@@ -327,7 +326,7 @@ fn render_primitive(
         (Element::FeConvolveMatrix(_), ConvolveMatrix(p))       => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeDiffuseLighting(ref inner), DiffuseLighting(node))     => FeDiffuseLighting::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeDisplacementMap(_), DisplacementMap(p))     => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeFlood(ref inner), Flood(node))                         => FeFlood::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeFlood(_), Flood(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeGaussianBlur(ref inner), GaussianBlur(node))           => FeGaussianBlur::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeImage(ref inner), Image(node))                         => FeImage::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeMerge(ref inner), Merge(node))                         => FeMerge::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),

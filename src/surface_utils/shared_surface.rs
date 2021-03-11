@@ -968,22 +968,21 @@ impl ImageSurface<Shared> {
         &self,
         bounds: IRect,
         color: cssparser::RGBA,
-        opacity: UnitInterval,
     ) -> Result<SharedImageSurface, cairo::Status> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        if opacity.0 > 0.0 {
+        if color.alpha > 0 {
             let cr = cairo::Context::new(&output_surface);
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
             cr.set_source_rgba(
-                f64::from(color.red) / 255f64,
-                f64::from(color.green) / 255f64,
-                f64::from(color.blue) / 255f64,
-                opacity.0,
+                f64::from(color.red_f32()),
+                f64::from(color.green_f32()),
+                f64::from(color.blue_f32()),
+                f64::from(color.alpha_f32()),
             );
             cr.paint();
         }
