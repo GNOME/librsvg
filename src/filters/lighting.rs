@@ -449,8 +449,6 @@ impl FeSpecularLighting {
     }
 }
 
-// We cannot use a blanket impl<T: Lighting> Filter for T because we do
-// not want to make the Lighting trait public, so we use a macro
 macro_rules! impl_lighting_filter {
     ($lighting_type:ty, $alpha_func:ident) => {
         impl FilterRender for $lighting_type {
