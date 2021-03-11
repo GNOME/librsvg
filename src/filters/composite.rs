@@ -7,6 +7,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -33,6 +34,19 @@ pub struct FeComposite {
     k2: f64,
     k3: f64,
     k4: f64,
+}
+
+/// Resolved `feComposite` primitive for rendering.
+pub struct Composite {
+    base: Primitive,
+    in1: Input,
+    in2: Input,
+    operator: Operator,
+    k1: f64,
+    k2: f64,
+    k3: f64,
+    k4: f64,
+    color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeComposite {
@@ -73,20 +87,25 @@ impl SetAttributes for FeComposite {
     }
 }
 
-impl FeComposite {
+impl Composite {
     pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-        let cif = values.color_interpolation_filters();
-
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
-        let input_2 = ctx.get_input(acquired_nodes, draw_ctx, &self.in2, cif)?;
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            self.color_interpolation_filters,
+        )?;
+        let input_2 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in2,
+            self.color_interpolation_filters,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?
@@ -120,7 +139,20 @@ impl FeComposite {
 
 impl FilterEffect for FeComposite {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Composite(node.clone()))
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::Composite(Composite {
+            base: self.base.clone(),
+            in1: self.in1.clone(),
+            in2: self.in2.clone(),
+            operator: self.operator.clone(),
+            k1: self.k1.clone(),
+            k2: self.k2.clone(),
+            k3: self.k3.clone(),
+            k4: self.k4.clone(),
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
     }
 }
 
