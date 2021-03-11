@@ -16,11 +16,14 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// The `feImage` filter primitive.
+#[derive(Clone)]
 pub struct FeImage {
     base: Primitive,
     aspect: AspectRatio,
     href: Option<String>,
 }
+
+pub type Image = FeImage;
 
 impl Default for FeImage {
     /// Constructs a new `FeImage` with empty properties.
@@ -121,7 +124,6 @@ impl SetAttributes for FeImage {
 impl FeImage {
     pub fn render(
         &self,
-        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -156,7 +158,7 @@ impl FeImage {
 }
 
 impl FilterEffect for FeImage {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Image(node.clone()))
+    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Image(self.clone()))
     }
 }

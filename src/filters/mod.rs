@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use image::FeImage;
 use lighting::{FeDiffuseLighting, FeSpecularLighting};
 use merge::FeMerge;
 use morphology::FeMorphology;
@@ -76,7 +75,7 @@ pub enum PrimitiveParams {
     DisplacementMap(displacement_map::DisplacementMap),
     Flood(flood::Flood),
     GaussianBlur(gaussian_blur::GaussianBlur),
-    Image(Node),
+    Image(image::Image),
     Merge(Node),
     Morphology(Node),
     Offset(Node),
@@ -327,7 +326,7 @@ fn render_primitive(
         (Element::FeDisplacementMap(_), DisplacementMap(p))     => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeFlood(_), Flood(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeGaussianBlur(_), GaussianBlur(p))           => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeImage(ref inner), Image(node))                         => FeImage::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeImage(_), Image(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeMerge(ref inner), Merge(node))                         => FeMerge::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeMorphology(ref inner), Morphology(node))               => FeMorphology::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeOffset(ref inner), Offset(node))                       => FeOffset::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
