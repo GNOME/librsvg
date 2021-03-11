@@ -8,7 +8,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
@@ -274,7 +274,7 @@ pub fn render(
 
         if let Err(err) = filter
             .resolve(&c)
-            .and_then(|params| render_primitive(&c, params, &filter_ctx, acquired_nodes, draw_ctx))
+            .and_then(|params| render_primitive(&params, &filter_ctx, acquired_nodes, draw_ctx))
             .and_then(|result| filter_ctx.store_result(result))
         {
             rsvg_log!("(filter primitive {} returned an error: {})", c, err);
@@ -298,35 +298,30 @@ pub fn render(
 
 #[rustfmt::skip]
 fn render_primitive(
-    node: &Node,
-    params: PrimitiveParams,
+    params: &PrimitiveParams,
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
 ) -> Result<FilterResult, FilterError> {
     use PrimitiveParams::*;
 
-    let elt = node.borrow_element();
-    let elt = &*elt;
-
-    match (elt, params) {
-        (Element::FeBlend(_), Blend(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeColorMatrix(_), ColorMatrix(p))             => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeComponentTransfer(_), ComponentTransfer(p)) => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeComposite(_), Composite(p))                 => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeConvolveMatrix(_), ConvolveMatrix(p))       => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeDiffuseLighting(_), DiffuseLighting(p))     => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeDisplacementMap(_), DisplacementMap(p))     => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeFlood(_), Flood(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeGaussianBlur(_), GaussianBlur(p))           => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeImage(_), Image(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeMerge(_), Merge(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeMorphology(_), Morphology(p))               => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeOffset(_), Offset(p))                       => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeSpecularLighting(_), SpecularLighting(p))   => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeTile(_), Tile(p))                           => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeTurbulence(_), Turbulence(p))               => p.render(ctx, acquired_nodes, draw_ctx),
-        (_, _) => unreachable!(),
+    match params {
+        Blend(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(p)       => p.render(ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(p) => p.render(ctx, acquired_nodes, draw_ctx),
+        Composite(p)         => p.render(ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(p)    => p.render(ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(p)   => p.render(ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(p)   => p.render(ctx, acquired_nodes, draw_ctx),
+        Flood(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(p)      => p.render(ctx, acquired_nodes, draw_ctx),
+        Image(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        Merge(p)             => p.render(ctx, acquired_nodes, draw_ctx),
+        Morphology(p)        => p.render(ctx, acquired_nodes, draw_ctx),
+        Offset(p)            => p.render(ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(p)  => p.render(ctx, acquired_nodes, draw_ctx),
+        Tile(p)              => p.render(ctx, acquired_nodes, draw_ctx),
+        Turbulence(p)        => p.render(ctx, acquired_nodes, draw_ctx),
     }
 }
 
