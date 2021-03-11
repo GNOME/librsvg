@@ -3,8 +3,9 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
-use crate::node::{Node, NodeBorrow};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
+use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
@@ -20,7 +21,8 @@ pub struct FeMerge {
 /// The `<feMergeNode>` element.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FeMergeNode {
-    in_: Option<Input>,
+    in1: Input,
+    color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeMerge {
@@ -28,24 +30,25 @@ impl Default for FeMerge {
     #[inline]
     fn default() -> FeMerge {
         FeMerge {
-            base: Primitive::new::<Self>(),
+            base: Primitive::new(),
         }
     }
 }
 
 impl SetAttributes for FeMerge {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)
+        self.base.parse_no_inputs(attrs)
     }
 }
 
 impl SetAttributes for FeMergeNode {
     #[inline]
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in_ = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
-            .and_then(|(attr, value)| attr.parse(value).ok());
+        for (attr, value) in attrs.iter() {
+            if let expanded_name!("", "in") = attr.expanded() {
+                self.in1 = attr.parse(value)?;
+            }
+        }
 
         Ok(())
     }
@@ -62,7 +65,12 @@ impl FeMergeNode {
         bounds: IRect,
         output_surface: Option<SharedImageSurface>,
     ) -> Result<SharedImageSurface, FilterError> {
-        let input = ctx.get_input(acquired_nodes, draw_ctx, self.in_.as_ref())?;
+        let input = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            self.color_interpolation_filters,
+        )?;
 
         if output_surface.is_none() {
             return Ok(input.surface().clone());
@@ -88,7 +96,12 @@ impl FilterRender for FeMerge {
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds = self.base.get_bounds(ctx)?;
         for merge_node in &parameters {
-            let input = ctx.get_input(acquired_nodes, draw_ctx, merge_node.in_.as_ref())?;
+            let input = ctx.get_input(
+                acquired_nodes,
+                draw_ctx,
+                &merge_node.in1,
+                merge_node.color_interpolation_filters,
+            )?;
             bounds = bounds.add_input(&input);
         }
 
@@ -118,12 +131,7 @@ impl FilterRender for FeMerge {
     }
 }
 
-impl FilterEffect for FeMerge {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeMerge {}
 
 /// Takes a feMerge and walks its children to produce a list of feMergeNode arguments.
 fn get_parameters(node: &Node) -> Result<Vec<FeMergeNode>, FilterError> {
@@ -136,8 +144,15 @@ fn get_parameters(node: &Node) -> Result<Vec<FeMergeNode>, FilterError> {
             return Err(FilterError::ChildNodeInError);
         }
 
+        let cascaded = CascadedValues::new_from_node(&child);
+        let values = cascaded.get();
+        let color_interpolation_filters = values.color_interpolation_filters();
+
         if let Element::FeMergeNode(ref merge_node) = *elt {
-            merge_nodes.push(merge_node.element_impl.clone());
+            merge_nodes.push(FeMergeNode {
+                color_interpolation_filters,
+                ..merge_node.element_impl.clone()
+            });
         }
     }
 
@@ -157,7 +172,7 @@ mod tests {
   <filter id="filter">
     <feMerge id="merge">
       <feMergeNode in="SourceGraphic"/>
-      <feMergeNode in="SourceAlpha"/>
+      <feMergeNode in="SourceAlpha" color-interpolation-filters="sRGB"/>
     </feMerge>
   </filter>
 </svg>
@@ -172,10 +187,12 @@ mod tests {
             &params[..],
             vec![
                 FeMergeNode {
-                    in_: Some(Input::SourceGraphic)
+                    in1: Input::SourceGraphic,
+                    color_interpolation_filters: Default::default(),
                 },
                 FeMergeNode {
-                    in_: Some(Input::SourceAlpha)
+                    in1: Input::SourceAlpha,
+                    color_interpolation_filters: ColorInterpolationFilters::Srgb,
                 },
             ]
         );

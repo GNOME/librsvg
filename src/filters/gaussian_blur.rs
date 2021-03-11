@@ -7,7 +7,7 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
-use crate::node::Node;
+use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -17,7 +17,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// The maximum gaussian blur kernel size.
 ///
@@ -26,7 +26,8 @@ const MAXIMUM_KERNEL_SIZE: usize = 500;
 
 /// The `feGaussianBlur` filter primitive.
 pub struct FeGaussianBlur {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     std_deviation: (f64, f64),
 }
 
@@ -35,7 +36,8 @@ impl Default for FeGaussianBlur {
     #[inline]
     fn default() -> FeGaussianBlur {
         FeGaussianBlur {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: Primitive::new(),
+            in1: Default::default(),
             std_deviation: (0.0, 0.0),
         }
     }
@@ -43,7 +45,7 @@ impl Default for FeGaussianBlur {
 
 impl SetAttributes for FeGaussianBlur {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "stdDeviation") = attr.expanded() {
@@ -188,16 +190,20 @@ fn gaussian_blur(
 impl FilterRender for FeGaussianBlur {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
 
         let (std_x, std_y) = self.std_deviation;
@@ -214,11 +220,11 @@ impl FilterRender for FeGaussianBlur {
         // Horizontal convolution.
         let horiz_result_surface = if std_x >= 2.0 {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
-            three_box_blurs::<Horizontal>(input.surface(), bounds, std_x)?
+            three_box_blurs::<Horizontal>(input_1.surface(), bounds, std_x)?
         } else if std_x != 0.0 {
-            gaussian_blur(input.surface(), bounds, std_x, false)?
+            gaussian_blur(input_1.surface(), bounds, std_x, false)?
         } else {
-            input.surface().clone()
+            input_1.surface().clone()
         };
 
         // Vertical convolution.
@@ -241,9 +247,4 @@ impl FilterRender for FeGaussianBlur {
     }
 }
 
-impl FilterEffect for FeGaussianBlur {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeGaussianBlur {}

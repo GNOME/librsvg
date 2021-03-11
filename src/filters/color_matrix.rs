@@ -6,7 +6,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
-use crate::node::Node;
+use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
@@ -15,7 +15,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// Color matrix operation types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -30,7 +30,8 @@ enum_default!(OperationType, OperationType::Matrix);
 
 /// The `feColorMatrix` filter primitive.
 pub struct FeColorMatrix {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     matrix: Matrix5<f64>,
 }
 
@@ -39,7 +40,8 @@ impl Default for FeColorMatrix {
     #[inline]
     fn default() -> FeColorMatrix {
         FeColorMatrix {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: Primitive::new(),
+            in1: Default::default(),
             matrix: Matrix5::identity(),
         }
     }
@@ -48,7 +50,7 @@ impl Default for FeColorMatrix {
 #[rustfmt::skip]
 impl SetAttributes for FeColorMatrix {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.in1 = self.base.parse_one_input(attrs)?;
 
         // First, determine the operation type.
         let mut operation_type = Default::default();
@@ -140,26 +142,30 @@ impl SetAttributes for FeColorMatrix {
 impl FilterRender for FeColorMatrix {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-            input.surface().surface_type(),
+            input_1.surface().surface_type(),
         )?;
 
         surface.modify(&mut |data, stride| {
-            for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
+            for (x, y, pixel) in Pixels::within(input_1.surface(), bounds) {
                 let alpha = f64::from(pixel.a) / 255f64;
 
                 let pixel_vec = if alpha == 0.0 {
@@ -201,12 +207,7 @@ impl FilterRender for FeColorMatrix {
     }
 }
 
-impl FilterEffect for FeColorMatrix {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeColorMatrix {}
 
 impl Parse for OperationType {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

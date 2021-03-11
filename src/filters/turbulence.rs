@@ -46,7 +46,7 @@ impl Default for FeTurbulence {
     #[inline]
     fn default() -> FeTurbulence {
         FeTurbulence {
-            base: Primitive::new::<Self>(),
+            base: Primitive::new(),
             base_frequency: (0.0, 0.0),
             num_octaves: 1,
             seed: 0,
@@ -58,7 +58,7 @@ impl Default for FeTurbulence {
 
 impl SetAttributes for FeTurbulence {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.base.parse_no_inputs(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -402,12 +402,7 @@ impl FilterRender for FeTurbulence {
     }
 }
 
-impl FilterEffect for FeTurbulence {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeTurbulence {}
 
 impl Parse for StitchTiles {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

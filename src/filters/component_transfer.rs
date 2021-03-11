@@ -7,7 +7,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::node::{Node, NodeBorrow};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
@@ -16,11 +16,12 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// The `feComponentTransfer` filter primitive.
 pub struct FeComponentTransfer {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
 }
 
 impl Default for FeComponentTransfer {
@@ -28,14 +29,16 @@ impl Default for FeComponentTransfer {
     #[inline]
     fn default() -> FeComponentTransfer {
         FeComponentTransfer {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: Primitive::new(),
+            in1: Default::default(),
         }
     }
 }
 
 impl SetAttributes for FeComponentTransfer {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)
+        self.in1 = self.base.parse_one_input(attrs)?;
+        Ok(())
     }
 }
 
@@ -291,20 +294,24 @@ impl FilterRender for FeComponentTransfer {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
         let functions = get_parameters(node)?;
 
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
         let bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
 
         // Create the output surface.
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
             ctx.source_graphic().height(),
-            input.surface().surface_type(),
+            input_1.surface().surface_type(),
         )?;
 
         #[inline]
@@ -338,7 +345,7 @@ impl FilterRender for FeComponentTransfer {
 
         // Do the actual processing.
         surface.modify(&mut |data, stride| {
-            for (x, y, pixel) in Pixels::within(input.surface(), bounds) {
+            for (x, y, pixel) in Pixels::within(input_1.surface(), bounds) {
                 let alpha = f64::from(pixel.a) / 255f64;
                 let new_alpha = compute_a(alpha);
 
@@ -363,11 +370,7 @@ impl FilterRender for FeComponentTransfer {
     }
 }
 
-impl FilterEffect for FeComponentTransfer {
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeComponentTransfer {}
 
 /// Takes a feComponentTransfer and walks its children to produce the feFuncX arguments.
 fn get_parameters(node: &Node) -> Result<Functions, FilterError> {

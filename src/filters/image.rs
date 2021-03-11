@@ -27,7 +27,7 @@ impl Default for FeImage {
     #[inline]
     fn default() -> FeImage {
         FeImage {
-            base: Primitive::new::<Self>(),
+            base: Primitive::new(),
             aspect: AspectRatio::default(),
             href: None,
         }
@@ -99,7 +99,7 @@ impl FeImage {
 
 impl SetAttributes for FeImage {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.base.parse_no_inputs(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -155,9 +155,4 @@ impl FilterRender for FeImage {
     }
 }
 
-impl FilterEffect for FeImage {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        false
-    }
-}
+impl FilterEffect for FeImage {}

@@ -17,14 +17,14 @@ impl Default for FeFlood {
     #[inline]
     fn default() -> FeFlood {
         FeFlood {
-            base: Primitive::new::<Self>(),
+            base: Primitive::new(),
         }
     }
 }
 
 impl SetAttributes for FeFlood {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)
+        self.base.parse_no_inputs(attrs)
     }
 }
 
@@ -56,9 +56,4 @@ impl FilterRender for FeFlood {
     }
 }
 
-impl FilterEffect for FeFlood {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        false
-    }
-}
+impl FilterEffect for FeFlood {}

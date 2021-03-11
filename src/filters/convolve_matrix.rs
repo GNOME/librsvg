@@ -6,7 +6,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
-use crate::node::Node;
+use crate::node::{CascadedValues, Node};
 use crate::parsers::{
     NonNegative, NumberList, NumberListLength, NumberOptionalNumber, Parse, ParseValue,
 };
@@ -20,11 +20,12 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, PrimitiveWithInput};
+use super::{FilterEffect, FilterError, FilterRender, Input, Primitive};
 
 /// The `feConvolveMatrix` filter primitive.
 pub struct FeConvolveMatrix {
-    base: PrimitiveWithInput,
+    base: Primitive,
+    in1: Input,
     order: (u32, u32),
     kernel_matrix: Option<DMatrix<f64>>,
     divisor: f64,
@@ -41,7 +42,8 @@ impl Default for FeConvolveMatrix {
     #[inline]
     fn default() -> FeConvolveMatrix {
         FeConvolveMatrix {
-            base: PrimitiveWithInput::new::<Self>(),
+            base: Primitive::new(),
+            in1: Default::default(),
             order: (3, 3),
             kernel_matrix: None,
             divisor: 0.0,
@@ -57,7 +59,7 @@ impl Default for FeConvolveMatrix {
 
 impl SetAttributes for FeConvolveMatrix {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
+        self.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -122,18 +124,22 @@ impl SetAttributes for FeConvolveMatrix {
 impl FilterRender for FeConvolveMatrix {
     fn render(
         &self,
-        _node: &Node,
+        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         #![allow(clippy::many_single_char_names)]
 
-        let input = self.base.get_input(ctx, acquired_nodes, draw_ctx)?;
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+        let cif = values.color_interpolation_filters();
+
+        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
         let mut bounds = self
             .base
             .get_bounds(ctx)?
-            .add_input(&input)
+            .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
         let original_bounds = bounds;
 
@@ -159,9 +165,9 @@ impl FilterRender for FeConvolveMatrix {
 
         let mut input_surface = if self.preserve_alpha {
             // preserve_alpha means we need to premultiply and unpremultiply the values.
-            input.surface().unpremultiply(bounds)?
+            input_1.surface().unpremultiply(bounds)?
         } else {
-            input.surface().clone()
+            input_1.surface().clone()
         };
 
         let scale = self
@@ -193,7 +199,7 @@ impl FilterRender for FeConvolveMatrix {
         let mut surface = ExclusiveImageSurface::new(
             input_surface.width(),
             input_surface.height(),
-            input.surface().surface_type(),
+            input_1.surface().surface_type(),
         )?;
 
         surface.modify(&mut |data, stride| {
@@ -282,12 +288,7 @@ impl FilterRender for FeConvolveMatrix {
     }
 }
 
-impl FilterEffect for FeConvolveMatrix {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeConvolveMatrix {}
 
 impl Parse for EdgeMode {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

@@ -2,7 +2,6 @@
 
 use cssparser::{BasicParseError, Parser};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use std::ops::Deref;
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
@@ -10,9 +9,9 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
-use crate::error::{ParseError, RenderingError};
+use crate::error::{ElementError, ParseError, RenderingError};
 use crate::length::*;
-use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::node::{Node, NodeBorrow};
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
@@ -24,7 +23,7 @@ mod bounds;
 use self::bounds::BoundsBuilder;
 
 pub mod context;
-use self::context::{FilterContext, FilterInput, FilterResult};
+use self::context::{FilterContext, FilterResult};
 
 mod error;
 use self::error::FilterError;
@@ -45,14 +44,7 @@ pub trait FilterRender {
 }
 
 /// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw + FilterRender {
-    /// Returns `true` if this filter primitive is affected by the `color-interpolation-filters`
-    /// property.
-    ///
-    /// Primitives that do color blending (like `feComposite` or `feBlend`) should return `true`
-    /// here, whereas primitives that don't (like `feOffset`) should return `false`.
-    fn is_affected_by_color_interpolation_filters(&self) -> bool;
-}
+pub trait FilterEffect: SetAttributes + Draw + FilterRender {}
 
 // Filter Effects do not need to draw themselves
 impl<T: FilterEffect> Draw for T {}
@@ -85,6 +77,7 @@ struct Primitive {
 /// An enumeration of possible inputs for a filter primitive.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Input {
+    Unspecified,
     SourceGraphic,
     SourceAlpha,
     BackgroundImage,
@@ -92,6 +85,12 @@ pub enum Input {
     FillPaint,
     StrokePaint,
     FilterOutput(CustomIdent),
+}
+
+impl Default for Input {
+    fn default() -> Self {
+        Input::Unspecified
+    }
 }
 
 impl Parse for Input {
@@ -115,16 +114,10 @@ impl Parse for Input {
     }
 }
 
-/// The base node for filter primitives which accept input.
-struct PrimitiveWithInput {
-    base: Primitive,
-    in_: Option<Input>,
-}
-
 impl Primitive {
     /// Constructs a new `Primitive` with empty properties.
     #[inline]
-    fn new<T: FilterEffect>() -> Primitive {
+    fn new() -> Primitive {
         Primitive {
             x: None,
             y: None,
@@ -172,8 +165,14 @@ fn check_units<N: Normalize, V: Validate>(
     }
 }
 
-impl SetAttributes for Primitive {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+impl Primitive {
+    fn parse_standard_attributes(
+        &mut self,
+        attrs: &Attributes,
+    ) -> Result<(Input, Input), ElementError> {
+        let mut input_1 = Input::Unspecified;
+        let mut input_2 = Input::Unspecified;
+
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -181,55 +180,27 @@ impl SetAttributes for Primitive {
                 expanded_name!("", "width") => self.width = attr.parse(value)?,
                 expanded_name!("", "height") => self.height = attr.parse(value)?,
                 expanded_name!("", "result") => self.result = attr.parse(value)?,
+                expanded_name!("", "in") => input_1 = attr.parse(value)?,
+                expanded_name!("", "in2") => input_2 = attr.parse(value)?,
                 _ => (),
             }
         }
 
+        Ok((input_1, input_2))
+    }
+
+    pub fn parse_no_inputs(&mut self, attrs: &Attributes) -> ElementResult {
+        let (_, _) = self.parse_standard_attributes(attrs)?;
         Ok(())
     }
-}
 
-impl PrimitiveWithInput {
-    /// Constructs a new `PrimitiveWithInput` with empty properties.
-    #[inline]
-    fn new<T: FilterEffect>() -> PrimitiveWithInput {
-        PrimitiveWithInput {
-            base: Primitive::new::<T>(),
-            in_: None,
-        }
+    pub fn parse_one_input(&mut self, attrs: &Attributes) -> Result<Input, ElementError> {
+        let (input_1, _) = self.parse_standard_attributes(attrs)?;
+        Ok(input_1)
     }
 
-    /// Returns the input Cairo surface for this filter primitive.
-    #[inline]
-    fn get_input(
-        &self,
-        ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterInput, FilterError> {
-        ctx.get_input(acquired_nodes, draw_ctx, self.in_.as_ref())
-    }
-}
-
-impl SetAttributes for PrimitiveWithInput {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.base.set_attributes(attrs)?;
-
-        self.in_ = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "in"))
-            .and_then(|(attr, value)| attr.parse(value).ok());
-
-        Ok(())
-    }
-}
-
-impl Deref for PrimitiveWithInput {
-    type Target = Primitive;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.base
+    pub fn parse_two_inputs(&mut self, attrs: &Attributes) -> Result<(Input, Input), ElementError> {
+        self.parse_standard_attributes(attrs)
     }
 }
 
@@ -280,45 +251,24 @@ pub fn render(
             !in_error
         })
         // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow_element().as_filter_effect().is_some())
-        // Check if the node wants linear RGB.
-        .map(|c| {
-            let linear_rgb = {
-                let cascaded = CascadedValues::new_from_node(&c);
-                let values = cascaded.get();
+        .filter(|c| c.borrow_element().as_filter_effect().is_some());
 
-                values.color_interpolation_filters() == ColorInterpolationFilters::LinearRgb
-            };
-
-            (c, linear_rgb)
-        });
-
-    for (c, linear_rgb) in primitives {
+    for c in primitives {
         let elt = c.borrow_element();
         let filter = elt.as_filter_effect().unwrap();
 
-        let mut render = |filter_ctx: &mut FilterContext| {
-            if let Err(err) = filter
-                .render(&c, filter_ctx, acquired_nodes, draw_ctx)
-                .and_then(|result| filter_ctx.store_result(result))
-            {
-                rsvg_log!("(filter primitive {} returned an error: {})", c, err);
-
-                // Exit early on Cairo errors. Continue rendering otherwise.
-                if let FilterError::CairoError(status) = err {
-                    return Err(status);
-                }
-            }
-
-            Ok(())
-        };
-
         let start = Instant::now();
 
-        if filter.is_affected_by_color_interpolation_filters() && linear_rgb {
-            filter_ctx.with_linear_rgb(render)?;
-        } else {
-            render(&mut filter_ctx)?;
+        if let Err(err) = filter
+            .render(&c, &filter_ctx, acquired_nodes, draw_ctx)
+            .and_then(|result| filter_ctx.store_result(result))
+        {
+            rsvg_log!("(filter primitive {} returned an error: {})", c, err);
+
+            // Exit early on Cairo errors. Continue rendering otherwise.
+            if let FilterError::CairoError(status) = err {
+                return Err(RenderingError::from(status));
+            }
         }
 
         let elapsed = start.elapsed();
