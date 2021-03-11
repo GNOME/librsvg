@@ -35,7 +35,7 @@ enum UntransformedLightSource {
 }
 
 /// A light source with affine transformations applied.
-pub enum LightSource {
+enum LightSource {
     Distant {
         azimuth: f64,
         elevation: f64,
@@ -179,7 +179,7 @@ pub struct FeDistantLight {
 }
 
 impl FeDistantLight {
-    pub fn transform(&self) -> LightSource {
+    fn transform(&self) -> LightSource {
         LightSource::Distant {
             azimuth: self.azimuth,
             elevation: self.elevation,
@@ -211,7 +211,7 @@ pub struct FePointLight {
 }
 
 impl FePointLight {
-    pub fn transform(&self, paffine: Transform) -> LightSource {
+    fn transform(&self, paffine: Transform) -> LightSource {
         let (x, y) = paffine.transform_point(self.x, self.y);
         let z = transform_dist(paffine, self.z);
 
@@ -251,7 +251,7 @@ pub struct FeSpotLight {
 }
 
 impl FeSpotLight {
-    pub fn transform(&self, paffine: Transform) -> LightSource {
+    fn transform(&self, paffine: Transform) -> LightSource {
         let (x, y) = paffine.transform_point(self.x, self.y);
         let z = transform_dist(paffine, self.z);
         let (points_at_x, points_at_y) =
