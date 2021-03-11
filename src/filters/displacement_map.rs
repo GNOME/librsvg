@@ -33,6 +33,17 @@ pub struct FeDisplacementMap {
     y_channel_selector: ColorChannel,
 }
 
+/// Resolved `feDisplacementMap` primitive for rendering.
+pub struct DisplacementMap {
+    base: Primitive,
+    in1: Input,
+    in2: Input,
+    scale: f64,
+    x_channel_selector: ColorChannel,
+    y_channel_selector: ColorChannel,
+    color_interpolation_filters: ColorInterpolationFilters,
+}
+
 impl Default for FeDisplacementMap {
     /// Constructs a new `DisplacementMap` with empty properties.
     #[inline]
@@ -71,18 +82,13 @@ impl SetAttributes for FeDisplacementMap {
     }
 }
 
-impl FeDisplacementMap {
+impl DisplacementMap {
     pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-        let cif = values.color_interpolation_filters();
-
         // https://www.w3.org/TR/filter-effects/#feDisplacementMapElement
         // "The color-interpolation-filters property only applies to
         // the in2 source image and does not apply to the in source
@@ -95,7 +101,12 @@ impl FeDisplacementMap {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let displacement_input = ctx.get_input(acquired_nodes, draw_ctx, &self.in2, cif)?;
+        let displacement_input = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in2,
+            self.color_interpolation_filters,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?
@@ -158,7 +169,18 @@ impl FeDisplacementMap {
 
 impl FilterEffect for FeDisplacementMap {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::DisplacementMap(node.clone()))
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::DisplacementMap(DisplacementMap {
+            base: self.base.clone(),
+            in1: self.in1.clone(),
+            in2: self.in2.clone(),
+            scale: self.scale.clone(),
+            x_channel_selector: self.x_channel_selector.clone(),
+            y_channel_selector: self.y_channel_selector.clone(),
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
     }
 }
 
