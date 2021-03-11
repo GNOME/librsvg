@@ -7,6 +7,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
@@ -43,6 +44,15 @@ pub struct FeBlend {
     mode: Mode,
 }
 
+/// Resolved `feBlend` primitive for rendering.
+pub struct Blend {
+    base: Primitive,
+    in1: Input,
+    in2: Input,
+    mode: Mode,
+    color_interpolation_filters: ColorInterpolationFilters,
+}
+
 impl Default for FeBlend {
     /// Constructs a new `Blend` with empty properties.
     #[inline]
@@ -72,20 +82,25 @@ impl SetAttributes for FeBlend {
     }
 }
 
-impl FeBlend {
+impl Blend {
     pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
-        let cif = values.color_interpolation_filters();
-
-        let input_1 = ctx.get_input(acquired_nodes, draw_ctx, &self.in1, cif)?;
-        let input_2 = ctx.get_input(acquired_nodes, draw_ctx, &self.in2, cif)?;
+        let input_1 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in1,
+            self.color_interpolation_filters,
+        )?;
+        let input_2 = ctx.get_input(
+            acquired_nodes,
+            draw_ctx,
+            &self.in2,
+            self.color_interpolation_filters,
+        )?;
         let bounds = self
             .base
             .get_bounds(ctx)?
@@ -108,7 +123,16 @@ impl FeBlend {
 
 impl FilterEffect for FeBlend {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Blend(node.clone()))
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::Blend(Blend {
+            base: self.base.clone(),
+            in1: self.in1.clone(),
+            in2: self.in2.clone(),
+            mode: self.mode.clone(),
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
     }
 }
 

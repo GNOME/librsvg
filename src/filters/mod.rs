@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use blend::FeBlend;
 use color_matrix::FeColorMatrix;
 use component_transfer::FeComponentTransfer;
 use composite::FeComposite;
@@ -75,7 +74,7 @@ use turbulence::FeTurbulence;
 /// and parameters extracted from the element's children (for example,
 /// `feMerge` gathers info from its `feMergNode` children).
 pub enum PrimitiveParams {
-    Blend(Node),
+    Blend(blend::Blend),
     ColorMatrix(Node),
     ComponentTransfer(Node),
     Composite(Node),
@@ -94,6 +93,7 @@ pub enum PrimitiveParams {
 }
 
 /// The base filter primitive node containing common properties.
+#[derive(Clone)]
 struct Primitive {
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
@@ -325,7 +325,7 @@ fn render_primitive(
     let elt = &*elt;
 
     match (elt, params) {
-        (Element::FeBlend(ref inner), Blend(node))                         => FeBlend::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeBlend(_), Blend(p))                         => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeColorMatrix(ref inner), ColorMatrix(node))             => FeColorMatrix::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeComponentTransfer(ref inner), ComponentTransfer(node)) => FeComponentTransfer::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (Element::FeComposite(ref inner), Composite(node))                 => FeComposite::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
