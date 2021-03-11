@@ -9,7 +9,7 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feOffset` filter primitive.
 pub struct FeOffset {
@@ -48,8 +48,8 @@ impl SetAttributes for FeOffset {
     }
 }
 
-impl FilterRender for FeOffset {
-    fn render(
+impl FeOffset {
+    pub fn render(
         &self,
         _node: &Node,
         ctx: &FilterContext,

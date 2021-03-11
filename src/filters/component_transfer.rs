@@ -16,7 +16,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feComponentTransfer` filter primitive.
 pub struct FeComponentTransfer {
@@ -286,8 +286,8 @@ macro_rules! get_func_x_node {
     };
 }
 
-impl FilterRender for FeComponentTransfer {
-    fn render(
+impl FeComponentTransfer {
+    pub fn render(
         &self,
         node: &Node,
         ctx: &FilterContext,

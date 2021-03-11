@@ -17,7 +17,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The maximum gaussian blur kernel size.
 ///
@@ -187,8 +187,8 @@ fn gaussian_blur(
     )?)
 }
 
-impl FilterRender for FeGaussianBlur {
-    fn render(
+impl FeGaussianBlur {
+    pub fn render(
         &self,
         node: &Node,
         ctx: &FilterContext,

@@ -12,7 +12,7 @@ use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurf
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the color channels the displacement map can source.
 #[derive(Clone, Copy)]
@@ -71,8 +71,8 @@ impl SetAttributes for FeDisplacementMap {
     }
 }
 
-impl FilterRender for FeDisplacementMap {
-    fn render(
+impl FeDisplacementMap {
+    pub fn render(
         &self,
         node: &Node,
         ctx: &FilterContext,

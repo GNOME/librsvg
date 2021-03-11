@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams,
+    FilterEffect, FilterError, Input, Primitive, PrimitiveParams,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
@@ -451,8 +451,8 @@ impl FeSpecularLighting {
 
 macro_rules! impl_lighting_filter {
     ($lighting_type:ty, $params_name:ident, $alpha_func:ident) => {
-        impl FilterRender for $lighting_type {
-            fn render(
+        impl $lighting_type {
+            pub fn render(
                 &self,
                 node: &Node,
                 ctx: &FilterContext,

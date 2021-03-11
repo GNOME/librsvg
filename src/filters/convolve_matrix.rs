@@ -20,7 +20,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feConvolveMatrix` filter primitive.
 pub struct FeConvolveMatrix {
@@ -121,8 +121,8 @@ impl SetAttributes for FeConvolveMatrix {
     }
 }
 
-impl FilterRender for FeConvolveMatrix {
-    fn render(
+impl FeConvolveMatrix {
+    pub fn render(
         &self,
         node: &Node,
         ctx: &FilterContext,

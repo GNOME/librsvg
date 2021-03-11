@@ -19,7 +19,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the possible morphology operations.
 enum Operator {
@@ -67,8 +67,8 @@ impl SetAttributes for FeMorphology {
     }
 }
 
-impl FilterRender for FeMorphology {
-    fn render(
+impl FeMorphology {
+    pub fn render(
         &self,
         _node: &Node,
         ctx: &FilterContext,

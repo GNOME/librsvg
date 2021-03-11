@@ -8,7 +8,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, ElementResult, SetAttributes};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
@@ -28,23 +28,8 @@ use self::context::{FilterContext, FilterResult};
 mod error;
 use self::error::FilterError;
 
-/// Trait to render filter effect primitives.
-pub trait FilterRender {
-    /// Renders this filter primitive.
-    ///
-    /// If this filter primitive can't be rendered for whatever reason (for instance, a required
-    /// property hasn't been provided), an error is returned.
-    fn render(
-        &self,
-        node: &Node,
-        ctx: &FilterContext,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError>;
-}
-
 /// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw + FilterRender {
+pub trait FilterEffect: SetAttributes + Draw {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError>;
 }
 
@@ -66,6 +51,22 @@ pub mod morphology;
 pub mod offset;
 pub mod tile;
 pub mod turbulence;
+
+use blend::FeBlend;
+use color_matrix::FeColorMatrix;
+use component_transfer::FeComponentTransfer;
+use composite::FeComposite;
+use convolve_matrix::FeConvolveMatrix;
+use displacement_map::FeDisplacementMap;
+use flood::FeFlood;
+use gaussian_blur::FeGaussianBlur;
+use image::FeImage;
+use lighting::{FeDiffuseLighting, FeSpecularLighting};
+use merge::FeMerge;
+use morphology::FeMorphology;
+use offset::FeOffset;
+use tile::FeTile;
+use turbulence::FeTurbulence;
 
 /// Resolved parameters for each filter primitive.
 ///
@@ -287,7 +288,8 @@ pub fn render(
         let start = Instant::now();
 
         if let Err(err) = filter
-            .render(&c, &filter_ctx, acquired_nodes, draw_ctx)
+            .resolve(&c)
+            .and_then(|params| render_primitive(&c, params, &filter_ctx, acquired_nodes, draw_ctx))
             .and_then(|result| filter_ctx.store_result(result))
         {
             rsvg_log!("(filter primitive {} returned an error: {})", c, err);
@@ -307,6 +309,40 @@ pub fn render(
     }
 
     Ok(filter_ctx.into_output()?)
+}
+
+#[rustfmt::skip]
+fn render_primitive(
+    node: &Node,
+    params: PrimitiveParams,
+    ctx: &FilterContext,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    draw_ctx: &mut DrawingCtx,
+) -> Result<FilterResult, FilterError> {
+    use PrimitiveParams::*;
+
+    let elt = node.borrow_element();
+    let elt = &*elt;
+
+    match (elt, params) {
+        (Element::FeBlend(ref inner), Blend(node))                         => FeBlend::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeColorMatrix(ref inner), ColorMatrix(node))             => FeColorMatrix::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeComponentTransfer(ref inner), ComponentTransfer(node)) => FeComponentTransfer::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeComposite(ref inner), Composite(node))                 => FeComposite::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeConvolveMatrix(ref inner), ConvolveMatrix(node))       => FeConvolveMatrix::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeDiffuseLighting(ref inner), DiffuseLighting(node))     => FeDiffuseLighting::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeDisplacementMap(ref inner), DisplacementMap(node))     => FeDisplacementMap::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeFlood(ref inner), Flood(node))                         => FeFlood::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeGaussianBlur(ref inner), GaussianBlur(node))           => FeGaussianBlur::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeImage(ref inner), Image(node))                         => FeImage::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeMerge(ref inner), Merge(node))                         => FeMerge::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeMorphology(ref inner), Morphology(node))               => FeMorphology::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeOffset(ref inner), Offset(node))                       => FeOffset::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeSpecularLighting(ref inner), SpecularLighting(node))   => FeSpecularLighting::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeTile(ref inner), Tile(node))                           => FeTile::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeTurbulence(ref inner), Turbulence(node))               => FeTurbulence::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (_, _) => unreachable!(),
+    }
 }
 
 impl From<ColorInterpolationFilters> for SurfaceType {

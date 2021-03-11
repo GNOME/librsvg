@@ -15,7 +15,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, FilterRender, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -323,8 +323,8 @@ impl NoiseGenerator {
     }
 }
 
-impl FilterRender for FeTurbulence {
-    fn render(
+impl FeTurbulence {
+    pub fn render(
         &self,
         node: &Node,
         ctx: &FilterContext,
