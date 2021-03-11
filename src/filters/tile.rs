@@ -9,10 +9,14 @@ use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feTile` filter primitive.
+#[derive(Clone)]
 pub struct FeTile {
     base: Primitive,
     in1: Input,
 }
+
+/// Resolved `feTile` primitive for rendering.
+pub type Tile = FeTile;
 
 impl Default for FeTile {
     /// Constructs a new `Tile` with empty properties.
@@ -35,7 +39,6 @@ impl SetAttributes for FeTile {
 impl FeTile {
     pub fn render(
         &self,
-        _node: &Node,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -82,7 +85,7 @@ impl FeTile {
 }
 
 impl FilterEffect for FeTile {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Tile(node.clone()))
+    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
+        Ok(PrimitiveParams::Tile(self.clone()))
     }
 }

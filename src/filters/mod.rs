@@ -52,7 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use tile::FeTile;
 use turbulence::FeTurbulence;
 
 /// Resolved parameters for each filter primitive.
@@ -76,7 +75,7 @@ pub enum PrimitiveParams {
     Morphology(morphology::Morphology),
     Offset(offset::Offset),
     SpecularLighting(lighting::SpecularLighting),
-    Tile(Node),
+    Tile(tile::Tile),
     Turbulence(Node),
 }
 
@@ -327,7 +326,7 @@ fn render_primitive(
         (Element::FeMorphology(_), Morphology(p))               => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeOffset(_), Offset(p))                       => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeSpecularLighting(_), SpecularLighting(p))   => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeTile(ref inner), Tile(node))                           => FeTile::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeTile(_), Tile(p))                           => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeTurbulence(ref inner), Turbulence(node))               => FeTurbulence::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
         (_, _) => unreachable!(),
     }
