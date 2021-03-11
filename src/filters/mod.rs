@@ -52,8 +52,6 @@ pub mod offset;
 pub mod tile;
 pub mod turbulence;
 
-use turbulence::FeTurbulence;
-
 /// Resolved parameters for each filter primitive.
 ///
 /// These gather all the data that a primitive may need during rendering:
@@ -76,7 +74,7 @@ pub enum PrimitiveParams {
     Offset(offset::Offset),
     SpecularLighting(lighting::SpecularLighting),
     Tile(tile::Tile),
-    Turbulence(Node),
+    Turbulence(turbulence::Turbulence),
 }
 
 /// The base filter primitive node containing common properties.
@@ -327,7 +325,7 @@ fn render_primitive(
         (Element::FeOffset(_), Offset(p))                       => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeSpecularLighting(_), SpecularLighting(p))   => p.render(ctx, acquired_nodes, draw_ctx),
         (Element::FeTile(_), Tile(p))                           => p.render(ctx, acquired_nodes, draw_ctx),
-        (Element::FeTurbulence(ref inner), Turbulence(node))               => FeTurbulence::render(&inner.element_impl, &node, ctx, acquired_nodes, draw_ctx),
+        (Element::FeTurbulence(_), Turbulence(p))               => p.render(ctx, acquired_nodes, draw_ctx),
         (_, _) => unreachable!(),
     }
 }

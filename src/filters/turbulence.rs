@@ -7,6 +7,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
+use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
@@ -39,6 +40,17 @@ pub struct FeTurbulence {
     seed: i32,
     stitch_tiles: StitchTiles,
     type_: NoiseType,
+}
+
+/// Resolved `feTurbulence` primitive for rendering.
+pub struct Turbulence {
+    base: Primitive,
+    base_frequency: (f64, f64),
+    num_octaves: i32,
+    seed: i32,
+    stitch_tiles: StitchTiles,
+    type_: NoiseType,
+    color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeTurbulence {
@@ -323,10 +335,9 @@ impl NoiseGenerator {
     }
 }
 
-impl FeTurbulence {
+impl Turbulence {
     pub fn render(
         &self,
-        node: &Node,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -345,11 +356,9 @@ impl FeTurbulence {
             f64::from(bounds.height()),
         );
 
-        let cascaded = CascadedValues::new_from_node(node);
-        let values = cascaded.get();
         // The generated color values are in the color space determined by
         // color-interpolation-filters.
-        let surface_type = SurfaceType::from(values.color_interpolation_filters());
+        let surface_type = SurfaceType::from(self.color_interpolation_filters);
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
@@ -404,7 +413,18 @@ impl FeTurbulence {
 
 impl FilterEffect for FeTurbulence {
     fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Turbulence(node.clone()))
+        let cascaded = CascadedValues::new_from_node(node);
+        let values = cascaded.get();
+
+        Ok(PrimitiveParams::Turbulence(Turbulence {
+            base: self.base.clone(),
+            base_frequency: self.base_frequency.clone(),
+            num_octaves: self.num_octaves.clone(),
+            seed: self.seed.clone(),
+            stitch_tiles: self.stitch_tiles.clone(),
+            type_: self.type_.clone(),
+            color_interpolation_filters: values.color_interpolation_filters(),
+        }))
     }
 }
 
