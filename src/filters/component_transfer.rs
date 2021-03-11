@@ -370,11 +370,7 @@ impl FilterRender for FeComponentTransfer {
     }
 }
 
-impl FilterEffect for FeComponentTransfer {
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeComponentTransfer {}
 
 /// Takes a feComponentTransfer and walks its children to produce the feFuncX arguments.
 fn get_parameters(node: &Node) -> Result<Functions, FilterError> {

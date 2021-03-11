@@ -81,9 +81,4 @@ impl FilterRender for FeTile {
     }
 }
 
-impl FilterEffect for FeTile {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        false
-    }
-}
+impl FilterEffect for FeTile {}

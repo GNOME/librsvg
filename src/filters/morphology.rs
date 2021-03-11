@@ -161,12 +161,7 @@ impl FilterRender for FeMorphology {
     }
 }
 
-impl FilterEffect for FeMorphology {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        false
-    }
-}
+impl FilterEffect for FeMorphology {}
 
 impl Parse for Operator {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

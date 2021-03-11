@@ -106,12 +106,7 @@ impl FilterRender for FeBlend {
     }
 }
 
-impl FilterEffect for FeBlend {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeBlend {}
 
 impl Parse for Mode {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

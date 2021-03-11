@@ -56,9 +56,4 @@ impl FilterRender for FeFlood {
     }
 }
 
-impl FilterEffect for FeFlood {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        false
-    }
-}
+impl FilterEffect for FeFlood {}

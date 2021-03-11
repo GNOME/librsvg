@@ -156,14 +156,7 @@ impl FilterRender for FeDisplacementMap {
     }
 }
 
-impl FilterEffect for FeDisplacementMap {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        // Performance TODO: this converts in back and forth to linear RGB while technically it's
-        // only needed for in2.
-        true
-    }
-}
+impl FilterEffect for FeDisplacementMap {}
 
 impl Parse for ColorChannel {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

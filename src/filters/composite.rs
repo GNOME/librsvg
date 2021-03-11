@@ -118,12 +118,7 @@ impl FilterRender for FeComposite {
     }
 }
 
-impl FilterEffect for FeComposite {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeComposite {}
 
 impl Parse for Operator {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

@@ -247,9 +247,4 @@ impl FilterRender for FeGaussianBlur {
     }
 }
 
-impl FilterEffect for FeGaussianBlur {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeGaussianBlur {}

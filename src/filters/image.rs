@@ -155,9 +155,4 @@ impl FilterRender for FeImage {
     }
 }
 
-impl FilterEffect for FeImage {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        false
-    }
-}
+impl FilterEffect for FeImage {}

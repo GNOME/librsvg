@@ -86,9 +86,4 @@ impl FilterRender for FeOffset {
     }
 }
 
-impl FilterEffect for FeOffset {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        false
-    }
-}
+impl FilterEffect for FeOffset {}

@@ -288,12 +288,7 @@ impl FilterRender for FeConvolveMatrix {
     }
 }
 
-impl FilterEffect for FeConvolveMatrix {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeConvolveMatrix {}
 
 impl Parse for EdgeMode {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

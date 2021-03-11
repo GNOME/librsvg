@@ -402,12 +402,7 @@ impl FilterRender for FeTurbulence {
     }
 }
 
-impl FilterEffect for FeTurbulence {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeTurbulence {}
 
 impl Parse for StitchTiles {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

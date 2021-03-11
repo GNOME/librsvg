@@ -207,12 +207,7 @@ impl FilterRender for FeColorMatrix {
     }
 }
 
-impl FilterEffect for FeColorMatrix {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeColorMatrix {}
 
 impl Parse for OperationType {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

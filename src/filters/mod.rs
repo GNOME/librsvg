@@ -44,14 +44,7 @@ pub trait FilterRender {
 }
 
 /// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw + FilterRender {
-    /// Returns `true` if this filter primitive is affected by the `color-interpolation-filters`
-    /// property.
-    ///
-    /// Primitives that do color blending (like `feComposite` or `feBlend`) should return `true`
-    /// here, whereas primitives that don't (like `feOffset`) should return `false`.
-    fn is_affected_by_color_interpolation_filters(&self) -> bool;
-}
+pub trait FilterEffect: SetAttributes + Draw + FilterRender {}
 
 // Filter Effects do not need to draw themselves
 impl<T: FilterEffect> Draw for T {}

@@ -131,12 +131,7 @@ impl FilterRender for FeMerge {
     }
 }
 
-impl FilterEffect for FeMerge {
-    #[inline]
-    fn is_affected_by_color_interpolation_filters(&self) -> bool {
-        true
-    }
-}
+impl FilterEffect for FeMerge {}
 
 /// Takes a feMerge and walks its children to produce a list of feMergeNode arguments.
 fn get_parameters(node: &Node) -> Result<Vec<FeMergeNode>, FilterError> {

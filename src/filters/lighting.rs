@@ -670,12 +670,7 @@ macro_rules! impl_lighting_filter {
             }
         }
 
-        impl FilterEffect for $lighting_type {
-            #[inline]
-            fn is_affected_by_color_interpolation_filters(&self) -> bool {
-                true
-            }
-        }
+        impl FilterEffect for $lighting_type {}
     };
 }
 
