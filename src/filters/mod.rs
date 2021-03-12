@@ -235,9 +235,26 @@ pub fn render(
     }
 
     let filter = borrow_element_as!(filter_node, Filter);
+
+    let values = computed_from_node_being_filtered;
+
+    let stroke_paint_source = values
+        .stroke()
+        .0
+        .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+        .to_user_space(&node_bbox, draw_ctx, values);
+
+    let fill_paint_source = values
+        .fill()
+        .0
+        .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+        .to_user_space(&node_bbox, draw_ctx, values);
+
     let mut filter_ctx = FilterContext::new(
         &filter,
         computed_from_node_being_filtered,
+        stroke_paint_source,
+        fill_paint_source,
         source_surface,
         draw_ctx,
         transform,
