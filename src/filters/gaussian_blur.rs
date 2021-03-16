@@ -26,39 +26,28 @@ use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, Resolv
 const MAXIMUM_KERNEL_SIZE: usize = 500;
 
 /// The `feGaussianBlur` filter primitive.
+#[derive(Default)]
 pub struct FeGaussianBlur {
     base: Primitive,
-    in1: Input,
-    std_deviation: (f64, f64),
+    params: GaussianBlur,
 }
 
 /// Resolved `feGaussianBlur` primitive for rendering.
+#[derive(Default, Clone)]
 pub struct GaussianBlur {
     in1: Input,
     std_deviation: (f64, f64),
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeGaussianBlur {
-    /// Constructs a new `GaussianBlur` with empty properties.
-    #[inline]
-    fn default() -> FeGaussianBlur {
-        FeGaussianBlur {
-            base: Default::default(),
-            in1: Default::default(),
-            std_deviation: (0.0, 0.0),
-        }
-    }
-}
-
 impl SetAttributes for FeGaussianBlur {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "stdDeviation") = attr.expanded() {
                 let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                self.std_deviation = (x, y);
+                self.params.std_deviation = (x, y);
             }
         }
 
@@ -260,13 +249,9 @@ impl FilterEffect for FeGaussianBlur {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::GaussianBlur(GaussianBlur {
-                in1: self.in1.clone(),
-                std_deviation: self.std_deviation,
-                color_interpolation_filters: values.color_interpolation_filters(),
-            }),
-        ))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::GaussianBlur(params)))
     }
 }
