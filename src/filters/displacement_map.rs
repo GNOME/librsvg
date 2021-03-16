@@ -23,17 +23,17 @@ enum ColorChannel {
     A,
 }
 
+enum_default!(ColorChannel, ColorChannel::A);
+
 /// The `feDisplacementMap` filter primitive.
+#[derive(Default)]
 pub struct FeDisplacementMap {
     base: Primitive,
-    in1: Input,
-    in2: Input,
-    scale: f64,
-    x_channel_selector: ColorChannel,
-    y_channel_selector: ColorChannel,
+    params: DisplacementMap,
 }
 
 /// Resolved `feDisplacementMap` primitive for rendering.
+#[derive(Clone, Default)]
 pub struct DisplacementMap {
     in1: Input,
     in2: Input,
@@ -43,35 +43,20 @@ pub struct DisplacementMap {
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeDisplacementMap {
-    /// Constructs a new `DisplacementMap` with empty properties.
-    #[inline]
-    fn default() -> FeDisplacementMap {
-        FeDisplacementMap {
-            base: Default::default(),
-            in1: Default::default(),
-            in2: Default::default(),
-            scale: 0.0,
-            x_channel_selector: ColorChannel::A,
-            y_channel_selector: ColorChannel::A,
-        }
-    }
-}
-
 impl SetAttributes for FeDisplacementMap {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         let (in1, in2) = self.base.parse_two_inputs(attrs)?;
-        self.in1 = in1;
-        self.in2 = in2;
+        self.params.in1 = in1;
+        self.params.in2 = in2;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "scale") => self.scale = attr.parse(value)?,
+                expanded_name!("", "scale") => self.params.scale = attr.parse(value)?,
                 expanded_name!("", "xChannelSelector") => {
-                    self.x_channel_selector = attr.parse(value)?
+                    self.params.x_channel_selector = attr.parse(value)?
                 }
                 expanded_name!("", "yChannelSelector") => {
-                    self.y_channel_selector = attr.parse(value)?
+                    self.params.y_channel_selector = attr.parse(value)?
                 }
                 _ => (),
             }
@@ -171,17 +156,10 @@ impl FilterEffect for FeDisplacementMap {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::DisplacementMap(DisplacementMap {
-                in1: self.in1.clone(),
-                in2: self.in2.clone(),
-                scale: self.scale,
-                x_channel_selector: self.x_channel_selector,
-                y_channel_selector: self.y_channel_selector,
-                color_interpolation_filters: values.color_interpolation_filters(),
-            }),
-        ))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::DisplacementMap(params)))
     }
 }
 
