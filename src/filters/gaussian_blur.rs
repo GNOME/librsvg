@@ -34,7 +34,6 @@ pub struct FeGaussianBlur {
 
 /// Resolved `feGaussianBlur` primitive for rendering.
 pub struct GaussianBlur {
-    base: Primitive,
     in1: Input,
     std_deviation: (f64, f64),
     color_interpolation_filters: ColorInterpolationFilters,
@@ -199,6 +198,7 @@ fn gaussian_blur(
 impl GaussianBlur {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -209,8 +209,7 @@ impl GaussianBlur {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -247,7 +246,7 @@ impl GaussianBlur {
         };
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: output_surface,
                 bounds,
@@ -257,15 +256,17 @@ impl GaussianBlur {
 }
 
 impl FilterEffect for FeGaussianBlur {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::GaussianBlur(GaussianBlur {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            std_deviation: self.std_deviation,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::GaussianBlur(GaussianBlur {
+                in1: self.in1.clone(),
+                std_deviation: self.std_deviation,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }

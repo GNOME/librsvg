@@ -16,7 +16,9 @@ pub struct FeTile {
 }
 
 /// Resolved `feTile` primitive for rendering.
-pub type Tile = FeTile;
+pub struct Tile {
+    in1: Input,
+}
 
 impl Default for FeTile {
     /// Constructs a new `Tile` with empty properties.
@@ -36,9 +38,10 @@ impl SetAttributes for FeTile {
     }
 }
 
-impl FeTile {
+impl Tile {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -58,7 +61,7 @@ impl FeTile {
         )?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
-        let bounds = self.base.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
+        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
 
         let surface = match input_1 {
             FilterInput::StandardInput(input_surface) => input_surface,
@@ -78,14 +81,19 @@ impl FeTile {
         };
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeTile {
-    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Tile(self.clone()))
+    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Tile(Tile {
+                in1: self.in1.clone(),
+            }),
+        ))
     }
 }

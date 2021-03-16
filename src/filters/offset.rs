@@ -21,7 +21,11 @@ pub struct FeOffset {
 }
 
 /// Resolved `feOffset` primitive for rendering.
-pub type Offset = FeOffset;
+pub struct Offset {
+    in1: Input,
+    dx: f64,
+    dy: f64,
+}
 
 impl Default for FeOffset {
     /// Constructs a new `Offset` with empty properties.
@@ -52,9 +56,10 @@ impl SetAttributes for FeOffset {
     }
 }
 
-impl FeOffset {
+impl Offset {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -72,8 +77,7 @@ impl FeOffset {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -83,14 +87,21 @@ impl FeOffset {
         let surface = input_1.surface().offset(bounds, dx, dy)?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeOffset {
-    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Offset(self.clone()))
+    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Offset(Offset {
+                in1: self.in1.clone(),
+                dx: self.dx,
+                dy: self.dy,
+            }),
+        ))
     }
 }

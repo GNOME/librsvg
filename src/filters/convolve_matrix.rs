@@ -38,8 +38,8 @@ pub struct FeConvolveMatrix {
     preserve_alpha: bool,
 }
 
+/// Resolved `feConvolveMatrix` primitive for rendering.
 pub struct ConvolveMatrix {
-    base: Primitive,
     in1: Input,
     order: (u32, u32),
     kernel_matrix: Option<DMatrix<f64>>,
@@ -140,6 +140,7 @@ impl SetAttributes for FeConvolveMatrix {
 impl ConvolveMatrix {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -152,8 +153,7 @@ impl ConvolveMatrix {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let mut bounds = self
-            .base
+        let mut bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -298,31 +298,33 @@ impl ConvolveMatrix {
         }
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeConvolveMatrix {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::ConvolveMatrix(ConvolveMatrix {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            order: self.order,
-            kernel_matrix: self.kernel_matrix.clone(),
-            divisor: self.divisor,
-            bias: self.bias,
-            target_x: self.target_x,
-            target_y: self.target_y,
-            edge_mode: self.edge_mode,
-            kernel_unit_length: self.kernel_unit_length,
-            preserve_alpha: self.preserve_alpha,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::ConvolveMatrix(ConvolveMatrix {
+                in1: self.in1.clone(),
+                order: self.order,
+                kernel_matrix: self.kernel_matrix.clone(),
+                divisor: self.divisor,
+                bias: self.bias,
+                target_x: self.target_x,
+                target_y: self.target_y,
+                edge_mode: self.edge_mode,
+                kernel_unit_length: self.kernel_unit_length,
+                preserve_alpha: self.preserve_alpha,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }
 

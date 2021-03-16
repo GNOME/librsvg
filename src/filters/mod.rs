@@ -30,7 +30,7 @@ use self::error::FilterError;
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError>;
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError>;
 }
 
 // Filter Effects do not need to draw themselves
@@ -79,7 +79,7 @@ pub enum PrimitiveParams {
 
 /// The base filter primitive node containing common properties.
 #[derive(Clone)]
-struct Primitive {
+pub struct Primitive {
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<ULength<Horizontal>>,
@@ -291,7 +291,9 @@ pub fn render(
 
         if let Err(err) = filter
             .resolve(&c)
-            .and_then(|params| render_primitive(&params, &filter_ctx, acquired_nodes, draw_ctx))
+            .and_then(|(primitive, params)| {
+                render_primitive(&primitive, &params, &filter_ctx, acquired_nodes, draw_ctx)
+            })
             .and_then(|result| filter_ctx.store_result(result))
         {
             rsvg_log!("(filter primitive {} returned an error: {})", c, err);
@@ -315,6 +317,7 @@ pub fn render(
 
 #[rustfmt::skip]
 fn render_primitive(
+    primitive: &Primitive,
     params: &PrimitiveParams,
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
@@ -323,22 +326,22 @@ fn render_primitive(
     use PrimitiveParams::*;
 
     match params {
-        Blend(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(p)       => p.render(ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(p) => p.render(ctx, acquired_nodes, draw_ctx),
-        Composite(p)         => p.render(ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(p)    => p.render(ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(p)   => p.render(ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(p)   => p.render(ctx, acquired_nodes, draw_ctx),
-        Flood(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(p)      => p.render(ctx, acquired_nodes, draw_ctx),
-        Image(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        Merge(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        Morphology(p)        => p.render(ctx, acquired_nodes, draw_ctx),
-        Offset(p)            => p.render(ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(p)  => p.render(ctx, acquired_nodes, draw_ctx),
-        Tile(p)              => p.render(ctx, acquired_nodes, draw_ctx),
-        Turbulence(p)        => p.render(ctx, acquired_nodes, draw_ctx),
+        Blend(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(p)       => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(p) => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Composite(p)         => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(p)    => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Flood(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(p)      => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Image(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Merge(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Morphology(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Offset(p)            => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(p)  => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Tile(p)              => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Turbulence(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
     }
 }
 

@@ -27,7 +27,6 @@ pub struct FeComponentTransfer {
 
 /// Resolved `feComponentTransfer` primitive for rendering.
 pub struct ComponentTransfer {
-    base: Primitive,
     in1: Input,
     functions: Functions,
     color_interpolation_filters: ColorInterpolationFilters,
@@ -298,6 +297,7 @@ macro_rules! get_func_x_node {
 impl ComponentTransfer {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -308,8 +308,7 @@ impl ComponentTransfer {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -368,7 +367,7 @@ impl ComponentTransfer {
         });
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -378,16 +377,18 @@ impl ComponentTransfer {
 }
 
 impl FilterEffect for FeComponentTransfer {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::ComponentTransfer(ComponentTransfer {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            functions: get_functions(node)?,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::ComponentTransfer(ComponentTransfer {
+                in1: self.in1.clone(),
+                functions: get_functions(node)?,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }
 

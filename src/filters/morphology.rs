@@ -29,7 +29,6 @@ enum Operator {
 }
 
 /// The `feMorphology` filter primitive.
-#[derive(Clone)]
 pub struct FeMorphology {
     base: Primitive,
     in1: Input,
@@ -38,7 +37,11 @@ pub struct FeMorphology {
 }
 
 /// Resolved `feMorphology` primitive for rendering.
-pub type Morphology = FeMorphology;
+pub struct Morphology {
+    in1: Input,
+    operator: Operator,
+    radius: (f64, f64),
+}
 
 impl Default for FeMorphology {
     /// Constructs a new `Morphology` with empty properties.
@@ -72,9 +75,10 @@ impl SetAttributes for FeMorphology {
     }
 }
 
-impl FeMorphology {
+impl Morphology {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -93,8 +97,7 @@ impl FeMorphology {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -156,7 +159,7 @@ impl FeMorphology {
         });
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -166,8 +169,15 @@ impl FeMorphology {
 }
 
 impl FilterEffect for FeMorphology {
-    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Morphology(self.clone()))
+    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Morphology(Morphology {
+                in1: self.in1.clone(),
+                operator: self.operator.clone(),
+                radius: self.radius,
+            }),
+        ))
     }
 }
 

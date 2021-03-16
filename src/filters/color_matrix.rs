@@ -38,7 +38,6 @@ pub struct FeColorMatrix {
 
 /// Resolved `feColorMatrix` primitive for rendering.
 pub struct ColorMatrix {
-    base: Primitive,
     in1: Input,
     matrix: Matrix5<f64>,
     color_interpolation_filters: ColorInterpolationFilters,
@@ -151,6 +150,7 @@ impl SetAttributes for FeColorMatrix {
 impl ColorMatrix {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -161,8 +161,7 @@ impl ColorMatrix {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -207,7 +206,7 @@ impl ColorMatrix {
         });
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -217,16 +216,18 @@ impl ColorMatrix {
 }
 
 impl FilterEffect for FeColorMatrix {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::ColorMatrix(ColorMatrix {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            matrix: self.matrix,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::ColorMatrix(ColorMatrix {
+                in1: self.in1.clone(),
+                matrix: self.matrix,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }
 

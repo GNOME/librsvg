@@ -44,7 +44,6 @@ pub struct FeTurbulence {
 
 /// Resolved `feTurbulence` primitive for rendering.
 pub struct Turbulence {
-    base: Primitive,
     base_frequency: (f64, f64),
     num_octaves: i32,
     seed: i32,
@@ -338,11 +337,12 @@ impl NoiseGenerator {
 impl Turbulence {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds = self.base.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
+        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
 
         let affine = ctx.paffine().invert().unwrap();
 
@@ -402,7 +402,7 @@ impl Turbulence {
         });
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -412,19 +412,21 @@ impl Turbulence {
 }
 
 impl FilterEffect for FeTurbulence {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::Turbulence(Turbulence {
-            base: self.base.clone(),
-            base_frequency: self.base_frequency,
-            num_octaves: self.num_octaves,
-            seed: self.seed,
-            stitch_tiles: self.stitch_tiles,
-            type_: self.type_,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Turbulence(Turbulence {
+                base_frequency: self.base_frequency,
+                num_octaves: self.num_octaves,
+                seed: self.seed,
+                stitch_tiles: self.stitch_tiles,
+                type_: self.type_,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }
 

@@ -23,7 +23,11 @@ pub struct FeImage {
     href: Option<String>,
 }
 
-pub type Image = FeImage;
+/// Resolved `feImage` primitive for rendering.
+pub struct Image {
+    aspect: AspectRatio,
+    href: Option<String>,
+}
 
 impl Default for FeImage {
     /// Constructs a new `FeImage` with empty properties.
@@ -37,7 +41,7 @@ impl Default for FeImage {
     }
 }
 
-impl FeImage {
+impl Image {
     /// Renders the filter if the source is an existing node.
     fn render_node(
         &self,
@@ -121,14 +125,15 @@ impl SetAttributes for FeImage {
     }
 }
 
-impl FeImage {
+impl Image {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds_builder = self.base.get_bounds(ctx)?;
+        let bounds_builder = primitive.get_bounds(ctx)?;
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx, draw_ctx);
 
         let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
@@ -148,7 +153,7 @@ impl FeImage {
         }?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface,
                 bounds: bounds.into(),
@@ -158,7 +163,13 @@ impl FeImage {
 }
 
 impl FilterEffect for FeImage {
-    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Image(self.clone()))
+    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Image(Image {
+                aspect: self.aspect.clone(),
+                href: self.href.clone(),
+            }),
+        ))
     }
 }

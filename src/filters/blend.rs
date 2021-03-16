@@ -46,7 +46,6 @@ pub struct FeBlend {
 
 /// Resolved `feBlend` primitive for rendering.
 pub struct Blend {
-    base: Primitive,
     in1: Input,
     in2: Input,
     mode: Mode,
@@ -85,6 +84,7 @@ impl SetAttributes for FeBlend {
 impl Blend {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -101,8 +101,7 @@ impl Blend {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&input_2)
@@ -115,24 +114,26 @@ impl Blend {
         )?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeBlend {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::Blend(Blend {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            in2: self.in2.clone(),
-            mode: self.mode,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Blend(Blend {
+                in1: self.in1.clone(),
+                in2: self.in2.clone(),
+                mode: self.mode,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }
 

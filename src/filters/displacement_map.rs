@@ -35,7 +35,6 @@ pub struct FeDisplacementMap {
 
 /// Resolved `feDisplacementMap` primitive for rendering.
 pub struct DisplacementMap {
-    base: Primitive,
     in1: Input,
     in2: Input,
     scale: f64,
@@ -85,6 +84,7 @@ impl SetAttributes for FeDisplacementMap {
 impl DisplacementMap {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -107,8 +107,7 @@ impl DisplacementMap {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&displacement_input)
@@ -158,7 +157,7 @@ impl DisplacementMap {
         })?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -168,19 +167,21 @@ impl DisplacementMap {
 }
 
 impl FilterEffect for FeDisplacementMap {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::DisplacementMap(DisplacementMap {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            in2: self.in2.clone(),
-            scale: self.scale,
-            x_channel_selector: self.x_channel_selector,
-            y_channel_selector: self.y_channel_selector,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::DisplacementMap(DisplacementMap {
+                in1: self.in1.clone(),
+                in2: self.in2.clone(),
+                scale: self.scale,
+                x_channel_selector: self.x_channel_selector,
+                y_channel_selector: self.y_channel_selector,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }
 

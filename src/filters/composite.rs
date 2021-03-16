@@ -38,7 +38,6 @@ pub struct FeComposite {
 
 /// Resolved `feComposite` primitive for rendering.
 pub struct Composite {
-    base: Primitive,
     in1: Input,
     in2: Input,
     operator: Operator,
@@ -90,6 +89,7 @@ impl SetAttributes for FeComposite {
 impl Composite {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -106,8 +106,7 @@ impl Composite {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&input_2)
@@ -131,28 +130,30 @@ impl Composite {
         };
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeComposite {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::Composite(Composite {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            in2: self.in2.clone(),
-            operator: self.operator,
-            k1: self.k1,
-            k2: self.k2,
-            k3: self.k3,
-            k4: self.k4,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Composite(Composite {
+                in1: self.in1.clone(),
+                in2: self.in2.clone(),
+                operator: self.operator,
+                k1: self.k1,
+                k2: self.k2,
+                k3: self.k3,
+                k4: self.k4,
+                color_interpolation_filters: values.color_interpolation_filters(),
+            }),
+        ))
     }
 }
 

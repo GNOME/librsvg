@@ -15,7 +15,6 @@ pub struct FeFlood {
 
 /// Resolved `feFlood` primitive for rendering.
 pub struct Flood {
-    base: Primitive,
     color: cssparser::RGBA,
 }
 
@@ -38,33 +37,36 @@ impl SetAttributes for FeFlood {
 impl Flood {
     pub fn render(
         &self,
+        primitive: &Primitive,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds = self.base.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
+        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
 
         let surface = ctx.source_graphic().flood(bounds, self.color)?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeFlood {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::Flood(Flood {
-            base: self.base.clone(),
-            color: resolve_color(
-                &values.flood_color().0,
-                values.flood_opacity().0,
-                values.color().0,
-            ),
-        }))
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Flood(Flood {
+                color: resolve_color(
+                    &values.flood_color().0,
+                    values.flood_opacity().0,
+                    values.color().0,
+                ),
+            }),
+        ))
     }
 }
