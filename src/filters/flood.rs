@@ -9,6 +9,7 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feFlood` filter primitive.
+#[derive(Default)]
 pub struct FeFlood {
     base: Primitive,
 }
@@ -16,16 +17,6 @@ pub struct FeFlood {
 /// Resolved `feFlood` primitive for rendering.
 pub struct Flood {
     color: cssparser::RGBA,
-}
-
-impl Default for FeFlood {
-    /// Constructs a new `Flood` with empty properties.
-    #[inline]
-    fn default() -> FeFlood {
-        FeFlood {
-            base: Default::default(),
-        }
-    }
 }
 
 impl SetAttributes for FeFlood {
