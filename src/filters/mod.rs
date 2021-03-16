@@ -145,10 +145,10 @@ impl Primitive {
     fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
-            check_units(self.x)?;
-            check_units(self.y)?;
-            check_units(self.width)?;
-            check_units(self.height)?;
+            check_px_or_percent_units(self.x)?;
+            check_px_or_percent_units(self.y)?;
+            check_px_or_percent_units(self.width)?;
+            check_px_or_percent_units(self.height)?;
         }
 
         let transform = ctx.paffine();
@@ -168,7 +168,7 @@ impl Primitive {
     }
 }
 
-fn check_units<N: Normalize, V: Validate>(
+fn check_px_or_percent_units<N: Normalize, V: Validate>(
     length: Option<CssLength<N, V>>,
 ) -> Result<(), FilterError> {
     match length {
