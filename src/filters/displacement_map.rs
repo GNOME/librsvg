@@ -48,7 +48,7 @@ impl Default for FeDisplacementMap {
     #[inline]
     fn default() -> FeDisplacementMap {
         FeDisplacementMap {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             in2: Default::default(),
             scale: 0.0,

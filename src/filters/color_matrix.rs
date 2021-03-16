@@ -48,7 +48,7 @@ impl Default for FeColorMatrix {
     #[inline]
     fn default() -> FeColorMatrix {
         FeColorMatrix {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             matrix: Matrix5::identity(),
         }

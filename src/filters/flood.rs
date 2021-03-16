@@ -23,7 +23,7 @@ impl Default for FeFlood {
     #[inline]
     fn default() -> FeFlood {
         FeFlood {
-            base: Primitive::new(),
+            base: Default::default(),
         }
     }
 }

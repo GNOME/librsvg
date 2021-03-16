@@ -53,7 +53,7 @@ impl Default for FeComposite {
     #[inline]
     fn default() -> FeComposite {
         FeComposite {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             in2: Default::default(),
             operator: Operator::Over,

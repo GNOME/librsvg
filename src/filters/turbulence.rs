@@ -57,7 +57,7 @@ impl Default for FeTurbulence {
     #[inline]
     fn default() -> FeTurbulence {
         FeTurbulence {
-            base: Primitive::new(),
+            base: Default::default(),
             base_frequency: (0.0, 0.0),
             num_octaves: 1,
             seed: 0,

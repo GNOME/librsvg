@@ -37,7 +37,7 @@ impl Default for FeComponentTransfer {
     #[inline]
     fn default() -> FeComponentTransfer {
         FeComponentTransfer {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
         }
     }

@@ -58,7 +58,7 @@ impl Default for FeConvolveMatrix {
     #[inline]
     fn default() -> FeConvolveMatrix {
         FeConvolveMatrix {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             order: (3, 3),
             kernel_matrix: None,

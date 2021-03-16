@@ -78,7 +78,7 @@ pub enum PrimitiveParams {
 }
 
 /// The base filter primitive node containing common properties.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Primitive {
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
@@ -136,18 +136,6 @@ impl Parse for Input {
 }
 
 impl Primitive {
-    /// Constructs a new `Primitive` with empty properties.
-    #[inline]
-    fn new() -> Primitive {
-        Primitive {
-            x: None,
-            y: None,
-            width: None,
-            height: None,
-            result: None,
-        }
-    }
-
     fn resolve(&self) -> Result<ResolvedPrimitive, FilterError> {
         Ok(ResolvedPrimitive {
             x: self.x,

@@ -44,7 +44,7 @@ impl Default for FeGaussianBlur {
     #[inline]
     fn default() -> FeGaussianBlur {
         FeGaussianBlur {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             std_deviation: (0.0, 0.0),
         }

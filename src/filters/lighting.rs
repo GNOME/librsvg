@@ -294,7 +294,7 @@ pub struct FeDiffuseLighting {
 impl Default for FeDiffuseLighting {
     fn default() -> Self {
         Self {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,
@@ -359,7 +359,7 @@ pub struct FeSpecularLighting {
 impl Default for FeSpecularLighting {
     fn default() -> Self {
         Self {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,

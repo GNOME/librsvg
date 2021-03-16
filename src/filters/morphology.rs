@@ -48,7 +48,7 @@ impl Default for FeMorphology {
     #[inline]
     fn default() -> FeMorphology {
         FeMorphology {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             operator: Operator::Erode,
             radius: (0.0, 0.0),

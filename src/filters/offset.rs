@@ -32,7 +32,7 @@ impl Default for FeOffset {
     #[inline]
     fn default() -> FeOffset {
         FeOffset {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
             dx: 0f64,
             dy: 0f64,

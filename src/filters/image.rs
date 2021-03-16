@@ -34,7 +34,7 @@ impl Default for FeImage {
     #[inline]
     fn default() -> FeImage {
         FeImage {
-            base: Primitive::new(),
+            base: Default::default(),
             aspect: AspectRatio::default(),
             href: None,
         }

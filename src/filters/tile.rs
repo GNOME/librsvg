@@ -25,7 +25,7 @@ impl Default for FeTile {
     #[inline]
     fn default() -> FeTile {
         FeTile {
-            base: Primitive::new(),
+            base: Default::default(),
             in1: Default::default(),
         }
     }
