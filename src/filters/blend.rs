@@ -37,14 +37,14 @@ enum Mode {
 enum_default!(Mode, Mode::Normal);
 
 /// The `feBlend` filter primitive.
+#[derive(Default)]
 pub struct FeBlend {
     base: Primitive,
-    in1: Input,
-    in2: Input,
-    mode: Mode,
+    params: Blend,
 }
 
 /// Resolved `feBlend` primitive for rendering.
+#[derive(Clone, Default)]
 pub struct Blend {
     in1: Input,
     in2: Input,
@@ -52,28 +52,15 @@ pub struct Blend {
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeBlend {
-    /// Constructs a new `Blend` with empty properties.
-    #[inline]
-    fn default() -> FeBlend {
-        FeBlend {
-            base: Default::default(),
-            in1: Default::default(),
-            in2: Default::default(),
-            mode: Mode::default(),
-        }
-    }
-}
-
 impl SetAttributes for FeBlend {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         let (in1, in2) = self.base.parse_two_inputs(attrs)?;
-        self.in1 = in1;
-        self.in2 = in2;
+        self.params.in1 = in1;
+        self.params.in2 = in2;
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "mode") = attr.expanded() {
-                self.mode = attr.parse(value)?;
+                self.params.mode = attr.parse(value)?;
             }
         }
 
@@ -125,15 +112,10 @@ impl FilterEffect for FeBlend {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::Blend(Blend {
-                in1: self.in1.clone(),
-                in2: self.in2.clone(),
-                mode: self.mode,
-                color_interpolation_filters: values.color_interpolation_filters(),
-            }),
-        ))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::Blend(params)))
     }
 }
 
