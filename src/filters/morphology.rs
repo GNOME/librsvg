@@ -28,44 +28,33 @@ enum Operator {
     Dilate,
 }
 
+enum_default!(Operator, Operator::Erode);
+
 /// The `feMorphology` filter primitive.
+#[derive(Default)]
 pub struct FeMorphology {
     base: Primitive,
-    in1: Input,
-    operator: Operator,
-    radius: (f64, f64),
+    params: Morphology,
 }
 
 /// Resolved `feMorphology` primitive for rendering.
+#[derive(Clone, Default)]
 pub struct Morphology {
     in1: Input,
     operator: Operator,
     radius: (f64, f64),
 }
 
-impl Default for FeMorphology {
-    /// Constructs a new `Morphology` with empty properties.
-    #[inline]
-    fn default() -> FeMorphology {
-        FeMorphology {
-            base: Default::default(),
-            in1: Default::default(),
-            operator: Operator::Erode,
-            radius: (0.0, 0.0),
-        }
-    }
-}
-
 impl SetAttributes for FeMorphology {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "operator") => self.operator = attr.parse(value)?,
+                expanded_name!("", "operator") => self.params.operator = attr.parse(value)?,
                 expanded_name!("", "radius") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.radius = (x, y);
+                    self.params.radius = (x, y);
                 }
                 _ => (),
             }
@@ -172,11 +161,7 @@ impl FilterEffect for FeMorphology {
     fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         Ok((
             self.base.clone(),
-            PrimitiveParams::Morphology(Morphology {
-                in1: self.in1.clone(),
-                operator: self.operator.clone(),
-                radius: self.radius,
-            }),
+            PrimitiveParams::Morphology(self.params.clone()),
         ))
     }
 }
