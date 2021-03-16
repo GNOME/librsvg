@@ -9,31 +9,21 @@ use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feTile` filter primitive.
-#[derive(Clone)]
+#[derive(Default)]
 pub struct FeTile {
     base: Primitive,
-    in1: Input,
+    params: Tile,
 }
 
 /// Resolved `feTile` primitive for rendering.
+#[derive(Clone, Default)]
 pub struct Tile {
     in1: Input,
 }
 
-impl Default for FeTile {
-    /// Constructs a new `Tile` with empty properties.
-    #[inline]
-    fn default() -> FeTile {
-        FeTile {
-            base: Default::default(),
-            in1: Default::default(),
-        }
-    }
-}
-
 impl SetAttributes for FeTile {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
         Ok(())
     }
 }
@@ -91,9 +81,7 @@ impl FilterEffect for FeTile {
     fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         Ok((
             self.base.clone(),
-            PrimitiveParams::Tile(Tile {
-                in1: self.in1.clone(),
-            }),
+            PrimitiveParams::Tile(self.params.clone()),
         ))
     }
 }
