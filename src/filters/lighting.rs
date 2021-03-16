@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, Input, Primitive, PrimitiveParams,
+    FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
@@ -430,7 +430,7 @@ macro_rules! impl_lighting_filter {
         impl $params_name {
             pub fn render(
                 &self,
-                primitive: &Primitive,
+                primitive: &ResolvedPrimitive,
                 ctx: &FilterContext,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,

@@ -11,7 +11,7 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -89,7 +89,7 @@ impl SetAttributes for FeComposite {
 impl Composite {
     pub fn render(
         &self,
-        primitive: &Primitive,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,

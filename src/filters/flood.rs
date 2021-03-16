@@ -6,7 +6,7 @@ use crate::paint_server::resolve_color;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feFlood` filter primitive.
 pub struct FeFlood {
@@ -37,7 +37,7 @@ impl SetAttributes for FeFlood {
 impl Flood {
     pub fn render(
         &self,
-        primitive: &Primitive,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,

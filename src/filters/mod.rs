@@ -87,6 +87,14 @@ pub struct Primitive {
     result: Option<CustomIdent>,
 }
 
+pub struct ResolvedPrimitive {
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
+    width: Option<ULength<Horizontal>>,
+    height: Option<ULength<Vertical>>,
+    result: Option<CustomIdent>,
+}
+
 /// An enumeration of possible inputs for a filter primitive.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Input {
@@ -140,6 +148,18 @@ impl Primitive {
         }
     }
 
+    fn resolve(&self) -> Result<ResolvedPrimitive, FilterError> {
+        Ok(ResolvedPrimitive {
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height,
+            result: self.result.clone(),
+        })
+    }
+}
+
+impl ResolvedPrimitive {
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
@@ -292,7 +312,13 @@ pub fn render(
         if let Err(err) = filter
             .resolve(&c)
             .and_then(|(primitive, params)| {
-                render_primitive(&primitive, &params, &filter_ctx, acquired_nodes, draw_ctx)
+                render_primitive(
+                    &primitive.resolve()?,
+                    &params,
+                    &filter_ctx,
+                    acquired_nodes,
+                    draw_ctx,
+                )
             })
             .and_then(|result| filter_ctx.store_result(result))
         {
@@ -317,7 +343,7 @@ pub fn render(
 
 #[rustfmt::skip]
 fn render_primitive(
-    primitive: &Primitive,
+    primitive: &ResolvedPrimitive,
     params: &PrimitiveParams,
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
