@@ -16,29 +16,17 @@ use super::context::{FilterContext, FilterOutput, FilterResult};
 use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feImage` filter primitive.
-#[derive(Clone)]
+#[derive(Default)]
 pub struct FeImage {
     base: Primitive,
-    aspect: AspectRatio,
-    href: Option<String>,
+    params: Image,
 }
 
 /// Resolved `feImage` primitive for rendering.
+#[derive(Clone, Default)]
 pub struct Image {
     aspect: AspectRatio,
     href: Option<String>,
-}
-
-impl Default for FeImage {
-    /// Constructs a new `FeImage` with empty properties.
-    #[inline]
-    fn default() -> FeImage {
-        FeImage {
-            base: Default::default(),
-            aspect: AspectRatio::default(),
-            href: None,
-        }
-    }
 }
 
 impl Image {
@@ -110,11 +98,13 @@ impl SetAttributes for FeImage {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                expanded_name!("", "preserveAspectRatio") => {
+                    self.params.aspect = attr.parse(value)?
+                }
 
                 // "path" is used by some older Adobe Illustrator versions
                 ref a if is_href(a) || *a == expanded_name!("", "path") => {
-                    set_href(a, &mut self.href, value.to_string());
+                    set_href(a, &mut self.params.href, value.to_string());
                 }
 
                 _ => (),
@@ -166,10 +156,7 @@ impl FilterEffect for FeImage {
     fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         Ok((
             self.base.clone(),
-            PrimitiveParams::Image(Image {
-                aspect: self.aspect.clone(),
-                href: self.href.clone(),
-            }),
+            PrimitiveParams::Image(self.params.clone()),
         ))
     }
 }
