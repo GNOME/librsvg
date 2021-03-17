@@ -1,8 +1,10 @@
 //! Utilities to acquire streams and data from from URLs.
 
+use data_url::{mime::Mime, DataUrl};
 use gio::{Cancellable, File as GFile, FileExt, InputStream, MemoryInputStream};
 use glib::{self, Bytes as GBytes, Cast};
 use std::fmt;
+use std::str::FromStr;
 
 use crate::url_resolver::AllowedUrl;
 
@@ -28,13 +30,21 @@ impl fmt::Display for IoError {
 
 pub struct BinaryData {
     pub data: Vec<u8>,
-    pub content_type: Option<String>,
+    pub mime_type: Mime,
 }
 
 fn decode_data_uri(uri: &str) -> Result<BinaryData, IoError> {
-    let data_url = data_url::DataUrl::process(uri).map_err(|_| IoError::BadDataUrl)?;
+    let data_url = DataUrl::process(uri).map_err(|_| IoError::BadDataUrl)?;
 
-    let mime_type = data_url.mime_type().to_string();
+    let mime = data_url.mime_type();
+
+    // data_url::mime::Mime doesn't impl Clone, so do it by hand
+
+    let mime_type = Mime {
+        type_: mime.type_.clone(),
+        subtype: mime.subtype.clone(),
+        parameters: mime.parameters.clone(),
+    };
 
     let (bytes, fragment_id) = data_url.decode_to_vec().map_err(|_| IoError::BadDataUrl)?;
 
@@ -49,11 +59,11 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, IoError> {
 
     Ok(BinaryData {
         data: bytes,
-        content_type: Some(mime_type),
+        mime_type,
     })
 }
 
-/// Returns an input stream.  The url can be a data: URL or a plain URI
+/// Creates a stream for reading.  The url can be a data: URL or a plain URI.
 pub fn acquire_stream(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
@@ -81,7 +91,7 @@ pub fn acquire_stream(
     }
 }
 
-/// Returns a chunk of data.  The url can be a data: URL or a plain URI
+/// Reads the entire contents pointed by an URL.  The url can be a data: URL or a plain URI.
 pub fn acquire_data(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
@@ -95,11 +105,18 @@ pub fn acquire_data(
         let (contents, _etag) = file.load_contents(cancellable)?;
 
         let (content_type, _uncertain) = gio::content_type_guess(Some(uri), &contents);
-        let mime_type = gio::content_type_get_mime_type(&content_type).map(String::from);
+
+        let mime_type = if let Some(mime_type_str) = gio::content_type_get_mime_type(&content_type)
+        {
+            Mime::from_str(&mime_type_str)
+                .expect("gio::content_type_get_mime_type returned an invalid MIME-type!?")
+        } else {
+            Mime::from_str("application/octet-stream").unwrap()
+        };
 
         Ok(BinaryData {
             data: contents,
-            content_type: mime_type.map(From::from),
+            mime_type,
         })
     }
 }

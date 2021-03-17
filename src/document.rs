@@ -1,5 +1,6 @@
 //! Main SVG document structure.
 
+use data_url::mime::Mime;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
@@ -9,6 +10,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::include_str;
 use std::rc::Rc;
+use std::str::FromStr;
 
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, AllowedUrlError, LoadingError, NodeIdError};
@@ -248,21 +250,14 @@ fn load_image(
 ) -> Result<SharedImageSurface, LoadingError> {
     let BinaryData {
         data: bytes,
-        mut content_type,
+        mime_type,
     } = io::acquire_data(&aurl, None)?;
 
     if bytes.is_empty() {
         return Err(LoadingError::Other(String::from("no image data")));
     }
 
-    // See issue #548 - data: URLs without a MIME-type automatically
-    // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
-    // Adobe Illustrator generate data: URLs without MIME-type for image
-    // data.  We'll catch this and fall back to sniffing by unsetting the
-    // content_type.
-    if content_type.as_deref() == Some("text/plain;charset=US-ASCII") {
-        content_type = None;
-    }
+    let content_type = content_type_for_gdk_pixbuf(&mime_type);
 
     let loader = if let Some(ref content_type) = content_type {
         PixbufLoader::new_with_mime_type(content_type)?
@@ -287,6 +282,21 @@ fn load_image(
         .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
     Ok(surface)
+}
+
+fn content_type_for_gdk_pixbuf(mime_type: &Mime) -> Option<String> {
+    // See issue #548 - data: URLs without a MIME-type automatically
+    // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
+    // Adobe Illustrator generate data: URLs without MIME-type for image
+    // data.  We'll catch this and fall back to sniffing by unsetting the
+    // content_type.
+    let unspecified_mime_type = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
+
+    if *mime_type == unspecified_mime_type {
+        None
+    } else {
+        Some(format!("{}/{}", mime_type.type_, mime_type.subtype))
+    }
 }
 
 fn human_readable_url(aurl: &AllowedUrl) -> &str {
@@ -579,5 +589,22 @@ mod tests {
             NodeId::parse("uri"),
             Err(NodeIdError::NodeIdRequired)
         ));
+    }
+
+    #[test]
+    fn unspecified_mime_type_yields_no_content_type() {
+        // Issue #548
+        let mime = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
+        assert!(content_type_for_gdk_pixbuf(&mime).is_none());
+    }
+
+    #[test]
+    fn strips_mime_type_parameters() {
+        // Issue #699
+        let mime = Mime::from_str("image/png;charset=utf-8").unwrap();
+        assert_eq!(
+            content_type_for_gdk_pixbuf(&mime),
+            Some(String::from("image/png"))
+        );
     }
 }
