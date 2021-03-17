@@ -19,7 +19,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the possible morphology operations.
 #[derive(Clone)]
@@ -28,41 +28,33 @@ enum Operator {
     Dilate,
 }
 
+enum_default!(Operator, Operator::Erode);
+
 /// The `feMorphology` filter primitive.
-#[derive(Clone)]
+#[derive(Default)]
 pub struct FeMorphology {
     base: Primitive,
+    params: Morphology,
+}
+
+/// Resolved `feMorphology` primitive for rendering.
+#[derive(Clone, Default)]
+pub struct Morphology {
     in1: Input,
     operator: Operator,
     radius: (f64, f64),
 }
 
-/// Resolved `feMorphology` primitive for rendering.
-pub type Morphology = FeMorphology;
-
-impl Default for FeMorphology {
-    /// Constructs a new `Morphology` with empty properties.
-    #[inline]
-    fn default() -> FeMorphology {
-        FeMorphology {
-            base: Primitive::new(),
-            in1: Default::default(),
-            operator: Operator::Erode,
-            radius: (0.0, 0.0),
-        }
-    }
-}
-
 impl SetAttributes for FeMorphology {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "operator") => self.operator = attr.parse(value)?,
+                expanded_name!("", "operator") => self.params.operator = attr.parse(value)?,
                 expanded_name!("", "radius") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.radius = (x, y);
+                    self.params.radius = (x, y);
                 }
                 _ => (),
             }
@@ -72,9 +64,10 @@ impl SetAttributes for FeMorphology {
     }
 }
 
-impl FeMorphology {
+impl Morphology {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -93,8 +86,7 @@ impl FeMorphology {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -156,7 +148,7 @@ impl FeMorphology {
         });
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -166,8 +158,11 @@ impl FeMorphology {
 }
 
 impl FilterEffect for FeMorphology {
-    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Morphology(self.clone()))
+    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Morphology(self.params.clone()),
+        ))
     }
 }
 

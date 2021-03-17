@@ -13,31 +13,23 @@ use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feImage` filter primitive.
-#[derive(Clone)]
+#[derive(Default)]
 pub struct FeImage {
     base: Primitive,
+    params: Image,
+}
+
+/// Resolved `feImage` primitive for rendering.
+#[derive(Clone, Default)]
+pub struct Image {
     aspect: AspectRatio,
     href: Option<String>,
 }
 
-pub type Image = FeImage;
-
-impl Default for FeImage {
-    /// Constructs a new `FeImage` with empty properties.
-    #[inline]
-    fn default() -> FeImage {
-        FeImage {
-            base: Primitive::new(),
-            aspect: AspectRatio::default(),
-            href: None,
-        }
-    }
-}
-
-impl FeImage {
+impl Image {
     /// Renders the filter if the source is an existing node.
     fn render_node(
         &self,
@@ -106,11 +98,13 @@ impl SetAttributes for FeImage {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
+                expanded_name!("", "preserveAspectRatio") => {
+                    self.params.aspect = attr.parse(value)?
+                }
 
                 // "path" is used by some older Adobe Illustrator versions
                 ref a if is_href(a) || *a == expanded_name!("", "path") => {
-                    set_href(a, &mut self.href, value.to_string());
+                    set_href(a, &mut self.params.href, value.to_string());
                 }
 
                 _ => (),
@@ -121,14 +115,15 @@ impl SetAttributes for FeImage {
     }
 }
 
-impl FeImage {
+impl Image {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds_builder = self.base.get_bounds(ctx)?;
+        let bounds_builder = primitive.get_bounds(ctx)?;
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx, draw_ctx);
 
         let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
@@ -148,7 +143,7 @@ impl FeImage {
         }?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface,
                 bounds: bounds.into(),
@@ -158,7 +153,10 @@ impl FeImage {
 }
 
 impl FilterEffect for FeImage {
-    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Image(self.clone()))
+    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Image(self.params.clone()),
+        ))
     }
 }

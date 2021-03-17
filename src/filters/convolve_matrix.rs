@@ -21,25 +21,18 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feConvolveMatrix` filter primitive.
+#[derive(Default)]
 pub struct FeConvolveMatrix {
     base: Primitive,
-    in1: Input,
-    order: (u32, u32),
-    kernel_matrix: Option<DMatrix<f64>>,
-    divisor: f64,
-    bias: f64,
-    target_x: Option<u32>,
-    target_y: Option<u32>,
-    edge_mode: EdgeMode,
-    kernel_unit_length: Option<(f64, f64)>,
-    preserve_alpha: bool,
+    params: ConvolveMatrix,
 }
 
+/// Resolved `feConvolveMatrix` primitive for rendering.
+#[derive(Clone)]
 pub struct ConvolveMatrix {
-    base: Primitive,
     in1: Input,
     order: (u32, u32),
     kernel_matrix: Option<DMatrix<f64>>,
@@ -53,12 +46,11 @@ pub struct ConvolveMatrix {
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeConvolveMatrix {
+impl Default for ConvolveMatrix {
     /// Constructs a new `ConvolveMatrix` with empty properties.
     #[inline]
-    fn default() -> FeConvolveMatrix {
-        FeConvolveMatrix {
-            base: Primitive::new(),
+    fn default() -> ConvolveMatrix {
+        ConvolveMatrix {
             in1: Default::default(),
             order: (3, 3),
             kernel_matrix: None,
@@ -69,30 +61,33 @@ impl Default for FeConvolveMatrix {
             edge_mode: EdgeMode::Duplicate,
             kernel_unit_length: None,
             preserve_alpha: false,
+            color_interpolation_filters: Default::default(),
         }
     }
 }
 
 impl SetAttributes for FeConvolveMatrix {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "order") => {
                     let NumberOptionalNumber(x, y) = attr.parse(value)?;
-                    self.order = (x, y);
+                    self.params.order = (x, y);
                 }
-                expanded_name!("", "divisor") => self.divisor = attr.parse(value)?,
-                expanded_name!("", "bias") => self.bias = attr.parse(value)?,
-                expanded_name!("", "targetX") => self.target_x = attr.parse(value)?,
-                expanded_name!("", "targetY") => self.target_y = attr.parse(value)?,
-                expanded_name!("", "edgeMode") => self.edge_mode = attr.parse(value)?,
+                expanded_name!("", "divisor") => self.params.divisor = attr.parse(value)?,
+                expanded_name!("", "bias") => self.params.bias = attr.parse(value)?,
+                expanded_name!("", "targetX") => self.params.target_x = attr.parse(value)?,
+                expanded_name!("", "targetY") => self.params.target_y = attr.parse(value)?,
+                expanded_name!("", "edgeMode") => self.params.edge_mode = attr.parse(value)?,
                 expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.kernel_unit_length = Some((x, y))
+                    self.params.kernel_unit_length = Some((x, y))
                 }
-                expanded_name!("", "preserveAlpha") => self.preserve_alpha = attr.parse(value)?,
+                expanded_name!("", "preserveAlpha") => {
+                    self.params.preserve_alpha = attr.parse(value)?
+                }
 
                 _ => (),
             }
@@ -103,8 +98,9 @@ impl SetAttributes for FeConvolveMatrix {
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!("", "kernelMatrix"))
         {
-            self.kernel_matrix = Some({
-                let number_of_elements = self.order.0 as usize * self.order.1 as usize;
+            self.params.kernel_matrix = Some({
+                let number_of_elements =
+                    self.params.order.0 as usize * self.params.order.1 as usize;
 
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
@@ -120,15 +116,15 @@ impl SetAttributes for FeConvolveMatrix {
                 }
 
                 DMatrix::from_data(VecStorage::new(
-                    Dynamic::new(self.order.1 as usize),
-                    Dynamic::new(self.order.0 as usize),
+                    Dynamic::new(self.params.order.1 as usize),
+                    Dynamic::new(self.params.order.0 as usize),
                     v,
                 ))
             });
         }
 
         // kernel_matrix must have been specified.
-        if self.kernel_matrix.is_none() {
+        if self.params.kernel_matrix.is_none() {
             return Err(ValueErrorKind::value_error("the value must be set"))
                 .attribute(QualName::new(None, ns!(svg), local_name!("kernelMatrix")));
         }
@@ -140,6 +136,7 @@ impl SetAttributes for FeConvolveMatrix {
 impl ConvolveMatrix {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -152,8 +149,7 @@ impl ConvolveMatrix {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let mut bounds = self
-            .base
+        let mut bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -298,31 +294,21 @@ impl ConvolveMatrix {
         }
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeConvolveMatrix {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::ConvolveMatrix(ConvolveMatrix {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            order: self.order,
-            kernel_matrix: self.kernel_matrix.clone(),
-            divisor: self.divisor,
-            bias: self.bias,
-            target_x: self.target_x,
-            target_y: self.target_y,
-            edge_mode: self.edge_mode,
-            kernel_unit_length: self.kernel_unit_length,
-            preserve_alpha: self.preserve_alpha,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::ConvolveMatrix(params)))
     }
 }
 

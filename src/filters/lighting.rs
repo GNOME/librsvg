@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, Input, Primitive, PrimitiveParams,
+    FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
@@ -27,6 +27,72 @@ use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 use crate::util::clamp;
 use crate::xml::Attributes;
+
+/// The `feDiffuseLighting` filter primitives.
+#[derive(Default)]
+pub struct FeDiffuseLighting {
+    base: Primitive,
+    params: DiffuseLightingParams,
+}
+
+#[derive(Clone)]
+pub struct DiffuseLightingParams {
+    in1: Input,
+    surface_scale: f64,
+    kernel_unit_length: Option<(f64, f64)>,
+    diffuse_constant: f64,
+}
+
+impl Default for DiffuseLightingParams {
+    fn default() -> Self {
+        Self {
+            in1: Default::default(),
+            surface_scale: 1.0,
+            kernel_unit_length: None,
+            diffuse_constant: 1.0,
+        }
+    }
+}
+
+/// The `feSpecularLighting` filter primitives.
+#[derive(Default)]
+pub struct FeSpecularLighting {
+    base: Primitive,
+    params: SpecularLightingParams,
+}
+
+#[derive(Clone)]
+pub struct SpecularLightingParams {
+    in1: Input,
+    surface_scale: f64,
+    kernel_unit_length: Option<(f64, f64)>,
+    specular_constant: f64,
+    specular_exponent: f64,
+}
+
+impl Default for SpecularLightingParams {
+    fn default() -> Self {
+        Self {
+            in1: Default::default(),
+            surface_scale: 1.0,
+            kernel_unit_length: None,
+            specular_constant: 1.0,
+            specular_exponent: 1.0,
+        }
+    }
+}
+
+/// Resolved `feDiffuseLighting` primitive for rendering.
+pub struct DiffuseLighting {
+    params: DiffuseLightingParams,
+    light: Light,
+}
+
+/// Resolved `feSpecularLighting` primitive for rendering.
+pub struct SpecularLighting {
+    params: SpecularLightingParams,
+    light: Light,
+}
 
 /// A light source before applying affine transformations, straight out of the SVG.
 #[derive(Debug, PartialEq)]
@@ -67,27 +133,6 @@ struct Light {
     source: UntransformedLightSource,
     lighting_color: cssparser::RGBA,
     color_interpolation_filters: ColorInterpolationFilters,
-}
-
-/// Resolved `feDiffuseLighting` primitive for rendering.
-pub struct DiffuseLighting {
-    base: Primitive,
-    in1: Input,
-    surface_scale: f64,
-    kernel_unit_length: Option<(f64, f64)>,
-    diffuse_constant: f64,
-    light: Light,
-}
-
-/// Resolved `feSpecularLighting` primitive for rendering.
-pub struct SpecularLighting {
-    base: Primitive,
-    in1: Input,
-    surface_scale: f64,
-    kernel_unit_length: Option<(f64, f64)>,
-    specular_constant: f64,
-    specular_exponent: f64,
-    light: Light,
 }
 
 impl Light {
@@ -284,41 +329,22 @@ fn transform_dist(t: Transform, d: f64) -> f64 {
     d * (t.xx.powi(2) + t.yy.powi(2)).sqrt() / std::f64::consts::SQRT_2
 }
 
-/// The `feDiffuseLighting` filter primitives.
-pub struct FeDiffuseLighting {
-    base: Primitive,
-    in1: Input,
-    surface_scale: f64,
-    kernel_unit_length: Option<(f64, f64)>,
-    diffuse_constant: f64,
-}
-
-impl Default for FeDiffuseLighting {
-    fn default() -> Self {
-        Self {
-            base: Primitive::new(),
-            in1: Default::default(),
-            surface_scale: 1.0,
-            kernel_unit_length: None,
-            diffuse_constant: 1.0,
-        }
-    }
-}
-
 impl SetAttributes for FeDiffuseLighting {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "surfaceScale") => self.surface_scale = attr.parse(value)?,
+                expanded_name!("", "surfaceScale") => {
+                    self.params.surface_scale = attr.parse(value)?
+                }
                 expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.kernel_unit_length = Some((x, y));
+                    self.params.kernel_unit_length = Some((x, y));
                 }
                 expanded_name!("", "diffuseConstant") => {
                     let NonNegative(c) = attr.parse(value)?;
-                    self.diffuse_constant = c;
+                    self.params.diffuse_constant = c;
                 }
                 _ => (),
             }
@@ -337,57 +363,36 @@ impl DiffuseLighting {
         } else {
             let mut n = normal
                 .normal
-                .map(|x| f64::from(x) * self.surface_scale / 255.);
+                .map(|x| f64::from(x) * self.params.surface_scale / 255.);
             n.component_mul_assign(&normal.factor);
             let normal = Vector3::new(n.x, n.y, 1.0);
 
             normal.dot(&light_vector) / normal.norm()
         };
 
-        self.diffuse_constant * k
-    }
-}
-
-/// The `feSpecularLighting` filter primitives.
-pub struct FeSpecularLighting {
-    base: Primitive,
-    in1: Input,
-    surface_scale: f64,
-    kernel_unit_length: Option<(f64, f64)>,
-    specular_constant: f64,
-    specular_exponent: f64,
-}
-
-impl Default for FeSpecularLighting {
-    fn default() -> Self {
-        Self {
-            base: Primitive::new(),
-            in1: Default::default(),
-            surface_scale: 1.0,
-            kernel_unit_length: None,
-            specular_constant: 1.0,
-            specular_exponent: 1.0,
-        }
+        self.params.diffuse_constant * k
     }
 }
 
 impl SetAttributes for FeSpecularLighting {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "surfaceScale") => self.surface_scale = attr.parse(value)?,
+                expanded_name!("", "surfaceScale") => {
+                    self.params.surface_scale = attr.parse(value)?
+                }
                 expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.kernel_unit_length = Some((x, y));
+                    self.params.kernel_unit_length = Some((x, y));
                 }
                 expanded_name!("", "specularConstant") => {
                     let NonNegative(c) = attr.parse(value)?;
-                    self.specular_constant = c;
+                    self.params.specular_constant = c;
                 }
                 expanded_name!("", "specularExponent") => {
-                    self.specular_exponent = attr.parse(value)?;
+                    self.params.specular_exponent = attr.parse(value)?;
                 }
                 _ => (),
             }
@@ -413,25 +418,26 @@ impl SpecularLighting {
         } else {
             let mut n = normal
                 .normal
-                .map(|x| f64::from(x) * self.surface_scale / 255.);
+                .map(|x| f64::from(x) * self.params.surface_scale / 255.);
             n.component_mul_assign(&normal.factor);
             let normal = Vector3::new(n.x, n.y, 1.0);
             normal.dot(&h) / normal.norm() / h_norm
         };
 
-        if approx_eq!(f64, self.specular_exponent, 1.0) {
-            self.specular_constant * n_dot_h
+        if approx_eq!(f64, self.params.specular_exponent, 1.0) {
+            self.params.specular_constant * n_dot_h
         } else {
-            self.specular_constant * n_dot_h.powf(self.specular_exponent)
+            self.params.specular_constant * n_dot_h.powf(self.params.specular_exponent)
         }
     }
 }
 
 macro_rules! impl_lighting_filter {
-    ($lighting_type:ty, $params_name:ident, $alpha_func:ident, $($specific_fields:ident,)+) => {
+    ($lighting_type:ty, $params_name:ident, $alpha_func:ident) => {
         impl $params_name {
             pub fn render(
                 &self,
+                primitive: &ResolvedPrimitive,
                 ctx: &FilterContext,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
@@ -439,17 +445,17 @@ macro_rules! impl_lighting_filter {
                 let input_1 = ctx.get_input(
                     acquired_nodes,
                     draw_ctx,
-                    &self.in1,
+                    &self.params.in1,
                     self.light.color_interpolation_filters,
                 )?;
-                let mut bounds = self
-                    .base
+                let mut bounds = primitive
                     .get_bounds(ctx)?
                     .add_input(&input_1)
                     .into_irect(ctx, draw_ctx);
                 let original_bounds = bounds;
 
                 let scale = self
+                    .params
                     .kernel_unit_length
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
@@ -493,7 +499,7 @@ macro_rules! impl_lighting_filter {
 
                             let scaled_x = f64::from(x) * ox;
                             let scaled_y = f64::from(y) * oy;
-                            let z = f64::from(pixel.a) / 255.0 * self.surface_scale;
+                            let z = f64::from(pixel.a) / 255.0 * self.params.surface_scale;
 
                             let (color, vector) =
                                 self.light.color_and_vector(&source, scaled_x, scaled_y, z);
@@ -637,19 +643,21 @@ macro_rules! impl_lighting_filter {
                 }
 
                 Ok(FilterResult {
-                    name: self.base.result.clone(),
+                    name: primitive.result.clone(),
                     output: FilterOutput { surface, bounds },
                 })
             }
         }
 
         impl FilterEffect for $lighting_type {
-            fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+            fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
                 let mut sources = node.children().rev().filter(|c| {
                     c.is_element()
                         && matches!(
                             *c.borrow_element(),
-                            Element::FeDistantLight(_) | Element::FePointLight(_) | Element::FeSpotLight(_)
+                            Element::FeDistantLight(_)
+                                | Element::FePointLight(_)
+                                | Element::FeSpotLight(_)
                         )
                 });
 
@@ -669,28 +677,33 @@ macro_rules! impl_lighting_filter {
                     Element::FeDistantLight(ref l) => {
                         UntransformedLightSource::Distant(l.element_impl.clone())
                     }
-                    Element::FePointLight(ref l) => UntransformedLightSource::Point(l.element_impl.clone()),
-                    Element::FeSpotLight(ref l) => UntransformedLightSource::Spot(l.element_impl.clone()),
+                    Element::FePointLight(ref l) => {
+                        UntransformedLightSource::Point(l.element_impl.clone())
+                    }
+                    Element::FeSpotLight(ref l) => {
+                        UntransformedLightSource::Spot(l.element_impl.clone())
+                    }
                     _ => unreachable!(),
                 };
 
                 let cascaded = CascadedValues::new_from_node(node);
                 let values = cascaded.get();
 
-                Ok(PrimitiveParams::$params_name($params_name {
-                    base: self.base.clone(),
-                    in1: self.in1.clone(),
-                    surface_scale: self.surface_scale.clone(),
-                    kernel_unit_length: self.kernel_unit_length.clone(),
-
-                    $($specific_fields: self.$specific_fields.clone(),)+
-
-                    light: Light {
-                        source,
-                        lighting_color: resolve_color(&values.lighting_color().0, UnitInterval::clamp(1.0), values.color().0),
-                        color_interpolation_filters: values.color_interpolation_filters(),
-                    }
-                }))
+                Ok((
+                    self.base.clone(),
+                    PrimitiveParams::$params_name($params_name {
+                        params: self.params.clone(),
+                        light: Light {
+                            source,
+                            lighting_color: resolve_color(
+                                &values.lighting_color().0,
+                                UnitInterval::clamp(1.0),
+                                values.color().0,
+                            ),
+                            color_interpolation_filters: values.color_interpolation_filters(),
+                        },
+                    }),
+                ))
             }
         }
     };
@@ -704,20 +717,9 @@ fn specular_alpha(r: u8, g: u8, b: u8) -> u8 {
     max(max(r, g), b)
 }
 
-impl_lighting_filter!(
-    FeDiffuseLighting,
-    DiffuseLighting,
-    diffuse_alpha,
-    diffuse_constant,
-);
+impl_lighting_filter!(FeDiffuseLighting, DiffuseLighting, diffuse_alpha);
 
-impl_lighting_filter!(
-    FeSpecularLighting,
-    SpecularLighting,
-    specular_alpha,
-    specular_constant,
-    specular_exponent,
-);
+impl_lighting_filter!(FeSpecularLighting, SpecularLighting, specular_alpha);
 
 /// 2D normal and factor stored separately.
 ///
@@ -991,7 +993,7 @@ mod tests {
 
         let node = document.lookup_internal_node("diffuse_distant").unwrap();
         let lighting = borrow_element_as!(node, FeDiffuseLighting);
-        let params = lighting.resolve(&node).unwrap();
+        let (_, params) = lighting.resolve(&node).unwrap();
         let diffuse_lighting = match params {
             PrimitiveParams::DiffuseLighting(l) => l,
             _ => unreachable!(),
@@ -1006,7 +1008,7 @@ mod tests {
 
         let node = document.lookup_internal_node("specular_point").unwrap();
         let lighting = borrow_element_as!(node, FeSpecularLighting);
-        let params = lighting.resolve(&node).unwrap();
+        let (_, params) = lighting.resolve(&node).unwrap();
         let specular_lighting = match params {
             PrimitiveParams::SpecularLighting(l) => l,
             _ => unreachable!(),
@@ -1022,7 +1024,7 @@ mod tests {
 
         let node = document.lookup_internal_node("diffuse_spot").unwrap();
         let lighting = borrow_element_as!(node, FeDiffuseLighting);
-        let params = lighting.resolve(&node).unwrap();
+        let (_, params) = lighting.resolve(&node).unwrap();
         let diffuse_lighting = match params {
             PrimitiveParams::DiffuseLighting(l) => l,
             _ => unreachable!(),

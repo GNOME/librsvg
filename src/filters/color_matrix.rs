@@ -16,7 +16,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Color matrix operation types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -30,27 +30,27 @@ enum OperationType {
 enum_default!(OperationType, OperationType::Matrix);
 
 /// The `feColorMatrix` filter primitive.
+#[derive(Default)]
 pub struct FeColorMatrix {
     base: Primitive,
-    in1: Input,
-    matrix: Matrix5<f64>,
+    params: ColorMatrix,
 }
 
 /// Resolved `feColorMatrix` primitive for rendering.
+#[derive(Clone)]
 pub struct ColorMatrix {
-    base: Primitive,
     in1: Input,
     matrix: Matrix5<f64>,
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeColorMatrix {
-    /// Constructs a new `ColorMatrix` with empty properties.
-    #[inline]
-    fn default() -> FeColorMatrix {
-        FeColorMatrix {
-            base: Primitive::new(),
+impl Default for ColorMatrix {
+    fn default() -> ColorMatrix {
+        ColorMatrix {
             in1: Default::default(),
+            color_interpolation_filters: Default::default(),
+
+            // nalgebra's Default for Matrix5 is all zeroes, so we actually need this :(
             matrix: Matrix5::identity(),
         }
     }
@@ -59,7 +59,7 @@ impl Default for FeColorMatrix {
 #[rustfmt::skip]
 impl SetAttributes for FeColorMatrix {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         // First, determine the operation type.
         let mut operation_type = Default::default();
@@ -73,7 +73,7 @@ impl SetAttributes for FeColorMatrix {
         // Now read the matrix correspondingly.
         // LuminanceToAlpha doesn't accept any matrix.
         if operation_type == OperationType::LuminanceToAlpha {
-            self.matrix = {
+            self.params.matrix = {
                 Matrix5::new(
                     0.0,    0.0,    0.0,    0.0, 0.0,
                     0.0,    0.0,    0.0,    0.0, 0.0,
@@ -140,7 +140,7 @@ impl SetAttributes for FeColorMatrix {
                     }
                 };
 
-                self.matrix = new_matrix;
+                self.params.matrix = new_matrix;
             }
         }
 
@@ -151,6 +151,7 @@ impl SetAttributes for FeColorMatrix {
 impl ColorMatrix {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -161,8 +162,7 @@ impl ColorMatrix {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -207,7 +207,7 @@ impl ColorMatrix {
         });
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -217,16 +217,14 @@ impl ColorMatrix {
 }
 
 impl FilterEffect for FeColorMatrix {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::ColorMatrix(ColorMatrix {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            matrix: self.matrix,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::ColorMatrix(params)))
     }
 }
 

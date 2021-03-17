@@ -16,7 +16,7 @@ use crate::util::clamp;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -25,6 +25,8 @@ enum StitchTiles {
     NoStitch,
 }
 
+enum_default!(StitchTiles, StitchTiles::NoStitch);
+
 /// Enumeration of the noise types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 enum NoiseType {
@@ -32,19 +34,18 @@ enum NoiseType {
     Turbulence,
 }
 
+enum_default!(NoiseType, NoiseType::Turbulence);
+
 /// The `feTurbulence` filter primitive.
+#[derive(Default)]
 pub struct FeTurbulence {
     base: Primitive,
-    base_frequency: (f64, f64),
-    num_octaves: i32,
-    seed: i32,
-    stitch_tiles: StitchTiles,
-    type_: NoiseType,
+    params: Turbulence,
 }
 
 /// Resolved `feTurbulence` primitive for rendering.
+#[derive(Clone)]
 pub struct Turbulence {
-    base: Primitive,
     base_frequency: (f64, f64),
     num_octaves: i32,
     seed: i32,
@@ -53,17 +54,17 @@ pub struct Turbulence {
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeTurbulence {
+impl Default for Turbulence {
     /// Constructs a new `Turbulence` with empty properties.
     #[inline]
-    fn default() -> FeTurbulence {
-        FeTurbulence {
-            base: Primitive::new(),
+    fn default() -> Turbulence {
+        Turbulence {
             base_frequency: (0.0, 0.0),
             num_octaves: 1,
             seed: 0,
-            stitch_tiles: StitchTiles::NoStitch,
-            type_: NoiseType::Turbulence,
+            stitch_tiles: Default::default(),
+            type_: Default::default(),
+            color_interpolation_filters: Default::default(),
         }
     }
 }
@@ -76,22 +77,24 @@ impl SetAttributes for FeTurbulence {
             match attr.expanded() {
                 expanded_name!("", "baseFrequency") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.base_frequency = (x, y);
+                    self.params.base_frequency = (x, y);
                 }
                 expanded_name!("", "numOctaves") => {
-                    self.num_octaves = attr.parse(value)?;
+                    self.params.num_octaves = attr.parse(value)?;
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!("", "seed") => {
                     let v: f64 = attr.parse(value)?;
-                    self.seed = clamp(
+                    self.params.seed = clamp(
                         v.trunc(),
                         f64::from(i32::min_value()),
                         f64::from(i32::max_value()),
                     ) as i32;
                 }
-                expanded_name!("", "stitchTiles") => self.stitch_tiles = attr.parse(value)?,
-                expanded_name!("", "type") => self.type_ = attr.parse(value)?,
+                expanded_name!("", "stitchTiles") => {
+                    self.params.stitch_tiles = attr.parse(value)?
+                }
+                expanded_name!("", "type") => self.params.type_ = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -338,11 +341,12 @@ impl NoiseGenerator {
 impl Turbulence {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds = self.base.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
+        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
 
         let affine = ctx.paffine().invert().unwrap();
 
@@ -402,7 +406,7 @@ impl Turbulence {
         });
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: surface.share()?,
                 bounds,
@@ -412,19 +416,14 @@ impl Turbulence {
 }
 
 impl FilterEffect for FeTurbulence {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::Turbulence(Turbulence {
-            base: self.base.clone(),
-            base_frequency: self.base_frequency,
-            num_octaves: self.num_octaves,
-            seed: self.seed,
-            stitch_tiles: self.stitch_tiles,
-            type_: self.type_,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::Turbulence(params)))
     }
 }
 

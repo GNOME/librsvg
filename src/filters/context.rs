@@ -6,6 +6,7 @@ use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::filter::Filter;
+use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
 use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
@@ -47,10 +48,14 @@ pub enum FilterInput {
 
 /// The filter rendering context.
 pub struct FilterContext {
-    /// Bounding box of node being filtered
-    node_bbox: BoundingBox,
     /// Values from the node which referenced this filter.
     computed_from_node_being_filtered: ComputedValues,
+
+    /// Paint source for primitives which have an input value equal to `StrokePaint`.
+    stroke_paint: UserSpacePaintSource,
+    /// Paint source for primitives which have an input value equal to `FillPaint`.
+    fill_paint: UserSpacePaintSource,
+
     /// The source graphic surface.
     source_surface: SharedImageSurface,
     /// Output of the last filter primitive.
@@ -100,6 +105,8 @@ impl FilterContext {
     pub fn new(
         filter: &Filter,
         computed_from_node_being_filtered: &ComputedValues,
+        stroke_paint: UserSpacePaintSource,
+        fill_paint: UserSpacePaintSource,
         source_surface: SharedImageSurface,
         draw_ctx: &mut DrawingCtx,
         draw_transform: Transform,
@@ -160,8 +167,9 @@ impl FilterContext {
         };
 
         Self {
-            node_bbox,
             computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
+            stroke_paint,
+            fill_paint,
             source_surface,
             last_result: None,
             previous_results: HashMap::new(),
@@ -207,20 +215,12 @@ impl FilterContext {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<SharedImageSurface, FilterError> {
         let res = self.stroke_paint_surface.get_or_init(|| {
-            let values = &self.computed_from_node_being_filtered;
-
-            let stroke_paint_source = values
-                .stroke()
-                .0
-                .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-                .to_user_space(&self.node_bbox, draw_ctx, values);
-
             draw_ctx
                 .get_paint_source_surface(
                     self.source_surface.width(),
                     self.source_surface.height(),
                     acquired_nodes,
-                    &stroke_paint_source,
+                    &self.stroke_paint,
                 )
                 .map_err(FilterError::CairoError)
         });
@@ -237,20 +237,12 @@ impl FilterContext {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<SharedImageSurface, FilterError> {
         let res = self.fill_paint_surface.get_or_init(|| {
-            let values = &self.computed_from_node_being_filtered;
-
-            let fill_paint_source = values
-                .fill()
-                .0
-                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-                .to_user_space(&self.node_bbox, draw_ctx, values);
-
             draw_ctx
                 .get_paint_source_surface(
                     self.source_surface.width(),
                     self.source_surface.height(),
                     acquired_nodes,
-                    &fill_paint_source,
+                    &self.fill_paint,
                 )
                 .map_err(FilterError::CairoError)
         });

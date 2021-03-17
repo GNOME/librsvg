@@ -11,7 +11,7 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -24,21 +24,18 @@ enum Operator {
     Arithmetic,
 }
 
+enum_default!(Operator, Operator::Over);
+
 /// The `feComposite` filter primitive.
+#[derive(Default)]
 pub struct FeComposite {
     base: Primitive,
-    in1: Input,
-    in2: Input,
-    operator: Operator,
-    k1: f64,
-    k2: f64,
-    k3: f64,
-    k4: f64,
+    params: Composite,
 }
 
 /// Resolved `feComposite` primitive for rendering.
+#[derive(Clone, Default)]
 pub struct Composite {
-    base: Primitive,
     in1: Input,
     in2: Input,
     operator: Operator,
@@ -49,36 +46,19 @@ pub struct Composite {
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeComposite {
-    /// Constructs a new `Composite` with empty properties.
-    #[inline]
-    fn default() -> FeComposite {
-        FeComposite {
-            base: Primitive::new(),
-            in1: Default::default(),
-            in2: Default::default(),
-            operator: Operator::Over,
-            k1: 0.0,
-            k2: 0.0,
-            k3: 0.0,
-            k4: 0.0,
-        }
-    }
-}
-
 impl SetAttributes for FeComposite {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         let (in1, in2) = self.base.parse_two_inputs(attrs)?;
-        self.in1 = in1;
-        self.in2 = in2;
+        self.params.in1 = in1;
+        self.params.in2 = in2;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "operator") => self.operator = attr.parse(value)?,
-                expanded_name!("", "k1") => self.k1 = attr.parse(value)?,
-                expanded_name!("", "k2") => self.k2 = attr.parse(value)?,
-                expanded_name!("", "k3") => self.k3 = attr.parse(value)?,
-                expanded_name!("", "k4") => self.k4 = attr.parse(value)?,
+                expanded_name!("", "operator") => self.params.operator = attr.parse(value)?,
+                expanded_name!("", "k1") => self.params.k1 = attr.parse(value)?,
+                expanded_name!("", "k2") => self.params.k2 = attr.parse(value)?,
+                expanded_name!("", "k3") => self.params.k3 = attr.parse(value)?,
+                expanded_name!("", "k4") => self.params.k4 = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -90,6 +70,7 @@ impl SetAttributes for FeComposite {
 impl Composite {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -106,8 +87,7 @@ impl Composite {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&input_2)
@@ -131,28 +111,21 @@ impl Composite {
         };
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeComposite {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::Composite(Composite {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            in2: self.in2.clone(),
-            operator: self.operator,
-            k1: self.k1,
-            k2: self.k2,
-            k3: self.k3,
-            k4: self.k4,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::Composite(params)))
     }
 }
 

@@ -18,7 +18,7 @@ use crate::surface_utils::{
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The maximum gaussian blur kernel size.
 ///
@@ -26,40 +26,28 @@ use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 const MAXIMUM_KERNEL_SIZE: usize = 500;
 
 /// The `feGaussianBlur` filter primitive.
+#[derive(Default)]
 pub struct FeGaussianBlur {
     base: Primitive,
-    in1: Input,
-    std_deviation: (f64, f64),
+    params: GaussianBlur,
 }
 
 /// Resolved `feGaussianBlur` primitive for rendering.
+#[derive(Default, Clone)]
 pub struct GaussianBlur {
-    base: Primitive,
     in1: Input,
     std_deviation: (f64, f64),
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeGaussianBlur {
-    /// Constructs a new `GaussianBlur` with empty properties.
-    #[inline]
-    fn default() -> FeGaussianBlur {
-        FeGaussianBlur {
-            base: Primitive::new(),
-            in1: Default::default(),
-            std_deviation: (0.0, 0.0),
-        }
-    }
-}
-
 impl SetAttributes for FeGaussianBlur {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "stdDeviation") = attr.expanded() {
                 let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                self.std_deviation = (x, y);
+                self.params.std_deviation = (x, y);
             }
         }
 
@@ -199,6 +187,7 @@ fn gaussian_blur(
 impl GaussianBlur {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -209,8 +198,7 @@ impl GaussianBlur {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -247,7 +235,7 @@ impl GaussianBlur {
         };
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput {
                 surface: output_surface,
                 bounds,
@@ -257,15 +245,13 @@ impl GaussianBlur {
 }
 
 impl FilterEffect for FeGaussianBlur {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::GaussianBlur(GaussianBlur {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            std_deviation: self.std_deviation,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::GaussianBlur(params)))
     }
 }

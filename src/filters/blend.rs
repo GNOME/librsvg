@@ -11,7 +11,7 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the possible blending modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -37,44 +37,30 @@ enum Mode {
 enum_default!(Mode, Mode::Normal);
 
 /// The `feBlend` filter primitive.
+#[derive(Default)]
 pub struct FeBlend {
     base: Primitive,
-    in1: Input,
-    in2: Input,
-    mode: Mode,
+    params: Blend,
 }
 
 /// Resolved `feBlend` primitive for rendering.
+#[derive(Clone, Default)]
 pub struct Blend {
-    base: Primitive,
     in1: Input,
     in2: Input,
     mode: Mode,
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Default for FeBlend {
-    /// Constructs a new `Blend` with empty properties.
-    #[inline]
-    fn default() -> FeBlend {
-        FeBlend {
-            base: Primitive::new(),
-            in1: Default::default(),
-            in2: Default::default(),
-            mode: Mode::default(),
-        }
-    }
-}
-
 impl SetAttributes for FeBlend {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         let (in1, in2) = self.base.parse_two_inputs(attrs)?;
-        self.in1 = in1;
-        self.in2 = in2;
+        self.params.in1 = in1;
+        self.params.in2 = in2;
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "mode") = attr.expanded() {
-                self.mode = attr.parse(value)?;
+                self.params.mode = attr.parse(value)?;
             }
         }
 
@@ -85,6 +71,7 @@ impl SetAttributes for FeBlend {
 impl Blend {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -101,8 +88,7 @@ impl Blend {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&input_2)
@@ -115,24 +101,21 @@ impl Blend {
         )?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeBlend {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(PrimitiveParams::Blend(Blend {
-            base: self.base.clone(),
-            in1: self.in1.clone(),
-            in2: self.in2.clone(),
-            mode: self.mode,
-            color_interpolation_filters: values.color_interpolation_filters(),
-        }))
+        let mut params = self.params.clone();
+        params.color_interpolation_filters = values.color_interpolation_filters();
+
+        Ok((self.base.clone(), PrimitiveParams::Blend(params)))
     }
 }
 

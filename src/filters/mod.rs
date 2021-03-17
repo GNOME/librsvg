@@ -30,7 +30,7 @@ use self::error::FilterError;
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError>;
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError>;
 }
 
 // Filter Effects do not need to draw themselves
@@ -78,8 +78,16 @@ pub enum PrimitiveParams {
 }
 
 /// The base filter primitive node containing common properties.
-#[derive(Clone)]
-struct Primitive {
+#[derive(Default, Clone)]
+pub struct Primitive {
+    x: Option<Length<Horizontal>>,
+    y: Option<Length<Vertical>>,
+    width: Option<ULength<Horizontal>>,
+    height: Option<ULength<Vertical>>,
+    result: Option<CustomIdent>,
+}
+
+pub struct ResolvedPrimitive {
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<ULength<Horizontal>>,
@@ -128,27 +136,27 @@ impl Parse for Input {
 }
 
 impl Primitive {
-    /// Constructs a new `Primitive` with empty properties.
-    #[inline]
-    fn new() -> Primitive {
-        Primitive {
-            x: None,
-            y: None,
-            width: None,
-            height: None,
-            result: None,
-        }
+    fn resolve(&self) -> Result<ResolvedPrimitive, FilterError> {
+        Ok(ResolvedPrimitive {
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height,
+            result: self.result.clone(),
+        })
     }
+}
 
+impl ResolvedPrimitive {
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
-            check_units(self.x)?;
-            check_units(self.y)?;
-            check_units(self.width)?;
-            check_units(self.height)?;
+            check_px_or_percent_units(self.x)?;
+            check_px_or_percent_units(self.y)?;
+            check_px_or_percent_units(self.width)?;
+            check_px_or_percent_units(self.height)?;
         }
 
         let transform = ctx.paffine();
@@ -168,7 +176,7 @@ impl Primitive {
     }
 }
 
-fn check_units<N: Normalize, V: Validate>(
+fn check_px_or_percent_units<N: Normalize, V: Validate>(
     length: Option<CssLength<N, V>>,
 ) -> Result<(), FilterError> {
     match length {
@@ -235,9 +243,26 @@ pub fn render(
     }
 
     let filter = borrow_element_as!(filter_node, Filter);
+
+    let values = computed_from_node_being_filtered;
+
+    let stroke_paint_source = values
+        .stroke()
+        .0
+        .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+        .to_user_space(&node_bbox, draw_ctx, values);
+
+    let fill_paint_source = values
+        .fill()
+        .0
+        .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+        .to_user_space(&node_bbox, draw_ctx, values);
+
     let mut filter_ctx = FilterContext::new(
         &filter,
         computed_from_node_being_filtered,
+        stroke_paint_source,
+        fill_paint_source,
         source_surface,
         draw_ctx,
         transform,
@@ -274,7 +299,15 @@ pub fn render(
 
         if let Err(err) = filter
             .resolve(&c)
-            .and_then(|params| render_primitive(&params, &filter_ctx, acquired_nodes, draw_ctx))
+            .and_then(|(primitive, params)| {
+                render_primitive(
+                    &primitive.resolve()?,
+                    &params,
+                    &filter_ctx,
+                    acquired_nodes,
+                    draw_ctx,
+                )
+            })
             .and_then(|result| filter_ctx.store_result(result))
         {
             rsvg_log!("(filter primitive {} returned an error: {})", c, err);
@@ -298,6 +331,7 @@ pub fn render(
 
 #[rustfmt::skip]
 fn render_primitive(
+    primitive: &ResolvedPrimitive,
     params: &PrimitiveParams,
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
@@ -306,22 +340,22 @@ fn render_primitive(
     use PrimitiveParams::*;
 
     match params {
-        Blend(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(p)       => p.render(ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(p) => p.render(ctx, acquired_nodes, draw_ctx),
-        Composite(p)         => p.render(ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(p)    => p.render(ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(p)   => p.render(ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(p)   => p.render(ctx, acquired_nodes, draw_ctx),
-        Flood(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(p)      => p.render(ctx, acquired_nodes, draw_ctx),
-        Image(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        Merge(p)             => p.render(ctx, acquired_nodes, draw_ctx),
-        Morphology(p)        => p.render(ctx, acquired_nodes, draw_ctx),
-        Offset(p)            => p.render(ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(p)  => p.render(ctx, acquired_nodes, draw_ctx),
-        Tile(p)              => p.render(ctx, acquired_nodes, draw_ctx),
-        Turbulence(p)        => p.render(ctx, acquired_nodes, draw_ctx),
+        Blend(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(p)       => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(p) => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Composite(p)         => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(p)    => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Flood(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(p)      => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Image(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Merge(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Morphology(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Offset(p)            => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(p)  => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Tile(p)              => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Turbulence(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
     }
 }
 

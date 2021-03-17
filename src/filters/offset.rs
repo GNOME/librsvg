@@ -9,41 +9,31 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feOffset` filter primitive.
-#[derive(Clone)]
+#[derive(Default)]
 pub struct FeOffset {
     base: Primitive,
+    params: Offset,
+}
+
+/// Resolved `feOffset` primitive for rendering.
+#[derive(Clone, Default)]
+pub struct Offset {
     in1: Input,
     dx: f64,
     dy: f64,
 }
 
-/// Resolved `feOffset` primitive for rendering.
-pub type Offset = FeOffset;
-
-impl Default for FeOffset {
-    /// Constructs a new `Offset` with empty properties.
-    #[inline]
-    fn default() -> FeOffset {
-        FeOffset {
-            base: Primitive::new(),
-            in1: Default::default(),
-            dx: 0f64,
-            dy: 0f64,
-        }
-    }
-}
-
 impl SetAttributes for FeOffset {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.in1 = self.base.parse_one_input(attrs)?;
+        self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "dx") => self.dx = attr.parse(value)?,
-                expanded_name!("", "dy") => self.dy = attr.parse(value)?,
+                expanded_name!("", "dx") => self.params.dx = attr.parse(value)?,
+                expanded_name!("", "dy") => self.params.dy = attr.parse(value)?,
                 _ => (),
             }
         }
@@ -52,9 +42,10 @@ impl SetAttributes for FeOffset {
     }
 }
 
-impl FeOffset {
+impl Offset {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -72,8 +63,7 @@ impl FeOffset {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = self
-            .base
+        let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
             .into_irect(ctx, draw_ctx);
@@ -83,14 +73,17 @@ impl FeOffset {
         let surface = input_1.surface().offset(bounds, dx, dy)?;
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeOffset {
-    fn resolve(&self, _node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Offset(self.clone()))
+    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Offset(self.params.clone()),
+        ))
     }
 }

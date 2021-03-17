@@ -11,7 +11,7 @@ use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
 
 use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feMerge` filter primitive.
 pub struct FeMerge {
@@ -26,7 +26,6 @@ pub struct FeMergeNode {
 
 /// Resolved `feMerge` primitive for rendering.
 pub struct Merge {
-    base: Primitive,
     merge_nodes: Vec<MergeNode>,
 }
 
@@ -42,7 +41,7 @@ impl Default for FeMerge {
     #[inline]
     fn default() -> FeMerge {
         FeMerge {
-            base: Primitive::new(),
+            base: Default::default(),
         }
     }
 }
@@ -98,12 +97,13 @@ impl MergeNode {
 impl Merge {
     pub fn render(
         &self,
+        primitive: &ResolvedPrimitive,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each feMergeNode's input into account.
-        let mut bounds = self.base.get_bounds(ctx)?;
+        let mut bounds = primitive.get_bounds(ctx)?;
         for merge_node in &self.merge_nodes {
             let input = ctx.get_input(
                 acquired_nodes,
@@ -134,18 +134,20 @@ impl Merge {
         };
 
         Ok(FilterResult {
-            name: self.base.result.clone(),
+            name: primitive.result.clone(),
             output: FilterOutput { surface, bounds },
         })
     }
 }
 
 impl FilterEffect for FeMerge {
-    fn resolve(&self, node: &Node) -> Result<PrimitiveParams, FilterError> {
-        Ok(PrimitiveParams::Merge(Merge {
-            base: self.base.clone(),
-            merge_nodes: resolve_merge_nodes(node)?,
-        }))
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        Ok((
+            self.base.clone(),
+            PrimitiveParams::Merge(Merge {
+                merge_nodes: resolve_merge_nodes(node)?,
+            }),
+        ))
     }
 }
 
@@ -196,7 +198,7 @@ mod tests {
 
         let node = document.lookup_internal_node("merge").unwrap();
         let merge = borrow_element_as!(node, FeMerge);
-        let params = merge.resolve(&node).unwrap();
+        let (_, params) = merge.resolve(&node).unwrap();
         let params = match params {
             PrimitiveParams::Merge(m) => m,
             _ => unreachable!(),
