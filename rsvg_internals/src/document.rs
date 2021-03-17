@@ -203,18 +203,7 @@ fn load_image(
         return Err(LoadingError::EmptyData);
     }
 
-    // See issue #548 - data: URLs without a MIME-type automatically
-    // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
-    // Adobe Illustrator generate data: URLs without MIME-type for image
-    // data.  We'll catch this and fall back to sniffing by unsetting the
-    // content_type.
-    let unspecified_mime_type = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
-
-    let content_type = if mime_type == unspecified_mime_type {
-        None
-    } else {
-        Some(format!("{}/{}", mime_type.type_, mime_type.subtype))
-    };
+    let content_type = content_type_for_gdk_pixbuf(&mime_type);
 
     let loader = if let Some(ref content_type) = content_type {
         PixbufLoader::new_with_mime_type(content_type)?
@@ -236,6 +225,21 @@ fn load_image(
     let surface = SharedImageSurface::from_pixbuf(&pixbuf, bytes, content_type.as_deref())?;
 
     Ok(surface)
+}
+
+fn content_type_for_gdk_pixbuf(mime_type: &Mime) -> Option<String> {
+    // See issue #548 - data: URLs without a MIME-type automatically
+    // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
+    // Adobe Illustrator generate data: URLs without MIME-type for image
+    // data.  We'll catch this and fall back to sniffing by unsetting the
+    // content_type.
+    let unspecified_mime_type = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
+
+    if *mime_type == unspecified_mime_type {
+        None
+    } else {
+        Some(format!("{}/{}", mime_type.type_, mime_type.subtype))
+    }
 }
 
 pub struct AcquiredNode {
