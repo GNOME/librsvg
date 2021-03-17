@@ -489,3 +489,25 @@ impl DocumentBuilder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unspecified_mime_type_yields_no_content_type() {
+        // Issue #548
+        let mime = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
+        assert!(content_type_for_gdk_pixbuf(&mime).is_none());
+    }
+
+    #[test]
+    fn strips_mime_type_parameters() {
+        // Issue #699
+        let mime = Mime::from_str("image/png;charset=utf-8").unwrap();
+        assert_eq!(
+            content_type_for_gdk_pixbuf(&mime),
+            Some(String::from("image/png"))
+        );
+    }
+}
