@@ -53,7 +53,7 @@ fn decode_data_uri(uri: &str) -> Result<BinaryData, IoError> {
     })
 }
 
-/// Returns an input stream.  The url can be a data: URL or a plain URI
+/// Creates a stream for reading.  The url can be a data: URL or a plain URI.
 pub fn acquire_stream(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
@@ -81,7 +81,7 @@ pub fn acquire_stream(
     }
 }
 
-/// Returns a chunk of data.  The url can be a data: URL or a plain URI
+/// Reads the entire contents pointed by an URL.  The url can be a data: URL or a plain URI.
 pub fn acquire_data(
     aurl: &AllowedUrl,
     cancellable: Option<&Cancellable>,
