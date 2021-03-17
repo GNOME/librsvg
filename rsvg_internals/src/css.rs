@@ -78,6 +78,7 @@ use cssparser::{
     CowRcStr, DeclarationListParser, DeclarationParser, Parser, ParserInput, QualifiedRuleParser,
     RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
 };
+use data_url::mime::Mime;
 use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
@@ -694,10 +695,10 @@ impl Stylesheet {
             .and_then(|data| {
                 let BinaryData {
                     data: bytes,
-                    content_type,
+                    mime_type,
                 } = data;
 
-                if content_type.as_ref().map(String::as_ref) == Some("text/css") {
+                if is_text_css(&mime_type) {
                     Ok(bytes)
                 } else {
                     rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
@@ -747,6 +748,10 @@ impl Stylesheet {
             }
         }
     }
+}
+
+fn is_text_css(mime_type: &Mime) -> bool {
+    mime_type.type_ == "text" && mime_type.subtype == "css"
 }
 
 /// Runs the CSS cascade on the specified tree from all the stylesheets

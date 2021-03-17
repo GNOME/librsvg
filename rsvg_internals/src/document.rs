@@ -1,5 +1,6 @@
 //! Main SVG document structure.
 
+use data_url::mime::Mime;
 use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
@@ -8,6 +9,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::include_str;
 use std::rc::Rc;
+use std::str::FromStr;
 
 use crate::allowed_url::{AllowedUrl, AllowedUrlError, Fragment};
 use crate::attributes::Attributes;
@@ -194,7 +196,7 @@ fn load_image(
 ) -> Result<SharedImageSurface, LoadingError> {
     let BinaryData {
         data: bytes,
-        mut content_type,
+        mime_type,
     } = io::acquire_data(&aurl, None)?;
 
     if bytes.is_empty() {
@@ -206,9 +208,13 @@ fn load_image(
     // Adobe Illustrator generate data: URLs without MIME-type for image
     // data.  We'll catch this and fall back to sniffing by unsetting the
     // content_type.
-    if content_type.as_deref() == Some("text/plain;charset=US-ASCII") {
-        content_type = None;
-    }
+    let unspecified_mime_type = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
+
+    let content_type = if mime_type == unspecified_mime_type {
+        None
+    } else {
+        Some(format!("{}/{}", mime_type.type_, mime_type.subtype))
+    };
 
     let loader = if let Some(ref content_type) = content_type {
         PixbufLoader::new_with_mime_type(content_type)?
