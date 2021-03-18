@@ -18,9 +18,14 @@ off items while making a release.
 - [ ] `git push` the signed tag to gitlab.gnome.org/GNOME/librsvg
 - [ ] `scp librsvg-x.y.z.tar.xz master.gnome.org:`
 - [ ] `ssh master.gnome.org` and then `ftpadmin install librsvg-x.y.z.tar.xz`
-- [ ] If this is a `x.y.0` release, [notify the release
-      team][release-team] on whether to use it for the next GNOME
-      version via an issue on their `GNOME/releng` project.
+      
+For `x.y.0` releases, at least, do the following:
+
+- [ ] [Notify the release team][release-team] on whether to use this
+      `librsvg-x.y.0` for the next GNOME version via an issue on their
+      `GNOME/releng` project.
+      
+- [ ] `cargo-audit audit` and ensure we don't have vulnerable dependencies.
 
 ## Version numbers
 
