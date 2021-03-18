@@ -1,9 +1,13 @@
+#![cfg(test)]
+use test_generator::test_resources;
+
 use cairo;
-use librsvg::{LoadingError, SvgHandle};
+use float_cmp::approx_eq;
+use librsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 use matches::matches;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{load_svg, render_document, SurfaceSize};
+use crate::utils::{load_svg, render_document, setup_font_map, SurfaceSize};
 
 // https://gitlab.gnome.org/GNOME/librsvg/issues/335
 #[test]
@@ -317,4 +321,36 @@ fn doubly_recursive_use() {
     .unwrap();
 
     test_renders_as_empty(&svg, "308-doubly-recursive-use");
+}
+
+// https://gitlab.gnome.org/GNOME/librsvg/-/issues/347
+#[test_resources("tests/fixtures/dimensions/347-wrapper.svg")]
+fn test_text_bounds(name: &str) {
+    setup_font_map();
+
+    let handle = Loader::new()
+        .read_path(name)
+        .unwrap_or_else(|e| panic!("could not load: {}", e));
+
+    let renderer = CairoRenderer::new(&handle).test_mode();
+
+    let (ink_r, _) = renderer
+        .geometry_for_layer(
+            Some("#LabelA"),
+            &cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 248.0,
+                height: 176.0,
+            },
+        )
+        .unwrap();
+
+    assert!(approx_eq!(f64, ink_r.x, 80.0));
+
+    // This is kind of suspicious, but we don't know the actual height of the
+    // text set at y=49 in the test SVG.  However, this test is more "text
+    // elements compute sensible bounds"; the bug #347 was that their ink_rect
+    // was not being computed correctly at all.
+    assert!(ink_r.y > 48.0 && ink_r.y < 49.0);
 }

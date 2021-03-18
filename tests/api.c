@@ -1556,13 +1556,6 @@ static DimensionsFixtureData dimensions_fixtures[] =
         FALSE, TRUE
     },
     {
-        "/dimensions/sub/text_position",
-        "dimensions/347-wrapper.svg",
-        "#LabelA",
-        80, 48.90, 0, 0,
-        TRUE, FALSE
-    },
-    {
         "/dimensions/with_viewbox",
         "dimensions/521-with-viewbox.svg",
         "#foo",
