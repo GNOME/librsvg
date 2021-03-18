@@ -1,7 +1,6 @@
 include $(top_srcdir)/glib-tap.mk
 
 test_sources =				\
-	build.rs			\
 	src/api.rs			\
 	src/bugs.rs			\
 	src/compare_surfaces.rs		\
