@@ -97,3 +97,24 @@ to do it or [ask the release team][release-team] to do it by filing an
 issue on their `GNOME/releng` project.
 
 [release-team]: https://gitlab.gnome.org/GNOME/releng/-/issues
+
+## Rust dependencies
+
+Release tarballs get generated with *vendored dependencies*, that is,
+the source code for all the crates that librsvg depends on gets bundled
+into the tarball itself.  It is important to keep these dependencies
+updated; you can do that regularly with the `cargo update` step listed
+in the checklist above.
+
+[`cargo-audit`][cargo-audit] is very useful to scan the list of
+dependencies for registered vulnerabilities in the [RustSec
+vulnerability database][rustsec].  Run it especially before making a
+new `x.y.0` release.
+
+Sometimes cargo-audit will report crates that are not vulnerable, but
+that are unmaintained.  Keep an eye of those; you may want to file
+bugs upstream to see if the crates are really unmaintained or if they
+should be substituted for something else.
+
+[cargo-audit]: https://github.com/RustSec/cargo-audit
+[rustsec]: https://rustsec.org/
