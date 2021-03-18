@@ -102,7 +102,7 @@ AS_IF(test x$RUSTC = xno,
     AC_MSG_ERROR([rustc is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
 
-dnl Minimum version of rustc that we support
+dnl MSRV - Minimum Supported Rust Version
 dnl If you change this, please update COMPILING.md
 MINIMUM_RUST_MAJOR=1
 MINIMUM_RUST_MINOR=48

@@ -43,6 +43,55 @@ tooling for the stable or development GNOME releases.  File an issue
 in their [repository][release-team] to indicate whether the new
 `librsvg-x.y.0` is a stable or development series.
 
+## Minimum supported Rust version (MSRV)
+
+While it may seem desirable to always require the latest released
+version of the Rust toolchain, to get new language features and such,
+this is really inconvenient for distributors of librsvg which do not
+update Rust all the time.  So, we make a compromise.
+
+The `configure.ac` script defines `MININUM_RUST_MAJOR` and
+`MINIMUM_RUST_MINOR` variables with librsvg's minimum supported Rust
+version (MSRV).  These ensure that distros will get an early failure during a
+build, at the `configure` step, if they have a version of Rust that is
+too old — instead of getting an obscure error message from `rustc` in
+the middle of the build when it finds an unsupported language
+construct.
+
+As of March 2021, Cargo does not allow setting a minimum supported
+Rust version; you may want to keep an eye on [the MSRV RFC][msrv-rfc].
+
+Sometimes librsvg's dependencies update their MSRV and librsvg may
+need to increase it as well.  Please consider the following before
+doing this:
+
+* Absolutely do not require a nightly snapshot of the compiler, or
+  crates that only build on nightly.
+
+* Distributions with rolling releases usually keep their Rust
+  toolchains fairly well updated, maybe not always at the latest, but
+  within two or three releases earlier than the latest.  If the MSRV
+  you want is within about six months of the latest, things are
+  probably safe.
+  
+* Enterprise distributions update more slowly.  It is useful to watch
+  for the MSRV that Firefox requires, although sometimes Firefox
+  updates Rust very slowly as well.  Now that distributions are
+  shipping packages other than Firefox that require Rust, they will
+  probably start updating more frequently.
+  
+Generally — two or three releases earlier than the latest stable Rust
+is OK for rolling distros, probably perilous for enterprise distros.
+Releases within a year of an enterprise distro's shipping date are
+probably OK.
+
+If you are not sure, ask on the [forum for GNOME
+distributors][distributors] about their plans!  (That is, posts on
+`discourse.gnome.org` with the `distributor` tag.)
+
+[msrv-rfc]: https://github.com/rust-lang/rfcs/pull/2495
+[distributors]: https://discourse.gnome.org/tag/distributor
+
 ## Format for release notes in NEWS
 
 The `NEWS` file contains the release notes.  Please use something
