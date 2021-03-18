@@ -337,23 +337,6 @@ GLIB_LC_MESSAGES
 
 dnl ===========================================================================
 
-# Check for pangoft2 and fontconfig, which is optional on Windows
-
-PKG_CHECK_MODULES([PANGOFT2],[pangoft2 >= $PANGO_REQUIRED],[have_pangoft2=yes],[have_pangoft2=no])
-PKG_CHECK_MODULES([FONTCONFIG],[fontconfig],[have_fontconfig=yes],[have_fontconfig=no])
-
-if test "x$native_win32" != "xyes"; then
-  if test "x$have_pangoft2" != "xyes" -o "x$have_fontconfig" != "xyes"; then
-    AC_MSG_ERROR([pangoft2 and fontconfig are required for non-Windows platforms.])
-  fi
-fi
-
-if test "x$have_pangoft2" = "xyes" -a "x$have_fontconfig" = "xyes"; then
-  AC_DEFINE(HAVE_PANGOFT2, 1, [Have the pangoft2 library])
-fi
-
-dnl ===========================================================================
-
 # Check whether MSVC toolset is explicitly set
 
 AM_CONDITIONAL(MSVC_BASE_NO_TOOLSET_SET, [test x$MSVC_BASE_TOOLSET = x])

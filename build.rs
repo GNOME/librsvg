@@ -2,106 +2,18 @@ use regex::Regex;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{self, BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 use std::process;
 
-use pkg_config::{Config, Error};
-
-const CAIRO_REQUIRED_VERSION: &str = "1.16";
-const PANGO_REQUIRED_VERSION: &str = "1.38";
-const LIBXML_REQUIRED_VERSION: &str = "2.9.0";
-
 fn main() {
-    find_libxml2();
-    check_for_pangoft2();
-    check_for_cairo_surface_backends();
-    generate_srgb_tables();
-    write_version();
-}
-
-fn find_libxml2() {
-    if let Err(s) = find("libxml-2.0", LIBXML_REQUIRED_VERSION, &["xml2"]) {
-        let _ = writeln!(io::stderr(), "{}", s);
+    if let Err(e) = system_deps::Config::new().probe() {
+        eprintln!("{}", e);
         process::exit(1);
     }
-}
 
-// This is stolen from the -sys crates in gtk-rs
-fn find(package_name: &str, version: &str, shared_libs: &[&str]) -> Result<(), Error> {
-    if let Ok(inc_dir) = env::var("GTK_INCLUDE_DIR") {
-        println!("cargo:include={}", inc_dir);
-    }
-    if let Ok(lib_dir) = env::var("GTK_LIB_DIR") {
-        for lib_ in shared_libs.iter() {
-            println!("cargo:rustc-link-lib=dylib={}", lib_);
-        }
-        println!("cargo:rustc-link-search=native={}", lib_dir);
-        return Ok(());
-    }
-
-    let target = env::var("TARGET").unwrap();
-    let hardcode_shared_libs = target.contains("windows");
-
-    let mut config = Config::new();
-    config.atleast_version(version);
-    config.print_system_libs(false);
-
-    if hardcode_shared_libs {
-        config.cargo_metadata(false);
-    }
-    match config.probe(package_name) {
-        Ok(library) => {
-            if let Ok(paths) = std::env::join_paths(library.include_paths) {
-                // Exposed to other build scripts as DEP_CAIRO_INCLUDE; use env::split_paths
-                println!("cargo:include={}", paths.to_string_lossy());
-            }
-            if hardcode_shared_libs {
-                for lib_ in shared_libs.iter() {
-                    println!("cargo:rustc-link-lib=dylib={}", lib_);
-                }
-                for path in library.link_paths.iter() {
-                    println!("cargo:rustc-link-search=native={}", path.to_str().unwrap());
-                }
-            }
-            Ok(())
-        }
-        Err(Error::EnvNoPkgConfig(_)) | Err(Error::Command { .. }) => {
-            for lib_ in shared_libs.iter() {
-                println!("cargo:rustc-link-lib=dylib={}", lib_);
-            }
-            Ok(())
-        }
-        Err(err) => Err(err),
-    }
-}
-
-fn check_for_pangoft2() {
-    if pkg_config::Config::new()
-        .atleast_version(PANGO_REQUIRED_VERSION)
-        .probe("pangoft2")
-        .is_ok()
-    {
-        println!("cargo:rustc-cfg=have_pangoft2");
-    }
-}
-
-fn check_for_cairo_surface_backend(backend: &str) {
-    let pkg_name = ["cairo", backend].join("-");
-    if pkg_config::Config::new()
-        .atleast_version(CAIRO_REQUIRED_VERSION)
-        .probe(&pkg_name)
-        .is_ok()
-    {
-        println!("cargo:rustc-cfg=have_cairo_{}", backend);
-    }
-}
-
-fn check_for_cairo_surface_backends() {
-    let backends = ["pdf", "ps", "svg"];
-    for name in &backends {
-        check_for_cairo_surface_backend(name);
-    }
+    generate_srgb_tables();
+    write_version();
 }
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).

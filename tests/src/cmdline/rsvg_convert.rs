@@ -8,7 +8,7 @@ use crate::predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
 use predicates::boolean::*;
 use predicates::prelude::*;
@@ -116,7 +116,7 @@ fn output_format_png() {
         .stdout(file::is_png());
 }
 
-#[cfg(have_cairo_ps)]
+#[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn output_format_ps() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -126,7 +126,7 @@ fn output_format_ps() {
         .stdout(file::is_ps());
 }
 
-#[cfg(have_cairo_ps)]
+#[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn output_format_eps() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -136,7 +136,7 @@ fn output_format_eps() {
         .stdout(file::is_eps());
 }
 
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn output_format_pdf() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -146,7 +146,7 @@ fn output_format_pdf() {
         .stdout(file::is_pdf());
 }
 
-#[cfg(have_cairo_svg)]
+#[cfg(system_deps_have_cairo_svg)]
 #[test]
 fn output_format_svg_short_option() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
@@ -247,7 +247,7 @@ fn multiple_input_files_not_allowed_for_png_output() {
         ));
 }
 
-#[cfg(have_cairo_ps)]
+#[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn multiple_input_files_accepted_for_eps_output() {
     let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -261,7 +261,7 @@ fn multiple_input_files_accepted_for_eps_output() {
         .stdout(file::is_eps());
 }
 
-#[cfg(have_cairo_ps)]
+#[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn multiple_input_files_accepted_for_ps_output() {
     let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -275,7 +275,7 @@ fn multiple_input_files_accepted_for_ps_output() {
         .stdout(file::is_ps());
 }
 
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn multiple_input_files_create_multi_page_pdf_output() {
     let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -291,7 +291,7 @@ fn multiple_input_files_create_multi_page_pdf_output() {
         .stdout(file::is_pdf().with_page_count(3));
 }
 
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_controls_pdf_creation_date() {
     let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
@@ -305,7 +305,7 @@ fn env_source_data_epoch_controls_pdf_creation_date() {
         .stdout(file::is_pdf().with_creation_date(Utc.timestamp(date, 0)));
 }
 
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_no_digits() {
     // intentionally not testing for the full error string here
@@ -319,7 +319,7 @@ fn env_source_data_epoch_no_digits() {
         .stderr(starts_with("Environment variable $SOURCE_DATE_EPOCH"));
 }
 
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_trailing_garbage() {
     // intentionally not testing for the full error string here
@@ -333,7 +333,7 @@ fn env_source_data_epoch_trailing_garbage() {
         .stderr(starts_with("Environment variable $SOURCE_DATE_EPOCH"));
 }
 
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_empty() {
     // intentionally not testing for the full error string here
@@ -531,7 +531,7 @@ fn negative_resolution_is_invalid() {
         .stderr(contains("Invalid resolution"));
 }
 
-#[cfg(have_cairo_pdf)]
+#[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn pdf_page_size() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
