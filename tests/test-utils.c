@@ -7,15 +7,14 @@
 #include <string.h>
 #include <pango/pango.h>
 #include <pango/pangocairo.h>
-#ifdef HAVE_PANGOFT2
-#include <pango/pangofc-fontmap.h>
-#else
-# if !PANGO_VERSION_CHECK (1, 44, 0)
-#  include <hb.h>
-# endif
-# include <ft2build.h>
-# include FT_FREETYPE_H
+
+#if !PANGO_VERSION_CHECK (1, 44, 0)
+# include <hb.h>
 #endif
+
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 
 /* Compare two buffers, returning the number of pixels that are
  * different and the maximum difference of any single color channel in
@@ -233,54 +232,6 @@ test_utils_get_test_data_path (void)
     data_path = g_test_build_filename (G_TEST_DIST, "fixtures", NULL);
 
     return data_path;
-}
-
-#ifdef HAVE_PANGOFT2
-static FcConfig *
-create_font_config_for_testing (void)
-{
-    const char *font_paths[] =
-    {
-        "Roboto-Regular.ttf",
-        "Roboto-Italic.ttf",
-        "Roboto-Bold.ttf",
-        "Roboto-BoldItalic.ttf",
-    };
-
-    FcConfig *config = FcConfigCreate ();
-    int i;
-
-    for (i = 0; i < G_N_ELEMENTS(font_paths); i++)
-    {
-        char *font_path = g_test_build_filename (G_TEST_DIST, "resources", font_paths[i], NULL);
-
-        if (!FcConfigAppFontAddFile (config, (const FcChar8 *) font_path))
-        {
-            g_error ("Could not load font file \"%s\" for tests; aborting", font_path);
-        }
-
-        g_free (font_path);
-    }
-
-    return config;
-}
-#endif
-
-void
-test_utils_setup_font_map (void)
-{
-#ifdef HAVE_PANGOFT2
-    FcConfig *config = create_font_config_for_testing ();
-    PangoFontMap *font_map = NULL;
-
-    font_map = pango_cairo_font_map_new_for_font_type (CAIRO_FONT_TYPE_FT);
-    pango_fc_font_map_set_config (PANGO_FC_FONT_MAP (font_map), config);
-    FcConfigDestroy (config);
-
-    pango_cairo_font_map_set_default (PANGO_CAIRO_FONT_MAP (font_map));
-
-    g_object_unref (font_map);
-#endif
 }
 
 void

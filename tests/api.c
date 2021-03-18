@@ -1556,13 +1556,6 @@ static DimensionsFixtureData dimensions_fixtures[] =
         FALSE, TRUE
     },
     {
-        "/dimensions/sub/text_position",
-        "dimensions/347-wrapper.svg",
-        "#LabelA",
-        80, 48.90, 0, 0,
-        TRUE, FALSE
-    },
-    {
         "/dimensions/with_viewbox",
         "dimensions/521-with-viewbox.svg",
         "#foo",
@@ -1719,7 +1712,6 @@ main (int argc, char **argv)
     g_test_init (&argc, &argv, NULL);
 
     test_utils_print_dependency_versions ();
-    test_utils_setup_font_map ();
 
     add_pixbuf_tests ();
     add_api_tests ();
