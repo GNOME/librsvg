@@ -4,8 +4,11 @@ Feel free to print this document or copy it to a text editor to check
 off items while making a release.
 
 - [ ] Refresh your memory with https://wiki.gnome.org/MaintainersCorner/Releasing
-- [ ] Increase the package version number in `configure.ac` (it may already be increased but not released; double-check it).
+- [ ] Increase the package version number in `configure.ac` (it may
+      already be increased but not released; double-check it).
 - [ ] Copy version number to `Cargo.toml`.
+- [ ] `cargo update` - needed because you tweaked `Cargo.toml`, and
+      also to get new dependencies.
 - [ ] Tweak the library version number in `configure.ac` if the API changed; follow the steps there.
 - [ ] Update `NEWS`, see below for the preferred format.
 - [ ] Commit the changes above.
@@ -15,7 +18,9 @@ off items while making a release.
 - [ ] `git push` the signed tag to gitlab.gnome.org/GNOME/librsvg
 - [ ] `scp librsvg-x.y.z.tar.xz master.gnome.org:`
 - [ ] `ssh master.gnome.org` and then `ftpadmin install librsvg-x.y.z.tar.xz`
-- [ ] If this is a `x.y.0` release, [notify the release team][release-team] on whether to use it for the next GNOME version via an issue on their `GNOME/releng` project.
+- [ ] If this is a `x.y.0` release, [notify the release
+      team][release-team] on whether to use it for the next GNOME
+      version via an issue on their `GNOME/releng` project.
 
 ## Version numbers
 
