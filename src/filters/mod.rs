@@ -108,11 +108,7 @@ pub enum Input {
     FilterOutput(CustomIdent),
 }
 
-impl Default for Input {
-    fn default() -> Self {
-        Input::Unspecified
-    }
-}
+enum_default!(Input, Input::Unspecified);
 
 impl Parse for Input {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
