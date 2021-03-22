@@ -997,7 +997,7 @@ impl CHandle {
         cr: &cairo::Context,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let dimensions = self.get_dimensions_sub(None)?;
         if dimensions.width == 0 || dimensions.height == 0 {
@@ -1043,7 +1043,7 @@ impl CHandle {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
@@ -1070,7 +1070,7 @@ impl CHandle {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
@@ -1098,7 +1098,7 @@ impl CHandle {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
@@ -2178,10 +2178,10 @@ impl fmt::Display for PathOrUrl {
     }
 }
 
-fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
+fn check_cairo_context(cr: &cairo::Context) -> Result<&cairo::Context, RenderingError> {
     let status = cr.status();
     if status == cairo::Status::Success {
-        Ok(())
+        Ok(cr)
     } else {
         let msg = format!(
             "cannot render on a cairo_t with a failure status (status={:?})",
