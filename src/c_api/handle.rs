@@ -1353,13 +1353,23 @@ pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
     rhandle.set_testing(from_glib(testing));
 }
 
-fn into_bool_gerror<E: fmt::Display>(result: Result<(), E>, error: *mut *mut glib_sys::GError) -> glib_sys::gboolean {
-    match result {
-        Ok(()) => true.to_glib(),
+trait IntoGError {
+    type GlibResult;
 
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
+    fn into_gerror(self, error: *mut *mut glib_sys::GError) -> Self::GlibResult;
+}
+
+impl<E: fmt::Display> IntoGError for Result<(), E> {
+    type GlibResult = glib_sys::gboolean;
+
+    fn into_gerror(self, error: *mut *mut glib_sys::GError) -> Self::GlibResult {
+        match self {
+            Ok(()) => true.to_glib(),
+
+            Err(e) => {
+                set_gerror(error, 0, &format!("{}", e));
+                false.to_glib()
+            }
         }
     }
 }
@@ -1385,8 +1395,9 @@ pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
     let stream = gio::InputStream::from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    let res = rhandle.read_stream_sync(&stream, cancellable.as_ref());
-    into_bool_gerror(res, error)
+    rhandle
+        .read_stream_sync(&stream, cancellable.as_ref())
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -1425,8 +1436,7 @@ pub unsafe extern "C" fn rsvg_handle_close(
 
     let rhandle = get_rust_handle(handle);
 
-    let res = rhandle.close();
-    into_bool_gerror(res, error)
+    rhandle.close().into_gerror(error)
 }
 
 #[no_mangle]
@@ -2031,19 +2041,20 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
 
     let id: Option<String> = from_glib_none(id);
 
-    let res = rhandle.get_geometry_for_element(id.as_deref()).map(|(ink_rect, logical_rect)| {
-        if !out_ink_rect.is_null() {
-            *out_ink_rect = ink_rect;
-        }
+    rhandle
+        .get_geometry_for_element(id.as_deref())
+        .map(|(ink_rect, logical_rect)| {
+            if !out_ink_rect.is_null() {
+                *out_ink_rect = ink_rect;
+            }
 
-        if !out_logical_rect.is_null() {
-            *out_logical_rect = logical_rect;
-        }
+            if !out_logical_rect.is_null() {
+                *out_logical_rect = logical_rect;
+            }
 
-        ()
-    });
-
-    into_bool_gerror(res, error)
+            ()
+        })
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -2067,8 +2078,9 @@ pub unsafe extern "C" fn rsvg_handle_render_element(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    let res = rhandle.render_element(&cr, id.as_deref(), &(*element_viewport).into());
-    into_bool_gerror(res, error)
+    rhandle
+        .render_element(&cr, id.as_deref(), &(*element_viewport).into())
+        .into_gerror(error)
 }
 
 #[no_mangle]
