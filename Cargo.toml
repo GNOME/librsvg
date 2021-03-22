@@ -36,8 +36,8 @@ crate-type = [ "staticlib", "rlib" ]
 bitflags = "1.0"
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
-cairo-rs = { version="0.8.0", features=["v1_16", "png", "pdf", "ps", "svg"] }
-cairo-sys-rs = "0.9.0"
+cairo-rs = { version="0.9.1", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cairo-sys-rs = "0.10.0"
 cast = "0.2.3"
 chrono = "0.4.0" # rsvg-convert
 clap = "~2.33.0" # rsvg-convert
@@ -45,13 +45,13 @@ cssparser = "0.27.1"
 data-url = "0.1"
 encoding = "0.2.33"
 float-cmp = "0.8.0"
-gdk-pixbuf = "0.8.0"
-gdk-pixbuf-sys = "0.9.0"
-gio = { version="0.8.1", features=["v2_50"] } # per configure.ac
-gio-sys = "0.9.1"
-glib = "0.9.0"
-glib-sys = { version="0.9.1", features=["v2_50"] }
-gobject-sys = "0.9.0"
+gdk-pixbuf = "0.9.0"
+gdk-pixbuf-sys = "0.10.0"
+gio = { version="0.9.1", features=["v2_50"] } # per configure.ac
+gio-sys = "0.10.1"
+glib = "0.10.3"
+glib-sys = { version="0.10.1", features=["v2_50"] }
+gobject-sys = "0.10.0"
 itertools = "0.9.0"
 language-tags = "0.2.2"
 libc = "0.2"
@@ -60,9 +60,9 @@ markup5ever = "0.10"
 nalgebra = "0.21.0"
 num-traits = "0.2"
 once_cell = "1.2.0"
-pango = "0.8.0"
-pango-sys = "0.9.0"
-pangocairo = "0.9.0"
+pango = "0.9.1"
+pango-sys = "0.10.0"
+pangocairo = "0.10.0"
 rayon = "1"
 rctree = "0.3.3"
 regex = "1"
@@ -75,17 +75,17 @@ xml5ever = "0.16.1"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"
-cairo-rs = { version = "0.8.0", features = ["png"] }
+cairo-rs = { version = "0.9.1", features = ["png"] }
 cast = "0.2.3"
 chrono = "0.4.0"
 criterion = "0.3"
-glib = "0.9.0"
+glib = "0.10.3"
 libc = "0.2"
 lopdf = "0.26.0"
 matches = "0.1"
-pango = "0.8.0"
-pango-sys = "0.9.0"
-pangocairo = "0.9.0"
+pango = "0.9.1"
+pango-sys = "0.10.0"
+pangocairo = "0.10.0"
 png = "0.16.1"
 predicates = "1.0.2"
 proptest = "0.10.1"
