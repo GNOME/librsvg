@@ -994,11 +994,9 @@ impl CHandle {
 
     fn render_cairo_sub(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
-        let cr = check_cairo_context(cr)?;
-
         let dimensions = self.get_dimensions_sub(None)?;
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
@@ -1030,7 +1028,8 @@ impl CHandle {
 
         {
             let cr = cairo::Context::new(&surface);
-            self.render_cairo_sub(&cr, id)?;
+            let cr_raw = cr.to_raw_none();
+            self.render_cairo_sub(cr_raw, id)?;
         }
 
         let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
@@ -1040,15 +1039,15 @@ impl CHandle {
 
     fn render_document(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        let cr = check_cairo_context(cr)?;
+        let mut cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
-        Ok(renderer.render_document(cr, viewport)?)
+        Ok(renderer.render_document(&mut cr, viewport)?)
     }
 
     fn get_geometry_for_layer(
@@ -1066,17 +1065,17 @@ impl CHandle {
 
     fn render_layer(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        let cr = check_cairo_context(cr)?;
+        let mut cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
 
-        Ok(renderer.render_layer(cr, id, viewport)?)
+        Ok(renderer.render_layer(&mut cr, id, viewport)?)
     }
 
     fn get_geometry_for_element(
@@ -1094,17 +1093,17 @@ impl CHandle {
 
     fn render_element(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        let cr = check_cairo_context(cr)?;
+        let mut cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
 
-        Ok(renderer.render_element(cr, id, element_viewport)?)
+        Ok(renderer.render_element(&mut cr, id, element_viewport)?)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
@@ -1473,16 +1472,10 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
 
-    match rhandle.render_cairo_sub(&cr, None) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            rsvg_log!("could not render: {}", e);
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_cairo_sub(cr, None)
+        .into_gerror(ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1499,17 +1492,11 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_cairo_sub(&cr, id.as_deref()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            rsvg_log!("could not render: {}", e);
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_cairo_sub(cr, id.as_deref())
+        .into_gerror(ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1932,10 +1919,9 @@ pub unsafe extern "C" fn rsvg_handle_render_document(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
 
     rhandle
-        .render_document(&cr, &(*viewport).into())
+        .render_document(cr, &(*viewport).into())
         .into_gerror(error)
 }
 
@@ -1994,11 +1980,10 @@ pub unsafe extern "C" fn rsvg_handle_render_layer(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
     rhandle
-        .render_layer(&cr, id.as_deref(), &(*viewport).into())
+        .render_layer(cr, id.as_deref(), &(*viewport).into())
         .into_gerror(error)
 }
 
@@ -2055,11 +2040,10 @@ pub unsafe extern "C" fn rsvg_handle_render_element(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
     rhandle
-        .render_element(&cr, id.as_deref(), &(*element_viewport).into())
+        .render_element(cr, id.as_deref(), &(*element_viewport).into())
         .into_gerror(error)
 }
 
@@ -2178,17 +2162,21 @@ impl fmt::Display for PathOrUrl {
     }
 }
 
-fn check_cairo_context(cr: &cairo::Context) -> Result<&cairo::Context, RenderingError> {
-    let status = cr.status();
-    if status == cairo::Status::Success {
-        Ok(cr)
+fn check_cairo_context(cr: *mut cairo_sys::cairo_t) -> Result<cairo::Context, RenderingError> {
+    let status = unsafe { cairo_sys::cairo_status(cr) };
+
+    if status == cairo_sys::STATUS_SUCCESS {
+        Ok(unsafe { from_glib_none(cr) })
     } else {
+        let status: cairo::Status = status.into();
+
         let msg = format!(
             "cannot render on a cairo_t with a failure status (status={:?})",
             status,
         );
 
         rsvg_g_warning(&msg);
+
         Err(RenderingError::from(status))
     }
 }
