@@ -1850,13 +1850,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
         }
     };
 
-    match rhandle.set_stylesheet(css) {
-        Ok(()) => true.to_glib(),
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle.set_stylesheet(css).into_gerror(error)
 }
 
 #[no_mangle]
@@ -1940,14 +1934,9 @@ pub unsafe extern "C" fn rsvg_handle_render_document(
     let rhandle = get_rust_handle(handle);
     let cr = from_glib_none(cr);
 
-    match rhandle.render_document(&cr, &(*viewport).into()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_document(&cr, &(*viewport).into())
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -1971,8 +1960,9 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_layer(id.as_deref(), &(*viewport).into()) {
-        Ok((ink_rect, logical_rect)) => {
+    rhandle
+        .get_geometry_for_layer(id.as_deref(), &(*viewport).into())
+        .map(|(ink_rect, logical_rect)| {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
             }
@@ -1981,14 +1971,9 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
                 *out_logical_rect = logical_rect;
             }
 
-            true.to_glib()
-        }
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+            ()
+        })
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -2012,14 +1997,9 @@ pub unsafe extern "C" fn rsvg_handle_render_layer(
     let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_layer(&cr, id.as_deref(), &(*viewport).into()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_layer(&cr, id.as_deref(), &(*viewport).into())
+        .into_gerror(error)
 }
 
 #[no_mangle]
