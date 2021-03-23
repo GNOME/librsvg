@@ -33,7 +33,6 @@ name = "librsvg"
 crate-type = [ "staticlib", "rlib" ]
 
 [dependencies]
-bitflags = "1.0"
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
 cairo-rs = { version="0.9.1", features=["v1_16", "png", "pdf", "ps", "svg"] }

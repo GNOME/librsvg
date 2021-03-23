@@ -33,7 +33,6 @@ use std::str;
 use std::sync::Once;
 use std::{f64, i32};
 
-use bitflags::bitflags;
 use gdk_pixbuf::Pixbuf;
 use gio::prelude::*;
 use glib::error::ErrorDomain;
@@ -44,15 +43,14 @@ use glib::subclass;
 use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
-use glib::value::{FromValue, FromValueOptional, SetValue};
 use glib::{
     glib_object_impl, glib_object_subclass, Bytes, Cast, ParamFlags, ParamSpec, StaticType,
-    ToValue, Type, Value,
+    ToValue, Type,
 };
 
 use glib::types::instance_of;
 
-use gobject_sys::{GEnumValue, GFlagsValue};
+use gobject_sys::GEnumValue;
 
 use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
 
@@ -93,62 +91,19 @@ impl fmt::Display for RenderingError {
     }
 }
 
-mod handle_flags {
-    // The following is entirely stolen from the auto-generated code
-    // for GBindingFlags, from gtk-rs/glib/src/gobject/auto/flags.rs
+#[glib::gflags("RsvgHandleFlags")]
+pub enum HandleFlags {
+    #[gflags(name = "RSVG_HANDLE_FLAGS_NONE", nick = "flags-none")]
+    NONE = 0,
 
-    use super::*;
+    #[gflags(name = "RSVG_HANDLE_FLAG_UNLIMITED", nick = "flag-unlimited")]
+    UNLIMITED = 1 << 0,
 
-    // Keep these in sync with rsvg.h:RsvgHandleFlags
-    #[rustfmt::skip]
-    bitflags! {
-        pub struct HandleFlags: u32 {
-            const NONE            = 0;
-            const UNLIMITED       = 1 << 0;
-            const KEEP_IMAGE_DATA = 1 << 1;
-        }
-    }
-
-    pub type RsvgHandleFlags = libc::c_uint;
-
-    impl ToGlib for HandleFlags {
-        type GlibType = RsvgHandleFlags;
-
-        fn to_glib(&self) -> RsvgHandleFlags {
-            self.bits()
-        }
-    }
-
-    impl FromGlib<RsvgHandleFlags> for HandleFlags {
-        fn from_glib(value: RsvgHandleFlags) -> HandleFlags {
-            HandleFlags::from_bits_truncate(value)
-        }
-    }
-
-    impl StaticType for HandleFlags {
-        fn static_type() -> Type {
-            unsafe { from_glib(rsvg_handle_flags_get_type()) }
-        }
-    }
-
-    impl<'a> FromValueOptional<'a> for HandleFlags {
-        unsafe fn from_value_optional(value: &Value) -> Option<Self> {
-            Some(FromValue::from_value(value))
-        }
-    }
-
-    impl<'a> FromValue<'a> for HandleFlags {
-        unsafe fn from_value(value: &Value) -> Self {
-            from_glib(gobject_sys::g_value_get_flags(value.to_glib_none().0))
-        }
-    }
-
-    impl SetValue for HandleFlags {
-        unsafe fn set_value(value: &mut Value, this: &Self) {
-            gobject_sys::g_value_set_flags(value.to_glib_none_mut().0, this.to_glib())
-        }
-    }
+    #[gflags(name = "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA", nick = "flag-keep-image-data")]
+    KEEP_IMAGE_DATA = 1 << 1,
 }
+
+pub type RsvgHandleFlags = u32;
 
 #[derive(Default, Copy, Clone)]
 struct LoadFlags {
@@ -156,13 +111,11 @@ struct LoadFlags {
     keep_image_data: bool,
 }
 
-use self::handle_flags::*;
-
 impl From<HandleFlags> for LoadFlags {
-    fn from(hflags: HandleFlags) -> LoadFlags {
+    fn from(flags: HandleFlags) -> LoadFlags {
         LoadFlags {
-            unlimited_size: hflags.contains(HandleFlags::UNLIMITED),
-            keep_image_data: hflags.contains(HandleFlags::KEEP_IMAGE_DATA),
+            unlimited_size: flags.contains(HandleFlags::UNLIMITED),
+            keep_image_data: flags.contains(HandleFlags::KEEP_IMAGE_DATA),
         }
     }
 }
@@ -1188,48 +1141,7 @@ pub unsafe extern "C" fn rsvg_error_get_type() -> glib_sys::GType {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_flags_get_type() -> glib_sys::GType {
-    static ONCE: Once = Once::new();
-    static mut FTYPE: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
-
-    // We have to store the GFlagsValue in a static variable but
-    // that requires it to be Sync. It is not Sync by default
-    // because it contains pointers, so we have define a custom
-    // wrapper type here on which we can implement Sync.
-    #[repr(transparent)]
-    struct GFlagsValueWrapper(GFlagsValue);
-    unsafe impl Sync for GFlagsValueWrapper {}
-
-    static VALUES: [GFlagsValueWrapper; 4] = [
-        GFlagsValueWrapper(GFlagsValue {
-            value: 0, // handle_flags::HandleFlags::NONE.bits(),
-            value_name: b"RSVG_HANDLE_FLAGS_NONE\0" as *const u8 as *const _,
-            value_nick: b"flags-none\0" as *const u8 as *const _,
-        }),
-        GFlagsValueWrapper(GFlagsValue {
-            value: 1 << 0, // HandleFlags::UNLIMITED.to_glib(),
-            value_name: b"RSVG_HANDLE_FLAG_UNLIMITED\0" as *const u8 as *const _,
-            value_nick: b"flag-unlimited\0" as *const u8 as *const _,
-        }),
-        GFlagsValueWrapper(GFlagsValue {
-            value: 1 << 1, // HandleFlags::KEEP_IMAGE_DATA.to_glib(),
-            value_name: b"RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA\0" as *const u8 as *const _,
-            value_nick: b"flag-keep-image-data\0" as *const u8 as *const _,
-        }),
-        GFlagsValueWrapper(GFlagsValue {
-            value: 0,
-            value_name: 0 as *const _,
-            value_nick: 0 as *const _,
-        }),
-    ];
-
-    ONCE.call_once(|| {
-        FTYPE = gobject_sys::g_flags_register_static(
-            b"RsvgHandleFlags\0" as *const u8 as *const _,
-            &VALUES as *const GFlagsValueWrapper as *const GFlagsValue,
-        );
-    });
-
-    FTYPE
+    HandleFlags::static_type().to_glib()
 }
 
 #[no_mangle]
@@ -1629,7 +1541,7 @@ pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
     let obj: *mut gobject_sys::GObject =
-        glib::Object::new(CHandle::get_type(), &[("flags", &flags)])
+        glib::Object::new(CHandle::get_type(), &[("flags", &HandleFlags::from_bits_truncate(flags))])
             .unwrap()
             .to_glib_full();
 
@@ -1772,7 +1684,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     let ret = rsvg_handle_new_from_stream_sync(
         raw_stream,
         ptr::null_mut(), // base_file
-        0,               // flags
+        0,
         ptr::null_mut(), // cancellable
         error,
     );
