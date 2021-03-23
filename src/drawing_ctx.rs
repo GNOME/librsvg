@@ -1098,15 +1098,13 @@ impl DrawingCtx {
         Ok(true)
     }
 
-    fn set_color(&self, rgba: cssparser::RGBA) -> Result<bool, RenderingError> {
+    fn set_color(&self, rgba: cssparser::RGBA) {
         self.cr.clone().set_source_rgba(
             f64::from(rgba.red_f32()),
             f64::from(rgba.green_f32()),
             f64::from(rgba.blue_f32()),
             f64::from(rgba.alpha_f32()),
         );
-
-        Ok(true)
     }
 
     fn set_paint_source(
@@ -1119,7 +1117,8 @@ impl DrawingCtx {
                 if self.set_gradient(gradient)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(c)
+                    self.set_color(c);
+                    Ok(true)
                 } else {
                     Ok(false)
                 }
@@ -1128,12 +1127,16 @@ impl DrawingCtx {
                 if self.set_pattern(pattern, acquired_nodes)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(c)
+                    self.set_color(c);
+                    Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            UserSpacePaintSource::SolidColor(c) => self.set_color(c),
+            UserSpacePaintSource::SolidColor(c) => {
+                self.set_color(c);
+                Ok(true)
+            },
             UserSpacePaintSource::None => Ok(false),
         }
     }
