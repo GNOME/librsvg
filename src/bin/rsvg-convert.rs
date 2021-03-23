@@ -21,10 +21,10 @@ impl std::fmt::Display for Error {
     }
 }
 
-impl From<cairo::Status> for Error {
-    fn from(s: cairo::Status) -> Self {
+impl From<cairo::Error> for Error {
+    fn from(s: cairo::Error) -> Self {
         match s {
-            cairo::Status::InvalidSize => Self(String::from(
+            cairo::Error::InvalidSize => Self(String::from(
                 "The resulting image would be larger than 32767 pixels on either dimension.\n\
                 Librsvg currently cannot render to images bigger than that.\n\
                 Please specify a smaller size.",
@@ -296,8 +296,8 @@ impl Surface {
     }
 }
 
-fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
-    cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+fn checked_i32(x: f64) -> Result<i32, cairo::Error> {
+    cast::i32(x).map_err(|_| cairo::Error::InvalidSize)
 }
 
 mod metadata {

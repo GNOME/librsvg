@@ -64,7 +64,7 @@ fn map_unpremultiplied_components<F: Fn(u8) -> u8>(
     bounds: IRect,
     f: F,
     new_type: SurfaceType,
-) -> Result<SharedImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Error> {
     let (width, height) = (surface.width(), surface.height());
     let mut output_surface = ExclusiveImageSurface::new(width, height, new_type)?;
     map_unpremultiplied_components_loop(surface, &mut output_surface, bounds, f);
@@ -77,7 +77,7 @@ fn map_unpremultiplied_components<F: Fn(u8) -> u8>(
 pub fn linearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
-) -> Result<SharedImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Error> {
     assert_eq!(surface.surface_type(), SurfaceType::SRgb);
 
     map_unpremultiplied_components(surface, bounds, linearize, SurfaceType::LinearRgb)
@@ -88,7 +88,7 @@ pub fn linearize_surface(
 pub fn unlinearize_surface(
     surface: &SharedImageSurface,
     bounds: IRect,
-) -> Result<SharedImageSurface, cairo::Status> {
+) -> Result<SharedImageSurface, cairo::Error> {
     assert_eq!(surface.surface_type(), SurfaceType::LinearRgb);
 
     map_unpremultiplied_components(surface, bounds, unlinearize, SurfaceType::SRgb)

@@ -176,7 +176,7 @@ impl ImageSurface<Shared> {
     pub fn wrap(
         surface: cairo::ImageSurface,
         surface_type: SurfaceType,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         // get_pixel() assumes ARgb32.
         assert_eq!(surface.get_format(), cairo::Format::ARgb32);
 
@@ -192,9 +192,6 @@ impl ImageSurface<Shared> {
         assert!(width > 0 && height > 0);
 
         surface.flush();
-        if surface.status() != cairo::Status::Success {
-            return Err(surface.status());
-        }
 
         let data_ptr =
             NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
@@ -216,7 +213,7 @@ impl ImageSurface<Shared> {
     /// Creates a `SharedImageSurface` copying from a `cairo::ImageSurface`, even if it
     /// does not have a reference count of 1.
     #[inline]
-    pub fn copy_from_surface(surface: &cairo::ImageSurface) -> Result<Self, cairo::Status> {
+    pub fn copy_from_surface(surface: &cairo::ImageSurface) -> Result<Self, cairo::Error> {
         let copy = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             surface.get_width(),
@@ -234,11 +231,7 @@ impl ImageSurface<Shared> {
 
     /// Creates an empty `SharedImageSurface` of the given size and `type`.
     #[inline]
-    pub fn empty(
-        width: i32,
-        height: i32,
-        surface_type: SurfaceType,
-    ) -> Result<Self, cairo::Status> {
+    pub fn empty(width: i32, height: i32, surface_type: SurfaceType) -> Result<Self, cairo::Error> {
         let s = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         SharedImageSurface::wrap(s, surface_type)
@@ -246,7 +239,7 @@ impl ImageSurface<Shared> {
 
     /// Converts this `SharedImageSurface` back into a Cairo image surface.
     #[inline]
-    pub fn into_image_surface(self) -> Result<cairo::ImageSurface, cairo::Status> {
+    pub fn into_image_surface(self) -> Result<cairo::ImageSurface, cairo::Error> {
         let reference_count =
             unsafe { cairo_sys::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
 
@@ -262,7 +255,7 @@ impl ImageSurface<Shared> {
         pixbuf: &Pixbuf,
         content_type: Option<&str>,
         mime_data: Option<Vec<u8>>,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
         assert!(pixbuf.get_bits_per_sample() == 8);
 
@@ -384,7 +377,7 @@ impl ImageSurface<Shared> {
 
     /// Returns a new `cairo::ImageSurface` with the same contents as the one stored in this
     /// `SharedImageSurface` within the given bounds.
-    fn copy_surface(&self, bounds: IRect) -> Result<cairo::ImageSurface, cairo::Status> {
+    fn copy_surface(&self, bounds: IRect) -> Result<cairo::ImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -408,7 +401,7 @@ impl ImageSurface<Shared> {
         bounds: IRect,
         x: f64,
         y: f64,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         {
@@ -432,7 +425,7 @@ impl ImageSurface<Shared> {
         bounds: IRect,
         x: f64,
         y: f64,
-    ) -> Result<(SharedImageSurface, IRect), cairo::Status> {
+    ) -> Result<(SharedImageSurface, IRect), cairo::Error> {
         let new_width = (f64::from(self.width) * x).ceil() as i32;
         let new_height = (f64::from(self.height) * y).ceil() as i32;
         let new_bounds = bounds.scale(x, y);
@@ -444,7 +437,7 @@ impl ImageSurface<Shared> {
     }
 
     /// Returns a surface with black background and alpha channel matching this surface.
-    pub fn extract_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn extract_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Error> {
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -472,7 +465,7 @@ impl ImageSurface<Shared> {
     /// useful luminance data.
     ///
     /// This is to get a mask suitable for use with cairo_mask_surface().
-    pub fn to_mask(&self, opacity: UnitInterval) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn to_mask(&self, opacity: UnitInterval) -> Result<SharedImageSurface, cairo::Error> {
         let bounds = IRect::from_size(self.width, self.height);
 
         let mut output_surface =
@@ -495,7 +488,7 @@ impl ImageSurface<Shared> {
     ///
     /// HACK: this is storing unpremultiplied pixels in an ARGB32 image surface (which is supposed
     /// to be premultiplied pixels).
-    pub fn unpremultiply(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn unpremultiply(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Error> {
         // Unpremultiplication doesn't affect the alpha channel.
         if self.is_alpha_only() {
             return Ok(self.clone());
@@ -518,7 +511,7 @@ impl ImageSurface<Shared> {
 
     /// Converts the surface to the linear sRGB color space.
     #[inline]
-    pub fn to_linear_rgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn to_linear_rgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Error> {
         match self.surface_type {
             SurfaceType::LinearRgb | SurfaceType::AlphaOnly => Ok(self.clone()),
             _ => srgb::linearize_surface(self, bounds),
@@ -527,7 +520,7 @@ impl ImageSurface<Shared> {
 
     /// Converts the surface to the sRGB color space.
     #[inline]
-    pub fn to_srgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn to_srgb(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Error> {
         match self.surface_type {
             SurfaceType::SRgb | SurfaceType::AlphaOnly => Ok(self.clone()),
             _ => srgb::unlinearize_surface(self, bounds),
@@ -552,7 +545,7 @@ impl ImageSurface<Shared> {
         target: (i32, i32),
         kernel: &Matrix<f64, R, C, S>,
         edge_mode: EdgeMode,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         assert!(kernel.nrows() >= 1);
         assert!(kernel.ncols() >= 1);
 
@@ -949,7 +942,7 @@ impl ImageSurface<Shared> {
         bounds: IRect,
         kernel_size: usize,
         target: usize,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -968,7 +961,7 @@ impl ImageSurface<Shared> {
         &self,
         bounds: IRect,
         color: cssparser::RGBA,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -997,7 +990,7 @@ impl ImageSurface<Shared> {
         bounds: IRect,
         dx: f64,
         dy: f64,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -1027,7 +1020,7 @@ impl ImageSurface<Shared> {
         bounds: Rect,
         image: &SharedImageSurface,
         rect: Option<Rect>,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -1061,7 +1054,7 @@ impl ImageSurface<Shared> {
 
     /// Creates a new surface with the size and content specified in `bounds`
     #[inline]
-    pub fn tile(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn tile(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, bounds.width(), bounds.height())?;
 
@@ -1083,7 +1076,7 @@ impl ImageSurface<Shared> {
         image: &SharedImageSurface,
         x: i32,
         y: i32,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
@@ -1118,7 +1111,7 @@ impl ImageSurface<Shared> {
         other: &SharedImageSurface,
         bounds: IRect,
         operator: cairo::Operator,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface = other.copy_surface(bounds)?;
 
         {
@@ -1154,7 +1147,7 @@ impl ImageSurface<Shared> {
         k2: f64,
         k3: f64,
         k4: f64,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let mut output_surface = ExclusiveImageSurface::new(
             self.width,
             self.height,
@@ -1280,7 +1273,7 @@ impl ImageSurface<Exclusive> {
         width: i32,
         height: i32,
         surface_type: SurfaceType,
-    ) -> Result<ExclusiveImageSurface, cairo::Status> {
+    ) -> Result<ExclusiveImageSurface, cairo::Error> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         let (width, height) = (surface.get_width(), surface.get_height());
@@ -1308,7 +1301,7 @@ impl ImageSurface<Exclusive> {
     }
 
     #[inline]
-    pub fn share(self) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn share(self) -> Result<SharedImageSurface, cairo::Error> {
         SharedImageSurface::wrap(self.surface, self.surface_type)
     }
 
@@ -1331,8 +1324,8 @@ impl ImageSurface<Exclusive> {
     #[inline]
     pub fn draw(
         &mut self,
-        draw_fn: &mut dyn FnMut(&cairo::Context) -> Result<(), cairo::Status>,
-    ) -> Result<(), cairo::Status> {
+        draw_fn: &mut dyn FnMut(&cairo::Context) -> Result<(), cairo::Error>,
+    ) -> Result<(), cairo::Error> {
         let cr = cairo::Context::new(&self.surface);
         draw_fn(&cr)
     }

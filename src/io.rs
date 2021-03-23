@@ -81,7 +81,7 @@ pub fn acquire_stream(
         //            file.write_all(&data).unwrap();
         //        }
 
-        let stream = MemoryInputStream::new_from_bytes(&GBytes::from_owned(data));
+        let stream = MemoryInputStream::from_bytes(&GBytes::from_owned(data));
         Ok(stream.upcast::<InputStream>())
     } else {
         let file = GFile::new_for_uri(uri);

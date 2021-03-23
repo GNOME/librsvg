@@ -111,7 +111,7 @@ impl<'a> PathHelper<'a> {
         }
     }
 
-    pub fn set(&mut self) -> Result<(), cairo::Status> {
+    pub fn set(&mut self) -> Result<(), RenderingError> {
         match self.has_path {
             Some(false) | None => {
                 self.has_path = Some(true);
@@ -978,10 +978,7 @@ impl DrawingCtx {
         Ok(child_surface)
     }
 
-    fn set_gradient(
-        self: &mut DrawingCtx,
-        gradient: &UserSpaceGradient,
-    ) -> Result<bool, RenderingError> {
+    fn set_gradient(self: &mut DrawingCtx, gradient: &UserSpaceGradient) {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -1014,8 +1011,6 @@ impl DrawingCtx {
 
         let cr = self.cr.clone();
         cr.set_source(&g);
-
-        Ok(true)
     }
 
     fn set_pattern(
@@ -1098,15 +1093,13 @@ impl DrawingCtx {
         Ok(true)
     }
 
-    fn set_color(&self, rgba: cssparser::RGBA) -> Result<bool, RenderingError> {
+    fn set_color(&self, rgba: cssparser::RGBA) {
         self.cr.clone().set_source_rgba(
             f64::from(rgba.red_f32()),
             f64::from(rgba.green_f32()),
             f64::from(rgba.blue_f32()),
             f64::from(rgba.alpha_f32()),
         );
-
-        Ok(true)
     }
 
     fn set_paint_source(
@@ -1115,25 +1108,24 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<bool, RenderingError> {
         match *paint_source {
-            UserSpacePaintSource::Gradient(ref gradient, c) => {
-                if self.set_gradient(gradient)? {
-                    Ok(true)
-                } else if let Some(c) = c {
-                    self.set_color(c)
-                } else {
-                    Ok(false)
-                }
+            UserSpacePaintSource::Gradient(ref gradient, _c) => {
+                self.set_gradient(gradient);
+                Ok(true)
             }
             UserSpacePaintSource::Pattern(ref pattern, c) => {
                 if self.set_pattern(pattern, acquired_nodes)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(c)
+                    self.set_color(c);
+                    Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            UserSpacePaintSource::SolidColor(c) => self.set_color(c),
+            UserSpacePaintSource::SolidColor(c) => {
+                self.set_color(c);
+                Ok(true)
+            }
             UserSpacePaintSource::None => Ok(false),
         }
     }
@@ -1145,7 +1137,7 @@ impl DrawingCtx {
         height: i32,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
@@ -1477,7 +1469,7 @@ impl DrawingCtx {
         &self,
         width: i32,
         height: i32,
-    ) -> Result<SharedImageSurface, cairo::Status> {
+    ) -> Result<SharedImageSurface, cairo::Error> {
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.

@@ -35,15 +35,15 @@ handle_has_gtype (void)
     g_object_unref (handle);
 }
 
-static gboolean
-flags_value_matches (GFlagsValue *v,
-                     guint value,
-                     const char *value_name,
-                     const char *value_nick)
+static void
+assert_flags_value_matches (GFlagsValue *v,
+                            guint value,
+                            const char *value_name,
+                            const char *value_nick)
 {
-    return (v->value == value
-            && strcmp (v->value_name, value_name) == 0
-            && strcmp (v->value_nick, value_nick) == 0);
+    g_assert_cmpint(v->value, ==, value);
+    g_assert_cmpstr(v->value_name, ==, value_name);
+    g_assert_cmpstr(v->value_nick, ==, value_nick);
 }
 
 static void
@@ -70,33 +70,33 @@ flags_registration (void)
     flags_class = G_FLAGS_CLASS (type_class);
     g_assert_cmpint (flags_class->n_values, ==, 3);
 
-    g_assert (flags_value_matches(&flags_class->values[0],
-                                  RSVG_HANDLE_FLAGS_NONE,
-                                  "RSVG_HANDLE_FLAGS_NONE",
-                                  "flags-none"));
+    assert_flags_value_matches(&flags_class->values[0],
+                               RSVG_HANDLE_FLAGS_NONE,
+                               "RSVG_HANDLE_FLAGS_NONE",
+                               "flags-none");
 
-    g_assert (flags_value_matches(&flags_class->values[1],
-                                  RSVG_HANDLE_FLAG_UNLIMITED,
-                                  "RSVG_HANDLE_FLAG_UNLIMITED",
-                                  "flag-unlimited"));
+    assert_flags_value_matches(&flags_class->values[1],
+                               RSVG_HANDLE_FLAG_UNLIMITED,
+                               "RSVG_HANDLE_FLAG_UNLIMITED",
+                               "flag-unlimited");
 
-    g_assert (flags_value_matches(&flags_class->values[2],
-                                  RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA,
-                                  "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA",
-                                  "flag-keep-image-data"));
+    assert_flags_value_matches(&flags_class->values[2],
+                               RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA,
+                               "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA",
+                               "flag-keep-image-data");
 
     g_type_class_unref (type_class);
 }
 
-static gboolean
-enum_value_matches (GEnumValue *v,
-                    gint value,
-                    const char *value_name,
-                    const char *value_nick)
+static void
+assert_enum_value_matches (GEnumValue *v,
+                           gint value,
+                           const char *value_name,
+                           const char *value_nick)
 {
-    return (v->value == value
-            && strcmp (v->value_name, value_name) == 0
-            && strcmp (v->value_nick, value_nick) == 0);
+    g_assert_cmpint (v->value, ==, value);
+    g_assert_cmpstr (v->value_name, ==, value_name);
+    g_assert_cmpstr (v->value_nick, ==, value_nick);
 }
 
 static void
@@ -125,10 +125,10 @@ error_registration (void)
     enum_class = G_ENUM_CLASS (type_class);
     g_assert_cmpint (enum_class->n_values, ==, 1);
 
-    g_assert (enum_value_matches (&enum_class->values[0],
-                                  RSVG_ERROR_FAILED,
-                                  "RSVG_ERROR_FAILED",
-                                  "failed"));
+    assert_enum_value_matches (&enum_class->values[0],
+                               RSVG_ERROR_FAILED,
+                               "RSVG_ERROR_FAILED",
+                               "failed");
 
     g_type_class_unref (type_class);
 }

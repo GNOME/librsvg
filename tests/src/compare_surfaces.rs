@@ -55,7 +55,7 @@ fn emphasize(p: &Pixel) -> Pixel {
 pub fn compare_surfaces(
     surf_a: &SharedImageSurface,
     surf_b: &SharedImageSurface,
-) -> Result<BufferDiff, cairo::Status> {
+) -> Result<BufferDiff, cairo::Error> {
     let a_width = surf_a.width();
     let a_height = surf_a.height();
 

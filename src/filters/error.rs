@@ -12,12 +12,12 @@ pub enum FilterError {
     /// The filter was passed an invalid parameter.
     InvalidParameter(String),
     /// The filter input surface has an unsuccessful status.
-    BadInputSurfaceStatus(cairo::Status),
+    BadInputSurfaceStatus(cairo::Error),
     /// A Cairo error.
     ///
     /// This means that either a failed intermediate surface creation or bad intermediate surface
     /// status.
-    CairoError(cairo::Status),
+    CairoError(cairo::Error),
     /// Error from the rendering backend.
     Rendering(RenderingError),
     /// A lighting filter has none or multiple light sources.
@@ -52,9 +52,9 @@ impl fmt::Display for FilterError {
     }
 }
 
-impl From<cairo::Status> for FilterError {
+impl From<cairo::Error> for FilterError {
     #[inline]
-    fn from(x: cairo::Status) -> Self {
+    fn from(x: cairo::Error) -> Self {
         FilterError::CairoError(x)
     }
 }

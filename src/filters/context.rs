@@ -256,7 +256,7 @@ impl FilterContext {
     /// The returned surface is in the sRGB color space.
     // TODO: sRGB conversion should probably be done by the caller.
     #[inline]
-    pub fn into_output(self) -> Result<SharedImageSurface, cairo::Status> {
+    pub fn into_output(self) -> Result<SharedImageSurface, cairo::Error> {
         match self.last_result {
             Some(FilterOutput { surface, bounds }) => surface.to_srgb(bounds),
             None => SharedImageSurface::empty(

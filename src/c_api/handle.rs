@@ -30,10 +30,8 @@ use std::path::PathBuf;
 use std::ptr;
 use std::slice;
 use std::str;
-use std::sync::Once;
 use std::{f64, i32};
 
-use bitflags::bitflags;
 use gdk_pixbuf::Pixbuf;
 use gio::prelude::*;
 use glib::error::ErrorDomain;
@@ -44,15 +42,12 @@ use glib::subclass;
 use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
-use glib::value::{FromValue, FromValueOptional, SetValue};
 use glib::{
     glib_object_impl, glib_object_subclass, Bytes, Cast, ParamFlags, ParamSpec, StaticType,
-    ToValue, Type, Value,
+    ToValue, Type,
 };
 
 use glib::types::instance_of;
-
-use gobject_sys::{GEnumValue, GFlagsValue};
 
 use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
 
@@ -93,62 +88,22 @@ impl fmt::Display for RenderingError {
     }
 }
 
-mod handle_flags {
-    // The following is entirely stolen from the auto-generated code
-    // for GBindingFlags, from gtk-rs/glib/src/gobject/auto/flags.rs
+#[glib::gflags("RsvgHandleFlags")]
+pub enum HandleFlags {
+    #[gflags(name = "RSVG_HANDLE_FLAGS_NONE", nick = "flags-none")]
+    NONE = 0,
 
-    use super::*;
+    #[gflags(name = "RSVG_HANDLE_FLAG_UNLIMITED", nick = "flag-unlimited")]
+    UNLIMITED = 1 << 0,
 
-    // Keep these in sync with rsvg.h:RsvgHandleFlags
-    #[rustfmt::skip]
-    bitflags! {
-        pub struct HandleFlags: u32 {
-            const NONE            = 0;
-            const UNLIMITED       = 1 << 0;
-            const KEEP_IMAGE_DATA = 1 << 1;
-        }
-    }
-
-    pub type RsvgHandleFlags = libc::c_uint;
-
-    impl ToGlib for HandleFlags {
-        type GlibType = RsvgHandleFlags;
-
-        fn to_glib(&self) -> RsvgHandleFlags {
-            self.bits()
-        }
-    }
-
-    impl FromGlib<RsvgHandleFlags> for HandleFlags {
-        fn from_glib(value: RsvgHandleFlags) -> HandleFlags {
-            HandleFlags::from_bits_truncate(value)
-        }
-    }
-
-    impl StaticType for HandleFlags {
-        fn static_type() -> Type {
-            unsafe { from_glib(rsvg_handle_flags_get_type()) }
-        }
-    }
-
-    impl<'a> FromValueOptional<'a> for HandleFlags {
-        unsafe fn from_value_optional(value: &Value) -> Option<Self> {
-            Some(FromValue::from_value(value))
-        }
-    }
-
-    impl<'a> FromValue<'a> for HandleFlags {
-        unsafe fn from_value(value: &Value) -> Self {
-            from_glib(gobject_sys::g_value_get_flags(value.to_glib_none().0))
-        }
-    }
-
-    impl SetValue for HandleFlags {
-        unsafe fn set_value(value: &mut Value, this: &Self) {
-            gobject_sys::g_value_set_flags(value.to_glib_none_mut().0, this.to_glib())
-        }
-    }
+    #[gflags(
+        name = "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA",
+        nick = "flag-keep-image-data"
+    )]
+    KEEP_IMAGE_DATA = 1 << 1,
 }
+
+pub type RsvgHandleFlags = u32;
 
 #[derive(Default, Copy, Clone)]
 struct LoadFlags {
@@ -156,13 +111,11 @@ struct LoadFlags {
     keep_image_data: bool,
 }
 
-use self::handle_flags::*;
-
 impl From<HandleFlags> for LoadFlags {
-    fn from(hflags: HandleFlags) -> LoadFlags {
+    fn from(flags: HandleFlags) -> LoadFlags {
         LoadFlags {
-            unlimited_size: hflags.contains(HandleFlags::UNLIMITED),
-            keep_image_data: hflags.contains(HandleFlags::KEEP_IMAGE_DATA),
+            unlimited_size: flags.contains(HandleFlags::UNLIMITED),
+            keep_image_data: flags.contains(HandleFlags::KEEP_IMAGE_DATA),
         }
     }
 }
@@ -546,8 +499,8 @@ impl ObjectImpl for CHandle {
 }
 
 // Keep in sync with tests/src/reference.rs
-pub(crate) fn checked_i32(x: f64) -> Result<i32, cairo::Status> {
-    cast::i32(x).map_err(|_| cairo::Status::InvalidSize)
+pub(crate) fn checked_i32(x: f64) -> Result<i32, cairo::Error> {
+    cast::i32(x).map_err(|_| cairo::Error::InvalidSize)
 }
 
 // Keep in sync with rsvg.h:RsvgPositionData
@@ -794,7 +747,7 @@ impl CHandle {
 
             LoadState::Loading { ref buffer } => {
                 let bytes = Bytes::from(&*buffer);
-                let stream = gio::MemoryInputStream::new_from_bytes(&bytes);
+                let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
                 let base_file = inner.base_url.get_gfile();
                 self.read_stream(state, &stream.upcast(), base_file.as_ref(), None)
@@ -994,11 +947,9 @@ impl CHandle {
 
     fn render_cairo_sub(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
-
         let dimensions = self.get_dimensions_sub(None)?;
         if dimensions.width == 0 || dimensions.height == 0 {
             // nothing to render
@@ -1030,7 +981,8 @@ impl CHandle {
 
         {
             let cr = cairo::Context::new(&surface);
-            self.render_cairo_sub(&cr, id)?;
+            let cr_raw = cr.to_raw_none();
+            self.render_cairo_sub(cr_raw, id)?;
         }
 
         let surface = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
@@ -1040,15 +992,15 @@ impl CHandle {
 
     fn render_document(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
-        Ok(renderer.render_document(cr, viewport)?)
+        Ok(renderer.render_document(&cr, viewport)?)
     }
 
     fn get_geometry_for_layer(
@@ -1066,17 +1018,17 @@ impl CHandle {
 
     fn render_layer(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
 
-        Ok(renderer.render_layer(cr, id, viewport)?)
+        Ok(renderer.render_layer(&cr, id, viewport)?)
     }
 
     fn get_geometry_for_element(
@@ -1094,17 +1046,17 @@ impl CHandle {
 
     fn render_element(
         &self,
-        cr: &cairo::Context,
+        cr: *mut cairo_sys::cairo_t,
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
 
-        Ok(renderer.render_element(cr, id, element_viewport)?)
+        Ok(renderer.render_element(&cr, id, element_viewport)?)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
@@ -1153,84 +1105,12 @@ pub unsafe extern "C" fn rsvg_handle_get_type() -> glib_sys::GType {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_error_get_type() -> glib_sys::GType {
-    static ONCE: Once = Once::new();
-    static mut ETYPE: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
-
-    // We have to store the GEnumValue in a static variable but
-    // that requires it to be Sync. It is not Sync by default
-    // because it contains pointers, so we have define a custom
-    // wrapper type here on which we can implement Sync.
-    #[repr(transparent)]
-    struct GEnumValueWrapper(GEnumValue);
-    unsafe impl Sync for GEnumValueWrapper {}
-
-    static VALUES: [GEnumValueWrapper; 2] = [
-        GEnumValueWrapper(GEnumValue {
-            value: RSVG_ERROR_FAILED,
-            value_name: b"RSVG_ERROR_FAILED\0" as *const u8 as *const _,
-            value_nick: b"failed\0" as *const u8 as *const _,
-        }),
-        GEnumValueWrapper(GEnumValue {
-            value: 0,
-            value_name: 0 as *const _,
-            value_nick: 0 as *const _,
-        }),
-    ];
-
-    ONCE.call_once(|| {
-        ETYPE = gobject_sys::g_enum_register_static(
-            b"RsvgError\0" as *const u8 as *const _,
-            &VALUES as *const GEnumValueWrapper as *const GEnumValue,
-        );
-    });
-
-    ETYPE
+    Error::static_type().to_glib()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_flags_get_type() -> glib_sys::GType {
-    static ONCE: Once = Once::new();
-    static mut FTYPE: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
-
-    // We have to store the GFlagsValue in a static variable but
-    // that requires it to be Sync. It is not Sync by default
-    // because it contains pointers, so we have define a custom
-    // wrapper type here on which we can implement Sync.
-    #[repr(transparent)]
-    struct GFlagsValueWrapper(GFlagsValue);
-    unsafe impl Sync for GFlagsValueWrapper {}
-
-    static VALUES: [GFlagsValueWrapper; 4] = [
-        GFlagsValueWrapper(GFlagsValue {
-            value: 0, // handle_flags::HandleFlags::NONE.bits(),
-            value_name: b"RSVG_HANDLE_FLAGS_NONE\0" as *const u8 as *const _,
-            value_nick: b"flags-none\0" as *const u8 as *const _,
-        }),
-        GFlagsValueWrapper(GFlagsValue {
-            value: 1 << 0, // HandleFlags::UNLIMITED.to_glib(),
-            value_name: b"RSVG_HANDLE_FLAG_UNLIMITED\0" as *const u8 as *const _,
-            value_nick: b"flag-unlimited\0" as *const u8 as *const _,
-        }),
-        GFlagsValueWrapper(GFlagsValue {
-            value: 1 << 1, // HandleFlags::KEEP_IMAGE_DATA.to_glib(),
-            value_name: b"RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA\0" as *const u8 as *const _,
-            value_nick: b"flag-keep-image-data\0" as *const u8 as *const _,
-        }),
-        GFlagsValueWrapper(GFlagsValue {
-            value: 0,
-            value_name: 0 as *const _,
-            value_nick: 0 as *const _,
-        }),
-    ];
-
-    ONCE.call_once(|| {
-        FTYPE = gobject_sys::g_flags_register_static(
-            b"RsvgHandleFlags\0" as *const u8 as *const _,
-            &VALUES as *const GFlagsValueWrapper as *const GFlagsValue,
-        );
-    });
-
-    FTYPE
+    HandleFlags::static_type().to_glib()
 }
 
 #[no_mangle]
@@ -1353,6 +1233,27 @@ pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
     rhandle.set_testing(from_glib(testing));
 }
 
+trait IntoGError {
+    type GlibResult;
+
+    fn into_gerror(self, error: *mut *mut glib_sys::GError) -> Self::GlibResult;
+}
+
+impl<E: fmt::Display> IntoGError for Result<(), E> {
+    type GlibResult = glib_sys::gboolean;
+
+    fn into_gerror(self, error: *mut *mut glib_sys::GError) -> Self::GlibResult {
+        match self {
+            Ok(()) => true.to_glib(),
+
+            Err(e) => {
+                set_gerror(error, 0, &format!("{}", e));
+                false.to_glib()
+            }
+        }
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
     handle: *const RsvgHandle,
@@ -1374,14 +1275,9 @@ pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
     let stream = gio::InputStream::from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
-    match rhandle.read_stream_sync(&stream, cancellable.as_ref()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle
+        .read_stream_sync(&stream, cancellable.as_ref())
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -1420,15 +1316,9 @@ pub unsafe extern "C" fn rsvg_handle_close(
 
     let rhandle = get_rust_handle(handle);
 
-    match rhandle.close() {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle.close().into_gerror(error)
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_has_sub(
     handle: *const RsvgHandle,
@@ -1463,16 +1353,10 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
 
-    match rhandle.render_cairo_sub(&cr, None) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            rsvg_log!("could not render: {}", e);
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_cairo_sub(cr, None)
+        .into_gerror(ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1489,17 +1373,11 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_cairo_sub(&cr, id.as_deref()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            rsvg_log!("could not render: {}", e);
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_cairo_sub(cr, id.as_deref())
+        .into_gerror(ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1631,10 +1509,12 @@ pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj: *mut gobject_sys::GObject =
-        glib::Object::new(CHandle::get_type(), &[("flags", &flags)])
-            .unwrap()
-            .to_glib_full();
+    let obj: *mut gobject_sys::GObject = glib::Object::new(
+        CHandle::get_type(),
+        &[("flags", &HandleFlags::from_bits_truncate(flags))],
+    )
+    .unwrap()
+    .to_glib_full();
 
     obj as *mut _
 }
@@ -1775,7 +1655,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     let ret = rsvg_handle_new_from_stream_sync(
         raw_stream,
         ptr::null_mut(), // base_file
-        0,               // flags
+        0,
         ptr::null_mut(), // cancellable
         error,
     );
@@ -1840,13 +1720,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
         }
     };
 
-    match rhandle.set_stylesheet(css) {
-        Ok(()) => true.to_glib(),
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle.set_stylesheet(css).into_gerror(error)
 }
 
 #[no_mangle]
@@ -1928,16 +1802,10 @@ pub unsafe extern "C" fn rsvg_handle_render_document(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
 
-    match rhandle.render_document(&cr, &(*viewport).into()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_document(cr, &(*viewport).into())
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -1961,8 +1829,9 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_layer(id.as_deref(), &(*viewport).into()) {
-        Ok((ink_rect, logical_rect)) => {
+    rhandle
+        .get_geometry_for_layer(id.as_deref(), &(*viewport).into())
+        .map(|(ink_rect, logical_rect)| {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
             }
@@ -1970,15 +1839,8 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
             if !out_logical_rect.is_null() {
                 *out_logical_rect = logical_rect;
             }
-
-            true.to_glib()
-        }
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+        })
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -1999,17 +1861,11 @@ pub unsafe extern "C" fn rsvg_handle_render_layer(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_layer(&cr, id.as_deref(), &(*viewport).into()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_layer(cr, id.as_deref(), &(*viewport).into())
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -2031,8 +1887,9 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
 
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.get_geometry_for_element(id.as_deref()) {
-        Ok((ink_rect, logical_rect)) => {
+    rhandle
+        .get_geometry_for_element(id.as_deref())
+        .map(|(ink_rect, logical_rect)| {
             if !out_ink_rect.is_null() {
                 *out_ink_rect = ink_rect;
             }
@@ -2040,15 +1897,8 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
             if !out_logical_rect.is_null() {
                 *out_logical_rect = logical_rect;
             }
-
-            true.to_glib()
-        }
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+        })
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -2069,17 +1919,11 @@ pub unsafe extern "C" fn rsvg_handle_render_element(
     }
 
     let rhandle = get_rust_handle(handle);
-    let cr = from_glib_none(cr);
     let id: Option<String> = from_glib_none(id);
 
-    match rhandle.render_element(&cr, id.as_deref(), &(*element_viewport).into()) {
-        Ok(()) => true.to_glib(),
-
-        Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
-            false.to_glib()
-        }
-    }
+    rhandle
+        .render_element(cr, id.as_deref(), &(*element_viewport).into())
+        .into_gerror(error)
 }
 
 #[no_mangle]
@@ -2197,17 +2041,21 @@ impl fmt::Display for PathOrUrl {
     }
 }
 
-fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
-    let status = cr.status();
-    if status == cairo::Status::Success {
-        Ok(())
+fn check_cairo_context(cr: *mut cairo_sys::cairo_t) -> Result<cairo::Context, RenderingError> {
+    let status = unsafe { cairo_sys::cairo_status(cr) };
+
+    if status == cairo_sys::STATUS_SUCCESS {
+        Ok(unsafe { from_glib_none(cr) })
     } else {
+        let status: cairo::Error = status.into();
+
         let msg = format!(
             "cannot render on a cairo_t with a failure status (status={:?})",
             status,
         );
 
         rsvg_g_warning(&msg);
+
         Err(RenderingError::from(status))
     }
 }
@@ -2233,6 +2081,15 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[repr(u32)]
+#[genum(type_name = "RsvgError")]
+enum Error {
+    #[genum(name = "RSVG_ERROR_FAILED", nick = "failed")]
+    // Keep in sync with rsvg.h:RsvgError
+    Failed = 0,
+}
+
 /// Used as a generic error to translate to glib::Error
 ///
 /// This type implements `glib::error::ErrorDomain`, so it can be used
@@ -2242,16 +2099,13 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
 #[derive(Copy, Clone)]
 struct RsvgError;
 
-// Keep in sync with rsvg.h:RsvgError
-const RSVG_ERROR_FAILED: i32 = 0;
-
 impl ErrorDomain for RsvgError {
     fn domain() -> glib::Quark {
         glib::Quark::from_string("rsvg-error-quark")
     }
 
     fn code(self) -> i32 {
-        RSVG_ERROR_FAILED
+        Error::Failed as i32
     }
 
     fn from(_code: i32) -> Option<Self> {
