@@ -326,16 +326,18 @@ mod metadata {
 struct Stdin;
 
 impl Stdin {
-    pub fn stream() -> UnixInputStream {
-        unsafe { UnixInputStream::new(0) }
+    pub fn stream() -> InputStream {
+        let stream = unsafe { UnixInputStream::new(0) };
+        stream.upcast::<InputStream>()
     }
 }
 
 struct Stdout;
 
 impl Stdout {
-    pub fn stream() -> UnixOutputStream {
-        unsafe { UnixOutputStream::new(1) }
+    pub fn stream() -> OutputStream {
+        let stream = unsafe { UnixOutputStream::new(1) };
+        stream.upcast::<OutputStream>()
     }
 }
 
@@ -411,7 +413,7 @@ impl Converter {
 
         for input in &self.input {
             let (stream, basefile) = match input {
-                Input::Stdin => (Stdin::stream().upcast::<InputStream>(), None),
+                Input::Stdin => (Stdin::stream(), None),
                 Input::Named(p) => {
                     let file = p.get_gfile();
                     let stream = file
@@ -513,7 +515,7 @@ impl Converter {
 
     fn create_surface(&self, size: Size) -> Result<Surface, Error> {
         let output_stream = match self.output {
-            Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
+            Output::Stdout => Stdout::stream(),
             Output::Path(ref p) => {
                 let file = gio::File::new_for_path(p);
                 let stream = file
