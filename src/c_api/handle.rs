@@ -992,12 +992,12 @@ impl CHandle {
         cr: *mut cairo_sys::cairo_t,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        let mut cr = check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
-        Ok(renderer.render_document(&mut cr, viewport)?)
+        Ok(renderer.render_document(&cr, viewport)?)
     }
 
     fn get_geometry_for_layer(
@@ -1019,13 +1019,13 @@ impl CHandle {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        let mut cr = check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
 
-        Ok(renderer.render_layer(&mut cr, id, viewport)?)
+        Ok(renderer.render_layer(&cr, id, viewport)?)
     }
 
     fn get_geometry_for_element(
@@ -1047,13 +1047,13 @@ impl CHandle {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        let mut cr = check_cairo_context(cr)?;
+        let cr = check_cairo_context(cr)?;
 
         let handle = self.get_handle_ref()?;
 
         let renderer = self.make_renderer(&handle);
 
-        Ok(renderer.render_element(&mut cr, id, element_viewport)?)
+        Ok(renderer.render_element(&cr, id, element_viewport)?)
     }
 
     fn get_intrinsic_dimensions(&self) -> Result<IntrinsicDimensions, RenderingError> {
