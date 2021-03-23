@@ -981,7 +981,7 @@ impl DrawingCtx {
     fn set_gradient(
         self: &mut DrawingCtx,
         gradient: &UserSpaceGradient,
-    ) -> Result<bool, RenderingError> {
+    ) {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -1014,8 +1014,6 @@ impl DrawingCtx {
 
         let cr = self.cr.clone();
         cr.set_source(&g);
-
-        Ok(true)
     }
 
     fn set_pattern(
@@ -1113,15 +1111,9 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<bool, RenderingError> {
         match *paint_source {
-            UserSpacePaintSource::Gradient(ref gradient, c) => {
-                if self.set_gradient(gradient)? {
-                    Ok(true)
-                } else if let Some(c) = c {
-                    self.set_color(c);
-                    Ok(true)
-                } else {
-                    Ok(false)
-                }
+            UserSpacePaintSource::Gradient(ref gradient, _c) => {
+                self.set_gradient(gradient);
+                Ok(true)
             }
             UserSpacePaintSource::Pattern(ref pattern, c) => {
                 if self.set_pattern(pattern, acquired_nodes)? {
