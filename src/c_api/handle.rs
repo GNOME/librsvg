@@ -96,7 +96,10 @@ pub enum HandleFlags {
     #[gflags(name = "RSVG_HANDLE_FLAG_UNLIMITED", nick = "flag-unlimited")]
     UNLIMITED = 1 << 0,
 
-    #[gflags(name = "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA", nick = "flag-keep-image-data")]
+    #[gflags(
+        name = "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA",
+        nick = "flag-keep-image-data"
+    )]
     KEEP_IMAGE_DATA = 1 << 1,
 }
 
@@ -1506,10 +1509,12 @@ pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj: *mut gobject_sys::GObject =
-        glib::Object::new(CHandle::get_type(), &[("flags", &HandleFlags::from_bits_truncate(flags))])
-            .unwrap()
-            .to_glib_full();
+    let obj: *mut gobject_sys::GObject = glib::Object::new(
+        CHandle::get_type(),
+        &[("flags", &HandleFlags::from_bits_truncate(flags))],
+    )
+    .unwrap()
+    .to_glib_full();
 
     obj as *mut _
 }
@@ -2080,7 +2085,7 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
 #[repr(u32)]
 #[genum(type_name = "RsvgError")]
 enum Error {
-    #[genum(name = "RSVG_ERROR_FAILED", nick="failed")]
+    #[genum(name = "RSVG_ERROR_FAILED", nick = "failed")]
     // Keep in sync with rsvg.h:RsvgError
     Failed = 0,
 }

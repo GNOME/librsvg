@@ -978,10 +978,7 @@ impl DrawingCtx {
         Ok(child_surface)
     }
 
-    fn set_gradient(
-        self: &mut DrawingCtx,
-        gradient: &UserSpaceGradient,
-    ) {
+    fn set_gradient(self: &mut DrawingCtx, gradient: &UserSpaceGradient) {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -1128,7 +1125,7 @@ impl DrawingCtx {
             UserSpacePaintSource::SolidColor(c) => {
                 self.set_color(c);
                 Ok(true)
-            },
+            }
             UserSpacePaintSource::None => Ok(false),
         }
     }
