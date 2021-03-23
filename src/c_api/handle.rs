@@ -30,7 +30,6 @@ use std::path::PathBuf;
 use std::ptr;
 use std::slice;
 use std::str;
-use std::sync::Once;
 use std::{f64, i32};
 
 use gdk_pixbuf::Pixbuf;
@@ -49,8 +48,6 @@ use glib::{
 };
 
 use glib::types::instance_of;
-
-use gobject_sys::GEnumValue;
 
 use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
 
@@ -1105,38 +1102,7 @@ pub unsafe extern "C" fn rsvg_handle_get_type() -> glib_sys::GType {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_error_get_type() -> glib_sys::GType {
-    static ONCE: Once = Once::new();
-    static mut ETYPE: glib_sys::GType = gobject_sys::G_TYPE_INVALID;
-
-    // We have to store the GEnumValue in a static variable but
-    // that requires it to be Sync. It is not Sync by default
-    // because it contains pointers, so we have define a custom
-    // wrapper type here on which we can implement Sync.
-    #[repr(transparent)]
-    struct GEnumValueWrapper(GEnumValue);
-    unsafe impl Sync for GEnumValueWrapper {}
-
-    static VALUES: [GEnumValueWrapper; 2] = [
-        GEnumValueWrapper(GEnumValue {
-            value: RSVG_ERROR_FAILED,
-            value_name: b"RSVG_ERROR_FAILED\0" as *const u8 as *const _,
-            value_nick: b"failed\0" as *const u8 as *const _,
-        }),
-        GEnumValueWrapper(GEnumValue {
-            value: 0,
-            value_name: 0 as *const _,
-            value_nick: 0 as *const _,
-        }),
-    ];
-
-    ONCE.call_once(|| {
-        ETYPE = gobject_sys::g_enum_register_static(
-            b"RsvgError\0" as *const u8 as *const _,
-            &VALUES as *const GEnumValueWrapper as *const GEnumValue,
-        );
-    });
-
-    ETYPE
+    Error::static_type().to_glib()
 }
 
 #[no_mangle]
@@ -2110,6 +2076,15 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[repr(u32)]
+#[genum(type_name = "RsvgError")]
+enum Error {
+    #[genum(name = "RSVG_ERROR_FAILED", nick="failed")]
+    // Keep in sync with rsvg.h:RsvgError
+    Failed = 0,
+}
+
 /// Used as a generic error to translate to glib::Error
 ///
 /// This type implements `glib::error::ErrorDomain`, so it can be used
@@ -2119,16 +2094,13 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
 #[derive(Copy, Clone)]
 struct RsvgError;
 
-// Keep in sync with rsvg.h:RsvgError
-const RSVG_ERROR_FAILED: i32 = 0;
-
 impl ErrorDomain for RsvgError {
     fn domain() -> glib::Quark {
         glib::Quark::from_string("rsvg-error-quark")
     }
 
     fn code(self) -> i32 {
-        RSVG_ERROR_FAILED
+        Error::Failed as i32
     }
 
     fn from(_code: i32) -> Option<Self> {

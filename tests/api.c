@@ -88,15 +88,15 @@ flags_registration (void)
     g_type_class_unref (type_class);
 }
 
-static gboolean
-enum_value_matches (GEnumValue *v,
-                    gint value,
-                    const char *value_name,
-                    const char *value_nick)
+static void
+assert_enum_value_matches (GEnumValue *v,
+                           gint value,
+                           const char *value_name,
+                           const char *value_nick)
 {
-    return (v->value == value
-            && strcmp (v->value_name, value_name) == 0
-            && strcmp (v->value_nick, value_nick) == 0);
+    g_assert_cmpint (v->value, ==, value);
+    g_assert_cmpstr (v->value_name, ==, value_name);
+    g_assert_cmpstr (v->value_nick, ==, value_nick);
 }
 
 static void
@@ -125,10 +125,10 @@ error_registration (void)
     enum_class = G_ENUM_CLASS (type_class);
     g_assert_cmpint (enum_class->n_values, ==, 1);
 
-    g_assert (enum_value_matches (&enum_class->values[0],
-                                  RSVG_ERROR_FAILED,
-                                  "RSVG_ERROR_FAILED",
-                                  "failed"));
+    assert_enum_value_matches (&enum_class->values[0],
+                               RSVG_ERROR_FAILED,
+                               "RSVG_ERROR_FAILED",
+                               "failed");
 
     g_type_class_unref (type_class);
 }
