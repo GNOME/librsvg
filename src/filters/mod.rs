@@ -132,14 +132,14 @@ impl Parse for Input {
 }
 
 impl Primitive {
-    fn resolve(&self) -> Result<ResolvedPrimitive, FilterError> {
-        Ok(ResolvedPrimitive {
+    fn resolve(&self) -> ResolvedPrimitive {
+        ResolvedPrimitive {
             x: self.x,
             y: self.y,
             width: self.width,
             height: self.height,
             result: self.result.clone(),
-        })
+        }
     }
 }
 
@@ -297,7 +297,7 @@ pub fn render(
             .resolve(&c)
             .and_then(|(primitive, params)| {
                 render_primitive(
-                    &primitive.resolve()?,
+                    &primitive.resolve(),
                     &params,
                     &filter_ctx,
                     acquired_nodes,
