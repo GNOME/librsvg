@@ -292,60 +292,31 @@ After parsing is done, there is a **cascading stage** where librsvg
 walks the tree of nodes, and for each node it finds the CSS rules that
 should be applied to it.
 
-# Rendering
+## Rendering
+
+The rendering process starts at the `draw_tree()` function.  This sets
+up a `DrawingCtx`, which carries around all the mutable state during
+rendering.
+
+Rendering is a recursive process, which goes back and forth between
+the utility functions in `DrawingCtx` and the `draw` method in
+elements.
+
+The main job of `DrawingCtx` is to deal with the SVG drawing model.
+Each element renders itself independently, and its result gets
+modified before getting composited onto the final image:
+
+1. Render an element to a temporary surface (example: stroke and fill a path).
+2. Apply filter effects (blur, color mapping, etc.).
+3. Apply clipping paths.
+4. Apply masks.
+5. Composite the result onto the final image.
+
+The temporary result from the last step also gets put in a stack; this
+is because filter effects sometimes need to look at the
+currently-drawn background to apply further filtering to it.
 
 FIXME: continue here
-
-The public `rsvg_handle_render_cairo()` and `rsvg_handle_render_cairo_sub()`
-functions initiate a rendering process; the first function just calls
-the second one with the root element of the SVG.
-
-This second function creates `RsvgDrawingCtx`, which contains the
-rendering state.  This structure gets passed around into all the
-rendering functions.  It carries the vtable for rendering in the
-`render` field, the CSS state for the node being rendered in the
-`state` field, and other values which are changed as rendering
-progresses.
-
-## CSS cascading
-
-For historical reasons, librsvg does the CSS cascade *and* rendering
-in a single traversal of the tree of nodes.  This is somewhat awkward,
-and in the future we hope to move to a Servo-like model where CSS is
-cascaded and sizes are resolved before rendering.
-
-Rendering starts at `rsvg_handle_render_cairo_sub()`.  It calls
-`rsvg_cairo_new_drawing_ctx()`, which creates an `RsvgDrawingCtx` with
-a default `state`:  this is the default CSS state per
-`rsvg_state_init()` (in reality that state carries an affine
-transformation already set up for this rendering pass; we can ignore
-it for now).
-
-Then, `rsvg_handle_render_cairo_sub()` starts the recursive drawing
-process by calling
-`rsvg_drawing_ctx_draw_node_from_stack()`, starting at the tree root
-(`handle->priv->treebase`).  In turn, that function creates a
-temporary `state` struct by calling `rsvg_drawing_ctx_state_push()`,
-calls `rsvg_node_draw()` on the current node, and destroys the temporary
-`state` struct with `rsvg_drawing_ctx_state_pop()`.
-
-Each node draws itself in the following way:
-
-* It resolves relative lengths from the size of current viewport by calling
-  `length.normalize()` on each length value.  The size of the current
-  viewport is maintained as a stack of `RsvgBbox` structures (it
-  stands for "bounding box").
-
-* It calls drawing_ctx::state_reinherit_top() with the node's own
-  `state` field.  This causes the temporary state in the `draw_ctx` to
-  obtain the final cascaded CSS values.
-
-* It calls the low-level rendering functions like
-  `drawing_ctx::render_path_builder()` or
-  `drawing_ctx::render_pango_layout()`.  These functions translate the
-  values from the `state` in the `draw_ctx` into Cairo values, they
-  configure the `cairo::Context`, and call actual Cairo functions to
-  draw paths/text/etc.
 
 ### What about referenced nodes which have a different cascade?
 
