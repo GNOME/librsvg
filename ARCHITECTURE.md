@@ -181,17 +181,39 @@ look up things like the element's stroke width or fill color.
 
 ## Parsing
 
-### XML into a tree of Node
+### XML into a tree of Nodes / Elements
 
 Librsvg uses an XML parser (libxml2 at the time of this writing) to do
 the first-stage parsing of the SVG document.  `XmlState` contains the
 XML parsing state, which is a stack of contexts depending on the XML
 nesting structure.  `XmlState` has public methods, called from the XML
-parser as it goes.  The most important one is `create_element`; this
+parser as it goes.  The most important one is `start_element`; this
 is responsible for creating new `Node` structures in the tree, within
 the `DocumentBuilder` being built.
 
-### CSS
+Nodes are either SVG elements (the `Element` enum), or text data
+inside elements (the `Chars` struct); this last one will not concern
+us here, and we will only talk about `Element`.
+
+Each supported kind of `Element` parses its attributes in a
+`set_attributes()` method.  Each attribute is just a key/value pair;
+for example, the `<rect width="5px">` element has a `width` attribute
+whose value is `5px`.
+
+While parsing its attributes, an element may encounter an invalid
+value, for example, a negative width where only nonnegative ones are
+allowed.  In this case, the element's `set_attributes` method may
+return a `Result::Err`.  The caller will then do `set_error` to mark
+that element as being in an error state.  If an element is in error,
+its children will get parsed as usual, but the element and its
+children will be ignored during the rendering stage.
+
+The SVG spec says that SVG rendering should stop on the first element
+that is "in error".  However, most implementations simply seem to
+ignore erroneous elements instead of completely stopping rendering,
+and we do the same in librsvg.
+
+### CSS and styles
 
 Librsvg uses Servo's `cssparser` crate as a CSS tokenizer, and
 `selectors` as a high-level parser for CSS style data.
@@ -247,55 +269,32 @@ Let's break this down:
 There is a Rust type for every CSS property that librsvg supports;
 many of these types are newtypes around primitive types like `f64`.
 
-FIXME: continue here
+Eventually an entire CSS stylesheet, like the contents of a `<style>`
+element, gets parsed into a `Stylesheet` struct.  A stylesheet has a
+list of rules, where each rule is the CSS selectors defined for it,
+and the style declarations that should be applied for the `Node`s that
+match the selectors.  For example, in a little stylesheet like this:
 
-## Translating SVG data into Nodes
+```xml
+<style type="text/css">
+  rect, #some_id {
+    fill: blue;
+    stroke-width: 5px;
+  }
+</style>
+```
 
-`RsvgHandlePrivate` has a `treebase` field, which is the root of the
-DOM tree.  Each node in the tree is an `RsvgNode` object.
+This stylesheet has a single rule.  The rule has a selector list with
+two selectors (`rect` and `#some_id`) and two style declarations
+(`fill: blue` and `stroke-width: 5px`).
 
-`rsvg_standard_element_start()` gets called from the XML parsing
-machinery; it takes an SVG element name like "`rect`" or "`filter`"
-and a key/value list of attributes within the element.  It then creates the
-appropriate subclass of an `RsvgNode` object, hooks the node to the
-DOM tree, and tells the node to set its attributes from the key/value
-pairs.
-
-*Through this document we may use **node** and **element**
-interchangeably:* a node is the struct we use to represent an SVG/XML
-element.
-
-While a node sets its key/value pairs in its `set_atts()` method, it
-may encounter an invalid value, for example, a negative width where
-only nonnegative ones are allowed.  In this case the element may
-decide to set itself to be "in error" via the `node.set_error()`
-method.  If a node is in error, the node's children will get parsed as
-usual, but the node and its children will be ignored during the
-rendering stage.
-
-The SVG spec says that SVG rendering should stop on the first element
-that is "in error".  However, most implementations simply seem to
-ignore erroneous elements instead of completely stopping rendering,
-and we do the same in librsvg.
-
-## Element attributes and specified/computed values
-
-Some HTML or SVG engines like Gecko / Servo make a very clear
-distinction between "specified values" and "computed values" for
-element attributes.  Currently librsvg doesn't have a clear
-distinction.
-
-Unspecified attributes cause librsvg to use defaults, some as per the
-spec, and some (erroneously) as values that seemed to make sense at
-the time of implementation.  Please help us find these and make them
-spec-compliant!
-
-For specified attributes, sometimes the set_atts() methods will
-validate the values and resolve them to their final computed form, and
-sometimes they will just store them as they come in the SVG data.  The
-computed or actually used values will be generated at rendering time.
+After parsing is done, there is a **cascading stage** where librsvg
+walks the tree of nodes, and for each node it finds the CSS rules that
+should be applied to it.
 
 # Rendering
+
+FIXME: continue here
 
 The public `rsvg_handle_render_cairo()` and `rsvg_handle_render_cairo_sub()`
 functions initiate a rendering process; the first function just calls
