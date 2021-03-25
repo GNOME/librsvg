@@ -227,27 +227,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
     #[allow(clippy::unnecessary_wraps)]
     fn set_presentation_attributes(&mut self) -> Result<(), ElementError> {
-        match self
-            .specified_values
+        self.specified_values
             .parse_presentation_attributes(&self.attributes)
-        {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                // FIXME: we'll ignore errors here for now.
-                //
-                // If we set the node to be in error, we expose buggy handling of the
-                // enable-background property; we are not parsing it correctly. This
-                // causes tests/fixtures/reftests/bugs/587721-text-transform.svg to fail
-                // because it has enable-background="new 0 0 1179.75118 687.74173" in the
-                // toplevel svg element.
-                //
-                //   self.set_error(e);
-                //   return;
-
-                rsvg_log!("(attribute error: {})", e);
-                Ok(())
-            }
-        }
     }
 
     // Applies a style declaration to the node's specified_values

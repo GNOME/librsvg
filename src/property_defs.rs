@@ -55,6 +55,7 @@ use crate::paint_server::PaintServer;
 use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
+use crate::rect::Rect;
 use crate::unit_interval::UnitInterval;
 
 // https://www.w3.org/TR/SVG/text.html#BaselineShiftProperty
@@ -205,17 +206,71 @@ make_property!(
     "none" => None,
 );
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EnableBackground {
+    Accumulate,
+    New(Option<Rect>),
+}
+
 // https://www.w3.org/TR/SVG/filters.html#EnableBackgroundProperty
 make_property!(
     ComputedValues,
     EnableBackground,
-    default: Accumulate,
+    default: EnableBackground::Accumulate,
     inherits_automatically: false,
 
-    identifiers:
-    "accumulate" => Accumulate,
-    "new" => New,
+    parse_impl: {
+        impl Parse for EnableBackground {
+            fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
+                let loc = parser.current_source_location();
+
+                if parser
+                    .try_parse(|p| p.expect_ident_matching("accumulate"))
+                    .is_ok()
+                {
+                    return Ok(EnableBackground::Accumulate);
+                }
+
+                if parser.try_parse(|p| p.expect_ident_matching("new")).is_ok() {
+                    parser.try_parse(|p| -> Result<_, ParseError<'_>> {
+                        let x = f64::parse(p)?;
+                        let y = f64::parse(p)?;
+                        let w = f64::parse(p)?;
+                        let h = f64::parse(p)?;
+
+                        Ok(EnableBackground::New(Some(Rect::new(x, y, x + w, y + h))))
+                    }).or(Ok(EnableBackground::New(None)))
+                } else {
+                    Err(loc.new_custom_error(ValueErrorKind::parse_error("invalid syntax for 'enable-background' property")))
+                }
+            }
+        }
+
+    }
 );
+
+#[cfg(test)]
+#[test]
+fn parses_enable_background() {
+    assert_eq!(
+        EnableBackground::parse_str("accumulate").unwrap(),
+        EnableBackground::Accumulate
+    );
+
+    assert_eq!(
+        EnableBackground::parse_str("new").unwrap(),
+        EnableBackground::New(None)
+    );
+
+    assert_eq!(
+        EnableBackground::parse_str("new 1 2 3 4").unwrap(),
+        EnableBackground::New(Some(Rect::new(1.0, 2.0, 4.0, 6.0)))
+    );
+
+    assert!(EnableBackground::parse_str("new foo").is_err());
+
+    assert!(EnableBackground::parse_str("plonk").is_err());
+}
 
 // https://www.w3.org/TR/SVG/painting.html#FillProperty
 make_property!(
