@@ -637,6 +637,7 @@ impl SpecifiedValues {
         }
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     fn parse_one_presentation_attribute(
         &mut self,
         attr: QualName,

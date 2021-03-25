@@ -225,6 +225,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
+    #[allow(clippy::unnecessary_wraps)]
     fn set_presentation_attributes(&mut self) -> Result<(), ElementError> {
         match self
             .specified_values
