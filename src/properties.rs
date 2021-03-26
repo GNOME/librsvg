@@ -637,12 +637,7 @@ impl SpecifiedValues {
         }
     }
 
-    #[allow(clippy::unnecessary_wraps)]
-    fn parse_one_presentation_attribute(
-        &mut self,
-        attr: QualName,
-        value: &str,
-    ) -> Result<(), ElementError> {
+    fn parse_one_presentation_attribute(&mut self, attr: QualName, value: &str) {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
@@ -723,8 +718,6 @@ impl SpecifiedValues {
                 );
             }
         }
-
-        Ok(())
     }
 
     pub fn parse_presentation_attributes(
@@ -751,7 +744,7 @@ impl SpecifiedValues {
                     )));
                 }
 
-                _ => self.parse_one_presentation_attribute(attr, value)?,
+                _ => self.parse_one_presentation_attribute(attr, value),
             }
         }
 
