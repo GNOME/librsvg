@@ -2,10 +2,20 @@
 extern crate clap;
 
 use gio::prelude::*;
-use gio::{
-    Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream, UnixInputStream,
-    UnixOutputStream,
-};
+use gio::{Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream};
+
+#[cfg(unix)]
+use gio::{UnixInputStream, UnixOutputStream};
+
+#[cfg(windows)]
+use std::io;
+
+#[cfg(windows)]
+use std::os::windows::io::AsRawHandle;
+
+#[cfg(windows)]
+use gio_sys;
+
 use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
 use librsvg::{CairoRenderer, Color, Loader, Parse, RenderingError};
 use once_cell::unsync::OnceCell;
@@ -326,16 +336,46 @@ mod metadata {
 struct Stdin;
 
 impl Stdin {
-    pub fn stream() -> UnixInputStream {
-        unsafe { UnixInputStream::new(0) }
+    #[cfg(unix)]
+    pub fn stream() -> InputStream {
+        let stream = unsafe { UnixInputStream::new(0) };
+        stream.upcast::<InputStream>()
+    }
+
+    #[cfg(windows)]
+    pub fn stream() -> InputStream {
+        // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
+        // Win32InputStream::with_handle when this is fixed
+        let raw_handle = io::stdin().as_raw_handle();
+        unsafe {
+            InputStream::from_glib_full(gio_sys::g_win32_input_stream_new(
+                raw_handle,
+                false.to_glib(),
+            ))
+        }
     }
 }
 
 struct Stdout;
 
 impl Stdout {
-    pub fn stream() -> UnixOutputStream {
-        unsafe { UnixOutputStream::new(1) }
+    #[cfg(unix)]
+    pub fn stream() -> OutputStream {
+        let stream = unsafe { UnixOutputStream::new(1) };
+        stream.upcast::<OutputStream>()
+    }
+
+    #[cfg(windows)]
+    pub fn stream() -> OutputStream {
+        // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
+        // Win32OutputStream::with_handle when this is fixed
+        let raw_handle = io::stdout().as_raw_handle();
+        unsafe {
+            OutputStream::from_glib_full(gio_sys::g_win32_output_stream_new(
+                raw_handle,
+                false.to_glib(),
+            ))
+        }
     }
 }
 
@@ -411,7 +451,7 @@ impl Converter {
 
         for input in &self.input {
             let (stream, basefile) = match input {
-                Input::Stdin => (Stdin::stream().upcast::<InputStream>(), None),
+                Input::Stdin => (Stdin::stream(), None),
                 Input::Named(p) => {
                     let file = p.get_gfile();
                     let stream = file
@@ -513,7 +553,7 @@ impl Converter {
 
     fn create_surface(&self, size: Size) -> Result<Surface, Error> {
         let output_stream = match self.output {
-            Output::Stdout => Stdout::stream().upcast::<OutputStream>(),
+            Output::Stdout => Stdout::stream(),
             Output::Path(ref p) => {
                 let file = gio::File::new_for_path(p);
                 let stream = file
