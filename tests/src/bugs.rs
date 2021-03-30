@@ -7,7 +7,7 @@ use librsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 use matches::matches;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{load_svg, render_document, setup_font_map, SurfaceSize};
+use crate::utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
 
 // https://gitlab.gnome.org/GNOME/librsvg/issues/335
 #[test]
@@ -353,4 +353,52 @@ fn test_text_bounds(name: &str) {
     // elements compute sensible bounds"; the bug #347 was that their ink_rect
     // was not being computed correctly at all.
     assert!(ink_r.y > 48.0 && ink_r.y < 49.0);
+}
+
+// https://gitlab.gnome.org/GNOME/librsvg/-/issues/703
+#[test]
+fn switch_element_should_ignore_elements_in_error() {
+    setup_language();
+
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <switch>
+    <rect x="10" y="10" width="10" height="10" systemLanguage="es_MX" id="es" fill="red"/>
+    <rect x="10" y="10" width="10" height="10" id="no_lang" fill="blue"/>
+  </switch>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(100, 100),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 100.0,
+            height: 100.0,
+        },
+    )
+    .unwrap();
+
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.rectangle(10.0, 10.0, 10.0, 10.0);
+        cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
+        cr.fill();
+    }
+
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(
+            &output_surf,
+            "switch_element_should_ignore_elements_in_error",
+        );
 }

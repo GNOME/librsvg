@@ -68,11 +68,10 @@ impl Draw for Switch {
         let values = cascaded.get();
 
         draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            if let Some(child) = node
-                .children()
-                .filter(|c| c.is_element())
-                .find(|c| c.borrow_element().get_cond())
-            {
+            if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
+                let elt = c.borrow_element();
+                elt.get_cond() && !elt.is_in_error()
+            }) {
                 child.draw(an, &CascadedValues::new(cascaded, &child), dc, clipping)
             } else {
                 Ok(dc.empty_bbox())
