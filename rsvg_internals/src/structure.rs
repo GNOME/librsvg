@@ -72,7 +72,10 @@ impl Draw for Switch {
             if let Some(child) = node
                 .children()
                 .filter(|c| c.is_element())
-                .find(|c| c.borrow_element().get_cond())
+                .find(|c| {
+                    let elt = c.borrow_element();
+                    elt.get_cond() && !elt.is_in_error()
+                })
             {
                 dc.draw_node_from_stack(
                     &child,
