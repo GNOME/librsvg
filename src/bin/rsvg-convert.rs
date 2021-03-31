@@ -13,9 +13,6 @@ use std::io;
 #[cfg(windows)]
 use std::os::windows::io::AsRawHandle;
 
-#[cfg(windows)]
-use gio_sys;
-
 use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
 use librsvg::{CairoRenderer, Color, Loader, Parse, RenderingError};
 use once_cell::unsync::OnceCell;
@@ -346,12 +343,17 @@ impl Stdin {
     pub fn stream() -> InputStream {
         // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
         // Win32InputStream::with_handle when this is fixed
+
+        extern "C" {
+            pub fn g_win32_input_stream_new(
+                handle: *mut c_void,
+                close_handle: gboolean,
+            ) -> *mut GInputStream;
+        }
+
         let raw_handle = io::stdin().as_raw_handle();
         unsafe {
-            InputStream::from_glib_full(gio_sys::g_win32_input_stream_new(
-                raw_handle,
-                false.to_glib(),
-            ))
+            InputStream::from_glib_full(g_win32_input_stream_new(raw_handle, false.to_glib()))
         }
     }
 }
@@ -369,12 +371,17 @@ impl Stdout {
     pub fn stream() -> OutputStream {
         // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
         // Win32OutputStream::with_handle when this is fixed
+
+        extern "C" {
+            pub fn g_win32_output_stream_new(
+                handle: *mut c_void,
+                close_handle: gboolean,
+            ) -> *mut GOutputStream;
+        }
+
         let raw_handle = io::stdout().as_raw_handle();
         unsafe {
-            OutputStream::from_glib_full(gio_sys::g_win32_output_stream_new(
-                raw_handle,
-                false.to_glib(),
-            ))
+            OutputStream::from_glib_full(g_win32_output_stream_new(raw_handle, false.to_glib()))
         }
     }
 }
