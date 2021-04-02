@@ -108,6 +108,24 @@ cargo_test:
   script:
     - sudo -E cargo test -- --skip cmdline --skip loading_crash --skip reference --skip render_crash
 
+coverage:
+  image: "rustlang/rust:nightly"
+  stage: unit test
+  needs:
+    - job: check
+      artifacts: false
+  variables:
+    RUSTFLAGS: "-Zinstrument-coverage"
+    LLVM_PROFILE_FILE: "coverage-%p-%m.profraw"
+  before_script:
+    - apt update -yqq && apt install -yqq --no-install-recommends libgdk-pixbuf2.0-dev libpango1.0-dev libcairo2-dev lcov
+    - rustup component add llvm-tools-preview
+    - curl -L https://github.com/mozilla/grcov/releases/latest/download/grcov-linux-x86_64.tar.bz2 | tar jxf -
+  script:
+    - cargo +nightly test -- --skip cmdline --skip loading_crash --skip reference --skip render_crash
+    - ./grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "*cargo*" -o lcov.info
+    - lcov --summary lcov.info
+
 cargo_bench:
   stage: unit test
   needs:
