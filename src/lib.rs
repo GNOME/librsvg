@@ -1,57 +1,145 @@
-//! The implementation of librsvg.
+//! Load and render SVG images into Cairo surfaces.
 //!
-//! The implementation of librsvg is in the `rsvg_internals` crate.  It is not a public
-//! crate; instead, it exports the primitives necessary to implement librsvg's public APIs,
-//! both the C and Rust APIs.  It has the XML and CSS parsing code, the SVG element
-//! definitions and tree of elements, and all the drawing logic.
+//! This crate can load SVG images and render them to Cairo surfaces,
+//! using a mixture of SVG's [static mode] and [secure static mode].
+//! Librsvg does not do animation nor scripting, and can load
+//! references to external data only in some situations; see below.
 //!
-//! # Common entry points for newcomers
+//! Librsvg supports reading [SVG 1.1] data, and is gradually adding
+//! support for features in [SVG 2].  Librsvg also supports SVGZ
+//! files, which are just an SVG stream compressed with the GZIP
+//! algorithm.
 //!
-//! * Are you adding support for a CSS property?  Look in the [`property_defs`] module.
+//! # Basic usage
 //!
-//! # Some interesting parts of rsvg_internals
+//! * Create a [`Loader`] struct.
+//! * Get an [`SvgHandle`] from the [`Loader`].
+//! * Create a [`CairoRenderer`] for the [`SvgHandle`] and render to a Cairo context.
 //!
-//! * The [`Handle`] struct provides the primitives to implement the public APIs, such as
-//! loading an SVG file and rendering it.
+//! You can put the following in your `Cargo.toml`:
 //!
-//! * The [`DrawingCtx`] struct is active while an SVG handle is being drawn or queried
-//! for its geometry.  It has all the mutable state related to the drawing process.
+//! ```toml
+//! [dependencies]
+//! librsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
+//! cairo-rs = "0.8.0"
+//! glib = "0.9.0"                                # only if you need streams
+//! gio = { version="0.8.1", features=["v2_50"] } # likewise
+//! ```
 //!
-//! * The [`Document`] struct represents a loaded SVG document.  It holds the tree of
-//! [`Node`] elements, and a mapping of `id` attributes to the corresponding element
-//! nodes.
+//! # Example
 //!
-//! * The [`node`] module provides the [`Node`] struct and helper traits used to operate
-//! on nodes.
+//! ```
 //!
-//! * The [`element`] module provides the [`Element`] struct and the [`SetAttributes`] and
-//! [`Draw`] traits which are implemented by all SVG elements.
+//! const WIDTH: i32 = 640;
+//! const HEIGHT: i32 = 480;
 //!
-//! * The [`xml`] module receives events from the XML parser, and builds a [`Document`] as
-//! a tree of [`Node`].
+//! fn main() {
+//!     // Loading from a file
 //!
-//! * The [`properties`] module contains structs that represent collections of CSS
-//! properties.
+//!     let handle = librsvg::Loader::new().read_path("example.svg").unwrap();
 //!
-//! * The [`property_defs`] module contains one type for each of the CSS style properties
-//! that librsvg supports.
+//!     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap();
+//!     let cr = cairo::Context::new(&surface);
 //!
-//! * The [`css`] module contains the implementation of CSS parsing and matching.
+//!     let renderer = librsvg::CairoRenderer::new(&handle);
+//!     renderer.render_document(
+//!         &cr,
+//!         &cairo::Rectangle {
+//!             x: 0.0,
+//!             y: 0.0,
+//!             width: f64::from(WIDTH),
+//!             height: f64::from(HEIGHT),
+//!         },
+//!     ).unwrap();
 //!
-//! [`Document`]: document/struct.Document.html
-//! [`Node`]: node/type.Node.html
-//! [`Element`]: element/struct.Element.html
-//! [`Handle`]: handle/struct.Handle.html
-//! [`DrawingCtx`]: drawing_ctx/struct.DrawingCtx.html
-//! [`Document`]: document/struct.Document.html
-//! [`SetAttributes`]: element/trait.SetAttributes.html
-//! [`Draw`]: element/trait.Draw.html
-//! [`css`]: css/index.html
-//! [`element`]: element/index.html
-//! [`node`]: node/index.html
-//! [`properties`]: properties/index.html
-//! [`property_defs`]: property_defs/index.html
-//! [`xml`]: xml/index.html
+//!     // Loading from a static SVG asset
+//!
+//!     let bytes = glib::Bytes::from_static(
+//!         br#"<?xml version="1.0" encoding="UTF-8"?>
+//!             <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+//!                 <rect id="foo" x="10" y="10" width="30" height="30"/>
+//!             </svg>
+//!         "#
+//!     );
+//!     let stream = gio::MemoryInputStream::from_bytes(&bytes);
+//!
+//!     let handle = librsvg::Loader::new().read_stream(
+//!         &stream,
+//!         None::<&gio::File>,          // no base file as this document has no references
+//!         None::<&gio::Cancellable>,   // no cancellable
+//!     ).unwrap();
+//! }
+//! ```
+//!
+//! [`Loader`]: api/struct.Loader.html
+//! [`SvgHandle`]: api/struct.SvgHandle.html
+//! [`CairoRenderer`]: api/struct.CairoRenderer.html
+//!
+//! # The "base file" and resolving references to external files
+//!
+//! When you load an SVG, librsvg needs to know the location of the "base file"
+//! for it.  This is so that librsvg can determine the location of referenced
+//! entities.  For example, say you have an SVG in <filename>/foo/bar/foo.svg</filename>
+//! and that it has an image element like this:
+//!
+//! ```xml
+//! <image href="resources/foo.png" .../>
+//! ```
+//!
+//! In this case, librsvg needs to know the location of the toplevel
+//! `/foo/bar/foo.svg` so that it can generate the appropriate
+//! reference to `/foo/bar/resources/foo.png`.
+//!
+//! ## Security and locations of referenced files
+//!
+//! When processing an SVG, librsvg will only load referenced files if
+//! they are in the same directory as the base file, or in a
+//! subdirectory of it.  That is, if the base file is
+//! `/foo/bar/baz.svg`, then librsvg will only try to load referenced
+//! files (from SVG's `<image>` element, for example, or from content
+//! included through XML entities) if those files are in `/foo/bar/*`
+//! or in `/foo/bar/*/.../*`.  This is so that malicious SVG documents
+//! cannot include files that are in a directory above.
+//!
+//! The full set of rules for deciding which URLs may be loaded is as follows;
+//! they are applied in order.  A referenced URL will not be loaded as soon as
+//! one of these rules fails:
+//!
+//! 1. All `data:` URLs may be loaded.  These are sometimes used to
+//! include raster image data, encoded as base-64, directly in an SVG
+//! file.
+//!
+//! 2. All other URL schemes in references require a base URL.  For
+//! example, this means that if you load an SVG with
+//! [`Loader.read`](api/struct.Loader.html#method.read) without
+//! providing a `base_url`, then any referenced files will not be
+//! allowed (e.g. raster images to be loaded from other files will not
+//! work).
+//!
+//! 3. If referenced URLs are absolute, rather than relative, then
+//! they must have the same scheme as the base URL.  For example, if
+//! the base URL has a "`file`" scheme, then all URL references inside
+//! the SVG must also have the "`file`" scheme, or be relative
+//! references which will be resolved against the base URL.
+//!
+//! 4. If referenced URLs have a "`resource`" scheme, that is, if they
+//! are included into your binary program with GLib's resource
+//! mechanism, they are allowed to be loaded (provided that the base
+//! URL is also a "`resource`", per the previous rule).
+//!
+//! 5. Otherwise, non-`file` schemes are not allowed.  For example,
+//! librsvg will not load `http` resources, to keep malicious SVG data
+//! from "phoning home".
+//!
+//! 6. A relative URL must resolve to the same directory as the base
+//! URL, or to one of its subdirectories.  Librsvg will canonicalize
+//! filenames, by removing "`..`" path components and resolving symbolic
+//! links, to decide whether files meet these conditions.
+//!
+//! [static mode]: https://www.w3.org/TR/SVG2/conform.html#static-mode
+//! [secure static mode]: https://www.w3.org/TR/SVG2/conform.html#secure-static-mode
+//! [SVG 1.1]: https://www.w3.org/TR/SVG11/
+//! [SVG 2]: https://www.w3.org/TR/SVG2/
 
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
