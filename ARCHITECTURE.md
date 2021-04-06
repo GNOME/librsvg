@@ -20,11 +20,11 @@ is why you will sometimes see references to deprecated SVG features in
 the source code.
 
 Librsvg started as an experiment to use libxml2's new SAX parser, so
-that SVG could be streamed in, instead of first creating a DOM.
-Originally it used [libart] as a rendering library; this was GNOME's
-first antialiased renderer with alpha compositing.  Later, the
-renderer was replaced with [Cairo].  Librsvg is currently striving to
-support other rendering backends.
+that SVG could be streamed in and rendered on the fly, instead of
+first creating a DOM tree.  Originally it used [libart] as a rendering
+library; this was GNOME's first antialiased renderer with alpha
+compositing.  Later, the renderer was replaced with [Cairo].  Librsvg
+is currently striving to support other rendering backends.
 
 (These days librsvg indeed builds a DOM tree by itself; it needs the
 tree to run the CSS cascade and do selector matching.)
@@ -37,7 +37,7 @@ programming languages.
 
 In 2016, librsvg started getting ported to Rust.  As of early 2021,
 the whole library is implemented in Rust, and exports an intact C
-API/ABI.
+API/ABI.  It also exports a more idiomatic Rust API as well.
 
 [libart]: https://levien.com/libart/
 [Cairo]: https://www.cairographics.org/
