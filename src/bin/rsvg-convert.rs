@@ -8,10 +8,17 @@ use gio::{Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream};
 use gio::{UnixInputStream, UnixOutputStream};
 
 #[cfg(windows)]
-use std::io;
+mod windows_imports {
+    pub use std::io;
+    pub use std::os::windows::io::AsRawHandle;
+    pub use libc::c_void;
+    pub use glib_sys::gboolean;
+    pub use gio_sys::{GInputStream, GOutputStream};
+    pub use glib::translate::*;
+}
 
 #[cfg(windows)]
-use std::os::windows::io::AsRawHandle;
+use self::windows_imports::*
 
 use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
 use librsvg::{CairoRenderer, Color, Loader, Parse, RenderingError};
