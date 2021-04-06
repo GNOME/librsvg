@@ -316,35 +316,15 @@ The temporary result from the last step also gets put in a stack; this
 is because filter effects sometimes need to look at the
 currently-drawn background to apply further filtering to it.
 
-FIXME: continue here
-
-### What about referenced nodes which have a different cascade?
-
-Sometimes, though, the node being considered in the recursive
-traversal has to refer to some other node.  For example, a shape like
-a `rect`angle may reference a `linearGradient` for its `fill`
-attribute.  In this case, the `rect`'s cascaded values will contain
-things like its fill opacity, or its stroke width and color.  However,
-the `linearGradient` has cascaded values that come from its own place
-in the element tree, not from the `rect` that references it (multiple
-objects may reference the same gradient; in each case, the gradient
-has its own cascade derived only from its ancestors).
-
-In such cases, the code that needs to resolve the referenced node's
-CSS properties needs to do this:
-
-* Create a temporary `state` with `rsvg_state_new()`, or grab the
-  temporary `draw_ctx.get_state()`.
-
-* Call `state::reconstruct(state, node)`.  This will walk the tree
-  from the root directly down to the node, reconstructing the CSS
-  cascade state for *that* node.
-
-This is a rather ugly special case for elements that are referenced
-outside the "normal" recursion used for rendering.  We hope to move to
-a model where all CSS properties are cascaded first, then bounding
-boxes are propagated, and finally all rendering can happen in a single
-pass in a fully-resolved tree.
+You'll see that most of the rendering-related functions return a
+`Result<BoundingBox, RenderingError>`.  Some SVG features require
+knowing the bounding box of the object that is being rendered; for
+historical reasons this bounding box is computed as part of the
+rendering process in librsvg.  When computing a subtree's bounding
+box, the bounding boxes from the leaves get aggregated up to the root
+of the subtree.  Each node in the tree has its own coordinate system;
+`BoundingBox` is able to transform coordinate systems to get a
+bounding box that is meaningful with respect to the root's transform.
 
 # Comparing floating-point numbers
 
@@ -352,10 +332,10 @@ Librsvg sometimes needs to compute things like "are these points
 equal?" or "did this computed result equal this test reference
 number?".
 
-We use `f64` numbers in Rust, and `double` numbers in C, for all
-computations on real numbers.  These types cannot be simply compared
-with `==` effectively, since it doesn't work when the numbers are
-slightly different due to numerical inaccuracies.
+We use `f64` numbers in Rust for all computations on real numbers.
+Floating-point numbers cannot be compared with `==` effectively, since
+it doesn't work when the numbers are slightly different due to
+numerical inaccuracies.
 
 Similarly, we don't `assert_eq!(a, b)` for floating-point numbers.
 
@@ -381,9 +361,5 @@ if a.approx_eq_cairo(&b) { // not a == b
 
 assert!(1.0_f64.approx_eq_cairo(&1.001953125_f64)); // 1 + 1/512 - cairo rounds to 1
 ```
-
-As of March 2018 this is not implemented for the C code; the hope is
-that we will move all that code to Rust and we'll be able to do this
-kind of approximate comparisons there.
 
 [ApproxEqCairo]: rsvg_internals/src/float_eq_cairo.rs
