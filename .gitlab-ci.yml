@@ -106,7 +106,7 @@ cargo_test:
   variables:
     OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
   script:
-    - sudo -E cargo test -- --skip cmdline --skip loading_crash --skip reference --skip render_crash
+    - sudo -E cargo test -- --skip loading_crash --skip reference --skip render_crash
 
 coverage:
   image: "rustlang/rust:nightly"
