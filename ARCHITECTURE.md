@@ -10,6 +10,9 @@ The library's internals are documented as Rust documentation comments;
 you can look at the rendered version at
 https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
 
+You may also want to see the section below on [interesting parts of
+the code](#some_interesting_parts_of_the_code).
+
 # A bit of history
 
 Librsvg is an old library.  It started around 2001, when Eazel (the
@@ -362,4 +365,43 @@ if a.approx_eq_cairo(&b) { // not a == b
 assert!(1.0_f64.approx_eq_cairo(&1.001953125_f64)); // 1 + 1/512 - cairo rounds to 1
 ```
 
-[ApproxEqCairo]: rsvg_internals/src/float_eq_cairo.rs
+[ApproxEqCairo]: src/float_eq_cairo.rs
+
+# Some interesting parts of the code
+
+* Are you adding support for a CSS property?  Look in the
+  [`property_defs`] and [`properties`] modules.  `property_defs`
+  defines most of the CSS properties that librsvg supports, and
+  `properties` actually puts all those properties in the
+  `SpecifiedValues` and `ComputedValues` structs.
+
+* The [`Handle`] struct provides the primitives to implement the
+  public APIs, such as loading an SVG file and rendering it.
+
+* The [`DrawingCtx`] struct is active while an SVG handle is being
+  drawn.  It has all the mutable state related to the drawing process,
+  such as the stack of temporary rendered surfaces, and the viewport
+  stack.
+
+* The [`Document`] struct represents a loaded SVG document.  It holds
+  the tree of [`Node`] structs, some of which contain [`Element`]s.  A
+  `Document` also contains a mapping of `id` attributes to the
+  corresponding element nodes.
+
+* The [`xml`] module receives events from an XML parser, and builds a
+  [`Document`] tree.
+
+* The [`css`] module has the high-level machinery for parsing CSS and
+  representing parsed stylesheets.  The low-level parsers for
+  individual properties are in [`property_defs`] and [`font_props`].
+
+[`css`]: src/css.rs
+[`Document`]: src/document.rs
+[`DrawingCtx`]: src/drawing_ctx.rs
+[`Element`]: src/element.rs
+[`font_props`]: src/font_props.rs
+[`Handle`]: src/handle.rs
+[`Node`]: src/node.rs
+[`properties`]: src/properties.rs
+[`property_defs`]: src/property_defs.rs
+[`xml`]: src/xml/mod.rs
