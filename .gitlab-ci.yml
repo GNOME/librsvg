@@ -122,7 +122,7 @@ coverage:
     - rustup component add llvm-tools-preview
     - curl -L https://github.com/mozilla/grcov/releases/latest/download/grcov-linux-x86_64.tar.bz2 | tar jxf -
   script:
-    - cargo +nightly test -- --skip cmdline --skip loading_crash --skip reference --skip render_crash
+    - cargo +nightly test --no-fail-fast || true
     - ./grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "*cargo*" -o lcov.info
     - lcov --summary lcov.info
 
