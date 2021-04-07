@@ -155,19 +155,12 @@ impl ResolvedPrimitive {
             check_px_or_percent_units(self.height)?;
         }
 
-        let transform = ctx.paffine();
-        if !transform.is_invertible() {
-            return Err(FilterError::InvalidParameter(
-                "transform is not invertible".to_string(),
-            ));
-        }
-
         Ok(BoundsBuilder::new(
             self.x,
             self.y,
             self.width,
             self.height,
-            transform,
+            ctx.paffine(),
         ))
     }
 }
