@@ -165,7 +165,7 @@ impl ColorMatrix {
         let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),

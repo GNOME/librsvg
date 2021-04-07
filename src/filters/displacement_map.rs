@@ -96,7 +96,7 @@ impl DisplacementMap {
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&displacement_input)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         // Displacement map's values need to be non-premultiplied.
         let displacement_surface = displacement_input.surface().unpremultiply(bounds)?;

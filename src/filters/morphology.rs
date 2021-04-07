@@ -89,7 +89,7 @@ impl Morphology {
         let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         let (rx, ry) = self.radius;
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);

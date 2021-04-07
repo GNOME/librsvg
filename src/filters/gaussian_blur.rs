@@ -201,7 +201,7 @@ impl GaussianBlur {
         let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         let (std_x, std_y) = self.std_deviation;
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);

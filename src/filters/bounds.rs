@@ -1,6 +1,4 @@
 //! Filter primitive subregion computation.
-use crate::drawing_ctx::DrawingCtx;
-use crate::length::*;
 use crate::rect::{IRect, Rect};
 use crate::transform::Transform;
 
@@ -9,10 +7,10 @@ use super::context::{FilterContext, FilterInput};
 /// A helper type for filter primitive subregion computation.
 pub struct BoundsBuilder {
     /// Filter primitive properties.
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
-    width: Option<ULength<Horizontal>>,
-    height: Option<ULength<Vertical>>,
+    x: Option<f64>,
+    y: Option<f64>,
+    width: Option<f64>,
+    height: Option<f64>,
 
     /// The transform to use when generating the rect
     transform: Transform,
@@ -31,10 +29,10 @@ impl BoundsBuilder {
     /// Constructs a new `BoundsBuilder`.
     #[inline]
     pub fn new(
-        x: Option<Length<Horizontal>>,
-        y: Option<Length<Vertical>>,
-        width: Option<ULength<Horizontal>>,
-        height: Option<ULength<Vertical>>,
+        x: Option<f64>,
+        y: Option<f64>,
+        width: Option<f64>,
+        height: Option<f64>,
         transform: Transform,
     ) -> Self {
         // We panic if transform is not invertible. This is checked in the caller.
@@ -73,7 +71,7 @@ impl BoundsBuilder {
     }
 
     /// Returns the final exact bounds, both with and without clipping to the effects region.
-    pub fn into_rect(self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> (Rect, Rect) {
+    pub fn into_rect(self, ctx: &FilterContext) -> (Rect, Rect) {
         let effects_region = ctx.effects_region();
 
         // The default value is the filter effects region converted into
@@ -86,24 +84,21 @@ impl BoundsBuilder {
         // If any of the properties were specified, we need to respect them.
         // These replacements are possible because of the primitive coordinate system.
         if self.x.is_some() || self.y.is_some() || self.width.is_some() || self.height.is_some() {
-            let params = draw_ctx.push_coord_units(ctx.primitive_units());
-            let values = ctx.get_computed_values_from_node_being_filtered();
-
             if let Some(x) = self.x {
                 let w = rect.width();
-                rect.x0 = x.normalize(values, &params);
+                rect.x0 = x;
                 rect.x1 = rect.x0 + w;
             }
             if let Some(y) = self.y {
                 let h = rect.height();
-                rect.y0 = y.normalize(values, &params);
+                rect.y0 = y;
                 rect.y1 = rect.y0 + h;
             }
             if let Some(width) = self.width {
-                rect.x1 = rect.x0 + width.normalize(values, &params);
+                rect.x1 = rect.x0 + width;
             }
             if let Some(height) = self.height {
-                rect.y1 = rect.y0 + height.normalize(values, &params);
+                rect.y1 = rect.y0 + height;
             }
         }
 
@@ -118,7 +113,7 @@ impl BoundsBuilder {
     }
 
     /// Returns the final pixel bounds, clipped to the effects region.
-    pub fn into_irect(self, ctx: &FilterContext, draw_ctx: &mut DrawingCtx) -> IRect {
-        self.into_rect(ctx, draw_ctx).0.into()
+    pub fn into_irect(self, ctx: &FilterContext) -> IRect {
+        self.into_rect(ctx).0.into()
     }
 }

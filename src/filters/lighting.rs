@@ -451,7 +451,7 @@ macro_rules! impl_lighting_filter {
                 let mut bounds = primitive
                     .get_bounds(ctx)?
                     .add_input(&input_1)
-                    .into_irect(ctx, draw_ctx);
+                    .into_irect(ctx);
                 let original_bounds = bounds;
 
                 let scale = self

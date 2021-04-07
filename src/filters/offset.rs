@@ -66,7 +66,7 @@ impl Offset {
         let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 

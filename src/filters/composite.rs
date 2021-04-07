@@ -91,7 +91,7 @@ impl Composite {
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&input_2)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         let surface = if self.operator == Operator::Arithmetic {
             input_1.surface().compose_arithmetic(

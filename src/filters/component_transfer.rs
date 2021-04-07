@@ -302,7 +302,7 @@ impl ComponentTransfer {
         let bounds = primitive
             .get_bounds(ctx)?
             .add_input(&input_1)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         // Create the output surface.
         let mut surface = ExclusiveImageSurface::new(

@@ -92,7 +92,7 @@ impl Blend {
             .get_bounds(ctx)?
             .add_input(&input_1)
             .add_input(&input_2)
-            .into_irect(ctx, draw_ctx);
+            .into_irect(ctx);
 
         let surface = input_1.surface().compose(
             input_2.surface(),

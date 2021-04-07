@@ -88,10 +88,10 @@ pub struct Primitive {
 }
 
 pub struct ResolvedPrimitive {
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
-    width: Option<ULength<Horizontal>>,
-    height: Option<ULength<Vertical>>,
+    x: Option<f64>,
+    y: Option<f64>,
+    width: Option<f64>,
+    height: Option<f64>,
     result: Option<CustomIdent>,
 }
 
@@ -132,21 +132,11 @@ impl Parse for Input {
 }
 
 impl Primitive {
-    fn resolve(&self) -> ResolvedPrimitive {
-        ResolvedPrimitive {
-            x: self.x,
-            y: self.y,
-            width: self.width,
-            height: self.height,
-            result: self.result.clone(),
-        }
-    }
-}
-
-impl ResolvedPrimitive {
-    /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
-    #[inline]
-    fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
+    fn resolve(
+        &self,
+        ctx: &FilterContext,
+        draw_ctx: &DrawingCtx,
+    ) -> Result<ResolvedPrimitive, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
             check_px_or_percent_units(self.x)?;
@@ -155,6 +145,28 @@ impl ResolvedPrimitive {
             check_px_or_percent_units(self.height)?;
         }
 
+        let params = draw_ctx.push_coord_units(ctx.primitive_units());
+        let values = ctx.get_computed_values_from_node_being_filtered();
+
+        let x = self.x.map(|l| l.normalize(values, &params));
+        let y = self.y.map(|l| l.normalize(values, &params));
+        let width = self.width.map(|l| l.normalize(values, &params));
+        let height = self.height.map(|l| l.normalize(values, &params));
+
+        Ok(ResolvedPrimitive {
+            x,
+            y,
+            width,
+            height,
+            result: self.result.clone(),
+        })
+    }
+}
+
+impl ResolvedPrimitive {
+    /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
+    #[inline]
+    fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
         Ok(BoundsBuilder::new(
             self.x,
             self.y,
@@ -282,8 +294,12 @@ pub fn render(
             if let Err(err) = filter
                 .resolve(&c)
                 .and_then(|(primitive, params)| {
+                    let resolved_primitive = primitive.resolve(&filter_ctx, draw_ctx)?;
+                    Ok((resolved_primitive, params))
+                })
+                .and_then(|(resolved_primitive, params)| {
                     render_primitive(
-                        &primitive.resolve(),
+                        &resolved_primitive,
                         &params,
                         &filter_ctx,
                         acquired_nodes,
