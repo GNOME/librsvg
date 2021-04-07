@@ -254,75 +254,76 @@ pub fn render(
         .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
         .to_user_space(&node_bbox, draw_ctx, values);
 
-    let mut filter_ctx = FilterContext::new(
+    if let Ok(mut filter_ctx) = FilterContext::new(
         &filter,
         computed_from_node_being_filtered,
         stroke_paint_source,
         fill_paint_source,
-        source_surface,
+        &source_surface,
         draw_ctx,
         transform,
         node_bbox,
-    );
+    ) {
+        let primitives = filter_node
+            .children()
+            .filter(|c| c.is_element())
+            // Skip nodes in error.
+            .filter(|c| {
+                let in_error = c.borrow_element().is_in_error();
 
-    // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds
-    // computations will panic due to non-invertible martrix.
-    if !filter_ctx.paffine().is_invertible() {
-        return Ok(filter_ctx.into_output()?);
-    }
+                if in_error {
+                    rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
+                }
 
-    let primitives = filter_node
-        .children()
-        .filter(|c| c.is_element())
-        // Skip nodes in error.
-        .filter(|c| {
-            let in_error = c.borrow_element().is_in_error();
-
-            if in_error {
-                rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
-            }
-
-            !in_error
-        })
-        // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow_element().as_filter_effect().is_some());
-
-    for c in primitives {
-        let elt = c.borrow_element();
-        let filter = elt.as_filter_effect().unwrap();
-
-        let start = Instant::now();
-
-        if let Err(err) = filter
-            .resolve(&c)
-            .and_then(|(primitive, params)| {
-                render_primitive(
-                    &primitive.resolve(),
-                    &params,
-                    &filter_ctx,
-                    acquired_nodes,
-                    draw_ctx,
-                )
+                !in_error
             })
-            .and_then(|result| filter_ctx.store_result(result))
-        {
-            rsvg_log!("(filter primitive {} returned an error: {})", c, err);
+            // Keep only filter primitives (those that implement the Filter trait)
+            .filter(|c| c.borrow_element().as_filter_effect().is_some());
 
-            // Exit early on Cairo errors. Continue rendering otherwise.
-            if let FilterError::CairoError(status) = err {
-                return Err(RenderingError::from(status));
+        for c in primitives {
+            let elt = c.borrow_element();
+            let filter = elt.as_filter_effect().unwrap();
+
+            let start = Instant::now();
+
+            if let Err(err) = filter
+                .resolve(&c)
+                .and_then(|(primitive, params)| {
+                    render_primitive(
+                        &primitive.resolve(),
+                        &params,
+                        &filter_ctx,
+                        acquired_nodes,
+                        draw_ctx,
+                    )
+                })
+                .and_then(|result| filter_ctx.store_result(result))
+            {
+                rsvg_log!("(filter primitive {} returned an error: {})", c, err);
+
+                // Exit early on Cairo errors. Continue rendering otherwise.
+                if let FilterError::CairoError(status) = err {
+                    return Err(RenderingError::from(status));
+                }
             }
+
+            let elapsed = start.elapsed();
+            rsvg_log!(
+                "(rendered filter primitive {} in\n    {} seconds)",
+                c,
+                elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+            );
         }
 
-        let elapsed = start.elapsed();
-        rsvg_log!(
-            "(rendered filter primitive {} in\n    {} seconds)",
-            c,
-            elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-        );
+        Ok(filter_ctx.into_output()?)
+    } else {
+        // Ignore errors that happened when creating the FilterContext
+        Ok(SharedImageSurface::empty(
+            source_surface.width(),
+            source_surface.height(),
+            SurfaceType::AlphaOnly,
+        )?)
     }
-
-    Ok(filter_ctx.into_output()?)
 }
 
 #[rustfmt::skip]

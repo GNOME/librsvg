@@ -107,11 +107,11 @@ impl FilterContext {
         computed_from_node_being_filtered: &ComputedValues,
         stroke_paint: UserSpacePaintSource,
         fill_paint: UserSpacePaintSource,
-        source_surface: SharedImageSurface,
+        source_surface: &SharedImageSurface,
         draw_ctx: &mut DrawingCtx,
         draw_transform: Transform,
         node_bbox: BoundingBox,
-    ) -> Self {
+    ) -> Result<Self, FilterError> {
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();
@@ -144,6 +144,12 @@ impl FilterContext {
             .post_transform(&draw_transform),
         };
 
+        if !(affine.is_invertible() && paffine.is_invertible()) {
+            return Err(FilterError::InvalidParameter(
+                "transform is not invertible".to_string(),
+            ));
+        }
+
         let effects_region = {
             let params = draw_ctx.push_coord_units(filter_units);
             let filter_rect = filter.get_rect(&computed_from_node_being_filtered, &params);
@@ -166,11 +172,11 @@ impl FilterContext {
             bbox.rect.unwrap()
         };
 
-        Self {
+        Ok(Self {
             computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
             stroke_paint,
             fill_paint,
-            source_surface,
+            source_surface: source_surface.clone(),
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: OnceCell::new(),
@@ -180,7 +186,7 @@ impl FilterContext {
             effects_region,
             _affine: affine,
             paffine,
-        }
+        })
     }
 
     /// Returns the computed values from the node that referenced this filter.
