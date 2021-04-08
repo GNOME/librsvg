@@ -37,9 +37,7 @@ struct RsvgConvert {}
 
 impl RsvgConvert {
     fn new() -> Command {
-        let mut command = Command::cargo_bin("rsvg-convert").unwrap();
-        command.env_clear();
-        command
+        Command::cargo_bin("rsvg-convert").unwrap()
     }
 
     fn new_with_input<P>(file: P) -> Command

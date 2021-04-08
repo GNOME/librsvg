@@ -116,6 +116,7 @@ coverage:
       artifacts: false
   variables:
     RUSTFLAGS: "-Zinstrument-coverage"
+    RUSTDOCFLAGS: "-Zinstrument-coverage"
     LLVM_PROFILE_FILE: "coverage-%p-%m.profraw"
   before_script:
     - apt update -yqq && apt install -yqq --no-install-recommends libgdk-pixbuf2.0-dev libpango1.0-dev libcairo2-dev lcov
@@ -123,7 +124,7 @@ coverage:
     - curl -L https://github.com/mozilla/grcov/releases/latest/download/grcov-linux-x86_64.tar.bz2 | tar jxf -
   script:
     - cargo +nightly test --no-fail-fast || true
-    - ./grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "*cargo*" -o lcov.info
+    - ./grcov . --binary-path ./target/debug/ --source-dir . --output-type lcov --llvm --ignore-not-existing --ignore "*cargo*" --output-path lcov.info
     - lcov --summary lcov.info
 
 cargo_bench:
