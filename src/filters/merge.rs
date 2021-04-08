@@ -10,8 +10,9 @@ use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::BoundsBuilder;
+use super::context::{FilterContext, FilterOutput};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feMerge` filter primitive.
 pub struct FeMerge {
@@ -97,13 +98,13 @@ impl MergeNode {
 impl Merge {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // Compute the filter bounds, taking each feMergeNode's input into account.
-        let mut bounds = primitive.get_bounds(ctx)?;
+        let mut bounds_builder = bounds_builder;
         for merge_node in &self.merge_nodes {
             let input = ctx.get_input(
                 acquired_nodes,
@@ -111,10 +112,10 @@ impl Merge {
                 &merge_node.in1,
                 merge_node.color_interpolation_filters,
             )?;
-            bounds = bounds.add_input(&input);
+            bounds_builder = bounds_builder.add_input(&input);
         }
 
-        let bounds = bounds.into_irect(ctx, draw_ctx);
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         // Now merge them all.
         let mut output_surface = None;
@@ -133,10 +134,7 @@ impl Merge {
             )?,
         };
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

@@ -22,8 +22,15 @@ pub struct Filter {
     y: Length<Vertical>,
     width: ULength<Horizontal>,
     height: ULength<Vertical>,
-    filterunits: CoordUnits,
-    primitiveunits: CoordUnits,
+    filter_units: CoordUnits,
+    primitive_units: CoordUnits,
+}
+
+/// A <filter> element definition in user-space coordinates.
+pub struct ResolvedFilter {
+    pub rect: Rect,
+    pub filter_units: CoordUnits,
+    pub primitive_units: CoordUnits,
 }
 
 impl Default for Filter {
@@ -34,25 +41,25 @@ impl Default for Filter {
             y: Length::<Vertical>::parse_str("-10%").unwrap(),
             width: ULength::<Horizontal>::parse_str("120%").unwrap(),
             height: ULength::<Vertical>::parse_str("120%").unwrap(),
-            filterunits: CoordUnits::ObjectBoundingBox,
-            primitiveunits: CoordUnits::UserSpaceOnUse,
+            filter_units: CoordUnits::ObjectBoundingBox,
+            primitive_units: CoordUnits::UserSpaceOnUse,
         }
     }
 }
 
 impl Filter {
     pub fn get_filter_units(&self) -> CoordUnits {
-        self.filterunits
+        self.filter_units
     }
 
     pub fn get_primitive_units(&self) -> CoordUnits {
-        self.primitiveunits
+        self.primitive_units
     }
 
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+    pub fn resolve(&self, values: &ComputedValues, params: &ViewParams) -> ResolvedFilter {
         // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
         // referencing node. No units are allowed (it's checked during attribute parsing).
-        let (x, y, w, h) = if self.filterunits == CoordUnits::ObjectBoundingBox {
+        let (x, y, w, h) = if self.filter_units == CoordUnits::ObjectBoundingBox {
             (
                 self.x.length,
                 self.y.length,
@@ -68,7 +75,13 @@ impl Filter {
             )
         };
 
-        Rect::new(x, y, x + w, y + h)
+        let rect = Rect::new(x, y, x + w, y + h);
+
+        ResolvedFilter {
+            rect,
+            filter_units: self.filter_units,
+            primitive_units: self.primitive_units,
+        }
     }
 }
 
@@ -80,11 +93,11 @@ impl SetAttributes for Filter {
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "filterUnits"))
             .and_then(|(attr, value)| attr.parse(value).ok());
         if let Some(filter_units) = result {
-            self.filterunits = filter_units
+            self.filter_units = filter_units
         }
 
         // With ObjectBoundingBox, only fractions and percents are allowed.
-        let units_allowed = self.filterunits != CoordUnits::ObjectBoundingBox;
+        let units_allowed = self.filter_units != CoordUnits::ObjectBoundingBox;
 
         // Parse the rest of the attributes.
         for (attr, value) in attrs.iter() {
@@ -109,7 +122,7 @@ impl SetAttributes for Filter {
                         .parse(value)
                         .and_then(|v| check_units(v, units_allowed, attr))?
                 }
-                expanded_name!("", "primitiveUnits") => self.primitiveunits = attr.parse(value)?,
+                expanded_name!("", "primitiveUnits") => self.primitive_units = attr.parse(value)?,
                 _ => (),
             }
         }

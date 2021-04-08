@@ -6,10 +6,12 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::BoundsBuilder;
+use super::context::{FilterContext, FilterOutput};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feOffset` filter primitive.
 #[derive(Default)]
@@ -45,11 +47,11 @@ impl SetAttributes for FeOffset {
 impl Offset {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
         //
         // "Note: The color-interpolation-filters property just has an
@@ -63,19 +65,17 @@ impl Offset {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = primitive
-            .get_bounds(ctx)?
+        let bounds: IRect = bounds_builder
             .add_input(&input_1)
-            .into_irect(ctx, draw_ctx);
+            .compute(ctx)
+            .clipped
+            .into();
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
         let surface = input_1.surface().offset(bounds, dx, dy)?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

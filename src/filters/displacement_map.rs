@@ -8,11 +8,13 @@ use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface};
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::BoundsBuilder;
+use super::context::{FilterContext, FilterOutput};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the color channels the displacement map can source.
 #[derive(Clone, Copy)]
@@ -69,11 +71,11 @@ impl SetAttributes for FeDisplacementMap {
 impl DisplacementMap {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#feDisplacementMapElement
         // "The color-interpolation-filters property only applies to
         // the in2 source image and does not apply to the in source
@@ -92,11 +94,12 @@ impl DisplacementMap {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = primitive
-            .get_bounds(ctx)?
+        let bounds: IRect = bounds_builder
             .add_input(&input_1)
             .add_input(&displacement_input)
-            .into_irect(ctx, draw_ctx);
+            .compute(ctx)
+            .clipped
+            .into();
 
         // Displacement map's values need to be non-premultiplied.
         let displacement_surface = displacement_input.surface().unpremultiply(bounds)?;
@@ -141,12 +144,9 @@ impl DisplacementMap {
             Ok(())
         })?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: surface.share()?,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: surface.share()?,
+            bounds,
         })
     }
 }

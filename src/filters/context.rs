@@ -5,10 +5,9 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::filter::Filter;
+use crate::filter::ResolvedFilter;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
-use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -48,9 +47,6 @@ pub enum FilterInput {
 
 /// The filter rendering context.
 pub struct FilterContext {
-    /// Values from the node which referenced this filter.
-    computed_from_node_being_filtered: ComputedValues,
-
     /// Paint source for primitives which have an input value equal to `StrokePaint`.
     stroke_paint: UserSpacePaintSource,
     /// Paint source for primitives which have an input value equal to `FillPaint`.
@@ -103,21 +99,18 @@ pub struct FilterContext {
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
-        filter: &Filter,
-        computed_from_node_being_filtered: &ComputedValues,
+        filter: &ResolvedFilter,
         stroke_paint: UserSpacePaintSource,
         fill_paint: UserSpacePaintSource,
-        source_surface: SharedImageSurface,
-        draw_ctx: &mut DrawingCtx,
+        source_surface: &SharedImageSurface,
         draw_transform: Transform,
         node_bbox: BoundingBox,
-    ) -> Self {
+    ) -> Result<Self, FilterError> {
         // The rect can be empty (for example, if the filter is applied to an empty group).
         // However, with userSpaceOnUse it's still possible to create images with a filter.
         let bbox_rect = node_bbox.rect.unwrap_or_default();
 
-        let filter_units = filter.get_filter_units();
-        let affine = match filter_units {
+        let affine = match filter.filter_units {
             CoordUnits::UserSpaceOnUse => draw_transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
@@ -130,8 +123,7 @@ impl FilterContext {
             .post_transform(&draw_transform),
         };
 
-        let primitive_units = filter.get_primitive_units();
-        let paffine = match primitive_units {
+        let paffine = match filter.primitive_units {
             CoordUnits::UserSpaceOnUse => draw_transform,
             CoordUnits::ObjectBoundingBox => Transform::new_unchecked(
                 bbox_rect.width(),
@@ -143,15 +135,18 @@ impl FilterContext {
             )
             .post_transform(&draw_transform),
         };
+
+        if !(affine.is_invertible() && paffine.is_invertible()) {
+            return Err(FilterError::InvalidParameter(
+                "transform is not invertible".to_string(),
+            ));
+        }
 
         let effects_region = {
-            let params = draw_ctx.push_coord_units(filter_units);
-            let filter_rect = filter.get_rect(&computed_from_node_being_filtered, &params);
-
             let mut bbox = BoundingBox::new();
             let other_bbox = BoundingBox::new()
                 .with_transform(affine)
-                .with_rect(filter_rect);
+                .with_rect(filter.rect);
 
             // At this point all of the previous viewbox and matrix business gets converted to pixel
             // coordinates in the final surface, because bbox is created with an identity transform.
@@ -166,27 +161,20 @@ impl FilterContext {
             bbox.rect.unwrap()
         };
 
-        Self {
-            computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
+        Ok(Self {
             stroke_paint,
             fill_paint,
-            source_surface,
+            source_surface: source_surface.clone(),
             last_result: None,
             previous_results: HashMap::new(),
             background_surface: OnceCell::new(),
             stroke_paint_surface: OnceCell::new(),
             fill_paint_surface: OnceCell::new(),
-            primitive_units,
+            primitive_units: filter.primitive_units,
             effects_region,
             _affine: affine,
             paffine,
-        }
-    }
-
-    /// Returns the computed values from the node that referenced this filter.
-    #[inline]
-    pub fn get_computed_values_from_node_being_filtered(&self) -> &ComputedValues {
-        &self.computed_from_node_being_filtered
+        })
     }
 
     /// Returns the surface corresponding to the source graphic.

@@ -8,6 +8,7 @@ use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
@@ -15,8 +16,9 @@ use crate::surface_utils::{
 use crate::util::clamp;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::BoundsBuilder;
+use super::context::{FilterContext, FilterOutput};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -341,12 +343,12 @@ impl NoiseGenerator {
 impl Turbulence {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
-        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
+        _draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterOutput, FilterError> {
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         let affine = ctx.paffine().invert().unwrap();
 
@@ -405,12 +407,9 @@ impl Turbulence {
             }
         });
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: surface.share()?,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: surface.share()?,
+            bounds,
         })
     }
 }

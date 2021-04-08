@@ -11,8 +11,9 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
-    context::{FilterContext, FilterOutput, FilterResult},
-    FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
+    bounds::BoundsBuilder,
+    context::{FilterContext, FilterOutput},
+    FilterEffect, FilterError, Input, Primitive, PrimitiveParams,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
@@ -437,21 +438,22 @@ macro_rules! impl_lighting_filter {
         impl $params_name {
             pub fn render(
                 &self,
-                primitive: &ResolvedPrimitive,
+                bounds_builder: BoundsBuilder,
                 ctx: &FilterContext,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
-            ) -> Result<FilterResult, FilterError> {
+            ) -> Result<FilterOutput, FilterError> {
                 let input_1 = ctx.get_input(
                     acquired_nodes,
                     draw_ctx,
                     &self.params.in1,
                     self.light.color_interpolation_filters,
                 )?;
-                let mut bounds = primitive
-                    .get_bounds(ctx)?
+                let mut bounds: IRect = bounds_builder
                     .add_input(&input_1)
-                    .into_irect(ctx, draw_ctx);
+                    .compute(ctx)
+                    .clipped
+                    .into();
                 let original_bounds = bounds;
 
                 let scale = self
@@ -642,10 +644,7 @@ macro_rules! impl_lighting_filter {
                     bounds = original_bounds;
                 }
 
-                Ok(FilterResult {
-                    name: primitive.result.clone(),
-                    output: FilterOutput { surface, bounds },
-                })
+                Ok(FilterOutput { surface, bounds })
             }
         }
 

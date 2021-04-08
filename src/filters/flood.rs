@@ -3,10 +3,12 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
+use crate::rect::IRect;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::BoundsBuilder;
+use super::context::{FilterContext, FilterOutput};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// The `feFlood` filter primitive.
 #[derive(Default)]
@@ -28,19 +30,16 @@ impl SetAttributes for FeFlood {
 impl Flood {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
-        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
+        _draw_ctx: &mut DrawingCtx,
+    ) -> Result<FilterOutput, FilterError> {
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         let surface = ctx.source_graphic().flood(bounds, self.color)?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

@@ -3,10 +3,12 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::BoundsBuilder;
+use super::context::{FilterContext, FilterInput, FilterOutput};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feTile` filter primitive.
 #[derive(Default)]
@@ -31,11 +33,11 @@ impl SetAttributes for FeTile {
 impl Tile {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
         //
         // "Note: The color-interpolation-filters property just has an
@@ -51,7 +53,7 @@ impl Tile {
         )?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
-        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx, draw_ctx);
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         let surface = match input_1 {
             FilterInput::StandardInput(input_surface) => input_surface,
@@ -70,10 +72,7 @@ impl Tile {
             }
         };
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

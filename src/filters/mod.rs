@@ -23,7 +23,7 @@ mod bounds;
 use self::bounds::BoundsBuilder;
 
 pub mod context;
-use self::context::{FilterContext, FilterResult};
+use self::context::{FilterContext, FilterOutput, FilterResult};
 
 mod error;
 use self::error::FilterError;
@@ -88,10 +88,10 @@ pub struct Primitive {
 }
 
 pub struct ResolvedPrimitive {
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
-    width: Option<ULength<Horizontal>>,
-    height: Option<ULength<Vertical>>,
+    x: Option<f64>,
+    y: Option<f64>,
+    width: Option<f64>,
+    height: Option<f64>,
     result: Option<CustomIdent>,
 }
 
@@ -132,21 +132,12 @@ impl Parse for Input {
 }
 
 impl Primitive {
-    fn resolve(&self) -> ResolvedPrimitive {
-        ResolvedPrimitive {
-            x: self.x,
-            y: self.y,
-            width: self.width,
-            height: self.height,
-            result: self.result.clone(),
-        }
-    }
-}
-
-impl ResolvedPrimitive {
-    /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
-    #[inline]
-    fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
+    fn resolve(
+        &self,
+        ctx: &FilterContext,
+        values: &ComputedValues,
+        draw_ctx: &DrawingCtx,
+    ) -> Result<ResolvedPrimitive, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
         if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
             check_px_or_percent_units(self.x)?;
@@ -155,20 +146,28 @@ impl ResolvedPrimitive {
             check_px_or_percent_units(self.height)?;
         }
 
-        let transform = ctx.paffine();
-        if !transform.is_invertible() {
-            return Err(FilterError::InvalidParameter(
-                "transform is not invertible".to_string(),
-            ));
-        }
+        let params = draw_ctx.push_coord_units(ctx.primitive_units());
 
-        Ok(BoundsBuilder::new(
-            self.x,
-            self.y,
-            self.width,
-            self.height,
-            transform,
-        ))
+        let x = self.x.map(|l| l.normalize(values, &params));
+        let y = self.y.map(|l| l.normalize(values, &params));
+        let width = self.width.map(|l| l.normalize(values, &params));
+        let height = self.height.map(|l| l.normalize(values, &params));
+
+        Ok(ResolvedPrimitive {
+            x,
+            y,
+            width,
+            height,
+            result: self.result.clone(),
+        })
+    }
+}
+
+impl ResolvedPrimitive {
+    /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
+    #[inline]
+    fn get_bounds(&self, ctx: &FilterContext) -> BoundsBuilder {
+        BoundsBuilder::new(self.x, self.y, self.width, self.height, ctx.paffine())
     }
 }
 
@@ -254,75 +253,94 @@ pub fn render(
         .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
         .to_user_space(&node_bbox, draw_ctx, values);
 
-    let mut filter_ctx = FilterContext::new(
-        &filter,
-        computed_from_node_being_filtered,
+    let resolved_filter = {
+        // This is in a temporary scope so we don't leave the coord_units pushed during
+        // the execution of all the filter primitives.
+        let params = draw_ctx.push_coord_units(filter.get_filter_units());
+        filter.resolve(values, &params)
+    };
+
+    if let Ok(mut filter_ctx) = FilterContext::new(
+        &resolved_filter,
         stroke_paint_source,
         fill_paint_source,
-        source_surface,
-        draw_ctx,
+        &source_surface,
         transform,
         node_bbox,
-    );
+    ) {
+        let primitives = filter_node
+            .children()
+            .filter(|c| c.is_element())
+            // Skip nodes in error.
+            .filter(|c| {
+                let in_error = c.borrow_element().is_in_error();
 
-    // If paffine is non-invertible, we won't draw anything. Also bbox combining in bounds
-    // computations will panic due to non-invertible martrix.
-    if !filter_ctx.paffine().is_invertible() {
-        return Ok(filter_ctx.into_output()?);
-    }
+                if in_error {
+                    rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
+                }
 
-    let primitives = filter_node
-        .children()
-        .filter(|c| c.is_element())
-        // Skip nodes in error.
-        .filter(|c| {
-            let in_error = c.borrow_element().is_in_error();
-
-            if in_error {
-                rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
-            }
-
-            !in_error
-        })
-        // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow_element().as_filter_effect().is_some());
-
-    for c in primitives {
-        let elt = c.borrow_element();
-        let filter = elt.as_filter_effect().unwrap();
-
-        let start = Instant::now();
-
-        if let Err(err) = filter
-            .resolve(&c)
-            .and_then(|(primitive, params)| {
-                render_primitive(
-                    &primitive.resolve(),
-                    &params,
-                    &filter_ctx,
-                    acquired_nodes,
-                    draw_ctx,
-                )
+                !in_error
             })
-            .and_then(|result| filter_ctx.store_result(result))
-        {
-            rsvg_log!("(filter primitive {} returned an error: {})", c, err);
+            // Keep only filter primitives (those that implement the Filter trait)
+            .filter(|c| c.borrow_element().as_filter_effect().is_some());
 
-            // Exit early on Cairo errors. Continue rendering otherwise.
-            if let FilterError::CairoError(status) = err {
-                return Err(RenderingError::from(status));
+        for c in primitives {
+            let elt = c.borrow_element();
+            let filter = elt.as_filter_effect().unwrap();
+
+            let start = Instant::now();
+
+            if let Err(err) = filter
+                .resolve(&c)
+                .and_then(|(primitive, params)| {
+                    let resolved_primitive = primitive.resolve(
+                        &filter_ctx,
+                        computed_from_node_being_filtered,
+                        draw_ctx,
+                    )?;
+                    Ok((resolved_primitive, params))
+                })
+                .and_then(|(resolved_primitive, params)| {
+                    let output = render_primitive(
+                        &resolved_primitive,
+                        &params,
+                        &filter_ctx,
+                        acquired_nodes,
+                        draw_ctx,
+                    )?;
+
+                    Ok(FilterResult {
+                        name: resolved_primitive.result,
+                        output,
+                    })
+                })
+                .and_then(|result| filter_ctx.store_result(result))
+            {
+                rsvg_log!("(filter primitive {} returned an error: {})", c, err);
+
+                // Exit early on Cairo errors. Continue rendering otherwise.
+                if let FilterError::CairoError(status) = err {
+                    return Err(RenderingError::from(status));
+                }
             }
+
+            let elapsed = start.elapsed();
+            rsvg_log!(
+                "(rendered filter primitive {} in\n    {} seconds)",
+                c,
+                elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+            );
         }
 
-        let elapsed = start.elapsed();
-        rsvg_log!(
-            "(rendered filter primitive {} in\n    {} seconds)",
-            c,
-            elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-        );
+        Ok(filter_ctx.into_output()?)
+    } else {
+        // Ignore errors that happened when creating the FilterContext
+        Ok(SharedImageSurface::empty(
+            source_surface.width(),
+            source_surface.height(),
+            SurfaceType::AlphaOnly,
+        )?)
     }
-
-    Ok(filter_ctx.into_output()?)
 }
 
 #[rustfmt::skip]
@@ -332,26 +350,28 @@ fn render_primitive(
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
-) -> Result<FilterResult, FilterError> {
+) -> Result<FilterOutput, FilterError> {
     use PrimitiveParams::*;
 
+    let bounds_builder = primitive.get_bounds(ctx);
+
     match params {
-        Blend(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(p)       => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(p) => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Composite(p)         => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(p)    => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Flood(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(p)      => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Image(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Merge(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Morphology(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Offset(p)            => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(p)  => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Tile(p)              => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Turbulence(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Blend(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Composite(p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Flood(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Image(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Merge(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Morphology(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Offset(p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Tile(p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Turbulence(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
     }
 }
 

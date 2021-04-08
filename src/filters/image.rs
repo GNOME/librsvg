@@ -7,26 +7,33 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
+use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::{Bounds, BoundsBuilder};
+use super::context::{FilterContext, FilterOutput};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// The `feImage` filter primitive.
 #[derive(Default)]
 pub struct FeImage {
     base: Primitive,
-    params: Image,
+    params: ImageParams,
 }
 
 /// Resolved `feImage` primitive for rendering.
 #[derive(Clone, Default)]
-pub struct Image {
+struct ImageParams {
     aspect: AspectRatio,
     href: Option<String>,
+}
+
+pub struct Image {
+    params: ImageParams,
+    feimage_values: ComputedValues,
 }
 
 impl Image {
@@ -39,16 +46,21 @@ impl Image {
         bounds: Rect,
         node_id: &NodeId,
     ) -> Result<SharedImageSurface, FilterError> {
-        let acquired_drawable = acquired_nodes
+        let acquired = acquired_nodes
             .acquire(node_id)
             .map_err(|_| FilterError::InvalidInput)?;
-        let drawable = acquired_drawable.get();
+        let referenced_node = acquired.get();
 
-        let node_being_filtered_values = ctx.get_computed_values_from_node_being_filtered();
-        let cascaded = CascadedValues::new_from_values(&drawable, node_being_filtered_values);
+        // https://www.w3.org/TR/filter-effects/#feImageElement
+        //
+        // The filters spec says, "... otherwise [rendering a referenced object], the
+        // referenced resource is rendered according to the behavior of the use element."
+        // I think this means that we use the same cascading mode as <use>, i.e. the
+        // referenced object inherits its properties from the feImage element.
+        let cascaded = CascadedValues::new_from_values(&referenced_node, &self.feimage_values);
 
         let image = draw_ctx.draw_node_to_surface(
-            &drawable,
+            &referenced_node,
             acquired_nodes,
             &cascaded,
             ctx.paffine(),
@@ -67,8 +79,7 @@ impl Image {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &DrawingCtx,
-        bounds: Rect,
-        unclipped_bounds: &Rect,
+        bounds: &Bounds,
         url: &str,
     ) -> Result<SharedImageSurface, FilterError> {
         // FIXME: translate the error better here
@@ -76,17 +87,17 @@ impl Image {
             .lookup_image(url)
             .map_err(|_| FilterError::InvalidInput)?;
 
-        let rect = self.aspect.compute(
+        let rect = self.params.aspect.compute(
             &ViewBox::from(Rect::from_size(
                 f64::from(image.width()),
                 f64::from(image.height()),
             )),
-            &unclipped_bounds,
+            &bounds.unclipped,
         );
 
         let surface = ctx
             .source_graphic()
-            .paint_image(bounds, &image, Some(rect))?;
+            .paint_image(bounds.clipped, &image, Some(rect))?;
 
         Ok(surface)
     }
@@ -118,45 +129,40 @@ impl SetAttributes for FeImage {
 impl Image {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
-        let bounds_builder = primitive.get_bounds(ctx)?;
-        let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx, draw_ctx);
+    ) -> Result<FilterOutput, FilterError> {
+        let bounds = bounds_builder.compute(ctx);
 
-        let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
+        let href = self.params.href.as_ref().ok_or(FilterError::InvalidInput)?;
 
         let surface = if let Ok(node_id) = NodeId::parse(href) {
             // if href has a fragment specified, render as a node
-            self.render_node(ctx, acquired_nodes, draw_ctx, bounds, &node_id)
+            self.render_node(ctx, acquired_nodes, draw_ctx, bounds.clipped, &node_id)
         } else {
-            self.render_external_image(
-                ctx,
-                acquired_nodes,
-                draw_ctx,
-                bounds,
-                &unclipped_bounds,
-                href,
-            )
+            self.render_external_image(ctx, acquired_nodes, draw_ctx, &bounds, href)
         }?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface,
-                bounds: bounds.into(),
-            },
+        Ok(FilterOutput {
+            surface,
+            bounds: bounds.clipped.into(),
         })
     }
 }
 
 impl FilterEffect for FeImage {
-    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        let cascaded = CascadedValues::new_from_node(node);
+        let feimage_values = cascaded.get().clone();
+
         Ok((
             self.base.clone(),
-            PrimitiveParams::Image(self.params.clone()),
+            PrimitiveParams::Image(Image {
+                params: self.params.clone(),
+                feimage_values,
+            }),
         ))
     }
 }

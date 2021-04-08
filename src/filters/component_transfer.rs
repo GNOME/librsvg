@@ -10,14 +10,16 @@ use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
 use crate::util::clamp;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::bounds::BoundsBuilder;
+use super::context::{FilterContext, FilterOutput};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feComponentTransfer` filter primitive.
 #[derive(Default)]
@@ -288,21 +290,22 @@ macro_rules! get_func_x_node {
 impl ComponentTransfer {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         let input_1 = ctx.get_input(
             acquired_nodes,
             draw_ctx,
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = primitive
-            .get_bounds(ctx)?
+        let bounds: IRect = bounds_builder
             .add_input(&input_1)
-            .into_irect(ctx, draw_ctx);
+            .compute(ctx)
+            .clipped
+            .into();
 
         // Create the output surface.
         let mut surface = ExclusiveImageSurface::new(
@@ -357,12 +360,9 @@ impl ComponentTransfer {
             }
         });
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: surface.share()?,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: surface.share()?,
+            bounds,
         })
     }
 }
