@@ -17,8 +17,9 @@ use crate::surface_utils::{
 };
 use crate::xml::Attributes;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The maximum gaussian blur kernel size.
 ///
@@ -187,7 +188,7 @@ fn gaussian_blur(
 impl GaussianBlur {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -198,10 +199,7 @@ impl GaussianBlur {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = primitive
-            .get_bounds(ctx)
-            .add_input(&input_1)
-            .into_irect(ctx);
+        let bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
 
         let (std_x, std_y) = self.std_deviation;
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);

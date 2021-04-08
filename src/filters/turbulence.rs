@@ -15,8 +15,9 @@ use crate::surface_utils::{
 use crate::util::clamp;
 use crate::xml::Attributes;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -341,12 +342,12 @@ impl NoiseGenerator {
 impl Turbulence {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
-        let bounds = primitive.get_bounds(ctx).into_irect(ctx);
+        let bounds = bounds_builder.into_irect(ctx);
 
         let affine = ctx.paffine().invert().unwrap();
 

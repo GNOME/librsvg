@@ -18,8 +18,9 @@ use crate::surface_utils::{
 };
 use crate::xml::Attributes;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the possible morphology operations.
 #[derive(Clone)]
@@ -67,7 +68,7 @@ impl SetAttributes for FeMorphology {
 impl Morphology {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -86,10 +87,7 @@ impl Morphology {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = primitive
-            .get_bounds(ctx)
-            .add_input(&input_1)
-            .into_irect(ctx);
+        let bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
 
         let (rx, ry) = self.radius;
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);

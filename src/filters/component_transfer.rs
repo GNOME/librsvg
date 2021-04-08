@@ -16,8 +16,9 @@ use crate::surface_utils::{
 use crate::util::clamp;
 use crate::xml::Attributes;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feComponentTransfer` filter primitive.
 #[derive(Default)]
@@ -288,7 +289,7 @@ macro_rules! get_func_x_node {
 impl ComponentTransfer {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -299,10 +300,7 @@ impl ComponentTransfer {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = primitive
-            .get_bounds(ctx)
-            .add_input(&input_1)
-            .into_irect(ctx);
+        let bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
 
         // Create the output surface.
         let mut surface = ExclusiveImageSurface::new(

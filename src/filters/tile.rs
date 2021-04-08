@@ -5,8 +5,9 @@ use crate::node::Node;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterInput, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// The `feTile` filter primitive.
 #[derive(Default)]
@@ -31,7 +32,7 @@ impl SetAttributes for FeTile {
 impl Tile {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -51,7 +52,7 @@ impl Tile {
         )?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
-        let bounds = primitive.get_bounds(ctx).into_irect(ctx);
+        let bounds = bounds_builder.into_irect(ctx);
 
         let surface = match input_1 {
             FilterInput::StandardInput(input_surface) => input_surface,

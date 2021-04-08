@@ -353,23 +353,25 @@ fn render_primitive(
 ) -> Result<FilterOutput, FilterError> {
     use PrimitiveParams::*;
 
+    let bounds_builder = primitive.get_bounds(ctx);
+
     match params {
-        Blend(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(p)       => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(p) => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Composite(p)         => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(p)    => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(p)   => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Flood(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(p)      => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Image(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Merge(p)             => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Morphology(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Offset(p)            => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(p)  => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Tile(p)              => p.render(primitive, ctx, acquired_nodes, draw_ctx),
-        Turbulence(p)        => p.render(primitive, ctx, acquired_nodes, draw_ctx),
+        Blend(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Composite(p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Flood(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Image(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Merge(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Morphology(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Offset(p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Tile(p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Turbulence(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
     }
 }
 

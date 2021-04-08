@@ -10,8 +10,9 @@ use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -70,7 +71,7 @@ impl SetAttributes for FeComposite {
 impl Composite {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
@@ -87,8 +88,7 @@ impl Composite {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = primitive
-            .get_bounds(ctx)
+        let bounds = bounds_builder
             .add_input(&input_1)
             .add_input(&input_2)
             .into_irect(ctx);

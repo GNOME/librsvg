@@ -13,8 +13,9 @@ use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
+use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
 /// The `feImage` filter primitive.
 #[derive(Default)]
@@ -129,12 +130,11 @@ impl SetAttributes for FeImage {
 impl Image {
     pub fn render(
         &self,
-        primitive: &ResolvedPrimitive,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
-        let bounds_builder = primitive.get_bounds(ctx);
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx);
 
         let href = self.params.href.as_ref().ok_or(FilterError::InvalidInput)?;

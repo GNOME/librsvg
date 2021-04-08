@@ -11,8 +11,9 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
+    bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
-    FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterEffect, FilterError, Input, Primitive, PrimitiveParams,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
@@ -437,7 +438,7 @@ macro_rules! impl_lighting_filter {
         impl $params_name {
             pub fn render(
                 &self,
-                primitive: &ResolvedPrimitive,
+                bounds_builder: BoundsBuilder,
                 ctx: &FilterContext,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
@@ -448,10 +449,7 @@ macro_rules! impl_lighting_filter {
                     &self.params.in1,
                     self.light.color_interpolation_filters,
                 )?;
-                let mut bounds = primitive
-                    .get_bounds(ctx)
-                    .add_input(&input_1)
-                    .into_irect(ctx);
+                let mut bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
                 let original_bounds = bounds;
 
                 let scale = self
