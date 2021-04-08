@@ -26,6 +26,13 @@ pub struct Filter {
     primitive_units: CoordUnits,
 }
 
+/// A <filter> element definition in user-space coordinates.
+pub struct ResolvedFilter {
+    pub rect: Rect,
+    pub filter_units: CoordUnits,
+    pub primitive_units: CoordUnits,
+}
+
 impl Default for Filter {
     /// Constructs a new `Filter` with default properties.
     fn default() -> Self {
@@ -49,7 +56,7 @@ impl Filter {
         self.primitive_units
     }
 
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
+    pub fn resolve(&self, values: &ComputedValues, params: &ViewParams) -> ResolvedFilter {
         // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
         // referencing node. No units are allowed (it's checked during attribute parsing).
         let (x, y, w, h) = if self.filter_units == CoordUnits::ObjectBoundingBox {
@@ -68,7 +75,13 @@ impl Filter {
             )
         };
 
-        Rect::new(x, y, x + w, y + h)
+        let rect = Rect::new(x, y, x + w, y + h);
+
+        ResolvedFilter {
+            rect,
+            filter_units: self.filter_units,
+            primitive_units: self.primitive_units,
+        }
     }
 }
 

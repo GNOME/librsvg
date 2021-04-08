@@ -259,8 +259,15 @@ pub fn render(
         .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
         .to_user_space(&node_bbox, draw_ctx, values);
 
+    let resolved_filter = {
+        // This is in a temporary scope so we don't leave the coord_units pushed during
+        // the execution of all the filter primitives.
+        let params = draw_ctx.push_coord_units(filter.get_filter_units());
+        filter.resolve(values, &params)
+    };
+
     if let Ok(mut filter_ctx) = FilterContext::new(
-        &filter,
+        &resolved_filter,
         computed_from_node_being_filtered,
         stroke_paint_source,
         fill_paint_source,
