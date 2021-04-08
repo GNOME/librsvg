@@ -98,12 +98,13 @@ impl MergeNode {
 impl Merge {
     pub fn render(
         &self,
-        mut bounds_builder: BoundsBuilder,
+        bounds_builder: BoundsBuilder,
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
         // Compute the filter bounds, taking each feMergeNode's input into account.
+        let mut bounds_builder = bounds_builder;
         for merge_node in &self.merge_nodes {
             let input = ctx.get_input(
                 acquired_nodes,
