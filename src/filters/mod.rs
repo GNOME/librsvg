@@ -135,6 +135,7 @@ impl Primitive {
     fn resolve(
         &self,
         ctx: &FilterContext,
+        values: &ComputedValues,
         draw_ctx: &DrawingCtx,
     ) -> Result<ResolvedPrimitive, FilterError> {
         // With ObjectBoundingBox, only fractions and percents are allowed.
@@ -146,7 +147,6 @@ impl Primitive {
         }
 
         let params = draw_ctx.push_coord_units(ctx.primitive_units());
-        let values = ctx.get_computed_values_from_node_being_filtered();
 
         let x = self.x.map(|l| l.normalize(values, &params));
         let y = self.y.map(|l| l.normalize(values, &params));
@@ -294,7 +294,11 @@ pub fn render(
             if let Err(err) = filter
                 .resolve(&c)
                 .and_then(|(primitive, params)| {
-                    let resolved_primitive = primitive.resolve(&filter_ctx, draw_ctx)?;
+                    let resolved_primitive = primitive.resolve(
+                        &filter_ctx,
+                        computed_from_node_being_filtered,
+                        draw_ctx,
+                    )?;
                     Ok((resolved_primitive, params))
                 })
                 .and_then(|(resolved_primitive, params)| {

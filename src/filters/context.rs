@@ -48,9 +48,6 @@ pub enum FilterInput {
 
 /// The filter rendering context.
 pub struct FilterContext {
-    /// Values from the node which referenced this filter.
-    computed_from_node_being_filtered: ComputedValues,
-
     /// Paint source for primitives which have an input value equal to `StrokePaint`.
     stroke_paint: UserSpacePaintSource,
     /// Paint source for primitives which have an input value equal to `FillPaint`.
@@ -173,7 +170,6 @@ impl FilterContext {
         };
 
         Ok(Self {
-            computed_from_node_being_filtered: computed_from_node_being_filtered.clone(),
             stroke_paint,
             fill_paint,
             source_surface: source_surface.clone(),
@@ -187,12 +183,6 @@ impl FilterContext {
             _affine: affine,
             paffine,
         })
-    }
-
-    /// Returns the computed values from the node that referenced this filter.
-    #[inline]
-    pub fn get_computed_values_from_node_being_filtered(&self) -> &ComputedValues {
-        &self.computed_from_node_being_filtered
     }
 
     /// Returns the surface corresponding to the source graphic.
