@@ -199,7 +199,11 @@ impl GaussianBlur {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
+        let bounds: IRect = bounds_builder
+            .add_input(&input_1)
+            .compute(ctx)
+            .clipped
+            .into();
 
         let (std_x, std_y) = self.std_deviation;
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);

@@ -3,6 +3,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -52,7 +53,7 @@ impl Tile {
         )?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
-        let bounds = bounds_builder.into_irect(ctx);
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         let surface = match input_1 {
             FilterInput::StandardInput(input_surface) => input_surface,

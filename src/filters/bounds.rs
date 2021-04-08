@@ -1,5 +1,5 @@
 //! Filter primitive subregion computation.
-use crate::rect::{IRect, Rect};
+use crate::rect::Rect;
 use crate::transform::Transform;
 
 use super::context::{FilterContext, FilterInput};
@@ -23,6 +23,15 @@ pub struct BoundsBuilder {
 
     /// The current bounding rectangle.
     rect: Option<Rect>,
+}
+
+/// A filter primitive's subregion.
+pub struct Bounds {
+    /// Primitive's subregion, clipped to the filter effects region.
+    pub clipped: Rect,
+
+    /// Primitive's subregion, unclipped.
+    pub unclipped: Rect,
 }
 
 impl BoundsBuilder {
@@ -71,7 +80,7 @@ impl BoundsBuilder {
     }
 
     /// Returns the final exact bounds, both with and without clipping to the effects region.
-    pub fn into_rect(self, ctx: &FilterContext) -> (Rect, Rect) {
+    pub fn compute(self, ctx: &FilterContext) -> Bounds {
         let effects_region = ctx.effects_region();
 
         // The default value is the filter effects region converted into
@@ -103,17 +112,12 @@ impl BoundsBuilder {
         }
 
         // Convert into the surface coordinate system.
-        let unclipped_rect = self.transform.transform_rect(&rect);
+        let unclipped = self.transform.transform_rect(&rect);
 
-        let clipped_rect = unclipped_rect
+        let clipped = unclipped
             .intersection(&effects_region)
             .unwrap_or_else(Rect::default);
 
-        (clipped_rect, unclipped_rect)
-    }
-
-    /// Returns the final pixel bounds, clipped to the effects region.
-    pub fn into_irect(self, ctx: &FilterContext) -> IRect {
-        self.into_rect(ctx).0.into()
+        Bounds { clipped, unclipped }
     }
 }

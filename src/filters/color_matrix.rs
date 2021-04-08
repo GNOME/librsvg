@@ -9,6 +9,7 @@ use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
@@ -163,7 +164,11 @@ impl ColorMatrix {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
+        let bounds: IRect = bounds_builder
+            .add_input(&input_1)
+            .compute(ctx)
+            .clipped
+            .into();
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),

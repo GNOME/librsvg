@@ -150,7 +150,11 @@ impl ConvolveMatrix {
             &self.in1,
             self.color_interpolation_filters,
         )?;
-        let mut bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
+        let mut bounds: IRect = bounds_builder
+            .add_input(&input_1)
+            .compute(ctx)
+            .clipped
+            .into();
         let original_bounds = bounds;
 
         let target_x = match self.target_x {

@@ -449,7 +449,11 @@ macro_rules! impl_lighting_filter {
                     &self.params.in1,
                     self.light.color_interpolation_filters,
                 )?;
-                let mut bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
+                let mut bounds: IRect = bounds_builder
+                    .add_input(&input_1)
+                    .compute(ctx)
+                    .clipped
+                    .into();
                 let original_bounds = bounds;
 
                 let scale = self

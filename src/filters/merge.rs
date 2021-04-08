@@ -114,7 +114,7 @@ impl Merge {
             bounds_builder = bounds_builder.add_input(&input);
         }
 
-        let bounds = bounds_builder.into_irect(ctx);
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         // Now merge them all.
         let mut output_surface = None;

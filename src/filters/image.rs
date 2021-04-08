@@ -13,7 +13,7 @@ use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
-use super::bounds::BoundsBuilder;
+use super::bounds::{Bounds, BoundsBuilder};
 use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
 
@@ -79,8 +79,7 @@ impl Image {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &DrawingCtx,
-        bounds: Rect,
-        unclipped_bounds: &Rect,
+        bounds: &Bounds,
         url: &str,
     ) -> Result<SharedImageSurface, FilterError> {
         // FIXME: translate the error better here
@@ -93,12 +92,12 @@ impl Image {
                 f64::from(image.width()),
                 f64::from(image.height()),
             )),
-            &unclipped_bounds,
+            &bounds.unclipped,
         );
 
         let surface = ctx
             .source_graphic()
-            .paint_image(bounds, &image, Some(rect))?;
+            .paint_image(bounds.clipped, &image, Some(rect))?;
 
         Ok(surface)
     }
@@ -135,27 +134,20 @@ impl Image {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
-        let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx);
+        let bounds = bounds_builder.compute(ctx);
 
         let href = self.params.href.as_ref().ok_or(FilterError::InvalidInput)?;
 
         let surface = if let Ok(node_id) = NodeId::parse(href) {
             // if href has a fragment specified, render as a node
-            self.render_node(ctx, acquired_nodes, draw_ctx, bounds, &node_id)
+            self.render_node(ctx, acquired_nodes, draw_ctx, bounds.clipped, &node_id)
         } else {
-            self.render_external_image(
-                ctx,
-                acquired_nodes,
-                draw_ctx,
-                bounds,
-                &unclipped_bounds,
-                href,
-            )
+            self.render_external_image(ctx, acquired_nodes, draw_ctx, &bounds, href)
         }?;
 
         Ok(FilterOutput {
             surface,
-            bounds: bounds.into(),
+            bounds: bounds.clipped.into(),
         })
     }
 }

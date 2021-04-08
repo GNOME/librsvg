@@ -6,6 +6,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -64,7 +65,11 @@ impl Offset {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
+        let bounds: IRect = bounds_builder
+            .add_input(&input_1)
+            .compute(ctx)
+            .clipped
+            .into();
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 

@@ -8,6 +8,7 @@ use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,
@@ -347,7 +348,7 @@ impl Turbulence {
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
-        let bounds = bounds_builder.into_irect(ctx);
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         let affine = ctx.paffine().invert().unwrap();
 

@@ -3,6 +3,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
+use crate::rect::IRect;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -34,7 +35,7 @@ impl Flood {
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterOutput, FilterError> {
-        let bounds = bounds_builder.into_irect(ctx);
+        let bounds: IRect = bounds_builder.compute(ctx).clipped.into();
 
         let surface = ctx.source_graphic().flood(bounds, self.color)?;
 

@@ -8,6 +8,7 @@ use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface};
 use crate::xml::Attributes;
 
@@ -93,10 +94,12 @@ impl DisplacementMap {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = bounds_builder
+        let bounds: IRect = bounds_builder
             .add_input(&input_1)
             .add_input(&displacement_input)
-            .into_irect(ctx);
+            .compute(ctx)
+            .clipped
+            .into();
 
         // Displacement map's values need to be non-premultiplied.
         let displacement_surface = displacement_input.surface().unpremultiply(bounds)?;

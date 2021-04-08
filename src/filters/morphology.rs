@@ -87,7 +87,11 @@ impl Morphology {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds = bounds_builder.add_input(&input_1).into_irect(ctx);
+        let bounds: IRect = bounds_builder
+            .add_input(&input_1)
+            .compute(ctx)
+            .clipped
+            .into();
 
         let (rx, ry) = self.radius;
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);

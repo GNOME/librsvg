@@ -8,6 +8,7 @@ use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
+use crate::rect::IRect;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -89,10 +90,12 @@ impl Blend {
             &self.in2,
             self.color_interpolation_filters,
         )?;
-        let bounds = bounds_builder
+        let bounds: IRect = bounds_builder
             .add_input(&input_1)
             .add_input(&input_2)
-            .into_irect(ctx);
+            .compute(ctx)
+            .clipped
+            .into();
 
         let surface = input_1.surface().compose(
             input_2.surface(),
