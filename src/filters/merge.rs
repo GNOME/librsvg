@@ -10,7 +10,7 @@ use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feMerge` filter primitive.
@@ -101,7 +101,7 @@ impl Merge {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // Compute the filter bounds, taking each feMergeNode's input into account.
         let mut bounds = primitive.get_bounds(ctx);
         for merge_node in &self.merge_nodes {
@@ -133,10 +133,7 @@ impl Merge {
             )?,
         };
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

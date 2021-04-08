@@ -10,7 +10,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the possible compositing operations.
@@ -74,7 +74,7 @@ impl Composite {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         let input_1 = ctx.get_input(
             acquired_nodes,
             draw_ctx,
@@ -110,10 +110,7 @@ impl Composite {
             )?
         };
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

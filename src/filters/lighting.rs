@@ -11,7 +11,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
-    context::{FilterContext, FilterOutput, FilterResult},
+    context::{FilterContext, FilterOutput},
     FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -441,7 +441,7 @@ macro_rules! impl_lighting_filter {
                 ctx: &FilterContext,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 draw_ctx: &mut DrawingCtx,
-            ) -> Result<FilterResult, FilterError> {
+            ) -> Result<FilterOutput, FilterError> {
                 let input_1 = ctx.get_input(
                     acquired_nodes,
                     draw_ctx,
@@ -642,10 +642,7 @@ macro_rules! impl_lighting_filter {
                     bounds = original_bounds;
                 }
 
-                Ok(FilterResult {
-                    name: primitive.result.clone(),
-                    output: FilterOutput { surface, bounds },
-                })
+                Ok(FilterOutput { surface, bounds })
             }
         }
 

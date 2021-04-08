@@ -20,7 +20,7 @@ use crate::surface_utils::{
 use crate::util::clamp;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feConvolveMatrix` filter primitive.
@@ -140,7 +140,7 @@ impl ConvolveMatrix {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         #![allow(clippy::many_single_char_names)]
 
         let input_1 = ctx.get_input(
@@ -293,10 +293,7 @@ impl ConvolveMatrix {
             bounds = original_bounds;
         }
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

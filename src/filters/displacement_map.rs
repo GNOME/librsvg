@@ -11,7 +11,7 @@ use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::{iterators::Pixels, shared_surface::ExclusiveImageSurface};
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the color channels the displacement map can source.
@@ -73,7 +73,7 @@ impl DisplacementMap {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#feDisplacementMapElement
         // "The color-interpolation-filters property only applies to
         // the in2 source image and does not apply to the in source
@@ -141,12 +141,9 @@ impl DisplacementMap {
             Ok(())
         })?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: surface.share()?,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: surface.share()?,
+            bounds,
         })
     }
 }

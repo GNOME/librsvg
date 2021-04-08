@@ -16,7 +16,7 @@ use crate::surface_utils::{
 use crate::util::clamp;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feComponentTransfer` filter primitive.
@@ -292,7 +292,7 @@ impl ComponentTransfer {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         let input_1 = ctx.get_input(
             acquired_nodes,
             draw_ctx,
@@ -357,12 +357,9 @@ impl ComponentTransfer {
             }
         });
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: surface.share()?,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: surface.share()?,
+            bounds,
         })
     }
 }

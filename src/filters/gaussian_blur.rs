@@ -17,7 +17,7 @@ use crate::surface_utils::{
 };
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The maximum gaussian blur kernel size.
@@ -191,7 +191,7 @@ impl GaussianBlur {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         let input_1 = ctx.get_input(
             acquired_nodes,
             draw_ctx,
@@ -234,12 +234,9 @@ impl GaussianBlur {
             horiz_result_surface
         };
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: output_surface,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: output_surface,
+            bounds,
         })
     }
 }

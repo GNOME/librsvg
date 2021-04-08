@@ -8,7 +8,7 @@ use crate::parsers::ParseValue;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feOffset` filter primitive.
@@ -49,7 +49,7 @@ impl Offset {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
         //
         // "Note: The color-interpolation-filters property just has an
@@ -72,10 +72,7 @@ impl Offset {
 
         let surface = input_1.surface().offset(bounds, dx, dy)?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

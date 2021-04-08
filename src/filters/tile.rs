@@ -5,7 +5,7 @@ use crate::node::Node;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterInput, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterInput, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feTile` filter primitive.
@@ -35,7 +35,7 @@ impl Tile {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // https://www.w3.org/TR/filter-effects/#ColorInterpolationFiltersProperty
         //
         // "Note: The color-interpolation-filters property just has an
@@ -70,10 +70,7 @@ impl Tile {
             }
         };
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

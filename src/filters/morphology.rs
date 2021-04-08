@@ -18,7 +18,7 @@ use crate::surface_utils::{
 };
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the possible morphology operations.
@@ -71,7 +71,7 @@ impl Morphology {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         // Although https://www.w3.org/TR/filter-effects/#propdef-color-interpolation-filters does not mention
         // feMorphology as being one of the primitives that does *not* use that property,
         // the SVG1.1 test for filters-morph-01-f.svg fails if we pass the value from the ComputedValues here (that
@@ -147,12 +147,9 @@ impl Morphology {
             }
         });
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: surface.share()?,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: surface.share()?,
+            bounds,
         })
     }
 }

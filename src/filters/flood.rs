@@ -5,7 +5,7 @@ use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feFlood` filter primitive.
@@ -32,15 +32,12 @@ impl Flood {
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         let bounds = primitive.get_bounds(ctx).into_irect(ctx);
 
         let surface = ctx.source_graphic().flood(bounds, self.color)?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput { surface, bounds },
-        })
+        Ok(FilterOutput { surface, bounds })
     }
 }
 

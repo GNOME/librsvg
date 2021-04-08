@@ -15,7 +15,7 @@ use crate::surface_utils::{
 use crate::util::clamp;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the tile stitching modes.
@@ -345,7 +345,7 @@ impl Turbulence {
         ctx: &FilterContext,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         let bounds = primitive.get_bounds(ctx).into_irect(ctx);
 
         let affine = ctx.paffine().invert().unwrap();
@@ -405,12 +405,9 @@ impl Turbulence {
             }
         });
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface: surface.share()?,
-                bounds,
-            },
+        Ok(FilterOutput {
+            surface: surface.share()?,
+            bounds,
         })
     }
 }

@@ -23,7 +23,7 @@ mod bounds;
 use self::bounds::BoundsBuilder;
 
 pub mod context;
-use self::context::{FilterContext, FilterResult};
+use self::context::{FilterContext, FilterOutput, FilterResult};
 
 mod error;
 use self::error::FilterError;
@@ -301,13 +301,18 @@ pub fn render(
                     Ok((resolved_primitive, params))
                 })
                 .and_then(|(resolved_primitive, params)| {
-                    render_primitive(
+                    let output = render_primitive(
                         &resolved_primitive,
                         &params,
                         &filter_ctx,
                         acquired_nodes,
                         draw_ctx,
-                    )
+                    )?;
+
+                    Ok(FilterResult {
+                        name: resolved_primitive.result.clone(),
+                        output,
+                    })
                 })
                 .and_then(|result| filter_ctx.store_result(result))
             {
@@ -345,7 +350,7 @@ fn render_primitive(
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
-) -> Result<FilterResult, FilterError> {
+) -> Result<FilterOutput, FilterError> {
     use PrimitiveParams::*;
 
     match params {

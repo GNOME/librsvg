@@ -13,7 +13,7 @@ use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
-use super::context::{FilterContext, FilterOutput, FilterResult};
+use super::context::{FilterContext, FilterOutput};
 use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feImage` filter primitive.
@@ -133,7 +133,7 @@ impl Image {
         ctx: &FilterContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Result<FilterResult, FilterError> {
+    ) -> Result<FilterOutput, FilterError> {
         let bounds_builder = primitive.get_bounds(ctx);
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx);
 
@@ -153,12 +153,9 @@ impl Image {
             )
         }?;
 
-        Ok(FilterResult {
-            name: primitive.result.clone(),
-            output: FilterOutput {
-                surface,
-                bounds: bounds.into(),
-            },
+        Ok(FilterOutput {
+            surface,
+            bounds: bounds.into(),
         })
     }
 }
