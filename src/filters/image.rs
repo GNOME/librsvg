@@ -7,6 +7,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
+use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::viewbox::ViewBox;
@@ -19,14 +20,19 @@ use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimi
 #[derive(Default)]
 pub struct FeImage {
     base: Primitive,
-    params: Image,
+    params: ImageParams,
 }
 
 /// Resolved `feImage` primitive for rendering.
 #[derive(Clone, Default)]
-pub struct Image {
+struct ImageParams {
     aspect: AspectRatio,
     href: Option<String>,
+}
+
+pub struct Image {
+    params: ImageParams,
+    feimage_values: ComputedValues,
 }
 
 impl Image {
@@ -39,16 +45,21 @@ impl Image {
         bounds: Rect,
         node_id: &NodeId,
     ) -> Result<SharedImageSurface, FilterError> {
-        let acquired_drawable = acquired_nodes
+        let acquired = acquired_nodes
             .acquire(node_id)
             .map_err(|_| FilterError::InvalidInput)?;
-        let drawable = acquired_drawable.get();
+        let referenced_node = acquired.get();
 
-        let node_being_filtered_values = ctx.get_computed_values_from_node_being_filtered();
-        let cascaded = CascadedValues::new_from_values(&drawable, node_being_filtered_values);
+        // https://www.w3.org/TR/filter-effects/#feImageElement
+        //
+        // The filters spec says, "... otherwise [rendering a referenced object], the
+        // referenced resource is rendered according to the behavior of the use element."
+        // I think this means that we use the same cascading mode as <use>, i.e. the
+        // referenced object inherits its properties from the feImage element.
+        let cascaded = CascadedValues::new_from_values(&referenced_node, &self.feimage_values);
 
         let image = draw_ctx.draw_node_to_surface(
-            &drawable,
+            &referenced_node,
             acquired_nodes,
             &cascaded,
             ctx.paffine(),
@@ -76,7 +87,7 @@ impl Image {
             .lookup_image(url)
             .map_err(|_| FilterError::InvalidInput)?;
 
-        let rect = self.aspect.compute(
+        let rect = self.params.aspect.compute(
             &ViewBox::from(Rect::from_size(
                 f64::from(image.width()),
                 f64::from(image.height()),
@@ -126,7 +137,7 @@ impl Image {
         let bounds_builder = primitive.get_bounds(ctx)?;
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx);
 
-        let href = self.href.as_ref().ok_or(FilterError::InvalidInput)?;
+        let href = self.params.href.as_ref().ok_or(FilterError::InvalidInput)?;
 
         let surface = if let Ok(node_id) = NodeId::parse(href) {
             // if href has a fragment specified, render as a node
@@ -153,10 +164,16 @@ impl Image {
 }
 
 impl FilterEffect for FeImage {
-    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+        let cascaded = CascadedValues::new_from_node(node);
+        let feimage_values = cascaded.get().clone();
+
         Ok((
             self.base.clone(),
-            PrimitiveParams::Image(self.params.clone()),
+            PrimitiveParams::Image(Image {
+                params: self.params.clone(),
+                feimage_values,
+            }),
         ))
     }
 }
