@@ -103,7 +103,7 @@ impl Merge {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
         // Compute the filter bounds, taking each feMergeNode's input into account.
-        let mut bounds = primitive.get_bounds(ctx)?;
+        let mut bounds = primitive.get_bounds(ctx);
         for merge_node in &self.merge_nodes {
             let input = ctx.get_input(
                 acquired_nodes,

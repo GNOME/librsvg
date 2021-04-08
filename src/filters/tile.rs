@@ -51,7 +51,7 @@ impl Tile {
         )?;
 
         // feTile doesn't consider its inputs in the filter primitive subregion calculation.
-        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx);
+        let bounds = primitive.get_bounds(ctx).into_irect(ctx);
 
         let surface = match input_1 {
             FilterInput::StandardInput(input_surface) => input_surface,

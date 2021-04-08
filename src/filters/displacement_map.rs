@@ -93,7 +93,7 @@ impl DisplacementMap {
             self.color_interpolation_filters,
         )?;
         let bounds = primitive
-            .get_bounds(ctx)?
+            .get_bounds(ctx)
             .add_input(&input_1)
             .add_input(&displacement_input)
             .into_irect(ctx);

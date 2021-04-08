@@ -89,7 +89,7 @@ impl Blend {
             self.color_interpolation_filters,
         )?;
         let bounds = primitive
-            .get_bounds(ctx)?
+            .get_bounds(ctx)
             .add_input(&input_1)
             .add_input(&input_2)
             .into_irect(ctx);

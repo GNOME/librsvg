@@ -87,7 +87,7 @@ impl Morphology {
             ColorInterpolationFilters::Auto,
         )?;
         let bounds = primitive
-            .get_bounds(ctx)?
+            .get_bounds(ctx)
             .add_input(&input_1)
             .into_irect(ctx);
 

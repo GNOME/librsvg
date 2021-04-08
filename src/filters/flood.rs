@@ -33,7 +33,7 @@ impl Flood {
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds = primitive.get_bounds(ctx)?.into_irect(ctx);
+        let bounds = primitive.get_bounds(ctx).into_irect(ctx);
 
         let surface = ctx.source_graphic().flood(bounds, self.color)?;
 

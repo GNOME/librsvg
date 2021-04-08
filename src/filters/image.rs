@@ -134,7 +134,7 @@ impl Image {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
     ) -> Result<FilterResult, FilterError> {
-        let bounds_builder = primitive.get_bounds(ctx)?;
+        let bounds_builder = primitive.get_bounds(ctx);
         let (bounds, unclipped_bounds) = bounds_builder.into_rect(ctx);
 
         let href = self.params.href.as_ref().ok_or(FilterError::InvalidInput)?;

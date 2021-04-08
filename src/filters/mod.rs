@@ -166,14 +166,8 @@ impl Primitive {
 impl ResolvedPrimitive {
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
-    fn get_bounds(&self, ctx: &FilterContext) -> Result<BoundsBuilder, FilterError> {
-        Ok(BoundsBuilder::new(
-            self.x,
-            self.y,
-            self.width,
-            self.height,
-            ctx.paffine(),
-        ))
+    fn get_bounds(&self, ctx: &FilterContext) -> BoundsBuilder {
+        BoundsBuilder::new(self.x, self.y, self.width, self.height, ctx.paffine())
     }
 }
 

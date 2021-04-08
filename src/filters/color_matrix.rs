@@ -163,7 +163,7 @@ impl ColorMatrix {
             self.color_interpolation_filters,
         )?;
         let bounds = primitive
-            .get_bounds(ctx)?
+            .get_bounds(ctx)
             .add_input(&input_1)
             .into_irect(ctx);
 
