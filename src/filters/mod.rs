@@ -310,7 +310,7 @@ pub fn render(
                     )?;
 
                     Ok(FilterResult {
-                        name: resolved_primitive.result.clone(),
+                        name: resolved_primitive.result,
                         output,
                     })
                 })
