@@ -268,11 +268,9 @@ pub fn render(
 
     if let Ok(mut filter_ctx) = FilterContext::new(
         &resolved_filter,
-        computed_from_node_being_filtered,
         stroke_paint_source,
         fill_paint_source,
         &source_surface,
-        draw_ctx,
         transform,
         node_bbox,
     ) {

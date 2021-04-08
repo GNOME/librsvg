@@ -8,7 +8,6 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::filter::ResolvedFilter;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
-use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -101,11 +100,9 @@ impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter: &ResolvedFilter,
-        computed_from_node_being_filtered: &ComputedValues,
         stroke_paint: UserSpacePaintSource,
         fill_paint: UserSpacePaintSource,
         source_surface: &SharedImageSurface,
-        draw_ctx: &mut DrawingCtx,
         draw_transform: Transform,
         node_bbox: BoundingBox,
     ) -> Result<Self, FilterError> {
