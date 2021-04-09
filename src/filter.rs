@@ -1,14 +1,14 @@
 //! The `filter` element.
 
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::slice::Iter;
 
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
-use crate::error::{ElementError, ValueErrorKind};
+use crate::error::ValueErrorKind;
 use crate::length::*;
 use crate::node::NodeBorrow;
 use crate::parsers::{Parse, ParseValue};
@@ -57,23 +57,10 @@ impl Filter {
     }
 
     pub fn resolve(&self, values: &ComputedValues, params: &ViewParams) -> ResolvedFilter {
-        // With filterunits == ObjectBoundingBox, lengths represent fractions or percentages of the
-        // referencing node. No units are allowed (it's checked during attribute parsing).
-        let (x, y, w, h) = if self.filter_units == CoordUnits::ObjectBoundingBox {
-            (
-                self.x.length,
-                self.y.length,
-                self.width.length,
-                self.height.length,
-            )
-        } else {
-            (
-                self.x.normalize(values, &params),
-                self.y.normalize(values, &params),
-                self.width.normalize(values, &params),
-                self.height.normalize(values, &params),
-            )
-        };
+        let x = self.x.normalize(values, &params);
+        let y = self.y.normalize(values, &params);
+        let w = self.width.normalize(values, &params);
+        let h = self.height.normalize(values, &params);
 
         let rect = Rect::new(x, y, x + w, y + h);
 
@@ -96,58 +83,19 @@ impl SetAttributes for Filter {
             self.filter_units = filter_units
         }
 
-        // With ObjectBoundingBox, only fractions and percents are allowed.
-        let units_allowed = self.filter_units != CoordUnits::ObjectBoundingBox;
-
         // Parse the rest of the attributes.
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => {
-                    self.x = attr
-                        .parse(value)
-                        .and_then(|v| check_units(v, units_allowed, attr))?
-                }
-                expanded_name!("", "y") => {
-                    self.y = attr
-                        .parse(value)
-                        .and_then(|v| check_units(v, units_allowed, attr))?
-                }
-                expanded_name!("", "width") => {
-                    self.width = attr
-                        .parse(value)
-                        .and_then(|v| check_units(v, units_allowed, attr))?
-                }
-                expanded_name!("", "height") => {
-                    self.height = attr
-                        .parse(value)
-                        .and_then(|v| check_units(v, units_allowed, attr))?
-                }
+                expanded_name!("", "x") => self.x = attr.parse(value)?,
+                expanded_name!("", "y") => self.y = attr.parse(value)?,
+                expanded_name!("", "width") => self.width = attr.parse(value)?,
+                expanded_name!("", "height") => self.height = attr.parse(value)?,
                 expanded_name!("", "primitiveUnits") => self.primitive_units = attr.parse(value)?,
                 _ => (),
             }
         }
 
         Ok(())
-    }
-}
-
-fn check_units<N: Normalize, V: Validate>(
-    length: CssLength<N, V>,
-    units_allowed: bool,
-    attr: QualName,
-) -> Result<CssLength<N, V>, ElementError> {
-    if units_allowed {
-        return Ok(length);
-    }
-
-    match length.unit {
-        LengthUnit::Px | LengthUnit::Percent => Ok(length),
-        _ => Err(ElementError {
-            attr,
-            err: ValueErrorKind::parse_error(
-                "unit identifiers are not allowed with filterUnits set to objectBoundingBox",
-            ),
-        }),
     }
 }
 

@@ -5,7 +5,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
-use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
@@ -139,14 +138,6 @@ impl Primitive {
         values: &ComputedValues,
         draw_ctx: &DrawingCtx,
     ) -> Result<ResolvedPrimitive, FilterError> {
-        // With ObjectBoundingBox, only fractions and percents are allowed.
-        if ctx.primitive_units() == CoordUnits::ObjectBoundingBox {
-            check_px_or_percent_units(self.x)?;
-            check_px_or_percent_units(self.y)?;
-            check_px_or_percent_units(self.width)?;
-            check_px_or_percent_units(self.height)?;
-        }
-
         let params = draw_ctx.push_coord_units(ctx.primitive_units());
 
         let x = self.x.map(|l| l.normalize(values, &params));
@@ -169,16 +160,6 @@ impl ResolvedPrimitive {
     #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> BoundsBuilder {
         BoundsBuilder::new(self.x, self.y, self.width, self.height, ctx.paffine())
-    }
-}
-
-fn check_px_or_percent_units<N: Normalize, V: Validate>(
-    length: Option<CssLength<N, V>>,
-) -> Result<(), FilterError> {
-    match length {
-        Some(l) if l.unit == LengthUnit::Px || l.unit == LengthUnit::Percent => Ok(()),
-        Some(_) => Err(FilterError::InvalidUnits),
-        None => Ok(()),
     }
 }
 
