@@ -12,6 +12,7 @@ use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
+use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
@@ -224,6 +225,8 @@ impl Primitive {
 pub fn render(
     filter_node: &Node,
     computed_from_node_being_filtered: &ComputedValues,
+    stroke_paint_source: UserSpacePaintSource,
+    fill_paint_source: UserSpacePaintSource,
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
@@ -240,18 +243,6 @@ pub fn render(
     let filter = borrow_element_as!(filter_node, Filter);
 
     let values = computed_from_node_being_filtered;
-
-    let stroke_paint_source = values
-        .stroke()
-        .0
-        .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-        .to_user_space(&node_bbox, draw_ctx, values);
-
-    let fill_paint_source = values
-        .fill()
-        .0
-        .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-        .to_user_space(&node_bbox, draw_ctx, values);
 
     let resolved_filter = {
         // This is in a temporary scope so we don't leave the coord_units pushed during
