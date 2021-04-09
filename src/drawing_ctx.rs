@@ -960,7 +960,6 @@ impl DrawingCtx {
 
                         return filters::render(
                             &filter_node,
-                            values,
                             stroke_paint_source,
                             fill_paint_source,
                             child_surface,

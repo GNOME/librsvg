@@ -224,7 +224,6 @@ impl Primitive {
 /// Applies a filter and returns the resulting surface.
 pub fn render(
     filter_node: &Node,
-    computed_from_node_being_filtered: &ComputedValues,
     stroke_paint_source: UserSpacePaintSource,
     fill_paint_source: UserSpacePaintSource,
     source_surface: SharedImageSurface,
@@ -236,19 +235,21 @@ pub fn render(
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
-    if filter_node.borrow_element().is_in_error() {
+    let filter_element = filter_node.borrow_element();
+
+    if filter_element.is_in_error() {
         return Ok(source_surface);
     }
 
-    let filter = borrow_element_as!(filter_node, Filter);
+    let filter_values = filter_element.get_computed_values();
 
-    let values = computed_from_node_being_filtered;
+    let filter = borrow_element_as!(filter_node, Filter);
 
     let resolved_filter = {
         // This is in a temporary scope so we don't leave the coord_units pushed during
         // the execution of all the filter primitives.
         let params = draw_ctx.push_coord_units(filter.get_filter_units());
-        filter.resolve(values, &params)
+        filter.resolve(filter_values, &params)
     };
 
     if let Ok(mut filter_ctx) = FilterContext::new(
@@ -275,20 +276,19 @@ pub fn render(
             // Keep only filter primitives (those that implement the Filter trait)
             .filter(|c| c.borrow_element().as_filter_effect().is_some());
 
-        for c in primitives {
-            let elt = c.borrow_element();
+        for primitive_node in primitives {
+            let elt = primitive_node.borrow_element();
             let filter = elt.as_filter_effect().unwrap();
+
+            let primitive_values = elt.get_computed_values();
 
             let start = Instant::now();
 
             if let Err(err) = filter
-                .resolve(&c)
+                .resolve(&primitive_node)
                 .and_then(|(primitive, params)| {
-                    let resolved_primitive = primitive.resolve(
-                        &filter_ctx,
-                        computed_from_node_being_filtered,
-                        draw_ctx,
-                    )?;
+                    let resolved_primitive =
+                        primitive.resolve(&filter_ctx, primitive_values, draw_ctx)?;
                     Ok((resolved_primitive, params))
                 })
                 .and_then(|(resolved_primitive, params)| {
@@ -307,7 +307,11 @@ pub fn render(
                 })
                 .and_then(|result| filter_ctx.store_result(result))
             {
-                rsvg_log!("(filter primitive {} returned an error: {})", c, err);
+                rsvg_log!(
+                    "(filter primitive {} returned an error: {})",
+                    primitive_node,
+                    err
+                );
 
                 // Exit early on Cairo errors. Continue rendering otherwise.
                 if let FilterError::CairoError(status) = err {
@@ -318,7 +322,7 @@ pub fn render(
             let elapsed = start.elapsed();
             rsvg_log!(
                 "(rendered filter primitive {} in\n    {} seconds)",
-                c,
+                primitive_node,
                 elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
             );
         }

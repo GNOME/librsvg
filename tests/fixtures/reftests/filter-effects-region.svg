@@ -32,15 +32,18 @@
   </filter>
 
   <!-- According to the spec, the "em" here should use the coordinate system
-       of the referencing node. Firefox follows this. Chromium uses the filter node's
-       coordinate system instead. -->
-  <filter id="cascading" filterUnits="userSpaceOnUse" style="font-size: 30pt"
+       of the referencing node, per filterUnits="userSpaceOnUse".  However, the "em" units
+       should resolve with respec to the element's font-size.  Firefox (incorrectly?)
+       uses the font-size of the element that referenced the filter. -->
+  <filter id="cascading" filterUnits="userSpaceOnUse" style="font-size: 20px"
     x="1em" y="1em" width="50" height="50">
     <feFlood flood-color="green"/>
   </filter>
 
-  <!-- Same as above but for the primitive subregion. -->
-  <filter id="cascading-primitive" style="font-size: 30pt">
+  <!-- Same as above but for the default primitiveUnits="userSpaceOnUse"; the primitive's width/height default to 100%
+       with respect to the filter region, whose default is filterUnits="objectBoundingBox".
+       Firefox has the same bug here. -->
+  <filter id="cascading-primitive" style="font-size: 20px">
     <feFlood x="1em" y="1em" flood-color="green"/>
   </filter>
 
@@ -64,12 +67,12 @@
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#fractions-invalid-primitive)"/>
   </g>
 
-  <g transform="translate(170 20)" style="font-size: 7pt">
+  <g transform="translate(170 20)" style="font-size: 10px">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#cascading)"/>
   </g>
 
-  <g transform="translate(170 100)" style="font-size: 7pt">
+  <g transform="translate(170 100)" style="font-size: 10px">
     <rect fill="red" x="1" y="1" width="50" height="50"/>
     <rect fill="red" x="1" y="1" width="50" height="50" filter="url(#cascading-primitive)"/>
   </g>
