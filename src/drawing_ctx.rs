@@ -946,9 +946,22 @@ impl DrawingCtx {
 
                 match *filter_node.borrow_element() {
                     Element::Filter(_) => {
+                        let stroke_paint_source = values
+                            .stroke()
+                            .0
+                            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+                            .to_user_space(&node_bbox, self, values);
+
+                        let fill_paint_source = values
+                            .fill()
+                            .0
+                            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+                            .to_user_space(&node_bbox, self, values);
+
                         return filters::render(
                             &filter_node,
-                            values,
+                            stroke_paint_source,
+                            fill_paint_source,
                             child_surface,
                             acquired_nodes,
                             self,
