@@ -137,7 +137,7 @@ impl Primitive {
         ctx: &FilterContext,
         values: &ComputedValues,
         draw_ctx: &DrawingCtx,
-    ) -> Result<ResolvedPrimitive, FilterError> {
+    ) -> ResolvedPrimitive {
         let params = draw_ctx.push_coord_units(ctx.primitive_units());
 
         let x = self.x.map(|l| l.normalize(values, &params));
@@ -145,13 +145,13 @@ impl Primitive {
         let width = self.width.map(|l| l.normalize(values, &params));
         let height = self.height.map(|l| l.normalize(values, &params));
 
-        Ok(ResolvedPrimitive {
+        ResolvedPrimitive {
             x,
             y,
             width,
             height,
             result: self.result.clone(),
-        })
+        }
     }
 }
 
@@ -269,10 +269,8 @@ pub fn render(
                 .resolve(&primitive_node)
                 .and_then(|(primitive, params)| {
                     let resolved_primitive =
-                        primitive.resolve(&filter_ctx, primitive_values, draw_ctx)?;
-                    Ok((resolved_primitive, params))
-                })
-                .and_then(|(resolved_primitive, params)| {
+                        primitive.resolve(&filter_ctx, primitive_values, draw_ctx);
+
                     let output = render_primitive(
                         &resolved_primitive,
                         &params,
