@@ -91,7 +91,8 @@ impl FilterEffect for FeMorphology {
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         // The radii can become negative here due to the transform.
-        let (rx, ry) = (rx.abs(), ry.abs());
+        // Additionally The radii being excessively large causes cpu hangups
+        let (rx, ry) = (rx.abs().min(10.0), ry.abs().min(10.0));
 
         let mut surface = ExclusiveImageSurface::new(
             ctx.source_graphic().width(),
