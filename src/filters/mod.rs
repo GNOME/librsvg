@@ -114,7 +114,7 @@ impl Parse for Input {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         parser
             .try_parse(|p| {
-                Ok(parse_identifiers!(
+                parse_identifiers!(
                     p,
                     "SourceGraphic" => Input::SourceGraphic,
                     "SourceAlpha" => Input::SourceAlpha,
@@ -122,7 +122,7 @@ impl Parse for Input {
                     "BackgroundAlpha" => Input::BackgroundAlpha,
                     "FillPaint" => Input::FillPaint,
                     "StrokePaint" => Input::StrokePaint,
-                )?)
+                )
             })
             .or_else(|_: BasicParseError<'_>| {
                 let ident = CustomIdent::parse(parser)?;
