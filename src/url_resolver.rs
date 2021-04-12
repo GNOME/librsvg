@@ -49,7 +49,7 @@ impl UrlResolver {
 
         // Deny loads from differing URI schemes
         if url.scheme() != base_url.scheme() {
-            return Err(AllowedUrlError::DifferentURISchemes);
+            return Err(AllowedUrlError::DifferentUriSchemes);
         }
 
         // resource: is allowed to load anything from other resources
@@ -149,7 +149,7 @@ mod tests {
         ));
         assert!(matches!(
             url_resolver.resolve_href("file:///etc/passwd"),
-            Err(AllowedUrlError::DifferentURISchemes)
+            Err(AllowedUrlError::DifferentUriSchemes)
         ));
     }
 

@@ -284,7 +284,7 @@ pub enum AllowedUrlError {
     BaseRequired,
 
     /// Cannot reference a file with a different URI scheme from the base file
-    DifferentURISchemes,
+    DifferentUriSchemes,
 
     /// Some scheme we don't allow loading
     DisallowedScheme,
@@ -308,7 +308,7 @@ impl fmt::Display for AllowedUrlError {
         match *self {
             AllowedUrlError::UrlParseError(e) => write!(f, "URL parse error: {}", e),
             AllowedUrlError::BaseRequired => write!(f, "base required"),
-            AllowedUrlError::DifferentURISchemes => write!(f, "different URI schemes"),
+            AllowedUrlError::DifferentUriSchemes => write!(f, "different URI schemes"),
             AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
             AllowedUrlError::NotSiblingOrChildOfBaseFile => {
                 write!(f, "not sibling or child of base file")

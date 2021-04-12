@@ -813,7 +813,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::iri::IRI;
+    use crate::iri::Iri;
     use crate::length::*;
 
     #[test]
@@ -865,7 +865,7 @@ mod tests {
     #[test]
     fn expands_marker_shorthand() {
         let mut specified = SpecifiedValues::default();
-        let iri = IRI::parse_str("url(#foo)").unwrap();
+        let iri = Iri::parse_str("url(#foo)").unwrap();
 
         let marker = Marker(iri.clone());
         specified.set_parsed_property(&ParsedProperty::Marker(SpecifiedValue::Specified(marker)));
@@ -881,8 +881,8 @@ mod tests {
     #[test]
     fn replaces_marker_shorthand() {
         let mut specified = SpecifiedValues::default();
-        let iri1 = IRI::parse_str("url(#foo)").unwrap();
-        let iri2 = IRI::None;
+        let iri1 = Iri::parse_str("url(#foo)").unwrap();
+        let iri2 = Iri::None;
 
         let marker1 = Marker(iri1.clone());
         specified.set_parsed_property(&ParsedProperty::Marker(SpecifiedValue::Specified(marker1)));

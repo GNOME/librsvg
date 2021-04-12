@@ -13,14 +13,17 @@ pub mod srgb;
 #[cfg(target_endian = "little")]
 use rgb::alt::BGRA8;
 #[cfg(target_endian = "little")]
+#[allow(clippy::upper_case_acronyms)]
 pub type CairoARGB = BGRA8;
 
 #[cfg(target_endian = "big")]
 use rgb::alt::ARGB8;
 #[cfg(target_endian = "big")]
+#[allow(clippy::upper_case_acronyms)]
 pub type CairoARGB = ARGB8;
 
 /// Analogous to `rgb::FromSlice`, to convert from `[T]` to `[CairoARGB]`
+#[allow(clippy::upper_case_acronyms)]
 pub trait AsCairoARGB<T: Copy> {
     /// Reinterpret slice as `CairoARGB` pixels.
     fn as_cairo_argb(&self) -> &[CairoARGB];
