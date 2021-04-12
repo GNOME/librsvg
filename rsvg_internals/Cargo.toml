@@ -12,7 +12,7 @@ edition = "2018"
 #   librsvg_crate/src/lib.rs - toplevel example in the docs
 cairo-rs = { version="0.8.0", features=["v1_16"] }
 cairo-sys-rs = "0.9.0"
-cast = "0.2.3"
+cast = "0.2.5"
 cssparser = "0.27.1"
 data-url = "0.1"
 downcast-rs = "^1.0.0"
