@@ -257,8 +257,7 @@ impl DrawingCtx {
         let vbox = ViewBox::from(viewport);
         let initial_viewport = Viewport { transform, vbox };
 
-        let mut viewport_stack = Vec::new();
-        viewport_stack.push(initial_viewport);
+        let viewport_stack = vec![initial_viewport];
 
         DrawingCtx {
             initial_viewport,
