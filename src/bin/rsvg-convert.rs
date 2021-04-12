@@ -18,7 +18,7 @@ mod windows_imports {
 }
 
 #[cfg(windows)]
-use self::windows_imports::*
+use self::windows_imports::*;
 
 use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
 use librsvg::{CairoRenderer, Color, Loader, Parse, RenderingError};
