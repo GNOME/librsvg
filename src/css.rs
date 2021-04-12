@@ -298,6 +298,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
 }
 
 /// Dummy type required by the SelectorImpl trait.
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct NonTSPseudoClass;
 
