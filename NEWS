@@ -1,3 +1,47 @@
+==============
+Version 2.51.1
+==============
+
+- The Minimum Supported Rust Version is now 1.48.
+
+- rsvg-convert should fully work on Windows again (Abraham Toriz).
+
+- rsvg-convert's SVG output format uses pixel units instead of points again.
+
+- #699 - Images embedded as data: URLs didn't render if they had a
+  MIME type with a charset parameter.
+
+- #698 - Add limit for too-large radiuses on the feMorphology filter (Madds H).
+
+- #686 - Reduced stack usage (Sebastian Dröge).
+
+- #261 - Parse the enable-background property.
+
+- #703 - Properly ignore elements in an error state inside the "switch" element.
+
+- #695 - Fix cascading mode for the "feImage" element.
+
+- Fix cascading for the "filter" element and filter primitives in general.
+
+- Remove constraints on the types of units used within the "filter"
+  element and filter primitives.
+
+- Reduced memory consumption in general by about 300 bytes per SVG element.
+
+- Update vulnerable crates:
+    smallvec to 1.6.1 (RUSTSEC-2021-0003)
+    generic-array to 0.13.3 (RUSTSEC-2020-0146)
+
+- Lots of cleanups to the build (Sven Neumann).
+
+- Update to gtk-rs 0.9 (Bilal Elmoussaoui).
+
+- Updated ARCHITECTURE.md and documentation in general.
+
+Special thanks to Dunja Lalic for adding the start of code coverage
+analysis to the build.
+
+
 Version 2.51.0
 
 There are many changes in this development release!  This experimental
