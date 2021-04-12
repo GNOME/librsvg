@@ -49,7 +49,7 @@ use crate::dasharray::Dasharray;
 use crate::error::*;
 use crate::filter::FilterValueList;
 use crate::font_props::{Font, FontFamily, FontSize, FontWeight, LetterSpacing, LineHeight};
-use crate::iri::IRI;
+use crate::iri::Iri;
 use crate::length::*;
 use crate::paint_server::PaintServer;
 use crate::parsers::Parse;
@@ -122,9 +122,9 @@ make_property!(
 make_property!(
     ComputedValues,
     ClipPath,
-    default: IRI::None,
+    default: Iri::None,
     inherits_automatically: false,
-    newtype_parse: IRI,
+    newtype_parse: Iri,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
@@ -484,45 +484,45 @@ make_property!(
 make_property!(
     ComputedValues,
     Marker,
-    default: IRI::None,
+    default: Iri::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse: Iri,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
 make_property!(
     ComputedValues,
     MarkerEnd,
-    default: IRI::None,
+    default: Iri::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse: Iri,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerMidProperty
 make_property!(
     ComputedValues,
     MarkerMid,
-    default: IRI::None,
+    default: Iri::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse: Iri,
 );
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerStartProperty
 make_property!(
     ComputedValues,
     MarkerStart,
-    default: IRI::None,
+    default: Iri::None,
     inherits_automatically: true,
-    newtype_parse: IRI,
+    newtype_parse: Iri,
 );
 
 // https://www.w3.org/TR/SVG/masking.html#MaskProperty
 make_property!(
     ComputedValues,
     Mask,
-    default: IRI::None,
+    default: Iri::None,
     inherits_automatically: false,
-    newtype_parse: IRI,
+    newtype_parse: Iri,
 );
 
 // https://www.w3.org/TR/compositing/#mix-blend-mode

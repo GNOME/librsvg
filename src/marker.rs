@@ -14,7 +14,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::iri::IRI;
+use crate::iri::Iri;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -622,7 +622,7 @@ pub fn render_markers_for_path(
     let marker_mid = values.marker_mid().0;
     let marker_end = values.marker_end().0;
 
-    if let (&IRI::None, &IRI::None, &IRI::None) = (&marker_start, &marker_mid, &marker_end) {
+    if let (&Iri::None, &Iri::None, &Iri::None) = (&marker_start, &marker_mid, &marker_end) {
         return Ok(draw_ctx.empty_bbox());
     }
 
@@ -630,7 +630,7 @@ pub fn render_markers_for_path(
         path,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
-            if let IRI::Resource(ref marker) = match marker_type {
+            if let Iri::Resource(ref marker) = match marker_type {
                 MarkerType::Start => &marker_start,
                 MarkerType::Middle => &marker_mid,
                 MarkerType::End => &marker_end,

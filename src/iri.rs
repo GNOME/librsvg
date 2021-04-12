@@ -13,41 +13,41 @@ use crate::parsers::Parse;
 /// does not take a funciri value (which looks like `url(...)`), but rather
 /// it takes a plain URL.
 #[derive(Debug, Clone, PartialEq)]
-pub enum IRI {
+pub enum Iri {
     None,
     Resource(Box<NodeId>),
 }
 
-impl Default for IRI {
-    fn default() -> IRI {
-        IRI::None
+impl Default for Iri {
+    fn default() -> Iri {
+        Iri::None
     }
 }
 
-impl IRI {
+impl Iri {
     /// Returns the contents of an `IRI::Resource`, or `None`
     pub fn get(&self) -> Option<&NodeId> {
         match *self {
-            IRI::None => None,
-            IRI::Resource(ref f) => Some(&*f),
+            Iri::None => None,
+            Iri::Resource(ref f) => Some(&*f),
         }
     }
 }
 
-impl Parse for IRI {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<IRI, ParseError<'i>> {
+impl Parse for Iri {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Iri, ParseError<'i>> {
         if parser
             .try_parse(|i| i.expect_ident_matching("none"))
             .is_ok()
         {
-            Ok(IRI::None)
+            Ok(Iri::None)
         } else {
             let loc = parser.current_source_location();
             let url = parser.expect_url()?;
             let node_id =
                 NodeId::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
 
-            Ok(IRI::Resource(Box::new(node_id)))
+            Ok(Iri::Resource(Box::new(node_id)))
         }
     }
 }
@@ -58,19 +58,19 @@ mod tests {
 
     #[test]
     fn parses_none() {
-        assert_eq!(IRI::parse_str("none").unwrap(), IRI::None);
+        assert_eq!(Iri::parse_str("none").unwrap(), Iri::None);
     }
 
     #[test]
     fn parses_url() {
         assert_eq!(
-            IRI::parse_str("url(#bar)").unwrap(),
-            IRI::Resource(Box::new(NodeId::Internal("bar".to_string())))
+            Iri::parse_str("url(#bar)").unwrap(),
+            Iri::Resource(Box::new(NodeId::Internal("bar".to_string())))
         );
 
         assert_eq!(
-            IRI::parse_str("url(foo#bar)").unwrap(),
-            IRI::Resource(Box::new(NodeId::External(
+            Iri::parse_str("url(foo#bar)").unwrap(),
+            Iri::Resource(Box::new(NodeId::External(
                 "foo".to_string(),
                 "bar".to_string()
             )))
@@ -78,19 +78,19 @@ mod tests {
 
         // be permissive if the closing ) is missing
         assert_eq!(
-            IRI::parse_str("url(#bar").unwrap(),
-            IRI::Resource(Box::new(NodeId::Internal("bar".to_string())))
+            Iri::parse_str("url(#bar").unwrap(),
+            Iri::Resource(Box::new(NodeId::Internal("bar".to_string())))
         );
         assert_eq!(
-            IRI::parse_str("url(foo#bar").unwrap(),
-            IRI::Resource(Box::new(NodeId::External(
+            Iri::parse_str("url(foo#bar").unwrap(),
+            Iri::Resource(Box::new(NodeId::External(
                 "foo".to_string(),
                 "bar".to_string()
             )))
         );
 
-        assert!(IRI::parse_str("").is_err());
-        assert!(IRI::parse_str("foo").is_err());
-        assert!(IRI::parse_str("url(foo)bar").is_err());
+        assert!(Iri::parse_str("").is_err());
+        assert!(Iri::parse_str("foo").is_err());
+        assert!(Iri::parse_str("url(foo)bar").is_err());
     }
 }
