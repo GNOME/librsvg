@@ -160,6 +160,7 @@ fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, 
 }
 
 // https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FontSize {
     Smaller,
