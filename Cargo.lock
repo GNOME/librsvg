@@ -75,20 +75,21 @@ dependencies = [
 
 [[package]]
 name = "cssparser"
-version = "0.23.10"
+version = "0.25.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f1c74d99b0f489cc546336b911452562ebfd4aec034b0c526cb77a3a02d3790"
+checksum = "fbe18ca4efb9ba3716c6da66cc3d7e673bf59fa576353011f48c4cfddbdd740e"
 dependencies = [
+ "autocfg 0.1.7",
  "cssparser-macros",
  "dtoa-short",
  "itoa",
  "matches",
  "phf",
- "proc-macro2 0.3.8",
+ "proc-macro2",
  "procedural-masquerade",
- "quote 0.5.2",
+ "quote",
  "smallvec",
- "syn 0.13.11",
+ "syn",
 ]
 
 [[package]]
@@ -98,10 +99,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5bb1c84e87c717666564ec056105052331431803d606bd45529b28547b611eef"
 dependencies = [
  "phf_codegen",
- "proc-macro2 1.0.26",
+ "proc-macro2",
  "procedural-masquerade",
- "quote 1.0.9",
- "syn 1.0.69",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -341,20 +342,11 @@ checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
 
 [[package]]
 name = "proc-macro2"
-version = "0.3.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b06e2f335f48d24442b35a19df506a835fb3547bc3c06ef27340da9acf5cae7"
-dependencies = [
- "unicode-xid 0.1.0",
-]
-
-[[package]]
-name = "proc-macro2"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a152013215dca273577e18d2bf00fa862b89b24169fb78c4c95aeb07992c9cec"
 dependencies = [
- "unicode-xid 0.2.1",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -365,20 +357,11 @@ checksum = "8f1383dff4092fe903ac180e391a8d4121cc48f08ccf850614b0290c6673b69d"
 
 [[package]]
 name = "quote"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9949cfe66888ffe1d53e6ec9d9f3b70714083854be20fd5e271b232a017401e8"
-dependencies = [
- "proc-macro2 0.3.8",
-]
-
-[[package]]
-name = "quote"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d0b9745dc2debf507c8422de05d7226cc1f0644216dfdfead988f9b1ab32a7"
 dependencies = [
- "proc-macro2 1.0.26",
+ "proc-macro2",
 ]
 
 [[package]]
@@ -557,24 +540,13 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "0.13.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14f9bf6292f3a61d2c716723fdb789a41bbe104168e6f496dc6497e531ea1b9b"
-dependencies = [
- "proc-macro2 0.3.8",
- "quote 0.5.2",
- "unicode-xid 0.1.0",
-]
-
-[[package]]
-name = "syn"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48fe99c6bd8b1cc636890bcc071842de909d902c81ac7dab53ba33c421ab8ffb"
 dependencies = [
- "proc-macro2 1.0.26",
- "quote 1.0.9",
- "unicode-xid 0.2.1",
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -591,12 +563,6 @@ name = "ucd-util"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c85f514e095d348c279b1e5cd76795082cf15bd59b93207832abe0b1d8fed236"
-
-[[package]]
-name = "unicode-xid"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
 
 [[package]]
 name = "unicode-xid"
