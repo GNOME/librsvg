@@ -1,3 +1,19 @@
+==============
+Version 2.50.4
+==============
+
+Update dependent crates that had security vulnerabilities:
+
+  generic-array to 0.13.3 - RUSTSEC-2020-0146
+
+- #686 - Reduced stack usage (Sebastian Dröge).
+
+- #698 - Add limit for too-large radiuses on the feMorphology filter (Madds H).
+
+- #703 - Properly ignore elements in an error state inside the "switch" element.
+
+
+
 Version 2.50.3
 
 - #601 - Compute correct bounds for objects with stroke-width=0.
