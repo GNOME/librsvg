@@ -1,3 +1,18 @@
+===============
+Version 2.48.10
+===============
+
+Update dependent crates that had security vulnerabilities:
+
+  futures-util to 0.3.14  - RUSTSEC-2020-0059
+  futures-task to 0.3.14  - RUSTSEC-2020-0060
+  generic-array to 0.13.3 - RUSTSEC-2020-0146  
+  smallvec to 1.6.1       - RUSTSEC-2021-0030
+
+There are no changes to the library code.
+
+
+
 Version 2.48.9
 
 - #642 - Fix dx/dy offsets in nested <tspan> elements.
