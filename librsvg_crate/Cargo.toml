@@ -1,6 +1,6 @@
 [package]
 name = "librsvg"
-version = "2.48.9"
+version = "2.48.10"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 workspace = "../"
 edition = "2018"
