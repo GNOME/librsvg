@@ -5,7 +5,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::filter::ResolvedFilter;
+use crate::filter::UserSpaceFilter;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
 use crate::property_defs::ColorInterpolationFilters;
@@ -99,7 +99,7 @@ pub struct FilterContext {
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
-        filter: &ResolvedFilter,
+        filter: &UserSpaceFilter,
         stroke_paint: UserSpacePaintSource,
         fill_paint: UserSpacePaintSource,
         source_surface: &SharedImageSurface,
