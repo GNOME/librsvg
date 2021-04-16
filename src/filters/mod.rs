@@ -262,13 +262,13 @@ pub fn render(
     ) {
         for primitive_node in primitive_nodes {
             let elt = primitive_node.borrow_element();
-            let filter = elt.as_filter_effect().unwrap();
+            let effect = elt.as_filter_effect().unwrap();
 
             let primitive_values = elt.get_computed_values();
 
             let start = Instant::now();
 
-            if let Err(err) = filter
+            if let Err(err) = effect
                 .resolve(&primitive_node)
                 .and_then(|(primitive, params)| {
                     let user_space_primitive =
