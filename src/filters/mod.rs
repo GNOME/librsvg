@@ -87,7 +87,8 @@ pub struct Primitive {
     result: Option<CustomIdent>,
 }
 
-pub struct ResolvedPrimitive {
+/// Common properties for filter primitives, with all lengths in user space coordinates.
+pub struct UserSpacePrimitive {
     x: Option<f64>,
     y: Option<f64>,
     width: Option<f64>,
@@ -132,12 +133,12 @@ impl Parse for Input {
 }
 
 impl Primitive {
-    fn resolve(
+    fn to_user_space(
         &self,
         ctx: &FilterContext,
         values: &ComputedValues,
         draw_ctx: &DrawingCtx,
-    ) -> ResolvedPrimitive {
+    ) -> UserSpacePrimitive {
         let params = draw_ctx.push_coord_units(ctx.primitive_units());
 
         let x = self.x.map(|l| l.normalize(values, &params));
@@ -145,7 +146,7 @@ impl Primitive {
         let width = self.width.map(|l| l.normalize(values, &params));
         let height = self.height.map(|l| l.normalize(values, &params));
 
-        ResolvedPrimitive {
+        UserSpacePrimitive {
             x,
             y,
             width,
@@ -155,7 +156,7 @@ impl Primitive {
     }
 }
 
-impl ResolvedPrimitive {
+impl UserSpacePrimitive {
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> BoundsBuilder {
@@ -268,11 +269,11 @@ pub fn render(
             if let Err(err) = filter
                 .resolve(&primitive_node)
                 .and_then(|(primitive, params)| {
-                    let resolved_primitive =
-                        primitive.resolve(&filter_ctx, primitive_values, draw_ctx);
+                    let user_space_primitive =
+                        primitive.to_user_space(&filter_ctx, primitive_values, draw_ctx);
 
                     let output = render_primitive(
-                        &resolved_primitive,
+                        &user_space_primitive,
                         &params,
                         &filter_ctx,
                         acquired_nodes,
@@ -280,7 +281,7 @@ pub fn render(
                     )?;
 
                     Ok(FilterResult {
-                        name: resolved_primitive.result,
+                        name: user_space_primitive.result,
                         output,
                     })
                 })
@@ -319,7 +320,7 @@ pub fn render(
 
 #[rustfmt::skip]
 fn render_primitive(
-    primitive: &ResolvedPrimitive,
+    primitive: &UserSpacePrimitive,
     params: &PrimitiveParams,
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
