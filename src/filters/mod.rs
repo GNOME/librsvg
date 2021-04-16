@@ -77,6 +77,32 @@ pub enum PrimitiveParams {
     Turbulence(turbulence::Turbulence),
 }
 
+impl PrimitiveParams {
+    /// Returns a human-readable name for a primitive.
+    #[rustfmt::skip]
+    fn name(&self) -> &'static str {
+        use PrimitiveParams::*;
+        match self {
+            Blend(..)             => "feBlend",
+            ColorMatrix(..)       => "feColorMatrix",
+            ComponentTransfer(..) => "feComponentTransfer",
+            Composite(..)         => "feComposite",
+            ConvolveMatrix(..)    => "feConvolveMatrix",
+            DiffuseLighting(..)   => "feDiffuseLighting",
+            DisplacementMap(..)   => "feDisplacementMap",
+            Flood(..)             => "feFlood",
+            GaussianBlur(..)      => "feGaussianBlur",
+            Image(..)             => "feImage",
+            Merge(..)             => "feMerge",
+            Morphology(..)        => "feMorphology",
+            Offset(..)            => "feOffset",
+            SpecularLighting(..)  => "feSpecularLighting",
+            Tile(..)              => "feTile",
+            Turbulence(..)        => "feTurbulence",
+        }
+    }
+}
+
 /// The base filter primitive node containing common properties.
 #[derive(Default, Clone)]
 pub struct Primitive {
@@ -287,7 +313,7 @@ pub fn render(
                     let elapsed = start.elapsed();
                     rsvg_log!(
                         "(rendered filter primitive {} in\n    {} seconds)",
-                        primitive_name,
+                        params.name(),
                         elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
                     );
 
