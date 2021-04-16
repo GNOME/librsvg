@@ -272,7 +272,7 @@ pub fn render(
 
     let filter = borrow_element_as!(filter_node, Filter);
 
-    let resolved_filter = {
+    let user_space_filter = {
         // This is in a temporary scope so we don't leave the coord_units pushed during
         // the execution of all the filter primitives.
         let params = draw_ctx.push_coord_units(filter.get_filter_units());
@@ -280,7 +280,7 @@ pub fn render(
     };
 
     if let Ok(mut filter_ctx) = FilterContext::new(
-        &resolved_filter,
+        &user_space_filter,
         stroke_paint_source,
         fill_paint_source,
         &source_surface,
@@ -301,7 +301,7 @@ pub fn render(
                 .resolve(&primitive_node)
                 .and_then(|(primitive, params)| {
                     let user_space_primitive = primitive.to_user_space(
-                        resolved_filter.primitive_units,
+                        user_space_filter.primitive_units,
                         primitive_values,
                         draw_ctx,
                     );
