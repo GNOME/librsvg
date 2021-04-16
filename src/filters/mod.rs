@@ -217,6 +217,24 @@ pub fn render(
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
+    let primitive_nodes: Vec<Node> = filter_node
+        .children()
+        .filter(|c| c.is_element())
+        // Skip nodes in error.
+        .filter(|c| {
+            let in_error = c.borrow_element().is_in_error();
+
+            if in_error {
+                rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
+            }
+
+            !in_error
+        })
+        // Keep only filter primitives (those that implement the Filter trait)
+        .filter(|c| c.borrow_element().as_filter_effect().is_some())
+        .map(|n| n.clone())
+        .collect();
+
     let filter_element = filter_node.borrow_element();
 
     if filter_element.is_in_error() {
@@ -242,23 +260,7 @@ pub fn render(
         transform,
         node_bbox,
     ) {
-        let primitives = filter_node
-            .children()
-            .filter(|c| c.is_element())
-            // Skip nodes in error.
-            .filter(|c| {
-                let in_error = c.borrow_element().is_in_error();
-
-                if in_error {
-                    rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
-                }
-
-                !in_error
-            })
-            // Keep only filter primitives (those that implement the Filter trait)
-            .filter(|c| c.borrow_element().as_filter_effect().is_some());
-
-        for primitive_node in primitives {
+        for primitive_node in primitive_nodes {
             let elt = primitive_node.borrow_element();
             let filter = elt.as_filter_effect().unwrap();
 
