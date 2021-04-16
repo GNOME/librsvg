@@ -266,6 +266,8 @@ pub fn render(
 
             let primitive_values = elt.get_computed_values();
 
+            let primitive_name = format!("{}", primitive_node);
+
             let start = Instant::now();
 
             if let Err(err) = effect
@@ -291,7 +293,7 @@ pub fn render(
             {
                 rsvg_log!(
                     "(filter primitive {} returned an error: {})",
-                    primitive_node,
+                    primitive_name,
                     err
                 );
 
@@ -304,7 +306,7 @@ pub fn render(
             let elapsed = start.elapsed();
             rsvg_log!(
                 "(rendered filter primitive {} in\n    {} seconds)",
-                primitive_node,
+                primitive_name,
                 elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
             );
         }
