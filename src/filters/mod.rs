@@ -5,6 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
+use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
@@ -161,11 +162,11 @@ impl Parse for Input {
 impl Primitive {
     fn to_user_space(
         &self,
-        ctx: &FilterContext,
+        primitive_units: CoordUnits,
         values: &ComputedValues,
         draw_ctx: &DrawingCtx,
     ) -> UserSpacePrimitive {
-        let params = draw_ctx.push_coord_units(ctx.primitive_units());
+        let params = draw_ctx.push_coord_units(primitive_units);
 
         let x = self.x.map(|l| l.normalize(values, &params));
         let y = self.y.map(|l| l.normalize(values, &params));
@@ -299,8 +300,11 @@ pub fn render(
             if let Err(err) = effect
                 .resolve(&primitive_node)
                 .and_then(|(primitive, params)| {
-                    let user_space_primitive =
-                        primitive.to_user_space(&filter_ctx, primitive_values, draw_ctx);
+                    let user_space_primitive = primitive.to_user_space(
+                        resolved_filter.primitive_units,
+                        primitive_values,
+                        draw_ctx,
+                    );
 
                     let output = render_primitive(
                         &user_space_primitive,
