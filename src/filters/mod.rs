@@ -284,6 +284,13 @@ pub fn render(
                         draw_ctx,
                     )?;
 
+                    let elapsed = start.elapsed();
+                    rsvg_log!(
+                        "(rendered filter primitive {} in\n    {} seconds)",
+                        primitive_name,
+                        elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+                    );
+
                     Ok(FilterResult {
                         name: user_space_primitive.result,
                         output,
@@ -302,13 +309,6 @@ pub fn render(
                     return Err(RenderingError::from(status));
                 }
             }
-
-            let elapsed = start.elapsed();
-            rsvg_log!(
-                "(rendered filter primitive {} in\n    {} seconds)",
-                primitive_name,
-                elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-            );
         }
 
         Ok(filter_ctx.into_output()?)
