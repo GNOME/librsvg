@@ -119,13 +119,15 @@ pub struct ResolvedPrimitive {
     pub params: PrimitiveParams,
 }
 
-/// Common properties for filter primitives, with all lengths in user space coordinates.
+/// A fully resolved filter primitive in user-space coordinates.
 pub struct UserSpacePrimitive {
     x: Option<f64>,
     y: Option<f64>,
     width: Option<f64>,
     height: Option<f64>,
     result: Option<CustomIdent>,
+
+    params: PrimitiveParams,
 }
 
 /// An enumeration of possible inputs for a filter primitive.
@@ -166,7 +168,7 @@ impl Parse for Input {
 
 impl ResolvedPrimitive {
     fn to_user_space(
-        &self,
+        self,
         primitive_units: CoordUnits,
         values: &ComputedValues,
         draw_ctx: &DrawingCtx,
@@ -183,7 +185,8 @@ impl ResolvedPrimitive {
             y,
             width,
             height,
-            result: self.primitive.result.clone(),
+            result: self.primitive.result,
+            params: self.params,
         }
     }
 }
@@ -300,16 +303,14 @@ pub fn render(
                     e
                 })
                 .and_then(|primitive| {
-                    let user_space_primitive = primitive.to_user_space(
+                    Ok(primitive.to_user_space(
                         user_space_filter.primitive_units,
                         primitive_values,
                         draw_ctx,
-                    );
-
-                    Ok((user_space_primitive, primitive.params))
+                    ))
                 })
         })
-        .collect::<Result<Vec<(UserSpacePrimitive, PrimitiveParams)>, FilterError>>();
+        .collect::<Result<Vec<UserSpacePrimitive>, FilterError>>();
 
     let primitives = match res {
         Err(FilterError::CairoError(status)) => {
@@ -337,21 +338,15 @@ pub fn render(
         transform,
         node_bbox,
     ) {
-        for (user_space_primitive, params) in primitives {
+        for user_space_primitive in primitives {
             let start = Instant::now();
 
-            match render_primitive(
-                &user_space_primitive,
-                &params,
-                &filter_ctx,
-                acquired_nodes,
-                draw_ctx,
-            ) {
+            match render_primitive(&user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
                 Ok(output) => {
                     let elapsed = start.elapsed();
                     rsvg_log!(
                         "(rendered filter primitive {} in\n    {} seconds)",
-                        params.name(),
+                        user_space_primitive.params.name(),
                         elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
                     );
 
@@ -364,7 +359,7 @@ pub fn render(
                 Err(err) => {
                     rsvg_log!(
                         "(filter primitive {} returned an error: {})",
-                        params.name(),
+                        user_space_primitive.params.name(),
                         err
                     );
 
@@ -390,7 +385,6 @@ pub fn render(
 #[rustfmt::skip]
 fn render_primitive(
     primitive: &UserSpacePrimitive,
-    params: &PrimitiveParams,
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
@@ -399,23 +393,23 @@ fn render_primitive(
 
     let bounds_builder = primitive.get_bounds(ctx);
 
-    match params {
-        Blend(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Composite(p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Flood(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Image(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Merge(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Morphology(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Offset(p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Tile(p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Turbulence(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+    match primitive.params {
+        Blend(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(ref p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(ref p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Composite(ref p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(ref p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Flood(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(ref p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Image(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Merge(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Morphology(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Offset(ref p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(ref p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Tile(ref p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Turbulence(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
     }
 }
 
