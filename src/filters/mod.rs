@@ -173,7 +173,7 @@ impl Parse for Input {
 }
 
 impl ResolvedPrimitive {
-    fn to_user_space(
+    fn into_user_space(
         self,
         primitive_units: CoordUnits,
         values: &ComputedValues,
@@ -298,7 +298,7 @@ pub fn extract_filter_from_filter_node(
                     e
                 })
                 .and_then(|primitive| {
-                    Ok(primitive.to_user_space(
+                    Ok(primitive.into_user_space(
                         user_space_filter.primitive_units,
                         primitive_values,
                         draw_ctx,
