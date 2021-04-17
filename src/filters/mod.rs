@@ -297,12 +297,12 @@ pub fn extract_filter_from_filter_node(
                     );
                     e
                 })
-                .and_then(|primitive| {
-                    Ok(primitive.into_user_space(
+                .map(|primitive| {
+                    primitive.into_user_space(
                         user_space_filter.primitive_units,
                         primitive_values,
                         draw_ctx,
-                    ))
+                    )
                 })
         })
         .collect::<Result<Vec<UserSpacePrimitive>, FilterError>>()?;
