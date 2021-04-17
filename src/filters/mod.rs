@@ -10,6 +10,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
+use crate::filter::UserSpaceFilter;
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::paint_server::UserSpacePaintSource;
@@ -52,6 +53,11 @@ pub mod morphology;
 pub mod offset;
 pub mod tile;
 pub mod turbulence;
+
+pub struct FilterSpec {
+    user_space_filter: UserSpaceFilter,
+    primitives: Vec<UserSpacePrimitive>,
+}
 
 /// Resolved parameters for each filter primitive.
 ///
@@ -238,17 +244,10 @@ impl Primitive {
     }
 }
 
-/// Applies a filter and returns the resulting surface.
-pub fn render(
+pub fn extract_filter_from_filter_node(
     filter_node: &Node,
-    stroke_paint_source: UserSpacePaintSource,
-    fill_paint_source: UserSpacePaintSource,
-    source_surface: SharedImageSurface,
-    acquired_nodes: &mut AcquiredNodes<'_>,
-    draw_ctx: &mut DrawingCtx,
-    transform: Transform,
-    node_bbox: BoundingBox,
-) -> Result<SharedImageSurface, RenderingError> {
+    draw_ctx: &DrawingCtx,
+) -> Result<FilterSpec, FilterError> {
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
@@ -265,7 +264,7 @@ pub fn render(
         filter.to_user_space(filter_values, &params)
     };
 
-    let res = filter_node
+    let primitives = filter_node
         .children()
         .filter(|c| c.is_element())
         // Skip nodes in error.
@@ -306,9 +305,26 @@ pub fn render(
                     ))
                 })
         })
-        .collect::<Result<Vec<UserSpacePrimitive>, FilterError>>();
+        .collect::<Result<Vec<UserSpacePrimitive>, FilterError>>()?;
 
-    let primitives = match res {
+    Ok(FilterSpec {
+        user_space_filter,
+        primitives,
+    })
+}
+
+/// Applies a filter and returns the resulting surface.
+pub fn render(
+    filter_node: &Node,
+    stroke_paint_source: UserSpacePaintSource,
+    fill_paint_source: UserSpacePaintSource,
+    source_surface: SharedImageSurface,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    draw_ctx: &mut DrawingCtx,
+    transform: Transform,
+    node_bbox: BoundingBox,
+) -> Result<SharedImageSurface, RenderingError> {
+    let filter = match extract_filter_from_filter_node(filter_node, draw_ctx) {
         Err(FilterError::CairoError(status)) => {
             // Exit early on Cairo errors
             return Err(RenderingError::from(status));
@@ -323,18 +339,18 @@ pub fn render(
             )?);
         }
 
-        Ok(r) => r,
+        Ok(f) => f,
     };
 
     if let Ok(mut filter_ctx) = FilterContext::new(
-        &user_space_filter,
+        &filter.user_space_filter,
         stroke_paint_source,
         fill_paint_source,
         &source_surface,
         transform,
         node_bbox,
     ) {
-        for user_space_primitive in primitives {
+        for user_space_primitive in &filter.primitives {
             let start = Instant::now();
 
             match render_primitive(&user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
@@ -347,7 +363,7 @@ pub fn render(
                     );
 
                     filter_ctx.store_result(FilterResult {
-                        name: user_space_primitive.result,
+                        name: user_space_primitive.result.clone(),
                         output,
                     });
                 }
