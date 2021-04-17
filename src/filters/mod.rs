@@ -254,10 +254,6 @@ pub fn render(
 
     let filter_element = filter_node.borrow_element();
 
-    if filter_element.is_in_error() {
-        return Ok(source_surface);
-    }
-
     let user_space_filter = {
         let filter_values = filter_element.get_computed_values();
 

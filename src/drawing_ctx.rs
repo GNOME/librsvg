@@ -941,10 +941,16 @@ impl DrawingCtx {
         // handling?
         match acquired_nodes.acquire(filter_uri) {
             Ok(acquired) => {
-                let filter_node = acquired.get();
+                let node = acquired.get();
 
-                match *filter_node.borrow_element() {
+                let element = node.borrow_element();
+
+                match *element {
                     Element::Filter(_) => {
+                        if element.is_in_error() {
+                            return Ok(child_surface);
+                        }
+
                         let stroke_paint_source = values
                             .stroke()
                             .0
@@ -958,7 +964,7 @@ impl DrawingCtx {
                             .to_user_space(&node_bbox, self, values);
 
                         return filters::render(
-                            &filter_node,
+                            &node,
                             stroke_paint_source,
                             fill_paint_source,
                             child_surface,
