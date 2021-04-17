@@ -11,7 +11,7 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feOffset` filter primitive.
 #[derive(Default)]
@@ -80,10 +80,10 @@ impl Offset {
 }
 
 impl FilterEffect for FeOffset {
-    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::Offset(self.params.clone()),
-        ))
+    fn resolve(&self, _node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+        Ok(ResolvedPrimitive {
+            primitive: self.base.clone(),
+            params: PrimitiveParams::Offset(self.params.clone()),
+        })
     }
 }

@@ -27,7 +27,7 @@ pub struct Filter {
 }
 
 /// A <filter> element definition in user-space coordinates.
-pub struct ResolvedFilter {
+pub struct UserSpaceFilter {
     pub rect: Rect,
     pub filter_units: CoordUnits,
     pub primitive_units: CoordUnits,
@@ -56,7 +56,7 @@ impl Filter {
         self.primitive_units
     }
 
-    pub fn resolve(&self, values: &ComputedValues, params: &ViewParams) -> ResolvedFilter {
+    pub fn to_user_space(&self, values: &ComputedValues, params: &ViewParams) -> UserSpaceFilter {
         let x = self.x.normalize(values, &params);
         let y = self.y.normalize(values, &params);
         let w = self.width.normalize(values, &params);
@@ -64,7 +64,7 @@ impl Filter {
 
         let rect = Rect::new(x, y, x + w, y + h);
 
-        ResolvedFilter {
+        UserSpaceFilter {
             rect,
             filter_units: self.filter_units,
             primitive_units: self.primitive_units,

@@ -12,7 +12,7 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feMerge` filter primitive.
 pub struct FeMerge {
@@ -139,13 +139,13 @@ impl Merge {
 }
 
 impl FilterEffect for FeMerge {
-    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::Merge(Merge {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+        Ok(ResolvedPrimitive {
+            primitive: self.base.clone(),
+            params: PrimitiveParams::Merge(Merge {
                 merge_nodes: resolve_merge_nodes(node)?,
             }),
-        ))
+        })
     }
 }
 
@@ -196,7 +196,7 @@ mod tests {
 
         let node = document.lookup_internal_node("merge").unwrap();
         let merge = borrow_element_as!(node, FeMerge);
-        let (_, params) = merge.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } = merge.resolve(&node).unwrap();
         let params = match params {
             PrimitiveParams::Merge(m) => m,
             _ => unreachable!(),

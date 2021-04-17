@@ -5,10 +5,12 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
+use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
+use crate::filter::UserSpaceFilter;
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::paint_server::UserSpacePaintSource;
@@ -30,7 +32,7 @@ use self::error::FilterError;
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
-    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError>;
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError>;
 }
 
 // Filter Effects do not need to draw themselves
@@ -51,6 +53,11 @@ pub mod morphology;
 pub mod offset;
 pub mod tile;
 pub mod turbulence;
+
+pub struct FilterSpec {
+    user_space_filter: UserSpaceFilter,
+    primitives: Vec<UserSpacePrimitive>,
+}
 
 /// Resolved parameters for each filter primitive.
 ///
@@ -77,6 +84,32 @@ pub enum PrimitiveParams {
     Turbulence(turbulence::Turbulence),
 }
 
+impl PrimitiveParams {
+    /// Returns a human-readable name for a primitive.
+    #[rustfmt::skip]
+    fn name(&self) -> &'static str {
+        use PrimitiveParams::*;
+        match self {
+            Blend(..)             => "feBlend",
+            ColorMatrix(..)       => "feColorMatrix",
+            ComponentTransfer(..) => "feComponentTransfer",
+            Composite(..)         => "feComposite",
+            ConvolveMatrix(..)    => "feConvolveMatrix",
+            DiffuseLighting(..)   => "feDiffuseLighting",
+            DisplacementMap(..)   => "feDisplacementMap",
+            Flood(..)             => "feFlood",
+            GaussianBlur(..)      => "feGaussianBlur",
+            Image(..)             => "feImage",
+            Merge(..)             => "feMerge",
+            Morphology(..)        => "feMorphology",
+            Offset(..)            => "feOffset",
+            SpecularLighting(..)  => "feSpecularLighting",
+            Tile(..)              => "feTile",
+            Turbulence(..)        => "feTurbulence",
+        }
+    }
+}
+
 /// The base filter primitive node containing common properties.
 #[derive(Default, Clone)]
 pub struct Primitive {
@@ -88,11 +121,19 @@ pub struct Primitive {
 }
 
 pub struct ResolvedPrimitive {
+    pub primitive: Primitive,
+    pub params: PrimitiveParams,
+}
+
+/// A fully resolved filter primitive in user-space coordinates.
+pub struct UserSpacePrimitive {
     x: Option<f64>,
     y: Option<f64>,
     width: Option<f64>,
     height: Option<f64>,
     result: Option<CustomIdent>,
+
+    params: PrimitiveParams,
 }
 
 /// An enumeration of possible inputs for a filter primitive.
@@ -131,31 +172,32 @@ impl Parse for Input {
     }
 }
 
-impl Primitive {
-    fn resolve(
-        &self,
-        ctx: &FilterContext,
+impl ResolvedPrimitive {
+    fn into_user_space(
+        self,
+        primitive_units: CoordUnits,
         values: &ComputedValues,
         draw_ctx: &DrawingCtx,
-    ) -> ResolvedPrimitive {
-        let params = draw_ctx.push_coord_units(ctx.primitive_units());
+    ) -> UserSpacePrimitive {
+        let params = draw_ctx.push_coord_units(primitive_units);
 
-        let x = self.x.map(|l| l.normalize(values, &params));
-        let y = self.y.map(|l| l.normalize(values, &params));
-        let width = self.width.map(|l| l.normalize(values, &params));
-        let height = self.height.map(|l| l.normalize(values, &params));
+        let x = self.primitive.x.map(|l| l.normalize(values, &params));
+        let y = self.primitive.y.map(|l| l.normalize(values, &params));
+        let width = self.primitive.width.map(|l| l.normalize(values, &params));
+        let height = self.primitive.height.map(|l| l.normalize(values, &params));
 
-        ResolvedPrimitive {
+        UserSpacePrimitive {
             x,
             y,
             width,
             height,
-            result: self.result.clone(),
+            result: self.primitive.result,
+            params: self.params,
         }
     }
 }
 
-impl ResolvedPrimitive {
+impl UserSpacePrimitive {
     /// Validates attributes and returns the `BoundsBuilder` for bounds computation.
     #[inline]
     fn get_bounds(&self, ctx: &FilterContext) -> BoundsBuilder {
@@ -202,6 +244,75 @@ impl Primitive {
     }
 }
 
+pub fn extract_filter_from_filter_node(
+    filter_node: &Node,
+    draw_ctx: &DrawingCtx,
+) -> Result<FilterSpec, FilterError> {
+    let filter_node = &*filter_node;
+    assert!(is_element_of_type!(filter_node, Filter));
+
+    let filter_element = filter_node.borrow_element();
+
+    let user_space_filter = {
+        let filter_values = filter_element.get_computed_values();
+
+        let filter = borrow_element_as!(filter_node, Filter);
+
+        // This is in a temporary scope so we don't leave the coord_units pushed during
+        // the execution of all the filter primitives.
+        let params = draw_ctx.push_coord_units(filter.get_filter_units());
+        filter.to_user_space(filter_values, &params)
+    };
+
+    let primitives = filter_node
+        .children()
+        .filter(|c| c.is_element())
+        // Skip nodes in error.
+        .filter(|c| {
+            let in_error = c.borrow_element().is_in_error();
+
+            if in_error {
+                rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
+            }
+
+            !in_error
+        })
+        // Keep only filter primitives (those that implement the Filter trait)
+        .filter(|c| c.borrow_element().as_filter_effect().is_some())
+        .map(|primitive_node| {
+            let elt = primitive_node.borrow_element();
+            let effect = elt.as_filter_effect().unwrap();
+
+            let primitive_values = elt.get_computed_values();
+
+            let primitive_name = format!("{}", primitive_node);
+
+            effect
+                .resolve(&primitive_node)
+                .map_err(|e| {
+                    rsvg_log!(
+                        "(filter primitive {} returned an error: {})",
+                        primitive_name,
+                        e
+                    );
+                    e
+                })
+                .map(|primitive| {
+                    primitive.into_user_space(
+                        user_space_filter.primitive_units,
+                        primitive_values,
+                        draw_ctx,
+                    )
+                })
+        })
+        .collect::<Result<Vec<UserSpacePrimitive>, FilterError>>()?;
+
+    Ok(FilterSpec {
+        user_space_filter,
+        primitives,
+    })
+}
+
 /// Applies a filter and returns the resulting surface.
 pub fn render(
     filter_node: &Node,
@@ -213,97 +324,63 @@ pub fn render(
     transform: Transform,
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
-    let filter_node = &*filter_node;
-    assert!(is_element_of_type!(filter_node, Filter));
+    let filter = match extract_filter_from_filter_node(filter_node, draw_ctx) {
+        Err(FilterError::CairoError(status)) => {
+            // Exit early on Cairo errors
+            return Err(RenderingError::from(status));
+        }
 
-    let filter_element = filter_node.borrow_element();
+        Err(_) => {
+            // ignore other filter errors and just return an empty surface
+            return Ok(SharedImageSurface::empty(
+                source_surface.width(),
+                source_surface.height(),
+                SurfaceType::AlphaOnly,
+            )?);
+        }
 
-    if filter_element.is_in_error() {
-        return Ok(source_surface);
-    }
-
-    let filter_values = filter_element.get_computed_values();
-
-    let filter = borrow_element_as!(filter_node, Filter);
-
-    let resolved_filter = {
-        // This is in a temporary scope so we don't leave the coord_units pushed during
-        // the execution of all the filter primitives.
-        let params = draw_ctx.push_coord_units(filter.get_filter_units());
-        filter.resolve(filter_values, &params)
+        Ok(f) => f,
     };
 
     if let Ok(mut filter_ctx) = FilterContext::new(
-        &resolved_filter,
+        &filter.user_space_filter,
         stroke_paint_source,
         fill_paint_source,
         &source_surface,
         transform,
         node_bbox,
     ) {
-        let primitives = filter_node
-            .children()
-            .filter(|c| c.is_element())
-            // Skip nodes in error.
-            .filter(|c| {
-                let in_error = c.borrow_element().is_in_error();
-
-                if in_error {
-                    rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
-                }
-
-                !in_error
-            })
-            // Keep only filter primitives (those that implement the Filter trait)
-            .filter(|c| c.borrow_element().as_filter_effect().is_some());
-
-        for primitive_node in primitives {
-            let elt = primitive_node.borrow_element();
-            let filter = elt.as_filter_effect().unwrap();
-
-            let primitive_values = elt.get_computed_values();
-
+        for user_space_primitive in &filter.primitives {
             let start = Instant::now();
 
-            if let Err(err) = filter
-                .resolve(&primitive_node)
-                .and_then(|(primitive, params)| {
-                    let resolved_primitive =
-                        primitive.resolve(&filter_ctx, primitive_values, draw_ctx);
+            match render_primitive(&user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
+                Ok(output) => {
+                    let elapsed = start.elapsed();
+                    rsvg_log!(
+                        "(rendered filter primitive {} in\n    {} seconds)",
+                        user_space_primitive.params.name(),
+                        elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+                    );
 
-                    let output = render_primitive(
-                        &resolved_primitive,
-                        &params,
-                        &filter_ctx,
-                        acquired_nodes,
-                        draw_ctx,
-                    )?;
-
-                    Ok(FilterResult {
-                        name: resolved_primitive.result,
+                    filter_ctx.store_result(FilterResult {
+                        name: user_space_primitive.result.clone(),
                         output,
-                    })
-                })
-                .and_then(|result| filter_ctx.store_result(result))
-            {
-                rsvg_log!(
-                    "(filter primitive {} returned an error: {})",
-                    primitive_node,
-                    err
-                );
+                    });
+                }
 
-                // Exit early on Cairo errors. Continue rendering otherwise.
-                if let FilterError::CairoError(status) = err {
-                    return Err(RenderingError::from(status));
+                Err(err) => {
+                    rsvg_log!(
+                        "(filter primitive {} returned an error: {})",
+                        user_space_primitive.params.name(),
+                        err
+                    );
+
+                    // Exit early on Cairo errors. Continue rendering otherwise.
+                    if let FilterError::CairoError(status) = err {
+                        return Err(RenderingError::from(status));
+                    }
                 }
             }
-
-            let elapsed = start.elapsed();
-            rsvg_log!(
-                "(rendered filter primitive {} in\n    {} seconds)",
-                primitive_node,
-                elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-            );
         }
 
         Ok(filter_ctx.into_output()?)
@@ -319,8 +396,7 @@ pub fn render(
 
 #[rustfmt::skip]
 fn render_primitive(
-    primitive: &ResolvedPrimitive,
-    params: &PrimitiveParams,
+    primitive: &UserSpacePrimitive,
     ctx: &FilterContext,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
@@ -329,23 +405,23 @@ fn render_primitive(
 
     let bounds_builder = primitive.get_bounds(ctx);
 
-    match params {
-        Blend(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ColorMatrix(p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ComponentTransfer(p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Composite(p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        ConvolveMatrix(p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DiffuseLighting(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        DisplacementMap(p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Flood(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        GaussianBlur(p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Image(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Merge(p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Morphology(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Offset(p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        SpecularLighting(p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Tile(p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
-        Turbulence(p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+    match primitive.params {
+        Blend(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ColorMatrix(ref p)       => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ComponentTransfer(ref p) => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Composite(ref p)         => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        ConvolveMatrix(ref p)    => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DiffuseLighting(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        DisplacementMap(ref p)   => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Flood(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        GaussianBlur(ref p)      => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Image(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Merge(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Morphology(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Offset(ref p)            => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        SpecularLighting(ref p)  => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Tile(ref p)              => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
+        Turbulence(ref p)        => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),
     }
 }
 

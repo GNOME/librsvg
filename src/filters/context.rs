@@ -5,7 +5,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::filter::ResolvedFilter;
+use crate::filter::UserSpaceFilter;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
 use crate::property_defs::ColorInterpolationFilters;
@@ -99,7 +99,7 @@ pub struct FilterContext {
 impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
-        filter: &ResolvedFilter,
+        filter: &UserSpaceFilter,
         stroke_paint: UserSpacePaintSource,
         fill_paint: UserSpacePaintSource,
         source_surface: &SharedImageSurface,
@@ -257,13 +257,12 @@ impl FilterContext {
 
     /// Stores a filter primitive result into the context.
     #[inline]
-    pub fn store_result(&mut self, result: FilterResult) -> Result<(), FilterError> {
+    pub fn store_result(&mut self, result: FilterResult) {
         if let Some(name) = result.name {
             self.previous_results.insert(name, result.output.clone());
         }
 
         self.last_result = Some(result.output);
-        Ok(())
     }
 
     /// Returns the paffine matrix.
