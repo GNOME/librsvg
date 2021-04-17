@@ -15,7 +15,7 @@ use crate::xml::Attributes;
 
 use super::bounds::{Bounds, BoundsBuilder};
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feImage` filter primitive.
 #[derive(Default)]
@@ -153,16 +153,16 @@ impl Image {
 }
 
 impl FilterEffect for FeImage {
-    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let feimage_values = cascaded.get().clone();
 
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::Image(Image {
+        Ok(ResolvedPrimitive {
+            primitive: self.base.clone(),
+            params: PrimitiveParams::Image(Image {
                 params: self.params.clone(),
                 feimage_values,
             }),
-        ))
+        })
     }
 }

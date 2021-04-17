@@ -19,7 +19,7 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feComponentTransfer` filter primitive.
 #[derive(Default)]
@@ -368,7 +368,7 @@ impl ComponentTransfer {
 }
 
 impl FilterEffect for FeComponentTransfer {
-    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
@@ -376,10 +376,10 @@ impl FilterEffect for FeComponentTransfer {
         params.functions = get_functions(node)?;
         params.color_interpolation_filters = values.color_interpolation_filters();
 
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::ComponentTransfer(params),
-        ))
+        Ok(ResolvedPrimitive {
+            primitive: self.base.clone(),
+            params: PrimitiveParams::ComponentTransfer(params),
+        })
     }
 }
 

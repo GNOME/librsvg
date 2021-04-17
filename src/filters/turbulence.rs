@@ -18,7 +18,7 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -415,14 +415,17 @@ impl Turbulence {
 }
 
 impl FilterEffect for FeTurbulence {
-    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
         let mut params = self.params.clone();
         params.color_interpolation_filters = values.color_interpolation_filters();
 
-        Ok((self.base.clone(), PrimitiveParams::Turbulence(params)))
+        Ok(ResolvedPrimitive {
+            primitive: self.base.clone(),
+            params: PrimitiveParams::Turbulence(params),
+        })
     }
 }
 

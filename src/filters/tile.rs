@@ -8,7 +8,7 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterInput, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// The `feTile` filter primitive.
 #[derive(Default)]
@@ -77,10 +77,10 @@ impl Tile {
 }
 
 impl FilterEffect for FeTile {
-    fn resolve(&self, _node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
-        Ok((
-            self.base.clone(),
-            PrimitiveParams::Tile(self.params.clone()),
-        ))
+    fn resolve(&self, _node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+        Ok(ResolvedPrimitive {
+            primitive: self.base.clone(),
+            params: PrimitiveParams::Tile(self.params.clone()),
+        })
     }
 }

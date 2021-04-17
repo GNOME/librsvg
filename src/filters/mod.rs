@@ -31,7 +31,7 @@ use self::error::FilterError;
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
-    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError>;
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError>;
 }
 
 // Filter Effects do not need to draw themselves
@@ -114,6 +114,11 @@ pub struct Primitive {
     result: Option<CustomIdent>,
 }
 
+pub struct ResolvedPrimitive {
+    pub primitive: Primitive,
+    pub params: PrimitiveParams,
+}
+
 /// Common properties for filter primitives, with all lengths in user space coordinates.
 pub struct UserSpacePrimitive {
     x: Option<f64>,
@@ -159,7 +164,7 @@ impl Parse for Input {
     }
 }
 
-impl Primitive {
+impl ResolvedPrimitive {
     fn to_user_space(
         &self,
         primitive_units: CoordUnits,
@@ -168,17 +173,17 @@ impl Primitive {
     ) -> UserSpacePrimitive {
         let params = draw_ctx.push_coord_units(primitive_units);
 
-        let x = self.x.map(|l| l.normalize(values, &params));
-        let y = self.y.map(|l| l.normalize(values, &params));
-        let width = self.width.map(|l| l.normalize(values, &params));
-        let height = self.height.map(|l| l.normalize(values, &params));
+        let x = self.primitive.x.map(|l| l.normalize(values, &params));
+        let y = self.primitive.y.map(|l| l.normalize(values, &params));
+        let width = self.primitive.width.map(|l| l.normalize(values, &params));
+        let height = self.primitive.height.map(|l| l.normalize(values, &params));
 
         UserSpacePrimitive {
             x,
             y,
             width,
             height,
-            result: self.result.clone(),
+            result: self.primitive.result.clone(),
         }
     }
 }
@@ -294,14 +299,14 @@ pub fn render(
                     );
                     e
                 })
-                .and_then(|(primitive, params)| {
+                .and_then(|primitive| {
                     let user_space_primitive = primitive.to_user_space(
                         user_space_filter.primitive_units,
                         primitive_values,
                         draw_ctx,
                     );
 
-                    Ok((user_space_primitive, params))
+                    Ok((user_space_primitive, primitive.params))
                 })
         })
         .collect::<Result<Vec<(UserSpacePrimitive, PrimitiveParams)>, FilterError>>();

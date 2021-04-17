@@ -14,7 +14,7 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams};
+use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
 
 /// Enumeration of the color channels the displacement map can source.
 #[derive(Clone, Copy)]
@@ -152,14 +152,17 @@ impl DisplacementMap {
 }
 
 impl FilterEffect for FeDisplacementMap {
-    fn resolve(&self, node: &Node) -> Result<(Primitive, PrimitiveParams), FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
         let mut params = self.params.clone();
         params.color_interpolation_filters = values.color_interpolation_filters();
 
-        Ok((self.base.clone(), PrimitiveParams::DisplacementMap(params)))
+        Ok(ResolvedPrimitive {
+            primitive: self.base.clone(),
+            params: PrimitiveParams::DisplacementMap(params),
+        })
     }
 }
 
