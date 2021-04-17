@@ -257,13 +257,12 @@ impl FilterContext {
 
     /// Stores a filter primitive result into the context.
     #[inline]
-    pub fn store_result(&mut self, result: FilterResult) -> Result<(), FilterError> {
+    pub fn store_result(&mut self, result: FilterResult) {
         if let Some(name) = result.name {
             self.previous_results.insert(name, result.output.clone());
         }
 
         self.last_result = Some(result.output);
-        Ok(())
     }
 
     /// Returns the paffine matrix.

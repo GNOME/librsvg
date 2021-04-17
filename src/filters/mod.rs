@@ -244,7 +244,24 @@ pub fn render(
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
-    let primitive_nodes: Vec<Node> = filter_node
+    let filter_element = filter_node.borrow_element();
+
+    if filter_element.is_in_error() {
+        return Ok(source_surface);
+    }
+
+    let user_space_filter = {
+        let filter_values = filter_element.get_computed_values();
+
+        let filter = borrow_element_as!(filter_node, Filter);
+
+        // This is in a temporary scope so we don't leave the coord_units pushed during
+        // the execution of all the filter primitives.
+        let params = draw_ctx.push_coord_units(filter.get_filter_units());
+        filter.to_user_space(filter_values, &params)
+    };
+
+    let res = filter_node
         .children()
         .filter(|c| c.is_element())
         // Skip nodes in error.
@@ -259,24 +276,52 @@ pub fn render(
         })
         // Keep only filter primitives (those that implement the Filter trait)
         .filter(|c| c.borrow_element().as_filter_effect().is_some())
-        .map(|n| n.clone())
-        .collect();
+        .map(|primitive_node| {
+            let elt = primitive_node.borrow_element();
+            let effect = elt.as_filter_effect().unwrap();
 
-    let filter_element = filter_node.borrow_element();
+            let primitive_values = elt.get_computed_values();
 
-    if filter_element.is_in_error() {
-        return Ok(source_surface);
-    }
+            let primitive_name = format!("{}", primitive_node);
 
-    let filter_values = filter_element.get_computed_values();
+            effect
+                .resolve(&primitive_node)
+                .map_err(|e| {
+                    rsvg_log!(
+                        "(filter primitive {} returned an error: {})",
+                        primitive_name,
+                        e
+                    );
+                    e
+                })
+                .and_then(|(primitive, params)| {
+                    let user_space_primitive = primitive.to_user_space(
+                        user_space_filter.primitive_units,
+                        primitive_values,
+                        draw_ctx,
+                    );
 
-    let filter = borrow_element_as!(filter_node, Filter);
+                    Ok((user_space_primitive, params))
+                })
+        })
+        .collect::<Result<Vec<(UserSpacePrimitive, PrimitiveParams)>, FilterError>>();
 
-    let user_space_filter = {
-        // This is in a temporary scope so we don't leave the coord_units pushed during
-        // the execution of all the filter primitives.
-        let params = draw_ctx.push_coord_units(filter.get_filter_units());
-        filter.to_user_space(filter_values, &params)
+    let primitives = match res {
+        Err(FilterError::CairoError(status)) => {
+            // Exit early on Cairo errors
+            return Err(RenderingError::from(status));
+        }
+
+        Err(_) => {
+            // ignore other filter errors and just return an empty surface
+            return Ok(SharedImageSurface::empty(
+                source_surface.width(),
+                source_surface.height(),
+                SurfaceType::AlphaOnly,
+            )?);
+        }
+
+        Ok(r) => r,
     };
 
     if let Ok(mut filter_ctx) = FilterContext::new(
@@ -287,33 +332,17 @@ pub fn render(
         transform,
         node_bbox,
     ) {
-        for primitive_node in primitive_nodes {
-            let elt = primitive_node.borrow_element();
-            let effect = elt.as_filter_effect().unwrap();
-
-            let primitive_values = elt.get_computed_values();
-
-            let primitive_name = format!("{}", primitive_node);
-
+        for (user_space_primitive, params) in primitives {
             let start = Instant::now();
 
-            if let Err(err) = effect
-                .resolve(&primitive_node)
-                .and_then(|(primitive, params)| {
-                    let user_space_primitive = primitive.to_user_space(
-                        user_space_filter.primitive_units,
-                        primitive_values,
-                        draw_ctx,
-                    );
-
-                    let output = render_primitive(
-                        &user_space_primitive,
-                        &params,
-                        &filter_ctx,
-                        acquired_nodes,
-                        draw_ctx,
-                    )?;
-
+            match render_primitive(
+                &user_space_primitive,
+                &params,
+                &filter_ctx,
+                acquired_nodes,
+                draw_ctx,
+            ) {
+                Ok(output) => {
                     let elapsed = start.elapsed();
                     rsvg_log!(
                         "(rendered filter primitive {} in\n    {} seconds)",
@@ -321,22 +350,23 @@ pub fn render(
                         elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
                     );
 
-                    Ok(FilterResult {
+                    filter_ctx.store_result(FilterResult {
                         name: user_space_primitive.result,
                         output,
-                    })
-                })
-                .and_then(|result| filter_ctx.store_result(result))
-            {
-                rsvg_log!(
-                    "(filter primitive {} returned an error: {})",
-                    primitive_name,
-                    err
-                );
+                    });
+                }
 
-                // Exit early on Cairo errors. Continue rendering otherwise.
-                if let FilterError::CairoError(status) = err {
-                    return Err(RenderingError::from(status));
+                Err(err) => {
+                    rsvg_log!(
+                        "(filter primitive {} returned an error: {})",
+                        params.name(),
+                        err
+                    );
+
+                    // Exit early on Cairo errors. Continue rendering otherwise.
+                    if let FilterError::CairoError(status) = err {
+                        return Err(RenderingError::from(status));
+                    }
                 }
             }
         }
