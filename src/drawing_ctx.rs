@@ -684,7 +684,12 @@ impl DrawingCtx {
 
                 let node_name = format!("{}", node);
 
+                let surface_to_filter = SharedImageSurface::copy_from_surface(
+                    &cairo::ImageSurface::try_from(saved_cr.draw_ctx.cr.get_target()).unwrap(),
+                )?;
+
                 let source_surface = saved_cr.draw_ctx.run_filters(
+                    surface_to_filter,
                     &filters,
                     acquired_nodes,
                     &node_name,
@@ -883,6 +888,7 @@ impl DrawingCtx {
 
     fn run_filters(
         &mut self,
+        surface_to_filter: SharedImageSurface,
         filters: &Filter,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
@@ -890,41 +896,33 @@ impl DrawingCtx {
         node_bbox: BoundingBox,
     ) -> Result<cairo::Surface, RenderingError> {
         let surface = match filters {
-            Filter::None => self.cr.get_target(),
+            Filter::None => surface_to_filter,
             Filter::List(filter_list) => {
                 if filter_list.is_applicable(&node_name, acquired_nodes) {
-                    // The target surface has multiple references.
-                    // We need to copy it to a new surface to have a unique
-                    // reference to be able to safely access the pixel data.
-                    let child_surface = SharedImageSurface::copy_from_surface(
-                        &cairo::ImageSurface::try_from(self.cr.get_target()).unwrap(),
-                    )?;
-
-                    let img_surface = filter_list
-                        .iter()
-                        .try_fold(
-                            child_surface,
-                            |surface, filter| -> Result<_, RenderingError> {
-                                let FilterValue::Url(f) = filter;
-                                self.run_filter(
-                                    acquired_nodes,
-                                    &f,
-                                    &node_name,
-                                    values,
-                                    surface,
-                                    node_bbox,
-                                )
-                            },
-                        )?
-                        .into_image_surface()?;
-                    // turn ImageSurface into a Surface
-                    (*img_surface).clone()
+                    filter_list.iter().try_fold(
+                        surface_to_filter,
+                        |surface, filter| -> Result<_, RenderingError> {
+                            let FilterValue::Url(f) = filter;
+                            self.run_filter(
+                                acquired_nodes,
+                                &f,
+                                &node_name,
+                                values,
+                                surface,
+                                node_bbox,
+                            )
+                        },
+                    )?
                 } else {
-                    self.cr.get_target()
+                    surface_to_filter
                 }
             }
         };
-        Ok(surface)
+
+        let img_surface = surface.into_image_surface()?;
+
+        // turn ImageSurface into a Surface
+        Ok((*img_surface).clone())
     }
 
     fn run_filter(
@@ -933,7 +931,7 @@ impl DrawingCtx {
         filter_uri: &NodeId,
         node_name: &str,
         values: &ComputedValues,
-        child_surface: SharedImageSurface,
+        surface_to_filter: SharedImageSurface,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
         // TODO: since we check is_applicable before we get here, these checks are redundant
@@ -948,7 +946,7 @@ impl DrawingCtx {
                 match *element {
                     Element::Filter(_) => {
                         if element.is_in_error() {
-                            return Ok(child_surface);
+                            return Ok(surface_to_filter);
                         }
 
                         let stroke_paint_source = values
@@ -967,7 +965,7 @@ impl DrawingCtx {
                             &node,
                             stroke_paint_source,
                             fill_paint_source,
-                            child_surface,
+                            surface_to_filter,
                             acquired_nodes,
                             self,
                             self.get_transform(),
@@ -993,7 +991,7 @@ impl DrawingCtx {
         }
 
         // Non-existing filters must act as null filters (an empty surface is returned).
-        Ok(child_surface)
+        Ok(surface_to_filter)
     }
 
     fn set_gradient(self: &mut DrawingCtx, gradient: &UserSpaceGradient) {
