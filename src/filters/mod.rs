@@ -2,6 +2,7 @@
 
 use cssparser::{BasicParseError, Parser};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use std::rc::Rc;
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
@@ -316,8 +317,8 @@ pub fn extract_filter_from_filter_node(
 /// Applies a filter and returns the resulting surface.
 pub fn render(
     filter_node: &Node,
-    stroke_paint_source: UserSpacePaintSource,
-    fill_paint_source: UserSpacePaintSource,
+    stroke_paint_source: Rc<UserSpacePaintSource>,
+    fill_paint_source: Rc<UserSpacePaintSource>,
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,

@@ -949,22 +949,30 @@ impl DrawingCtx {
                             return Ok(surface_to_filter);
                         }
 
-                        let stroke_paint_source = values
-                            .stroke()
-                            .0
-                            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-                            .to_user_space(&node_bbox, self, values);
+                        let stroke_paint_source = Rc::new(
+                            values
+                                .stroke()
+                                .0
+                                .resolve(
+                                    acquired_nodes,
+                                    values.stroke_opacity().0,
+                                    values.color().0,
+                                )?
+                                .to_user_space(&node_bbox, self, values),
+                        );
 
-                        let fill_paint_source = values
-                            .fill()
-                            .0
-                            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-                            .to_user_space(&node_bbox, self, values);
+                        let fill_paint_source = Rc::new(
+                            values
+                                .fill()
+                                .0
+                                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+                                .to_user_space(&node_bbox, self, values),
+                        );
 
                         return filters::render(
                             &node,
-                            stroke_paint_source,
-                            fill_paint_source,
+                            stroke_paint_source.clone(),
+                            fill_paint_source.clone(),
                             surface_to_filter,
                             acquired_nodes,
                             self,

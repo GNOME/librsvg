@@ -1,5 +1,6 @@
 use once_cell::sync::OnceCell;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -48,9 +49,9 @@ pub enum FilterInput {
 /// The filter rendering context.
 pub struct FilterContext {
     /// Paint source for primitives which have an input value equal to `StrokePaint`.
-    stroke_paint: UserSpacePaintSource,
+    stroke_paint: Rc<UserSpacePaintSource>,
     /// Paint source for primitives which have an input value equal to `FillPaint`.
-    fill_paint: UserSpacePaintSource,
+    fill_paint: Rc<UserSpacePaintSource>,
 
     /// The source graphic surface.
     source_surface: SharedImageSurface,
@@ -100,8 +101,8 @@ impl FilterContext {
     /// Creates a new `FilterContext`.
     pub fn new(
         filter: &UserSpaceFilter,
-        stroke_paint: UserSpacePaintSource,
-        fill_paint: UserSpacePaintSource,
+        stroke_paint: Rc<UserSpacePaintSource>,
+        fill_paint: Rc<UserSpacePaintSource>,
         source_surface: &SharedImageSurface,
         draw_transform: Transform,
         node_bbox: BoundingBox,
