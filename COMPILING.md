@@ -75,7 +75,7 @@ PATH="$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0"
 dnf install -y gcc rust rust-std-static cargo make \
 automake autoconf libtool gtk-doc git redhat-rpm-config \
 gdk-pixbuf2-devel gobject-introspection-devel \
-libxml2-devel cairo-devel pango-devel
+libxml2-devel cairo-devel cairo-gobject-devel pango-devel 
 ```
 
 ### openSUSE based systems
