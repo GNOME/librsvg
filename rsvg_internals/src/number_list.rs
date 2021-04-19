@@ -7,6 +7,7 @@ use crate::parsers::{optional_comma, Parse};
 
 #[derive(Eq, PartialEq)]
 pub enum NumberListLength {
+    MaxLength(usize),
     Exact(usize),
     Unbounded,
 }
@@ -20,6 +21,11 @@ impl NumberList {
         length: NumberListLength,
     ) -> Result<Self, ParseError<'i>> {
         let mut v = match length {
+            NumberListLength::MaxLength(l) if l > 0 => Vec::<f64>::with_capacity(l),
+            NumberListLength::MaxLength(_) => {
+                //cargo fmt suggests this formatting for some reason
+                unreachable!("NumberListLength::MaxLength cannot be 0")
+            }
             NumberListLength::Exact(l) if l > 0 => Vec::<f64>::with_capacity(l),
             NumberListLength::Exact(_) => unreachable!("NumberListLength::Exact cannot be 0"),
             NumberListLength::Unbounded => Vec::<f64>::new(),
@@ -35,6 +41,12 @@ impl NumberList {
             }
 
             v.push(f64::parse(parser)?);
+
+            if let NumberListLength::MaxLength(l) = length {
+                if i + 1 == l {
+                    break;
+                }
+            }
 
             if let NumberListLength::Exact(l) = length {
                 if i + 1 == l {
