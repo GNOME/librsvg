@@ -105,10 +105,12 @@ impl SetAttributes for FeConvolveMatrix {
 
                 // #352: Parse as an unbounded list rather than exact length to prevent aborts due
                 //       to huge allocation attempts by underlying Vec::with_capacity().
-                let NumberList(v) = NumberList::parse_str(value, NumberListLength::Unbounded)
+                // #691: Limit list to 400 (20x20) to mitigate malicious SVGs
+                let NumberList(v) = NumberList::parse_str(value, NumberListLength::MaxLength(400))
                     .attribute(attr.clone())?;
-
-                if v.len() != number_of_elements {
+                // #691: Update check as v.len can be different than number of elements because
+                //       of the above limit (and will = 400 if that happens)
+                if v.len() != number_of_elements && v.len() != 400 {
                     return Err(ValueErrorKind::value_error(&format!(
                         "incorrect number of elements: expected {}",
                         number_of_elements
