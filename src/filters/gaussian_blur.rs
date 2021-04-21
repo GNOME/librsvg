@@ -19,7 +19,10 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{
+    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
+};
 
 /// The maximum gaussian blur kernel size.
 ///
@@ -244,7 +247,7 @@ impl GaussianBlur {
 }
 
 impl FilterEffect for FeGaussianBlur {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 

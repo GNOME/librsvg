@@ -18,10 +18,15 @@ pub enum FilterError {
     CairoError(cairo::Error),
     /// Error from the rendering backend.
     Rendering(RenderingError),
-    /// A lighting filter has none or multiple light sources.
-    InvalidLightSourceCount,
     /// A lighting filter input surface is too small.
     LightingInputTooSmall,
+}
+
+/// Errors that can occur while resolving a `FilterSpec`.
+#[derive(Debug)]
+pub enum FilterResolveError {
+    /// A lighting filter has none or multiple light sources.
+    InvalidLightSourceCount,
     /// Child node was in error.
     ChildNodeInError,
 }
@@ -36,12 +41,19 @@ impl fmt::Display for FilterError {
             }
             FilterError::CairoError(ref status) => write!(f, "Cairo error: {}", status),
             FilterError::Rendering(ref e) => write!(f, "Rendering error: {}", e),
-            FilterError::InvalidLightSourceCount => write!(f, "invalid light source count"),
             FilterError::LightingInputTooSmall => write!(
                 f,
                 "lighting filter input surface is too small (less than 2×2 pixels)"
             ),
-            FilterError::ChildNodeInError => write!(f, "child node was in error"),
+        }
+    }
+}
+
+impl fmt::Display for FilterResolveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            FilterResolveError::InvalidLightSourceCount => write!(f, "invalid light source count"),
+            FilterResolveError::ChildNodeInError => write!(f, "child node was in error"),
         }
     }
 }

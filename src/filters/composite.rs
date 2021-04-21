@@ -13,7 +13,10 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{
+    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
+};
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -118,7 +121,7 @@ impl Composite {
 }
 
 impl FilterEffect for FeComposite {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 

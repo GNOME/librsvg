@@ -12,7 +12,10 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{
+    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
+};
 
 /// The `feMerge` filter primitive.
 pub struct FeMerge {
@@ -139,7 +142,7 @@ impl Merge {
 }
 
 impl FilterEffect for FeMerge {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
         Ok(ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Merge(Merge {
@@ -150,14 +153,14 @@ impl FilterEffect for FeMerge {
 }
 
 /// Takes a feMerge and walks its children to produce a list of feMergeNode arguments.
-fn resolve_merge_nodes(node: &Node) -> Result<Vec<MergeNode>, FilterError> {
+fn resolve_merge_nodes(node: &Node) -> Result<Vec<MergeNode>, FilterResolveError> {
     let mut merge_nodes = Vec::new();
 
     for child in node.children().filter(|c| c.is_element()) {
         let elt = child.borrow_element();
 
         if elt.is_in_error() {
-            return Err(FilterError::ChildNodeInError);
+            return Err(FilterResolveError::ChildNodeInError);
         }
 
         let cascaded = CascadedValues::new_from_node(&child);

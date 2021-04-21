@@ -20,7 +20,10 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{
+    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
+};
 
 /// Enumeration of the possible morphology operations.
 #[derive(Clone)]
@@ -158,7 +161,7 @@ impl Morphology {
 }
 
 impl FilterEffect for FeMorphology {
-    fn resolve(&self, _node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+    fn resolve(&self, _node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
         Ok(ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Morphology(self.params.clone()),

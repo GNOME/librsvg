@@ -19,7 +19,10 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{
+    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
+};
 
 /// The `feComponentTransfer` filter primitive.
 #[derive(Default)]
@@ -369,7 +372,7 @@ impl ComponentTransfer {
 }
 
 impl FilterEffect for FeComponentTransfer {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
@@ -385,7 +388,7 @@ impl FilterEffect for FeComponentTransfer {
 }
 
 /// Takes a feComponentTransfer and walks its children to produce the feFuncX arguments.
-fn get_functions(node: &Node) -> Result<Functions, FilterError> {
+fn get_functions(node: &Node) -> Result<Functions, FilterResolveError> {
     let func_r_node = get_func_x_node!(node, FeFuncR, Channel::R);
     let func_g_node = get_func_x_node!(node, FeFuncG, Channel::G);
     let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
@@ -396,7 +399,7 @@ fn get_functions(node: &Node) -> Result<Functions, FilterError> {
         .filter_map(|x| x.as_ref())
     {
         if node.borrow_element().is_in_error() {
-            return Err(FilterError::ChildNodeInError);
+            return Err(FilterResolveError::ChildNodeInError);
         }
     }
 

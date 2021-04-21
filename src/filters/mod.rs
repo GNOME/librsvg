@@ -29,11 +29,11 @@ pub mod context;
 use self::context::{FilterContext, FilterOutput, FilterResult};
 
 mod error;
-use self::error::FilterError;
+use self::error::{FilterError, FilterResolveError};
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError>;
+    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError>;
 }
 
 // Filter Effects do not need to draw themselves
@@ -248,7 +248,7 @@ impl Primitive {
 pub fn extract_filter_from_filter_node(
     filter_node: &Node,
     draw_ctx: &DrawingCtx,
-) -> Result<FilterSpec, FilterError> {
+) -> Result<FilterSpec, FilterResolveError> {
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
@@ -306,7 +306,7 @@ pub fn extract_filter_from_filter_node(
                     )
                 })
         })
-        .collect::<Result<Vec<UserSpacePrimitive>, FilterError>>()?;
+        .collect::<Result<Vec<UserSpacePrimitive>, FilterResolveError>>()?;
 
     Ok(FilterSpec {
         user_space_filter,
@@ -326,6 +326,9 @@ pub fn render(
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
     extract_filter_from_filter_node(filter_node, draw_ctx)
+        .map_err(|e| {
+            FilterError::InvalidParameter(format!("error when creating filter spec: {}", e))
+        })
         .and_then(|filter| {
             let filter_ctx = FilterContext::new(
                 &filter.user_space_filter,
