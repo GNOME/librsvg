@@ -29,7 +29,8 @@ pub mod context;
 use self::context::{FilterContext, FilterOutput, FilterResult};
 
 mod error;
-use self::error::{FilterError, FilterResolveError};
+use self::error::FilterError;
+pub use self::error::FilterResolveError;
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
@@ -316,7 +317,7 @@ pub fn extract_filter_from_filter_node(
 
 /// Applies a filter and returns the resulting surface.
 pub fn render(
-    filter_node: &Node,
+    filter: &FilterSpec,
     stroke_paint_source: Rc<UserSpacePaintSource>,
     fill_paint_source: Rc<UserSpacePaintSource>,
     source_surface: SharedImageSurface,
@@ -325,74 +326,65 @@ pub fn render(
     transform: Transform,
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
-    extract_filter_from_filter_node(filter_node, draw_ctx)
-        .map_err(|e| {
-            FilterError::InvalidParameter(format!("error when creating filter spec: {}", e))
-        })
-        .and_then(|filter| {
-            let filter_ctx = FilterContext::new(
-                &filter.user_space_filter,
-                stroke_paint_source,
-                fill_paint_source,
-                &source_surface,
-                transform,
-                node_bbox,
-            )?;
+    FilterContext::new(
+        &filter.user_space_filter,
+        stroke_paint_source,
+        fill_paint_source,
+        &source_surface,
+        transform,
+        node_bbox,
+    )
+    .and_then(|mut filter_ctx| {
+        for user_space_primitive in &filter.primitives {
+            let start = Instant::now();
 
-            Ok((filter, filter_ctx))
-        })
-        .and_then(|(filter, mut filter_ctx)| {
-            for user_space_primitive in &filter.primitives {
-                let start = Instant::now();
+            match render_primitive(&user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
+                Ok(output) => {
+                    let elapsed = start.elapsed();
+                    rsvg_log!(
+                        "(rendered filter primitive {} in\n    {} seconds)",
+                        user_space_primitive.params.name(),
+                        elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
+                    );
 
-                match render_primitive(&user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx)
-                {
-                    Ok(output) => {
-                        let elapsed = start.elapsed();
-                        rsvg_log!(
-                            "(rendered filter primitive {} in\n    {} seconds)",
-                            user_space_primitive.params.name(),
-                            elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
-                        );
+                    filter_ctx.store_result(FilterResult {
+                        name: user_space_primitive.result.clone(),
+                        output,
+                    });
+                }
 
-                        filter_ctx.store_result(FilterResult {
-                            name: user_space_primitive.result.clone(),
-                            output,
-                        });
-                    }
+                Err(err) => {
+                    rsvg_log!(
+                        "(filter primitive {} returned an error: {})",
+                        user_space_primitive.params.name(),
+                        err
+                    );
 
-                    Err(err) => {
-                        rsvg_log!(
-                            "(filter primitive {} returned an error: {})",
-                            user_space_primitive.params.name(),
-                            err
-                        );
-
-                        // Exit early on Cairo errors. Continue rendering otherwise.
-                        if let FilterError::CairoError(status) = err {
-                            return Err(FilterError::CairoError(status));
-                        }
+                    // Exit early on Cairo errors. Continue rendering otherwise.
+                    if let FilterError::CairoError(status) = err {
+                        return Err(FilterError::CairoError(status));
                     }
                 }
             }
+        }
 
-            Ok(filter_ctx.into_output()?)
-        })
-        .or_else(|err| match err {
-            FilterError::CairoError(status) => {
-                // Exit early on Cairo errors
-                Err(RenderingError::from(status))
-            }
+        Ok(filter_ctx.into_output()?)
+    })
+    .or_else(|err| match err {
+        FilterError::CairoError(status) => {
+            // Exit early on Cairo errors
+            Err(RenderingError::from(status))
+        }
 
-            _ => {
-                // ignore other filter errors and just return an empty surface
-                Ok(SharedImageSurface::empty(
-                    source_surface.width(),
-                    source_surface.height(),
-                    SurfaceType::AlphaOnly,
-                )?)
-            }
-        })
+        _ => {
+            // ignore other filter errors and just return an empty surface
+            Ok(SharedImageSurface::empty(
+                source_surface.width(),
+                source_surface.height(),
+                SurfaceType::AlphaOnly,
+            )?)
+        }
+    })
 }
 
 #[rustfmt::skip]

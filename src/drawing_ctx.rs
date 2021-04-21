@@ -17,8 +17,7 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
 use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
-use crate::filter::FilterValue;
-use crate::filters;
+use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::marker;
@@ -702,10 +701,7 @@ impl DrawingCtx {
                 // Set temporary surface as source
 
                 saved_cr.draw_ctx.cr.set_matrix(affines.compositing.into());
-                saved_cr
-                    .draw_ctx
-                    .cr
-                    .set_source_surface(&source_surface, 0.0, 0.0);
+                source_surface.set_as_source_surface(&saved_cr.draw_ctx.cr, 0.0, 0.0);
 
                 // Clip
 
@@ -894,7 +890,7 @@ impl DrawingCtx {
         node_name: &str,
         values: &ComputedValues,
         node_bbox: BoundingBox,
-    ) -> Result<cairo::Surface, RenderingError> {
+    ) -> Result<SharedImageSurface, RenderingError> {
         let stroke_paint_source = Rc::new(
             values
                 .stroke()
@@ -915,89 +911,35 @@ impl DrawingCtx {
             Filter::None => surface_to_filter,
             Filter::List(filter_list) => {
                 if filter_list.is_applicable(&node_name, acquired_nodes) {
-                    filter_list.iter().try_fold(
-                        surface_to_filter,
-                        |surface, filter| -> Result<_, RenderingError> {
-                            let FilterValue::Url(f) = filter;
-                            self.run_filter(
-                                acquired_nodes,
-                                &f,
+                    if let Ok(specs) = filter_list
+                        .iter()
+                        .map(|filter_value| {
+                            filter_value.to_filter_spec(acquired_nodes, self, node_name)
+                        })
+                        .collect::<Result<Vec<FilterSpec>, _>>()
+                    {
+                        specs.iter().try_fold(surface_to_filter, |surface, spec| {
+                            filters::render(
+                                &spec,
                                 stroke_paint_source.clone(),
                                 fill_paint_source.clone(),
-                                &node_name,
                                 surface,
+                                acquired_nodes,
+                                self,
+                                self.get_transform(),
                                 node_bbox,
                             )
-                        },
-                    )?
+                        })?
+                    } else {
+                        surface_to_filter
+                    }
                 } else {
                     surface_to_filter
                 }
             }
         };
 
-        let img_surface = surface.into_image_surface()?;
-
-        // turn ImageSurface into a Surface
-        Ok((*img_surface).clone())
-    }
-
-    fn run_filter(
-        &mut self,
-        acquired_nodes: &mut AcquiredNodes<'_>,
-        filter_uri: &NodeId,
-        stroke_paint_source: Rc<UserSpacePaintSource>,
-        fill_paint_source: Rc<UserSpacePaintSource>,
-        node_name: &str,
-        surface_to_filter: SharedImageSurface,
-        node_bbox: BoundingBox,
-    ) -> Result<SharedImageSurface, RenderingError> {
-        // TODO: since we check is_applicable before we get here, these checks are redundant
-        // do we want to remove them and directly grab the filter node? or keep for future error
-        // handling?
-        match acquired_nodes.acquire(filter_uri) {
-            Ok(acquired) => {
-                let node = acquired.get();
-
-                let element = node.borrow_element();
-
-                match *element {
-                    Element::Filter(_) => {
-                        if element.is_in_error() {
-                            return Ok(surface_to_filter);
-                        }
-
-                        return filters::render(
-                            &node,
-                            stroke_paint_source,
-                            fill_paint_source,
-                            surface_to_filter,
-                            acquired_nodes,
-                            self,
-                            self.get_transform(),
-                            node_bbox,
-                        );
-                    }
-                    _ => {
-                        rsvg_log!(
-                            "element {} will not be filtered since \"{}\" is not a filter",
-                            node_name,
-                            filter_uri,
-                        );
-                    }
-                }
-            }
-            _ => {
-                rsvg_log!(
-                    "element {} will not be filtered since its filter \"{}\" was not found",
-                    node_name,
-                    filter_uri,
-                );
-            }
-        }
-
-        // Non-existing filters must act as null filters (an empty surface is returned).
-        Ok(surface_to_filter)
+        Ok(surface)
     }
 
     fn set_gradient(self: &mut DrawingCtx, gradient: &UserSpaceGradient) {

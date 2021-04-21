@@ -25,6 +25,8 @@ pub enum FilterError {
 /// Errors that can occur while resolving a `FilterSpec`.
 #[derive(Debug)]
 pub enum FilterResolveError {
+    /// An `uri(#foo)` reference does not point to a `<filter>` element.
+    ReferenceToNonFilterElement,
     /// A lighting filter has none or multiple light sources.
     InvalidLightSourceCount,
     /// Child node was in error.
@@ -52,6 +54,9 @@ impl fmt::Display for FilterError {
 impl fmt::Display for FilterResolveError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
+            FilterResolveError::ReferenceToNonFilterElement => {
+                write!(f, "reference to a non-filter element")
+            }
             FilterResolveError::InvalidLightSourceCount => write!(f, "invalid light source count"),
             FilterResolveError::ChildNodeInError => write!(f, "child node was in error"),
         }
