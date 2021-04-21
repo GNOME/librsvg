@@ -935,7 +935,7 @@ dependencies = [
  "system-deps 3.1.1",
  "tempfile",
  "test-generator",
- "tinyvec 0.3.4",
+ "tinyvec",
  "url",
  "xml5ever",
  "yeslogic-fontconfig-sys",
@@ -2202,12 +2202,6 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "238ce071d267c5710f9d31451efec16c5ee22de34df17cc05e56cbc92e967117"
-
-[[package]]
-name = "tinyvec"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b5220f05bb7de7f3f53c7c065e1199b3172696fe2db9f9c4d8ad9b4ee74c342"
@@ -2257,7 +2251,7 @@ version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07fbfce1c8a97d547e8b5334978438d9d6ec8c20e38f56d4a4374d181493eaef"
 dependencies = [
- "tinyvec 1.2.0",
+ "tinyvec",
 ]
 
 [[package]]

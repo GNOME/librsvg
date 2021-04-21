@@ -68,7 +68,7 @@ regex = "1"
 rgb = { version="0.8", features=["argb"] }
 selectors = "0.22.0"
 string_cache = "0.8.0"
-tinyvec = {version = "0.3.2", features = ["alloc"]}
+tinyvec = { version = "1.2.0", features = ["alloc"] }
 url = "2"
 xml5ever = "0.16.1"
 
