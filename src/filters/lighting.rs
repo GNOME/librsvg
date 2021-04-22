@@ -650,7 +650,11 @@ macro_rules! impl_lighting_filter {
         }
 
         impl FilterEffect for $lighting_type {
-            fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
+            fn resolve(
+                &self,
+                _acquired_nodes: &mut AcquiredNodes<'_>,
+                node: &Node,
+            ) -> Result<ResolvedPrimitive, FilterResolveError> {
                 let mut sources = node.children().rev().filter(|c| {
                     c.is_element()
                         && matches!(
@@ -990,10 +994,12 @@ mod tests {
 </svg>
 "#,
         );
+        let mut acquired_nodes = AcquiredNodes::new(&document);
 
         let node = document.lookup_internal_node("diffuse_distant").unwrap();
         let lighting = borrow_element_as!(node, FeDiffuseLighting);
-        let ResolvedPrimitive { params, .. } = lighting.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } =
+            lighting.resolve(&mut acquired_nodes, &node).unwrap();
         let diffuse_lighting = match params {
             PrimitiveParams::DiffuseLighting(l) => l,
             _ => unreachable!(),
@@ -1008,7 +1014,8 @@ mod tests {
 
         let node = document.lookup_internal_node("specular_point").unwrap();
         let lighting = borrow_element_as!(node, FeSpecularLighting);
-        let ResolvedPrimitive { params, .. } = lighting.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } =
+            lighting.resolve(&mut acquired_nodes, &node).unwrap();
         let specular_lighting = match params {
             PrimitiveParams::SpecularLighting(l) => l,
             _ => unreachable!(),
@@ -1024,7 +1031,8 @@ mod tests {
 
         let node = document.lookup_internal_node("diffuse_spot").unwrap();
         let lighting = borrow_element_as!(node, FeDiffuseLighting);
-        let ResolvedPrimitive { params, .. } = lighting.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } =
+            lighting.resolve(&mut acquired_nodes, &node).unwrap();
         let diffuse_lighting = match params {
             PrimitiveParams::DiffuseLighting(l) => l,
             _ => unreachable!(),

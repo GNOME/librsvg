@@ -155,7 +155,11 @@ impl Image {
 }
 
 impl FilterEffect for FeImage {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
+    fn resolve(
+        &self,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let feimage_values = cascaded.get().clone();
 

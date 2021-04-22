@@ -34,7 +34,11 @@ pub use self::error::FilterResolveError;
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError>;
+    fn resolve(
+        &self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError>;
 }
 
 // Filter Effects do not need to draw themselves
@@ -248,6 +252,7 @@ impl Primitive {
 
 pub fn extract_filter_from_filter_node(
     filter_node: &Node,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &DrawingCtx,
 ) -> Result<FilterSpec, FilterResolveError> {
     let filter_node = &*filter_node;
@@ -290,7 +295,7 @@ pub fn extract_filter_from_filter_node(
             let primitive_name = format!("{}", primitive_node);
 
             effect
-                .resolve(&primitive_node)
+                .resolve(acquired_nodes, &primitive_node)
                 .map_err(|e| {
                     rsvg_log!(
                         "(filter primitive {} returned an error: {})",

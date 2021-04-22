@@ -161,7 +161,11 @@ impl Morphology {
 }
 
 impl FilterEffect for FeMorphology {
-    fn resolve(&self, _node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
+    fn resolve(
+        &self,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        _node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError> {
         Ok(ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Morphology(self.params.clone()),

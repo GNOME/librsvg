@@ -157,7 +157,7 @@ fn filter_spec_from_filter_node(
                         );
                         Err(FilterResolveError::ChildNodeInError)
                     } else {
-                        extract_filter_from_filter_node(node, draw_ctx)
+                        extract_filter_from_filter_node(node, acquired_nodes, draw_ctx)
                     }
                 }
 

@@ -83,7 +83,11 @@ impl Offset {
 }
 
 impl FilterEffect for FeOffset {
-    fn resolve(&self, _node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
+    fn resolve(
+        &self,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        _node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError> {
         Ok(ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Offset(self.params.clone()),

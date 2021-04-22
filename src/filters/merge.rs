@@ -142,7 +142,11 @@ impl Merge {
 }
 
 impl FilterEffect for FeMerge {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterResolveError> {
+    fn resolve(
+        &self,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError> {
         Ok(ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Merge(Merge {
@@ -196,10 +200,11 @@ mod tests {
 </svg>
 "#,
         );
+        let mut acquired_nodes = AcquiredNodes::new(&document);
 
         let node = document.lookup_internal_node("merge").unwrap();
         let merge = borrow_element_as!(node, FeMerge);
-        let ResolvedPrimitive { params, .. } = merge.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } = merge.resolve(&mut acquired_nodes, &node).unwrap();
         let params = match params {
             PrimitiveParams::Merge(m) => m,
             _ => unreachable!(),
