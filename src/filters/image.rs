@@ -26,16 +26,29 @@ pub struct FeImage {
     params: ImageParams,
 }
 
-/// Resolved `feImage` primitive for rendering.
 #[derive(Clone, Default)]
 struct ImageParams {
     aspect: AspectRatio,
     href: Option<String>,
 }
 
+/// Resolved `feImage` primitive for rendering.
 pub struct Image {
-    params: ImageParams,
+    aspect: AspectRatio,
+    source: Source,
     feimage_values: ComputedValues,
+}
+
+/// What a feImage references for rendering.
+enum Source {
+    /// Nothing is referenced; ignore the filter.
+    None,
+
+    /// Reference to a node.
+    Node(Node),
+
+    /// Reference to an external image.  This is just a URL.
+    ExternalImage(String),
 }
 
 impl Image {
@@ -46,13 +59,8 @@ impl Image {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         bounds: Rect,
-        node_id: &NodeId,
+        referenced_node: &Node,
     ) -> Result<SharedImageSurface, FilterError> {
-        let acquired = acquired_nodes
-            .acquire(node_id)
-            .map_err(|_| FilterError::InvalidInput)?;
-        let referenced_node = acquired.get();
-
         // https://www.w3.org/TR/filter-effects/#feImageElement
         //
         // The filters spec says, "... otherwise [rendering a referenced object], the
@@ -89,7 +97,7 @@ impl Image {
             .lookup_image(url)
             .map_err(|_| FilterError::InvalidInput)?;
 
-        let rect = self.params.aspect.compute(
+        let rect = self.aspect.compute(
             &ViewBox::from(Rect::from_size(
                 f64::from(image.width()),
                 f64::from(image.height()),
@@ -138,14 +146,27 @@ impl Image {
     ) -> Result<FilterOutput, FilterError> {
         let bounds = bounds_builder.compute(ctx);
 
-        let href = self.params.href.as_ref().ok_or(FilterError::InvalidInput)?;
+        let surface = match &self.source {
+            Source::None => return Err(FilterError::InvalidInput),
 
-        let surface = if let Ok(node_id) = NodeId::parse(href) {
-            // if href has a fragment specified, render as a node
-            self.render_node(ctx, acquired_nodes, draw_ctx, bounds.clipped, &node_id)
-        } else {
-            self.render_external_image(ctx, acquired_nodes, draw_ctx, &bounds, href)
-        }?;
+            Source::Node(node) => {
+                if let Ok(acquired) = acquired_nodes.acquire_ref(node) {
+                    self.render_node(
+                        ctx,
+                        acquired_nodes,
+                        draw_ctx,
+                        bounds.clipped,
+                        &acquired.get(),
+                    )?
+                } else {
+                    return Err(FilterError::InvalidInput);
+                }
+            }
+
+            Source::ExternalImage(ref href) => {
+                self.render_external_image(ctx, acquired_nodes, draw_ctx, &bounds, href)?
+            }
+        };
 
         Ok(FilterOutput {
             surface,
@@ -157,16 +178,32 @@ impl Image {
 impl FilterEffect for FeImage {
     fn resolve(
         &self,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
+        acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
     ) -> Result<ResolvedPrimitive, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let feimage_values = cascaded.get().clone();
 
+        let source = match self.params.href {
+            None => Source::None,
+
+            Some(ref s) => {
+                if let Ok(node_id) = NodeId::parse(s) {
+                    acquired_nodes
+                        .acquire(&node_id)
+                        .map(|acquired| Source::Node(acquired.get().clone()))
+                        .unwrap_or(Source::None)
+                } else {
+                    Source::ExternalImage(s.to_string())
+                }
+            }
+        };
+
         Ok(ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Image(Image {
-                params: self.params.clone(),
+                aspect: self.params.aspect,
+                source,
                 feimage_values,
             }),
         })
