@@ -382,6 +382,16 @@ mod tests {
             NumberList::parse_str("1 2 3 4", NumberListLength::Exact(4)).unwrap(),
             NumberList(vec![1.0, 2.0, 3.0, 4.0])
         );
+
+        assert_eq!(
+            NumberList::parse_str("1 2 3 4 5", NumberListLength::MaxLength(5)).unwrap(),
+            NumberList(vec![1.0, 2.0, 3.0, 4.0, 5.0])
+        );
+
+        assert_eq!(
+            NumberList::parse_str("1 2 3", NumberListLength::MaxLength(5)).unwrap(),
+            NumberList(vec![1.0, 2.0, 3.0])
+        );
     }
 
     #[test]
@@ -402,7 +412,7 @@ mod tests {
 
         // extra token
         assert!(NumberList::parse_str("1,", NumberListLength::Exact(1)).is_err());
-        assert!(NumberList::parse_str("1,", NumberListLength::Exact(1)).is_err());
+        assert!(NumberList::parse_str("1,", NumberListLength::MaxLength(1)).is_err());
 
         // too few
         assert!(NumberList::parse_str("1", NumberListLength::Exact(2)).is_err());
