@@ -9,7 +9,6 @@ use crate::parsers::{optional_comma, Parse};
 pub enum NumberListLength {
     MaxLength(usize),
     Exact(usize),
-    Unbounded,
 }
 
 #[derive(Debug, PartialEq)]
@@ -28,12 +27,7 @@ impl NumberList {
             }
             NumberListLength::Exact(l) if l > 0 => Vec::<f64>::with_capacity(l),
             NumberListLength::Exact(_) => unreachable!("NumberListLength::Exact cannot be 0"),
-            NumberListLength::Unbounded => Vec::<f64>::new(),
         };
-
-        if parser.is_exhausted() && length == NumberListLength::Unbounded {
-            return Ok(NumberList(v));
-        }
 
         for i in 0.. {
             if i != 0 {
@@ -94,22 +88,13 @@ mod tests {
             NumberList::parse_str("1 2 3 4", NumberListLength::Exact(4)),
             Ok(NumberList(vec![1.0, 2.0, 3.0, 4.0]))
         );
-
-        assert_eq!(
-            NumberList::parse_str("", NumberListLength::Unbounded),
-            Ok(NumberList(vec![]))
-        );
-
-        assert_eq!(
-            NumberList::parse_str("1, 2, 3.0, 4, 5", NumberListLength::Unbounded),
-            Ok(NumberList(vec![1.0, 2.0, 3.0, 4.0, 5.0]))
-        );
     }
 
     #[test]
     fn errors_on_invalid_number_list() {
         // empty
         assert!(NumberList::parse_str("", NumberListLength::Exact(1)).is_err());
+        assert!(NumberList::parse_str("", NumberListLength::MaxLength(1)).is_err());
 
         // garbage
         assert!(NumberList::parse_str("foo", NumberListLength::Exact(1)).is_err());
@@ -124,7 +109,6 @@ mod tests {
         // extra token
         assert!(NumberList::parse_str("1,", NumberListLength::Exact(1)).is_err());
         assert!(NumberList::parse_str("1,", NumberListLength::Exact(1)).is_err());
-        assert!(NumberList::parse_str("1,", NumberListLength::Unbounded).is_err());
 
         // too few
         assert!(NumberList::parse_str("1", NumberListLength::Exact(2)).is_err());
