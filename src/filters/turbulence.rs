@@ -18,7 +18,9 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{
+    FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
+};
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -415,7 +417,11 @@ impl Turbulence {
 }
 
 impl FilterEffect for FeTurbulence {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+    fn resolve(
+        &self,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 

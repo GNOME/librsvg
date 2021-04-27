@@ -8,7 +8,9 @@ use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
 use super::context::{FilterContext, FilterOutput};
-use super::{FilterEffect, FilterError, Primitive, PrimitiveParams, ResolvedPrimitive};
+use super::{
+    FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
+};
 
 /// The `feFlood` filter primitive.
 #[derive(Default)]
@@ -44,7 +46,11 @@ impl Flood {
 }
 
 impl FilterEffect for FeFlood {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+    fn resolve(
+        &self,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 

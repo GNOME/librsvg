@@ -6,9 +6,10 @@ use std::slice::Iter;
 
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::ViewParams;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
+use crate::filters::{extract_filter_from_filter_node, FilterResolveError, FilterSpec};
 use crate::length::*;
 use crate::node::NodeBorrow;
 use crate::parsers::{Parse, ParseValue};
@@ -105,6 +106,71 @@ impl Draw for Filter {}
 pub enum FilterValue {
     Url(NodeId),
     // TODO: add functions from https://www.w3.org/TR/filter-effects-1/#filter-functions
+}
+
+impl FilterValue {
+    pub fn to_filter_spec(
+        &self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        draw_ctx: &DrawingCtx,
+        node_being_filtered_name: &str,
+    ) -> Result<FilterSpec, FilterResolveError> {
+        match *self {
+            FilterValue::Url(ref node_id) => filter_spec_from_filter_node(
+                acquired_nodes,
+                draw_ctx,
+                node_id,
+                node_being_filtered_name,
+            ),
+        }
+    }
+}
+
+fn filter_spec_from_filter_node(
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    draw_ctx: &DrawingCtx,
+    node_id: &NodeId,
+    node_being_filtered_name: &str,
+) -> Result<FilterSpec, FilterResolveError> {
+    acquired_nodes
+        .acquire(node_id)
+        .map_err(|e| {
+            rsvg_log!(
+                "element {} will not be filtered with \"{}\": {}",
+                node_being_filtered_name,
+                node_id,
+                e
+            );
+            FilterResolveError::ReferenceToNonFilterElement
+        })
+        .and_then(|acquired| {
+            let node = acquired.get();
+            let element = node.borrow_element();
+
+            match *element {
+                Element::Filter(_) => {
+                    if element.is_in_error() {
+                        rsvg_log!(
+                            "element {} will not be filtered since its filter \"{}\" is in error",
+                            node_being_filtered_name,
+                            node_id,
+                        );
+                        Err(FilterResolveError::ChildNodeInError)
+                    } else {
+                        extract_filter_from_filter_node(node, acquired_nodes, draw_ctx)
+                    }
+                }
+
+                _ => {
+                    rsvg_log!(
+                        "element {} will not be filtered since \"{}\" is not a filter",
+                        node_being_filtered_name,
+                        node_id,
+                    );
+                    Err(FilterResolveError::ReferenceToNonFilterElement)
+                }
+            }
+        })
 }
 
 #[derive(Debug, Clone, PartialEq)]

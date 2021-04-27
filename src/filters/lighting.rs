@@ -13,7 +13,8 @@ use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
-    FilterEffect, FilterError, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterEffect, FilterError, FilterResolveError, Input, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
 };
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
@@ -649,7 +650,11 @@ macro_rules! impl_lighting_filter {
         }
 
         impl FilterEffect for $lighting_type {
-            fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError> {
+            fn resolve(
+                &self,
+                _acquired_nodes: &mut AcquiredNodes<'_>,
+                node: &Node,
+            ) -> Result<ResolvedPrimitive, FilterResolveError> {
                 let mut sources = node.children().rev().filter(|c| {
                     c.is_element()
                         && matches!(
@@ -662,14 +667,14 @@ macro_rules! impl_lighting_filter {
 
                 let source_node = sources.next();
                 if source_node.is_none() || sources.next().is_some() {
-                    return Err(FilterError::InvalidLightSourceCount);
+                    return Err(FilterResolveError::InvalidLightSourceCount);
                 }
 
                 let source_node = source_node.unwrap();
                 let elt = source_node.borrow_element();
 
                 if elt.is_in_error() {
-                    return Err(FilterError::ChildNodeInError);
+                    return Err(FilterResolveError::ChildNodeInError);
                 }
 
                 let source = match *elt {
@@ -989,10 +994,12 @@ mod tests {
 </svg>
 "#,
         );
+        let mut acquired_nodes = AcquiredNodes::new(&document);
 
         let node = document.lookup_internal_node("diffuse_distant").unwrap();
         let lighting = borrow_element_as!(node, FeDiffuseLighting);
-        let ResolvedPrimitive { params, .. } = lighting.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } =
+            lighting.resolve(&mut acquired_nodes, &node).unwrap();
         let diffuse_lighting = match params {
             PrimitiveParams::DiffuseLighting(l) => l,
             _ => unreachable!(),
@@ -1007,7 +1014,8 @@ mod tests {
 
         let node = document.lookup_internal_node("specular_point").unwrap();
         let lighting = borrow_element_as!(node, FeSpecularLighting);
-        let ResolvedPrimitive { params, .. } = lighting.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } =
+            lighting.resolve(&mut acquired_nodes, &node).unwrap();
         let specular_lighting = match params {
             PrimitiveParams::SpecularLighting(l) => l,
             _ => unreachable!(),
@@ -1023,7 +1031,8 @@ mod tests {
 
         let node = document.lookup_internal_node("diffuse_spot").unwrap();
         let lighting = borrow_element_as!(node, FeDiffuseLighting);
-        let ResolvedPrimitive { params, .. } = lighting.resolve(&node).unwrap();
+        let ResolvedPrimitive { params, .. } =
+            lighting.resolve(&mut acquired_nodes, &node).unwrap();
         let diffuse_lighting = match params {
             PrimitiveParams::DiffuseLighting(l) => l,
             _ => unreachable!(),

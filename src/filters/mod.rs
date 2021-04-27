@@ -2,6 +2,7 @@
 
 use cssparser::{BasicParseError, Parser};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use std::rc::Rc;
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
@@ -29,10 +30,15 @@ use self::context::{FilterContext, FilterOutput, FilterResult};
 
 mod error;
 use self::error::FilterError;
+pub use self::error::FilterResolveError;
 
 /// A filter primitive interface.
 pub trait FilterEffect: SetAttributes + Draw {
-    fn resolve(&self, node: &Node) -> Result<ResolvedPrimitive, FilterError>;
+    fn resolve(
+        &self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        node: &Node,
+    ) -> Result<ResolvedPrimitive, FilterResolveError>;
 }
 
 // Filter Effects do not need to draw themselves
@@ -246,8 +252,9 @@ impl Primitive {
 
 pub fn extract_filter_from_filter_node(
     filter_node: &Node,
+    acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &DrawingCtx,
-) -> Result<FilterSpec, FilterError> {
+) -> Result<FilterSpec, FilterResolveError> {
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
@@ -288,7 +295,7 @@ pub fn extract_filter_from_filter_node(
             let primitive_name = format!("{}", primitive_node);
 
             effect
-                .resolve(&primitive_node)
+                .resolve(acquired_nodes, &primitive_node)
                 .map_err(|e| {
                     rsvg_log!(
                         "(filter primitive {} returned an error: {})",
@@ -305,7 +312,7 @@ pub fn extract_filter_from_filter_node(
                     )
                 })
         })
-        .collect::<Result<Vec<UserSpacePrimitive>, FilterError>>()?;
+        .collect::<Result<Vec<UserSpacePrimitive>, FilterResolveError>>()?;
 
     Ok(FilterSpec {
         user_space_filter,
@@ -315,41 +322,24 @@ pub fn extract_filter_from_filter_node(
 
 /// Applies a filter and returns the resulting surface.
 pub fn render(
-    filter_node: &Node,
-    stroke_paint_source: UserSpacePaintSource,
-    fill_paint_source: UserSpacePaintSource,
+    filter: &FilterSpec,
+    stroke_paint_source: Rc<UserSpacePaintSource>,
+    fill_paint_source: Rc<UserSpacePaintSource>,
     source_surface: SharedImageSurface,
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
     transform: Transform,
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
-    let filter = match extract_filter_from_filter_node(filter_node, draw_ctx) {
-        Err(FilterError::CairoError(status)) => {
-            // Exit early on Cairo errors
-            return Err(RenderingError::from(status));
-        }
-
-        Err(_) => {
-            // ignore other filter errors and just return an empty surface
-            return Ok(SharedImageSurface::empty(
-                source_surface.width(),
-                source_surface.height(),
-                SurfaceType::AlphaOnly,
-            )?);
-        }
-
-        Ok(f) => f,
-    };
-
-    if let Ok(mut filter_ctx) = FilterContext::new(
+    FilterContext::new(
         &filter.user_space_filter,
         stroke_paint_source,
         fill_paint_source,
         &source_surface,
         transform,
         node_bbox,
-    ) {
+    )
+    .and_then(|mut filter_ctx| {
         for user_space_primitive in &filter.primitives {
             let start = Instant::now();
 
@@ -377,21 +367,29 @@ pub fn render(
 
                     // Exit early on Cairo errors. Continue rendering otherwise.
                     if let FilterError::CairoError(status) = err {
-                        return Err(RenderingError::from(status));
+                        return Err(FilterError::CairoError(status));
                     }
                 }
             }
         }
 
         Ok(filter_ctx.into_output()?)
-    } else {
-        // Ignore errors that happened when creating the FilterContext
-        Ok(SharedImageSurface::empty(
-            source_surface.width(),
-            source_surface.height(),
-            SurfaceType::AlphaOnly,
-        )?)
-    }
+    })
+    .or_else(|err| match err {
+        FilterError::CairoError(status) => {
+            // Exit early on Cairo errors
+            Err(RenderingError::from(status))
+        }
+
+        _ => {
+            // ignore other filter errors and just return an empty surface
+            Ok(SharedImageSurface::empty(
+                source_surface.width(),
+                source_surface.height(),
+                SurfaceType::AlphaOnly,
+            )?)
+        }
+    })
 }
 
 #[rustfmt::skip]
