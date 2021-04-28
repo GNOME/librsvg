@@ -202,10 +202,17 @@ impl Parse for FilterValueList {
         loop {
             let loc = parser.current_source_location();
 
-            let url = parser.expect_url()?;
-            let node_id =
-                NodeId::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
-            result.0.push(FilterValue::Url(node_id));
+            let filter_value = if let Ok(func) = parser.try_parse(|p| FilterFunction::parse(p)) {
+                FilterValue::Function(func)
+            } else {
+                let url = parser.expect_url()?;
+                let node_id = NodeId::parse(&url)
+                    .map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
+
+                FilterValue::Url(node_id)
+            };
+
+            result.0.push(filter_value);
 
             if parser.is_exhausted() {
                 break;
