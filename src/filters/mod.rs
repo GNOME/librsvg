@@ -6,9 +6,8 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
-use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::filter::UserSpaceFilter;
@@ -179,14 +178,7 @@ impl Parse for Input {
 }
 
 impl ResolvedPrimitive {
-    fn into_user_space(
-        self,
-        primitive_units: CoordUnits,
-        values: &ComputedValues,
-        draw_ctx: &DrawingCtx,
-    ) -> UserSpacePrimitive {
-        let params = draw_ctx.push_coord_units(primitive_units);
-
+    fn into_user_space(self, values: &ComputedValues, params: &ViewParams) -> UserSpacePrimitive {
         let x = self.primitive.x.map(|l| l.normalize(values, &params));
         let y = self.primitive.y.map(|l| l.normalize(values, &params));
         let width = self.primitive.width.map(|l| l.normalize(values, &params));
@@ -305,11 +297,8 @@ pub fn extract_filter_from_filter_node(
                     e
                 })
                 .map(|primitive| {
-                    primitive.into_user_space(
-                        user_space_filter.primitive_units,
-                        primitive_values,
-                        draw_ctx,
-                    )
+                    let params = draw_ctx.push_coord_units(user_space_filter.primitive_units);
+                    primitive.into_user_space(primitive_values, &params)
                 })
         })
         .collect::<Result<Vec<UserSpacePrimitive>, FilterResolveError>>()?;
