@@ -9,6 +9,7 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
+use crate::filter_func::FilterFunction;
 use crate::filters::{extract_filter_from_filter_node, FilterResolveError, FilterSpec};
 use crate::length::*;
 use crate::node::NodeBorrow;
@@ -105,7 +106,7 @@ impl Draw for Filter {}
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterValue {
     Url(NodeId),
-    // TODO: add functions from https://www.w3.org/TR/filter-effects-1/#filter-functions
+    Function(FilterFunction),
 }
 
 impl FilterValue {
@@ -122,6 +123,8 @@ impl FilterValue {
                 node_id,
                 node_being_filtered_name,
             ),
+
+            FilterValue::Function(ref func) => func.to_filter_spec(),
         }
     }
 }

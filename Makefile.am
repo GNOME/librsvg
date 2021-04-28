@@ -48,6 +48,7 @@ LIBRSVG_SRC =					\
 	src/drawing_ctx.rs			\
 	src/element.rs				\
 	src/error.rs				\
+	src/filter_func.rs			\
 	src/filter.rs				\
 	src/filters/blend.rs			\
 	src/filters/bounds.rs			\
