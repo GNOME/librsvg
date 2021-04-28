@@ -190,48 +190,6 @@ impl FilterValueList {
     pub fn iter(&self) -> Iter<'_, FilterValue> {
         self.0.iter()
     }
-
-    /// Check that at least one filter URI exists and that all contained
-    /// URIs reference existing <filter> elements.
-    ///
-    /// The `node_name` refers to the node being filtered; it is just
-    /// to log an error in case the filter value list is not
-    /// applicable.
-    pub fn is_applicable(&self, node_name: &str, acquired_nodes: &mut AcquiredNodes<'_>) -> bool {
-        if self.is_empty() {
-            return false;
-        }
-
-        self.iter()
-            .map(|v| match v {
-                FilterValue::Url(v) => v,
-            })
-            .all(|v| match acquired_nodes.acquire(v) {
-                Ok(acquired) => {
-                    let filter_node = acquired.get();
-
-                    match *filter_node.borrow_element() {
-                        Element::Filter(_) => true,
-                        _ => {
-                            rsvg_log!(
-                                "element {} will not be filtered since \"{}\" is not a filter",
-                                node_name,
-                                v,
-                            );
-                            false
-                        }
-                    }
-                }
-                _ => {
-                    rsvg_log!(
-                        "element {} will not be filtered since its filter \"{}\" was not found",
-                        node_name,
-                        v,
-                    );
-                    false
-                }
-            })
-    }
 }
 
 impl Parse for FilterValueList {
