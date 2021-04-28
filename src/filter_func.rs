@@ -56,11 +56,7 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
 }
 
 impl Blur {
-    fn to_filter_spec(
-        &self,
-        values: &ComputedValues,
-        params: &ViewParams,
-    ) -> FilterSpec {
+    fn to_filter_spec(&self, values: &ComputedValues, params: &ViewParams) -> FilterSpec {
         // The 0.0 default is from the spec
         let std_dev = self
             .std_deviation
@@ -89,11 +85,11 @@ impl Parse for FilterFunction {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
         let loc = parser.current_source_location();
 
-        parser
-            .try_parse(|p| parse_function(p, "blur", parse_blur))
-            .or_else(|_| {
-                Err(loc.new_custom_error(ValueErrorKind::parse_error("expected filter function")))
-            })
+        if let Ok(func) = parser.try_parse(|p| parse_function(p, "blur", parse_blur)) {
+            return Ok(func);
+        }
+
+        return Err(loc.new_custom_error(ValueErrorKind::parse_error("expected filter function")));
     }
 }
 
