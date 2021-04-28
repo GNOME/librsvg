@@ -60,8 +60,8 @@ pub mod tile;
 pub mod turbulence;
 
 pub struct FilterSpec {
-    user_space_filter: UserSpaceFilter,
-    primitives: Vec<UserSpacePrimitive>,
+    pub user_space_filter: UserSpaceFilter,
+    pub primitives: Vec<UserSpacePrimitive>,
 }
 
 /// Resolved parameters for each filter primitive.
@@ -178,7 +178,11 @@ impl Parse for Input {
 }
 
 impl ResolvedPrimitive {
-    fn into_user_space(self, values: &ComputedValues, params: &ViewParams) -> UserSpacePrimitive {
+    pub fn into_user_space(
+        self,
+        values: &ComputedValues,
+        params: &ViewParams,
+    ) -> UserSpacePrimitive {
         let x = self.primitive.x.map(|l| l.normalize(values, &params));
         let y = self.primitive.y.map(|l| l.normalize(values, &params));
         let width = self.primitive.width.map(|l| l.normalize(values, &params));

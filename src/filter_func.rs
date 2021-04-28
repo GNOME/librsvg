@@ -1,9 +1,16 @@
 use cssparser::Parser;
 
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::error::*;
-use crate::filters::{FilterResolveError, FilterSpec};
+use crate::filter::Filter;
+use crate::filters::{
+    gaussian_blur::GaussianBlur, FilterResolveError, FilterSpec, Primitive, PrimitiveParams,
+    ResolvedPrimitive,
+};
 use crate::length::*;
 use crate::parsers::Parse;
+use crate::properties::ComputedValues;
 
 /// CSS Filter functions from the Filter Effects Module Level 1
 ///
@@ -45,6 +52,36 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
     }))
 }
 
+impl Blur {
+    fn to_filter_spec(
+        &self,
+        values: &ComputedValues,
+        params: &ViewParams,
+    ) -> Result<FilterSpec, FilterResolveError> {
+        // The 0.0 default is from the spec
+        let std_dev = self
+            .std_deviation
+            .map(|l| l.normalize(values, params))
+            .unwrap_or(0.0);
+
+        let user_space_filter = Filter::default().to_user_space(values, params);
+
+        let gaussian_blur = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::GaussianBlur(GaussianBlur {
+                std_deviation: (std_dev, std_dev),
+                ..GaussianBlur::default()
+            }),
+        }
+        .into_user_space(values, params);
+
+        Ok(FilterSpec {
+            user_space_filter,
+            primitives: vec![gaussian_blur],
+        })
+    }
+}
+
 impl Parse for FilterFunction {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
         let loc = parser.current_source_location();
@@ -58,8 +95,17 @@ impl Parse for FilterFunction {
 }
 
 impl FilterFunction {
-    pub fn to_filter_spec(&self) -> Result<FilterSpec, FilterResolveError> {
-        unimplemented!()
+    pub fn to_filter_spec(
+        &self,
+        values: &ComputedValues,
+        draw_ctx: &DrawingCtx,
+    ) -> Result<FilterSpec, FilterResolveError> {
+        // This is the default for primitive_units
+        let params = draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
+
+        match self {
+            FilterFunction::Blur(v) => v.to_filter_spec(values, &params),
+        }
     }
 }
 

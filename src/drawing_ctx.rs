@@ -913,7 +913,7 @@ impl DrawingCtx {
                 if let Ok(specs) = filter_list
                     .iter()
                     .map(|filter_value| {
-                        filter_value.to_filter_spec(acquired_nodes, self, node_name)
+                        filter_value.to_filter_spec(acquired_nodes, values, self, node_name)
                     })
                     .collect::<Result<Vec<FilterSpec>, _>>()
                 {

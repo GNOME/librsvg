@@ -113,6 +113,7 @@ impl FilterValue {
     pub fn to_filter_spec(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        values: &ComputedValues,
         draw_ctx: &DrawingCtx,
         node_being_filtered_name: &str,
     ) -> Result<FilterSpec, FilterResolveError> {
@@ -124,7 +125,7 @@ impl FilterValue {
                 node_being_filtered_name,
             ),
 
-            FilterValue::Function(ref func) => func.to_filter_spec(),
+            FilterValue::Function(ref func) => func.to_filter_spec(values, draw_ctx),
         }
     }
 }
