@@ -40,6 +40,9 @@ where
     parser.parse_nested_block(f)
 }
 
+// This function doesn't fail, but returns a Result like the other parsers, so tell Clippy
+// about that.
+#[allow(clippy::unnecessary_wraps)]
 fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
     let length = if let Ok(length) = parser.try_parse(|p| Length::parse(p)) {
         Some(length)
@@ -57,7 +60,7 @@ impl Blur {
         &self,
         values: &ComputedValues,
         params: &ViewParams,
-    ) -> Result<FilterSpec, FilterResolveError> {
+    ) -> FilterSpec {
         // The 0.0 default is from the spec
         let std_dev = self
             .std_deviation
@@ -75,10 +78,10 @@ impl Blur {
         }
         .into_user_space(values, params);
 
-        Ok(FilterSpec {
+        FilterSpec {
             user_space_filter,
             primitives: vec![gaussian_blur],
-        })
+        }
     }
 }
 
@@ -95,6 +98,8 @@ impl Parse for FilterFunction {
 }
 
 impl FilterFunction {
+    // If this function starts actually returning an Err, remove this Clippy exception:
+    #[allow(clippy::unnecessary_wraps)]
     pub fn to_filter_spec(
         &self,
         values: &ComputedValues,
@@ -104,7 +109,7 @@ impl FilterFunction {
         let params = draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
 
         match self {
-            FilterFunction::Blur(v) => v.to_filter_spec(values, &params),
+            FilterFunction::Blur(v) => Ok(v.to_filter_spec(values, &params)),
         }
     }
 }
