@@ -377,14 +377,10 @@ impl SetAttributes for Rect {
                         attr.parse_and_validate(value, Length::<Vertical>::check_nonnegative)?
                 }
                 expanded_name!("", "rx") => {
-                    self.rx = attr
-                        .parse_and_validate(value, Length::<Horizontal>::check_nonnegative)
-                        .map(Some)?
+                    self.rx = attr.parse(value).map(Some)?;
                 }
                 expanded_name!("", "ry") => {
-                    self.ry = attr
-                        .parse_and_validate(value, Length::<Vertical>::check_nonnegative)
-                        .map(Some)?
+                    self.ry = attr.parse(value).map(Some)?;
                 }
                 _ => (),
             }
@@ -423,28 +419,42 @@ impl Rect {
         let w = self.w.normalize(values, &params);
         let h = self.h.normalize(values, &params);
 
+        let specified_rx = self.rx.map(|l| l.normalize(values, &params));
+        let specified_ry = self.ry.map(|l| l.normalize(values, &params));
+
+        fn nonnegative_or_none(l: f64) -> Option<f64> {
+            if l < 0.0 {
+                None
+            } else {
+                Some(l)
+            }
+        }
+
+        let norm_rx = specified_rx.and_then(nonnegative_or_none);
+        let norm_ry = specified_ry.and_then(nonnegative_or_none);
+
         let mut rx;
         let mut ry;
 
-        match (self.rx, self.ry) {
+        match (norm_rx, norm_ry) {
             (None, None) => {
                 rx = 0.0;
                 ry = 0.0;
             }
 
             (Some(_rx), None) => {
-                rx = _rx.normalize(values, &params);
-                ry = _rx.normalize(values, &params);
+                rx = _rx;
+                ry = _rx;
             }
 
             (None, Some(_ry)) => {
-                rx = _ry.normalize(values, &params);
-                ry = _ry.normalize(values, &params);
+                rx = _ry;
+                ry = _ry;
             }
 
             (Some(_rx), Some(_ry)) => {
-                rx = _rx.normalize(values, &params);
-                ry = _ry.normalize(values, &params);
+                rx = _rx;
+                ry = _ry;
             }
         }
 
@@ -452,11 +462,6 @@ impl Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return builder.into_path();
-        }
-
-        // ... and rx,ry must be nonnegative
-        if rx < 0.0 || ry < 0.0 {
             return builder.into_path();
         }
 
