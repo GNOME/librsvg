@@ -5,6 +5,7 @@ test_sources =				\
 	src/bugs.rs			\
 	src/compare_surfaces.rs		\
 	src/errors.rs			\
+	src/filters.rs			\
 	src/intrinsic_dimensions.rs	\
 	src/loading_crash.rs		\
 	src/main.rs			\

@@ -18,6 +18,9 @@ mod compare_surfaces;
 mod errors;
 
 #[cfg(test)]
+mod filters;
+
+#[cfg(test)]
 mod intrinsic_dimensions;
 
 #[cfg(test)]

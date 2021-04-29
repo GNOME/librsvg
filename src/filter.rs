@@ -9,6 +9,7 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
+use crate::filter_func::FilterFunction;
 use crate::filters::{extract_filter_from_filter_node, FilterResolveError, FilterSpec};
 use crate::length::*;
 use crate::node::NodeBorrow;
@@ -105,13 +106,14 @@ impl Draw for Filter {}
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterValue {
     Url(NodeId),
-    // TODO: add functions from https://www.w3.org/TR/filter-effects-1/#filter-functions
+    Function(FilterFunction),
 }
 
 impl FilterValue {
     pub fn to_filter_spec(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        values: &ComputedValues,
         draw_ctx: &DrawingCtx,
         node_being_filtered_name: &str,
     ) -> Result<FilterSpec, FilterResolveError> {
@@ -122,6 +124,8 @@ impl FilterValue {
                 node_id,
                 node_being_filtered_name,
             ),
+
+            FilterValue::Function(ref func) => func.to_filter_spec(values, draw_ctx),
         }
     }
 }
@@ -190,48 +194,6 @@ impl FilterValueList {
     pub fn iter(&self) -> Iter<'_, FilterValue> {
         self.0.iter()
     }
-
-    /// Check that at least one filter URI exists and that all contained
-    /// URIs reference existing <filter> elements.
-    ///
-    /// The `node_name` refers to the node being filtered; it is just
-    /// to log an error in case the filter value list is not
-    /// applicable.
-    pub fn is_applicable(&self, node_name: &str, acquired_nodes: &mut AcquiredNodes<'_>) -> bool {
-        if self.is_empty() {
-            return false;
-        }
-
-        self.iter()
-            .map(|v| match v {
-                FilterValue::Url(v) => v,
-            })
-            .all(|v| match acquired_nodes.acquire(v) {
-                Ok(acquired) => {
-                    let filter_node = acquired.get();
-
-                    match *filter_node.borrow_element() {
-                        Element::Filter(_) => true,
-                        _ => {
-                            rsvg_log!(
-                                "element {} will not be filtered since \"{}\" is not a filter",
-                                node_name,
-                                v,
-                            );
-                            false
-                        }
-                    }
-                }
-                _ => {
-                    rsvg_log!(
-                        "element {} will not be filtered since its filter \"{}\" was not found",
-                        node_name,
-                        v,
-                    );
-                    false
-                }
-            })
-    }
 }
 
 impl Parse for FilterValueList {
@@ -241,10 +203,17 @@ impl Parse for FilterValueList {
         loop {
             let loc = parser.current_source_location();
 
-            let url = parser.expect_url()?;
-            let node_id =
-                NodeId::parse(&url).map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
-            result.0.push(FilterValue::Url(node_id));
+            let filter_value = if let Ok(func) = parser.try_parse(|p| FilterFunction::parse(p)) {
+                FilterValue::Function(func)
+            } else {
+                let url = parser.expect_url()?;
+                let node_id = NodeId::parse(&url)
+                    .map_err(|e| loc.new_custom_error(ValueErrorKind::from(e)))?;
+
+                FilterValue::Url(node_id)
+            };
+
+            result.0.push(filter_value);
 
             if parser.is_exhausted() {
                 break;

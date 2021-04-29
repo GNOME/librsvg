@@ -195,6 +195,7 @@ mod drawing_ctx;
 mod element;
 mod error;
 mod filter;
+mod filter_func;
 pub mod filters;
 mod font_props;
 mod gradient;

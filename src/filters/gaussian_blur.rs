@@ -39,9 +39,9 @@ pub struct FeGaussianBlur {
 /// Resolved `feGaussianBlur` primitive for rendering.
 #[derive(Default, Clone)]
 pub struct GaussianBlur {
-    in1: Input,
-    std_deviation: (f64, f64),
-    color_interpolation_filters: ColorInterpolationFilters,
+    pub in1: Input,
+    pub std_deviation: (f64, f64),
+    pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl SetAttributes for FeGaussianBlur {

@@ -910,29 +910,25 @@ impl DrawingCtx {
         let surface = match filters {
             Filter::None => surface_to_filter,
             Filter::List(filter_list) => {
-                if filter_list.is_applicable(&node_name, acquired_nodes) {
-                    if let Ok(specs) = filter_list
-                        .iter()
-                        .map(|filter_value| {
-                            filter_value.to_filter_spec(acquired_nodes, self, node_name)
-                        })
-                        .collect::<Result<Vec<FilterSpec>, _>>()
-                    {
-                        specs.iter().try_fold(surface_to_filter, |surface, spec| {
-                            filters::render(
-                                &spec,
-                                stroke_paint_source.clone(),
-                                fill_paint_source.clone(),
-                                surface,
-                                acquired_nodes,
-                                self,
-                                self.get_transform(),
-                                node_bbox,
-                            )
-                        })?
-                    } else {
-                        surface_to_filter
-                    }
+                if let Ok(specs) = filter_list
+                    .iter()
+                    .map(|filter_value| {
+                        filter_value.to_filter_spec(acquired_nodes, values, self, node_name)
+                    })
+                    .collect::<Result<Vec<FilterSpec>, _>>()
+                {
+                    specs.iter().try_fold(surface_to_filter, |surface, spec| {
+                        filters::render(
+                            &spec,
+                            stroke_paint_source.clone(),
+                            fill_paint_source.clone(),
+                            surface,
+                            acquired_nodes,
+                            self,
+                            self.get_transform(),
+                            node_bbox,
+                        )
+                    })?
                 } else {
                     surface_to_filter
                 }
