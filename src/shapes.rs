@@ -305,8 +305,8 @@ pub struct Rect {
     height: ULength<Vertical>,
 
     // Radiuses for rounded corners
-    rx: Option<ULength<Horizontal>>,
-    ry: Option<ULength<Vertical>>,
+    rx: Option<Length<Horizontal>>,
+    ry: Option<Length<Vertical>>,
 }
 
 impl_draw!(Rect);
@@ -330,6 +330,7 @@ impl SetAttributes for Rect {
 }
 
 impl BasicShape for Rect {
+    #[allow(clippy::many_single_char_names)]
     fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
         let params = draw_ctx.get_view_params();
 
@@ -338,28 +339,42 @@ impl BasicShape for Rect {
         let w = self.width.normalize(values, &params);
         let h = self.height.normalize(values, &params);
 
+        let specified_rx = self.rx.map(|l| l.normalize(values, &params));
+        let specified_ry = self.ry.map(|l| l.normalize(values, &params));
+
+        fn nonnegative_or_none(l: f64) -> Option<f64> {
+            if l < 0.0 {
+                None
+            } else {
+                Some(l)
+            }
+        }
+
+        let norm_rx = specified_rx.and_then(nonnegative_or_none);
+        let norm_ry = specified_ry.and_then(nonnegative_or_none);
+
         let mut rx;
         let mut ry;
 
-        match (self.rx, self.ry) {
+        match (norm_rx, norm_ry) {
             (None, None) => {
                 rx = 0.0;
                 ry = 0.0;
             }
 
             (Some(_rx), None) => {
-                rx = _rx.normalize(values, &params);
-                ry = _rx.normalize(values, &params);
+                rx = _rx;
+                ry = _rx;
             }
 
             (None, Some(_ry)) => {
-                rx = _ry.normalize(values, &params);
-                ry = _ry.normalize(values, &params);
+                rx = _ry;
+                ry = _ry;
             }
 
             (Some(_rx), Some(_ry)) => {
-                rx = _rx.normalize(values, &params);
-                ry = _ry.normalize(values, &params);
+                rx = _rx;
+                ry = _ry;
             }
         }
 
@@ -367,11 +382,6 @@ impl BasicShape for Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return Shape::new(Rc::new(builder.into_path()), Markers::No);
-        }
-
-        // ... and rx,ry must be nonnegative
-        if rx < 0.0 || ry < 0.0 {
             return Shape::new(Rc::new(builder.into_path()), Markers::No);
         }
 
