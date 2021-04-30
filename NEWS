@@ -1,4 +1,18 @@
 ==============
+Version 2.50.5
+==============
+
+- #699 - Images embedded as data: URLs didn't render if they had a
+  MIME type with a charset parameter.
+
+- #691 - Don't allow number lists with unbounded lengths in
+  tableValues attributes, for feComponentTransfer and
+  feConvolveMatrix (Madds H).
+
+- #718 - Negative rx/ry in rect element should be ignored.
+
+
+==============
 Version 2.50.4
 ==============
 
