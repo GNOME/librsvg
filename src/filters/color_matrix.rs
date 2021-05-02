@@ -95,8 +95,7 @@ impl SetAttributes for FeColorMatrix {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
-                        let NumberList::<20, 20>(v) = NumberList::parse_str(value)
-                                .attribute(attr)?;
+                        let NumberList::<20, 20>(v) = attr.parse(value)?;
                         let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;

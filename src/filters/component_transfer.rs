@@ -220,8 +220,7 @@ macro_rules! func_x {
                         expanded_name!("", "type") => self.function_type = attr.parse(value)?,
                         expanded_name!("", "tableValues") => {
                             // #691: Limit list to 256 to mitigate malicious SVGs
-                            let NumberList::<0, 256>(v) =
-                                NumberList::parse_str(value).attribute(attr)?;
+                            let NumberList::<0, 256>(v) = attr.parse(value)?;
                             self.table_values = v;
                         }
                         expanded_name!("", "slope") => self.slope = attr.parse(value)?,

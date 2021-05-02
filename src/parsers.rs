@@ -135,8 +135,8 @@ impl Parse for u32 {
 #[derive(Debug, PartialEq)]
 pub struct NumberList<const REQUIRED: usize, const MAX: usize>(pub Vec<f64>);
 
-impl<const REQUIRED: usize, const MAX: usize> NumberList<REQUIRED, MAX> {
-    pub fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         let loc = parser.current_source_location();
         let mut v = Vec::<f64>::with_capacity(MAX);
         for i in 0..MAX {
@@ -156,15 +156,6 @@ impl<const REQUIRED: usize, const MAX: usize> NumberList<REQUIRED, MAX> {
         } else {
             Ok(NumberList(v))
         }
-    }
-
-    pub fn parse_str(s: &str) -> Result<Self, ParseError<'_>> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        let res = Self::parse(&mut parser)?;
-        parser.expect_exhausted()?;
-        Ok(res)
     }
 }
 
