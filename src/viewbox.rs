@@ -4,7 +4,7 @@ use cssparser::Parser;
 use std::ops::Deref;
 
 use crate::error::*;
-use crate::parsers::{NumberList, NumberListLength, Parse};
+use crate::parsers::{NumberList, Parse};
 use crate::rect::Rect;
 
 /// Newtype around a [`Rect`], used to represent the `viewBox` attribute.
@@ -45,8 +45,7 @@ impl Parse for ViewBox {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<ViewBox, ParseError<'i>> {
         let loc = parser.current_source_location();
 
-        let NumberList(v) = NumberList::parse(parser, NumberListLength::Exact(4))?;
-
+        let NumberList::<4, 4>(v) = NumberList::parse(parser)?;
         let (x, y, width, height) = (v[0], v[1], v[2], v[3]);
 
         if width >= 0.0 && height >= 0.0 {

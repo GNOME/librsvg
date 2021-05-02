@@ -8,7 +8,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
+use crate::parsers::{NumberList, Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -219,10 +219,9 @@ macro_rules! func_x {
                     match attr.expanded() {
                         expanded_name!("", "type") => self.function_type = attr.parse(value)?,
                         expanded_name!("", "tableValues") => {
-                            let NumberList(v) =
-                                // #691: Limit list to 256 to mitigate malicious SVGs
-                                NumberList::parse_str(value, NumberListLength::MaxLength(256))
-                                    .attribute(attr)?;
+                            // #691: Limit list to 256 to mitigate malicious SVGs
+                            let NumberList::<0, 256>(v) =
+                                NumberList::parse_str(value).attribute(attr)?;
                             self.table_values = v;
                         }
                         expanded_name!("", "slope") => self.slope = attr.parse(value)?,
