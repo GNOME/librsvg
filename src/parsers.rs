@@ -131,72 +131,31 @@ impl Parse for u32 {
     }
 }
 
-#[derive(Eq, PartialEq)]
-pub enum NumberListLength {
-    MaxLength(usize),
-    Exact(usize),
-}
-
-#[derive(Debug, PartialEq)]
-pub struct NumberList(pub Vec<f64>);
-
 /// CSS number-list values.
-impl NumberList {
-    pub fn parse<'i>(
-        parser: &mut Parser<'i, '_>,
-        length: NumberListLength,
-    ) -> Result<Self, ParseError<'i>> {
-        let mut v = match length {
-            NumberListLength::MaxLength(l) if l > 0 => Vec::<f64>::with_capacity(l),
-            NumberListLength::MaxLength(_) => {
-                //cargo fmt suggests this formatting for some reason
-                unreachable!("NumberListLength::MaxLength cannot be 0")
-            }
-            NumberListLength::Exact(l) if l > 0 => Vec::<f64>::with_capacity(l),
-            NumberListLength::Exact(_) => unreachable!("NumberListLength::Exact cannot be 0"),
-        };
+#[derive(Debug, PartialEq)]
+pub struct NumberList<const REQUIRED: usize, const MAX: usize>(pub Vec<f64>);
 
-        for i in 0.. {
+impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+        let mut v = Vec::<f64>::with_capacity(MAX);
+        for i in 0..MAX {
             if i != 0 {
                 optional_comma(parser);
             }
 
             v.push(f64::parse(parser)?);
 
-            if let NumberListLength::MaxLength(l) = length {
-                if i + 1 == l {
-                    break;
-                }
-            }
-
-            if let NumberListLength::Exact(l) = length {
-                if i + 1 == l {
-                    break;
-                }
-            }
-
             if parser.is_exhausted() {
-                match length {
-                    NumberListLength::Exact(l) => {
-                        if i + 1 == l {
-                            break;
-                        }
-                    }
-                    _ => break,
-                }
+                break;
             }
         }
 
-        Ok(NumberList(v))
-    }
-
-    pub fn parse_str(s: &str, length: NumberListLength) -> Result<NumberList, ParseError<'_>> {
-        let mut input = ParserInput::new(s);
-        let mut parser = Parser::new(&mut input);
-
-        let res = Self::parse(&mut parser, length)?;
-        parser.expect_exhausted()?;
-        Ok(res)
+        if REQUIRED > 0 && v.len() < REQUIRED {
+            Err(loc.new_custom_error(ValueErrorKind::value_error("expected more numbers")))
+        } else {
+            Ok(NumberList(v))
+        }
     }
 }
 
@@ -374,22 +333,22 @@ mod tests {
     #[test]
     fn parses_number_list() {
         assert_eq!(
-            NumberList::parse_str("5", NumberListLength::Exact(1)).unwrap(),
+            NumberList::<1, 1>::parse_str("5").unwrap(),
             NumberList(vec![5.0])
         );
 
         assert_eq!(
-            NumberList::parse_str("1 2 3 4", NumberListLength::Exact(4)).unwrap(),
+            NumberList::<4, 4>::parse_str("1 2 3 4").unwrap(),
             NumberList(vec![1.0, 2.0, 3.0, 4.0])
         );
 
         assert_eq!(
-            NumberList::parse_str("1 2 3 4 5", NumberListLength::MaxLength(5)).unwrap(),
+            NumberList::<0, 5>::parse_str("1 2 3 4 5").unwrap(),
             NumberList(vec![1.0, 2.0, 3.0, 4.0, 5.0])
         );
 
         assert_eq!(
-            NumberList::parse_str("1 2 3", NumberListLength::MaxLength(5)).unwrap(),
+            NumberList::<0, 5>::parse_str("1 2 3").unwrap(),
             NumberList(vec![1.0, 2.0, 3.0])
         );
     }
@@ -397,26 +356,26 @@ mod tests {
     #[test]
     fn errors_on_invalid_number_list() {
         // empty
-        assert!(NumberList::parse_str("", NumberListLength::Exact(1)).is_err());
-        assert!(NumberList::parse_str("", NumberListLength::MaxLength(1)).is_err());
+        assert!(NumberList::<1, 1>::parse_str("").is_err());
+        assert!(NumberList::<0, 1>::parse_str("").is_err());
 
         // garbage
-        assert!(NumberList::parse_str("foo", NumberListLength::Exact(1)).is_err());
-        assert!(NumberList::parse_str("1foo", NumberListLength::Exact(2)).is_err());
-        assert!(NumberList::parse_str("1 foo", NumberListLength::Exact(2)).is_err());
-        assert!(NumberList::parse_str("1 foo 2", NumberListLength::Exact(2)).is_err());
-        assert!(NumberList::parse_str("1,foo", NumberListLength::Exact(2)).is_err());
+        assert!(NumberList::<1, 1>::parse_str("foo").is_err());
+        assert!(NumberList::<2, 2>::parse_str("1foo").is_err());
+        assert!(NumberList::<2, 2>::parse_str("1 foo").is_err());
+        assert!(NumberList::<2, 2>::parse_str("1 foo 2").is_err());
+        assert!(NumberList::<2, 2>::parse_str("1,foo").is_err());
 
         // too many
-        assert!(NumberList::parse_str("1 2", NumberListLength::Exact(1)).is_err());
+        assert!(NumberList::<1, 1>::parse_str("1 2").is_err());
 
         // extra token
-        assert!(NumberList::parse_str("1,", NumberListLength::Exact(1)).is_err());
-        assert!(NumberList::parse_str("1,", NumberListLength::MaxLength(1)).is_err());
+        assert!(NumberList::<1, 1>::parse_str("1,").is_err());
+        assert!(NumberList::<0, 1>::parse_str("1,").is_err());
 
         // too few
-        assert!(NumberList::parse_str("1", NumberListLength::Exact(2)).is_err());
-        assert!(NumberList::parse_str("1 2", NumberListLength::Exact(3)).is_err());
+        assert!(NumberList::<2, 2>::parse_str("1").is_err());
+        assert!(NumberList::<3, 3>::parse_str("1 2").is_err());
     }
 
     #[test]

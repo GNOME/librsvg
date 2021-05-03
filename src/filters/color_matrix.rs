@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NumberList, NumberListLength, Parse, ParseValue};
+use crate::parsers::{NumberList, Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
@@ -95,9 +95,7 @@ impl SetAttributes for FeColorMatrix {
                 let new_matrix = match operation_type {
                     OperationType::LuminanceToAlpha => unreachable!(),
                     OperationType::Matrix => {
-                        let NumberList(v) =
-                            NumberList::parse_str(value, NumberListLength::Exact(20))
-                                .attribute(attr)?;
+                        let NumberList::<20, 20>(v) = attr.parse(value)?;
                         let matrix = Matrix4x5::from_row_slice(&v);
                         let mut matrix = matrix.fixed_resize(0.0);
                         matrix[(4, 4)] = 1.0;
