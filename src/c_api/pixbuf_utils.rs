@@ -151,8 +151,8 @@ fn render_to_pixbuf_at_size(
 unsafe fn pixbuf_from_file_with_size_mode(
     filename: *const libc::c_char,
     size_mode: &SizeMode,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    error: *mut *mut glib::ffi::GError,
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     let path = PathBuf::from_glib_none(filename);
 
     let handle = match Loader::new().read_path(path) {
@@ -194,8 +194,8 @@ unsafe fn pixbuf_from_file_with_size_mode(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_pixbuf_from_file(
     filename: *const libc::c_char,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    error: *mut *mut glib::ffi::GError,
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     rsvg_return_val_if_fail! {
         rsvg_pixbuf_from_file => ptr::null_mut();
 
@@ -221,8 +221,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_size(
     filename: *const libc::c_char,
     width: libc::c_int,
     height: libc::c_int,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    error: *mut *mut glib::ffi::GError,
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     rsvg_return_val_if_fail! {
         rsvg_pixbuf_from_file_at_size => ptr::null_mut();
 
@@ -249,8 +249,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom(
     filename: *const libc::c_char,
     x_zoom: libc::c_double,
     y_zoom: libc::c_double,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    error: *mut *mut glib::ffi::GError,
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     rsvg_return_val_if_fail! {
         rsvg_pixbuf_from_file_at_zoom => ptr::null_mut();
 
@@ -279,8 +279,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_zoom_with_max(
     y_zoom: libc::c_double,
     max_width: libc::c_int,
     max_height: libc::c_int,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    error: *mut *mut glib::ffi::GError,
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     rsvg_return_val_if_fail! {
         rsvg_pixbuf_from_file_at_zoom_with_max => ptr::null_mut();
 
@@ -308,8 +308,8 @@ pub unsafe extern "C" fn rsvg_pixbuf_from_file_at_max_size(
     filename: *const libc::c_char,
     max_width: libc::c_int,
     max_height: libc::c_int,
-    error: *mut *mut glib_sys::GError,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+    error: *mut *mut glib::ffi::GError,
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     rsvg_return_val_if_fail! {
         rsvg_pixbuf_from_file_at_max_size => ptr::null_mut();
 

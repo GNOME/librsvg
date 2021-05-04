@@ -3,7 +3,7 @@
 use cssparser::RGBA;
 use float_cmp::approx_eq;
 use once_cell::sync::Lazy;
-use pango::FontMapExt;
+use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;

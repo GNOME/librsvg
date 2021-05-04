@@ -10,12 +10,12 @@ pub use crate::{
     length::{LengthUnit, RsvgLength as Length},
 };
 
-use glib::prelude::*;
 use url::Url;
 
 use std::path::Path;
 
-use gio::{Cancellable, FileExt};
+use gio::prelude::*; // Re-exposes glib's prelude as well
+use gio::Cancellable;
 
 use crate::{
     dpi::Dpi,

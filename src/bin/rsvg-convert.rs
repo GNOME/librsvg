@@ -9,9 +9,9 @@ use gio::{UnixInputStream, UnixOutputStream};
 
 #[cfg(windows)]
 mod windows_imports {
-    pub use gio_sys::{GInputStream, GOutputStream};
+    pub use gio::ffi::{GInputStream, GOutputStream};
+    pub use glib::ffi::gboolean;
     pub use glib::translate::*;
-    pub use glib_sys::gboolean;
     pub use libc::c_void;
     pub use std::io;
     pub use std::os::windows::io::AsRawHandle;

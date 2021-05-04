@@ -14,7 +14,6 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
-use crate::util::check_cairo_context;
 
 /// Loading options for SVG documents.
 #[derive(Clone)]
@@ -247,7 +246,7 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        cr.status()?;
 
         let node = self.get_node_or_root(id)?;
         let root = self.document.root();
@@ -327,7 +326,7 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        cr.status()?;
 
         let node = self.get_node_or_root(id)?;
 

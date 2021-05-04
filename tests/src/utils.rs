@@ -82,7 +82,7 @@ mod pango_ft2 {
         }
 
         let font_map = FontMap::new_for_font_type(cairo::FontType::FontTypeFt).unwrap();
-        let raw_font_map: *mut pango_sys::PangoFontMap = font_map.to_glib_none().0;
+        let raw_font_map: *mut pango::ffi::PangoFontMap = font_map.to_glib_none().0;
 
         pango_fc_font_map_set_config(raw_font_map as *mut _, config);
         fontconfig::FcConfigDestroy(config);

@@ -205,7 +205,7 @@ impl ImageSurface<Shared> {
         assert_eq!(surface.get_format(), cairo::Format::ARgb32);
 
         let reference_count =
-            unsafe { cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) };
+            unsafe { cairo::ffi::cairo_surface_get_reference_count(surface.to_raw_none()) };
         assert_eq!(reference_count, 1);
 
         let (width, height) = (surface.get_width(), surface.get_height());
@@ -217,9 +217,10 @@ impl ImageSurface<Shared> {
 
         surface.flush();
 
-        let data_ptr =
-            NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
-                .unwrap();
+        let data_ptr = NonNull::new(unsafe {
+            cairo::ffi::cairo_image_surface_get_data(surface.to_raw_none())
+        })
+        .unwrap();
 
         let stride = surface.get_stride() as isize;
 
@@ -265,7 +266,7 @@ impl ImageSurface<Shared> {
     #[inline]
     pub fn into_image_surface(self) -> Result<cairo::ImageSurface, cairo::Error> {
         let reference_count =
-            unsafe { cairo_sys::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
+            unsafe { cairo::ffi::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
 
         if reference_count == 1 {
             Ok(self.surface)
@@ -948,7 +949,7 @@ impl ImageSurface<Shared> {
 
         // Don't forget to manually mark the surface as dirty (due to usage of
         // `UnsafeSendPixelData`).
-        unsafe { cairo_sys::cairo_surface_mark_dirty(output_surface.to_raw_none()) }
+        unsafe { cairo::ffi::cairo_surface_mark_dirty(output_surface.to_raw_none()) }
     }
 
     /// Performs a horizontal or vertical box blur.
@@ -1307,9 +1308,10 @@ impl ImageSurface<Exclusive> {
         // why we disallow zero-sized surfaces here.
         assert!(width > 0 && height > 0);
 
-        let data_ptr =
-            NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
-                .unwrap();
+        let data_ptr = NonNull::new(unsafe {
+            cairo::ffi::cairo_image_surface_get_data(surface.to_raw_none())
+        })
+        .unwrap();
 
         let stride = surface.get_stride() as isize;
 

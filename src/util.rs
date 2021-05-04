@@ -4,8 +4,6 @@ use std::borrow::Cow;
 use std::ffi::CStr;
 use std::str;
 
-use crate::error::RenderingError;
-
 /// Converts a `char *` which is known to be valid UTF-8 into a `&str`
 ///
 /// The usual `from_glib_none(s)` allocates an owned String.  The
@@ -54,22 +52,4 @@ macro_rules! enum_default {
             }
         }
     };
-}
-
-/// Return an error if a Cairo context is in error.
-///
-/// https://github.com/gtk-rs/gtk-rs/issues/74 - with cairo-rs 0.9.0, the `Context` objet
-/// lost the ability to get its error status queried.  So we do it by hand with `cairo_sys`.
-pub fn check_cairo_context(cr: &cairo::Context) -> Result<(), RenderingError> {
-    unsafe {
-        let cr_raw = cr.to_raw_none();
-
-        let status = cairo_sys::cairo_status(cr_raw);
-        if status == cairo_sys::STATUS_SUCCESS {
-            Ok(())
-        } else {
-            let status: cairo::Error = status.into();
-            Err(RenderingError::from(status))
-        }
-    }
 }
