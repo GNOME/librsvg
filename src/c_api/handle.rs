@@ -34,14 +34,9 @@ use glib::error::ErrorDomain;
 use url::Url;
 
 use glib::object::ObjectClass;
-use glib::subclass;
-use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
-use glib::{
-    glib_object_impl, glib_object_subclass, Bytes, Cast, ParamFlags, ParamSpec, StaticType,
-    ToValue, Type,
-};
+use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue, Type};
 use once_cell::sync::Lazy;
 
 use glib::types::instance_of;
