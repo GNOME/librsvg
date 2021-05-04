@@ -651,7 +651,7 @@ impl CHandle {
     }
 
     fn set_base_gfile(&self, file: &gio::File) {
-        self.set_base_url(&file.get_uri());
+        self.set_base_url(&file.uri());
     }
 
     fn get_base_url(&self) -> Option<String> {
@@ -1088,12 +1088,12 @@ fn is_cancellable(obj: *mut gio::ffi::GCancellable) -> bool {
 
 fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
     let handle = unsafe { &*handle };
-    handle.get_impl()
+    handle.impl_()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_get_type() -> glib::ffi::GType {
-    CHandle::get_type().to_glib()
+    CHandle::type_().to_glib()
 }
 
 #[no_mangle]

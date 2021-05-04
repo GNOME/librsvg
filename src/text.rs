@@ -193,7 +193,7 @@ impl MeasuredSpan {
 
         let properties = FontProperties::new(&values, &params);
         let layout = create_pango_layout(draw_ctx, &properties, &span.text);
-        let (w, h) = layout.get_size();
+        let (w, h) = layout.size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
         let h = f64::from(h) / f64::from(pango::SCALE);
@@ -228,7 +228,7 @@ impl PositionedSpan {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
-        let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
+        let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
         let baseline_shift = values.baseline_shift().0.to_user(&params);
         let offset = baseline + baseline_shift;
 
@@ -833,7 +833,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
         }
     }
 
-    let mut font_desc = pango_context.get_font_description().unwrap();
+    let mut font_desc = pango_context.font_description().unwrap();
     font_desc.set_family(props.font_family.as_str());
     font_desc.set_style(pango::Style::from(props.font_style));
 
@@ -864,23 +864,23 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 
     let attr_list = pango::AttrList::new();
 
-    attr_list.insert(
-        pango::Attribute::new_letter_spacing(to_pango_units(props.letter_spacing)).unwrap(),
-    );
+    attr_list.insert(pango::Attribute::new_letter_spacing(to_pango_units(
+        props.letter_spacing,
+    )));
 
     if props.text_decoration.underline {
-        attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
+        attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single));
     }
 
     if props.text_decoration.strike {
-        attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
+        attr_list.insert(pango::Attribute::new_strikethrough(true));
     }
 
     // FIXME: Using the "smcp" OpenType feature only works for fonts that support it.  We
     // should query if the font supports small caps, and synthesize them if it doesn't.
     if props.font_variant == FontVariant::SmallCaps {
         // smcp - small capitals - https://docs.microsoft.com/en-ca/typography/opentype/spec/features_pt#smcp
-        attr_list.insert(pango::Attribute::new_font_features("'smcp' 1").unwrap());
+        attr_list.insert(pango::Attribute::new_font_features("'smcp' 1"));
     }
 
     layout.set_attributes(Some(&attr_list));

@@ -493,7 +493,7 @@ macro_rules! impl_lighting_filter {
 
                 {
                     let output_stride = surface.stride() as usize;
-                    let mut output_data = surface.get_data();
+                    let mut output_data = surface.data();
                     let output_slice = &mut *output_data;
 
                     let compute_output_pixel =

@@ -268,7 +268,7 @@ fn load_image(
     loader.write(&bytes)?;
     loader.close()?;
 
-    let pixbuf = loader.get_pixbuf().ok_or_else(|| {
+    let pixbuf = loader.pixbuf().ok_or_else(|| {
         LoadingError::Other(format!("loading image: {}", human_readable_url(aurl)))
     })?;
 

@@ -206,7 +206,7 @@ pub fn draw_tree(
 
     // Preserve the user's transform and use it for the outermost bounding box.  All bounds/extents
     // will be converted to this transform in the end.
-    let user_transform = Transform::from(cr.get_matrix());
+    let user_transform = Transform::from(cr.matrix());
     let mut user_bbox = BoundingBox::new().with_transform(user_transform);
 
     // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
@@ -335,7 +335,7 @@ impl DrawingCtx {
     }
 
     fn get_transform(&self) -> Transform {
-        Transform::from(self.cr.get_matrix())
+        Transform::from(self.cr.matrix())
     }
 
     pub fn empty_bbox(&self) -> BoundingBox {
@@ -713,8 +713,7 @@ impl DrawingCtx {
 
                 let cr = match stacking_ctx.filter {
                     Filter::None => cairo::Context::new(
-                        &self
-                            .create_similar_surface_for_toplevel_viewport(&self.cr.get_target())?,
+                        &self.create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
                     ),
                     Filter::List(_) => {
                         cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)
@@ -1022,7 +1021,7 @@ impl DrawingCtx {
         // Draw to another surface
         let surface = self
             .cr
-            .get_target()
+            .target()
             .create_similar(cairo::Content::ColorAlpha, pw, ph)?;
 
         let cr_pattern = cairo::Context::new(&surface);
@@ -1339,7 +1338,7 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, RenderingError> {
         let transform = self.get_transform();
 
-        let gravity = span.layout.get_context().unwrap().get_gravity();
+        let gravity = span.layout.context().unwrap().gravity();
 
         let bbox = compute_text_box(&span.layout, span.x, span.y, transform, gravity);
         if bbox.is_none() {
@@ -1436,13 +1435,13 @@ impl DrawingCtx {
             // stacking contexts instead, or the result of rendering stacking contexts?
             for (depth, draw) in self.cr_stack.borrow().iter().enumerate() {
                 let affines = CompositingAffines::new(
-                    Transform::from(draw.get_matrix()),
+                    Transform::from(draw.matrix()),
                     self.initial_transform_with_offset(),
                     depth,
                 );
 
                 cr.set_matrix(affines.for_snapshot.into());
-                cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
+                cr.set_source_surface(&draw.target(), 0.0, 0.0);
                 cr.paint();
             }
 
@@ -1746,14 +1745,14 @@ fn compute_stroke_and_fill_box(
     stroke: &Stroke,
     stroke_paint_source: &PaintSource,
 ) -> BoundingBox {
-    let affine = Transform::from(cr.get_matrix());
+    let affine = Transform::from(cr.matrix());
 
     let mut bbox = BoundingBox::new().with_transform(affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
     // really needed here? */
-    let backup_tolerance = cr.get_tolerance();
+    let backup_tolerance = cr.tolerance();
     cr.set_tolerance(1.0);
 
     // Bounding box for fill
@@ -1813,7 +1812,7 @@ fn compute_text_box(
 ) -> Option<BoundingBox> {
     #![allow(clippy::many_single_char_names)]
 
-    let (ink, _) = layout.get_extents();
+    let (ink, _) = layout.extents();
     if ink.width == 0 || ink.height == 0 {
         return None;
     }
