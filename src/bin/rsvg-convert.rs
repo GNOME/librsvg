@@ -369,7 +369,7 @@ impl Stdin {
 
         let raw_handle = io::stdin().as_raw_handle();
         unsafe {
-            InputStream::from_glib_full(g_win32_input_stream_new(raw_handle, false.to_glib()))
+            InputStream::from_glib_full(g_win32_input_stream_new(raw_handle, false.into_glib()))
         }
     }
 }
@@ -397,7 +397,7 @@ impl Stdout {
 
         let raw_handle = io::stdout().as_raw_handle();
         unsafe {
-            OutputStream::from_glib_full(g_win32_output_stream_new(raw_handle, false.to_glib()))
+            OutputStream::from_glib_full(g_win32_output_stream_new(raw_handle, false.into_glib()))
         }
     }
 }

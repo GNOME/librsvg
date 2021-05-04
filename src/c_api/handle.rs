@@ -1093,17 +1093,16 @@ fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_get_type() -> glib::ffi::GType {
-    CHandle::type_().to_glib()
-}
+    CHandle::type_().into_glib()
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_error_get_type() -> glib::ffi::GType {
-    Error::static_type().to_glib()
+    Error::static_type().into_glib()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_flags_get_type() -> glib::ffi::GType {
-    HandleFlags::static_type().to_glib()
+    HandleFlags::static_type().into_glib()
 }
 
 #[no_mangle]
@@ -1237,11 +1236,11 @@ impl<E: fmt::Display> IntoGError for Result<(), E> {
 
     fn into_gerror(self, error: *mut *mut glib::ffi::GError) -> Self::GlibResult {
         match self {
-            Ok(()) => true.to_glib(),
+            Ok(()) => true.into_glib(),
 
             Err(e) => {
                 set_gerror(error, 0, &format!("{}", e));
-                false.to_glib()
+                false.into_glib()
             }
         }
     }
@@ -1255,7 +1254,7 @@ pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_read_stream_sync => false.to_glib();
+        rsvg_handle_read_stream_sync => false.into_glib();
 
         is_rsvg_handle(handle),
         is_input_stream(stream),
@@ -1281,7 +1280,7 @@ pub unsafe extern "C" fn rsvg_handle_write(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_write => false.to_glib();
+        rsvg_handle_write => false.into_glib();
 
         is_rsvg_handle(handle),
         error.is_null() || (*error).is_null(),
@@ -1292,7 +1291,7 @@ pub unsafe extern "C" fn rsvg_handle_write(
     let buffer = slice::from_raw_parts(buf, count);
     rhandle.write(buffer);
 
-    true.to_glib()
+    true.into_glib()
 }
 
 #[no_mangle]
@@ -1301,7 +1300,7 @@ pub unsafe extern "C" fn rsvg_handle_close(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_close => false.to_glib();
+        rsvg_handle_close => false.into_glib();
 
         is_rsvg_handle(handle),
         error.is_null() || (*error).is_null(),
@@ -1318,7 +1317,7 @@ pub unsafe extern "C" fn rsvg_handle_has_sub(
     id: *const libc::c_char,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_has_sub => false.to_glib();
+        rsvg_handle_has_sub => false.into_glib();
 
         is_rsvg_handle(handle),
     }
@@ -1326,11 +1325,11 @@ pub unsafe extern "C" fn rsvg_handle_has_sub(
     let rhandle = get_rust_handle(handle);
 
     if id.is_null() {
-        return false.to_glib();
+        return false.into_glib();
     }
 
     let id: String = from_glib_none(id);
-    rhandle.has_sub(&id).unwrap_or(false).to_glib()
+    rhandle.has_sub(&id).unwrap_or(false).into_glib()
 }
 
 #[no_mangle]
@@ -1339,7 +1338,7 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo(
     cr: *mut cairo::ffi::cairo_t,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_cairo => false.to_glib();
+        rsvg_handle_render_cairo => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1359,7 +1358,7 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
     id: *const libc::c_char,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_cairo_sub => false.to_glib();
+        rsvg_handle_render_cairo_sub => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1432,7 +1431,7 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
     id: *const libc::c_char,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_dimensions_sub => false.to_glib();
+        rsvg_handle_get_dimensions_sub => false.into_glib();
 
         is_rsvg_handle(handle),
         !dimension_data.is_null(),
@@ -1445,13 +1444,13 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
     match rhandle.get_dimensions_sub(id.as_deref()) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
-            true.to_glib()
+            true.into_glib()
         }
 
         Err(e) => {
             rsvg_log!("could not get dimensions: {}", e);
             *dimension_data = RsvgDimensionData::empty();
-            false.to_glib()
+            false.into_glib()
         }
     }
 }
@@ -1463,7 +1462,7 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
     id: *const libc::c_char,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_position_sub => false.to_glib();
+        rsvg_handle_get_position_sub => false.into_glib();
 
         is_rsvg_handle(handle),
         !position_data.is_null(),
@@ -1476,7 +1475,7 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
     match rhandle.get_position_sub(id.as_deref()) {
         Ok(position) => {
             *position_data = position;
-            true.to_glib()
+            true.into_glib()
         }
 
         Err(e) => {
@@ -1486,7 +1485,7 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
             p.y = 0;
 
             rsvg_log!("could not get position: {}", e);
-            false.to_glib()
+            false.into_glib()
         }
     }
 }
@@ -1670,7 +1669,7 @@ unsafe fn set_out_param<T: Copy>(
     };
 
     if !out_has_param.is_null() {
-        *out_has_param = has_value.to_glib();
+        *out_has_param = has_value.into_glib();
     }
 }
 
@@ -1687,7 +1686,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_set_stylesheet => false.to_glib();
+        rsvg_handle_set_stylesheet => false.into_glib();
 
         is_rsvg_handle(handle),
         !css.is_null() || (css.is_null() && css_len == 0),
@@ -1704,7 +1703,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
                 Ok(s) => s,
                 Err(e) => {
                     set_gerror(error, 0, &format!("CSS is not valid UTF-8: {}", e));
-                    return false.to_glib();
+                    return false.into_glib();
                 }
             }
         }
@@ -1751,7 +1750,7 @@ pub unsafe extern "C" fn rsvg_handle_get_intrinsic_size_in_pixels(
     out_height: *mut f64,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_intrinsic_size_in_pixels => false.to_glib();
+        rsvg_handle_get_intrinsic_size_in_pixels => false.into_glib();
 
         is_rsvg_handle(handle),
     }
@@ -1772,7 +1771,7 @@ pub unsafe extern "C" fn rsvg_handle_get_intrinsic_size_in_pixels(
         *out_height = h;
     }
 
-    dim.is_some().to_glib()
+    dim.is_some().into_glib()
 }
 
 #[no_mangle]
@@ -1783,7 +1782,7 @@ pub unsafe extern "C" fn rsvg_handle_render_document(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_document => false.to_glib();
+        rsvg_handle_render_document => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1808,7 +1807,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_geometry_for_layer => false.to_glib();
+        rsvg_handle_get_geometry_for_layer => false.into_glib();
 
         is_rsvg_handle(handle),
         !viewport.is_null(),
@@ -1842,7 +1841,7 @@ pub unsafe extern "C" fn rsvg_handle_render_layer(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_layer => false.to_glib();
+        rsvg_handle_render_layer => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1867,7 +1866,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_geometry_for_element => false.to_glib();
+        rsvg_handle_get_geometry_for_element => false.into_glib();
 
         is_rsvg_handle(handle),
         error.is_null() || (*error).is_null(),
@@ -1900,7 +1899,7 @@ pub unsafe extern "C" fn rsvg_handle_render_element(
     error: *mut *mut glib::ffi::GError,
 ) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_element => false.to_glib();
+        rsvg_handle_render_element => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -2106,7 +2105,7 @@ impl ErrorDomain for RsvgError {
 
 #[no_mangle]
 pub extern "C" fn rsvg_error_quark() -> glib::ffi::GQuark {
-    RsvgError::domain().to_glib()
+    RsvgError::domain().into_glib()
 }
 
 #[cfg(test)]
