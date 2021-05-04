@@ -1,7 +1,7 @@
 //! Main SVG document structure.
 
 use data_url::mime::Mime;
-use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
+use gdk_pixbuf::{prelude::PixbufLoaderExt, PixbufLoader};
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
 use std::cell::RefCell;

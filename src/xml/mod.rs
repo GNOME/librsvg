@@ -3,8 +3,8 @@
 use encoding::label::encoding_from_whatwg_label;
 use encoding::DecoderTrap;
 use gio::{
-    BufferedInputStream, BufferedInputStreamExt, Cancellable, ConverterInputStream, InputStream,
-    ZlibCompressorFormat, ZlibDecompressor,
+    prelude::BufferedInputStreamExt, BufferedInputStream, Cancellable, ConverterInputStream,
+    InputStream, ZlibCompressorFormat, ZlibDecompressor,
 };
 use glib::Cast;
 use markup5ever::{
