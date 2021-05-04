@@ -42,6 +42,7 @@ use glib::{
     glib_object_impl, glib_object_subclass, Bytes, Cast, ParamFlags, ParamSpec, StaticType,
     ToValue, Type,
 };
+use once_cell::sync::Lazy;
 
 use glib::types::instance_of;
 
@@ -320,87 +321,7 @@ impl ops::DerefMut for RsvgHandleClass {
     }
 }
 
-static PROPERTIES: [subclass::Property<'_>; 11] = [
-    subclass::Property("flags", |name| {
-        ParamSpec::flags(
-            name,
-            "Flags",
-            "Loading flags",
-            HandleFlags::static_type(),
-            0,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
-        )
-    }),
-    subclass::Property("dpi-x", |name| {
-        ParamSpec::double(
-            name,
-            "Horizontal DPI",
-            "Horizontal resolution in dots per inch",
-            0.0,
-            f64::MAX,
-            0.0,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-        )
-    }),
-    subclass::Property("dpi-y", |name| {
-        ParamSpec::double(
-            name,
-            "Vertical DPI",
-            "Vertical resolution in dots per inch",
-            0.0,
-            f64::MAX,
-            0.0,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-        )
-    }),
-    subclass::Property("base-uri", |name| {
-        ParamSpec::string(
-            name,
-            "Base URI",
-            "Base URI for resolving relative references",
-            None,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-        )
-    }),
-    subclass::Property("width", |name| {
-        ParamSpec::int(
-            name,
-            "Image width",
-            "Image width",
-            0,
-            i32::MAX,
-            0,
-            ParamFlags::READABLE,
-        )
-    }),
-    subclass::Property("height", |name| {
-        ParamSpec::int(
-            name,
-            "Image height",
-            "Image height",
-            0,
-            i32::MAX,
-            0,
-            ParamFlags::READABLE,
-        )
-    }),
-    subclass::Property("em", |name| {
-        ParamSpec::double(name, "em", "em", 0.0, f64::MAX, 0.0, ParamFlags::READABLE)
-    }),
-    subclass::Property("ex", |name| {
-        ParamSpec::double(name, "ex", "ex", 0.0, f64::MAX, 0.0, ParamFlags::READABLE)
-    }),
-    subclass::Property("title", |name| {
-        ParamSpec::string(name, "deprecated", "deprecated", None, ParamFlags::READABLE)
-    }),
-    subclass::Property("desc", |name| {
-        ParamSpec::string(name, "deprecated", "deprecated", None, ParamFlags::READABLE)
-    }),
-    subclass::Property("metadata", |name| {
-        ParamSpec::string(name, "deprecated", "deprecated", None, ParamFlags::READABLE)
-    }),
-];
-
+#[glib::object_subclass]
 impl ObjectSubclass for CHandle {
     const NAME: &'static str = "RsvgHandle";
 
@@ -412,12 +333,6 @@ impl ObjectSubclass for CHandle {
 
     type Instance = RsvgHandle;
     type Class = RsvgHandleClass;
-
-    glib_object_subclass!();
-
-    fn class_init(klass: &mut RsvgHandleClass) {
-        klass.install_properties(&PROPERTIES);
-    }
 
     fn new() -> Self {
         CHandle {
@@ -435,33 +350,111 @@ impl ObjectSubclass for CHandle {
 
 impl StaticType for CHandle {
     fn static_type() -> Type {
-        CHandle::get_type()
+        CHandle::type_()
     }
 }
 
 impl ObjectImpl for CHandle {
-    glib_object_impl!();
+    fn properties() -> &'static [ParamSpec] {
+        static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+            vec![
+                ParamSpec::new_flags(
+                    "flags",
+                    "Flags",
+                    "Loading flags",
+                    HandleFlags::static_type(),
+                    0,
+                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
+                ),
+                ParamSpec::new_double(
+                    "dpi-x",
+                    "Horizontal DPI",
+                    "Horizontal resolution in dots per inch",
+                    0.0,
+                    f64::MAX,
+                    0.0,
+                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                ),
+                ParamSpec::new_double(
+                    "dpi-y",
+                    "Vertical DPI",
+                    "Vertical resolution in dots per inch",
+                    0.0,
+                    f64::MAX,
+                    0.0,
+                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                ),
+                ParamSpec::new_string(
+                    "base-uri",
+                    "Base URI",
+                    "Base URI for resolving relative references",
+                    None,
+                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                ),
+                ParamSpec::new_int(
+                    "width",
+                    "Image width",
+                    "Image width",
+                    0,
+                    i32::MAX,
+                    0,
+                    ParamFlags::READABLE,
+                ),
+                ParamSpec::new_int(
+                    "height",
+                    "Image height",
+                    "Image height",
+                    0,
+                    i32::MAX,
+                    0,
+                    ParamFlags::READABLE,
+                ),
+                ParamSpec::new_double("em", "em", "em", 0.0, f64::MAX, 0.0, ParamFlags::READABLE),
+                ParamSpec::new_double("ex", "ex", "ex", 0.0, f64::MAX, 0.0, ParamFlags::READABLE),
+                ParamSpec::new_string(
+                    "title",
+                    "deprecated",
+                    "deprecated",
+                    None,
+                    ParamFlags::READABLE,
+                ),
+                ParamSpec::new_string(
+                    "desc",
+                    "deprecated",
+                    "deprecated",
+                    None,
+                    ParamFlags::READABLE,
+                ),
+                ParamSpec::new_string(
+                    "metadata",
+                    "deprecated",
+                    "deprecated",
+                    None,
+                    ParamFlags::READABLE,
+                ),
+            ]
+        });
+        PROPERTIES.as_ref()
+    }
 
-    fn set_property(&self, _obj: &glib::Object, id: usize, value: &glib::Value) {
-        let prop = &PROPERTIES[id];
-
-        match *prop {
-            subclass::Property("flags", ..) => {
-                let v: HandleFlags = value.get_some().expect("flags value has incorrect type");
+    fn set_property(&self, _obj: &Self::Type, id: usize, value: &glib::Value, pspec: &ParamSpec) {
+        match pspec.name() {
+            "flags" => {
+                let v: HandleFlags = value.get().expect("flags value has incorrect type");
                 self.set_flags(v);
             }
 
-            subclass::Property("dpi-x", ..) => {
-                let dpi_x: f64 = value.get_some().expect("dpi-x value has incorrect type");
+            "dpi-x" => {
+                let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
                 self.set_dpi_x(dpi_x);
             }
 
-            subclass::Property("dpi-y", ..) => {
-                let dpi_y: f64 = value.get_some().expect("dpi-y value has incorrect type");
+            "dpi-y" => {
+                let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
                 self.set_dpi_y(dpi_y);
             }
 
-            subclass::Property("base-uri", ..) => {
+            "base-uri" => {
                 let v: Option<String> = value.get().expect("base-uri value has incorrect type");
 
                 // rsvg_handle_set_base_uri() expects non-NULL URI strings,
@@ -477,34 +470,21 @@ impl ObjectImpl for CHandle {
         }
     }
 
-    #[rustfmt::skip]
-    fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
-        let prop = &PROPERTIES[id];
-
-        match *prop {
-            subclass::Property("flags", ..) => Ok(self.get_flags().to_value()),
-
-            subclass::Property("dpi-x", ..) => Ok(self.get_dpi_x().to_value()),
-            subclass::Property("dpi-y", ..) => Ok(self.get_dpi_y().to_value()),
-
-            subclass::Property("base-uri", ..) => Ok(self.get_base_url().to_value()),
-
-            subclass::Property("width", ..) =>
-                Ok(self.get_dimensions_or_empty().width.to_value()),
-
-            subclass::Property("height", ..) =>
-                Ok(self.get_dimensions_or_empty().height.to_value()),
-
-            subclass::Property("em", ..) =>
-                Ok(self.get_dimensions_or_empty().em.to_value()),
-
-            subclass::Property("ex", ..) =>
-                Ok(self.get_dimensions_or_empty().ex.to_value()),
+    fn property(&self, _obj: &Self::Type, id: usize, pspec: &ParamSpec) -> glib::Value {
+        match pspec.name() {
+            "flags" => self.get_flags().to_value(),
+            "dpi-x" => self.get_dpi_x().to_value(),
+            "dpi-y" => self.get_dpi_y().to_value(),
+            "base-uri" => self.get_base_url().to_value(),
+            "width" => self.get_dimensions_or_empty().width.to_value(),
+            "height" => self.get_dimensions_or_empty().height.to_value(),
+            "em" => self.get_dimensions_or_empty().em.to_value(),
+            "ex" => self.get_dimensions_or_empty().ex.to_value(),
 
             // the following three are deprecated
-            subclass::Property("title", ..)    => Ok(None::<String>.to_value()),
-            subclass::Property("desc", ..)     => Ok(None::<String>.to_value()),
-            subclass::Property("metadata", ..) => Ok(None::<String>.to_value()),
+            "title" => None::<String>.to_value(),
+            "desc" => None::<String>.to_value(),
+            "metadata" => None::<String>.to_value(),
 
             _ => unreachable!("invalid property id={} for RsvgHandle", id),
         }
@@ -1513,21 +1493,18 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
-    let obj: *mut glib::gobject_ffi::GObject = glib::Object::new(CHandle::get_type(), &[])
-        .unwrap()
-        .to_glib_full();
+    let obj: *mut glib::gobject_ffi::GObject =
+        glib::Object::new::<CHandle>(&[]).unwrap().to_glib_full();
 
     obj as *mut _
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj: *mut glib::gobject_ffi::GObject = glib::Object::new(
-        CHandle::get_type(),
-        &[("flags", &HandleFlags::from_bits_truncate(flags))],
-    )
-    .unwrap()
-    .to_glib_full();
+    let obj: *mut glib::gobject_ffi::GObject =
+        glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))])
+            .unwrap()
+            .to_glib_full();
 
     obj as *mut _
 }
