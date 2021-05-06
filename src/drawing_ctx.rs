@@ -1117,7 +1117,7 @@ impl DrawingCtx {
         surface.draw(&mut |cr| {
             // FIXME: we are ignoring any error
 
-            let _ = self.with_cairo_context(cr, &mut |dc| {
+            let _ = self.with_cairo_context(&cr, &mut |dc| {
                 dc.set_paint_source(paint_source, acquired_nodes)
                     .map(|had_paint_server| {
                         if had_paint_server {

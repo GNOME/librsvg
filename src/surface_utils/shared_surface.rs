@@ -1324,10 +1324,10 @@ impl ImageSurface<Exclusive> {
     #[inline]
     pub fn draw(
         &mut self,
-        draw_fn: &mut dyn FnMut(&cairo::Context) -> Result<(), cairo::Error>,
+        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), cairo::Error>,
     ) -> Result<(), cairo::Error> {
         let cr = cairo::Context::new(&self.surface);
-        draw_fn(&cr)
+        draw_fn(cr)
     }
 
     pub fn rows_mut(&mut self) -> RowsMut<'_> {
