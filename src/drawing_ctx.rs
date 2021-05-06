@@ -1115,16 +1115,17 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
+            let mut temporary_draw_ctx = self.nested(cr);
+
             // FIXME: we are ignoring any error
 
-            let _ = self.with_cairo_context(&cr, &mut |dc| {
-                dc.set_paint_source(paint_source, acquired_nodes)
-                    .map(|had_paint_server| {
-                        if had_paint_server {
-                            cr.paint();
-                        }
-                    })
-            });
+            let _ = temporary_draw_ctx
+                .set_paint_source(paint_source, acquired_nodes)
+                .map(|had_paint_server| {
+                    if had_paint_server {
+                        temporary_draw_ctx.cr.paint();
+                    }
+                });
 
             Ok(())
         })?;
