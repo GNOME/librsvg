@@ -309,22 +309,6 @@ impl DrawingCtx {
         BoundingBox::new().with_transform(self.get_transform())
     }
 
-    // FIXME: Usage of this function is more less a hack...
-    // It would be better to have an explicit push/pop for the cairo_t, or
-    // pushing a temporary surface, or something that does not involve
-    // monkeypatching the cr directly.
-    fn with_cairo_context(
-        &mut self,
-        cr: &cairo::Context,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
-    ) -> Result<(), RenderingError> {
-        let cr_save = self.cr.clone();
-        self.cr = cr.clone();
-        let res = draw_fn(self);
-        self.cr = cr_save;
-        res
-    }
-
     fn size_for_temporary_surface(&self) -> (i32, i32) {
         let rect = self.toplevel_viewport();
 
@@ -1035,24 +1019,32 @@ impl DrawingCtx {
         cr_pattern.set_matrix(caffine.into());
 
         // Draw everything
-        self.with_cairo_context(&cr_pattern, &mut |dc| {
-            dc.with_alpha(pattern.opacity, &mut |dc| {
-                let pattern_cascaded = CascadedValues::new_from_node(&pattern.node_with_children);
-                let pattern_values = pattern_cascaded.get();
-                dc.with_discrete_layer(
-                    &pattern.node_with_children,
-                    acquired_nodes,
-                    pattern_values,
-                    false,
-                    &mut |an, dc| {
-                        pattern
-                            .node_with_children
-                            .draw_children(an, &pattern_cascaded, dc, false)
-                    },
-                )
-            })
-            .map(|_| ())
-        })?;
+
+        {
+            let mut pattern_draw_ctx = self.nested(cr_pattern);
+
+            pattern_draw_ctx
+                .with_alpha(pattern.opacity, &mut |dc| {
+                    let pattern_cascaded =
+                        CascadedValues::new_from_node(&pattern.node_with_children);
+                    let pattern_values = pattern_cascaded.get();
+                    dc.with_discrete_layer(
+                        &pattern.node_with_children,
+                        acquired_nodes,
+                        pattern_values,
+                        false,
+                        &mut |an, dc| {
+                            pattern.node_with_children.draw_children(
+                                an,
+                                &pattern_cascaded,
+                                dc,
+                                false,
+                            )
+                        },
+                    )
+                })
+                .map(|_| ())?;
+        }
 
         // Set the final surface as a Cairo pattern into the Cairo context
         let pattern = cairo::SurfacePattern::create(&surface);
