@@ -146,7 +146,7 @@ pub struct DrawingCtx {
 
     dpi: Dpi,
 
-    cr_stack: Vec<cairo::Context>,
+    cr_stack: Rc<RefCell<Vec<cairo::Context>>>,
     cr: cairo::Context,
 
     viewport_stack: Rc<RefCell<Vec<Viewport>>>,
@@ -243,6 +243,12 @@ impl Drop for SavedCr<'_> {
     }
 }
 
+impl Drop for DrawingCtx {
+    fn drop(&mut self) {
+        self.cr_stack.borrow_mut().pop();
+    }
+}
+
 impl DrawingCtx {
     fn new(
         cr: &cairo::Context,
@@ -261,12 +267,35 @@ impl DrawingCtx {
         DrawingCtx {
             initial_viewport,
             dpi,
-            cr_stack: Vec::new(),
+            cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
             viewport_stack: Rc::new(RefCell::new(viewport_stack)),
             drawsub_stack,
             measuring,
             testing,
+        }
+    }
+
+    /// Copies a `DrawingCtx` for temporary use on a Cairo surface.
+    ///
+    /// `DrawingCtx` maintains state using during the drawing process, and sometimes we
+    /// would like to use that same state but on a different Cairo surface and context
+    /// than the ones being used on `self`.  This function copies the `self` state into a
+    /// new `DrawingCtx`, and ties the copied one to the supplied `cr`.
+    fn nested(&self, cr: cairo::Context) -> DrawingCtx {
+        let cr_stack = self.cr_stack.clone();
+
+        cr_stack.borrow_mut().push(self.cr.clone());
+
+        DrawingCtx {
+            initial_viewport: self.initial_viewport,
+            dpi: self.dpi,
+            cr_stack,
+            cr,
+            viewport_stack: self.viewport_stack.clone(),
+            drawsub_stack: Vec::new(),
+            measuring: self.measuring,
+            testing: self.testing,
         }
     }
 
@@ -284,33 +313,6 @@ impl DrawingCtx {
 
     pub fn empty_bbox(&self) -> BoundingBox {
         BoundingBox::new().with_transform(self.get_transform())
-    }
-
-    // FIXME: Usage of this function is more less a hack...
-    // It would be better to have an explicit push/pop for the cairo_t, or
-    // pushing a temporary surface, or something that does not involve
-    // monkeypatching the cr directly.
-    fn with_cairo_context(
-        &mut self,
-        cr: &cairo::Context,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<(), RenderingError>,
-    ) -> Result<(), RenderingError> {
-        let cr_save = self.cr.clone();
-        self.cr = cr.clone();
-        let res = draw_fn(self);
-        self.cr = cr_save;
-        res
-    }
-
-    // Temporary hack while we unify surface/cr/affine creation
-    fn push_cairo_context(&mut self, cr: cairo::Context) {
-        self.cr_stack.push(self.cr.clone());
-        self.cr = cr;
-    }
-
-    // Temporary hack while we unify surface/cr/affine creation
-    fn pop_cairo_context(&mut self) {
-        self.cr = self.cr_stack.pop().unwrap();
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
@@ -565,17 +567,15 @@ impl DrawingCtx {
 
             let _params = self.push_coord_units(mask.get_content_units());
 
-            self.push_cairo_context(mask_cr);
+            let mut mask_draw_ctx = self.nested(mask_cr);
 
-            let res = self.with_discrete_layer(
+            let res = mask_draw_ctx.with_discrete_layer(
                 mask_node,
                 acquired_nodes,
                 values,
                 false,
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
             );
-
-            self.pop_cairo_context();
 
             res?;
         }
@@ -647,7 +647,7 @@ impl DrawingCtx {
                 let affines = CompositingAffines::new(
                     affine_at_start,
                     saved_cr.draw_ctx.initial_transform_with_offset(),
-                    saved_cr.draw_ctx.cr_stack.len(),
+                    saved_cr.draw_ctx.cr_stack.borrow().len(),
                 );
 
                 // Create temporary surface and its cr
@@ -667,36 +667,40 @@ impl DrawingCtx {
 
                 cr.set_matrix(affines.for_temporary_surface.into());
 
-                saved_cr.draw_ctx.push_cairo_context(cr);
-
-                // Draw!
-
-                let mut res = draw_fn(acquired_nodes, saved_cr.draw_ctx);
-
-                let bbox = if let Ok(ref bbox) = res {
-                    *bbox
-                } else {
-                    BoundingBox::new().with_transform(affines.for_temporary_surface)
-                };
-
-                // Filter
-
                 let node_name = format!("{}", node);
 
-                let surface_to_filter = SharedImageSurface::copy_from_surface(
-                    &cairo::ImageSurface::try_from(saved_cr.draw_ctx.cr.get_target()).unwrap(),
-                )?;
+                let (source_surface, mut res, bbox) = {
+                    let mut temporary_draw_ctx = saved_cr.draw_ctx.nested(cr);
 
-                let source_surface = saved_cr.draw_ctx.run_filters(
-                    surface_to_filter,
-                    &filters,
-                    acquired_nodes,
-                    &node_name,
-                    values,
-                    bbox,
-                )?;
+                    // Draw!
 
-                saved_cr.draw_ctx.pop_cairo_context();
+                    let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
+
+                    let bbox = if let Ok(ref bbox) = res {
+                        *bbox
+                    } else {
+                        BoundingBox::new().with_transform(affines.for_temporary_surface)
+                    };
+
+                    // Filter
+
+                    let surface_to_filter = SharedImageSurface::copy_from_surface(
+                        &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.get_target()).unwrap(),
+                    )?;
+
+                    (
+                        temporary_draw_ctx.run_filters(
+                            surface_to_filter,
+                            &filters,
+                            acquired_nodes,
+                            &node_name,
+                            values,
+                            bbox,
+                        )?,
+                        res,
+                        bbox,
+                    )
+                };
 
                 // Set temporary surface as source
 
@@ -1021,24 +1025,32 @@ impl DrawingCtx {
         cr_pattern.set_matrix(caffine.into());
 
         // Draw everything
-        self.with_cairo_context(&cr_pattern, &mut |dc| {
-            dc.with_alpha(pattern.opacity, &mut |dc| {
-                let pattern_cascaded = CascadedValues::new_from_node(&pattern.node_with_children);
-                let pattern_values = pattern_cascaded.get();
-                dc.with_discrete_layer(
-                    &pattern.node_with_children,
-                    acquired_nodes,
-                    pattern_values,
-                    false,
-                    &mut |an, dc| {
-                        pattern
-                            .node_with_children
-                            .draw_children(an, &pattern_cascaded, dc, false)
-                    },
-                )
-            })
-            .map(|_| ())
-        })?;
+
+        {
+            let mut pattern_draw_ctx = self.nested(cr_pattern);
+
+            pattern_draw_ctx
+                .with_alpha(pattern.opacity, &mut |dc| {
+                    let pattern_cascaded =
+                        CascadedValues::new_from_node(&pattern.node_with_children);
+                    let pattern_values = pattern_cascaded.get();
+                    dc.with_discrete_layer(
+                        &pattern.node_with_children,
+                        acquired_nodes,
+                        pattern_values,
+                        false,
+                        &mut |an, dc| {
+                            pattern.node_with_children.draw_children(
+                                an,
+                                &pattern_cascaded,
+                                dc,
+                                false,
+                            )
+                        },
+                    )
+                })
+                .map(|_| ())?;
+        }
 
         // Set the final surface as a Cairo pattern into the Cairo context
         let pattern = cairo::SurfacePattern::create(&surface);
@@ -1101,16 +1113,17 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
+            let mut temporary_draw_ctx = self.nested(cr);
+
             // FIXME: we are ignoring any error
 
-            let _ = self.with_cairo_context(cr, &mut |dc| {
-                dc.set_paint_source(paint_source, acquired_nodes)
-                    .map(|had_paint_server| {
-                        if had_paint_server {
-                            cr.paint();
-                        }
-                    })
-            });
+            let _ = temporary_draw_ctx
+                .set_paint_source(paint_source, acquired_nodes)
+                .map(|had_paint_server| {
+                    if had_paint_server {
+                        temporary_draw_ctx.cr.paint();
+                    }
+                });
 
             Ok(())
         })?;
@@ -1448,7 +1461,7 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
-            for (depth, draw) in self.cr_stack.iter().enumerate() {
+            for (depth, draw) in self.cr_stack.borrow().iter().enumerate() {
                 let affines = CompositingAffines::new(
                     Transform::from(draw.get_matrix()),
                     self.initial_transform_with_offset(),
