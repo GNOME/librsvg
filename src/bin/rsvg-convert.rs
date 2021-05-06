@@ -40,8 +40,8 @@ impl From<cairo::Error> for Error {
         match s {
             cairo::Error::InvalidSize => Self(String::from(
                 "The resulting image would be larger than 32767 pixels on either dimension.\n\
-                Librsvg currently cannot render to images bigger than that.\n\
-                Please specify a smaller size.",
+                 Librsvg currently cannot render to images bigger than that.\n\
+                 Please specify a smaller size.",
             )),
             e => Self(format!("{}", e)),
         }
