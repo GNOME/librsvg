@@ -243,6 +243,12 @@ impl Drop for SavedCr<'_> {
     }
 }
 
+impl Drop for DrawingCtx {
+    fn drop(&mut self) {
+        self.cr_stack.borrow_mut().pop();
+    }
+}
+
 impl DrawingCtx {
     fn new(
         cr: &cairo::Context,
@@ -267,6 +273,23 @@ impl DrawingCtx {
             drawsub_stack,
             measuring,
             testing,
+        }
+    }
+
+    fn nested(&self, cr: cairo::Context) -> DrawingCtx {
+        let cr_stack = self.cr_stack.clone();
+
+        cr_stack.borrow_mut().push(self.cr.clone());
+
+        DrawingCtx {
+            initial_viewport: self.initial_viewport,
+            dpi: self.dpi,
+            cr_stack,
+            cr,
+            viewport_stack: self.viewport_stack.clone(),
+            drawsub_stack: Vec::new(),
+            measuring: self.measuring,
+            testing: self.testing,
         }
     }
 
@@ -300,17 +323,6 @@ impl DrawingCtx {
         let res = draw_fn(self);
         self.cr = cr_save;
         res
-    }
-
-    // Temporary hack while we unify surface/cr/affine creation
-    fn push_cairo_context(&mut self, cr: cairo::Context) {
-        self.cr_stack.borrow_mut().push(self.cr.clone());
-        self.cr = cr;
-    }
-
-    // Temporary hack while we unify surface/cr/affine creation
-    fn pop_cairo_context(&mut self) {
-        self.cr = self.cr_stack.borrow_mut().pop().unwrap();
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
@@ -565,17 +577,15 @@ impl DrawingCtx {
 
             let _params = self.push_coord_units(mask.get_content_units());
 
-            self.push_cairo_context(mask_cr);
+            let mut mask_draw_ctx = self.nested(mask_cr);
 
-            let res = self.with_discrete_layer(
+            let res = mask_draw_ctx.with_discrete_layer(
                 mask_node,
                 acquired_nodes,
                 values,
                 false,
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
             );
-
-            self.pop_cairo_context();
 
             res?;
         }
@@ -667,36 +677,40 @@ impl DrawingCtx {
 
                 cr.set_matrix(affines.for_temporary_surface.into());
 
-                saved_cr.draw_ctx.push_cairo_context(cr);
-
-                // Draw!
-
-                let mut res = draw_fn(acquired_nodes, saved_cr.draw_ctx);
-
-                let bbox = if let Ok(ref bbox) = res {
-                    *bbox
-                } else {
-                    BoundingBox::new().with_transform(affines.for_temporary_surface)
-                };
-
-                // Filter
-
                 let node_name = format!("{}", node);
 
-                let surface_to_filter = SharedImageSurface::copy_from_surface(
-                    &cairo::ImageSurface::try_from(saved_cr.draw_ctx.cr.get_target()).unwrap(),
-                )?;
+                let (source_surface, mut res, bbox) = {
+                    let mut temporary_draw_ctx = saved_cr.draw_ctx.nested(cr);
 
-                let source_surface = saved_cr.draw_ctx.run_filters(
-                    surface_to_filter,
-                    &filters,
-                    acquired_nodes,
-                    &node_name,
-                    values,
-                    bbox,
-                )?;
+                    // Draw!
 
-                saved_cr.draw_ctx.pop_cairo_context();
+                    let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
+
+                    let bbox = if let Ok(ref bbox) = res {
+                        *bbox
+                    } else {
+                        BoundingBox::new().with_transform(affines.for_temporary_surface)
+                    };
+
+                    // Filter
+
+                    let surface_to_filter = SharedImageSurface::copy_from_surface(
+                        &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.get_target()).unwrap(),
+                    )?;
+
+                    (
+                        temporary_draw_ctx.run_filters(
+                            surface_to_filter,
+                            &filters,
+                            acquired_nodes,
+                            &node_name,
+                            values,
+                            bbox,
+                        )?,
+                        res,
+                        bbox,
+                    )
+                };
 
                 // Set temporary surface as source
 
