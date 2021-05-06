@@ -146,7 +146,7 @@ pub struct DrawingCtx {
 
     dpi: Dpi,
 
-    cr_stack: Vec<cairo::Context>,
+    cr_stack: Rc<RefCell<Vec<cairo::Context>>>,
     cr: cairo::Context,
 
     viewport_stack: Rc<RefCell<Vec<Viewport>>>,
@@ -261,7 +261,7 @@ impl DrawingCtx {
         DrawingCtx {
             initial_viewport,
             dpi,
-            cr_stack: Vec::new(),
+            cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
             viewport_stack: Rc::new(RefCell::new(viewport_stack)),
             drawsub_stack,
@@ -304,13 +304,13 @@ impl DrawingCtx {
 
     // Temporary hack while we unify surface/cr/affine creation
     fn push_cairo_context(&mut self, cr: cairo::Context) {
-        self.cr_stack.push(self.cr.clone());
+        self.cr_stack.borrow_mut().push(self.cr.clone());
         self.cr = cr;
     }
 
     // Temporary hack while we unify surface/cr/affine creation
     fn pop_cairo_context(&mut self) {
-        self.cr = self.cr_stack.pop().unwrap();
+        self.cr = self.cr_stack.borrow_mut().pop().unwrap();
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
@@ -647,7 +647,7 @@ impl DrawingCtx {
                 let affines = CompositingAffines::new(
                     affine_at_start,
                     saved_cr.draw_ctx.initial_transform_with_offset(),
-                    saved_cr.draw_ctx.cr_stack.len(),
+                    saved_cr.draw_ctx.cr_stack.borrow().len(),
                 );
 
                 // Create temporary surface and its cr
@@ -1448,7 +1448,7 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
-            for (depth, draw) in self.cr_stack.iter().enumerate() {
+            for (depth, draw) in self.cr_stack.borrow().iter().enumerate() {
                 let affines = CompositingAffines::new(
                     Transform::from(draw.get_matrix()),
                     self.initial_transform_with_offset(),
