@@ -276,6 +276,12 @@ impl DrawingCtx {
         }
     }
 
+    /// Copies a `DrawingCtx` for temporary use on a Cairo surface.
+    ///
+    /// `DrawingCtx` maintains state using during the drawing process, and sometimes we
+    /// would like to use that same state but on a different Cairo surface and context
+    /// than the ones being used on `self`.  This function copies the `self` state into a
+    /// new `DrawingCtx`, and ties the copied one to the supplied `cr`.
     fn nested(&self, cr: cairo::Context) -> DrawingCtx {
         let cr_stack = self.cr_stack.clone();
 
