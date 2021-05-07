@@ -368,13 +368,9 @@ impl ResolvedPattern {
             let x = r.x0 - vbox.x0 * sw;
             let y = r.y0 - vbox.y0 * sh;
 
-            let _params = draw_ctx.push_view_box(vbox.width(), vbox.height());
-
             Transform::new_scale(sw, sh).pre_translate(x, y)
         } else {
             let PatternContentUnits(content_units) = self.content_units;
-
-            let _params = draw_ctx.push_coord_units(content_units);
 
             match content_units {
                 CoordUnits::ObjectBoundingBox => {
