@@ -63,6 +63,7 @@ use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
+use crate::viewbox::ViewBox;
 
 /// Units for length values.
 // This needs to be kept in sync with `rsvg.h:RsvgUnit`.
@@ -327,6 +328,25 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
     }
 }
 
+/// Parameters to normalize `Length` values to user-space distances.
+pub struct NormalizeParams {
+    vbox: ViewBox,
+    font_size: f64,
+    dpi: Dpi,
+}
+
+impl NormalizeParams {
+    /// Extracts the information needed to normalize `Length` values from a set of
+    /// `ComputedValues` and the viewport size in `ViewParams`.
+    pub fn new(values: &ComputedValues, params: &ViewParams) -> NormalizeParams {
+        NormalizeParams {
+            vbox: params.vbox,
+            font_size: font_size_from_values(values, params.dpi),
+            dpi: params.dpi,
+        }
+    }
+}
+
 impl<N: Normalize, V: Validate> CssLength<N, V> {
     /// Creates a CssLength.
     ///
@@ -358,6 +378,8 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
     /// based on the current element's set of `ComputedValues` (e.g. for lengths with `Em`
     /// units that need to be resolved against the current font size).
     pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
+        let params = NormalizeParams::new(values, params);
+
         match self.unit {
             LengthUnit::Px => self.length,
 
@@ -365,9 +387,9 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
                 self.length * <N as Normalize>::normalize(params.vbox.width(), params.vbox.height())
             }
 
-            LengthUnit::Em => self.length * font_size_from_values(values, params.dpi),
+            LengthUnit::Em => self.length * params.font_size,
 
-            LengthUnit::Ex => self.length * font_size_from_values(values, params.dpi) / 2.0,
+            LengthUnit::Ex => self.length * params.font_size / 2.0,
 
             LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 
