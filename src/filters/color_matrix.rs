@@ -44,9 +44,9 @@ pub struct FeColorMatrix {
 /// Resolved `feColorMatrix` primitive for rendering.
 #[derive(Clone)]
 pub struct ColorMatrix {
-    in1: Input,
-    matrix: Matrix5<f64>,
-    color_interpolation_filters: ColorInterpolationFilters,
+    pub in1: Input,
+    pub matrix: Matrix5<f64>,
+    pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for ColorMatrix {

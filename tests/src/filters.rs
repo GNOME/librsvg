@@ -155,3 +155,64 @@ fn blur_filter_func() {
         .compare(&output_surf)
         .evaluate(&output_surf, "blur_filter_func");
 }
+
+#[test]
+fn sepia_filter_func() {
+    // Create an element with a filter function, and compare it to the
+    // supposed equivalent using the <filter> element.
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="sepia(0.75)"/>
+</svg>
+"##,
+    ).unwrap();
+
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(400, 400),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 400.0,
+            height: 400.0,
+        },
+    )
+    .unwrap();
+
+    let reference = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <defs>
+    <filter id="filter">
+      <feColorMatrix type="matrix"
+         values="0.5447500000000001 0.57675 0.14175 0 0
+                 0.26175 0.7645000000000001 0.126 0 0
+                 0.20400000000000001 0.4005 0.34825 0 0
+                 0 0 0 1 0"/>
+    </filter>
+  </defs>
+
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="url(#filter)"/>
+</svg>
+"##,
+    ).unwrap();
+
+    let reference_surf = render_document(
+        &reference,
+        SurfaceSize(400, 400),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 400.0,
+            height: 400.0,
+        },
+    )
+    .unwrap();
+
+    Reference::from_surface(reference_surf.into_image_surface().unwrap())
+        .compare(&output_surf)
+        .evaluate(&output_surf, "sepia_filter_func");
+}
