@@ -110,6 +110,31 @@ impl<T: Parse + Copy> Parse for NumberOptionalNumber<T> {
     }
 }
 
+/// CSS number-percentage
+///
+/// https://www.w3.org/TR/css3-values/#typedef-number-percentage
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct NumberOrPercentage {
+    pub value: f64,
+}
+
+impl Parse for NumberOrPercentage {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        let loc = parser.current_source_location();
+
+        let value = match parser.next()? {
+            Token::Number { value, .. } => Ok(*value),
+            Token::Percentage { unit_value, .. } => Ok(*unit_value),
+            tok => Err(loc.new_unexpected_token_error(tok.clone())),
+        }?;
+
+        let v = finite_f32(value).map_err(|e| parser.new_custom_error(e))?;
+        Ok(NumberOrPercentage {
+            value: f64::from(v),
+        })
+    }
+}
+
 impl Parse for i32 {
     /// CSS integer
     ///
