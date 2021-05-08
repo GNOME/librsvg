@@ -1236,7 +1236,7 @@ impl DrawingCtx {
             let mut bounding_box: Option<BoundingBox> = None;
             path_helper.unset();
 
-            let params = dc.get_view_params();
+            let view_params = dc.get_view_params();
 
             for &target in &values.paint_order().targets {
                 // fill and stroke operations will preserve the path.
@@ -1245,7 +1245,7 @@ impl DrawingCtx {
                     PaintTarget::Fill | PaintTarget::Stroke => {
                         path_helper.set()?;
                         let bbox = bounding_box.get_or_insert_with(|| {
-                            compute_stroke_and_fill_box(&cr, &values, &params)
+                            compute_stroke_and_fill_box(&cr, &values, &view_params)
                         });
 
                         if values.is_visible() {
@@ -1726,7 +1726,7 @@ fn get_clip_in_user_and_object_space(
 fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     values: &ComputedValues,
-    params: &ViewParams,
+    view_params: &ViewParams,
 ) -> BoundingBox {
     let affine = Transform::from(cr.get_matrix());
 
@@ -1763,7 +1763,10 @@ fn compute_stroke_and_fill_box(
     // So, see if the stroke width is 0 and just not include the stroke in the
     // bounding box if so.
 
-    let stroke_width = values.stroke_width().0.normalize(values, &params);
+    let stroke_width = values
+        .stroke_width()
+        .0
+        .to_user(&NormalizeParams::new(values, view_params));
 
     if !stroke_width.approx_eq_cairo(0.0) && values.stroke().0 != PaintServer::None {
         let (x0, y0, x1, y1) = cr.stroke_extents();
