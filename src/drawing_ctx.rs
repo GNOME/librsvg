@@ -1589,8 +1589,9 @@ impl DrawingCtx {
         };
 
         let values = cascaded.get();
-        let params = self.get_view_params();
-        let use_rect = borrow_element_as!(node, Use).get_rect(values, &params);
+        let view_params = self.get_view_params();
+        let params = NormalizeParams::new(values, &view_params);
+        let use_rect = borrow_element_as!(node, Use).get_rect(&params);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute

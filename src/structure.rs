@@ -250,11 +250,11 @@ pub struct Use {
 }
 
 impl Use {
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
-        let x = self.x.normalize(values, &params);
-        let y = self.y.normalize(values, &params);
-        let w = self.width.normalize(values, &params);
-        let h = self.height.normalize(values, &params);
+    pub fn get_rect(&self, params: &NormalizeParams) -> Rect {
+        let x = self.x.to_user(params);
+        let y = self.y.to_user(params);
+        let w = self.width.to_user(params);
+        let h = self.height.to_user(params);
 
         Rect::new(x, y, x + w, y + h)
     }
