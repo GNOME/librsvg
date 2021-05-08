@@ -140,18 +140,18 @@ impl Svg {
         (w, h)
     }
 
-    fn get_viewport(&self, values: &ComputedValues, params: &ViewParams, outermost: bool) -> Rect {
+    fn get_viewport(&self, params: &NormalizeParams, outermost: bool) -> Rect {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let (nx, ny) = if outermost {
             (0.0, 0.0)
         } else {
             let (x, y) = self.get_unnormalized_offset();
-            (x.normalize(values, &params), y.normalize(values, &params))
+            (x.to_user(params), y.to_user(params))
         };
 
         let (w, h) = self.get_unnormalized_size();
-        let (nw, nh) = (w.normalize(values, &params), h.normalize(values, &params));
+        let (nw, nh) = (w.to_user(params), h.to_user(params));
 
         Rect::new(nx, ny, nx + nw, ny + nh)
     }
@@ -164,7 +164,8 @@ impl Svg {
     ) -> Option<ViewParams> {
         let values = cascaded.get();
 
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(values, &view_params);
 
         let has_parent = node.parent().is_some();
 
@@ -174,7 +175,7 @@ impl Svg {
             None
         };
 
-        let svg_viewport = self.get_viewport(values, &params, !has_parent);
+        let svg_viewport = self.get_viewport(&params, !has_parent);
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
