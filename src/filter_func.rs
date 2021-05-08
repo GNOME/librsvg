@@ -63,7 +63,8 @@ impl Blur {
             .map(|l| l.normalize(values, params))
             .unwrap_or(0.0);
 
-        let user_space_filter = Filter::default().to_user_space(values, params);
+        let user_space_filter =
+            Filter::default().to_user_space(&NormalizeParams::new(values, params));
 
         let gaussian_blur = ResolvedPrimitive {
             primitive: Primitive::default(),

@@ -264,7 +264,7 @@ pub fn extract_filter_from_filter_node(
         // This is in a temporary scope so we don't leave the coord_units pushed during
         // the execution of all the filter primitives.
         let params = draw_ctx.push_coord_units(filter.get_filter_units());
-        filter.to_user_space(filter_values, &params)
+        filter.to_user_space(&NormalizeParams::new(filter_values, &params))
     };
 
     let primitives = filter_node
