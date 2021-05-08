@@ -8,6 +8,7 @@ use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{draw_tree, DrawingMode, ViewParams};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
+use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
@@ -130,12 +131,14 @@ impl Handle {
             return None;
         }
 
-        let params = ViewParams::new(dpi, 0.0, 0.0);
+        let view_params = ViewParams::new(dpi, 0.0, 0.0);
         let root = self.document.root();
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
 
-        Some((w.normalize(values, &params), h.normalize(values, &params)))
+        let params = NormalizeParams::new(&values, &view_params);
+
+        Some((w.to_user(&params), h.to_user(&params)))
     }
 
     fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
