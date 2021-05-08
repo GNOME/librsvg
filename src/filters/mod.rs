@@ -7,7 +7,7 @@ use std::time::Instant;
 
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::filter::UserSpaceFilter;
@@ -15,7 +15,6 @@ use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
-use crate::properties::ComputedValues;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
@@ -178,15 +177,11 @@ impl Parse for Input {
 }
 
 impl ResolvedPrimitive {
-    pub fn into_user_space(
-        self,
-        values: &ComputedValues,
-        params: &ViewParams,
-    ) -> UserSpacePrimitive {
-        let x = self.primitive.x.map(|l| l.normalize(values, &params));
-        let y = self.primitive.y.map(|l| l.normalize(values, &params));
-        let width = self.primitive.width.map(|l| l.normalize(values, &params));
-        let height = self.primitive.height.map(|l| l.normalize(values, &params));
+    pub fn into_user_space(self, params: &NormalizeParams) -> UserSpacePrimitive {
+        let x = self.primitive.x.map(|l| l.to_user(params));
+        let y = self.primitive.y.map(|l| l.to_user(params));
+        let width = self.primitive.width.map(|l| l.to_user(params));
+        let height = self.primitive.height.map(|l| l.to_user(params));
 
         UserSpacePrimitive {
             x,
@@ -286,9 +281,11 @@ pub fn extract_filter_from_filter_node(
             let elt = primitive_node.borrow_element();
             let effect = elt.as_filter_effect().unwrap();
 
-            let primitive_values = elt.get_computed_values();
-
             let primitive_name = format!("{}", primitive_node);
+
+            let view_params = draw_ctx.push_coord_units(user_space_filter.primitive_units);
+            let primitive_values = elt.get_computed_values();
+            let params = NormalizeParams::new(&primitive_values, &view_params);
 
             effect
                 .resolve(acquired_nodes, &primitive_node)
@@ -300,10 +297,7 @@ pub fn extract_filter_from_filter_node(
                     );
                     e
                 })
-                .map(|primitive| {
-                    let params = draw_ctx.push_coord_units(user_space_filter.primitive_units);
-                    primitive.into_user_space(primitive_values, &params)
-                })
+                .map(|primitive| primitive.into_user_space(&params))
         })
         .collect::<Result<Vec<UserSpacePrimitive>, FilterResolveError>>()?;
 
