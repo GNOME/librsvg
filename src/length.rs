@@ -377,9 +377,21 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
     /// to pixels based on the current viewport (e.g. for lengths with percent units), and
     /// based on the current element's set of `ComputedValues` (e.g. for lengths with `Em`
     /// units that need to be resolved against the current font size).
+    ///
+    /// Those parameters can be obtained with `NormalizeParams::new()`.
     pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-        let params = NormalizeParams::new(values, params);
+        self.to_user(&NormalizeParams::new(values, params))
+    }
 
+    /// Convert a Length with units into user-space coordinates.
+    ///
+    /// Lengths may come with non-pixel units, and when rendering, they need to be normalized
+    /// to pixels based on the current viewport (e.g. for lengths with percent units), and
+    /// based on the current element's set of `ComputedValues` (e.g. for lengths with `Em`
+    /// units that need to be resolved against the current font size).
+    ///
+    /// Those parameters can be obtained with `NormalizeParams::new()`.
+    pub fn to_user(&self, params: &NormalizeParams) -> f64 {
         match self.unit {
             LengthUnit::Px => self.length,
 
@@ -548,81 +560,81 @@ mod tests {
 
     #[test]
     fn normalize_default_works() {
-        let params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 100.0);
-
+        let view_params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 100.0);
         let values = ComputedValues::default();
+        let params = NormalizeParams::new(&values, &view_params);
 
         assert_approx_eq_cairo!(
-            Length::<Both>::new(10.0, LengthUnit::Px).normalize(&values, &params),
+            Length::<Both>::new(10.0, LengthUnit::Px).to_user(&params),
             10.0
         );
     }
 
     #[test]
     fn normalize_absolute_units_works() {
-        let params = ViewParams::new(Dpi::new(40.0, 50.0), 100.0, 100.0);
-
+        let view_params = ViewParams::new(Dpi::new(40.0, 50.0), 100.0, 100.0);
         let values = ComputedValues::default();
+        let params = NormalizeParams::new(&values, &view_params);
 
         assert_approx_eq_cairo!(
-            Length::<Horizontal>::new(10.0, LengthUnit::In).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::In).to_user(&params),
             400.0
         );
         assert_approx_eq_cairo!(
-            Length::<Vertical>::new(10.0, LengthUnit::In).normalize(&values, &params),
+            Length::<Vertical>::new(10.0, LengthUnit::In).to_user(&params),
             500.0
         );
 
         assert_approx_eq_cairo!(
-            Length::<Horizontal>::new(10.0, LengthUnit::Cm).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Cm).to_user(&params),
             400.0 / CM_PER_INCH
         );
         assert_approx_eq_cairo!(
-            Length::<Horizontal>::new(10.0, LengthUnit::Mm).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Mm).to_user(&params),
             400.0 / MM_PER_INCH
         );
         assert_approx_eq_cairo!(
-            Length::<Horizontal>::new(10.0, LengthUnit::Pt).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Pt).to_user(&params),
             400.0 / POINTS_PER_INCH
         );
         assert_approx_eq_cairo!(
-            Length::<Horizontal>::new(10.0, LengthUnit::Pc).normalize(&values, &params),
+            Length::<Horizontal>::new(10.0, LengthUnit::Pc).to_user(&params),
             400.0 / PICA_PER_INCH
         );
     }
 
     #[test]
     fn normalize_percent_works() {
-        let params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
-
+        let view_params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
         let values = ComputedValues::default();
+        let params = NormalizeParams::new(&values, &view_params);
 
         assert_approx_eq_cairo!(
-            Length::<Horizontal>::new(0.05, LengthUnit::Percent).normalize(&values, &params),
+            Length::<Horizontal>::new(0.05, LengthUnit::Percent).to_user(&params),
             5.0
         );
         assert_approx_eq_cairo!(
-            Length::<Vertical>::new(0.05, LengthUnit::Percent).normalize(&values, &params),
+            Length::<Vertical>::new(0.05, LengthUnit::Percent).to_user(&params),
             10.0
         );
     }
 
     #[test]
     fn normalize_font_em_ex_works() {
-        let params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
-
+        let view_params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
         let values = ComputedValues::default();
+        let params = NormalizeParams::new(&values, &view_params);
 
         // These correspond to the default size for the font-size
         // property and the way we compute Em/Ex from that.
 
         assert_approx_eq_cairo!(
-            Length::<Vertical>::new(1.0, LengthUnit::Em).normalize(&values, &params),
+            Length::<Vertical>::new(1.0, LengthUnit::Em).to_user(&params),
             12.0
         );
 
         assert_approx_eq_cairo!(
-            Length::<Vertical>::new(1.0, LengthUnit::Ex).normalize(&values, &params),
+            Length::<Vertical>::new(1.0, LengthUnit::Ex).to_user(&params),
             6.0
         );
     }
