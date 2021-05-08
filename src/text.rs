@@ -221,10 +221,11 @@ impl PositionedSpan {
         let layout = measured.layout.clone();
         let values = measured.values.clone();
 
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let baseline_shift = values.baseline_shift().0.normalize(&values, &params);
+        let baseline_shift = values.baseline_shift().0.to_user(&params);
         let offset = baseline + baseline_shift;
 
         let dx = measured.dx;
@@ -438,12 +439,13 @@ impl Text {
         let mut chunks = Vec::new();
 
         let values = cascaded.get();
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
 
         chunks.push(Chunk::new(&values, Some(x), Some(y)));
 
-        let dx = self.dx.normalize(&values, &params);
-        let dy = self.dy.normalize(&values, &params);
+        let dx = self.dx.to_user(&params);
+        let dy = self.dy.to_user(&params);
 
         children_to_chunks(
             &mut chunks,
@@ -485,10 +487,11 @@ impl Draw for Text {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
 
-        let mut x = self.x.normalize(values, &params);
-        let mut y = self.y.normalize(values, &params);
+        let mut x = self.x.to_user(&params);
+        let mut y = self.y.to_user(&params);
 
         let chunks = self.make_chunks(node, acquired_nodes, cascaded, draw_ctx, x, y);
 
@@ -621,12 +624,14 @@ impl TSpan {
             return;
         }
 
-        let params = draw_ctx.get_view_params();
-        let x = self.x.map(|l| l.normalize(&values, &params));
-        let y = self.y.map(|l| l.normalize(&values, &params));
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(values, &view_params);
 
-        let span_dx = dx + self.dx.normalize(&values, &params);
-        let span_dy = dy + self.dy.normalize(&values, &params);
+        let x = self.x.map(|l| l.to_user(&params));
+        let y = self.y.map(|l| l.to_user(&params));
+
+        let span_dx = dx + self.dx.to_user(&params);
+        let span_dy = dy + self.dy.to_user(&params);
 
         if x.is_some() || y.is_some() {
             chunks.push(Chunk::new(values, x, y));
