@@ -1545,6 +1545,7 @@ impl DrawingCtx {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
+        use_rect: Rect,
         link: &NodeId,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1587,10 +1588,6 @@ impl DrawingCtx {
                 return Ok(self.empty_bbox());
             }
         };
-
-        let view_params = self.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
-        let use_rect = borrow_element_as!(node, Use).get_rect(&params);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute

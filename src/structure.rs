@@ -250,7 +250,7 @@ pub struct Use {
 }
 
 impl Use {
-    pub fn get_rect(&self, params: &NormalizeParams) -> Rect {
+    fn get_rect(&self, params: &NormalizeParams) -> Rect {
         let x = self.x.to_user(params);
         let y = self.y.to_user(params);
         let w = self.width.to_user(params);
@@ -304,7 +304,11 @@ impl Draw for Use {
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(link) = self.link.as_ref() {
             let values = cascaded.get();
-            draw_ctx.draw_from_use_node(node, acquired_nodes, values, link, clipping)
+            let view_params = draw_ctx.get_view_params();
+            let params = NormalizeParams::new(values, &view_params);
+            let rect = self.get_rect(&params);
+
+            draw_ctx.draw_from_use_node(node, acquired_nodes, values, rect, link, clipping)
         } else {
             Ok(draw_ctx.empty_bbox())
         }
