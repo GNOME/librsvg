@@ -229,8 +229,8 @@ impl FontSize {
         FontSize::Value(new_size)
     }
 
-    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-        self.value().normalize(values, params)
+    pub fn to_user(&self, params: &NormalizeParams) -> f64 {
+        self.value().to_user(params)
     }
 }
 
