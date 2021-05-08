@@ -303,7 +303,8 @@ impl Draw for Use {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(link) = self.link.as_ref() {
-            draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, link, clipping)
+            let values = cascaded.get();
+            draw_ctx.draw_from_use_node(node, acquired_nodes, values, link, clipping)
         } else {
             Ok(draw_ctx.empty_bbox())
         }
