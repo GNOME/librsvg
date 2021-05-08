@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -315,11 +315,11 @@ impl ResolvedPattern {
         }
     }
 
-    fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
-        let x = self.x.normalize(&values, &params);
-        let y = self.y.normalize(&values, &params);
-        let w = self.width.normalize(&values, &params);
-        let h = self.height.normalize(&values, &params);
+    fn get_rect(&self, params: &NormalizeParams) -> Rect {
+        let x = self.x.to_user(params);
+        let y = self.y.to_user(params);
+        let w = self.width.to_user(params);
+        let h = self.height.to_user(params);
 
         Rect::new(x, y, x + w, y + h)
     }
@@ -332,9 +332,10 @@ impl ResolvedPattern {
     ) -> Option<UserSpacePattern> {
         let node_with_children = self.node_with_children()?;
 
-        let params = draw_ctx.push_coord_units(self.units.0);
+        let view_params = draw_ctx.push_coord_units(self.units.0);
+        let params = NormalizeParams::new(values, &view_params);
 
-        let rect = self.get_rect(values, &params);
+        let rect = self.get_rect(&params);
         let bbrect = bbox.rect.unwrap();
 
         // Create the pattern coordinate system
