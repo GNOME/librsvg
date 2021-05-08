@@ -3,7 +3,6 @@
 use cast::{f64, u16};
 use cssparser::{Parser, Token};
 
-use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::length::*;
 use crate::parsers::{finite_f32, Parse};
@@ -419,8 +418,8 @@ impl LineHeight {
         }
     }
 
-    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-        self.value().normalize(values, params)
+    pub fn to_user(&self, params: &NormalizeParams) -> f64 {
+        self.value().to_user(params)
     }
 }
 
