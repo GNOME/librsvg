@@ -397,8 +397,9 @@ impl DrawingCtx {
 
     /// Pushes a viewport size for normalizing `Length` values.
     ///
-    /// You should pass the returned `ViewParams` to all subsequent `CssLength.normalize()`
-    /// calls that correspond to this viewport.
+    /// With the returned `ViewParams`, plus a `ComputedValues`, you can create a
+    /// `NormalizeParams` that can be used with calls to `CssLength.to_user()` that
+    /// correspond to this viewport.
     ///
     /// The viewport will stay in place, and will be the one returned by
     /// `get_view_params()`, until the returned `ViewParams` is dropped.
