@@ -6,7 +6,7 @@ use std::slice::Iter;
 
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
@@ -58,11 +58,11 @@ impl Filter {
         self.primitive_units
     }
 
-    pub fn to_user_space(&self, values: &ComputedValues, params: &ViewParams) -> UserSpaceFilter {
-        let x = self.x.normalize(values, &params);
-        let y = self.y.normalize(values, &params);
-        let w = self.width.normalize(values, &params);
-        let h = self.height.normalize(values, &params);
+    pub fn to_user_space(&self, params: &NormalizeParams) -> UserSpaceFilter {
+        let x = self.x.to_user(params);
+        let y = self.y.to_user(params);
+        let w = self.width.to_user(params);
+        let h = self.height.to_user(params);
 
         let rect = Rect::new(x, y, x + w, y + h);
 

@@ -103,10 +103,11 @@ impl Marker {
         let cascaded = CascadedValues::new_from_node(&node);
         let values = cascaded.get();
 
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
 
-        let marker_width = self.width.normalize(&values, &params);
-        let marker_height = self.height.normalize(&values, &params);
+        let marker_width = self.width.to_user(&params);
+        let marker_height = self.height.to_user(&params);
 
         if marker_width.approx_eq_cairo(0.0) || marker_height.approx_eq_cairo(0.0) {
             // markerWidth or markerHeight set to 0 disables rendering of the element
@@ -125,7 +126,7 @@ impl Marker {
             transform = transform.pre_scale(line_width, line_width);
         }
 
-        let params = if let Some(vbox) = self.vbox {
+        let content_view_params = if let Some(vbox) = self.vbox {
             if vbox.is_empty() {
                 return Ok(draw_ctx.empty_bbox());
             }
@@ -142,9 +143,11 @@ impl Marker {
             draw_ctx.push_view_box(marker_width, marker_height)
         };
 
+        let content_params = NormalizeParams::new(&values, &content_view_params);
+
         transform = transform.pre_translate(
-            -self.ref_x.normalize(&values, &params),
-            -self.ref_y.normalize(&values, &params),
+            -self.ref_x.to_user(&content_params),
+            -self.ref_y.to_user(&content_params),
         );
 
         let clip = if values.is_overflow() {
@@ -609,10 +612,10 @@ pub fn render_markers_for_path(
     values: &ComputedValues,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    let line_width = values
-        .stroke_width()
-        .0
-        .normalize(values, &draw_ctx.get_view_params());
+    let view_params = draw_ctx.get_view_params();
+    let params = NormalizeParams::new(values, &view_params);
+
+    let line_width = values.stroke_width().0.to_user(&params);
 
     if line_width.approx_eq_cairo(0.0) {
         return Ok(draw_ctx.empty_bbox());

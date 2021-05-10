@@ -1,7 +1,7 @@
 use cssparser::Parser;
 
 use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -56,14 +56,11 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
 }
 
 impl Blur {
-    fn to_filter_spec(&self, values: &ComputedValues, params: &ViewParams) -> FilterSpec {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
         // The 0.0 default is from the spec
-        let std_dev = self
-            .std_deviation
-            .map(|l| l.normalize(values, params))
-            .unwrap_or(0.0);
+        let std_dev = self.std_deviation.map(|l| l.to_user(params)).unwrap_or(0.0);
 
-        let user_space_filter = Filter::default().to_user_space(values, params);
+        let user_space_filter = Filter::default().to_user_space(params);
 
         let gaussian_blur = ResolvedPrimitive {
             primitive: Primitive::default(),
@@ -72,7 +69,7 @@ impl Blur {
                 ..GaussianBlur::default()
             }),
         }
-        .into_user_space(values, params);
+        .into_user_space(params);
 
         FilterSpec {
             user_space_filter,
@@ -101,11 +98,12 @@ impl FilterFunction {
         values: &ComputedValues,
         draw_ctx: &DrawingCtx,
     ) -> Result<FilterSpec, FilterResolveError> {
-        // This is the default for primitive_units
-        let params = draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
+        // userSpaceonUse is the default for primitive_units
+        let view_params = draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
+        let params = NormalizeParams::new(values, &view_params);
 
         match self {
-            FilterFunction::Blur(v) => Ok(v.to_filter_spec(values, &params)),
+            FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
         }
     }
 }

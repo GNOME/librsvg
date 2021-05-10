@@ -2,6 +2,7 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
@@ -34,14 +35,14 @@ use crate::xml::Attributes;
 ///
 /// [text chunk]: https://www.w3.org/TR/SVG11/text.html#TextLayoutIntroduction
 struct Chunk {
-    values: ComputedValues,
+    values: Rc<ComputedValues>,
     x: Option<f64>,
     y: Option<f64>,
     spans: Vec<Span>,
 }
 
 struct MeasuredChunk {
-    values: ComputedValues,
+    values: Rc<ComputedValues>,
     x: Option<f64>,
     y: Option<f64>,
     advance: (f64, f64),
@@ -55,7 +56,7 @@ struct PositionedChunk {
 }
 
 struct Span {
-    values: ComputedValues,
+    values: Rc<ComputedValues>,
     text: String,
     dx: f64,
     dy: f64,
@@ -63,7 +64,7 @@ struct Span {
 }
 
 struct MeasuredSpan {
-    values: ComputedValues,
+    values: Rc<ComputedValues>,
     layout: pango::Layout,
     _layout_size: (f64, f64),
     advance: (f64, f64),
@@ -73,7 +74,7 @@ struct MeasuredSpan {
 
 struct PositionedSpan {
     layout: pango::Layout,
-    values: ComputedValues,
+    values: Rc<ComputedValues>,
     _position: (f64, f64),
     rendered_position: (f64, f64),
     next_span_x: f64,
@@ -83,7 +84,7 @@ struct PositionedSpan {
 impl Chunk {
     fn new(values: &ComputedValues, x: Option<f64>, y: Option<f64>) -> Chunk {
         Chunk {
-            values: values.clone(),
+            values: Rc::new(values.clone()),
             x,
             y,
             spans: Vec::new(),
@@ -173,7 +174,7 @@ fn text_anchor_advance(
 }
 
 impl Span {
-    fn new(text: &str, values: ComputedValues, dx: f64, dy: f64, depth: usize) -> Span {
+    fn new(text: &str, values: Rc<ComputedValues>, dx: f64, dy: f64, depth: usize) -> Span {
         Span {
             values,
             text: text.to_string(),
@@ -188,7 +189,7 @@ impl MeasuredSpan {
     fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
         let values = span.values.clone();
 
-        let layout = create_pango_layout(draw_ctx, &values, &span.text);
+        let layout = create_pango_layout(draw_ctx, &*values, &span.text);
         let (w, h) = layout.get_size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -221,10 +222,11 @@ impl PositionedSpan {
         let layout = measured.layout.clone();
         let values = measured.values.clone();
 
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
 
         let baseline = f64::from(layout.get_baseline()) / f64::from(pango::SCALE);
-        let baseline_shift = values.baseline_shift().0.normalize(&values, &params);
+        let baseline_shift = values.baseline_shift().0.to_user(&params);
         let offset = baseline + baseline_shift;
 
         let dx = measured.dx;
@@ -279,7 +281,7 @@ fn children_to_chunks(
             let values = cascaded.get();
             child
                 .borrow_chars()
-                .to_chunks(&child, values, chunks, dx, dy, depth);
+                .to_chunks(&child, Rc::new(values.clone()), chunks, dx, dy, depth);
         } else {
             assert!(child.is_element());
 
@@ -375,19 +377,19 @@ impl Chars {
     fn make_span(
         &self,
         node: &Node,
-        values: &ComputedValues,
+        values: Rc<ComputedValues>,
         dx: f64,
         dy: f64,
         depth: usize,
     ) -> Option<Span> {
-        self.ensure_normalized_string(node, values);
+        self.ensure_normalized_string(node, &*values);
 
         if self.space_normalized.borrow().as_ref().unwrap() == "" {
             None
         } else {
             Some(Span::new(
                 self.space_normalized.borrow().as_ref().unwrap(),
-                values.clone(),
+                values,
                 dx,
                 dy,
                 depth,
@@ -398,7 +400,7 @@ impl Chars {
     fn to_chunks(
         &self,
         node: &Node,
-        values: &ComputedValues,
+        values: Rc<ComputedValues>,
         chunks: &mut Vec<Chunk>,
         dx: f64,
         dy: f64,
@@ -438,12 +440,13 @@ impl Text {
         let mut chunks = Vec::new();
 
         let values = cascaded.get();
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
 
         chunks.push(Chunk::new(&values, Some(x), Some(y)));
 
-        let dx = self.dx.normalize(&values, &params);
-        let dy = self.dy.normalize(&values, &params);
+        let dx = self.dx.to_user(&params);
+        let dy = self.dy.to_user(&params);
 
         children_to_chunks(
             &mut chunks,
@@ -485,10 +488,11 @@ impl Draw for Text {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
 
-        let mut x = self.x.normalize(values, &params);
-        let mut y = self.y.normalize(values, &params);
+        let mut x = self.x.to_user(&params);
+        let mut y = self.y.to_user(&params);
 
         let chunks = self.make_chunks(node, acquired_nodes, cascaded, draw_ctx, x, y);
 
@@ -552,7 +556,12 @@ impl TRef {
 
         if let Ok(acquired) = acquired_nodes.acquire(link) {
             let c = acquired.get();
-            extract_chars_children_to_chunks_recursively(chunks, &c, values, depth);
+            extract_chars_children_to_chunks_recursively(
+                chunks,
+                &c,
+                Rc::new(values.clone()),
+                depth,
+            );
         } else {
             rsvg_log!(
                 "element {} references a nonexistent text source \"{}\"",
@@ -566,10 +575,12 @@ impl TRef {
 fn extract_chars_children_to_chunks_recursively(
     chunks: &mut Vec<Chunk>,
     node: &Node,
-    values: &ComputedValues,
+    values: Rc<ComputedValues>,
     depth: usize,
 ) {
     for child in node.children() {
+        let values = values.clone();
+
         if child.is_chars() {
             child
                 .borrow_chars()
@@ -621,12 +632,14 @@ impl TSpan {
             return;
         }
 
-        let params = draw_ctx.get_view_params();
-        let x = self.x.map(|l| l.normalize(&values, &params));
-        let y = self.y.map(|l| l.normalize(&values, &params));
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(values, &view_params);
 
-        let span_dx = dx + self.dx.normalize(&values, &params);
-        let span_dy = dy + self.dy.normalize(&values, &params);
+        let x = self.x.map(|l| l.to_user(&params));
+        let y = self.y.map(|l| l.to_user(&params));
+
+        let span_dx = dx + self.dx.to_user(&params);
+        let span_dy = dy + self.dy.to_user(&params);
 
         if x.is_some() || y.is_some() {
             chunks.push(Chunk::new(values, x, y));
@@ -793,11 +806,10 @@ fn create_pango_layout(
     font_desc.set_weight(pango::Weight::from(values.font_weight()));
     font_desc.set_stretch(pango::Stretch::from(values.font_stretch()));
 
-    let params = draw_ctx.get_view_params();
+    let view_params = draw_ctx.get_view_params();
+    let params = NormalizeParams::new(values, &view_params);
 
-    font_desc.set_size(to_pango_units(
-        values.font_size().normalize(values, &params),
-    ));
+    font_desc.set_size(to_pango_units(values.font_size().to_user(&params)));
 
     let layout = pango::Layout::new(&pango_context);
     layout.set_auto_dir(false);
@@ -819,7 +831,7 @@ fn create_pango_layout(
 
     attr_list.insert(
         pango::Attribute::new_letter_spacing(to_pango_units(
-            values.letter_spacing().normalize(values, &params),
+            values.letter_spacing().to_user(&params),
         ))
         .unwrap(),
     );

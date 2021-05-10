@@ -70,11 +70,13 @@ impl Draw for Image {
 
         let values = cascaded.get();
 
-        let params = draw_ctx.get_view_params();
-        let x = self.x.normalize(&values, &params);
-        let y = self.y.normalize(&values, &params);
-        let w = self.width.normalize(&values, &params);
-        let h = self.height.normalize(&values, &params);
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(values, &view_params);
+
+        let x = self.x.to_user(&params);
+        let y = self.y.to_user(&params);
+        let w = self.width.to_user(&params);
+        let h = self.height.to_user(&params);
 
         draw_ctx.draw_image(
             &surface,

@@ -13,7 +13,6 @@ use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
-use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::viewbox::*;
 use crate::xml::Attributes;
@@ -140,18 +139,18 @@ impl Svg {
         (w, h)
     }
 
-    fn get_viewport(&self, values: &ComputedValues, params: &ViewParams, outermost: bool) -> Rect {
+    fn get_viewport(&self, params: &NormalizeParams, outermost: bool) -> Rect {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let (nx, ny) = if outermost {
             (0.0, 0.0)
         } else {
             let (x, y) = self.get_unnormalized_offset();
-            (x.normalize(values, &params), y.normalize(values, &params))
+            (x.to_user(params), y.to_user(params))
         };
 
         let (w, h) = self.get_unnormalized_size();
-        let (nw, nh) = (w.normalize(values, &params), h.normalize(values, &params));
+        let (nw, nh) = (w.to_user(params), h.to_user(params));
 
         Rect::new(nx, ny, nx + nw, ny + nh)
     }
@@ -164,7 +163,8 @@ impl Svg {
     ) -> Option<ViewParams> {
         let values = cascaded.get();
 
-        let params = draw_ctx.get_view_params();
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(values, &view_params);
 
         let has_parent = node.parent().is_some();
 
@@ -174,7 +174,7 @@ impl Svg {
             None
         };
 
-        let svg_viewport = self.get_viewport(values, &params, !has_parent);
+        let svg_viewport = self.get_viewport(&params, !has_parent);
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
@@ -249,11 +249,11 @@ pub struct Use {
 }
 
 impl Use {
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
-        let x = self.x.normalize(values, &params);
-        let y = self.y.normalize(values, &params);
-        let w = self.width.normalize(values, &params);
-        let h = self.height.normalize(values, &params);
+    fn get_rect(&self, params: &NormalizeParams) -> Rect {
+        let x = self.x.to_user(params);
+        let y = self.y.to_user(params);
+        let w = self.width.to_user(params);
+        let h = self.height.to_user(params);
 
         Rect::new(x, y, x + w, y + h)
     }
@@ -302,7 +302,12 @@ impl Draw for Use {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(link) = self.link.as_ref() {
-            draw_ctx.draw_from_use_node(node, acquired_nodes, cascaded, link, clipping)
+            let values = cascaded.get();
+            let view_params = draw_ctx.get_view_params();
+            let params = NormalizeParams::new(values, &view_params);
+            let rect = self.get_rect(&params);
+
+            draw_ctx.draw_from_use_node(node, acquired_nodes, values, rect, link, clipping)
         } else {
             Ok(draw_ctx.empty_bbox())
         }
@@ -409,11 +414,11 @@ impl Mask {
         CoordUnits::from(self.content_units)
     }
 
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
-        let x = self.x.normalize(&values, &params);
-        let y = self.y.normalize(&values, &params);
-        let w = self.width.normalize(&values, &params);
-        let h = self.height.normalize(&values, &params);
+    pub fn get_rect(&self, params: &NormalizeParams) -> Rect {
+        let x = self.x.to_user(params);
+        let y = self.y.to_user(params);
+        let w = self.width.to_user(params);
+        let h = self.height.to_user(params);
 
         Rect::new(x, y, x + w, y + h)
     }

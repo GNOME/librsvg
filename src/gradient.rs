@@ -692,16 +692,17 @@ impl ResolvedGradient {
             return None;
         };
 
-        let params = draw_ctx.push_coord_units(units);
+        let view_params = draw_ctx.push_coord_units(units);
+        let params = NormalizeParams::new(values, &view_params);
 
         let transform = transform.pre_transform(&self.transform).invert()?;
 
         let variant = match self.variant {
             ResolvedGradientVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
-                x1: x1.normalize(values, &params),
-                y1: y1.normalize(values, &params),
-                x2: x2.normalize(values, &params),
-                y2: y2.normalize(values, &params),
+                x1: x1.to_user(&params),
+                y1: y1.to_user(&params),
+                x2: x2.to_user(&params),
+                y2: y2.to_user(&params),
             },
 
             ResolvedGradientVariant::Radial {
@@ -712,12 +713,12 @@ impl ResolvedGradient {
                 fy,
                 fr,
             } => GradientVariant::Radial {
-                cx: cx.normalize(values, &params),
-                cy: cy.normalize(values, &params),
-                r: r.normalize(values, &params),
-                fx: fx.normalize(values, &params),
-                fy: fy.normalize(values, &params),
-                fr: fr.normalize(values, &params),
+                cx: cx.to_user(&params),
+                cy: cy.to_user(&params),
+                r: r.to_user(&params),
+                fx: fx.to_user(&params),
+                fy: fy.to_user(&params),
+                fr: fr.to_user(&params),
             },
         };
 

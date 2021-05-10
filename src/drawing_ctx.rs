@@ -20,6 +20,7 @@ use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
+use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintServer, UserSpacePaintSource};
@@ -396,8 +397,9 @@ impl DrawingCtx {
 
     /// Pushes a viewport size for normalizing `Length` values.
     ///
-    /// You should pass the returned `ViewParams` to all subsequent `CssLength.normalize()`
-    /// calls that correspond to this viewport.
+    /// With the returned `ViewParams`, plus a `ComputedValues`, you can create a
+    /// `NormalizeParams` that can be used with calls to `CssLength.to_user()` that
+    /// correspond to this viewport.
     ///
     /// The viewport will stay in place, and will be the one returned by
     /// `get_view_params()`, until the returned `ViewParams` is dropped.
@@ -523,8 +525,9 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let params = self.push_coord_units(mask_units);
-            mask.get_rect(&values, &params)
+            let view_params = self.push_coord_units(mask_units);
+            let params = NormalizeParams::new(values, &view_params);
+            mask.get_rect(&params)
         };
 
         let mask_transform = mask_node
@@ -1132,23 +1135,21 @@ impl DrawingCtx {
     }
 
     fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
-        let params = self.get_view_params();
+        let view_params = self.get_view_params();
+        let params = NormalizeParams::new(values, &view_params);
 
-        cr.set_line_width(values.stroke_width().0.normalize(values, &params));
+        cr.set_line_width(values.stroke_width().0.to_user(&params));
         cr.set_miter_limit(values.stroke_miterlimit().0);
         cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap()));
         cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join()));
 
         if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray() {
-            let normalized_dashes: Vec<f64> = dashes
-                .iter()
-                .map(|l| l.normalize(values, &params))
-                .collect();
+            let normalized_dashes: Vec<f64> = dashes.iter().map(|l| l.to_user(&params)).collect();
 
             let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
 
             if total_length > 0.0 {
-                let offset = values.stroke_dashoffset().0.normalize(values, &params);
+                let offset = values.stroke_dashoffset().0.to_user(&params);
                 cr.set_dash(&normalized_dashes, offset);
             } else {
                 cr.set_dash(&[], 0.0);
@@ -1236,7 +1237,7 @@ impl DrawingCtx {
             let mut bounding_box: Option<BoundingBox> = None;
             path_helper.unset();
 
-            let params = dc.get_view_params();
+            let view_params = dc.get_view_params();
 
             for &target in &values.paint_order().targets {
                 // fill and stroke operations will preserve the path.
@@ -1245,7 +1246,7 @@ impl DrawingCtx {
                     PaintTarget::Fill | PaintTarget::Stroke => {
                         path_helper.set()?;
                         let bbox = bounding_box.get_or_insert_with(|| {
-                            compute_stroke_and_fill_box(&cr, &values, &params)
+                            compute_stroke_and_fill_box(&cr, &values, &view_params)
                         });
 
                         if values.is_visible() {
@@ -1544,7 +1545,8 @@ impl DrawingCtx {
         &mut self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        cascaded: &CascadedValues<'_>,
+        values: &ComputedValues,
+        use_rect: Rect,
         link: &NodeId,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1587,10 +1589,6 @@ impl DrawingCtx {
                 return Ok(self.empty_bbox());
             }
         };
-
-        let values = cascaded.get();
-        let params = self.get_view_params();
-        let use_rect = borrow_element_as!(node, Use).get_rect(values, &params);
 
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -1726,7 +1724,7 @@ fn get_clip_in_user_and_object_space(
 fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     values: &ComputedValues,
-    params: &ViewParams,
+    view_params: &ViewParams,
 ) -> BoundingBox {
     let affine = Transform::from(cr.get_matrix());
 
@@ -1763,7 +1761,10 @@ fn compute_stroke_and_fill_box(
     // So, see if the stroke width is 0 and just not include the stroke in the
     // bounding box if so.
 
-    let stroke_width = values.stroke_width().0.normalize(values, &params);
+    let stroke_width = values
+        .stroke_width()
+        .0
+        .to_user(&NormalizeParams::new(values, view_params));
 
     if !stroke_width.approx_eq_cairo(0.0) && values.stroke().0 != PaintServer::None {
         let (x0, y0, x1, y1) = cr.stroke_extents();

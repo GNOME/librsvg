@@ -16,7 +16,6 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
-use crate::properties::ComputedValues;
 use crate::xml::Attributes;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -37,7 +36,7 @@ impl Shape {
 }
 
 trait BasicShape {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape;
+    fn make_shape(&self, params: &NormalizeParams) -> Shape;
 }
 
 macro_rules! impl_draw {
@@ -52,7 +51,9 @@ macro_rules! impl_draw {
                 clipping: bool,
             ) -> Result<BoundingBox, RenderingError> {
                 let values = cascaded.get();
-                let shape = self.make_shape(values, draw_ctx);
+                let view_params = draw_ctx.get_view_params();
+                let params = NormalizeParams::new(values, &view_params);
+                let shape = self.make_shape(&params);
                 draw_ctx.draw_shape(&shape, node, acquired_nodes, values, clipping)
             }
         }
@@ -142,7 +143,7 @@ impl SetAttributes for Path {
 }
 
 impl BasicShape for Path {
-    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
+    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
         Shape::new(self.path.clone(), Markers::Yes)
     }
 }
@@ -223,7 +224,7 @@ impl SetAttributes for Polygon {
 }
 
 impl BasicShape for Polygon {
-    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
+    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
         Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
     }
 }
@@ -248,7 +249,7 @@ impl SetAttributes for Polyline {
 }
 
 impl BasicShape for Polyline {
-    fn make_shape(&self, _values: &ComputedValues, _draw_ctx: &DrawingCtx) -> Shape {
+    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
         Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
     }
 }
@@ -280,15 +281,13 @@ impl SetAttributes for Line {
 }
 
 impl BasicShape for Line {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> Shape {
         let mut builder = PathBuilder::default();
 
-        let params = draw_ctx.get_view_params();
-
-        let x1 = self.x1.normalize(values, &params);
-        let y1 = self.y1.normalize(values, &params);
-        let x2 = self.x2.normalize(values, &params);
-        let y2 = self.y2.normalize(values, &params);
+        let x1 = self.x1.to_user(params);
+        let y1 = self.y1.to_user(params);
+        let x2 = self.x2.to_user(params);
+        let y2 = self.y2.to_user(params);
 
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
@@ -331,16 +330,14 @@ impl SetAttributes for Rect {
 
 impl BasicShape for Rect {
     #[allow(clippy::many_single_char_names)]
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
-        let params = draw_ctx.get_view_params();
+    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+        let x = self.x.to_user(params);
+        let y = self.y.to_user(params);
+        let w = self.width.to_user(params);
+        let h = self.height.to_user(params);
 
-        let x = self.x.normalize(values, &params);
-        let y = self.y.normalize(values, &params);
-        let w = self.width.normalize(values, &params);
-        let h = self.height.normalize(values, &params);
-
-        let specified_rx = self.rx.map(|l| l.normalize(values, &params));
-        let specified_ry = self.ry.map(|l| l.normalize(values, &params));
+        let specified_rx = self.rx.map(|l| l.to_user(params));
+        let specified_ry = self.ry.map(|l| l.to_user(params));
 
         fn nonnegative_or_none(l: f64) -> Option<f64> {
             if l < 0.0 {
@@ -537,12 +534,10 @@ impl SetAttributes for Circle {
 }
 
 impl BasicShape for Circle {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
-        let params = draw_ctx.get_view_params();
-
-        let cx = self.cx.normalize(values, &params);
-        let cy = self.cy.normalize(values, &params);
-        let r = self.r.normalize(values, &params);
+    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+        let cx = self.cx.to_user(params);
+        let cy = self.cy.to_user(params);
+        let r = self.r.to_user(params);
 
         Shape::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
     }
@@ -575,13 +570,11 @@ impl SetAttributes for Ellipse {
 }
 
 impl BasicShape for Ellipse {
-    fn make_shape(&self, values: &ComputedValues, draw_ctx: &DrawingCtx) -> Shape {
-        let params = draw_ctx.get_view_params();
-
-        let cx = self.cx.normalize(values, &params);
-        let cy = self.cy.normalize(values, &params);
-        let rx = self.rx.normalize(values, &params);
-        let ry = self.ry.normalize(values, &params);
+    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+        let cx = self.cx.to_user(params);
+        let cy = self.cy.to_user(params);
+        let rx = self.rx.to_user(params);
+        let ry = self.ry.to_user(params);
 
         Shape::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
     }
