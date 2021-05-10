@@ -371,18 +371,6 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
         }
     }
 
-    /// Normalizes a specified length into a used value.
-    ///
-    /// Lengths may come with non-pixel units, and when rendering, they need to be normalized
-    /// to pixels based on the current viewport (e.g. for lengths with percent units), and
-    /// based on the current element's set of `ComputedValues` (e.g. for lengths with `Em`
-    /// units that need to be resolved against the current font size).
-    ///
-    /// Those parameters can be obtained with `NormalizeParams::new()`.
-    pub fn normalize(&self, values: &ComputedValues, params: &ViewParams) -> f64 {
-        self.to_user(&NormalizeParams::new(values, params))
-    }
-
     /// Convert a Length with units into user-space coordinates.
     ///
     /// Lengths may come with non-pixel units, and when rendering, they need to be normalized
