@@ -13,7 +13,6 @@ use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
-use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::viewbox::*;
 use crate::xml::Attributes;
@@ -415,11 +414,11 @@ impl Mask {
         CoordUnits::from(self.content_units)
     }
 
-    pub fn get_rect(&self, values: &ComputedValues, params: &ViewParams) -> Rect {
-        let x = self.x.normalize(&values, &params);
-        let y = self.y.normalize(&values, &params);
-        let w = self.width.normalize(&values, &params);
-        let h = self.height.normalize(&values, &params);
+    pub fn get_rect(&self, params: &NormalizeParams) -> Rect {
+        let x = self.x.to_user(params);
+        let y = self.y.to_user(params);
+        let w = self.width.to_user(params);
+        let h = self.height.to_user(params);
 
         Rect::new(x, y, x + w, y + h)
     }

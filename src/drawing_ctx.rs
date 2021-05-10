@@ -525,8 +525,9 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let params = self.push_coord_units(mask_units);
-            mask.get_rect(&values, &params)
+            let view_params = self.push_coord_units(mask_units);
+            let params = NormalizeParams::new(values, &view_params);
+            mask.get_rect(&params)
         };
 
         let mask_transform = mask_node
