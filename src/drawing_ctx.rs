@@ -848,7 +848,7 @@ impl DrawingCtx {
     }
 
     /// Run the drawing function with the specified opacity
-    pub fn with_alpha(
+    fn with_alpha(
         &mut self,
         opacity: UnitInterval,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
