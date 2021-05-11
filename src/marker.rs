@@ -159,16 +159,15 @@ impl Marker {
             )
         };
 
-        draw_ctx.with_saved_transform(&transform, &mut |dc| {
-            dc.with_discrete_layer(
-                node,
-                acquired_nodes,
-                values,
-                clipping,
-                clip,
-                &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
-            )
-        })
+        draw_ctx.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            clip,
+            transform,
+            &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
+        )
     }
 }
 

@@ -578,6 +578,7 @@ impl DrawingCtx {
                 values,
                 false,
                 None,
+                Transform::identity(),
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
             );
 
@@ -600,12 +601,17 @@ impl DrawingCtx {
         values: &ComputedValues,
         clipping: bool,
         clip_rect: Option<Rect>,
+        transform: Transform,
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
-        if clipping {
+        let orig_transform = self.get_transform();
+
+        self.cr.transform(transform.into());
+
+        let res = if clipping {
             draw_fn(acquired_nodes, self)
         } else {
             let saved_cr = SavedCr::new(self);
@@ -793,34 +799,7 @@ impl DrawingCtx {
             } else {
                 draw_fn(acquired_nodes, saved_cr.draw_ctx)
             }
-        }
-    }
-
-    fn initial_transform_with_offset(&self) -> Transform {
-        let rect = self.toplevel_viewport();
-
-        self.initial_viewport
-            .transform
-            .pre_translate(rect.x0, rect.y0)
-    }
-
-    /// Saves the current transform, applies a new transform, runs the
-    /// draw_fn, and restores the original transform
-    ///
-    /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
-    /// pair, but more importantly, it does not reset the whole
-    /// graphics state, i.e. it leaves a clipping path in place if it
-    /// was set by the `draw_fn`.
-    pub fn with_saved_transform(
-        &mut self,
-        transform: &Transform,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
-    ) -> Result<BoundingBox, RenderingError> {
-        let orig_transform = self.get_transform();
-
-        self.cr.transform((*transform).into());
-
-        let res = draw_fn(self);
+        };
 
         self.cr.set_matrix(orig_transform.into());
 
@@ -831,6 +810,14 @@ impl DrawingCtx {
         } else {
             res
         }
+    }
+
+    fn initial_transform_with_offset(&self) -> Transform {
+        let rect = self.toplevel_viewport();
+
+        self.initial_viewport
+            .transform
+            .pre_translate(rect.x0, rect.y0)
     }
 
     /// Run the drawing function with the specified opacity
@@ -1027,6 +1014,7 @@ impl DrawingCtx {
                         pattern_values,
                         false,
                         None,
+                        Transform::identity(),
                         &mut |an, dc| {
                             pattern.node_with_children.draw_children(
                                 an,
@@ -1206,6 +1194,7 @@ impl DrawingCtx {
             values,
             clipping,
             None,
+            node.borrow_element().get_transform(),
             &mut |an, dc| {
                 let cr = dc.cr.clone();
                 let transform = dc.get_transform();
@@ -1314,6 +1303,7 @@ impl DrawingCtx {
             values,
             clipping,
             None,
+            node.borrow_element().get_transform(),
             &mut |_an, dc| {
                 let saved_cr = SavedCr::new(dc);
 
@@ -1597,7 +1587,12 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
-        if is_element_of_type!(child, Symbol) {
+        let orig_transform = self.get_transform();
+
+        self.cr
+            .transform(node.borrow_element().get_transform().into());
+
+        let res = if is_element_of_type!(child, Symbol) {
             // if the <use> references a <symbol>, it gets handled specially
 
             let elt = child.borrow_element();
@@ -1619,6 +1614,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
+                Transform::identity(),
                 &mut |an, dc| {
                     let _params = dc.push_new_viewport(
                         symbol.get_viewbox(),
@@ -1647,6 +1643,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
+                Transform::identity(),
                 &mut |an, dc| {
                     child.draw(
                         an,
@@ -1656,6 +1653,16 @@ impl DrawingCtx {
                     )
                 },
             )
+        };
+
+        self.cr.set_matrix(orig_transform.into());
+
+        if let Ok(bbox) = res {
+            let mut res_bbox = BoundingBox::new().with_transform(orig_transform);
+            res_bbox.insert(&bbox);
+            Ok(res_bbox)
+        } else {
+            res
         }
     }
 }

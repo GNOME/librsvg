@@ -39,6 +39,7 @@ impl Draw for Group {
             values,
             clipping,
             None,
+            node.borrow_element().get_transform(),
             &mut |an, dc| node.draw_children(an, cascaded, dc, clipping),
         )
     }
@@ -77,6 +78,7 @@ impl Draw for Switch {
             values,
             clipping,
             None,
+            node.borrow_element().get_transform(),
             &mut |an, dc| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
@@ -251,6 +253,7 @@ impl Draw for Svg {
             values,
             clipping,
             None,
+            node.borrow_element().get_transform(),
             &mut |an, dc| {
                 let _params = self.push_viewport(node, cascaded, dc);
                 node.draw_children(an, cascaded, dc, clipping)
@@ -499,6 +502,7 @@ impl Draw for Link {
             values,
             clipping,
             None,
+            node.borrow_element().get_transform(),
             &mut |an, dc| match self.link.as_ref() {
                 Some(l) if !l.is_empty() => {
                     dc.with_link_tag(l, &mut |dc| node.draw_children(an, &cascaded, dc, clipping))

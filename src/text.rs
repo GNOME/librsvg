@@ -491,36 +491,37 @@ impl Draw for Text {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
-        let mut x = self.x.to_user(&params);
-        let mut y = self.y.to_user(&params);
-
-        let chunks = self.make_chunks(node, acquired_nodes, cascaded, draw_ctx, x, y);
-
-        let mut measured_chunks = Vec::new();
-        for chunk in &chunks {
-            measured_chunks.push(MeasuredChunk::from_chunk(chunk, draw_ctx));
-        }
-
-        let mut positioned_chunks = Vec::new();
-        for chunk in &measured_chunks {
-            let chunk_x = chunk.x.unwrap_or(x);
-            let chunk_y = chunk.y.unwrap_or(y);
-
-            let positioned = PositionedChunk::from_measured(&chunk, draw_ctx, chunk_x, chunk_y);
-
-            x = positioned.next_chunk_x;
-            y = positioned.next_chunk_y;
-
-            positioned_chunks.push(positioned);
-        }
-
         draw_ctx.with_discrete_layer(
             node,
             acquired_nodes,
             values,
             clipping,
             None,
+            node.borrow_element().get_transform(),
             &mut |an, dc| {
+                let mut x = self.x.to_user(&params);
+                let mut y = self.y.to_user(&params);
+
+                let chunks = self.make_chunks(node, an, cascaded, dc, x, y);
+
+                let mut measured_chunks = Vec::new();
+                for chunk in &chunks {
+                    measured_chunks.push(MeasuredChunk::from_chunk(chunk, dc));
+                }
+
+                let mut positioned_chunks = Vec::new();
+                for chunk in &measured_chunks {
+                    let chunk_x = chunk.x.unwrap_or(x);
+                    let chunk_y = chunk.y.unwrap_or(y);
+
+                    let positioned = PositionedChunk::from_measured(&chunk, dc, chunk_x, chunk_y);
+
+                    x = positioned.next_chunk_x;
+                    y = positioned.next_chunk_y;
+
+                    positioned_chunks.push(positioned);
+                }
+
                 let mut bbox = dc.empty_bbox();
 
                 for chunk in &positioned_chunks {
