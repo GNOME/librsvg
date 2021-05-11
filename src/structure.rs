@@ -10,6 +10,7 @@ use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
+use crate::layout::StackingContext;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -33,13 +34,15 @@ impl Draw for Group {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
+        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+
         draw_ctx.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             None,
-            node.borrow_element().get_transform(),
             &mut |an, dc| node.draw_children(an, cascaded, dc, clipping),
         )
     }
@@ -72,13 +75,15 @@ impl Draw for Switch {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
+        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+
         draw_ctx.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             None,
-            node.borrow_element().get_transform(),
             &mut |an, dc| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
@@ -247,13 +252,15 @@ impl Draw for Svg {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
+        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+
         draw_ctx.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             None,
-            node.borrow_element().get_transform(),
             &mut |an, dc| {
                 let _params = self.push_viewport(node, cascaded, dc);
                 node.draw_children(an, cascaded, dc, clipping)
@@ -496,13 +503,15 @@ impl Draw for Link {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
+        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+
         draw_ctx.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             None,
-            node.borrow_element().get_transform(),
             &mut |an, dc| match self.link.as_ref() {
                 Some(l) if !l.is_empty() => {
                     dc.with_link_tag(l, &mut |dc| node.draw_children(an, &cascaded, dc, clipping))

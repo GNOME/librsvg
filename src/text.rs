@@ -10,6 +10,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::font_props::FontWeight;
+use crate::layout::StackingContext;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -491,13 +492,15 @@ impl Draw for Text {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
+        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+
         draw_ctx.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             None,
-            node.borrow_element().get_transform(),
             &mut |an, dc| {
                 let mut x = self.x.to_user(&params);
                 let mut y = self.y.to_user(&params);

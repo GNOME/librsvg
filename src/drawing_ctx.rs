@@ -20,6 +20,7 @@ use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
+use crate::layout::StackingContext;
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -572,13 +573,15 @@ impl DrawingCtx {
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
+            let stacking_ctx = StackingContext::new(Transform::identity());
+
             let res = mask_draw_ctx.with_discrete_layer(
+                &stacking_ctx,
                 mask_node,
                 acquired_nodes,
                 values,
                 false,
                 None,
-                Transform::identity(),
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
             );
 
@@ -596,12 +599,12 @@ impl DrawingCtx {
 
     pub fn with_discrete_layer(
         &mut self,
+        stacking_ctx: &StackingContext,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
         clip_rect: Option<Rect>,
-        transform: Transform,
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
@@ -609,7 +612,7 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, RenderingError> {
         let orig_transform = self.get_transform();
 
-        self.cr.transform(transform.into());
+        self.cr.transform(stacking_ctx.transform.into());
 
         let res = if clipping {
             draw_fn(acquired_nodes, self)
@@ -1008,13 +1011,16 @@ impl DrawingCtx {
                     let pattern_cascaded =
                         CascadedValues::new_from_node(&pattern.node_with_children);
                     let pattern_values = pattern_cascaded.get();
+
+                    let stacking_ctx = StackingContext::new(Transform::identity());
+
                     dc.with_discrete_layer(
+                        &stacking_ctx,
                         &pattern.node_with_children,
                         acquired_nodes,
                         pattern_values,
                         false,
                         None,
-                        Transform::identity(),
                         &mut |an, dc| {
                             pattern.node_with_children.draw_children(
                                 an,
@@ -1188,13 +1194,15 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
+        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+
         self.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             None,
-            node.borrow_element().get_transform(),
             &mut |an, dc| {
                 let cr = dc.cr.clone();
                 let transform = dc.get_transform();
@@ -1297,13 +1305,15 @@ impl DrawingCtx {
             None
         };
 
+        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+
         self.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             None,
-            node.borrow_element().get_transform(),
             &mut |_an, dc| {
                 let saved_cr = SavedCr::new(dc);
 
@@ -1608,13 +1618,15 @@ impl DrawingCtx {
                 None
             };
 
+            let stacking_ctx = StackingContext::new(Transform::identity());
+
             self.with_discrete_layer(
+                &stacking_ctx,
                 node,
                 acquired_nodes,
                 values,
                 clipping,
                 None,
-                Transform::identity(),
                 &mut |an, dc| {
                     let _params = dc.push_new_viewport(
                         symbol.get_viewbox(),
@@ -1634,13 +1646,15 @@ impl DrawingCtx {
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
+            let stacking_ctx = StackingContext::new(Transform::new_translate(use_rect.x0, use_rect.y0));
+
             self.with_discrete_layer(
+                &stacking_ctx,
                 node,
                 acquired_nodes,
                 values,
                 clipping,
                 None,
-                Transform::new_translate(use_rect.x0, use_rect.y0),
                 &mut |an, dc| {
                     child.draw(
                         an,

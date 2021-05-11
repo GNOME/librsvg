@@ -15,6 +15,7 @@ use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::iri::Iri;
+use crate::layout::StackingContext;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -159,13 +160,15 @@ impl Marker {
             )
         };
 
+        let stacking_ctx = StackingContext::new(transform);
+
         draw_ctx.with_discrete_layer(
+            &stacking_ctx,
             node,
             acquired_nodes,
             values,
             clipping,
             clip,
-            transform,
             &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
         )
     }
