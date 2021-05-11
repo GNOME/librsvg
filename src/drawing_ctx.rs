@@ -515,6 +515,17 @@ impl DrawingCtx {
             return Ok(None);
         }
 
+        let _mask_acquired = match acquired_nodes.acquire_ref(mask_node) {
+            Ok(n) => n,
+
+            Err(AcquireError::CircularReference(_)) => {
+                rsvg_log!("circular reference in element {}", mask_node);
+                return Ok(None);
+            }
+
+            _ => unreachable!(),
+        };
+
         let mask = borrow_element_as!(mask_node, Mask);
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
