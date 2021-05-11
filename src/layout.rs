@@ -4,7 +4,7 @@
 
 use crate::element::Element;
 use crate::properties::ComputedValues;
-use crate::property_defs::Opacity;
+use crate::property_defs::{Filter, Opacity};
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
@@ -24,6 +24,7 @@ use crate::unit_interval::UnitInterval;
 pub struct StackingContext {
     pub transform: Transform,
     pub opacity: Opacity,
+    pub filter: Filter,
 }
 
 impl StackingContext {
@@ -33,16 +34,26 @@ impl StackingContext {
         values: &ComputedValues,
     ) -> StackingContext {
         let opacity;
+        let filter;
 
         match *element {
-            // The opacity property does not apply to masks, so we pass 1.0 here.
-            //
             // "The opacity, filter and display properties do not apply to the mask element"
             // https://drafts.fxtf.org/css-masking-1/#MaskElement
-            Element::Mask(_) => opacity = Opacity(UnitInterval::clamp(1.0)),
-            _ => opacity = values.opacity(),
+            Element::Mask(_) => {
+                opacity = Opacity(UnitInterval::clamp(1.0));
+                filter = Filter::None;
+            }
+
+            _ => {
+                opacity = values.opacity();
+                filter = values.filter();
+            }
         }
 
-        StackingContext { transform, opacity }
+        StackingContext {
+            transform,
+            opacity,
+            filter,
+        }
     }
 }

@@ -624,15 +624,6 @@ impl DrawingCtx {
             let clip_uri = clip_path_value.0.get();
             let mask = mask_value.0.get();
 
-            let filters = if node.is_element() {
-                match *node.borrow_element() {
-                    Element::Mask(_) => Filter::None,
-                    _ => values.filter(),
-                }
-            } else {
-                values.filter()
-            };
-
             let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
             let affine_at_start = saved_cr.draw_ctx.get_transform();
@@ -653,7 +644,7 @@ impl DrawingCtx {
 
             let is_opaque = approx_eq!(f64, opacity, 1.0);
             let needs_temporary_surface = !(is_opaque
-                && filters == Filter::None
+                && stacking_ctx.filter == Filter::None
                 && mask.is_none()
                 && values.mix_blend_mode() == MixBlendMode::Normal
                 && clip_in_object_space.is_none());
@@ -669,7 +660,7 @@ impl DrawingCtx {
 
                 // Create temporary surface and its cr
 
-                let cr = match filters {
+                let cr = match stacking_ctx.filter {
                     Filter::None => cairo::Context::new(
                         &saved_cr
                             .draw_ctx
@@ -708,7 +699,7 @@ impl DrawingCtx {
                     (
                         temporary_draw_ctx.run_filters(
                             surface_to_filter,
-                            &filters,
+                            &stacking_ctx.filter,
                             acquired_nodes,
                             &node_name,
                             values,
