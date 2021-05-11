@@ -514,18 +514,25 @@ impl Draw for Text {
             positioned_chunks.push(positioned);
         }
 
-        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            let mut bbox = dc.empty_bbox();
+        draw_ctx.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc| {
+                let mut bbox = dc.empty_bbox();
 
-            for chunk in &positioned_chunks {
-                for span in &chunk.spans {
-                    let span_bbox = span.draw(an, dc, clipping)?;
-                    bbox.insert(&span_bbox);
+                for chunk in &positioned_chunks {
+                    for span in &chunk.spans {
+                        let span_bbox = span.draw(an, dc, clipping)?;
+                        bbox.insert(&span_bbox);
+                    }
                 }
-            }
 
-            Ok(bbox)
-        })
+                Ok(bbox)
+            },
+        )
     }
 }
 

@@ -577,6 +577,7 @@ impl DrawingCtx {
                 acquired_nodes,
                 values,
                 false,
+                None,
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
             );
 
@@ -598,6 +599,7 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
+        clip_rect: Option<Rect>,
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
@@ -629,6 +631,10 @@ impl DrawingCtx {
 
             let (clip_in_user_space, clip_in_object_space) =
                 get_clip_in_user_and_object_space(acquired_nodes, clip_uri);
+
+            if let Some(rect) = clip_rect {
+                clip_to_rectangle(&saved_cr.draw_ctx.cr, &rect);
+            }
 
             // Here we are clipping in user space, so the bbox doesn't matter
             saved_cr.draw_ctx.clip_to_node(
@@ -827,26 +833,6 @@ impl DrawingCtx {
         }
     }
 
-    /// if a rectangle is specified, clips and runs the draw_fn, otherwise simply run the draw_fn
-    pub fn with_clip_rect(
-        &mut self,
-        clip: Option<Rect>,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
-    ) -> Result<BoundingBox, RenderingError> {
-        if let Some(rect) = clip {
-            self.cr.save();
-            clip_to_rectangle(&self.cr, &rect);
-        }
-
-        let res = draw_fn(self);
-
-        if clip.is_some() {
-            self.cr.restore();
-        }
-
-        res
-    }
-
     /// Run the drawing function with the specified opacity
     fn with_alpha(
         &mut self,
@@ -1040,6 +1026,7 @@ impl DrawingCtx {
                         acquired_nodes,
                         pattern_values,
                         false,
+                        None,
                         &mut |an, dc| {
                             pattern.node_with_children.draw_children(
                                 an,
@@ -1213,59 +1200,66 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            let cr = dc.cr.clone();
-            let transform = dc.get_transform();
-            let mut path_helper =
-                PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
+        self.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc| {
+                let cr = dc.cr.clone();
+                let transform = dc.get_transform();
+                let mut path_helper =
+                    PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
 
-            if clipping {
-                if values.is_visible() {
-                    cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
-                    path_helper.set()?;
-                }
-                return Ok(dc.empty_bbox());
-            }
-
-            cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
-            dc.setup_cr_for_stroke(&cr, values);
-
-            cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
-
-            let mut bounding_box: Option<BoundingBox> = None;
-            path_helper.unset();
-
-            let view_params = dc.get_view_params();
-
-            for &target in &values.paint_order().targets {
-                // fill and stroke operations will preserve the path.
-                // markers operation will clear the path.
-                match target {
-                    PaintTarget::Fill | PaintTarget::Stroke => {
+                if clipping {
+                    if values.is_visible() {
+                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
                         path_helper.set()?;
-                        let bbox = bounding_box.get_or_insert_with(|| {
-                            compute_stroke_and_fill_box(&cr, &values, &view_params)
-                        });
+                    }
+                    return Ok(dc.empty_bbox());
+                }
 
-                        if values.is_visible() {
-                            if target == PaintTarget::Stroke {
-                                dc.stroke(&cr, an, values, &bbox)?;
-                            } else {
-                                dc.fill(&cr, an, values, &bbox)?;
+                cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
+                dc.setup_cr_for_stroke(&cr, values);
+
+                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
+
+                let mut bounding_box: Option<BoundingBox> = None;
+                path_helper.unset();
+
+                let view_params = dc.get_view_params();
+
+                for &target in &values.paint_order().targets {
+                    // fill and stroke operations will preserve the path.
+                    // markers operation will clear the path.
+                    match target {
+                        PaintTarget::Fill | PaintTarget::Stroke => {
+                            path_helper.set()?;
+                            let bbox = bounding_box.get_or_insert_with(|| {
+                                compute_stroke_and_fill_box(&cr, &values, &view_params)
+                            });
+
+                            if values.is_visible() {
+                                if target == PaintTarget::Stroke {
+                                    dc.stroke(&cr, an, values, &bbox)?;
+                                } else {
+                                    dc.fill(&cr, an, values, &bbox)?;
+                                }
                             }
                         }
+                        PaintTarget::Markers if shape.markers == Markers::Yes => {
+                            path_helper.unset();
+                            marker::render_markers_for_path(&shape.path, dc, an, values, clipping)?;
+                        }
+                        _ => {}
                     }
-                    PaintTarget::Markers if shape.markers == Markers::Yes => {
-                        path_helper.unset();
-                        marker::render_markers_for_path(&shape.path, dc, an, values, clipping)?;
-                    }
-                    _ => {}
                 }
-            }
 
-            path_helper.unset();
-            Ok(bounding_box.unwrap())
-        })
+                path_helper.unset();
+                Ok(bounding_box.unwrap())
+            },
+        )
     }
 
     fn paint_surface(&mut self, surface: &SharedImageSurface, width: f64, height: f64) {
@@ -1314,25 +1308,32 @@ impl DrawingCtx {
             None
         };
 
-        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |_an, dc| {
-            let saved_cr = SavedCr::new(dc);
+        self.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |_an, dc| {
+                let saved_cr = SavedCr::new(dc);
 
-            if let Some(_params) =
-                saved_cr
-                    .draw_ctx
-                    .push_new_viewport(Some(vbox), rect, aspect, clip_mode)
-            {
-                if values.is_visible() {
+                if let Some(_params) =
                     saved_cr
                         .draw_ctx
-                        .paint_surface(surface, image_width, image_height);
+                        .push_new_viewport(Some(vbox), rect, aspect, clip_mode)
+                {
+                    if values.is_visible() {
+                        saved_cr
+                            .draw_ctx
+                            .paint_surface(surface, image_width, image_height);
+                    }
                 }
-            }
 
-            // The bounding box for <image> is decided by the values of x, y, w, h
-            // and not by the final computed image bounds.
-            Ok(saved_cr.draw_ctx.empty_bbox().with_rect(rect))
-        })
+                // The bounding box for <image> is decided by the values of x, y, w, h
+                // and not by the final computed image bounds.
+                Ok(saved_cr.draw_ctx.empty_bbox().with_rect(rect))
+            },
+        )
     }
 
     pub fn draw_text(
@@ -1612,35 +1613,49 @@ impl DrawingCtx {
                 None
             };
 
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                let _params = dc.push_new_viewport(
-                    symbol.get_viewbox(),
-                    use_rect,
-                    symbol.get_preserve_aspect_ratio(),
-                    clip_mode,
-                );
+            self.with_discrete_layer(
+                node,
+                acquired_nodes,
+                values,
+                clipping,
+                None,
+                &mut |an, dc| {
+                    let _params = dc.push_new_viewport(
+                        symbol.get_viewbox(),
+                        use_rect,
+                        symbol.get_preserve_aspect_ratio(),
+                        clip_mode,
+                    );
 
-                child.draw_children(
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    dc,
-                    clipping,
-                )
-            })
+                    child.draw_children(
+                        an,
+                        &CascadedValues::new_from_values(&child, values),
+                        dc,
+                        clipping,
+                    )
+                },
+            )
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
             let cr = self.cr.clone();
             cr.translate(use_rect.x0, use_rect.y0);
 
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                child.draw(
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    dc,
-                    clipping,
-                )
-            })
+            self.with_discrete_layer(
+                node,
+                acquired_nodes,
+                values,
+                clipping,
+                None,
+                &mut |an, dc| {
+                    child.draw(
+                        an,
+                        &CascadedValues::new_from_values(&child, values),
+                        dc,
+                        clipping,
+                    )
+                },
+            )
         }
     }
 }

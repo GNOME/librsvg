@@ -33,9 +33,14 @@ impl Draw for Group {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            node.draw_children(an, cascaded, dc, clipping)
-        })
+        draw_ctx.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc| node.draw_children(an, cascaded, dc, clipping),
+        )
     }
 }
 
@@ -66,16 +71,23 @@ impl Draw for Switch {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
-                let elt = c.borrow_element();
-                elt.get_cond() && !elt.is_in_error()
-            }) {
-                child.draw(an, &CascadedValues::new(cascaded, &child), dc, clipping)
-            } else {
-                Ok(dc.empty_bbox())
-            }
-        })
+        draw_ctx.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc| {
+                if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
+                    let elt = c.borrow_element();
+                    elt.get_cond() && !elt.is_in_error()
+                }) {
+                    child.draw(an, &CascadedValues::new(cascaded, &child), dc, clipping)
+                } else {
+                    Ok(dc.empty_bbox())
+                }
+            },
+        )
     }
 }
 
@@ -233,10 +245,17 @@ impl Draw for Svg {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            let _params = self.push_viewport(node, cascaded, dc);
-            node.draw_children(an, cascaded, dc, clipping)
-        })
+        draw_ctx.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc| {
+                let _params = self.push_viewport(node, cascaded, dc);
+                node.draw_children(an, cascaded, dc, clipping)
+            },
+        )
     }
 }
 
@@ -474,13 +493,18 @@ impl Draw for Link {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        draw_ctx.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            match self.link.as_ref() {
+        draw_ctx.with_discrete_layer(
+            node,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc| match self.link.as_ref() {
                 Some(l) if !l.is_empty() => {
                     dc.with_link_tag(l, &mut |dc| node.draw_children(an, &cascaded, dc, clipping))
                 }
                 _ => node.draw_children(an, &cascaded, dc, clipping),
-            }
-        })
+            },
+        )
     }
 }
