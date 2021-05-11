@@ -798,8 +798,8 @@ impl DrawingCtx {
             .pre_translate(rect.x0, rect.y0)
     }
 
-    /// Saves the current transform, applies a new transform if specified,
-    /// runs the draw_fn, and restores the original transform
+    /// Saves the current transform, applies a new transform, runs the
+    /// draw_fn, and restores the original transform
     ///
     /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
     /// pair, but more importantly, it does not reset the whole
@@ -807,14 +807,12 @@ impl DrawingCtx {
     /// was set by the `draw_fn`.
     pub fn with_saved_transform(
         &mut self,
-        transform: Option<Transform>,
+        transform: &Transform,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         let orig_transform = self.get_transform();
 
-        if let Some(t) = transform {
-            self.cr.transform(t.into());
-        }
+        self.cr.transform((*transform).into());
 
         let res = draw_fn(self);
 

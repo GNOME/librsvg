@@ -159,7 +159,7 @@ impl Marker {
             )
         };
 
-        draw_ctx.with_saved_transform(Some(transform), &mut |dc| {
+        draw_ctx.with_saved_transform(&transform, &mut |dc| {
             dc.with_clip_rect(clip, &mut |dc| {
                 dc.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
                     node.draw_children(an, &cascaded, dc, clipping)
