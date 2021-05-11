@@ -15,7 +15,6 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
-use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -34,7 +33,6 @@ use crate::property_defs::{
 };
 use crate::rect::Rect;
 use crate::shapes::{Markers, Shape};
-use crate::structure::Mask;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -506,7 +504,6 @@ impl DrawingCtx {
 
     fn generate_cairo_mask(
         &mut self,
-        mask: &Mask,
         mask_node: &Node,
         transform: Transform,
         bbox: &BoundingBox,
@@ -517,6 +514,8 @@ impl DrawingCtx {
             // bounding box, so there's nothing to mask!
             return Ok(None);
         }
+
+        let mask = borrow_element_as!(mask_node, Mask);
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
 
@@ -572,7 +571,8 @@ impl DrawingCtx {
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
-            let stacking_ctx = StackingContext::new(&mask_element, Transform::identity(), values);
+            let stacking_ctx =
+                StackingContext::new(acquired_nodes, &mask_element, Transform::identity(), values);
 
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
@@ -619,10 +619,8 @@ impl DrawingCtx {
             let saved_cr = SavedCr::new(self);
 
             let clip_path_value = values.clip_path();
-            let mask_value = values.mask();
 
             let clip_uri = clip_path_value.0.get();
-            let mask = mask_value.0.get();
 
             let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
@@ -645,7 +643,7 @@ impl DrawingCtx {
             let is_opaque = approx_eq!(f64, opacity, 1.0);
             let needs_temporary_surface = !(is_opaque
                 && stacking_ctx.filter == Filter::None
-                && mask.is_none()
+                && stacking_ctx.mask.is_none()
                 && values.mix_blend_mode() == MixBlendMode::Normal
                 && clip_in_object_space.is_none());
 
@@ -727,49 +725,24 @@ impl DrawingCtx {
 
                 // Mask
 
-                if let Some(mask_id) = mask {
-                    if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
-                        let mask_node = acquired.get();
-
-                        match *mask_node.borrow_element() {
-                            Element::Mask(ref m) => {
-                                res = res.and_then(|bbox| {
-                                    saved_cr
-                                        .draw_ctx
-                                        .generate_cairo_mask(
-                                            &m,
-                                            &mask_node,
-                                            affines.for_temporary_surface,
-                                            &bbox,
-                                            acquired_nodes,
-                                        )
-                                        .map(|mask_surf| {
-                                            if let Some(surf) = mask_surf {
-                                                saved_cr
-                                                    .draw_ctx
-                                                    .cr
-                                                    .set_matrix(affines.compositing.into());
-                                                saved_cr.draw_ctx.cr.mask_surface(&surf, 0.0, 0.0);
-                                            }
-                                        })
-                                        .map(|_: ()| bbox)
-                                });
-                            }
-                            _ => {
-                                rsvg_log!(
-                                    "element {} references \"{}\" which is not a mask",
-                                    node_name,
-                                    mask_id
-                                );
-                            }
-                        }
-                    } else {
-                        rsvg_log!(
-                            "element {} references nonexistent mask \"{}\"",
-                            node_name,
-                            mask_id
-                        );
-                    }
+                if let Some(ref mask_node) = stacking_ctx.mask {
+                    res = res.and_then(|bbox| {
+                        saved_cr
+                            .draw_ctx
+                            .generate_cairo_mask(
+                                mask_node,
+                                affines.for_temporary_surface,
+                                &bbox,
+                                acquired_nodes,
+                            )
+                            .map(|mask_surf| {
+                                if let Some(surf) = mask_surf {
+                                    saved_cr.draw_ctx.cr.set_matrix(affines.compositing.into());
+                                    saved_cr.draw_ctx.cr.mask_surface(&surf, 0.0, 0.0);
+                                }
+                            })
+                            .map(|_: ()| bbox)
+                    });
                 } else {
                     // No mask, so composite the temporary surface
 
@@ -1004,8 +977,12 @@ impl DrawingCtx {
 
                     let elt = pattern.node_with_children.borrow_element();
 
-                    let stacking_ctx =
-                        StackingContext::new(&elt, Transform::identity(), pattern_values);
+                    let stacking_ctx = StackingContext::new(
+                        acquired_nodes,
+                        &elt,
+                        Transform::identity(),
+                        pattern_values,
+                    );
 
                     dc.with_discrete_layer(
                         &stacking_ctx,
@@ -1188,7 +1165,7 @@ impl DrawingCtx {
         }
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
 
         self.with_discrete_layer(
             &stacking_ctx,
@@ -1301,7 +1278,7 @@ impl DrawingCtx {
 
         let elt = node.borrow_element();
 
-        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
 
         self.with_discrete_layer(
             &stacking_ctx,
@@ -1616,7 +1593,8 @@ impl DrawingCtx {
                 None
             };
 
-            let stacking_ctx = StackingContext::new(&use_element, Transform::identity(), values);
+            let stacking_ctx =
+                StackingContext::new(acquired_nodes, &use_element, Transform::identity(), values);
 
             self.with_discrete_layer(
                 &stacking_ctx,
@@ -1645,6 +1623,7 @@ impl DrawingCtx {
             // otherwise the referenced node is not a <symbol>; process it generically
 
             let stacking_ctx = StackingContext::new(
+                acquired_nodes,
                 &use_element,
                 Transform::new_translate(use_rect.x0, use_rect.y0),
                 values,

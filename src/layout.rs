@@ -2,7 +2,9 @@
 //!
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
+use crate::document::AcquiredNodes;
 use crate::element::Element;
+use crate::node::*;
 use crate::properties::ComputedValues;
 use crate::property_defs::{Filter, Opacity};
 use crate::transform::Transform;
@@ -25,10 +27,12 @@ pub struct StackingContext {
     pub transform: Transform,
     pub opacity: Opacity,
     pub filter: Filter,
+    pub mask: Option<Node>,
 }
 
 impl StackingContext {
     pub fn new(
+        acquired_nodes: &mut AcquiredNodes<'_>,
         element: &Element,
         transform: Transform,
         values: &ComputedValues,
@@ -50,10 +54,38 @@ impl StackingContext {
             }
         }
 
+        let mask = values.mask().0.get().and_then(|mask_id| {
+            if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
+                let node = acquired.get();
+                match *node.borrow_element() {
+                    Element::Mask(_) => Some(node.clone()),
+
+                    _ => {
+                        rsvg_log!(
+                            "element {} references \"{}\" which is not a mask",
+                            element,
+                            mask_id
+                        );
+
+                        None
+                    }
+                }
+            } else {
+                rsvg_log!(
+                    "element {} references nonexistent mask \"{}\"",
+                    element,
+                    mask_id
+                );
+
+                None
+            }
+        });
+
         StackingContext {
             transform,
             opacity,
             filter,
+            mask,
         }
     }
 }

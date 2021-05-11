@@ -35,7 +35,7 @@ impl Draw for Group {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -77,7 +77,7 @@ impl Draw for Switch {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -255,7 +255,7 @@ impl Draw for Svg {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -507,7 +507,7 @@ impl Draw for Link {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
