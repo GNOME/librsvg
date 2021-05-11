@@ -495,8 +495,8 @@ impl DrawingCtx {
 
             self.cr.set_matrix(orig_transform.into());
 
-            // Clipping paths do not contribute to bounding boxes (they should, but we
-            // need Real Computational Geometry(tm), so ignore the bbox from the clip path.
+            // Clipping paths do not contribute to bounding boxes, so ignore the bbox from
+            // the clip path.
             res.map(|_bbox| ())
         } else {
             Ok(())
