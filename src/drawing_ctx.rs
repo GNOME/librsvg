@@ -1634,16 +1634,13 @@ impl DrawingCtx {
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
-            let cr = self.cr.clone();
-            cr.translate(use_rect.x0, use_rect.y0);
-
             self.with_discrete_layer(
                 node,
                 acquired_nodes,
                 values,
                 clipping,
                 None,
-                Transform::identity(),
+                Transform::new_translate(use_rect.x0, use_rect.y0),
                 &mut |an, dc| {
                     child.draw(
                         an,
