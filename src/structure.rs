@@ -39,7 +39,6 @@ impl Draw for Group {
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
-            node,
             acquired_nodes,
             values,
             clipping,
@@ -81,7 +80,6 @@ impl Draw for Switch {
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
-            node,
             acquired_nodes,
             values,
             clipping,
@@ -259,7 +257,6 @@ impl Draw for Svg {
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
-            node,
             acquired_nodes,
             values,
             clipping,
@@ -511,7 +508,6 @@ impl Draw for Link {
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
-            node,
             acquired_nodes,
             values,
             clipping,

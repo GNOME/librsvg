@@ -24,6 +24,7 @@ use crate::unit_interval::UnitInterval;
 /// Here we store all the parameters that may lead to the decision to actually
 /// render an element as an isolated group.
 pub struct StackingContext {
+    pub element_name: String,
     pub transform: Transform,
     pub opacity: Opacity,
     pub filter: Filter,
@@ -37,6 +38,8 @@ impl StackingContext {
         transform: Transform,
         values: &ComputedValues,
     ) -> StackingContext {
+        let element_name = format!("{}", element);
+
         let opacity;
         let filter;
 
@@ -82,6 +85,7 @@ impl StackingContext {
         });
 
         StackingContext {
+            element_name,
             transform,
             opacity,
             filter,

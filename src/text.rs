@@ -498,7 +498,6 @@ impl Draw for Text {
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
-            node,
             acquired_nodes,
             values,
             clipping,

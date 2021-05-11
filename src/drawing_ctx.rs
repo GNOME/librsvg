@@ -576,7 +576,6 @@ impl DrawingCtx {
 
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
-                mask_node,
                 acquired_nodes,
                 values,
                 false,
@@ -599,7 +598,6 @@ impl DrawingCtx {
     pub fn with_discrete_layer(
         &mut self,
         stacking_ctx: &StackingContext,
-        node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
@@ -673,8 +671,6 @@ impl DrawingCtx {
 
                 cr.set_matrix(affines.for_temporary_surface.into());
 
-                let node_name = format!("{}", node);
-
                 let (source_surface, mut res, bbox) = {
                     let mut temporary_draw_ctx = saved_cr.draw_ctx.nested(cr);
 
@@ -699,7 +695,7 @@ impl DrawingCtx {
                             surface_to_filter,
                             &stacking_ctx.filter,
                             acquired_nodes,
-                            &node_name,
+                            &stacking_ctx.element_name,
                             values,
                             bbox,
                         )?,
@@ -986,7 +982,6 @@ impl DrawingCtx {
 
                     dc.with_discrete_layer(
                         &stacking_ctx,
-                        &pattern.node_with_children,
                         acquired_nodes,
                         pattern_values,
                         false,
@@ -1169,7 +1164,6 @@ impl DrawingCtx {
 
         self.with_discrete_layer(
             &stacking_ctx,
-            node,
             acquired_nodes,
             values,
             clipping,
@@ -1282,7 +1276,6 @@ impl DrawingCtx {
 
         self.with_discrete_layer(
             &stacking_ctx,
-            node,
             acquired_nodes,
             values,
             clipping,
@@ -1598,7 +1591,6 @@ impl DrawingCtx {
 
             self.with_discrete_layer(
                 &stacking_ctx,
-                node,
                 acquired_nodes,
                 values,
                 clipping,
@@ -1631,7 +1623,6 @@ impl DrawingCtx {
 
             self.with_discrete_layer(
                 &stacking_ctx,
-                node,
                 acquired_nodes,
                 values,
                 clipping,
