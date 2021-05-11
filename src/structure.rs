@@ -34,7 +34,8 @@ impl Draw for Group {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -75,7 +76,8 @@ impl Draw for Switch {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -252,7 +254,8 @@ impl Draw for Svg {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
 
-        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -503,7 +506,8 @@ impl Draw for Link {
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
-        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,

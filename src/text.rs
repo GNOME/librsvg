@@ -492,7 +492,9 @@ impl Draw for Text {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
-        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+        let elt = node.borrow_element();
+
+        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,

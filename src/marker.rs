@@ -160,7 +160,8 @@ impl Marker {
             )
         };
 
-        let stacking_ctx = StackingContext::new(transform);
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(&elt, transform, values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,

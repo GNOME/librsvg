@@ -531,10 +531,9 @@ impl DrawingCtx {
             mask.get_rect(&params)
         };
 
-        let mask_transform = mask_node
-            .borrow_element()
-            .get_transform()
-            .post_transform(&transform);
+        let mask_element = mask_node.borrow_element();
+
+        let mask_transform = mask_element.get_transform().post_transform(&transform);
 
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
@@ -573,7 +572,7 @@ impl DrawingCtx {
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
-            let stacking_ctx = StackingContext::new(Transform::identity());
+            let stacking_ctx = StackingContext::new(&mask_element, Transform::identity(), values);
 
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
@@ -634,7 +633,7 @@ impl DrawingCtx {
                 values.filter()
             };
 
-            let UnitInterval(opacity) = values.opacity().0;
+            let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
             let affine_at_start = saved_cr.draw_ctx.get_transform();
 
@@ -1012,7 +1011,10 @@ impl DrawingCtx {
                         CascadedValues::new_from_node(&pattern.node_with_children);
                     let pattern_values = pattern_cascaded.get();
 
-                    let stacking_ctx = StackingContext::new(Transform::identity());
+                    let elt = pattern.node_with_children.borrow_element();
+
+                    let stacking_ctx =
+                        StackingContext::new(&elt, Transform::identity(), pattern_values);
 
                     dc.with_discrete_layer(
                         &stacking_ctx,
@@ -1194,7 +1196,8 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
 
         self.with_discrete_layer(
             &stacking_ctx,
@@ -1305,7 +1308,9 @@ impl DrawingCtx {
             None
         };
 
-        let stacking_ctx = StackingContext::new(node.borrow_element().get_transform());
+        let elt = node.borrow_element();
+
+        let stacking_ctx = StackingContext::new(&elt, elt.get_transform(), values);
 
         self.with_discrete_layer(
             &stacking_ctx,
@@ -1602,6 +1607,8 @@ impl DrawingCtx {
         self.cr
             .transform(node.borrow_element().get_transform().into());
 
+        let use_element = node.borrow_element();
+
         let res = if is_element_of_type!(child, Symbol) {
             // if the <use> references a <symbol>, it gets handled specially
 
@@ -1618,7 +1625,7 @@ impl DrawingCtx {
                 None
             };
 
-            let stacking_ctx = StackingContext::new(Transform::identity());
+            let stacking_ctx = StackingContext::new(&use_element, Transform::identity(), values);
 
             self.with_discrete_layer(
                 &stacking_ctx,
@@ -1646,7 +1653,11 @@ impl DrawingCtx {
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
-            let stacking_ctx = StackingContext::new(Transform::new_translate(use_rect.x0, use_rect.y0));
+            let stacking_ctx = StackingContext::new(
+                &use_element,
+                Transform::new_translate(use_rect.x0, use_rect.y0),
+                values,
+            );
 
             self.with_discrete_layer(
                 &stacking_ctx,

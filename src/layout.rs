@@ -2,7 +2,11 @@
 //!
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
+use crate::element::Element;
+use crate::properties::ComputedValues;
+use crate::property_defs::Opacity;
 use crate::transform::Transform;
+use crate::unit_interval::UnitInterval;
 
 /// SVG Stacking context, an inner node in the layout tree.
 ///
@@ -19,12 +23,26 @@ use crate::transform::Transform;
 /// render an element as an isolated group.
 pub struct StackingContext {
     pub transform: Transform,
+    pub opacity: Opacity,
 }
 
 impl StackingContext {
-    pub fn new(transform: Transform) -> StackingContext {
-        StackingContext {
-            transform,
+    pub fn new(
+        element: &Element,
+        transform: Transform,
+        values: &ComputedValues,
+    ) -> StackingContext {
+        let opacity;
+
+        match *element {
+            // The opacity property does not apply to masks, so we pass 1.0 here.
+            //
+            // "The opacity, filter and display properties do not apply to the mask element"
+            // https://drafts.fxtf.org/css-masking-1/#MaskElement
+            Element::Mask(_) => opacity = Opacity(UnitInterval::clamp(1.0)),
+            _ => opacity = values.opacity(),
         }
+
+        StackingContext { transform, opacity }
     }
 }
