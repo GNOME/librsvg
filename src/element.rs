@@ -281,10 +281,8 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
         if !self.is_in_error() {
             let values = cascaded.get();
             if values.is_displayed() {
-                draw_ctx.with_saved_transform(Some(self.get_transform()), &mut |dc| {
-                    self.element_impl
-                        .draw(node, acquired_nodes, cascaded, dc, clipping)
-                })
+                self.element_impl
+                    .draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
             } else {
                 Ok(draw_ctx.empty_bbox())
             }

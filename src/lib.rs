@@ -204,6 +204,7 @@ mod href;
 mod image;
 mod io;
 mod iri;
+mod layout;
 mod length;
 mod limits;
 mod marker;

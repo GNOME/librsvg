@@ -15,11 +15,11 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
-use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
+use crate::layout::StackingContext;
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -33,7 +33,6 @@ use crate::property_defs::{
 };
 use crate::rect::Rect;
 use crate::shapes::{Markers, Shape};
-use crate::structure::Mask;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -495,8 +494,8 @@ impl DrawingCtx {
 
             self.cr.set_matrix(orig_transform.into());
 
-            // Clipping paths do not contribute to bounding boxes (they should, but we
-            // need Real Computational Geometry(tm), so ignore the bbox from the clip path.
+            // Clipping paths do not contribute to bounding boxes, so ignore the bbox from
+            // the clip path.
             res.map(|_bbox| ())
         } else {
             Ok(())
@@ -505,7 +504,6 @@ impl DrawingCtx {
 
     fn generate_cairo_mask(
         &mut self,
-        mask: &Mask,
         mask_node: &Node,
         transform: Transform,
         bbox: &BoundingBox,
@@ -516,6 +514,19 @@ impl DrawingCtx {
             // bounding box, so there's nothing to mask!
             return Ok(None);
         }
+
+        let _mask_acquired = match acquired_nodes.acquire_ref(mask_node) {
+            Ok(n) => n,
+
+            Err(AcquireError::CircularReference(_)) => {
+                rsvg_log!("circular reference in element {}", mask_node);
+                return Ok(None);
+            }
+
+            _ => unreachable!(),
+        };
+
+        let mask = borrow_element_as!(mask_node, Mask);
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
 
@@ -530,10 +541,9 @@ impl DrawingCtx {
             mask.get_rect(&params)
         };
 
-        let mask_transform = mask_node
-            .borrow_element()
-            .get_transform()
-            .post_transform(&transform);
+        let mask_element = mask_node.borrow_element();
+
+        let mask_transform = mask_element.get_transform().post_transform(&transform);
 
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
@@ -572,11 +582,15 @@ impl DrawingCtx {
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
+            let stacking_ctx =
+                StackingContext::new(acquired_nodes, &mask_element, Transform::identity(), values);
+
             let res = mask_draw_ctx.with_discrete_layer(
-                mask_node,
+                &stacking_ctx,
                 acquired_nodes,
                 values,
                 false,
+                None,
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
             );
 
@@ -594,41 +608,39 @@ impl DrawingCtx {
 
     pub fn with_discrete_layer(
         &mut self,
-        node: &Node,
+        stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
+        clip_rect: Option<Rect>,
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
-        if clipping {
+        let orig_transform = self.get_transform();
+
+        self.cr.transform(stacking_ctx.transform.into());
+
+        let res = if clipping {
             draw_fn(acquired_nodes, self)
         } else {
             let saved_cr = SavedCr::new(self);
 
             let clip_path_value = values.clip_path();
-            let mask_value = values.mask();
 
             let clip_uri = clip_path_value.0.get();
-            let mask = mask_value.0.get();
 
-            let filters = if node.is_element() {
-                match *node.borrow_element() {
-                    Element::Mask(_) => Filter::None,
-                    _ => values.filter(),
-                }
-            } else {
-                values.filter()
-            };
-
-            let UnitInterval(opacity) = values.opacity().0;
+            let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
             let affine_at_start = saved_cr.draw_ctx.get_transform();
 
             let (clip_in_user_space, clip_in_object_space) =
                 get_clip_in_user_and_object_space(acquired_nodes, clip_uri);
+
+            if let Some(rect) = clip_rect {
+                clip_to_rectangle(&saved_cr.draw_ctx.cr, &rect);
+            }
 
             // Here we are clipping in user space, so the bbox doesn't matter
             saved_cr.draw_ctx.clip_to_node(
@@ -639,8 +651,8 @@ impl DrawingCtx {
 
             let is_opaque = approx_eq!(f64, opacity, 1.0);
             let needs_temporary_surface = !(is_opaque
-                && filters == Filter::None
-                && mask.is_none()
+                && stacking_ctx.filter == Filter::None
+                && stacking_ctx.mask.is_none()
                 && values.mix_blend_mode() == MixBlendMode::Normal
                 && clip_in_object_space.is_none());
 
@@ -655,7 +667,7 @@ impl DrawingCtx {
 
                 // Create temporary surface and its cr
 
-                let cr = match filters {
+                let cr = match stacking_ctx.filter {
                     Filter::None => cairo::Context::new(
                         &saved_cr
                             .draw_ctx
@@ -669,8 +681,6 @@ impl DrawingCtx {
                 };
 
                 cr.set_matrix(affines.for_temporary_surface.into());
-
-                let node_name = format!("{}", node);
 
                 let (source_surface, mut res, bbox) = {
                     let mut temporary_draw_ctx = saved_cr.draw_ctx.nested(cr);
@@ -694,9 +704,9 @@ impl DrawingCtx {
                     (
                         temporary_draw_ctx.run_filters(
                             surface_to_filter,
-                            &filters,
+                            &stacking_ctx.filter,
                             acquired_nodes,
-                            &node_name,
+                            &stacking_ctx.element_name,
                             values,
                             bbox,
                         )?,
@@ -722,49 +732,24 @@ impl DrawingCtx {
 
                 // Mask
 
-                if let Some(mask_id) = mask {
-                    if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
-                        let mask_node = acquired.get();
-
-                        match *mask_node.borrow_element() {
-                            Element::Mask(ref m) => {
-                                res = res.and_then(|bbox| {
-                                    saved_cr
-                                        .draw_ctx
-                                        .generate_cairo_mask(
-                                            &m,
-                                            &mask_node,
-                                            affines.for_temporary_surface,
-                                            &bbox,
-                                            acquired_nodes,
-                                        )
-                                        .map(|mask_surf| {
-                                            if let Some(surf) = mask_surf {
-                                                saved_cr
-                                                    .draw_ctx
-                                                    .cr
-                                                    .set_matrix(affines.compositing.into());
-                                                saved_cr.draw_ctx.cr.mask_surface(&surf, 0.0, 0.0);
-                                            }
-                                        })
-                                        .map(|_: ()| bbox)
-                                });
-                            }
-                            _ => {
-                                rsvg_log!(
-                                    "element {} references \"{}\" which is not a mask",
-                                    node_name,
-                                    mask_id
-                                );
-                            }
-                        }
-                    } else {
-                        rsvg_log!(
-                            "element {} references nonexistent mask \"{}\"",
-                            node_name,
-                            mask_id
-                        );
-                    }
+                if let Some(ref mask_node) = stacking_ctx.mask {
+                    res = res.and_then(|bbox| {
+                        saved_cr
+                            .draw_ctx
+                            .generate_cairo_mask(
+                                mask_node,
+                                affines.for_temporary_surface,
+                                &bbox,
+                                acquired_nodes,
+                            )
+                            .map(|mask_surf| {
+                                if let Some(surf) = mask_surf {
+                                    saved_cr.draw_ctx.cr.set_matrix(affines.compositing.into());
+                                    saved_cr.draw_ctx.cr.mask_surface(&surf, 0.0, 0.0);
+                                }
+                            })
+                            .map(|_: ()| bbox)
+                    });
                 } else {
                     // No mask, so composite the temporary surface
 
@@ -787,36 +772,7 @@ impl DrawingCtx {
             } else {
                 draw_fn(acquired_nodes, saved_cr.draw_ctx)
             }
-        }
-    }
-
-    fn initial_transform_with_offset(&self) -> Transform {
-        let rect = self.toplevel_viewport();
-
-        self.initial_viewport
-            .transform
-            .pre_translate(rect.x0, rect.y0)
-    }
-
-    /// Saves the current transform, applies a new transform if specified,
-    /// runs the draw_fn, and restores the original transform
-    ///
-    /// This is slightly cheaper than a `cr.save()` / `cr.restore()`
-    /// pair, but more importantly, it does not reset the whole
-    /// graphics state, i.e. it leaves a clipping path in place if it
-    /// was set by the `draw_fn`.
-    pub fn with_saved_transform(
-        &mut self,
-        transform: Option<Transform>,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
-    ) -> Result<BoundingBox, RenderingError> {
-        let orig_transform = self.get_transform();
-
-        if let Some(t) = transform {
-            self.cr.transform(t.into());
-        }
-
-        let res = draw_fn(self);
+        };
 
         self.cr.set_matrix(orig_transform.into());
 
@@ -829,28 +785,16 @@ impl DrawingCtx {
         }
     }
 
-    /// if a rectangle is specified, clips and runs the draw_fn, otherwise simply run the draw_fn
-    pub fn with_clip_rect(
-        &mut self,
-        clip: Option<Rect>,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
-    ) -> Result<BoundingBox, RenderingError> {
-        if let Some(rect) = clip {
-            self.cr.save();
-            clip_to_rectangle(&self.cr, &rect);
-        }
+    fn initial_transform_with_offset(&self) -> Transform {
+        let rect = self.toplevel_viewport();
 
-        let res = draw_fn(self);
-
-        if clip.is_some() {
-            self.cr.restore();
-        }
-
-        res
+        self.initial_viewport
+            .transform
+            .pre_translate(rect.x0, rect.y0)
     }
 
     /// Run the drawing function with the specified opacity
-    pub fn with_alpha(
+    fn with_alpha(
         &mut self,
         opacity: UnitInterval,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
@@ -1037,11 +981,22 @@ impl DrawingCtx {
                     let pattern_cascaded =
                         CascadedValues::new_from_node(&pattern.node_with_children);
                     let pattern_values = pattern_cascaded.get();
+
+                    let elt = pattern.node_with_children.borrow_element();
+
+                    let stacking_ctx = StackingContext::new(
+                        acquired_nodes,
+                        &elt,
+                        Transform::identity(),
+                        pattern_values,
+                    );
+
                     dc.with_discrete_layer(
-                        &pattern.node_with_children,
+                        &stacking_ctx,
                         acquired_nodes,
                         pattern_values,
                         false,
+                        None,
                         &mut |an, dc| {
                             pattern.node_with_children.draw_children(
                                 an,
@@ -1215,59 +1170,69 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-            let cr = dc.cr.clone();
-            let transform = dc.get_transform();
-            let mut path_helper =
-                PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
 
-            if clipping {
-                if values.is_visible() {
-                    cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
-                    path_helper.set()?;
-                }
-                return Ok(dc.empty_bbox());
-            }
+        self.with_discrete_layer(
+            &stacking_ctx,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc| {
+                let cr = dc.cr.clone();
+                let transform = dc.get_transform();
+                let mut path_helper =
+                    PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
 
-            cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
-            dc.setup_cr_for_stroke(&cr, values);
-
-            cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
-
-            let mut bounding_box: Option<BoundingBox> = None;
-            path_helper.unset();
-
-            let view_params = dc.get_view_params();
-
-            for &target in &values.paint_order().targets {
-                // fill and stroke operations will preserve the path.
-                // markers operation will clear the path.
-                match target {
-                    PaintTarget::Fill | PaintTarget::Stroke => {
+                if clipping {
+                    if values.is_visible() {
+                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
                         path_helper.set()?;
-                        let bbox = bounding_box.get_or_insert_with(|| {
-                            compute_stroke_and_fill_box(&cr, &values, &view_params)
-                        });
+                    }
+                    return Ok(dc.empty_bbox());
+                }
 
-                        if values.is_visible() {
-                            if target == PaintTarget::Stroke {
-                                dc.stroke(&cr, an, values, &bbox)?;
-                            } else {
-                                dc.fill(&cr, an, values, &bbox)?;
+                cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
+                dc.setup_cr_for_stroke(&cr, values);
+
+                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
+
+                let mut bounding_box: Option<BoundingBox> = None;
+                path_helper.unset();
+
+                let view_params = dc.get_view_params();
+
+                for &target in &values.paint_order().targets {
+                    // fill and stroke operations will preserve the path.
+                    // markers operation will clear the path.
+                    match target {
+                        PaintTarget::Fill | PaintTarget::Stroke => {
+                            path_helper.set()?;
+                            let bbox = bounding_box.get_or_insert_with(|| {
+                                compute_stroke_and_fill_box(&cr, &values, &view_params)
+                            });
+
+                            if values.is_visible() {
+                                if target == PaintTarget::Stroke {
+                                    dc.stroke(&cr, an, values, &bbox)?;
+                                } else {
+                                    dc.fill(&cr, an, values, &bbox)?;
+                                }
                             }
                         }
+                        PaintTarget::Markers if shape.markers == Markers::Yes => {
+                            path_helper.unset();
+                            marker::render_markers_for_path(&shape.path, dc, an, values, clipping)?;
+                        }
+                        _ => {}
                     }
-                    PaintTarget::Markers if shape.markers == Markers::Yes => {
-                        path_helper.unset();
-                        marker::render_markers_for_path(&shape.path, dc, an, values, clipping)?;
-                    }
-                    _ => {}
                 }
-            }
 
-            path_helper.unset();
-            Ok(bounding_box.unwrap())
-        })
+                path_helper.unset();
+                Ok(bounding_box.unwrap())
+            },
+        )
     }
 
     fn paint_surface(&mut self, surface: &SharedImageSurface, width: f64, height: f64) {
@@ -1316,25 +1281,36 @@ impl DrawingCtx {
             None
         };
 
-        self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |_an, dc| {
-            let saved_cr = SavedCr::new(dc);
+        let elt = node.borrow_element();
 
-            if let Some(_params) =
-                saved_cr
-                    .draw_ctx
-                    .push_new_viewport(Some(vbox), rect, aspect, clip_mode)
-            {
-                if values.is_visible() {
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
+
+        self.with_discrete_layer(
+            &stacking_ctx,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |_an, dc| {
+                let saved_cr = SavedCr::new(dc);
+
+                if let Some(_params) =
                     saved_cr
                         .draw_ctx
-                        .paint_surface(surface, image_width, image_height);
+                        .push_new_viewport(Some(vbox), rect, aspect, clip_mode)
+                {
+                    if values.is_visible() {
+                        saved_cr
+                            .draw_ctx
+                            .paint_surface(surface, image_width, image_height);
+                    }
                 }
-            }
 
-            // The bounding box for <image> is decided by the values of x, y, w, h
-            // and not by the final computed image bounds.
-            Ok(saved_cr.draw_ctx.empty_bbox().with_rect(rect))
-        })
+                // The bounding box for <image> is decided by the values of x, y, w, h
+                // and not by the final computed image bounds.
+                Ok(saved_cr.draw_ctx.empty_bbox().with_rect(rect))
+            },
+        )
     }
 
     pub fn draw_text(
@@ -1598,7 +1574,14 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
-        if is_element_of_type!(child, Symbol) {
+        let orig_transform = self.get_transform();
+
+        self.cr
+            .transform(node.borrow_element().get_transform().into());
+
+        let use_element = node.borrow_element();
+
+        let res = if is_element_of_type!(child, Symbol) {
             // if the <use> references a <symbol>, it gets handled specially
 
             let elt = child.borrow_element();
@@ -1614,35 +1597,66 @@ impl DrawingCtx {
                 None
             };
 
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                let _params = dc.push_new_viewport(
-                    symbol.get_viewbox(),
-                    use_rect,
-                    symbol.get_preserve_aspect_ratio(),
-                    clip_mode,
-                );
+            let stacking_ctx =
+                StackingContext::new(acquired_nodes, &use_element, Transform::identity(), values);
 
-                child.draw_children(
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    dc,
-                    clipping,
-                )
-            })
+            self.with_discrete_layer(
+                &stacking_ctx,
+                acquired_nodes,
+                values,
+                clipping,
+                None,
+                &mut |an, dc| {
+                    let _params = dc.push_new_viewport(
+                        symbol.get_viewbox(),
+                        use_rect,
+                        symbol.get_preserve_aspect_ratio(),
+                        clip_mode,
+                    );
+
+                    child.draw_children(
+                        an,
+                        &CascadedValues::new_from_values(&child, values),
+                        dc,
+                        clipping,
+                    )
+                },
+            )
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
-            let cr = self.cr.clone();
-            cr.translate(use_rect.x0, use_rect.y0);
+            let stacking_ctx = StackingContext::new(
+                acquired_nodes,
+                &use_element,
+                Transform::new_translate(use_rect.x0, use_rect.y0),
+                values,
+            );
 
-            self.with_discrete_layer(node, acquired_nodes, values, clipping, &mut |an, dc| {
-                child.draw(
-                    an,
-                    &CascadedValues::new_from_values(&child, values),
-                    dc,
-                    clipping,
-                )
-            })
+            self.with_discrete_layer(
+                &stacking_ctx,
+                acquired_nodes,
+                values,
+                clipping,
+                None,
+                &mut |an, dc| {
+                    child.draw(
+                        an,
+                        &CascadedValues::new_from_values(&child, values),
+                        dc,
+                        clipping,
+                    )
+                },
+            )
+        };
+
+        self.cr.set_matrix(orig_transform.into());
+
+        if let Ok(bbox) = res {
+            let mut res_bbox = BoundingBox::new().with_transform(orig_transform);
+            res_bbox.insert(&bbox);
+            Ok(res_bbox)
+        } else {
+            res
         }
     }
 }

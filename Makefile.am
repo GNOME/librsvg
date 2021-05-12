@@ -77,6 +77,7 @@ LIBRSVG_SRC =					\
 	src/image.rs				\
 	src/io.rs				\
 	src/iri.rs				\
+	src/layout.rs				\
 	src/length.rs				\
 	src/lib.rs				\
 	src/limits.rs				\
