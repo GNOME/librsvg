@@ -157,6 +157,65 @@ fn blur_filter_func() {
 }
 
 #[test]
+fn opacity_filter_func() {
+    // Create an element with a filter function, and compare it to the
+    // supposed equivalent using the <filter> element.
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="opacity(0.75)"/>
+</svg>
+"##,
+    ).unwrap();
+
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(400, 400),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 400.0,
+            height: 400.0,
+        },
+    )
+    .unwrap();
+
+    let reference = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <defs>
+    <filter id="filter">
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.75" />
+      </feComponentTransfer>
+    </filter>
+  </defs>
+
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="url(#filter)"/>
+</svg>
+"##,
+    ).unwrap();
+
+    let reference_surf = render_document(
+        &reference,
+        SurfaceSize(400, 400),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 400.0,
+            height: 400.0,
+        },
+    )
+    .unwrap();
+
+    Reference::from_surface(reference_surf.into_image_surface().unwrap())
+        .compare(&output_surf)
+        .evaluate(&output_surf, "opacity_filter_func");
+}
+
+#[test]
 fn sepia_filter_func() {
     // Create an element with a filter function, and compare it to the
     // supposed equivalent using the <filter> element.

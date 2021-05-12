@@ -1,6 +1,5 @@
 use cssparser::Parser;
 
-use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -11,6 +10,7 @@ use crate::length::*;
 use crate::parsers::{NumberOrPercentage, Parse};
 use crate::properties::ComputedValues;
 use crate::{coord_units::CoordUnits, filters::color_matrix::ColorMatrix};
+use crate::{drawing_ctx::DrawingCtx, filters::component_transfer};
 
 /// CSS Filter functions from the Filter Effects Module Level 1
 ///
@@ -18,6 +18,7 @@ use crate::{coord_units::CoordUnits, filters::color_matrix::ColorMatrix};
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterFunction {
     Blur(Blur),
+    Opacity(Opacity),
     Sepia(Sepia),
 }
 
@@ -27,6 +28,14 @@ pub enum FilterFunction {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Blur {
     std_deviation: Option<Length<Both>>,
+}
+
+/// Parameters for the `opacity()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-opacity
+#[derive(Debug, Clone, PartialEq)]
+pub struct Opacity {
+    proportion: Option<f64>,
 }
 
 /// Parameters for the `sepia()` filter function
@@ -65,6 +74,17 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
 }
 
 #[allow(clippy::unnecessary_wraps)]
+fn parse_opacity<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
+        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
+        Ok(NumberOrPercentage { value }) => Some(value.clamp(0.0, 1.0)),
+        Err(_) => None,
+    };
+
+    Ok(FilterFunction::Opacity(Opacity { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
 fn parse_sepia<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
     let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
         Ok(NumberOrPercentage { value }) if value < 0.0 => None,
@@ -94,6 +114,34 @@ impl Blur {
         FilterSpec {
             user_space_filter,
             primitives: vec![gaussian_blur],
+        }
+    }
+}
+
+impl Opacity {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let p = self.proportion.unwrap_or(1.0);
+        let user_space_filter = Filter::default().to_user_space(params);
+
+        let opacity = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
+                functions: crate::filters::component_transfer::Functions {
+                    a: component_transfer::FeFuncA {
+                        function_type: component_transfer::FunctionType::Table,
+                        table_values: vec![0.0, p],
+                        ..component_transfer::FeFuncA::default()
+                    },
+                    ..component_transfer::Functions::default()
+                },
+                ..component_transfer::ComponentTransfer::default()
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![opacity],
         }
     }
 }
@@ -134,13 +182,16 @@ impl Sepia {
 impl Parse for FilterFunction {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
         let loc = parser.current_source_location();
+        let fns: Vec<(&str, &dyn Fn(&mut Parser<'i, '_>) -> _)> = vec![
+            ("blur", &parse_blur),
+            ("opacity", &parse_opacity),
+            ("sepia", &parse_sepia),
+        ];
 
-        if let Ok(func) = parser.try_parse(|p| parse_function(p, "blur", parse_blur)) {
-            return Ok(func);
-        }
-
-        if let Ok(func) = parser.try_parse(|p| parse_function(p, "sepia", parse_sepia)) {
-            return Ok(func);
+        for (filter_name, parse_fn) in fns {
+            if let Ok(func) = parser.try_parse(|p| parse_function(p, filter_name, parse_fn)) {
+                return Ok(func);
+            }
         }
 
         return Err(loc.new_custom_error(ValueErrorKind::parse_error("expected filter function")));
@@ -161,6 +212,7 @@ impl FilterFunction {
 
         match self {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Sepia(v) => Ok(v.to_filter_spec(&params)),
         }
     }
@@ -183,6 +235,21 @@ mod tests {
             FilterFunction::parse_str("blur(5px)").unwrap(),
             FilterFunction::Blur(Blur {
                 std_deviation: Some(Length::new(5.0, LengthUnit::Px))
+            })
+        );
+    }
+
+    #[test]
+    fn parses_opacity() {
+        assert_eq!(
+            FilterFunction::parse_str("opacity()").unwrap(),
+            FilterFunction::Opacity(Opacity { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("opacity(50%)").unwrap(),
+            FilterFunction::Opacity(Opacity {
+                proportion: Some(0.50_f32.into()),
             })
         );
     }
@@ -227,6 +294,11 @@ mod tests {
     fn invalid_blur_yields_error() {
         assert!(FilterFunction::parse_str("blur(foo)").is_err());
         assert!(FilterFunction::parse_str("blur(42 43)").is_err());
+    }
+
+    #[test]
+    fn invalid_opacity_yields_error() {
+        assert!(FilterFunction::parse_str("opacity(foo)").is_err());
     }
 
     #[test]
