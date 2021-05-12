@@ -19,6 +19,7 @@ use crate::{drawing_ctx::DrawingCtx, filters::component_transfer};
 pub enum FilterFunction {
     Blur(Blur),
     Opacity(Opacity),
+    Saturate(Saturate),
     Sepia(Sepia),
 }
 
@@ -35,6 +36,14 @@ pub struct Blur {
 /// https://www.w3.org/TR/filter-effects/#funcdef-filter-opacity
 #[derive(Debug, Clone, PartialEq)]
 pub struct Opacity {
+    proportion: Option<f64>,
+}
+
+/// Parameters for the `saturate()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-saturate
+#[derive(Debug, Clone, PartialEq)]
+pub struct Saturate {
     proportion: Option<f64>,
 }
 
@@ -82,6 +91,17 @@ fn parse_opacity<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, Pars
     };
 
     Ok(FilterFunction::Opacity(Opacity { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_saturate<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
+        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
+        Ok(NumberOrPercentage { value }) => Some(value),
+        Err(_) => None,
+    };
+
+    Ok(FilterFunction::Saturate(Saturate { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -146,6 +166,39 @@ impl Opacity {
     }
 }
 
+impl Saturate {
+    #[rustfmt::skip]
+    fn matrix(&self) -> nalgebra::Matrix5<f64> {
+        let p = self.proportion.unwrap_or(1.0);
+
+        nalgebra::Matrix5::new(
+            0.213 + 0.787 * p, 0.715 - 0.715 * p, 0.072 - 0.072 * p, 0.0, 0.0,
+            0.213 - 0.213 * p, 0.715 + 0.285 * p, 0.072 - 0.072 * p, 0.0, 0.0,
+            0.213 - 0.213 * p, 0.715 - 0.715 * p, 0.072 + 0.928 * p, 0.0, 0.0,
+            0.0,               0.0,               0.0,               1.0, 0.0,
+            0.0,               0.0,               0.0,               0.0, 1.0,
+        )
+    }
+
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let user_space_filter = Filter::default().to_user_space(params);
+
+        let saturate = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::ColorMatrix(ColorMatrix {
+                matrix: self.matrix(),
+                ..ColorMatrix::default()
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![saturate],
+        }
+    }
+}
+
 impl Sepia {
     #[rustfmt::skip]
     fn matrix(&self) -> nalgebra::Matrix5<f64> {
@@ -185,6 +238,7 @@ impl Parse for FilterFunction {
         let fns: Vec<(&str, &dyn Fn(&mut Parser<'i, '_>) -> _)> = vec![
             ("blur", &parse_blur),
             ("opacity", &parse_opacity),
+            ("saturate", &parse_saturate),
             ("sepia", &parse_sepia),
         ];
 
@@ -213,6 +267,7 @@ impl FilterFunction {
         match self {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Saturate(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Sepia(v) => Ok(v.to_filter_spec(&params)),
         }
     }
@@ -249,6 +304,21 @@ mod tests {
         assert_eq!(
             FilterFunction::parse_str("opacity(50%)").unwrap(),
             FilterFunction::Opacity(Opacity {
+                proportion: Some(0.50_f32.into()),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_saturate() {
+        assert_eq!(
+            FilterFunction::parse_str("saturate()").unwrap(),
+            FilterFunction::Saturate(Saturate { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("saturate(50%)").unwrap(),
+            FilterFunction::Saturate(Saturate {
                 proportion: Some(0.50_f32.into()),
             })
         );
@@ -299,6 +369,11 @@ mod tests {
     #[test]
     fn invalid_opacity_yields_error() {
         assert!(FilterFunction::parse_str("opacity(foo)").is_err());
+    }
+
+    #[test]
+    fn invalid_saturate_yields_error() {
+        assert!(FilterFunction::parse_str("saturate(foo)").is_err());
     }
 
     #[test]
