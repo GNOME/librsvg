@@ -34,9 +34,9 @@ pub struct FeComponentTransfer {
 /// Resolved `feComponentTransfer` primitive for rendering.
 #[derive(Clone, Default)]
 pub struct ComponentTransfer {
-    in1: Input,
-    functions: Functions,
-    color_interpolation_filters: ColorInterpolationFilters,
+    pub in1: Input,
+    pub functions: Functions,
+    pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl SetAttributes for FeComponentTransfer {
@@ -48,7 +48,7 @@ impl SetAttributes for FeComponentTransfer {
 
 /// Pixel components that can be influenced by `feComponentTransfer`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Channel {
+pub enum Channel {
     R,
     G,
     B,
@@ -57,7 +57,7 @@ enum Channel {
 
 /// Component transfer function types.
 #[derive(Clone, Debug, PartialEq)]
-enum FunctionType {
+pub enum FunctionType {
     Identity,
     Table,
     Discrete,
@@ -89,11 +89,11 @@ struct FunctionParameters {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-struct Functions {
-    r: FeFuncR,
-    g: FeFuncG,
-    b: FeFuncB,
-    a: FeFuncA,
+pub struct Functions {
+    pub r: FeFuncR,
+    pub g: FeFuncG,
+    pub b: FeFuncB,
+    pub a: FeFuncA,
 }
 
 /// The compute function type.
@@ -156,14 +156,14 @@ macro_rules! func_x {
     ($func_name:ident, $channel:expr) => {
         #[derive(Clone, Debug, PartialEq)]
         pub struct $func_name {
-            channel: Channel,
-            function_type: FunctionType,
-            table_values: Vec<f64>,
-            slope: f64,
-            intercept: f64,
-            amplitude: f64,
-            exponent: f64,
-            offset: f64,
+            pub channel: Channel,
+            pub function_type: FunctionType,
+            pub table_values: Vec<f64>,
+            pub slope: f64,
+            pub intercept: f64,
+            pub amplitude: f64,
+            pub exponent: f64,
+            pub offset: f64,
         }
 
         impl Default for $func_name {
