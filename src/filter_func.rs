@@ -18,6 +18,7 @@ use crate::{drawing_ctx::DrawingCtx, filters::component_transfer};
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterFunction {
     Blur(Blur),
+    Grayscale(Grayscale),
     Opacity(Opacity),
     Saturate(Saturate),
     Sepia(Sepia),
@@ -29,6 +30,14 @@ pub enum FilterFunction {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Blur {
     std_deviation: Option<Length<Both>>,
+}
+
+/// Parameters for the `grayscale()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-grayscale
+#[derive(Debug, Clone, PartialEq)]
+pub struct Grayscale {
+    proportion: Option<f64>,
 }
 
 /// Parameters for the `opacity()` filter function
@@ -80,6 +89,17 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
     Ok(FilterFunction::Blur(Blur {
         std_deviation: length,
     }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_grayscale<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
+        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
+        Ok(NumberOrPercentage { value }) => Some(value.clamp(0.0, 1.0)),
+        Err(_) => None,
+    };
+
+    Ok(FilterFunction::Grayscale(Grayscale { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -135,6 +155,19 @@ impl Blur {
             user_space_filter,
             primitives: vec![gaussian_blur],
         }
+    }
+}
+
+impl Grayscale {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        // grayscale is implemented as the inverse of a saturate operation,
+        // with the input clamped to the range [0, 1] by the parser.
+        let p = 1.0 - self.proportion.unwrap_or(1.0);
+        let saturate = Saturate {
+            proportion: Some(p),
+        };
+
+        saturate.to_filter_spec(params)
     }
 }
 
@@ -237,6 +270,7 @@ impl Parse for FilterFunction {
         let loc = parser.current_source_location();
         let fns: Vec<(&str, &dyn Fn(&mut Parser<'i, '_>) -> _)> = vec![
             ("blur", &parse_blur),
+            ("grayscale", &parse_grayscale),
             ("opacity", &parse_opacity),
             ("saturate", &parse_saturate),
             ("sepia", &parse_sepia),
@@ -266,6 +300,7 @@ impl FilterFunction {
 
         match self {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Saturate(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Sepia(v) => Ok(v.to_filter_spec(&params)),
@@ -290,6 +325,21 @@ mod tests {
             FilterFunction::parse_str("blur(5px)").unwrap(),
             FilterFunction::Blur(Blur {
                 std_deviation: Some(Length::new(5.0, LengthUnit::Px))
+            })
+        );
+    }
+
+    #[test]
+    fn parses_grayscale() {
+        assert_eq!(
+            FilterFunction::parse_str("grayscale()").unwrap(),
+            FilterFunction::Grayscale(Grayscale { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("grayscale(50%)").unwrap(),
+            FilterFunction::Grayscale(Grayscale {
+                proportion: Some(0.50_f32.into()),
             })
         );
     }
@@ -364,6 +414,11 @@ mod tests {
     fn invalid_blur_yields_error() {
         assert!(FilterFunction::parse_str("blur(foo)").is_err());
         assert!(FilterFunction::parse_str("blur(42 43)").is_err());
+    }
+
+    #[test]
+    fn invalid_grayscale_yields_error() {
+        assert!(FilterFunction::parse_str("grayscale(foo)").is_err());
     }
 
     #[test]

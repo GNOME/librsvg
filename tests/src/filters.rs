@@ -159,6 +159,26 @@ test_compare_render_output!(
 );
 
 test_compare_render_output!(
+    grayscale_filter_func,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="grayscale(0.75)"/>
+</svg>
+"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <defs>
+    <filter id="filter">
+      <feColorMatrix type="saturate" values="0.25" />
+    </filter>
+  </defs>
+
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="url(#filter)"/>
+</svg>
+"##,
+);
+
+test_compare_render_output!(
 opacity_filter_func,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
