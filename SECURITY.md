@@ -14,7 +14,9 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 ### 2.48.10
 
 CVE-2020-35905 - RUSTSEC-2020-0059 - data race in futures-util.
+
 CVE-2020-35906 - RUSTSEC-2020-0060 - use-after-free in futures-task.
+
 CVE-2021-25900 - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
 RUSTSEC-2020-0146 - lifetime erasure in generic-array.
