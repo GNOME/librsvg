@@ -32,6 +32,8 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
 CVE-2021-25900 - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
+See notes below on libcroco.
+
 ### 2.44.17
 
 RUSTSEC-2020-0146 - lifetime erasure in generic-array.
@@ -42,35 +44,51 @@ CVE-2019-15551 - RUSTSEC-2019-0009 - double-free and use-after-free in smallvec.
 
 CVE-2021-25900 - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
+See notes below on libcroco.
+
 ### 2.44.16
 
 CVE-2019-20446 - guard against exponential growth of CPU time
 from malicious SVGs.
+
+See notes below on libcroco.
 
 ### 2.42.8
 
 CVE-2019-20446 - guard against exponential growth of CPU time
 from malicious SVGs.
 
+See notes below on libcroco.
+
 ### 2.42.9
 
 CVE-2018-20991 - RUSTSEC-2018-0003 - double-free in smallvec.
 
-### 2.40.21
+See notes below on libcroco.
 
-**Important:** Note that librsvg 2.40.x and earlier use
-[libcroco](https://gitlab.gnome.org/Archive/libcroco/) for parsing
-CSS, but that library is deprecated, unmaintained, and has open CVEs as
-of May 2021.  Please do not use librsvg 2.40.x or earlier.
+### 2.40.21
 
 CVE-2019-20446 - guard against exponential growth of CPU time
 from malicious SVGs.
+
+See notes below on libcroco.
 
 ### 2.40.18
 
 CVE-2017-11464 - Fix division-by-zero in the Gaussian blur code.
 
+See notes below on libcroco.
+
 ### Earlier releases should be avoided and are not listed here.
+
+**Important note on libcroco:** Note that librsvg 2.46.x and earlier use
+[libcroco](https://gitlab.gnome.org/Archive/libcroco/) for parsing
+CSS, but that library is deprecated, unmaintained, and has open CVEs as
+of May 2021.
+
+If your application processes untrusted data, please avoid using
+librsvg 2.46.x or earlier.  The first release of librsvg that does not
+use libcroco is 2.48.0.
 
 # Librsvg's dependencies
 
