@@ -26,10 +26,10 @@ impl Transform {
     pub fn new_unchecked(xx: f64, yx: f64, xy: f64, yy: f64, x0: f64, y0: f64) -> Self {
         Self {
             xx,
-            xy,
-            x0,
             yx,
+            xy,
             yy,
+            x0,
             y0,
         }
     }
