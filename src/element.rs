@@ -104,7 +104,9 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     result: ElementResult,
     transform: Transform,
     values: ComputedValues,
-    cond: bool,
+    required_extensions: Option<RequiredExtensions>,
+    required_features: Option<RequiredFeatures>,
+    system_language: Option<SystemLanguage>,
     pub element_impl: T,
 }
 
@@ -127,7 +129,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             result,
             transform: Default::default(),
             values: Default::default(),
-            cond: true,
+            required_extensions: Default::default(),
+            required_features: Default::default(),
+            system_language: Default::default(),
             element_impl,
         };
 
@@ -174,7 +178,20 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn get_cond(&self) -> bool {
-        self.cond
+        self.required_extensions
+            .as_ref()
+            .map(|v| v.eval())
+            .unwrap_or(true)
+            && self
+                .required_features
+                .as_ref()
+                .map(|v| v.eval())
+                .unwrap_or(true)
+            && self
+                .system_language
+                .as_ref()
+                .map(|v| v.eval())
+                .unwrap_or(true)
     }
 
     fn get_transform(&self) -> Transform {
@@ -193,33 +210,26 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {
-        let mut cond = self.cond;
-
         for (attr, value) in self.attributes.iter() {
             match attr.expanded() {
-                expanded_name!("", "requiredExtensions") if cond => {
-                    cond = RequiredExtensions::from_attribute(value)
-                        .map(|RequiredExtensions(res)| res)
-                        .attribute(attr)?;
+                expanded_name!("", "requiredExtensions") => {
+                    self.required_extensions =
+                        Some(RequiredExtensions::from_attribute(value).attribute(attr)?);
                 }
 
-                expanded_name!("", "requiredFeatures") if cond => {
-                    cond = RequiredFeatures::from_attribute(value)
-                        .map(|RequiredFeatures(res)| res)
-                        .attribute(attr)?;
+                expanded_name!("", "requiredFeatures") => {
+                    self.required_features =
+                        Some(RequiredFeatures::from_attribute(value).attribute(attr)?);
                 }
 
-                expanded_name!("", "systemLanguage") if cond => {
-                    cond = SystemLanguage::from_attribute(value, &LOCALE)
-                        .map(|SystemLanguage(res)| res)
-                        .attribute(attr)?;
+                expanded_name!("", "systemLanguage") => {
+                    self.system_language =
+                        Some(SystemLanguage::from_attribute(value, &LOCALE).attribute(attr)?);
                 }
 
                 _ => {}
             }
         }
-
-        self.cond = cond;
 
         Ok(())
     }

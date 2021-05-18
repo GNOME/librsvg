@@ -17,13 +17,19 @@ static IMPLEMENTED_EXTENSIONS: &[&str] = &[];
 pub struct RequiredExtensions(pub bool);
 
 impl RequiredExtensions {
-    // Parse a requiredExtensions attribute
-    // http://www.w3.org/TR/SVG/struct.html#RequiredExtensionsAttribute
+    /// Parse a requiredExtensions attribute.
+    ///
+    /// http://www.w3.org/TR/SVG/struct.html#RequiredExtensionsAttribute
     pub fn from_attribute(s: &str) -> Result<RequiredExtensions, ValueErrorKind> {
         Ok(RequiredExtensions(
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_EXTENSIONS.binary_search(&f).is_ok()),
         ))
+    }
+
+    /// Evaluate a requiredExtensions value for conditional processing.
+    pub fn eval(&self) -> bool {
+        self.0
     }
 }
 
@@ -63,6 +69,11 @@ impl RequiredFeatures {
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_FEATURES.binary_search(&f).is_ok()),
         ))
+    }
+
+    /// Evaluate a requiredFeatures value for conditional processing.
+    pub fn eval(&self) -> bool {
+        self.0
     }
 }
 
@@ -109,6 +120,11 @@ impl SystemLanguage {
                     ))),
                 },
             )
+    }
+
+    /// Evaluate a systemLanguage value for conditional processing.
+    pub fn eval(&self) -> bool {
+        self.0
     }
 }
 
