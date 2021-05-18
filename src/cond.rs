@@ -139,6 +139,9 @@ impl SystemLanguage {
     /// [`systemLanguage`]: https://www.w3.org/TR/SVG/struct.html#ConditionalProcessingSystemLanguageAttribute
     /// [BCP47]: http://www.ietf.org/rfc/bcp/bcp47.txt
     pub fn from_attribute(s: &str, locale: &Locale) -> Result<SystemLanguage, ValueErrorKind> {
+        let locale_tags =
+            LanguageTags::from_locale(locale).map_err(|e| ValueErrorKind::value_error(&e))?;
+
         s.split(',')
             .map(str::trim)
             .map(LanguageTag::from_str)
@@ -152,7 +155,7 @@ impl SystemLanguage {
                         if have_match {
                             Ok(SystemLanguage(have_match))
                         } else {
-                            locale_accepts_language_tag(locale, &language_tag).map(SystemLanguage)
+                            Ok(SystemLanguage(locale_tags.any_matches(&language_tag)))
                         }
                     }
 
@@ -168,15 +171,6 @@ impl SystemLanguage {
     pub fn eval(&self) -> bool {
         self.0
     }
-}
-
-fn locale_accepts_language_tag(
-    locale: &Locale,
-    language_tag: &LanguageTag,
-) -> Result<bool, ValueErrorKind> {
-    let tags = LanguageTags::from_locale(locale).map_err(|e| ValueErrorKind::value_error(&e))?;
-
-    Ok(tags.any_matches(language_tag))
 }
 
 #[cfg(test)]
