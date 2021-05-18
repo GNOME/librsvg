@@ -77,6 +77,48 @@ impl RequiredFeatures {
     }
 }
 
+/// A list of BCP47 language tags.
+///
+/// https://www.rfc-editor.org/info/rfc5664
+pub struct LanguageTags(Vec<LanguageTag>);
+
+impl LanguageTags {
+    /// Converts a `Locale` to a set of language tags.
+    pub fn from_locale(locale: &Locale) -> Result<LanguageTags, String> {
+        let mut tags = Vec::new();
+
+        for locale_range in locale.tags_for("messages") {
+            if locale_range == LanguageRange::invariant() {
+                continue;
+            }
+
+            let str_locale_range = locale_range.as_ref();
+
+            let locale_tag = LanguageTag::from_str(str_locale_range).map_err(|e| {
+                format!(
+                    "invalid language tag \"{}\" in locale: {}",
+                    str_locale_range, e
+                )
+            })?;
+
+            if !locale_tag.is_language_range() {
+                return Err(format!(
+                    "language tag \"{}\" is not a language range",
+                    locale_tag
+                ));
+            }
+
+            tags.push(locale_tag);
+        }
+
+        Ok(LanguageTags(tags))
+    }
+
+    fn any_matches(&self, language_tag: &LanguageTag) -> bool {
+        self.0.iter().any(|tag| tag.matches(language_tag))
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct SystemLanguage(pub bool);
 
@@ -132,33 +174,9 @@ fn locale_accepts_language_tag(
     locale: &Locale,
     language_tag: &LanguageTag,
 ) -> Result<bool, ValueErrorKind> {
-    for locale_range in locale.tags_for("messages") {
-        if locale_range == LanguageRange::invariant() {
-            continue;
-        }
+    let tags = LanguageTags::from_locale(locale).map_err(|e| ValueErrorKind::value_error(&e))?;
 
-        let str_locale_range = locale_range.as_ref();
-
-        let locale_tag = LanguageTag::from_str(str_locale_range).map_err(|e| {
-            ValueErrorKind::parse_error(&format!(
-                "invalid language tag \"{}\" in locale: {}",
-                str_locale_range, e
-            ))
-        })?;
-
-        if !locale_tag.is_language_range() {
-            return Err(ValueErrorKind::value_error(&format!(
-                "language tag \"{}\" is not a language range",
-                locale_tag
-            )));
-        }
-
-        if locale_tag.matches(language_tag) {
-            return Ok(true);
-        }
-    }
-
-    Ok(false)
+    Ok(tags.any_matches(language_tag))
 }
 
 #[cfg(test)]
