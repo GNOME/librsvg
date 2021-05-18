@@ -78,20 +78,24 @@ fn write_version() {
         let micro_regex = Regex::new(r#"^m4_define\(\[rsvg_micro_version\],\[(\d+)\]\)"#).unwrap();
 
         for line in BufReader::new(file).lines() {
-            if let Ok(line) = line {
-                if let Some(nums) = major_regex.captures(&line) {
-                    major = Some(String::from(
-                        nums.get(1).expect("major_regex matched once").as_str(),
-                    ));
-                } else if let Some(nums) = minor_regex.captures(&line) {
-                    minor = Some(String::from(
-                        nums.get(1).expect("minor_regex matched once").as_str(),
-                    ));
-                } else if let Some(nums) = micro_regex.captures(&line) {
-                    micro = Some(String::from(
-                        nums.get(1).expect("micro_regex matched once").as_str(),
-                    ));
+            match line {
+                Ok(line) => {
+                    if let Some(nums) = major_regex.captures(&line) {
+                        major = Some(String::from(
+                            nums.get(1).expect("major_regex matched once").as_str(),
+                        ));
+                    } else if let Some(nums) = minor_regex.captures(&line) {
+                        minor = Some(String::from(
+                            nums.get(1).expect("minor_regex matched once").as_str(),
+                        ));
+                    } else if let Some(nums) = micro_regex.captures(&line) {
+                        micro = Some(String::from(
+                            nums.get(1).expect("micro_regex matched once").as_str(),
+                        ));
+                    }
                 }
+
+                Err(e) => panic!("could not parse version from configure.ac: {}", e),
             }
         }
     }
