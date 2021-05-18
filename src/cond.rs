@@ -142,29 +142,16 @@ impl SystemLanguage {
         let locale_tags =
             LanguageTags::from_locale(locale).map_err(|e| ValueErrorKind::value_error(&e))?;
 
-        s.split(',')
+        let attribute_tags = s.split(',')
             .map(str::trim)
-            .map(LanguageTag::from_str)
-            .try_fold(
-                // start with no match
-                SystemLanguage(false),
-                // The accumulator is Result<SystemLanguage, ValueErrorKind>
-                |acc, tag_result| match tag_result {
-                    Ok(language_tag) => {
-                        let have_match = acc.0;
-                        if have_match {
-                            Ok(SystemLanguage(have_match))
-                        } else {
-                            Ok(SystemLanguage(locale_tags.any_matches(&language_tag)))
-                        }
-                    }
+            .map(|s| LanguageTag::from_str(s).map_err(|e| ValueErrorKind::parse_error(&format!(
+                "invalid language tag: \"{}\"",
+                e
+            ))))
+            .collect::<Result<Vec<LanguageTag>, _>>()?;
 
-                    Err(e) => Err(ValueErrorKind::parse_error(&format!(
-                        "invalid language tag: \"{}\"",
-                        e
-                    ))),
-                },
-            )
+        let matches = attribute_tags.iter().any(|tag| locale_tags.any_matches(tag));
+        Ok(SystemLanguage(matches))
     }
 
     /// Evaluate a systemLanguage value for conditional processing.
