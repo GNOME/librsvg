@@ -80,9 +80,14 @@ impl RequiredFeatures {
 /// A list of BCP47 language tags.
 ///
 /// https://www.rfc-editor.org/info/rfc5664
+#[derive(Debug, Clone, PartialEq)]
 pub struct LanguageTags(Vec<LanguageTag>);
 
 impl LanguageTags {
+    pub fn empty() -> Self {
+        LanguageTags(Vec::new())
+    }
+
     /// Converts a `Locale` to a set of language tags.
     pub fn from_locale(locale: &Locale) -> Result<LanguageTags, String> {
         let mut tags = Vec::new();
@@ -120,7 +125,7 @@ impl LanguageTags {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct SystemLanguage(pub bool);
+pub struct SystemLanguage(LanguageTags);
 
 impl SystemLanguage {
     /// Parse a `systemLanguage` attribute and match it against a given `Locale`
@@ -138,25 +143,23 @@ impl SystemLanguage {
     ///
     /// [`systemLanguage`]: https://www.w3.org/TR/SVG/struct.html#ConditionalProcessingSystemLanguageAttribute
     /// [BCP47]: http://www.ietf.org/rfc/bcp/bcp47.txt
-    pub fn from_attribute(s: &str, locale: &Locale) -> Result<SystemLanguage, ValueErrorKind> {
-        let locale_tags =
-            LanguageTags::from_locale(locale).map_err(|e| ValueErrorKind::value_error(&e))?;
-
-        let attribute_tags = s.split(',')
+    pub fn from_attribute(s: &str) -> Result<SystemLanguage, ValueErrorKind> {
+        let attribute_tags = s
+            .split(',')
             .map(str::trim)
-            .map(|s| LanguageTag::from_str(s).map_err(|e| ValueErrorKind::parse_error(&format!(
-                "invalid language tag: \"{}\"",
-                e
-            ))))
+            .map(|s| {
+                LanguageTag::from_str(s).map_err(|e| {
+                    ValueErrorKind::parse_error(&format!("invalid language tag: \"{}\"", e))
+                })
+            })
             .collect::<Result<Vec<LanguageTag>, _>>()?;
 
-        let matches = attribute_tags.iter().any(|tag| locale_tags.any_matches(tag));
-        Ok(SystemLanguage(matches))
+        Ok(SystemLanguage(LanguageTags(attribute_tags)))
     }
 
     /// Evaluate a systemLanguage value for conditional processing.
-    pub fn eval(&self) -> bool {
-        self.0
+    pub fn eval(&self, locale_tags: &LanguageTags) -> bool {
+        (self.0).0.iter().any(|tag| locale_tags.any_matches(tag))
     }
 }
 
@@ -207,50 +210,68 @@ mod tests {
 
     #[test]
     fn system_language() {
-        let user_prefers = Locale::new("de,en-US").unwrap();
+        let locale = Locale::new("de,en-US").unwrap();
 
-        assert!(SystemLanguage::from_attribute("", &user_prefers).is_err());
+        let locale_tags = LanguageTags::from_locale(&locale).unwrap();
 
-        assert!(SystemLanguage::from_attribute("12345", &user_prefers).is_err());
+        assert!(SystemLanguage::from_attribute("").is_err());
+
+        assert!(SystemLanguage::from_attribute("12345").is_err());
 
         assert_eq!(
-            SystemLanguage::from_attribute("fr", &user_prefers).unwrap(),
-            SystemLanguage(false)
+            SystemLanguage::from_attribute("fr")
+                .unwrap()
+                .eval(&locale_tags),
+            false
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("en", &user_prefers).unwrap(),
-            SystemLanguage(false)
+            SystemLanguage::from_attribute("en")
+                .unwrap()
+                .eval(&locale_tags),
+            false
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("de", &user_prefers).unwrap(),
-            SystemLanguage(true)
+            SystemLanguage::from_attribute("de")
+                .unwrap()
+                .eval(&locale_tags),
+            true
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("en-US", &user_prefers).unwrap(),
-            SystemLanguage(true)
+            SystemLanguage::from_attribute("en-US")
+                .unwrap()
+                .eval(&locale_tags),
+            true
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("en-GB", &user_prefers).unwrap(),
-            SystemLanguage(false)
+            SystemLanguage::from_attribute("en-GB")
+                .unwrap()
+                .eval(&locale_tags),
+            false
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("DE", &user_prefers).unwrap(),
-            SystemLanguage(true)
+            SystemLanguage::from_attribute("DE")
+                .unwrap()
+                .eval(&locale_tags),
+            true
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("de-LU", &user_prefers).unwrap(),
-            SystemLanguage(true)
+            SystemLanguage::from_attribute("de-LU")
+                .unwrap()
+                .eval(&locale_tags),
+            true
         );
 
         assert_eq!(
-            SystemLanguage::from_attribute("fr, de", &user_prefers).unwrap(),
-            SystemLanguage(true)
+            SystemLanguage::from_attribute("fr, de")
+                .unwrap()
+                .eval(&locale_tags),
+            true
         );
     }
 }

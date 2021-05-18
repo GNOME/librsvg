@@ -1,6 +1,5 @@
 //! SVG Elements.
 
-use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
@@ -8,7 +7,7 @@ use std::fmt;
 use std::ops::Deref;
 
 use crate::bbox::BoundingBox;
-use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
+use crate::cond::{LanguageTags, RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::{Declaration, Origin};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -177,7 +176,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         self.values = values.clone();
     }
 
-    fn get_cond(&self) -> bool {
+    fn get_cond(&self, locale_tags: &LanguageTags) -> bool {
         self.required_extensions
             .as_ref()
             .map(|v| v.eval())
@@ -190,7 +189,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             && self
                 .system_language
                 .as_ref()
-                .map(|v| v.eval())
+                .map(|v| v.eval(locale_tags))
                 .unwrap_or(true)
     }
 
@@ -224,7 +223,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
                 expanded_name!("", "systemLanguage") => {
                     self.system_language =
-                        Some(SystemLanguage::from_attribute(value, &LOCALE).attribute(attr)?);
+                        Some(SystemLanguage::from_attribute(value).attribute(attr)?);
                 }
 
                 _ => {}
@@ -532,8 +531,8 @@ impl Element {
         call_inner!(self, set_computed_values, values);
     }
 
-    pub fn get_cond(&self) -> bool {
-        call_inner!(self, get_cond)
+    pub fn get_cond(&self, locale_tags: &LanguageTags) -> bool {
+        call_inner!(self, get_cond, locale_tags)
     }
 
     pub fn get_transform(&self) -> Transform {
@@ -823,29 +822,6 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
     ];
 
     creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
-});
-
-/// Gets the user's preferred locale from the environment and
-/// translates it to a `Locale` with `LanguageRange` fallbacks.
-///
-/// The `Locale::current()` call only contemplates a single language,
-/// but glib is smarter, and `g_get_langauge_names()` can provide
-/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
-/// English and German).  This function converts the output of
-/// `g_get_language_names()` into a `Locale` with appropriate
-/// fallbacks.
-static LOCALE: Lazy<Locale> = Lazy::new(|| {
-    let mut locale = Locale::invariant();
-
-    // This call has a lot of memory churn internally with many
-    // short-lived allocations, so we do this only once.
-    for name in glib::get_language_names() {
-        if let Ok(range) = LanguageRange::from_unix(&name) {
-            locale.add(&range);
-        }
-    }
-
-    locale
 });
 
 #[cfg(ignore)]

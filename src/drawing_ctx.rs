@@ -1,6 +1,7 @@
 //! The main context structure which drives the drawing process.
 
 use float_cmp::approx_eq;
+use locale_config::{LanguageRange, Locale};
 use once_cell::sync::Lazy;
 use pango::FontMapExt;
 use regex::{Captures, Regex};
@@ -11,6 +12,7 @@ use std::rc::{Rc, Weak};
 
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
+use crate::cond::LanguageTags;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};
@@ -149,6 +151,8 @@ pub struct DrawingCtx {
     cr_stack: Rc<RefCell<Vec<cairo::Context>>>,
     cr: cairo::Context,
 
+    locale_tags: LanguageTags,
+
     viewport_stack: Rc<RefCell<Vec<Viewport>>>,
 
     drawsub_stack: Vec<Node>,
@@ -249,6 +253,27 @@ impl Drop for DrawingCtx {
     }
 }
 
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+///
+/// The `Locale::current()` call only contemplates a single language,
+/// but glib is smarter, and `g_get_langauge_names()` can provide
+/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
+/// English and German).  This function converts the output of
+/// `g_get_language_names()` into a `Locale` with appropriate
+/// fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::get_language_names() {
+        if let Ok(range) = LanguageRange::from_unix(&name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
+}
+
 impl DrawingCtx {
     fn new(
         cr: &cairo::Context,
@@ -264,11 +289,18 @@ impl DrawingCtx {
 
         let viewport_stack = vec![initial_viewport];
 
+        let locale_tags = LanguageTags::from_locale(&locale_from_environment())
+            .map_err(|s| {
+                rsvg_log!("could not convert locale to language tags: {}", s);
+            })
+            .unwrap_or_else(|_| LanguageTags::empty());
+
         DrawingCtx {
             initial_viewport,
             dpi,
             cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
+            locale_tags,
             viewport_stack: Rc::new(RefCell::new(viewport_stack)),
             drawsub_stack,
             measuring,
@@ -292,11 +324,16 @@ impl DrawingCtx {
             dpi: self.dpi,
             cr_stack,
             cr,
+            locale_tags: self.locale_tags.clone(),
             viewport_stack: self.viewport_stack.clone(),
             drawsub_stack: Vec::new(),
             measuring: self.measuring,
             testing: self.testing,
         }
+    }
+
+    pub fn locale_tags(&self) -> &LanguageTags {
+        &self.locale_tags
     }
 
     pub fn toplevel_viewport(&self) -> Rect {
