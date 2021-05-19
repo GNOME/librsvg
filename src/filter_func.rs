@@ -91,46 +91,46 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
     }))
 }
 
+/// Reads an optional number or percentage from the parser.
+/// Negative numbers are not allowed.
+fn parse_num_or_percentage<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+    match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
+        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
+        Ok(NumberOrPercentage { value }) => Some(value),
+        Err(_) => None,
+    }
+}
+
+/// Reads an optional number or percentage from the parser, returning a value clamped to [0, 1].
+/// Negative numbers are not allowed.
+fn parse_num_or_percentage_clamped<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+    parse_num_or_percentage(parser).map(|value| value.clamp(0.0, 1.0))
+}
+
 #[allow(clippy::unnecessary_wraps)]
 fn parse_grayscale<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value.clamp(0.0, 1.0)),
-        Err(_) => None,
-    };
+    let proportion = parse_num_or_percentage_clamped(parser);
 
     Ok(FilterFunction::Grayscale(Grayscale { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
 fn parse_opacity<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value.clamp(0.0, 1.0)),
-        Err(_) => None,
-    };
+    let proportion = parse_num_or_percentage_clamped(parser);
 
     Ok(FilterFunction::Opacity(Opacity { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
 fn parse_saturate<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value),
-        Err(_) => None,
-    };
+    let proportion = parse_num_or_percentage(parser);
 
     Ok(FilterFunction::Saturate(Saturate { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
 fn parse_sepia<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value.clamp(0.0, 1.0)),
-        Err(_) => None,
-    };
+    let proportion = parse_num_or_percentage_clamped(parser);
 
     Ok(FilterFunction::Sepia(Sepia { proportion }))
 }
