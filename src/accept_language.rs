@@ -60,6 +60,10 @@ impl AcceptLanguage {
             Ok(AcceptLanguage(items.into_boxed_slice()))
         }
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&LanguageTag, f32)> {
+        self.0.iter().map(|item| (&item.tag, item.weight.numeric()))
+    }
 }
 
 impl Item {
@@ -321,5 +325,21 @@ mod tests {
             AcceptLanguage::parse("es;q=0.1234"),
             Err(Error::InvalidWeight)
         ));
+    }
+
+    #[test]
+    fn iter() {
+        let accept_language = AcceptLanguage::parse("es-MX, en; q=0.5").unwrap();
+        let mut iter = accept_language.iter();
+
+        let (tag, weight) = iter.next().unwrap();
+        assert_eq!(*tag, LanguageTag::parse("es-MX").unwrap());
+        assert_eq!(weight, 1.0);
+
+        let (tag, weight) = iter.next().unwrap();
+        assert_eq!(*tag, LanguageTag::parse("en").unwrap());
+        assert_eq!(weight, 0.5);
+
+        assert!(iter.next().is_none());
     }
 }
