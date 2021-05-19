@@ -179,6 +179,30 @@ test_compare_render_output!(
 );
 
 test_compare_render_output!(
+    invert_filter_func,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="invert(0.75)"/>
+</svg>
+"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
+  <defs>
+    <filter id="filter">
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.75 0.25" />
+        <feFuncG type="table" tableValues="0.75 0.25" />
+        <feFuncB type="table" tableValues="0.75 0.25" />
+      </feComponentTransfer>
+    </filter>
+  </defs>
+
+  <rect x="100" y="100" width="200" height="200" fill="lime" filter="url(#filter)"/>
+</svg>
+"##,
+);
+
+test_compare_render_output!(
 opacity_filter_func,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
