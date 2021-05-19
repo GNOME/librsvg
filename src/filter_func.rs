@@ -18,6 +18,7 @@ use crate::{drawing_ctx::DrawingCtx, filters::component_transfer};
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterFunction {
     Blur(Blur),
+    Brightness(Brightness),
     Grayscale(Grayscale),
     Invert(Invert),
     Opacity(Opacity),
@@ -31,6 +32,14 @@ pub enum FilterFunction {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Blur {
     std_deviation: Option<Length<Both>>,
+}
+
+/// Parameters for the `brightness()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-brightness
+#[derive(Debug, Clone, PartialEq)]
+pub struct Brightness {
+    proportion: Option<f64>,
 }
 
 /// Parameters for the `grayscale()` filter function
@@ -73,6 +82,22 @@ pub struct Sepia {
     proportion: Option<f64>,
 }
 
+/// Reads an optional number or percentage from the parser.
+/// Negative numbers are not allowed.
+fn parse_num_or_percentage<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+    match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
+        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
+        Ok(NumberOrPercentage { value }) => Some(value),
+        Err(_) => None,
+    }
+}
+
+/// Reads an optional number or percentage from the parser, returning a value clamped to [0, 1].
+/// Negative numbers are not allowed.
+fn parse_num_or_percentage_clamped<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+    parse_num_or_percentage(parser).map(|value| value.clamp(0.0, 1.0))
+}
+
 fn parse_function<'i, F>(
     parser: &mut Parser<'i, '_>,
     name: &str,
@@ -100,20 +125,11 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
     }))
 }
 
-/// Reads an optional number or percentage from the parser.
-/// Negative numbers are not allowed.
-fn parse_num_or_percentage<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
-    match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value),
-        Err(_) => None,
-    }
-}
+#[allow(clippy::unnecessary_wraps)]
+fn parse_brightness<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = parse_num_or_percentage(parser);
 
-/// Reads an optional number or percentage from the parser, returning a value clamped to [0, 1].
-/// Negative numbers are not allowed.
-fn parse_num_or_percentage_clamped<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
-    parse_num_or_percentage(parser).map(|value| value.clamp(0.0, 1.0))
+    Ok(FilterFunction::Brightness(Brightness { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -170,6 +186,44 @@ impl Blur {
         FilterSpec {
             user_space_filter,
             primitives: vec![gaussian_blur],
+        }
+    }
+}
+
+impl Brightness {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let user_space_filter = Filter::default().to_user_space(params);
+        let slope = self.proportion.unwrap_or(1.0);
+
+        let brightness = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
+                functions: component_transfer::Functions {
+                    r: component_transfer::FeFuncR {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        ..component_transfer::FeFuncR::default()
+                    },
+                    g: component_transfer::FeFuncG {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        ..component_transfer::FeFuncG::default()
+                    },
+                    b: component_transfer::FeFuncB {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        ..component_transfer::FeFuncB::default()
+                    },
+                    ..component_transfer::Functions::default()
+                },
+                ..component_transfer::ComponentTransfer::default()
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![brightness],
         }
     }
 }
@@ -324,6 +378,7 @@ impl Parse for FilterFunction {
         let loc = parser.current_source_location();
         let fns: Vec<(&str, &dyn Fn(&mut Parser<'i, '_>) -> _)> = vec![
             ("blur", &parse_blur),
+            ("brightness", &parse_brightness),
             ("grayscale", &parse_grayscale),
             ("invert", &parse_invert),
             ("opacity", &parse_opacity),
@@ -355,6 +410,7 @@ impl FilterFunction {
 
         match self {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Brightness(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Invert(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
@@ -381,6 +437,21 @@ mod tests {
             FilterFunction::parse_str("blur(5px)").unwrap(),
             FilterFunction::Blur(Blur {
                 std_deviation: Some(Length::new(5.0, LengthUnit::Px))
+            })
+        );
+    }
+
+    #[test]
+    fn parses_brightness() {
+        assert_eq!(
+            FilterFunction::parse_str("brightness()").unwrap(),
+            FilterFunction::Brightness(Brightness { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("brightness(50%)").unwrap(),
+            FilterFunction::Brightness(Brightness {
+                proportion: Some(0.50_f32.into()),
             })
         );
     }
@@ -485,6 +556,11 @@ mod tests {
     fn invalid_blur_yields_error() {
         assert!(FilterFunction::parse_str("blur(foo)").is_err());
         assert!(FilterFunction::parse_str("blur(42 43)").is_err());
+    }
+
+    #[test]
+    fn invalid_brightness_yields_error() {
+        assert!(FilterFunction::parse_str("brightness(foo)").is_err());
     }
 
     #[test]
