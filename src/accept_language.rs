@@ -1,6 +1,7 @@
 //! Parser for an Accept-Language HTTP header.
 
 use language_tags::{LanguageTag, ParseError};
+use locale_config::{LanguageRange, Locale};
 
 use std::str::FromStr;
 
@@ -76,7 +77,8 @@ impl Item {
             (s, None)
         };
 
-        let tag = LanguageTag::parse(before_semicolon).map_err(AcceptLanguageError::InvalidLanguageTag)?;
+        let tag = LanguageTag::parse(before_semicolon)
+            .map_err(AcceptLanguageError::InvalidLanguageTag)?;
 
         let weight;
 
@@ -119,6 +121,61 @@ impl Item {
         }
 
         Ok(Item { tag, weight })
+    }
+}
+
+/// A list of BCP47 language tags.
+///
+/// https://www.rfc-editor.org/info/rfc5664
+#[derive(Debug, Clone, PartialEq)]
+pub struct LanguageTags(Vec<LanguageTag>);
+
+impl LanguageTags {
+    pub fn empty() -> Self {
+        LanguageTags(Vec::new())
+    }
+
+    /// Converts a `Locale` to a set of language tags.
+    pub fn from_locale(locale: &Locale) -> Result<LanguageTags, String> {
+        let mut tags = Vec::new();
+
+        for locale_range in locale.tags_for("messages") {
+            if locale_range == LanguageRange::invariant() {
+                continue;
+            }
+
+            let str_locale_range = locale_range.as_ref();
+
+            let locale_tag = LanguageTag::from_str(str_locale_range).map_err(|e| {
+                format!(
+                    "invalid language tag \"{}\" in locale: {}",
+                    str_locale_range, e
+                )
+            })?;
+
+            if !locale_tag.is_language_range() {
+                return Err(format!(
+                    "language tag \"{}\" is not a language range",
+                    locale_tag
+                ));
+            }
+
+            tags.push(locale_tag);
+        }
+
+        Ok(LanguageTags(tags))
+    }
+
+    pub fn from(tags: Vec<LanguageTag>) -> LanguageTags {
+        LanguageTags(tags)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &LanguageTag> {
+        self.0.iter()
+    }
+
+    pub fn any_matches(&self, language_tag: &LanguageTag) -> bool {
+        self.0.iter().any(|tag| tag.matches(language_tag))
     }
 }
 
@@ -263,9 +320,15 @@ mod tests {
 
     #[test]
     fn empty_lists() {
-        assert!(matches!(AcceptLanguage::parse(""), Err(AcceptLanguageError::NoElements)));
+        assert!(matches!(
+            AcceptLanguage::parse(""),
+            Err(AcceptLanguageError::NoElements)
+        ));
 
-        assert!(matches!(AcceptLanguage::parse(","), Err(AcceptLanguageError::NoElements)));
+        assert!(matches!(
+            AcceptLanguage::parse(","),
+            Err(AcceptLanguageError::NoElements)
+        ));
 
         assert!(matches!(
             AcceptLanguage::parse(", , ,,,"),

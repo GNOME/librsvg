@@ -10,9 +10,9 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::{Rc, Weak};
 
+use crate::accept_language::LanguageTags;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::cond::LanguageTags;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};

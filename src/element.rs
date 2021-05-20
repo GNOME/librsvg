@@ -6,8 +6,9 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
 
+use crate::accept_language::LanguageTags;
 use crate::bbox::BoundingBox;
-use crate::cond::{LanguageTags, RequiredExtensions, RequiredFeatures, SystemLanguage};
+use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::{Declaration, Origin};
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
