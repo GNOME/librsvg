@@ -27,7 +27,7 @@ pub struct AcceptLanguage(Box<[Item]>);
 
 /// Errors when parsing an `AcceptLanguage`.
 #[derive(Debug, PartialEq)]
-pub enum Error {
+pub enum AcceptLanguageError {
     NoElements,
     InvalidCharacters,
     InvalidLanguageTag(ParseError),
@@ -38,9 +38,9 @@ pub enum Error {
 const OWS: [char; 2] = ['\x20', '\x09'];
 
 impl AcceptLanguage {
-    pub fn parse(s: &str) -> Result<AcceptLanguage, Error> {
+    pub fn parse(s: &str) -> Result<AcceptLanguage, AcceptLanguageError> {
         if !s.is_ascii() {
-            return Err(Error::InvalidCharacters);
+            return Err(AcceptLanguageError::InvalidCharacters);
         }
 
         let mut items = Vec::new();
@@ -55,7 +55,7 @@ impl AcceptLanguage {
         }
 
         if items.len() == 0 {
-            Err(Error::NoElements)
+            Err(AcceptLanguageError::NoElements)
         } else {
             Ok(AcceptLanguage(items.into_boxed_slice()))
         }
@@ -67,7 +67,7 @@ impl AcceptLanguage {
 }
 
 impl Item {
-    fn parse(s: &str) -> Result<Item, Error> {
+    fn parse(s: &str) -> Result<Item, AcceptLanguageError> {
         let semicolon_pos = s.find(';');
 
         let (before_semicolon, after_semicolon) = if let Some(semi) = semicolon_pos {
@@ -76,7 +76,7 @@ impl Item {
             (s, None)
         };
 
-        let tag = LanguageTag::parse(before_semicolon).map_err(Error::InvalidLanguageTag)?;
+        let tag = LanguageTag::parse(before_semicolon).map_err(AcceptLanguageError::InvalidLanguageTag)?;
 
         let weight;
 
@@ -99,20 +99,20 @@ impl Item {
                         {
                             qvalue
                         } else {
-                            return Err(Error::InvalidWeight);
+                            return Err(AcceptLanguageError::InvalidWeight);
                         }
                     } else {
                         qvalue
                     }
                 } else {
-                    return Err(Error::InvalidWeight);
+                    return Err(AcceptLanguageError::InvalidWeight);
                 }
             } else {
-                return Err(Error::InvalidWeight);
+                return Err(AcceptLanguageError::InvalidWeight);
             };
 
             weight = Weight(Some(
-                f32::from_str(number).map_err(|_| Error::InvalidWeight)?,
+                f32::from_str(number).map_err(|_| AcceptLanguageError::InvalidWeight)?,
             ));
         } else {
             weight = Weight(None);
@@ -263,13 +263,13 @@ mod tests {
 
     #[test]
     fn empty_lists() {
-        assert!(matches!(AcceptLanguage::parse(""), Err(Error::NoElements)));
+        assert!(matches!(AcceptLanguage::parse(""), Err(AcceptLanguageError::NoElements)));
 
-        assert!(matches!(AcceptLanguage::parse(","), Err(Error::NoElements)));
+        assert!(matches!(AcceptLanguage::parse(","), Err(AcceptLanguageError::NoElements)));
 
         assert!(matches!(
             AcceptLanguage::parse(", , ,,,"),
-            Err(Error::NoElements)
+            Err(AcceptLanguageError::NoElements)
         ));
     }
 
@@ -277,7 +277,7 @@ mod tests {
     fn ascii_only() {
         assert!(matches!(
             AcceptLanguage::parse("ës"),
-            Err(Error::InvalidCharacters)
+            Err(AcceptLanguageError::InvalidCharacters)
         ));
     }
 
@@ -285,7 +285,7 @@ mod tests {
     fn invalid_tag() {
         assert!(matches!(
             AcceptLanguage::parse("no_underscores"),
-            Err(Error::InvalidLanguageTag(_))
+            Err(AcceptLanguageError::InvalidLanguageTag(_))
         ));
     }
 
@@ -293,37 +293,37 @@ mod tests {
     fn invalid_weight() {
         assert!(matches!(
             AcceptLanguage::parse("es;"),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
             AcceptLanguage::parse("es;q"),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
             AcceptLanguage::parse("es;q="),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
             AcceptLanguage::parse("es;q=2"),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
             AcceptLanguage::parse("es;q=1.1"),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
             AcceptLanguage::parse("es;q=1.12"),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
             AcceptLanguage::parse("es;q=1.123"),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
 
         // Up to three decimals allowed per RFC 7231
         assert!(matches!(
             AcceptLanguage::parse("es;q=0.1234"),
-            Err(Error::InvalidWeight)
+            Err(AcceptLanguageError::InvalidWeight)
         ));
     }
 
