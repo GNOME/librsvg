@@ -119,6 +119,10 @@ impl LanguageTags {
         Ok(LanguageTags(tags))
     }
 
+    pub fn from(tags: Vec<LanguageTag>) -> LanguageTags {
+        LanguageTags(tags)
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &LanguageTag> {
         self.0.iter()
     }
@@ -158,7 +162,7 @@ impl SystemLanguage {
             })
             .collect::<Result<Vec<LanguageTag>, _>>()?;
 
-        Ok(SystemLanguage(LanguageTags(attribute_tags)))
+        Ok(SystemLanguage(LanguageTags::from(attribute_tags)))
     }
 
     /// Evaluate a systemLanguage value for conditional processing.
