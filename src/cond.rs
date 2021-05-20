@@ -119,6 +119,10 @@ impl LanguageTags {
         Ok(LanguageTags(tags))
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = &LanguageTag> {
+        self.0.iter()
+    }
+
     fn any_matches(&self, language_tag: &LanguageTag) -> bool {
         self.0.iter().any(|tag| tag.matches(language_tag))
     }
@@ -159,7 +163,7 @@ impl SystemLanguage {
 
     /// Evaluate a systemLanguage value for conditional processing.
     pub fn eval(&self, locale_tags: &LanguageTags) -> bool {
-        (self.0).0.iter().any(|tag| locale_tags.any_matches(tag))
+        self.0.iter().any(|tag| locale_tags.any_matches(tag))
     }
 }
 
