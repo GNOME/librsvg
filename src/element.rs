@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
 
-use crate::accept_language::LanguageTags;
+use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::{Declaration, Origin};
@@ -177,7 +177,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         self.values = values.clone();
     }
 
-    fn get_cond(&self, locale_tags: &LanguageTags) -> bool {
+    fn get_cond(&self, user_language: &UserLanguage) -> bool {
         self.required_extensions
             .as_ref()
             .map(|v| v.eval())
@@ -190,7 +190,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             && self
                 .system_language
                 .as_ref()
-                .map(|v| v.eval(locale_tags))
+                .map(|v| v.eval(user_language))
                 .unwrap_or(true)
     }
 
@@ -532,8 +532,8 @@ impl Element {
         call_inner!(self, set_computed_values, values);
     }
 
-    pub fn get_cond(&self, locale_tags: &LanguageTags) -> bool {
-        call_inner!(self, get_cond, locale_tags)
+    pub fn get_cond(&self, user_language: &UserLanguage) -> bool {
+        call_inner!(self, get_cond, user_language)
     }
 
     pub fn get_transform(&self) -> Transform {

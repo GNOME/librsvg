@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 use language_tags::LanguageTag;
 
-use crate::accept_language::LanguageTags;
+use crate::accept_language::{LanguageTags, UserLanguage};
 use crate::error::*;
 
 // No extensions at the moment.
@@ -111,8 +111,8 @@ impl SystemLanguage {
     }
 
     /// Evaluate a systemLanguage value for conditional processing.
-    pub fn eval(&self, locale_tags: &LanguageTags) -> bool {
-        self.0.iter().any(|tag| locale_tags.any_matches(tag))
+    pub fn eval(&self, user_language: &UserLanguage) -> bool {
+        user_language.any_matches(&self.0)
     }
 }
 
@@ -165,8 +165,7 @@ mod tests {
     #[test]
     fn system_language() {
         let locale = Locale::new("de,en-US").unwrap();
-
-        let locale_tags = LanguageTags::from_locale(&locale).unwrap();
+        let user_language = UserLanguage::LanguageTags(LanguageTags::from_locale(&locale).unwrap());
 
         assert!(SystemLanguage::from_attribute("").is_err());
 
@@ -175,56 +174,56 @@ mod tests {
         assert_eq!(
             SystemLanguage::from_attribute("fr")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             false
         );
 
         assert_eq!(
             SystemLanguage::from_attribute("en")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             false
         );
 
         assert_eq!(
             SystemLanguage::from_attribute("de")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             true
         );
 
         assert_eq!(
             SystemLanguage::from_attribute("en-US")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             true
         );
 
         assert_eq!(
             SystemLanguage::from_attribute("en-GB")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             false
         );
 
         assert_eq!(
             SystemLanguage::from_attribute("DE")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             true
         );
 
         assert_eq!(
             SystemLanguage::from_attribute("de-LU")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             true
         );
 
         assert_eq!(
             SystemLanguage::from_attribute("fr, de")
                 .unwrap()
-                .eval(&locale_tags),
+                .eval(&user_language),
             true
         );
     }

@@ -5,7 +5,31 @@ use locale_config::{LanguageRange, Locale};
 
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+/// Used to set the language for rendering.
+///
+/// SVG documents can use the `<switch>` element whose children have a `systemLanguage`
+/// attribute; only the first child which has a `systemLanguage` that matches the user's
+/// preferences will be rendered.
+///
+/// This enum, used with `CairoRenderer::with_language`, configures how to obtain the
+/// user's prefererred languages.
+pub enum Language {
+    /// Use the Unix environment variables `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` and `LANG` to obtain the
+    /// user's language.  This uses [`g_get_language_names()`][ggln] underneath.
+    ///
+    /// [ggln]: https://developer.gnome.org/glib/stable/glib-I18N.html#g-get-language-names
+    FromEnvironment,
+    AcceptLanguage(AcceptLanguage),
+}
+
+/// `Language` but with the environment's locale converted to something we can use.
+#[derive(Clone)]
+pub enum UserLanguage {
+    LanguageTags(LanguageTags),
+    AcceptLanguage(AcceptLanguage),
+}
+
+#[derive(Clone, Debug, PartialEq)]
 struct Weight(Option<f32>);
 
 impl Weight {
@@ -14,7 +38,7 @@ impl Weight {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 struct Item {
     tag: LanguageTag,
     weight: Weight,
@@ -23,7 +47,7 @@ struct Item {
 /// Stores a parsed version of an HTTP Accept-Language header.
 ///
 /// https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.5
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AcceptLanguage(Box<[Item]>);
 
 /// Errors when parsing an `AcceptLanguage`.
@@ -64,6 +88,10 @@ impl AcceptLanguage {
 
     pub fn iter(&self) -> impl Iterator<Item = (&LanguageTag, f32)> {
         self.0.iter().map(|item| (&item.tag, item.weight.numeric()))
+    }
+
+    fn any_matches(&self, tag: &LanguageTag) -> bool {
+        self.iter().any(|(self_tag, _weight)| tag.matches(self_tag))
     }
 }
 
@@ -177,6 +205,54 @@ impl LanguageTags {
     pub fn any_matches(&self, language_tag: &LanguageTag) -> bool {
         self.0.iter().any(|tag| tag.matches(language_tag))
     }
+}
+
+impl UserLanguage {
+    pub fn new(language: &Language) -> UserLanguage {
+        match *language {
+            Language::FromEnvironment => UserLanguage::LanguageTags(
+                LanguageTags::from_locale(&locale_from_environment())
+                    .map_err(|s| {
+                        rsvg_log!("could not convert locale to language tags: {}", s);
+                    })
+                    .unwrap_or_else(|_| LanguageTags::empty()),
+            ),
+
+            Language::AcceptLanguage(ref a) => UserLanguage::AcceptLanguage(a.clone()),
+        }
+    }
+
+    pub fn any_matches(&self, tags: &LanguageTags) -> bool {
+        match *self {
+            UserLanguage::LanguageTags(ref language_tags) => {
+                tags.iter().any(|tag| language_tags.any_matches(tag))
+            }
+            UserLanguage::AcceptLanguage(ref accept_language) => {
+                tags.iter().any(|tag| accept_language.any_matches(tag))
+            }
+        }
+    }
+}
+
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+///
+/// The `Locale::current()` call only contemplates a single language,
+/// but glib is smarter, and `g_get_langauge_names()` can provide
+/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
+/// English and German).  This function converts the output of
+/// `g_get_language_names()` into a `Locale` with appropriate
+/// fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::get_language_names() {
+        if let Ok(range) = LanguageRange::from_unix(&name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
 }
 
 #[cfg(test)]
