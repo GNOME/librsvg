@@ -7,9 +7,9 @@ use std::str::FromStr;
 
 /// Used to set the language for rendering.
 ///
-/// SVG documents can use the `<switch>` element whose children have a `systemLanguage`
-/// attribute; only the first child which has a `systemLanguage` that matches the user's
-/// preferences will be rendered.
+/// SVG documents can use the `<switch>` element, whose children have a `systemLanguage`
+/// attribute; only the first child which has a `systemLanguage` that matches the
+/// preferred languages will be rendered.
 ///
 /// This enum, used with `CairoRenderer::with_language`, configures how to obtain the
 /// user's prefererred languages.

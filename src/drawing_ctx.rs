@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::{Rc, Weak};
 
-use crate::accept_language::{Language, UserLanguage};
+use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -173,6 +173,7 @@ pub fn draw_tree(
     mode: DrawingMode,
     cr: &cairo::Context,
     viewport: Rect,
+    user_language: &UserLanguage,
     dpi: Dpi,
     measuring: bool,
     testing: bool,
@@ -215,6 +216,7 @@ pub fn draw_tree(
         cr,
         transform,
         viewport,
+        user_language.clone(),
         dpi,
         measuring,
         testing,
@@ -257,6 +259,7 @@ impl DrawingCtx {
         cr: &cairo::Context,
         transform: Transform,
         viewport: Rect,
+        user_language: UserLanguage,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
@@ -266,8 +269,6 @@ impl DrawingCtx {
         let initial_viewport = Viewport { transform, vbox };
 
         let viewport_stack = vec![initial_viewport];
-
-        let user_language = UserLanguage::new(&Language::FromEnvironment);
 
         DrawingCtx {
             initial_viewport,

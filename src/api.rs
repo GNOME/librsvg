@@ -5,6 +5,7 @@
 #![warn(missing_docs)]
 
 pub use crate::{
+    accept_language::{AcceptLanguage, Language, UserLanguage},
     error::{ImplementationLimit, LoadingError, RenderingError},
     length::{LengthUnit, RsvgLength as Length},
 };
@@ -247,6 +248,7 @@ impl SvgHandle {
 pub struct CairoRenderer<'a> {
     handle: &'a SvgHandle,
     dpi: Dpi,
+    user_language: UserLanguage,
     is_testing: bool,
 }
 
@@ -292,6 +294,7 @@ impl<'a> CairoRenderer<'a> {
         CairoRenderer {
             handle,
             dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
+            user_language: UserLanguage::new(&Language::FromEnvironment),
             is_testing: false,
         }
     }
@@ -307,6 +310,25 @@ impl<'a> CairoRenderer<'a> {
 
         CairoRenderer {
             dpi: Dpi::new(dpi_x, dpi_y),
+            ..self
+        }
+    }
+
+    /// Configures the set of languages used for rendering.
+    ///
+    /// SVG documents can use the `<switch>` element, whose children have a
+    /// `systemLanguage` attribute; only the first child which has a `systemLanguage` that
+    /// matches the preferred languages will be rendered.
+    ///
+    /// This function sets the preferred languages.  The default is
+    /// `Language::FromEnvironment`, which means that the set of preferred languages will
+    /// be obtained from the program's environment.  To set an explicit list of languages,
+    /// you can use `Language::AcceptLanguage` instead.
+    pub fn with_language(self, language: Language) -> Self {
+        let user_language = UserLanguage::new(&language);
+
+        CairoRenderer {
+            user_language,
             ..self
         }
     }
@@ -361,7 +383,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(), RenderingError> {
         self.handle
             .0
-            .render_document(cr, viewport, self.dpi, self.is_testing)
+            .render_document(cr, viewport, &self.user_language, self.dpi, self.is_testing)
     }
 
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if
@@ -395,7 +417,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_layer(id, viewport, self.dpi, self.is_testing)
+            .get_geometry_for_layer(id, viewport, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
 
@@ -424,9 +446,14 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle
-            .0
-            .render_layer(cr, id, viewport, self.dpi, self.is_testing)
+        self.handle.0.render_layer(
+            cr,
+            id,
+            viewport,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )
     }
 
     /// Computes the (ink_rect, logical_rect) of a single SVG element
@@ -465,7 +492,7 @@ impl<'a> CairoRenderer<'a> {
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
             .0
-            .get_geometry_for_element(id, self.dpi, self.is_testing)
+            .get_geometry_for_element(id, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
 
@@ -491,9 +518,14 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle
-            .0
-            .render_element(cr, id, element_viewport, self.dpi, self.is_testing)
+        self.handle.0.render_element(
+            cr,
+            id,
+            element_viewport,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )
     }
 
     /// Turns on test mode.  Do not use this function; it is for librsvg's test suite only.
