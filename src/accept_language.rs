@@ -87,14 +87,14 @@ impl AcceptLanguage {
 
         for val in s.split(',') {
             let trimmed = val.trim_matches(&OWS[..]);
-            if trimmed.len() == 0 {
+            if trimmed.is_empty() {
                 continue;
             }
 
             items.push(Item::parse(trimmed)?);
         }
 
-        if items.len() == 0 {
+        if items.is_empty() {
             Err(AcceptLanguageError::NoElements)
         } else {
             Ok(AcceptLanguage(items.into_boxed_slice()))
