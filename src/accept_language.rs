@@ -3,6 +3,8 @@
 use language_tags::{LanguageTag, ParseError};
 use locale_config::{LanguageRange, Locale};
 
+use std::error;
+use std::fmt;
 use std::str::FromStr;
 
 /// Used to set the language for rendering.
@@ -57,6 +59,19 @@ pub enum AcceptLanguageError {
     InvalidCharacters,
     InvalidLanguageTag(ParseError),
     InvalidWeight,
+}
+
+impl error::Error for AcceptLanguageError {}
+
+impl fmt::Display for AcceptLanguageError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoElements => write!(f, "no language tags in list"),
+            Self::InvalidCharacters => write!(f, "invalid characters in language list"),
+            Self::InvalidLanguageTag(e) => write!(f, "invalid language tag: {}", e),
+            Self::InvalidWeight => write!(f, "invalid q= weight"),
+        }
+    }
 }
 
 /// Optional whitespace, Space or Tab, per https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3
