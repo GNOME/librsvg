@@ -55,6 +55,11 @@ Specify the background color.  If unspecified, none is used as the default.
 .I "\-s \-\-stylesheet filename"
 Filename of a CSS stylesheet.
 .TP
+.I "\-l \-\-accept-language [es-MX,fr,en]"
+Specify which languages will be used for SVG documents with multiple languages.  The string is
+formatted like an HTTP Accept-Language header, which is a comma-separated list of BCP47 language
+tags: https://www.rfc-editor.org/info/bcp47
+.TP
 .I "\-u \-\-unlimited"
 The SVG parser has some guards designed to mitigate large CPU or memory consumption in the face of
 malicious XML.  It may also refuse to resolve URIs used to embed image data.  If you are running
