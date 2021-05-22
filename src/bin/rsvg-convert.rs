@@ -21,7 +21,7 @@ mod windows_imports {
 use self::windows_imports::*;
 
 use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
-use librsvg::{CairoRenderer, Color, Loader, Parse, RenderingError};
+use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, Loader, Parse, RenderingError};
 use once_cell::unsync::OnceCell;
 use std::ops::Deref;
 use std::path::PathBuf;
@@ -435,7 +435,6 @@ arg_enum! {
     }
 }
 
-#[derive(Debug)]
 struct Converter {
     pub dpi: (f64, f64),
     pub zoom: Scale,
@@ -446,6 +445,7 @@ struct Converter {
     pub keep_aspect_ratio: bool,
     pub background_color: Option<Color>,
     pub stylesheet: Option<PathBuf>,
+    pub language: Language,
     pub unlimited: bool,
     pub keep_image_data: bool,
     pub input: Vec<Input>,
@@ -487,7 +487,9 @@ impl Converter {
                     .map_err(|e| error!("Error applying stylesheet: {}", e))?;
             }
 
-            let renderer = CairoRenderer::new(&handle).with_dpi(self.dpi.0, self.dpi.1);
+            let renderer = CairoRenderer::new(&handle)
+                .with_dpi(self.dpi.0, self.dpi.1)
+                .with_language(&self.language);
 
             let geometry = self.natural_geometry(&renderer, input)?;
             let natural_size = Size::new(geometry.width, geometry.height);
@@ -690,6 +692,14 @@ fn parse_args() -> Result<Converter, Error> {
                 .help("SVG id of object to export [default is to export all objects]"),
         )
         .arg(
+            clap::Arg::with_name("accept-language")
+                .short("l")
+                .long("accept-language")
+                .empty_values(false)
+                .value_name("languages")
+                .help("Languages to accept, for example \"es-MX,de,en\" [default uses language from the environment]"),
+        )
+        .arg(
             clap::Arg::with_name("keep_aspect")
                 .short("a")
                 .long("keep-aspect-ratio")
@@ -740,6 +750,18 @@ fn parse_args() -> Result<Converter, Error> {
         Format::Ps | Format::Eps | Format::Pdf => !matches.is_present("no_keep_image_data"),
         _ => matches.is_present("keep_image_data"),
     };
+
+    let language = value_t!(matches, "accept-language", String)
+        .or_none()
+        .and_then(|lang_str| match lang_str {
+            None => Ok(Language::FromEnvironment),
+            Some(s) => AcceptLanguage::parse(&s)
+                .map(Language::AcceptLanguage)
+                .map_err(|e| {
+                    let desc = format!("{}", e);
+                    clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
+                }),
+        });
 
     let background_color = value_t!(matches, "background", String).and_then(parse_color_string);
 
@@ -793,6 +815,7 @@ fn parse_args() -> Result<Converter, Error> {
         stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
         unlimited: matches.is_present("unlimited"),
         keep_image_data,
+        language: language?,
         input,
         output: matches
             .value_of_os("output")

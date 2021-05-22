@@ -324,8 +324,8 @@ impl<'a> CairoRenderer<'a> {
     /// `Language::FromEnvironment`, which means that the set of preferred languages will
     /// be obtained from the program's environment.  To set an explicit list of languages,
     /// you can use `Language::AcceptLanguage` instead.
-    pub fn with_language(self, language: Language) -> Self {
-        let user_language = UserLanguage::new(&language);
+    pub fn with_language(self, language: &Language) -> Self {
+        let user_language = UserLanguage::new(language);
 
         CairoRenderer {
             user_language,
