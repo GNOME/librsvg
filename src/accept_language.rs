@@ -133,14 +133,12 @@ impl Item {
                     let first_digit = qvalue.chars().next().unwrap();
 
                     if let Some(decimals) = qvalue[1..].strip_prefix(".") {
-                        if first_digit == '0'
+                        if (first_digit == '0'
                             && decimals.len() <= 3
-                            && decimals.chars().all(|c| c.is_digit(10))
-                        {
-                            qvalue
-                        } else if first_digit == '1'
-                            && decimals.len() <= 3
-                            && decimals.chars().all(|c| c == '0')
+                            && decimals.chars().all(|c| c.is_digit(10)))
+                            || (first_digit == '1'
+                                && decimals.len() <= 3
+                                && decimals.chars().all(|c| c == '0'))
                         {
                             qvalue
                         } else {
