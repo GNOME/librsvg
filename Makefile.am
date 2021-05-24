@@ -28,6 +28,7 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_SOURCES =	\
 LIBRSVG_SRC =					\
 	Cargo.toml				\
 	build.rs				\
+	src/accept_language.rs			\
 	src/angle.rs				\
 	src/api.rs				\
 	src/aspect_ratio.rs			\

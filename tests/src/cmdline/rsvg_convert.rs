@@ -709,6 +709,32 @@ fn overflowing_size_is_detected() {
 }
 
 #[test]
+fn accept_language_given() {
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/accept-language.svg")
+        .arg("--accept-language=es-MX")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/cmdline/accept-language-es.png"));
+
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/accept-language.svg")
+        .arg("--accept-language=de")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/cmdline/accept-language-de.png"));
+}
+
+#[test]
+fn accept_language_fallback() {
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/accept-language.svg")
+        .arg("--accept-language=fr")
+        .assert()
+        .success()
+        .stdout(
+            file::is_png().with_contents("tests/fixtures/cmdline/accept-language-fallback.png"),
+        );
+}
+
+#[test]
 fn keep_image_data_option() {
     RsvgConvert::accepts_arg("--keep-image-data");
 }

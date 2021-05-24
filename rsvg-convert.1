@@ -34,7 +34,7 @@ as the default.
 Specify how tall you wish the image to be.  If unspecified, the natural height of the image is used
 as the default.
 .TP
-.I "\-f \-\-format [png, pdf, ps, eps, svg, xml, recording]"
+.I "\-f \-\-format [png, pdf, ps, eps, svg]"
 Specify the output format you wish the image to be saved in.  If unspecified, PNG is used as the
 default.
 .TP
@@ -54,6 +54,11 @@ Specify the background color.  If unspecified, none is used as the default.
 .TP
 .I "\-s \-\-stylesheet filename"
 Filename of a CSS stylesheet.
+.TP
+.I "\-l \-\-accept-language [es-MX,fr,en]"
+Specify which languages will be used for SVG documents with multiple languages.  The string is
+formatted like an HTTP Accept-Language header, which is a comma-separated list of BCP47 language
+tags: https://www.rfc-editor.org/info/bcp47
 .TP
 .I "\-u \-\-unlimited"
 The SVG parser has some guards designed to mitigate large CPU or memory consumption in the face of
@@ -79,9 +84,11 @@ decimal number corresponding to a UNIX timestamp, defined as the number of secon
 seconds, since 01 Jan 1970 00:00:00 UTC.  The specification for this can be found at
 https://reproducible-builds.org/specs/source-date-epoch/
 .SH MORE INFORMATION
+https://gitlab.gnome.org/GNOME/librsvg
 https://wiki.gnome.org/Projects/LibRsvg
 
 http://www.w3.org/TR/SVG11/
+http://www.w3.org/TR/SVG2
 
 http://www.gnome.org/
 .SH "AUTHORS"

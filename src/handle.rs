@@ -2,6 +2,7 @@
 //!
 //! This module provides the primitives on which the public APIs are implemented.
 
+use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document, NodeId};
@@ -153,6 +154,7 @@ impl Handle {
         &self,
         node: Node,
         viewport: Rect,
+        user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(Rect, Rect), RenderingError> {
@@ -165,6 +167,7 @@ impl Handle {
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
+            user_language,
             dpi,
             true,
             is_testing,
@@ -181,13 +184,15 @@ impl Handle {
         &self,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let viewport = Rect::from(*viewport);
         let node = self.get_node_or_root(id)?;
 
-        let (ink_rect, logical_rect) = self.geometry_for_layer(node, viewport, dpi, is_testing)?;
+        let (ink_rect, logical_rect) =
+            self.geometry_for_layer(node, viewport, user_language, dpi, is_testing)?;
 
         Ok((
             cairo::Rectangle::from(ink_rect),
@@ -226,10 +231,11 @@ impl Handle {
         &self,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        self.render_layer(cr, None, viewport, dpi, is_testing)
+        self.render_layer(cr, None, viewport, user_language, dpi, is_testing)
     }
 
     pub fn render_layer(
@@ -237,6 +243,7 @@ impl Handle {
         cr: &cairo::Context,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
@@ -253,6 +260,7 @@ impl Handle {
             DrawingMode::LimitToStack { node, root },
             cr,
             viewport,
+            user_language,
             dpi,
             false,
             is_testing,
@@ -267,6 +275,7 @@ impl Handle {
     fn get_bbox_for_element(
         &self,
         node: &Node,
+        user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -279,6 +288,7 @@ impl Handle {
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
+            user_language,
             dpi,
             true,
             is_testing,
@@ -290,12 +300,13 @@ impl Handle {
     pub fn get_geometry_for_element(
         &self,
         id: Option<&str>,
+        user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node = self.get_node_or_root(id)?;
 
-        let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
+        let bbox = self.get_bbox_for_element(&node, user_language, dpi, is_testing)?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
         let logical_rect = bbox.rect.unwrap_or_default();
@@ -314,6 +325,7 @@ impl Handle {
         cr: &cairo::Context,
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
@@ -321,7 +333,7 @@ impl Handle {
 
         let node = self.get_node_or_root(id)?;
 
-        let bbox = self.get_bbox_for_element(&node, dpi, is_testing)?;
+        let bbox = self.get_bbox_for_element(&node, user_language, dpi, is_testing)?;
 
         if bbox.ink_rect.is_none() || bbox.rect.is_none() {
             // Nothing to draw
@@ -349,6 +361,7 @@ impl Handle {
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
+            user_language,
             dpi,
             false,
             is_testing,

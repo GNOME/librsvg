@@ -1,12 +1,12 @@
 //! SVG Elements.
 
-use locale_config::{LanguageRange, Locale};
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
 
+use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::{Declaration, Origin};
@@ -104,7 +104,9 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     result: ElementResult,
     transform: Transform,
     values: ComputedValues,
-    cond: bool,
+    required_extensions: Option<RequiredExtensions>,
+    required_features: Option<RequiredFeatures>,
+    system_language: Option<SystemLanguage>,
     pub element_impl: T,
 }
 
@@ -127,7 +129,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             result,
             transform: Default::default(),
             values: Default::default(),
-            cond: true,
+            required_extensions: Default::default(),
+            required_features: Default::default(),
+            system_language: Default::default(),
             element_impl,
         };
 
@@ -173,8 +177,21 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         self.values = values.clone();
     }
 
-    fn get_cond(&self) -> bool {
-        self.cond
+    fn get_cond(&self, user_language: &UserLanguage) -> bool {
+        self.required_extensions
+            .as_ref()
+            .map(|v| v.eval())
+            .unwrap_or(true)
+            && self
+                .required_features
+                .as_ref()
+                .map(|v| v.eval())
+                .unwrap_or(true)
+            && self
+                .system_language
+                .as_ref()
+                .map(|v| v.eval(user_language))
+                .unwrap_or(true)
     }
 
     fn get_transform(&self) -> Transform {
@@ -193,33 +210,26 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {
-        let mut cond = self.cond;
-
         for (attr, value) in self.attributes.iter() {
             match attr.expanded() {
-                expanded_name!("", "requiredExtensions") if cond => {
-                    cond = RequiredExtensions::from_attribute(value)
-                        .map(|RequiredExtensions(res)| res)
-                        .attribute(attr)?;
+                expanded_name!("", "requiredExtensions") => {
+                    self.required_extensions =
+                        Some(RequiredExtensions::from_attribute(value).attribute(attr)?);
                 }
 
-                expanded_name!("", "requiredFeatures") if cond => {
-                    cond = RequiredFeatures::from_attribute(value)
-                        .map(|RequiredFeatures(res)| res)
-                        .attribute(attr)?;
+                expanded_name!("", "requiredFeatures") => {
+                    self.required_features =
+                        Some(RequiredFeatures::from_attribute(value).attribute(attr)?);
                 }
 
-                expanded_name!("", "systemLanguage") if cond => {
-                    cond = SystemLanguage::from_attribute(value, &LOCALE)
-                        .map(|SystemLanguage(res)| res)
-                        .attribute(attr)?;
+                expanded_name!("", "systemLanguage") => {
+                    self.system_language =
+                        Some(SystemLanguage::from_attribute(value).attribute(attr)?);
                 }
 
                 _ => {}
             }
         }
-
-        self.cond = cond;
 
         Ok(())
     }
@@ -522,8 +532,8 @@ impl Element {
         call_inner!(self, set_computed_values, values);
     }
 
-    pub fn get_cond(&self) -> bool {
-        call_inner!(self, get_cond)
+    pub fn get_cond(&self, user_language: &UserLanguage) -> bool {
+        call_inner!(self, get_cond, user_language)
     }
 
     pub fn get_transform(&self) -> Transform {
@@ -813,29 +823,6 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
     ];
 
     creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
-});
-
-/// Gets the user's preferred locale from the environment and
-/// translates it to a `Locale` with `LanguageRange` fallbacks.
-///
-/// The `Locale::current()` call only contemplates a single language,
-/// but glib is smarter, and `g_get_langauge_names()` can provide
-/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
-/// English and German).  This function converts the output of
-/// `g_get_language_names()` into a `Locale` with appropriate
-/// fallbacks.
-static LOCALE: Lazy<Locale> = Lazy::new(|| {
-    let mut locale = Locale::invariant();
-
-    // This call has a lot of memory churn internally with many
-    // short-lived allocations, so we do this only once.
-    for name in glib::get_language_names() {
-        if let Ok(range) = LanguageRange::from_unix(&name) {
-            locale.add(&range);
-        }
-    }
-
-    locale
 });
 
 #[cfg(ignore)]

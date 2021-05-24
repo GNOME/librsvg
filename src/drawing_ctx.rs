@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::{Rc, Weak};
 
+use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -149,6 +150,8 @@ pub struct DrawingCtx {
     cr_stack: Rc<RefCell<Vec<cairo::Context>>>,
     cr: cairo::Context,
 
+    user_language: UserLanguage,
+
     viewport_stack: Rc<RefCell<Vec<Viewport>>>,
 
     drawsub_stack: Vec<Node>,
@@ -170,6 +173,7 @@ pub fn draw_tree(
     mode: DrawingMode,
     cr: &cairo::Context,
     viewport: Rect,
+    user_language: &UserLanguage,
     dpi: Dpi,
     measuring: bool,
     testing: bool,
@@ -212,6 +216,7 @@ pub fn draw_tree(
         cr,
         transform,
         viewport,
+        user_language.clone(),
         dpi,
         measuring,
         testing,
@@ -254,6 +259,7 @@ impl DrawingCtx {
         cr: &cairo::Context,
         transform: Transform,
         viewport: Rect,
+        user_language: UserLanguage,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
@@ -269,6 +275,7 @@ impl DrawingCtx {
             dpi,
             cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
+            user_language,
             viewport_stack: Rc::new(RefCell::new(viewport_stack)),
             drawsub_stack,
             measuring,
@@ -292,11 +299,16 @@ impl DrawingCtx {
             dpi: self.dpi,
             cr_stack,
             cr,
+            user_language: self.user_language.clone(),
             viewport_stack: self.viewport_stack.clone(),
             drawsub_stack: Vec::new(),
             measuring: self.measuring,
             testing: self.testing,
         }
+    }
+
+    pub fn user_language(&self) -> &UserLanguage {
+        &self.user_language
     }
 
     pub fn toplevel_viewport(&self) -> Rect {
