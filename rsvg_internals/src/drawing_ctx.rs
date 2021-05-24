@@ -1,8 +1,11 @@
 //! The main context structure which drives the drawing process.
 
 use float_cmp::approx_eq;
+use glib::translate::*;
+use glib_sys::gboolean;
 use once_cell::sync::Lazy;
 use pango::FontMapExt;
+use pango_sys::PangoContext;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -2054,8 +2057,31 @@ impl From<TextRendering> for cairo::Antialias {
 impl From<&DrawingCtx> for pango::Context {
     fn from(draw_ctx: &DrawingCtx) -> pango::Context {
         let cr = draw_ctx.cr.clone();
+
+        let mut options = cairo::FontOptions::new();
+        if draw_ctx.testing {
+            options.set_antialias(cairo::Antialias::Gray);
+        }
+
+        options.set_hint_style(cairo::HintStyle::None);
+        options.set_hint_metrics(cairo::HintMetrics::Off);
+
+        cr.set_font_options(&options);
+
         let font_map = pangocairo::FontMap::get_default().unwrap();
         let context = font_map.create_context().unwrap();
+
+        unsafe {
+            extern "C" {
+                fn pango_context_set_round_glyph_positions(
+                    context: *mut PangoContext,
+                    round_positions: gboolean,
+                );
+            }
+
+            pango_context_set_round_glyph_positions(context.to_glib_none().0, false.to_glib());
+        }
+
         pangocairo::functions::update_context(&cr, &context);
 
         // Pango says this about pango_cairo_context_set_resolution():
@@ -2075,16 +2101,6 @@ impl From<&DrawingCtx> for pango::Context {
         // right here, instead of spreading them out through our Length normalization
         // code.
         pangocairo::functions::context_set_resolution(&context, 72.0);
-
-        if draw_ctx.testing {
-            let mut options = cairo::FontOptions::new();
-
-            options.set_antialias(cairo::Antialias::Gray);
-            options.set_hint_style(cairo::HintStyle::Full);
-            options.set_hint_metrics(cairo::HintMetrics::On);
-
-            pangocairo::functions::context_set_font_options(&context, Some(&options));
-        }
 
         context
     }
