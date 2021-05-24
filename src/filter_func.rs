@@ -123,11 +123,7 @@ where
 // about that.
 #[allow(clippy::unnecessary_wraps)]
 fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let length = if let Ok(length) = parser.try_parse(|p| Length::parse(p)) {
-        Some(length)
-    } else {
-        None
-    };
+    let length = parser.try_parse(|p| Length::parse(p)).ok();
 
     Ok(FilterFunction::Blur(Blur {
         std_deviation: length,
