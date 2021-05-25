@@ -1,4 +1,22 @@
 ==============
+Version 2.50.6
+==============
+
+This release fixes an important bug about text spacing.  The bug fix
+requires an update to at least Pango 1.44.  Sorry for the increased
+requirements!
+
+- Librsvg now requires at least Pango 1.44.
+
+- #730 - Incorrect text spacing when the transform is not 1:1.  You
+  can see this when a small font-size is scaled up due to a
+  transform.  It is less visible for a large font-size scaled down.
+
+- #704 - Fix circle/ellipse in paths when they are made out of a
+  single Arc command.
+
+
+==============
 Version 2.50.5
 ==============
 
