@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <g>
+    <!-- text and tspans all visible -->
+    <text x="10" y="10" font-family="sans" font-size="12">
+      foo 
+      <tspan>bar</tspan>
+      <tspan>baz</tspan>
+    </text>
+
+    <!-- tspan with display none -->
+    <text x="10" y="50" font-family="sans" font-size="12">
+      foo 
+      <tspan display="none">bar</tspan>
+      <tspan>baz</tspan>
+    </text>
+
+    <!-- tspan with visibility hidden -->
+    <text x="10" y="100" font-family="sans" font-size="12">
+      foo 
+      <tspan visibility="hidden">bar</tspan>
+      <tspan>baz</tspan>
+    </text>
+
+  </g>
+</svg>
