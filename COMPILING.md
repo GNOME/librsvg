@@ -44,7 +44,7 @@ minimum version is listed here; you may use a newer version instead.
 * GObject-Introspection 0.10.8
 * Gtk-doc 1.13
 * Libxml2 2.9.0
-* Pango 1.38.0
+* Pango 1.44.0
 
 The following sections describe how to install these dependencies on
 several systems.

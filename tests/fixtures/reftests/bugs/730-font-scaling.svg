@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="200">
+  <svg x="10" y="0" width="480" height="40" viewBox="0 0 480 40">
+    <text x="0" y="25" font-size="20" font-family="sans">How vexingly quick daft zebras jump!</text>
+  </svg>
+
+  <svg x="10" y="40" width="480" height="40" viewBox="0 0 240 20">
+    <text x="0" y="12.5" font-size="10" font-family="sans">How vexingly quick daft zebras jump!</text>
+  </svg>
+
+  <svg x="10" y="80" width="480" height="40" viewBox="0 0 120 10">
+    <text x="0" y="6.25" font-size="5" font-family="sans">How vexingly quick daft zebras jump!</text>
+  </svg>
+
+  <svg x="10" y="120" width="480" height="40" viewBox="0 0 60 5">
+    <text x="0" y="3.125" font-size="2.5" font-family="sans">How vexingly quick daft zebras jump!</text>
+  </svg>
+</svg>
