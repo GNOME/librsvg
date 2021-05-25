@@ -2,7 +2,6 @@
 use test_generator::test_resources;
 
 use cairo;
-use float_cmp::approx_eq;
 use librsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 use matches::matches;
 
@@ -346,7 +345,7 @@ fn test_text_bounds(name: &str) {
         )
         .unwrap();
 
-    assert!(approx_eq!(f64, ink_r.x, 80.0));
+    assert!(ink_r.x >= 80.0 && ink_r.x < 80.1);
 
     // This is kind of suspicious, but we don't know the actual height of the
     // text set at y=49 in the test SVG.  However, this test is more "text
