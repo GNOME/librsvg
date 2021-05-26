@@ -1,4 +1,70 @@
 ==============
+Version 2.51.2
+==============
+
+This release fixes an important bug about text spacing.  The bug fix
+requires an update to at least Pango 1.44.  Sorry for the increased
+requirements!
+
+Librsvg now supports most of the filter function shortcuts in SVG2;
+see below.
+
+Previously, librsvg picked up the user's language preferences through
+environment variables like LANG and LC_MESSAGES.  This is inconvenient
+for applications that call rsvg-convert but don't want to synthesize a
+LANG variable.
+
+There is a new option in rsvg-convert so you can pass
+--accept-language=<languages> formatted as an HTTP Accept-Language
+header.  This is used to specify which languages will be chosen from
+elements with the "systemLanguage" attribute:
+
+    rsvg-convert --accept-language=es-MX,en foo.svg
+
+That command will select Mexican Spanish and English from suitable SVG
+elements.  Please see the man page for details.
+
+- The Minimum Supported Rust Version (MSRV) is now Rust 1.51.
+
+- Librsvg now requires at least Pango 1.44.
+
+- #730 - Incorrect text spacing when the transform is not 1:1.  You
+  can see this when a small font-size is scaled up due to a
+  transform.  It is less visible for a large font-size scaled down.
+
+- #709 #710 #712 714 #715 #716 #717 - The "filter" attribute now
+  accepts lists of "<filter-function>" per SVG2.  There is support for
+  blur(), contrast(), grayscale(), invert(), opacity(), saturate(),
+  sepia() (John Ledbetter).
+
+- #356 - Add --accept-language option to rsvg-convert.
+
+- #704 - Fix circle/ellipse in paths when they are made out of a
+  single Arc command.
+
+- #691 - Don't allow number lists with unbounded lengths in
+  tableValues attributes, for feComponentTransfer and
+  feConvolveMatrix (Madds H).
+
+- #718 - Negative rx/ry in rect element should be ignored.
+
+- #687 - Reduce memory pressure when rendering text.
+
+- Fix build on 32-bit ARM (Lovell Fuller).
+
+- Update the Rust crate dependencies (Bastien Orivel).
+
+- Refactoring parsers (Paolo Borelli).
+
+- There is a new list of librsvg releases with security fixes in
+  SECURITY.md.  That file also contains security-related information
+  on librsvg's dependencies.
+
+Special thanks to John Ledbetter for carefully implementing each of
+the new shortcuts for filter functions in SVG2.
+
+
+==============
 Version 2.51.1
 ==============
 
