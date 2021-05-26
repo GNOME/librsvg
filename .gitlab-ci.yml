@@ -231,6 +231,8 @@ pages:
   script:
     - mkdir -p public/doc
     - sudo -E cargo doc --document-private-items --no-deps
+    - cp -r target/doc/* public/internals
+    - sudo -E cargo doc --no-deps --lib
     - cp -r target/doc/* public/doc
   artifacts:
     paths:

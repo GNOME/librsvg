@@ -83,7 +83,7 @@ with a sample SVG file.
 ## Hacking on librsvg
 
 The library's internals are being documented at
-https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg_internals/index.html
+https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html
 
 Please see that documentation for common tasks like adding support for
 a new CSS property.

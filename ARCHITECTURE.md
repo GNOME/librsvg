@@ -8,7 +8,7 @@ at a street corner.
 
 The library's internals are documented as Rust documentation comments;
 you can look at the rendered version at
-https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
+https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html
 
 You may also want to see the section below on [interesting parts of
 the code](#some_interesting_parts_of_the_code).
