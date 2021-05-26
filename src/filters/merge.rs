@@ -30,14 +30,14 @@ pub struct FeMergeNode {
 
 /// Resolved `feMerge` primitive for rendering.
 pub struct Merge {
-    merge_nodes: Vec<MergeNode>,
+    pub merge_nodes: Vec<MergeNode>,
 }
 
 /// Resolved `feMergeNode` for rendering.
-#[derive(Debug, PartialEq)]
-struct MergeNode {
-    in1: Input,
-    color_interpolation_filters: ColorInterpolationFilters,
+#[derive(Debug, Default, PartialEq)]
+pub struct MergeNode {
+    pub in1: Input,
+    pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl Default for FeMerge {

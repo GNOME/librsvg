@@ -117,11 +117,11 @@ impl PrimitiveParams {
 /// The base filter primitive node containing common properties.
 #[derive(Default, Clone)]
 pub struct Primitive {
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
-    width: Option<ULength<Horizontal>>,
-    height: Option<ULength<Vertical>>,
-    result: Option<CustomIdent>,
+    pub x: Option<Length<Horizontal>>,
+    pub y: Option<Length<Vertical>>,
+    pub width: Option<ULength<Horizontal>>,
+    pub height: Option<ULength<Vertical>>,
+    pub result: Option<CustomIdent>,
 }
 
 pub struct ResolvedPrimitive {

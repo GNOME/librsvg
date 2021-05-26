@@ -1,16 +1,24 @@
-use cssparser::Parser;
+use cssparser::{Color, Parser, RGBA};
 
+use crate::coord_units::CoordUnits;
+use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
-    gaussian_blur::GaussianBlur, FilterResolveError, FilterSpec, Primitive, PrimitiveParams,
-    ResolvedPrimitive,
+    color_matrix::ColorMatrix,
+    component_transfer,
+    composite::{Composite, Operator},
+    flood::Flood,
+    gaussian_blur::GaussianBlur,
+    merge::{Merge, MergeNode},
+    offset::Offset,
+    FilterResolveError, FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
 };
 use crate::length::*;
-use crate::parsers::{NumberOrPercentage, Parse};
+use crate::paint_server::resolve_color;
+use crate::parsers::{CustomIdent, NumberOrPercentage, Parse};
 use crate::properties::ComputedValues;
-use crate::{coord_units::CoordUnits, filters::color_matrix::ColorMatrix};
-use crate::{drawing_ctx::DrawingCtx, filters::component_transfer};
+use crate::unit_interval::UnitInterval;
 
 /// CSS Filter functions from the Filter Effects Module Level 1
 ///
@@ -20,6 +28,7 @@ pub enum FilterFunction {
     Blur(Blur),
     Brightness(Brightness),
     Contrast(Contrast),
+    DropShadow(DropShadow),
     Grayscale(Grayscale),
     Invert(Invert),
     Opacity(Opacity),
@@ -49,6 +58,17 @@ pub struct Brightness {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Contrast {
     proportion: Option<f64>,
+}
+
+/// Parameters for the `drop-shadow()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-drop-shadow
+#[derive(Debug, Clone, PartialEq)]
+pub struct DropShadow {
+    color: Option<Color>,
+    dx: Option<Length<Horizontal>>,
+    dy: Option<Length<Vertical>>,
+    std_deviation: Option<ULength<Both>>,
 }
 
 /// Parameters for the `grayscale()` filter function
@@ -142,6 +162,21 @@ fn parse_contrast<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, Par
     let proportion = parse_num_or_percentage(parser);
 
     Ok(FilterFunction::Contrast(Contrast { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_dropshadow<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let color = parser.try_parse(|p| Color::parse(p)).ok();
+    let dx = parser.try_parse(|p| Length::parse(p)).ok();
+    let dy = parser.try_parse(|p| Length::parse(p)).ok();
+    let std_deviation = parser.try_parse(|p| ULength::parse(p)).ok();
+
+    Ok(FilterFunction::DropShadow(DropShadow {
+        color,
+        dx,
+        dy,
+        std_deviation,
+    }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -278,6 +313,83 @@ impl Contrast {
         FilterSpec {
             user_space_filter,
             primitives: vec![contrast],
+        }
+    }
+}
+
+impl DropShadow {
+    /// Converts a DropShadow into the set of filter element primitives.
+    ///
+    /// See https://www.w3.org/TR/filter-effects/#dropshadowEquivalent
+    fn to_filter_spec(&self, params: &NormalizeParams, default_color: RGBA) -> FilterSpec {
+        let user_space_filter = Filter::default().to_user_space(params);
+        let dx = self.dx.map(|l| l.to_user(params)).unwrap_or(0.0);
+        let dy = self.dy.map(|l| l.to_user(params)).unwrap_or(0.0);
+        let std_dev = self.std_deviation.map(|l| l.to_user(params)).unwrap_or(0.0);
+        let color = self
+            .color
+            .as_ref()
+            .map(|c| resolve_color(c, UnitInterval::clamp(1.0), default_color))
+            .unwrap_or(default_color);
+
+        let offsetblur = CustomIdent("offsetblur".to_string());
+
+        let gaussian_blur = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::GaussianBlur(GaussianBlur {
+                in1: Input::SourceAlpha,
+                std_deviation: (std_dev, std_dev),
+                ..GaussianBlur::default()
+            }),
+        }
+        .into_user_space(params);
+
+        let offset = ResolvedPrimitive {
+            primitive: Primitive {
+                result: Some(offsetblur.clone()),
+                ..Primitive::default()
+            },
+            params: PrimitiveParams::Offset(Offset {
+                in1: Input::default(),
+                dx,
+                dy,
+            }),
+        }
+        .into_user_space(params);
+
+        let flood = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::Flood(Flood { color }),
+        }
+        .into_user_space(params);
+
+        let composite = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::Composite(Composite {
+                in2: Input::FilterOutput(offsetblur),
+                operator: Operator::In,
+                ..Composite::default()
+            }),
+        }
+        .into_user_space(params);
+
+        let merge = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::Merge(Merge {
+                merge_nodes: vec![
+                    MergeNode::default(),
+                    MergeNode {
+                        in1: Input::SourceGraphic,
+                        ..MergeNode::default()
+                    },
+                ],
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![gaussian_blur, offset, flood, composite, merge],
         }
     }
 }
@@ -434,6 +546,7 @@ impl Parse for FilterFunction {
             ("blur", &parse_blur),
             ("brightness", &parse_brightness),
             ("contrast", &parse_contrast),
+            ("drop-shadow", &parse_dropshadow),
             ("grayscale", &parse_grayscale),
             ("invert", &parse_invert),
             ("opacity", &parse_opacity),
@@ -467,6 +580,7 @@ impl FilterFunction {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Brightness(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Contrast(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::DropShadow(v) => Ok(v.to_filter_spec(&params, values.color().0)),
             FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Invert(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
@@ -523,6 +637,49 @@ mod tests {
             FilterFunction::parse_str("contrast(50%)").unwrap(),
             FilterFunction::Contrast(Contrast {
                 proportion: Some(0.50_f32.into()),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_dropshadow() {
+        assert_eq!(
+            FilterFunction::parse_str("drop-shadow(4px 5px)").unwrap(),
+            FilterFunction::DropShadow(DropShadow {
+                color: None,
+                dx: Some(Length::new(4.0, LengthUnit::Px)),
+                dy: Some(Length::new(5.0, LengthUnit::Px)),
+                std_deviation: None,
+            })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("drop-shadow(#ff0000 4px 5px 32px)").unwrap(),
+            FilterFunction::DropShadow(DropShadow {
+                color: Some(Color::RGBA(RGBA {
+                    red: 255,
+                    green: 0,
+                    blue: 0,
+                    alpha: 255
+                })),
+                dx: Some(Length::new(4.0, LengthUnit::Px)),
+                dy: Some(Length::new(5.0, LengthUnit::Px)),
+                std_deviation: Some(ULength::new(32.0, LengthUnit::Px)),
+            })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("drop-shadow(#ff0000)").unwrap(),
+            FilterFunction::DropShadow(DropShadow {
+                color: Some(Color::RGBA(RGBA {
+                    red: 255,
+                    green: 0,
+                    blue: 0,
+                    alpha: 255
+                })),
+                dx: None,
+                dy: None,
+                std_deviation: None,
             })
         );
     }

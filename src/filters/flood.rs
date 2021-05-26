@@ -20,7 +20,7 @@ pub struct FeFlood {
 
 /// Resolved `feFlood` primitive for rendering.
 pub struct Flood {
-    color: cssparser::RGBA,
+    pub color: cssparser::RGBA,
 }
 
 impl SetAttributes for FeFlood {

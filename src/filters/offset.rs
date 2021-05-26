@@ -26,9 +26,9 @@ pub struct FeOffset {
 /// Resolved `feOffset` primitive for rendering.
 #[derive(Clone, Default)]
 pub struct Offset {
-    in1: Input,
-    dx: f64,
-    dy: f64,
+    pub in1: Input,
+    pub dx: f64,
+    pub dy: f64,
 }
 
 impl SetAttributes for FeOffset {
