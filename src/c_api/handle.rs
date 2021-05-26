@@ -1,4 +1,4 @@
-//! Rust implementation of the C API for librsvg.
+//! Main API for `RsvgHandle`.
 //!
 //! The C API of librsvg revolves around an `RsvgHandle` GObject class, which is
 //! implemented as follows:
