@@ -1,3 +1,15 @@
+//! Compute an SVG document's size with the legacy logic.
+//!
+//! See the documentation for [`LegacySize`](trait.LegacySize.html).  The legacy C API
+//! functions like `rsvg_handle_render_cairo()` do not take a viewport argument: they do
+//! not know how big the caller would like to render the document; instead they compute a
+//! "natural size" for the document based on its `width`/`height`/`viewBox` and some
+//! heuristics for when they are missing.
+//!
+//! The new style C functions like `rsvg_handle_render_document()` actually take a
+//! viewport, which indicates how big the result should be.  This matches the expectations
+//! of the web platform, which assumes that all embedded content goes into a viewport.
+
 use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
 use float_cmp::approx_eq;
 
