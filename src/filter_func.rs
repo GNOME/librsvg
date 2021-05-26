@@ -18,6 +18,10 @@ use crate::{drawing_ctx::DrawingCtx, filters::component_transfer};
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterFunction {
     Blur(Blur),
+    Brightness(Brightness),
+    Contrast(Contrast),
+    Grayscale(Grayscale),
+    Invert(Invert),
     Opacity(Opacity),
     Saturate(Saturate),
     Sepia(Sepia),
@@ -29,6 +33,38 @@ pub enum FilterFunction {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Blur {
     std_deviation: Option<Length<Both>>,
+}
+
+/// Parameters for the `brightness()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-brightness
+#[derive(Debug, Clone, PartialEq)]
+pub struct Brightness {
+    proportion: Option<f64>,
+}
+
+/// Parameters for the `contrast()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-contrast
+#[derive(Debug, Clone, PartialEq)]
+pub struct Contrast {
+    proportion: Option<f64>,
+}
+
+/// Parameters for the `grayscale()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-grayscale
+#[derive(Debug, Clone, PartialEq)]
+pub struct Grayscale {
+    proportion: Option<f64>,
+}
+
+/// Parameters for the `invert()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-invert
+#[derive(Debug, Clone, PartialEq)]
+pub struct Invert {
+    proportion: Option<f64>,
 }
 
 /// Parameters for the `opacity()` filter function
@@ -55,6 +91,22 @@ pub struct Sepia {
     proportion: Option<f64>,
 }
 
+/// Reads an optional number or percentage from the parser.
+/// Negative numbers are not allowed.
+fn parse_num_or_percentage<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+    match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
+        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
+        Ok(NumberOrPercentage { value }) => Some(value),
+        Err(_) => None,
+    }
+}
+
+/// Reads an optional number or percentage from the parser, returning a value clamped to [0, 1].
+/// Negative numbers are not allowed.
+fn parse_num_or_percentage_clamped<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+    parse_num_or_percentage(parser).map(|value| value.clamp(0.0, 1.0))
+}
+
 fn parse_function<'i, F>(
     parser: &mut Parser<'i, '_>,
     name: &str,
@@ -71,11 +123,7 @@ where
 // about that.
 #[allow(clippy::unnecessary_wraps)]
 fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let length = if let Ok(length) = parser.try_parse(|p| Length::parse(p)) {
-        Some(length)
-    } else {
-        None
-    };
+    let length = parser.try_parse(|p| Length::parse(p)).ok();
 
     Ok(FilterFunction::Blur(Blur {
         std_deviation: length,
@@ -83,34 +131,50 @@ fn parse_blur<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseEr
 }
 
 #[allow(clippy::unnecessary_wraps)]
+fn parse_brightness<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = parse_num_or_percentage(parser);
+
+    Ok(FilterFunction::Brightness(Brightness { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_contrast<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = parse_num_or_percentage(parser);
+
+    Ok(FilterFunction::Contrast(Contrast { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_grayscale<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = parse_num_or_percentage_clamped(parser);
+
+    Ok(FilterFunction::Grayscale(Grayscale { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_invert<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let proportion = parse_num_or_percentage_clamped(parser);
+
+    Ok(FilterFunction::Invert(Invert { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
 fn parse_opacity<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value.clamp(0.0, 1.0)),
-        Err(_) => None,
-    };
+    let proportion = parse_num_or_percentage_clamped(parser);
 
     Ok(FilterFunction::Opacity(Opacity { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
 fn parse_saturate<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value),
-        Err(_) => None,
-    };
+    let proportion = parse_num_or_percentage(parser);
 
     Ok(FilterFunction::Saturate(Saturate { proportion }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
 fn parse_sepia<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let proportion = match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
-        Ok(NumberOrPercentage { value }) if value < 0.0 => None,
-        Ok(NumberOrPercentage { value }) => Some(value.clamp(0.0, 1.0)),
-        Err(_) => None,
-    };
+    let proportion = parse_num_or_percentage_clamped(parser);
 
     Ok(FilterFunction::Sepia(Sepia { proportion }))
 }
@@ -138,6 +202,137 @@ impl Blur {
     }
 }
 
+impl Brightness {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let user_space_filter = Filter::default().to_user_space(params);
+        let slope = self.proportion.unwrap_or(1.0);
+
+        let brightness = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
+                functions: component_transfer::Functions {
+                    r: component_transfer::FeFuncR {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        ..component_transfer::FeFuncR::default()
+                    },
+                    g: component_transfer::FeFuncG {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        ..component_transfer::FeFuncG::default()
+                    },
+                    b: component_transfer::FeFuncB {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        ..component_transfer::FeFuncB::default()
+                    },
+                    ..component_transfer::Functions::default()
+                },
+                ..component_transfer::ComponentTransfer::default()
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![brightness],
+        }
+    }
+}
+
+impl Contrast {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let user_space_filter = Filter::default().to_user_space(params);
+        let slope = self.proportion.unwrap_or(1.0);
+        let intercept = -(0.5 * slope) + 0.5;
+
+        let contrast = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
+                functions: component_transfer::Functions {
+                    r: component_transfer::FeFuncR {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        intercept,
+                        ..component_transfer::FeFuncR::default()
+                    },
+                    g: component_transfer::FeFuncG {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        intercept,
+                        ..component_transfer::FeFuncG::default()
+                    },
+                    b: component_transfer::FeFuncB {
+                        function_type: component_transfer::FunctionType::Linear,
+                        slope,
+                        intercept,
+                        ..component_transfer::FeFuncB::default()
+                    },
+                    ..component_transfer::Functions::default()
+                },
+                ..component_transfer::ComponentTransfer::default()
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![contrast],
+        }
+    }
+}
+
+impl Grayscale {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        // grayscale is implemented as the inverse of a saturate operation,
+        // with the input clamped to the range [0, 1] by the parser.
+        let p = 1.0 - self.proportion.unwrap_or(1.0);
+        let saturate = Saturate {
+            proportion: Some(p),
+        };
+
+        saturate.to_filter_spec(params)
+    }
+}
+
+impl Invert {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let p = self.proportion.unwrap_or(1.0);
+        let user_space_filter = Filter::default().to_user_space(params);
+
+        let invert = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
+                functions: component_transfer::Functions {
+                    r: component_transfer::FeFuncR {
+                        function_type: component_transfer::FunctionType::Table,
+                        table_values: vec![p, 1.0 - p],
+                        ..component_transfer::FeFuncR::default()
+                    },
+                    g: component_transfer::FeFuncG {
+                        function_type: component_transfer::FunctionType::Table,
+                        table_values: vec![p, 1.0 - p],
+                        ..component_transfer::FeFuncG::default()
+                    },
+                    b: component_transfer::FeFuncB {
+                        function_type: component_transfer::FunctionType::Table,
+                        table_values: vec![p, 1.0 - p],
+                        ..component_transfer::FeFuncB::default()
+                    },
+                    ..component_transfer::Functions::default()
+                },
+                ..component_transfer::ComponentTransfer::default()
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![invert],
+        }
+    }
+}
+
 impl Opacity {
     fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
         let p = self.proportion.unwrap_or(1.0);
@@ -146,7 +341,7 @@ impl Opacity {
         let opacity = ResolvedPrimitive {
             primitive: Primitive::default(),
             params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
-                functions: crate::filters::component_transfer::Functions {
+                functions: component_transfer::Functions {
                     a: component_transfer::FeFuncA {
                         function_type: component_transfer::FunctionType::Table,
                         table_values: vec![0.0, p],
@@ -237,6 +432,10 @@ impl Parse for FilterFunction {
         let loc = parser.current_source_location();
         let fns: Vec<(&str, &dyn Fn(&mut Parser<'i, '_>) -> _)> = vec![
             ("blur", &parse_blur),
+            ("brightness", &parse_brightness),
+            ("contrast", &parse_contrast),
+            ("grayscale", &parse_grayscale),
+            ("invert", &parse_invert),
             ("opacity", &parse_opacity),
             ("saturate", &parse_saturate),
             ("sepia", &parse_sepia),
@@ -266,6 +465,10 @@ impl FilterFunction {
 
         match self {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Brightness(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Contrast(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Invert(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Saturate(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Sepia(v) => Ok(v.to_filter_spec(&params)),
@@ -290,6 +493,66 @@ mod tests {
             FilterFunction::parse_str("blur(5px)").unwrap(),
             FilterFunction::Blur(Blur {
                 std_deviation: Some(Length::new(5.0, LengthUnit::Px))
+            })
+        );
+    }
+
+    #[test]
+    fn parses_brightness() {
+        assert_eq!(
+            FilterFunction::parse_str("brightness()").unwrap(),
+            FilterFunction::Brightness(Brightness { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("brightness(50%)").unwrap(),
+            FilterFunction::Brightness(Brightness {
+                proportion: Some(0.50_f32.into()),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_contrast() {
+        assert_eq!(
+            FilterFunction::parse_str("contrast()").unwrap(),
+            FilterFunction::Contrast(Contrast { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("contrast(50%)").unwrap(),
+            FilterFunction::Contrast(Contrast {
+                proportion: Some(0.50_f32.into()),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_grayscale() {
+        assert_eq!(
+            FilterFunction::parse_str("grayscale()").unwrap(),
+            FilterFunction::Grayscale(Grayscale { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("grayscale(50%)").unwrap(),
+            FilterFunction::Grayscale(Grayscale {
+                proportion: Some(0.50_f32.into()),
+            })
+        );
+    }
+
+    #[test]
+    fn parses_invert() {
+        assert_eq!(
+            FilterFunction::parse_str("invert()").unwrap(),
+            FilterFunction::Invert(Invert { proportion: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("invert(50%)").unwrap(),
+            FilterFunction::Invert(Invert {
+                proportion: Some(0.50_f32.into()),
             })
         );
     }
@@ -364,6 +627,26 @@ mod tests {
     fn invalid_blur_yields_error() {
         assert!(FilterFunction::parse_str("blur(foo)").is_err());
         assert!(FilterFunction::parse_str("blur(42 43)").is_err());
+    }
+
+    #[test]
+    fn invalid_brightness_yields_error() {
+        assert!(FilterFunction::parse_str("brightness(foo)").is_err());
+    }
+
+    #[test]
+    fn invalid_contrast_yields_error() {
+        assert!(FilterFunction::parse_str("contrast(foo)").is_err());
+    }
+
+    #[test]
+    fn invalid_grayscale_yields_error() {
+        assert!(FilterFunction::parse_str("grayscale(foo)").is_err());
+    }
+
+    #[test]
+    fn invalid_invert_yields_error() {
+        assert!(FilterFunction::parse_str("invert(foo)").is_err());
     }
 
     #[test]
