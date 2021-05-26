@@ -159,8 +159,8 @@ test_compare_render_output!(
 );
 
 test_compare_render_output!(
-brightness_filter_func,
-br##"<?xml version="1.0" encoding="UTF-8"?>
+    brightness_filter_func,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="green" filter="brightness(125%)"/>
 </svg>
@@ -183,8 +183,8 @@ br##"<?xml version="1.0" encoding="UTF-8"?>
 );
 
 test_compare_render_output!(
-contrast_filter_func,
-br##"<?xml version="1.0" encoding="UTF-8"?>
+    contrast_filter_func,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="green" filter="contrast(125%)"/>
 </svg>
@@ -251,7 +251,7 @@ test_compare_render_output!(
 );
 
 test_compare_render_output!(
-opacity_filter_func,
+    opacity_filter_func,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="red"/>
