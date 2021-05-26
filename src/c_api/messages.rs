@@ -1,3 +1,10 @@
+//! Logging functions, plus Rust versions of `g_return_if_fail()`.
+//!
+//! Glib's `g_return_if_fail()`, `g_warning()`, etc. are all C macros, so they cannot be
+//! used from Rust.  This module defines equivalent functions or macros with an `rsvg_`
+//! prefix, to be clear that they should only be used from the implementation of the C API
+//! and not from the main Rust code of the library.
+
 use glib::translate::*;
 use glib_sys::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
 
@@ -70,14 +77,32 @@ fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
     }
 }
 
+/// Replacement for `g_warning()`.
+///
+/// Use this to signal an error condition in the following situations:
+///
+/// * The C API does not have an adequate error code for the error in question (and cannot
+///   be changed to have one, for ABI compatibility reasons).
+///
+/// * Applications using the C API would be prone to ignoring an important error,
+///   so it's best to have a warning on the console to at least have a hope of someone
+///   noticing the error.
 pub(crate) fn rsvg_g_warning(msg: &str) {
     rsvg_g_log(glib_sys::G_LOG_LEVEL_WARNING, msg);
 }
 
+/// Replacement for `g_critical()`.
+///
+/// Use this to signal a programming error from the caller of the C API, like passing
+/// incorrect arguments or calling the API out of order.  Rust code conventionally panics
+/// in such situations, but C/Glib code does not, so it's best to "do nothing", print a
+/// critical message, and return.  Development versions of GNOME will crash the program
+/// if this happens; release versions will ignore the error.
 pub(crate) fn rsvg_g_critical(msg: &str) {
     rsvg_g_log(glib_sys::G_LOG_LEVEL_CRITICAL, msg);
 }
 
+/// Replacement for `g_return_if_fail()`.
 // Once Rust has a function! macro that gives us the current function name, we
 // can remove the $func_name argument.
 #[macro_export]
@@ -99,6 +124,7 @@ macro_rules! rsvg_return_if_fail {
     }
 }
 
+/// Replacement for `g_return_val_if_fail()`.
 #[macro_export]
 macro_rules! rsvg_return_val_if_fail {
     {
