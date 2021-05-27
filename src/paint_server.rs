@@ -17,16 +17,33 @@ use crate::properties::ComputedValues;
 use crate::unit_interval::UnitInterval;
 use crate::util;
 
+/// Unresolved SVG paint server straight from the DOM data.
+///
+/// This is either a solid color (which if `currentColor` needs to be extracted from the
+/// `ComputedValues`), or a paint server like a gradient or pattern which is referenced by
+/// a URL that points to a certain document node.
+///
+/// Use [`PaintServer.resolve`](#method.resolve) to turn this into a
+/// [`PaintSource`](enum.PaintSource.html).
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {
+    /// For example, `fill="none"`.
     None,
+
+    /// For example, `fill="url(#some_gradient) fallback_color"`.
     Iri {
         iri: Box<NodeId>,
         alternate: Option<cssparser::Color>,
     },
+
+    /// For example, `fill="blue"`.
     SolidColor(cssparser::Color),
 }
 
+/// Paint server with resolved references, with unnormalized lengths.
+///
+/// Use [`PaintSource.to_user_space`](#method.to_user_space) to turn this into a
+/// [`UserSpacePaintSource`](enum.UserSpacePaintSource.html).
 pub enum PaintSource {
     None,
     Gradient(ResolvedGradient, Option<cssparser::RGBA>),
@@ -34,6 +51,9 @@ pub enum PaintSource {
     SolidColor(cssparser::RGBA),
 }
 
+/// Fully resolved paint server, in user-space units.
+///
+/// This has everything required for rendering.
 pub enum UserSpacePaintSource {
     None,
     Gradient(UserSpaceGradient, Option<cssparser::RGBA>),
@@ -79,6 +99,12 @@ impl Parse for PaintServer {
 }
 
 impl PaintServer {
+    /// Resolves colors, plus node references for gradients and patterns.
+    ///
+    /// `opacity` depends on `strokeOpacity` or `fillOpacity` depending on whether
+    /// the paint server is for the `stroke` or `fill` properties.
+    ///
+    /// `current_color` should be the value of `ComputedValues.color()`.
     pub fn resolve(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -171,6 +197,7 @@ impl PaintServer {
 }
 
 impl PaintSource {
+    /// Converts lengths to user-space.
     pub fn to_user_space(
         &self,
         bbox: &BoundingBox,
@@ -196,6 +223,10 @@ impl PaintSource {
     }
 }
 
+/// Resolves a CSS color into an RGBA value.
+///
+/// A CSS color can be `currentColor`, in which case the computed value comes from
+/// the `color` property.  You should pass the `color` property's value for `current_color`.
 pub fn resolve_color(
     color: &cssparser::Color,
     opacity: UnitInterval,
