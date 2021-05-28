@@ -51,6 +51,30 @@ impl SurfaceType {
     }
 }
 
+/// Operators supported by `ImageSurface<Shared>::compose`.
+pub enum Operator {
+    Over,
+    In,
+    Out,
+    Atop,
+    Xor,
+    Multiply,
+    Screen,
+    Darken,
+    Lighten,
+    Overlay,
+    ColorDodge,
+    ColorBurn,
+    HardLight,
+    SoftLight,
+    Difference,
+    Exclusion,
+    HslHue,
+    HslSaturation,
+    HslColor,
+    HslLuminosity,
+}
+
 /// Wrapper for a Cairo image surface that enforces exclusive access when modifying it.
 ///
 /// Shared access to `cairo::ImageSurface` is tricky since a read-only borrowed reference
@@ -1343,6 +1367,36 @@ impl ImageSurface<Exclusive> {
             stride,
             data,
             next_row: 0,
+        }
+    }
+}
+
+impl From<Operator> for cairo::Operator {
+    fn from(op: Operator) -> cairo::Operator {
+        use cairo::Operator as Cairo;
+        use Operator::*;
+
+        match op {
+            Over => Cairo::Over,
+            In => Cairo::In,
+            Out => Cairo::Out,
+            Atop => Cairo::Atop,
+            Xor => Cairo::Xor,
+            Multiply => Cairo::Multiply,
+            Screen => Cairo::Screen,
+            Darken => Cairo::Darken,
+            Lighten => Cairo::Lighten,
+            Overlay => Cairo::Overlay,
+            ColorDodge => Cairo::ColorDodge,
+            ColorBurn => Cairo::ColorBurn,
+            HardLight => Cairo::HardLight,
+            SoftLight => Cairo::SoftLight,
+            Difference => Cairo::Difference,
+            Exclusion => Cairo::Exclusion,
+            HslHue => Cairo::HslHue,
+            HslSaturation => Cairo::HslSaturation,
+            HslColor => Cairo::HslColor,
+            HslLuminosity => Cairo::HslLuminosity,
         }
     }
 }
