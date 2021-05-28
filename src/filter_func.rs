@@ -163,20 +163,40 @@ fn parse_contrast<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, Par
 
     Ok(FilterFunction::Contrast(Contrast { proportion }))
 }
-
 #[allow(clippy::unnecessary_wraps)]
 fn parse_dropshadow<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
-    let color = parser.try_parse(|p| Color::parse(p)).ok();
-    let dx = parser.try_parse(|p| Length::parse(p)).ok();
-    let dy = parser.try_parse(|p| Length::parse(p)).ok();
-    let std_deviation = parser.try_parse(|p| ULength::parse(p)).ok();
+    let mut result = DropShadow {
+        color: None,
+        dx: None,
+        dy: None,
+        std_deviation: None,
+    };
 
-    Ok(FilterFunction::DropShadow(DropShadow {
-        color,
-        dx,
-        dy,
-        std_deviation,
-    }))
+    result.color = parser.try_parse(|p| Color::parse(p)).ok();
+
+    // if dx is provided, dy must follow and an optional std_dev must follow that.
+    if let Ok(dx) = parser.try_parse(|p| Length::parse(p)) {
+        result.dx = Some(dx);
+        result.dy = Some(parser.try_parse(|p| Length::parse(p))?);
+        result.std_deviation = parser.try_parse(|p| ULength::parse(p)).ok();
+    }
+
+    let loc = parser.current_source_location();
+
+    // because the color and length arguments can be provided in either order,
+    // check again after potentially parsing lengths if the color is now provided.
+    // if a color is provided both before and after, that is an error.
+    if let Ok(c) = parser.try_parse(|p| Color::parse(p)) {
+        if result.color.is_some() {
+            return Err(
+                loc.new_custom_error(ValueErrorKind::Value("color already specified".to_string()))
+            );
+        } else {
+            result.color = Some(c);
+        }
+    }
+
+    Ok(FilterFunction::DropShadow(result))
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -669,17 +689,37 @@ mod tests {
         );
 
         assert_eq!(
-            FilterFunction::parse_str("drop-shadow(#ff0000)").unwrap(),
+            FilterFunction::parse_str("drop-shadow(1px 2px blue)").unwrap(),
             FilterFunction::DropShadow(DropShadow {
                 color: Some(Color::RGBA(RGBA {
-                    red: 255,
+                    red: 0,
                     green: 0,
-                    blue: 0,
+                    blue: 255,
                     alpha: 255
                 })),
-                dx: None,
-                dy: None,
+                dx: Some(Length::new(1.0, LengthUnit::Px)),
+                dy: Some(Length::new(2.0, LengthUnit::Px)),
                 std_deviation: None,
+            })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("drop-shadow(1px 2px 3px currentColor)").unwrap(),
+            FilterFunction::DropShadow(DropShadow {
+                color: Some(Color::CurrentColor),
+                dx: Some(Length::new(1.0, LengthUnit::Px)),
+                dy: Some(Length::new(2.0, LengthUnit::Px)),
+                std_deviation: Some(ULength::new(3.0, LengthUnit::Px)),
+            })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("drop-shadow(1 2 3)").unwrap(),
+            FilterFunction::DropShadow(DropShadow {
+                color: None,
+                dx: Some(Length::new(1.0, LengthUnit::Px)),
+                dy: Some(Length::new(2.0, LengthUnit::Px)),
+                std_deviation: Some(ULength::new(3.0, LengthUnit::Px)),
             })
         );
     }
@@ -794,6 +834,14 @@ mod tests {
     #[test]
     fn invalid_contrast_yields_error() {
         assert!(FilterFunction::parse_str("contrast(foo)").is_err());
+    }
+
+    #[test]
+    fn invalid_dropshadow_yields_error() {
+        assert!(FilterFunction::parse_str("drop-shadow(blue 5px green)").is_err());
+        assert!(FilterFunction::parse_str("drop-shadow(blue 5px 5px green)").is_err());
+        assert!(FilterFunction::parse_str("drop-shadow(blue 1px)").is_err());
+        assert!(FilterFunction::parse_str("drop-shadow(1 2 3 4 blue)").is_err());
     }
 
     #[test]
