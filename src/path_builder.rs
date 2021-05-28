@@ -470,6 +470,22 @@ enum PackedCommand {
     ClosePath,
 }
 
+impl PackedCommand {
+    // Returns the number of coordinate values that this command will generate in a `Path`.
+    fn num_coordinates(&self) -> usize {
+        match *self {
+            PackedCommand::MoveTo => 2,
+            PackedCommand::LineTo => 2,
+            PackedCommand::CurveTo => 6,
+            PackedCommand::ArcSmallNegative
+            | PackedCommand::ArcSmallPositive
+            | PackedCommand::ArcLargeNegative
+            | PackedCommand::ArcLargePositive => 7,
+            PackedCommand::ClosePath => 0,
+        }
+    }
+}
+
 impl PathBuilder {
     pub fn into_path(self) -> Path {
         let num_coords = self
@@ -540,12 +556,63 @@ impl PathBuilder {
 struct SubPathIter<'a> {
     path: &'a Path,
     commands_start: usize,
+    coords_start: usize,
 }
 
-/// A slice of `PackedCommand` representing a subpath in a `Path`.
-/// A subpath is a list of `PackedCommand` starting with a `MoveTo` and ending if it encounters
-/// another `MoveTo` or the end of the `Path`.
-struct SubPath<'a>(pub &'a [PackedCommand]);
+/// A slice of commands and coordinates with a single `MoveTo` at the beginning.
+struct SubPath<'a> {
+    commands: &'a [PackedCommand],
+    coords: &'a [f64],
+}
+
+struct SubPathCommandsIter<'a> {
+    commands_iter: slice::Iter<'a, PackedCommand>,
+    coords_iter: slice::Iter<'a, f64>,
+}
+
+impl<'a> SubPath<'a> {
+    fn iter_commands(&self) -> SubPathCommandsIter<'_> {
+        SubPathCommandsIter {
+            commands_iter: self.commands.iter(),
+            coords_iter: self.coords.iter(),
+        }
+    }
+
+    fn origin(&self) -> (f64, f64) {
+        let first = *self.commands.first().unwrap();
+        assert!(matches!(first, PackedCommand::MoveTo));
+        let command = PathCommand::from_packed(first, &mut self.coords.iter());
+
+        match command {
+            PathCommand::MoveTo(x, y) => (x, y),
+            _ => unreachable!(),
+        }
+    }
+
+    fn is_zero_length(&self) -> bool {
+        let (cur_x, cur_y) = self.origin();
+
+        for cmd in self.iter_commands().skip(1) {
+            let (end_x, end_y) = match cmd {
+                PathCommand::MoveTo(_, _) => unreachable!(
+                    "A MoveTo cannot appear in a subpath if it's not the first element"
+                ),
+                PathCommand::LineTo(x, y) => (x, y),
+                PathCommand::CurveTo(curve) => curve.to,
+                PathCommand::Arc(arc) => arc.to,
+                // If we get a `ClosePath and haven't returned yet then we haven't moved at all making
+                // it an empty subpath`
+                PathCommand::ClosePath => return true,
+            };
+
+            if !end_x.approx_eq_cairo(cur_x) || !end_y.approx_eq_cairo(cur_y) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
 
 impl<'a> Iterator for SubPathIter<'a> {
     type Item = SubPath<'a>;
@@ -558,56 +625,56 @@ impl<'a> Iterator for SubPathIter<'a> {
 
         // Otherwise we have at least one command left, we setup the slice to be all the remaining
         // commands.
-        let slice = &self.path.commands[self.commands_start..];
+        let commands = &self.path.commands[self.commands_start..];
 
-        // Since the first command of the current subpath will always be a move or a close, skip
-        // it so we don't end our subpath immediately as that would be wrong.
-        for (i, cmd) in slice.iter().enumerate().skip(1) {
+        assert!(matches!(commands.first().unwrap(), PackedCommand::MoveTo));
+        let mut num_coords = PackedCommand::MoveTo.num_coordinates();
+
+        // Skip over the initial MoveTo
+        for (i, cmd) in commands.iter().enumerate().skip(1) {
             // If we encounter a MoveTo , we ended our current subpath, we
-            // return the slice until this command and set commands_start to be the index of the
+            // return the commands until this command and set commands_start to be the index of the
             // next command
             if let PackedCommand::MoveTo = cmd {
+                let subpath_coords_start = self.coords_start;
+
                 self.commands_start += i;
-                return Some(SubPath(&slice[..i]));
+                self.coords_start += num_coords;
+
+                return Some(SubPath {
+                    commands: &commands[..i],
+                    coords: &self.path.coords
+                        [subpath_coords_start..subpath_coords_start + num_coords],
+                });
+            } else {
+                num_coords += cmd.num_coordinates();
             }
         }
 
         // If we didn't find any MoveTo, we're done here. We return the rest of the path
-        // and set commands_start so next iteration will return None
+        // and set commands_start so next iteration will return None.
+
         self.commands_start = self.path.commands.len();
-        Some(SubPath(slice))
+
+        let subpath_coords_start = self.coords_start;
+        assert!(subpath_coords_start + num_coords == self.path.coords.len());
+        self.coords_start = self.path.coords.len();
+
+        Some(SubPath {
+            commands,
+            coords: &self.path.coords[subpath_coords_start..],
+        })
     }
 }
 
-/// This function will return the origin of a subpath and whether it is a zero length one.
-fn is_subpath_zero_length(mut subpath: impl Iterator<Item = PathCommand>) -> ((f64, f64), bool) {
-    let (cur_x, cur_y) = if let Some(PathCommand::MoveTo(x, y)) = subpath.next() {
-        (x, y)
-    } else {
-        unreachable!("Subpaths must start with a MoveTo.");
-    };
+impl<'a> Iterator for SubPathCommandsIter<'a> {
+    type Item = PathCommand;
 
-    let orig = (cur_x, cur_y);
-
-    for cmd in subpath {
-        let (end_x, end_y) = match cmd {
-            PathCommand::MoveTo(_, _) => {
-                unreachable!("A MoveTo cannot appear in a subpath if it's not the first element")
-            }
-            PathCommand::LineTo(x, y) => (x, y),
-            PathCommand::CurveTo(curve) => curve.to,
-            PathCommand::Arc(arc) => arc.to,
-            // If we get a `ClosePath and haven't returned yet then we haven't moved at all making
-            // it an empty subpath`
-            PathCommand::ClosePath => return (orig, true),
-        };
-
-        if !end_x.approx_eq_cairo(cur_x) || !end_y.approx_eq_cairo(cur_y) {
-            return (orig, false);
-        }
+    fn next(&mut self) -> Option<Self::Item> {
+        self.commands_iter
+            .next()
+            .map(|packed| PathCommand::from_packed(*packed, &mut self.coords_iter))
     }
-
-    (orig, true)
 }
 
 impl Path {
@@ -616,6 +683,7 @@ impl Path {
         SubPathIter {
             path: &self,
             commands_start: 0,
+            coords_start: 0,
         }
     }
 
@@ -637,21 +705,12 @@ impl Path {
     ) -> Result<(), RenderingError> {
         assert!(!self.is_empty());
 
-        let mut coords = self.coords.iter();
-
         for subpath in self.iter_subpath() {
             // If a subpath is empty and the linecap is a square, then draw a square centered on
             // the origin of the subpath. See #165.
             if is_square_linecap {
-                let mut coords = self.coords.iter();
-                let commands = subpath
-                    .0
-                    .iter()
-                    .map(|cmd| PathCommand::from_packed(*cmd, &mut coords));
-                let (orig, is_empty) = is_subpath_zero_length(commands);
-
-                if is_empty {
-                    let (x, y) = orig;
+                let (x, y) = subpath.origin();
+                if subpath.is_zero_length() {
                     let stroke_size = 0.002;
 
                     cr.move_to(x - stroke_size / 2., y);
@@ -659,11 +718,7 @@ impl Path {
                 }
             }
 
-            let commands = subpath
-                .0
-                .iter()
-                .map(|cmd| PathCommand::from_packed(*cmd, &mut coords));
-            for cmd in commands {
+            for cmd in subpath.iter_commands() {
                 cmd.to_cairo(cr);
             }
         }
@@ -759,39 +814,46 @@ mod tests {
         builder.move_to(69.0, 69.0);
         builder.line_to(42.0, 43.0);
         let path = builder.into_path();
-        let mut coords = path.coords.iter();
 
         let subpaths = path
             .iter_subpath()
             .map(|subpath| {
-                subpath
-                    .0
-                    .iter()
-                    .map(|cmd| PathCommand::from_packed(*cmd, &mut coords))
-                    .collect::<Vec<PathCommand>>()
+                (
+                    subpath.origin(),
+                    subpath.iter_commands().collect::<Vec<PathCommand>>(),
+                )
             })
-            .collect::<Vec<Vec<PathCommand>>>();
+            .collect::<Vec<((f64, f64), Vec<PathCommand>)>>();
 
         assert_eq!(
             subpaths,
             vec![
-                vec![
-                    PathCommand::MoveTo(42.0, 43.0),
-                    PathCommand::LineTo(42.0, 43.0),
-                    PathCommand::ClosePath
-                ],
-                vec![
-                    PathCommand::MoveTo(22.0, 22.0),
-                    PathCommand::CurveTo(CubicBezierCurve {
-                        pt1: (22.0, 22.0),
-                        pt2: (44.0, 45.0),
-                        to: (46.0, 47.0)
-                    })
-                ],
-                vec![
-                    PathCommand::MoveTo(69.0, 69.0),
-                    PathCommand::LineTo(42.0, 43.0)
-                ]
+                (
+                    (42.0, 43.0),
+                    vec![
+                        PathCommand::MoveTo(42.0, 43.0),
+                        PathCommand::LineTo(42.0, 43.0),
+                        PathCommand::ClosePath
+                    ]
+                ),
+                (
+                    (22.0, 22.0),
+                    vec![
+                        PathCommand::MoveTo(22.0, 22.0),
+                        PathCommand::CurveTo(CubicBezierCurve {
+                            pt1: (22.0, 22.0),
+                            pt2: (44.0, 45.0),
+                            to: (46.0, 47.0)
+                        })
+                    ]
+                ),
+                (
+                    (69.0, 69.0),
+                    vec![
+                        PathCommand::MoveTo(69.0, 69.0),
+                        PathCommand::LineTo(42.0, 43.0)
+                    ]
+                )
             ]
         );
     }
