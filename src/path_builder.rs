@@ -6,9 +6,8 @@ use std::f64;
 use std::f64::consts::*;
 use std::slice;
 
-use crate::error::RenderingError;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::util::{check_cairo_context, clamp};
+use crate::util::clamp;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);
@@ -30,11 +29,6 @@ pub struct CubicBezierCurve {
 }
 
 impl CubicBezierCurve {
-    fn to_cairo(self, cr: &cairo::Context) {
-        let Self { pt1, pt2, to } = self;
-        cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
-    }
-
     fn from_coords(coords: &mut slice::Iter<'_, f64>) -> CubicBezierCurve {
         let pt1 = take_two(coords);
         let pt2 = take_two(coords);
@@ -215,32 +209,6 @@ impl EllipticalArc {
         }
     }
 
-    fn to_cairo(self, cr: &cairo::Context) {
-        match self.center_parameterization() {
-            ArcParameterization::CenterParameters {
-                center,
-                radii,
-                theta1,
-                delta_theta,
-            } => {
-                let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
-                let d_theta = delta_theta / f64::from(n_segs);
-
-                let mut theta = theta1;
-                for _ in 0..n_segs {
-                    arc_segment(center, radii, self.x_axis_rotation, theta, theta + d_theta)
-                        .to_cairo(cr);
-                    theta += d_theta;
-                }
-            }
-            ArcParameterization::LineTo => {
-                let (x2, y2) = self.to;
-                cr.line_to(x2, y2);
-            }
-            ArcParameterization::Omit => {}
-        }
-    }
-
     fn from_coords(
         large_arc: LargeArc,
         sweep: Sweep,
@@ -338,16 +306,6 @@ enum_default!(
 );
 
 impl PathCommand {
-    fn to_cairo(&self, cr: &cairo::Context) {
-        match *self {
-            PathCommand::MoveTo(x, y) => cr.move_to(x, y),
-            PathCommand::LineTo(x, y) => cr.line_to(x, y),
-            PathCommand::CurveTo(curve) => curve.to_cairo(cr),
-            PathCommand::Arc(arc) => arc.to_cairo(cr),
-            PathCommand::ClosePath => cr.close_path(),
-        }
-    }
-
     // Returns the number of coordinate values that this command will generate in a `Path`.
     fn num_coordinates(&self) -> usize {
         match *self {
@@ -553,32 +511,32 @@ impl PathBuilder {
 }
 
 /// An iterator over `SubPath` from a Path.
-struct SubPathIter<'a> {
+pub struct SubPathIter<'a> {
     path: &'a Path,
     commands_start: usize,
     coords_start: usize,
 }
 
 /// A slice of commands and coordinates with a single `MoveTo` at the beginning.
-struct SubPath<'a> {
+pub struct SubPath<'a> {
     commands: &'a [PackedCommand],
     coords: &'a [f64],
 }
 
-struct SubPathCommandsIter<'a> {
+pub struct SubPathCommandsIter<'a> {
     commands_iter: slice::Iter<'a, PackedCommand>,
     coords_iter: slice::Iter<'a, f64>,
 }
 
 impl<'a> SubPath<'a> {
-    fn iter_commands(&self) -> SubPathCommandsIter<'_> {
+    pub fn iter_commands(&self) -> SubPathCommandsIter<'_> {
         SubPathCommandsIter {
             commands_iter: self.commands.iter(),
             coords_iter: self.coords.iter(),
         }
     }
 
-    fn origin(&self) -> (f64, f64) {
+    pub fn origin(&self) -> (f64, f64) {
         let first = *self.commands.first().unwrap();
         assert!(matches!(first, PackedCommand::MoveTo));
         let command = PathCommand::from_packed(first, &mut self.coords.iter());
@@ -589,7 +547,7 @@ impl<'a> SubPath<'a> {
         }
     }
 
-    fn is_zero_length(&self) -> bool {
+    pub fn is_zero_length(&self) -> bool {
         let (cur_x, cur_y) = self.origin();
 
         for cmd in self.iter_commands().skip(1) {
@@ -679,7 +637,7 @@ impl<'a> Iterator for SubPathCommandsIter<'a> {
 
 impl Path {
     /// Get an iterator over a path `Subpath`s.
-    fn iter_subpath(&self) -> SubPathIter<'_> {
+    pub fn iter_subpath(&self) -> SubPathIter<'_> {
         SubPathIter {
             path: &self,
             commands_start: 0,
@@ -696,42 +654,6 @@ impl Path {
 
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
-    }
-
-    pub fn to_cairo(
-        &self,
-        cr: &cairo::Context,
-        is_square_linecap: bool,
-    ) -> Result<(), RenderingError> {
-        assert!(!self.is_empty());
-
-        for subpath in self.iter_subpath() {
-            // If a subpath is empty and the linecap is a square, then draw a square centered on
-            // the origin of the subpath. See #165.
-            if is_square_linecap {
-                let (x, y) = subpath.origin();
-                if subpath.is_zero_length() {
-                    let stroke_size = 0.002;
-
-                    cr.move_to(x - stroke_size / 2., y);
-                    cr.line_to(x + stroke_size / 2., y);
-                }
-            }
-
-            for cmd in subpath.iter_commands() {
-                cmd.to_cairo(cr);
-            }
-        }
-
-        // We check the cr's status right after feeding it a new path for a few reasons:
-        //
-        // * Any of the individual path commands may cause the cr to enter an error state, for
-        //   example, if they come with coordinates outside of Cairo's supported range.
-        //
-        // * The *next* call to the cr will probably be something that actually checks the status
-        //   (i.e. in cairo-rs), and we don't want to panic there.
-
-        check_cairo_context(&cr)
     }
 }
 
