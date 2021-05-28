@@ -539,7 +539,7 @@ impl PathBuilder {
 /// An iterator over `SubPath` from a Path.
 struct SubPathIter<'a> {
     path: &'a Path,
-    next_start: usize,
+    commands_start: usize,
 }
 
 /// A slice of `PackedCommand` representing a subpath in a `Path`.
@@ -552,29 +552,29 @@ impl<'a> Iterator for SubPathIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // If we ended on our last command in the previous iteration, we're done here
-        if self.next_start >= self.path.commands.len() {
+        if self.commands_start >= self.path.commands.len() {
             return None;
         }
 
         // Otherwise we have at least one command left, we setup the slice to be all the remaining
         // commands.
-        let slice = &self.path.commands[self.next_start..];
+        let slice = &self.path.commands[self.commands_start..];
 
         // Since the first command of the current subpath will always be a move or a close, skip
         // it so we don't end our subpath immediately as that would be wrong.
         for (i, cmd) in slice.iter().enumerate().skip(1) {
             // If we encounter a MoveTo , we ended our current subpath, we
-            // return the slice until this command and set next_start to be the index of the
+            // return the slice until this command and set commands_start to be the index of the
             // next command
             if let PackedCommand::MoveTo = cmd {
-                self.next_start += i;
+                self.commands_start += i;
                 return Some(SubPath(&slice[..i]));
             }
         }
 
         // If we didn't find any MoveTo, we're done here. We return the rest of the path
-        // and set next_start so next iteration will return None
-        self.next_start = self.path.commands.len();
+        // and set commands_start so next iteration will return None
+        self.commands_start = self.path.commands.len();
         Some(SubPath(slice))
     }
 }
@@ -615,7 +615,7 @@ impl Path {
     fn iter_subpath(&self) -> SubPathIter<'_> {
         SubPathIter {
             path: &self,
-            next_start: 0,
+            commands_start: 0,
         }
     }
 
