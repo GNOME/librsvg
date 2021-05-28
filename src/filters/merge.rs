@@ -7,7 +7,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
-use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::surface_utils::shared_surface::{Operator, SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -93,7 +93,7 @@ impl MergeNode {
 
         input
             .surface()
-            .compose(&output_surface.unwrap(), bounds, cairo::Operator::Over)
+            .compose(&output_surface.unwrap(), bounds, Operator::Over)
             .map_err(FilterError::CairoError)
     }
 }

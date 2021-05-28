@@ -9,6 +9,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::surface_utils::shared_surface::Operator as SurfaceOperator;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -109,11 +110,9 @@ impl Composite {
                 self.k4,
             )?
         } else {
-            input_1.surface().compose(
-                input_2.surface(),
-                bounds,
-                cairo::Operator::from(self.operator),
-            )?
+            input_1
+                .surface()
+                .compose(input_2.surface(), bounds, self.operator.into())?
         };
 
         Ok(FilterOutput { surface, bounds })
@@ -153,16 +152,19 @@ impl Parse for Operator {
     }
 }
 
-impl From<Operator> for cairo::Operator {
+impl From<Operator> for SurfaceOperator {
     #[inline]
-    fn from(x: Operator) -> Self {
+    fn from(x: Operator) -> SurfaceOperator {
+        use Operator::*;
+
         match x {
-            Operator::Over => cairo::Operator::Over,
-            Operator::In => cairo::Operator::In,
-            Operator::Out => cairo::Operator::Out,
-            Operator::Atop => cairo::Operator::Atop,
-            Operator::Xor => cairo::Operator::Xor,
-            _ => panic!("can't convert Operator::Arithmetic to a cairo::Operator"),
+            Over => SurfaceOperator::Over,
+            In => SurfaceOperator::In,
+            Out => SurfaceOperator::Out,
+            Atop => SurfaceOperator::Atop,
+            Xor => SurfaceOperator::Xor,
+
+            _ => panic!("can't convert Operator::Arithmetic to a shared_surface::Operator"),
         }
     }
 }

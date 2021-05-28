@@ -1125,7 +1125,7 @@ impl ImageSurface<Shared> {
     }
 
     /// Performs the combination of two input surfaces using Porter-Duff
-    /// compositing operators
+    /// compositing operators.
     ///
     /// # Panics
     /// Panics if the two surface types are not compatible.
@@ -1134,7 +1134,7 @@ impl ImageSurface<Shared> {
         &self,
         other: &SharedImageSurface,
         bounds: IRect,
-        operator: cairo::Operator,
+        operator: Operator,
     ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface = other.copy_surface(bounds)?;
 
@@ -1145,7 +1145,7 @@ impl ImageSurface<Shared> {
             cr.clip();
 
             self.set_as_source_surface(&cr, 0.0, 0.0);
-            cr.set_operator(operator);
+            cr.set_operator(operator.into());
             cr.paint();
         }
 
