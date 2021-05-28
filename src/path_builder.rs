@@ -857,4 +857,30 @@ mod tests {
             ]
         );
     }
+
+    #[test]
+    fn zero_length_subpaths() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(42.0, 43.0);
+        builder.move_to(44.0, 45.0);
+        builder.close_path();
+        builder.move_to(46.0, 47.0);
+        builder.line_to(48.0, 49.0);
+
+        let path = builder.into_path();
+
+        let subpaths = path
+            .iter_subpath()
+            .map(|subpath| (subpath.is_zero_length(), subpath.origin()))
+            .collect::<Vec<(bool, (f64, f64))>>();
+
+        assert_eq!(
+            subpaths,
+            vec![
+                (true, (42.0, 43.0)),
+                (true, (44.0, 45.0)),
+                (false, (46.0, 47.0)),
+            ]
+        );
+    }
 }
