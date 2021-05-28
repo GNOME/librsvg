@@ -1,4 +1,22 @@
 //! Representation of Bézier paths.
+//!
+//! Path data can consume a significant amount of memory in complex SVG documents.  This
+//! module deals with this as follows:
+//!
+//! * The path parser pushes commands into a [`PathBuilder`](struct.PathBuilder.html).  This is a
+//! mutable, temporary storage for path data.
+//!
+//! * Then, the `PathBuilder` gets turned into a long-term, immutable [`Path`](struct.Path.html) that
+//! has a more compact representation.
+//!
+//! The code tries to reduce work in the allocator, by using a `TinyVec` with space for at
+//! least 32 commands on the stack for `PathBuilder`; most paths in SVGs in the wild have
+//! fewer than 32 commands, and larger ones will spill to the heap.
+//!
+//! See these blog posts for details and profiles:
+//!
+//! * [Compact representation for path data](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-4.html)
+//! * [Reducing slack space and allocator work](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-3.html)
 
 use tinyvec::TinyVec;
 
@@ -9,15 +27,18 @@ use std::slice;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::util::clamp;
 
+/// Whether an arc's sweep should be >= 180 degrees, or smaller.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);
 
+/// Angular direction in which an arc is drawn.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Sweep {
     Negative,
     Positive,
 }
 
+/// "c" command for paths; describes a cubic Bézier segment.
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct CubicBezierCurve {
     /// The (x, y) coordinates of the first control point.
@@ -29,6 +50,7 @@ pub struct CubicBezierCurve {
 }
 
 impl CubicBezierCurve {
+    /// Consumes 6 coordinates and creates a curve segment.
     fn from_coords(coords: &mut slice::Iter<'_, f64>) -> CubicBezierCurve {
         let pt1 = take_two(coords);
         let pt2 = take_two(coords);
@@ -37,6 +59,7 @@ impl CubicBezierCurve {
         CubicBezierCurve { pt1, pt2, to }
     }
 
+    /// Pushes 6 coordinates to `coords` and returns `PackedCommand::CurveTo`.
     fn to_packed_and_coords(&self, coords: &mut Vec<f64>) -> PackedCommand {
         coords.push(self.pt1.0);
         coords.push(self.pt1.1);
@@ -48,6 +71,11 @@ impl CubicBezierCurve {
     }
 }
 
+/// Conversion from endpoint parameterization to center parameterization.
+///
+/// SVG path data specifies elliptical arcs in terms of their endpoints, but
+/// they are easier to process if they are converted to a center parameterization.
+///
 /// When attempting to compute the center parameterization of the arc,
 /// out of range parameters may see an arc omitted or treated as a line.
 pub enum ArcParameterization {
@@ -68,6 +96,7 @@ pub enum ArcParameterization {
     Omit,
 }
 
+/// "a" command for paths; describes  an elliptical arc in terms of its endpoints.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EllipticalArc {
     /// The (x-axis, y-axis) radii for the ellipse.
@@ -91,8 +120,8 @@ impl EllipticalArc {
     ///
     /// Radii may be adjusted if there is no solution.
     ///
-    /// See Appendix F.6 Elliptical arc implementation notes.
-    /// http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
+    /// See section B.2.4. Conversion from endpoint to center parameterization
+    /// https://www.w3.org/TR/SVG2/implnote.html#ArcConversionEndpointToCenter
     pub(crate) fn center_parameterization(self) -> ArcParameterization {
         let Self {
             r: (mut rx, mut ry),
@@ -209,6 +238,7 @@ impl EllipticalArc {
         }
     }
 
+    /// Consumes 7 coordinates and creates an arc segment.
     fn from_coords(
         large_arc: LargeArc,
         sweep: Sweep,
@@ -229,6 +259,7 @@ impl EllipticalArc {
         }
     }
 
+    /// Pushes 7 coordinates to `coords` and returns one of `PackedCommand::Arc*`.
     fn to_packed_and_coords(&self, coords: &mut Vec<f64>) -> PackedCommand {
         coords.push(self.r.0);
         coords.push(self.r.1);
@@ -291,6 +322,9 @@ pub(crate) fn arc_segment(
     }
 }
 
+/// Long-form version of a single path command.
+///
+/// This is returned from iterators on paths and subpaths.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PathCommand {
     MoveTo(f64, f64),
@@ -300,13 +334,16 @@ pub enum PathCommand {
     ClosePath,
 }
 
+// This is just so we can use TinyVec, whose type parameter requires T: Default.
+// There is no actual default for path commands in the SVG spec; this is just our
+// implementation detail.
 enum_default!(
     PathCommand,
     PathCommand::CurveTo(CubicBezierCurve::default())
 );
 
 impl PathCommand {
-    // Returns the number of coordinate values that this command will generate in a `Path`.
+    /// Returns the number of coordinate values that this command will generate in a `Path`.
     fn num_coordinates(&self) -> usize {
         match *self {
             PathCommand::MoveTo(..) => 2,
@@ -317,6 +354,7 @@ impl PathCommand {
         }
     }
 
+    /// Pushes a command's coordinates to `coords` and returns the corresponding `PackedCommand`.
     fn to_packed(&self, coords: &mut Vec<f64>) -> PackedCommand {
         match *self {
             PathCommand::MoveTo(x, y) => {
@@ -339,6 +377,7 @@ impl PathCommand {
         }
     }
 
+    /// Consumes a packed command's coordinates from the `coords` iterator and returns the rehydrated `PathCommand`.
     fn from_packed(packed: PackedCommand, coords: &mut slice::Iter<'_, f64>) -> PathCommand {
         match packed {
             PackedCommand::MoveTo => {
@@ -386,8 +425,8 @@ impl PathCommand {
 
 /// Constructs a path out of commands.
 ///
-/// When you are finished constructing a path builder, turn it into
-/// a `Path` with `into_path`.
+/// When you are finished constructing a path builder, turn it into a `Path` with
+/// `into_path`.  You can then iterate on that `Path`'s commands with its methods.
 #[derive(Default)]
 pub struct PathBuilder {
     path_commands: TinyVec<[PathCommand; 32]>,
@@ -397,15 +436,17 @@ pub struct PathBuilder {
 ///
 /// This is constructed from a `PathBuilder` once it is finished.  You
 /// can get an iterator for the path's commands with the `iter`
-/// function.
+/// method, or an iterator for its subpaths (subsequences of commands that
+/// start with a MoveTo) with the `iter_subpath` method.
 ///
-/// Most `PathCommand` variants only have a few coordinates, but `PathCommand::Arc`
-/// has two extra booleans.  We separate the commands from their coordinates so
-/// we can have two dense arrays: one with a compact representation of commands,
-/// and another with a linear list of the coordinates for each command.
+/// The variants in `PathCommand` have different sizes, so a simple array of `PathCommand`
+/// would have a lot of slack space.  We reduce this to a minimum by separating the
+/// commands from their coordinates.  Then, we can have two dense arrays: one with a compact
+/// representation of commands, and another with a linear list of the coordinates for each
+/// command.
 ///
-/// Each `PathCommand` knows how many coordinates it ought to produce, with
-/// its `num_coordinates` method.
+/// Both `PathCommand` and `PackedCommand` know how many coordinates they ought to
+/// produce, with their `num_coordinates` methods.
 ///
 /// This struct implements `Default`, and it yields an empty path.
 #[derive(Default)]
@@ -415,6 +456,12 @@ pub struct Path {
 }
 
 /// Packed version of a `PathCommand`, used in `Path`.
+///
+/// MoveTo/LineTo/CurveTo have only pairs of coordinates, while ClosePath has no coordinates,
+/// and EllipticalArc has a bunch of coordinates plus two flags.  Here we represent the flags
+/// as four variants.
+///
+/// This is `repr(u8)` to keep it as small as possible.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
 enum PackedCommand {
@@ -445,6 +492,7 @@ impl PackedCommand {
 }
 
 impl PathBuilder {
+    /// Consumes the `PathBuilder` and returns a compact, immutable representation as a `Path`.
     pub fn into_path(self) -> Path {
         let num_coords = self
             .path_commands
@@ -465,14 +513,17 @@ impl PathBuilder {
         }
     }
 
+    /// Adds a MoveTo command to the path.
     pub fn move_to(&mut self, x: f64, y: f64) {
         self.path_commands.push(PathCommand::MoveTo(x, y));
     }
 
+    /// Adds a LineTo command to the path.
     pub fn line_to(&mut self, x: f64, y: f64) {
         self.path_commands.push(PathCommand::LineTo(x, y));
     }
 
+    /// Adds a CurveTo command to the path.
     pub fn curve_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
         let curve = CubicBezierCurve {
             pt1: (x2, y2),
@@ -482,6 +533,7 @@ impl PathBuilder {
         self.path_commands.push(PathCommand::CurveTo(curve));
     }
 
+    /// Adds an EllipticalArc command to the path.
     pub fn arc(
         &mut self,
         x1: f64,
@@ -505,12 +557,13 @@ impl PathBuilder {
         self.path_commands.push(PathCommand::Arc(arc));
     }
 
+    /// Adds a ClosePath command to the path.
     pub fn close_path(&mut self) {
         self.path_commands.push(PathCommand::ClosePath);
     }
 }
 
-/// An iterator over `SubPath` from a Path.
+/// An iterator over the subpaths of a `Path`.
 pub struct SubPathIter<'a> {
     path: &'a Path,
     commands_start: usize,
@@ -523,12 +576,14 @@ pub struct SubPath<'a> {
     coords: &'a [f64],
 }
 
+/// An iterator over the commands/coordinates of a subpath.
 pub struct SubPathCommandsIter<'a> {
     commands_iter: slice::Iter<'a, PackedCommand>,
     coords_iter: slice::Iter<'a, f64>,
 }
 
 impl<'a> SubPath<'a> {
+    /// Returns an iterator over the subpath's commands.
     pub fn iter_commands(&self) -> SubPathCommandsIter<'_> {
         SubPathCommandsIter {
             commands_iter: self.commands.iter(),
@@ -536,6 +591,7 @@ impl<'a> SubPath<'a> {
         }
     }
 
+    /// Each subpath starts with a MoveTo; this returns its `(x, y)` coordinates.
     pub fn origin(&self) -> (f64, f64) {
         let first = *self.commands.first().unwrap();
         assert!(matches!(first, PackedCommand::MoveTo));
@@ -547,6 +603,7 @@ impl<'a> SubPath<'a> {
         }
     }
 
+    /// Returns whether the length of a subpath is approximately zero.
     pub fn is_zero_length(&self) -> bool {
         let (cur_x, cur_y) = self.origin();
 
@@ -645,6 +702,7 @@ impl Path {
         }
     }
 
+    /// Get an iterator over a path's commands.
     pub fn iter(&self) -> impl Iterator<Item = PathCommand> + '_ {
         let commands = self.commands.iter();
         let mut coords = self.coords.iter();
@@ -652,6 +710,7 @@ impl Path {
         commands.map(move |cmd| PathCommand::from_packed(*cmd, &mut coords))
     }
 
+    /// Returns whether there are no commands in the path.
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
     }
