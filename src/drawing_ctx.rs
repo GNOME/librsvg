@@ -2018,3 +2018,17 @@ impl From<&DrawingCtx> for pango::Context {
         context
     }
 }
+
+impl From<cairo::Matrix> for Transform {
+    #[inline]
+    fn from(m: cairo::Matrix) -> Self {
+        Self::new_unchecked(m.xx, m.yx, m.xy, m.yy, m.x0, m.y0)
+    }
+}
+
+impl From<Transform> for cairo::Matrix {
+    #[inline]
+    fn from(t: Transform) -> Self {
+        Self::new(t.xx, t.yx, t.xy, t.yy, t.x0, t.y0)
+    }
+}
