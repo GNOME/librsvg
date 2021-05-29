@@ -221,7 +221,7 @@ macro_rules! parse_identifiers {
 
 /// https://www.w3.org/TR/css-values-4/#custom-idents
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CustomIdent(String);
+pub struct CustomIdent(pub String);
 
 impl Parse for CustomIdent {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

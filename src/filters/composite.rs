@@ -20,7 +20,7 @@ use super::{
 
 /// Enumeration of the possible compositing operations.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-enum Operator {
+pub enum Operator {
     Over,
     In,
     Out,
@@ -41,14 +41,14 @@ pub struct FeComposite {
 /// Resolved `feComposite` primitive for rendering.
 #[derive(Clone, Default)]
 pub struct Composite {
-    in1: Input,
-    in2: Input,
-    operator: Operator,
-    k1: f64,
-    k2: f64,
-    k3: f64,
-    k4: f64,
-    color_interpolation_filters: ColorInterpolationFilters,
+    pub in1: Input,
+    pub in2: Input,
+    pub operator: Operator,
+    pub k1: f64,
+    pub k2: f64,
+    pub k3: f64,
+    pub k4: f64,
+    pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
 impl SetAttributes for FeComposite {
