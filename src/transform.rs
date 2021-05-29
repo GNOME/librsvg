@@ -220,20 +220,6 @@ impl Parse for Transform {
     }
 }
 
-impl From<cairo::Matrix> for Transform {
-    #[inline]
-    fn from(m: cairo::Matrix) -> Self {
-        Self::new_unchecked(m.xx, m.yx, m.xy, m.yy, m.x0, m.y0)
-    }
-}
-
-impl From<Transform> for cairo::Matrix {
-    #[inline]
-    fn from(t: Transform) -> Self {
-        Self::new(t.xx, t.yx, t.xy, t.yy, t.x0, t.y0)
-    }
-}
-
 fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
     let mut t = Transform::identity();
 

@@ -7,6 +7,7 @@ use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
+use std::f64::consts::*;
 use std::rc::{Rc, Weak};
 
 use crate::accept_language::UserLanguage;
@@ -40,6 +41,7 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::util::check_cairo_context;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `CssLength` values to a current viewport.
@@ -2016,5 +2018,104 @@ impl From<&DrawingCtx> for pango::Context {
         pangocairo::functions::context_set_resolution(&context, 72.0);
 
         context
+    }
+}
+
+impl From<cairo::Matrix> for Transform {
+    #[inline]
+    fn from(m: cairo::Matrix) -> Self {
+        Self::new_unchecked(m.xx, m.yx, m.xy, m.yy, m.x0, m.y0)
+    }
+}
+
+impl From<Transform> for cairo::Matrix {
+    #[inline]
+    fn from(t: Transform) -> Self {
+        Self::new(t.xx, t.yx, t.xy, t.yy, t.x0, t.y0)
+    }
+}
+
+impl Path {
+    pub fn to_cairo(
+        &self,
+        cr: &cairo::Context,
+        is_square_linecap: bool,
+    ) -> Result<(), RenderingError> {
+        assert!(!self.is_empty());
+
+        for subpath in self.iter_subpath() {
+            // If a subpath is empty and the linecap is a square, then draw a square centered on
+            // the origin of the subpath. See #165.
+            if is_square_linecap {
+                let (x, y) = subpath.origin();
+                if subpath.is_zero_length() {
+                    let stroke_size = 0.002;
+
+                    cr.move_to(x - stroke_size / 2., y);
+                    cr.line_to(x + stroke_size / 2., y);
+                }
+            }
+
+            for cmd in subpath.iter_commands() {
+                cmd.to_cairo(cr);
+            }
+        }
+
+        // We check the cr's status right after feeding it a new path for a few reasons:
+        //
+        // * Any of the individual path commands may cause the cr to enter an error state, for
+        //   example, if they come with coordinates outside of Cairo's supported range.
+        //
+        // * The *next* call to the cr will probably be something that actually checks the status
+        //   (i.e. in cairo-rs), and we don't want to panic there.
+
+        check_cairo_context(&cr)
+    }
+}
+
+impl PathCommand {
+    fn to_cairo(&self, cr: &cairo::Context) {
+        match *self {
+            PathCommand::MoveTo(x, y) => cr.move_to(x, y),
+            PathCommand::LineTo(x, y) => cr.line_to(x, y),
+            PathCommand::CurveTo(curve) => curve.to_cairo(cr),
+            PathCommand::Arc(arc) => arc.to_cairo(cr),
+            PathCommand::ClosePath => cr.close_path(),
+        }
+    }
+}
+
+impl EllipticalArc {
+    fn to_cairo(self, cr: &cairo::Context) {
+        match self.center_parameterization() {
+            ArcParameterization::CenterParameters {
+                center,
+                radii,
+                theta1,
+                delta_theta,
+            } => {
+                let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
+                let d_theta = delta_theta / f64::from(n_segs);
+
+                let mut theta = theta1;
+                for _ in 0..n_segs {
+                    arc_segment(center, radii, self.x_axis_rotation, theta, theta + d_theta)
+                        .to_cairo(cr);
+                    theta += d_theta;
+                }
+            }
+            ArcParameterization::LineTo => {
+                let (x2, y2) = self.to;
+                cr.line_to(x2, y2);
+            }
+            ArcParameterization::Omit => {}
+        }
+    }
+}
+
+impl CubicBezierCurve {
+    fn to_cairo(self, cr: &cairo::Context) {
+        let Self { pt1, pt2, to } = self;
+        cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
     }
 }

@@ -1,4 +1,22 @@
 //! Representation of Bézier paths.
+//!
+//! Path data can consume a significant amount of memory in complex SVG documents.  This
+//! module deals with this as follows:
+//!
+//! * The path parser pushes commands into a [`PathBuilder`](struct.PathBuilder.html).  This is a
+//! mutable, temporary storage for path data.
+//!
+//! * Then, the `PathBuilder` gets turned into a long-term, immutable [`Path`](struct.Path.html) that
+//! has a more compact representation.
+//!
+//! The code tries to reduce work in the allocator, by using a `TinyVec` with space for at
+//! least 32 commands on the stack for `PathBuilder`; most paths in SVGs in the wild have
+//! fewer than 32 commands, and larger ones will spill to the heap.
+//!
+//! See these blog posts for details and profiles:
+//!
+//! * [Compact representation for path data](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-4.html)
+//! * [Reducing slack space and allocator work](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-3.html)
 
 use tinyvec::TinyVec;
 
@@ -6,19 +24,21 @@ use std::f64;
 use std::f64::consts::*;
 use std::slice;
 
-use crate::error::RenderingError;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::util::{check_cairo_context, clamp};
+use crate::util::clamp;
 
+/// Whether an arc's sweep should be >= 180 degrees, or smaller.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct LargeArc(pub bool);
 
+/// Angular direction in which an arc is drawn.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Sweep {
     Negative,
     Positive,
 }
 
+/// "c" command for paths; describes a cubic Bézier segment.
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
 pub struct CubicBezierCurve {
     /// The (x, y) coordinates of the first control point.
@@ -30,11 +50,7 @@ pub struct CubicBezierCurve {
 }
 
 impl CubicBezierCurve {
-    fn to_cairo(self, cr: &cairo::Context) {
-        let Self { pt1, pt2, to } = self;
-        cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
-    }
-
+    /// Consumes 6 coordinates and creates a curve segment.
     fn from_coords(coords: &mut slice::Iter<'_, f64>) -> CubicBezierCurve {
         let pt1 = take_two(coords);
         let pt2 = take_two(coords);
@@ -43,6 +59,7 @@ impl CubicBezierCurve {
         CubicBezierCurve { pt1, pt2, to }
     }
 
+    /// Pushes 6 coordinates to `coords` and returns `PackedCommand::CurveTo`.
     fn to_packed_and_coords(&self, coords: &mut Vec<f64>) -> PackedCommand {
         coords.push(self.pt1.0);
         coords.push(self.pt1.1);
@@ -54,6 +71,11 @@ impl CubicBezierCurve {
     }
 }
 
+/// Conversion from endpoint parameterization to center parameterization.
+///
+/// SVG path data specifies elliptical arcs in terms of their endpoints, but
+/// they are easier to process if they are converted to a center parameterization.
+///
 /// When attempting to compute the center parameterization of the arc,
 /// out of range parameters may see an arc omitted or treated as a line.
 pub enum ArcParameterization {
@@ -74,6 +96,7 @@ pub enum ArcParameterization {
     Omit,
 }
 
+/// "a" command for paths; describes  an elliptical arc in terms of its endpoints.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct EllipticalArc {
     /// The (x-axis, y-axis) radii for the ellipse.
@@ -97,8 +120,8 @@ impl EllipticalArc {
     ///
     /// Radii may be adjusted if there is no solution.
     ///
-    /// See Appendix F.6 Elliptical arc implementation notes.
-    /// http://www.w3.org/TR/SVG/implnote.html#ArcImplementationNotes
+    /// See section B.2.4. Conversion from endpoint to center parameterization
+    /// https://www.w3.org/TR/SVG2/implnote.html#ArcConversionEndpointToCenter
     pub(crate) fn center_parameterization(self) -> ArcParameterization {
         let Self {
             r: (mut rx, mut ry),
@@ -215,32 +238,7 @@ impl EllipticalArc {
         }
     }
 
-    fn to_cairo(self, cr: &cairo::Context) {
-        match self.center_parameterization() {
-            ArcParameterization::CenterParameters {
-                center,
-                radii,
-                theta1,
-                delta_theta,
-            } => {
-                let n_segs = (delta_theta / (PI * 0.5 + 0.001)).abs().ceil() as u32;
-                let d_theta = delta_theta / f64::from(n_segs);
-
-                let mut theta = theta1;
-                for _ in 0..n_segs {
-                    arc_segment(center, radii, self.x_axis_rotation, theta, theta + d_theta)
-                        .to_cairo(cr);
-                    theta += d_theta;
-                }
-            }
-            ArcParameterization::LineTo => {
-                let (x2, y2) = self.to;
-                cr.line_to(x2, y2);
-            }
-            ArcParameterization::Omit => {}
-        }
-    }
-
+    /// Consumes 7 coordinates and creates an arc segment.
     fn from_coords(
         large_arc: LargeArc,
         sweep: Sweep,
@@ -261,6 +259,7 @@ impl EllipticalArc {
         }
     }
 
+    /// Pushes 7 coordinates to `coords` and returns one of `PackedCommand::Arc*`.
     fn to_packed_and_coords(&self, coords: &mut Vec<f64>) -> PackedCommand {
         coords.push(self.r.0);
         coords.push(self.r.1);
@@ -323,6 +322,9 @@ pub(crate) fn arc_segment(
     }
 }
 
+/// Long-form version of a single path command.
+///
+/// This is returned from iterators on paths and subpaths.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PathCommand {
     MoveTo(f64, f64),
@@ -332,23 +334,16 @@ pub enum PathCommand {
     ClosePath,
 }
 
+// This is just so we can use TinyVec, whose type parameter requires T: Default.
+// There is no actual default for path commands in the SVG spec; this is just our
+// implementation detail.
 enum_default!(
     PathCommand,
     PathCommand::CurveTo(CubicBezierCurve::default())
 );
 
 impl PathCommand {
-    fn to_cairo(&self, cr: &cairo::Context) {
-        match *self {
-            PathCommand::MoveTo(x, y) => cr.move_to(x, y),
-            PathCommand::LineTo(x, y) => cr.line_to(x, y),
-            PathCommand::CurveTo(curve) => curve.to_cairo(cr),
-            PathCommand::Arc(arc) => arc.to_cairo(cr),
-            PathCommand::ClosePath => cr.close_path(),
-        }
-    }
-
-    // Returns the number of coordinate values that this command will generate in a `Path`.
+    /// Returns the number of coordinate values that this command will generate in a `Path`.
     fn num_coordinates(&self) -> usize {
         match *self {
             PathCommand::MoveTo(..) => 2,
@@ -359,6 +354,7 @@ impl PathCommand {
         }
     }
 
+    /// Pushes a command's coordinates to `coords` and returns the corresponding `PackedCommand`.
     fn to_packed(&self, coords: &mut Vec<f64>) -> PackedCommand {
         match *self {
             PathCommand::MoveTo(x, y) => {
@@ -381,6 +377,7 @@ impl PathCommand {
         }
     }
 
+    /// Consumes a packed command's coordinates from the `coords` iterator and returns the rehydrated `PathCommand`.
     fn from_packed(packed: PackedCommand, coords: &mut slice::Iter<'_, f64>) -> PathCommand {
         match packed {
             PackedCommand::MoveTo => {
@@ -428,8 +425,8 @@ impl PathCommand {
 
 /// Constructs a path out of commands.
 ///
-/// When you are finished constructing a path builder, turn it into
-/// a `Path` with `into_path`.
+/// When you are finished constructing a path builder, turn it into a `Path` with
+/// `into_path`.  You can then iterate on that `Path`'s commands with its methods.
 #[derive(Default)]
 pub struct PathBuilder {
     path_commands: TinyVec<[PathCommand; 32]>,
@@ -439,15 +436,17 @@ pub struct PathBuilder {
 ///
 /// This is constructed from a `PathBuilder` once it is finished.  You
 /// can get an iterator for the path's commands with the `iter`
-/// function.
+/// method, or an iterator for its subpaths (subsequences of commands that
+/// start with a MoveTo) with the `iter_subpath` method.
 ///
-/// Most `PathCommand` variants only have a few coordinates, but `PathCommand::Arc`
-/// has two extra booleans.  We separate the commands from their coordinates so
-/// we can have two dense arrays: one with a compact representation of commands,
-/// and another with a linear list of the coordinates for each command.
+/// The variants in `PathCommand` have different sizes, so a simple array of `PathCommand`
+/// would have a lot of slack space.  We reduce this to a minimum by separating the
+/// commands from their coordinates.  Then, we can have two dense arrays: one with a compact
+/// representation of commands, and another with a linear list of the coordinates for each
+/// command.
 ///
-/// Each `PathCommand` knows how many coordinates it ought to produce, with
-/// its `num_coordinates` method.
+/// Both `PathCommand` and `PackedCommand` know how many coordinates they ought to
+/// produce, with their `num_coordinates` methods.
 ///
 /// This struct implements `Default`, and it yields an empty path.
 #[derive(Default)]
@@ -457,6 +456,12 @@ pub struct Path {
 }
 
 /// Packed version of a `PathCommand`, used in `Path`.
+///
+/// MoveTo/LineTo/CurveTo have only pairs of coordinates, while ClosePath has no coordinates,
+/// and EllipticalArc has a bunch of coordinates plus two flags.  Here we represent the flags
+/// as four variants.
+///
+/// This is `repr(u8)` to keep it as small as possible.
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
 enum PackedCommand {
@@ -470,7 +475,24 @@ enum PackedCommand {
     ClosePath,
 }
 
+impl PackedCommand {
+    // Returns the number of coordinate values that this command will generate in a `Path`.
+    fn num_coordinates(&self) -> usize {
+        match *self {
+            PackedCommand::MoveTo => 2,
+            PackedCommand::LineTo => 2,
+            PackedCommand::CurveTo => 6,
+            PackedCommand::ArcSmallNegative
+            | PackedCommand::ArcSmallPositive
+            | PackedCommand::ArcLargeNegative
+            | PackedCommand::ArcLargePositive => 7,
+            PackedCommand::ClosePath => 0,
+        }
+    }
+}
+
 impl PathBuilder {
+    /// Consumes the `PathBuilder` and returns a compact, immutable representation as a `Path`.
     pub fn into_path(self) -> Path {
         let num_coords = self
             .path_commands
@@ -491,14 +513,17 @@ impl PathBuilder {
         }
     }
 
+    /// Adds a MoveTo command to the path.
     pub fn move_to(&mut self, x: f64, y: f64) {
         self.path_commands.push(PathCommand::MoveTo(x, y));
     }
 
+    /// Adds a LineTo command to the path.
     pub fn line_to(&mut self, x: f64, y: f64) {
         self.path_commands.push(PathCommand::LineTo(x, y));
     }
 
+    /// Adds a CurveTo command to the path.
     pub fn curve_to(&mut self, x2: f64, y2: f64, x3: f64, y3: f64, x4: f64, y4: f64) {
         let curve = CubicBezierCurve {
             pt1: (x2, y2),
@@ -508,6 +533,7 @@ impl PathBuilder {
         self.path_commands.push(PathCommand::CurveTo(curve));
     }
 
+    /// Adds an EllipticalArc command to the path.
     pub fn arc(
         &mut self,
         x1: f64,
@@ -531,94 +557,152 @@ impl PathBuilder {
         self.path_commands.push(PathCommand::Arc(arc));
     }
 
+    /// Adds a ClosePath command to the path.
     pub fn close_path(&mut self) {
         self.path_commands.push(PathCommand::ClosePath);
     }
 }
 
-/// An iterator over `SubPath` from a Path.
-struct SubPathIter<'a> {
+/// An iterator over the subpaths of a `Path`.
+pub struct SubPathIter<'a> {
     path: &'a Path,
-    next_start: usize,
+    commands_start: usize,
+    coords_start: usize,
 }
 
-/// A slice of `PackedCommand` representing a subpath in a `Path`.
-/// A subpath is a list of `PackedCommand` starting with a `MoveTo` and ending if it encounters
-/// another `MoveTo` or the end of the `Path`.
-struct SubPath<'a>(pub &'a [PackedCommand]);
+/// A slice of commands and coordinates with a single `MoveTo` at the beginning.
+pub struct SubPath<'a> {
+    commands: &'a [PackedCommand],
+    coords: &'a [f64],
+}
+
+/// An iterator over the commands/coordinates of a subpath.
+pub struct SubPathCommandsIter<'a> {
+    commands_iter: slice::Iter<'a, PackedCommand>,
+    coords_iter: slice::Iter<'a, f64>,
+}
+
+impl<'a> SubPath<'a> {
+    /// Returns an iterator over the subpath's commands.
+    pub fn iter_commands(&self) -> SubPathCommandsIter<'_> {
+        SubPathCommandsIter {
+            commands_iter: self.commands.iter(),
+            coords_iter: self.coords.iter(),
+        }
+    }
+
+    /// Each subpath starts with a MoveTo; this returns its `(x, y)` coordinates.
+    pub fn origin(&self) -> (f64, f64) {
+        let first = *self.commands.first().unwrap();
+        assert!(matches!(first, PackedCommand::MoveTo));
+        let command = PathCommand::from_packed(first, &mut self.coords.iter());
+
+        match command {
+            PathCommand::MoveTo(x, y) => (x, y),
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns whether the length of a subpath is approximately zero.
+    pub fn is_zero_length(&self) -> bool {
+        let (cur_x, cur_y) = self.origin();
+
+        for cmd in self.iter_commands().skip(1) {
+            let (end_x, end_y) = match cmd {
+                PathCommand::MoveTo(_, _) => unreachable!(
+                    "A MoveTo cannot appear in a subpath if it's not the first element"
+                ),
+                PathCommand::LineTo(x, y) => (x, y),
+                PathCommand::CurveTo(curve) => curve.to,
+                PathCommand::Arc(arc) => arc.to,
+                // If we get a `ClosePath and haven't returned yet then we haven't moved at all making
+                // it an empty subpath`
+                PathCommand::ClosePath => return true,
+            };
+
+            if !end_x.approx_eq_cairo(cur_x) || !end_y.approx_eq_cairo(cur_y) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
 
 impl<'a> Iterator for SubPathIter<'a> {
     type Item = SubPath<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // If we ended on our last command in the previous iteration, we're done here
-        if self.next_start >= self.path.commands.len() {
+        if self.commands_start >= self.path.commands.len() {
             return None;
         }
 
         // Otherwise we have at least one command left, we setup the slice to be all the remaining
         // commands.
-        let slice = &self.path.commands[self.next_start..];
+        let commands = &self.path.commands[self.commands_start..];
 
-        // Since the first command of the current subpath will always be a move or a close, skip
-        // it so we don't end our subpath immediately as that would be wrong.
-        for (i, cmd) in slice.iter().enumerate().skip(1) {
+        assert!(matches!(commands.first().unwrap(), PackedCommand::MoveTo));
+        let mut num_coords = PackedCommand::MoveTo.num_coordinates();
+
+        // Skip over the initial MoveTo
+        for (i, cmd) in commands.iter().enumerate().skip(1) {
             // If we encounter a MoveTo , we ended our current subpath, we
-            // return the slice until this command and set next_start to be the index of the
+            // return the commands until this command and set commands_start to be the index of the
             // next command
             if let PackedCommand::MoveTo = cmd {
-                self.next_start += i;
-                return Some(SubPath(&slice[..i]));
+                let subpath_coords_start = self.coords_start;
+
+                self.commands_start += i;
+                self.coords_start += num_coords;
+
+                return Some(SubPath {
+                    commands: &commands[..i],
+                    coords: &self.path.coords
+                        [subpath_coords_start..subpath_coords_start + num_coords],
+                });
+            } else {
+                num_coords += cmd.num_coordinates();
             }
         }
 
         // If we didn't find any MoveTo, we're done here. We return the rest of the path
-        // and set next_start so next iteration will return None
-        self.next_start = self.path.commands.len();
-        Some(SubPath(slice))
+        // and set commands_start so next iteration will return None.
+
+        self.commands_start = self.path.commands.len();
+
+        let subpath_coords_start = self.coords_start;
+        assert!(subpath_coords_start + num_coords == self.path.coords.len());
+        self.coords_start = self.path.coords.len();
+
+        Some(SubPath {
+            commands,
+            coords: &self.path.coords[subpath_coords_start..],
+        })
     }
 }
 
-/// This function will return the origin of a subpath and whether it is a zero length one.
-fn is_subpath_zero_length(mut subpath: impl Iterator<Item = PathCommand>) -> ((f64, f64), bool) {
-    let (cur_x, cur_y) = if let Some(PathCommand::MoveTo(x, y)) = subpath.next() {
-        (x, y)
-    } else {
-        unreachable!("Subpaths must start with a MoveTo.");
-    };
+impl<'a> Iterator for SubPathCommandsIter<'a> {
+    type Item = PathCommand;
 
-    let orig = (cur_x, cur_y);
-
-    for cmd in subpath {
-        let (end_x, end_y) = match cmd {
-            PathCommand::MoveTo(_, _) => {
-                unreachable!("A MoveTo cannot appear in a subpath if it's not the first element")
-            }
-            PathCommand::LineTo(x, y) => (x, y),
-            PathCommand::CurveTo(curve) => curve.to,
-            PathCommand::Arc(arc) => arc.to,
-            // If we get a `ClosePath and haven't returned yet then we haven't moved at all making
-            // it an empty subpath`
-            PathCommand::ClosePath => return (orig, true),
-        };
-
-        if !end_x.approx_eq_cairo(cur_x) || !end_y.approx_eq_cairo(cur_y) {
-            return (orig, false);
-        }
+    fn next(&mut self) -> Option<Self::Item> {
+        self.commands_iter
+            .next()
+            .map(|packed| PathCommand::from_packed(*packed, &mut self.coords_iter))
     }
-
-    (orig, true)
 }
 
 impl Path {
     /// Get an iterator over a path `Subpath`s.
-    fn iter_subpath(&self) -> SubPathIter<'_> {
+    pub fn iter_subpath(&self) -> SubPathIter<'_> {
         SubPathIter {
             path: &self,
-            next_start: 0,
+            commands_start: 0,
+            coords_start: 0,
         }
     }
 
+    /// Get an iterator over a path's commands.
     pub fn iter(&self) -> impl Iterator<Item = PathCommand> + '_ {
         let commands = self.commands.iter();
         let mut coords = self.coords.iter();
@@ -626,57 +710,9 @@ impl Path {
         commands.map(move |cmd| PathCommand::from_packed(*cmd, &mut coords))
     }
 
+    /// Returns whether there are no commands in the path.
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
-    }
-
-    pub fn to_cairo(
-        &self,
-        cr: &cairo::Context,
-        is_square_linecap: bool,
-    ) -> Result<(), RenderingError> {
-        assert!(!self.is_empty());
-
-        let mut coords = self.coords.iter();
-
-        for subpath in self.iter_subpath() {
-            // If a subpath is empty and the linecap is a square, then draw a square centered on
-            // the origin of the subpath. See #165.
-            if is_square_linecap {
-                let mut coords = self.coords.iter();
-                let commands = subpath
-                    .0
-                    .iter()
-                    .map(|cmd| PathCommand::from_packed(*cmd, &mut coords));
-                let (orig, is_empty) = is_subpath_zero_length(commands);
-
-                if is_empty {
-                    let (x, y) = orig;
-                    let stroke_size = 0.002;
-
-                    cr.move_to(x - stroke_size / 2., y);
-                    cr.line_to(x + stroke_size / 2., y);
-                }
-            }
-
-            let commands = subpath
-                .0
-                .iter()
-                .map(|cmd| PathCommand::from_packed(*cmd, &mut coords));
-            for cmd in commands {
-                cmd.to_cairo(cr);
-            }
-        }
-
-        // We check the cr's status right after feeding it a new path for a few reasons:
-        //
-        // * Any of the individual path commands may cause the cr to enter an error state, for
-        //   example, if they come with coordinates outside of Cairo's supported range.
-        //
-        // * The *next* call to the cr will probably be something that actually checks the status
-        //   (i.e. in cairo-rs), and we don't want to panic there.
-
-        check_cairo_context(&cr)
     }
 }
 
@@ -759,39 +795,72 @@ mod tests {
         builder.move_to(69.0, 69.0);
         builder.line_to(42.0, 43.0);
         let path = builder.into_path();
-        let mut coords = path.coords.iter();
 
         let subpaths = path
             .iter_subpath()
             .map(|subpath| {
-                subpath
-                    .0
-                    .iter()
-                    .map(|cmd| PathCommand::from_packed(*cmd, &mut coords))
-                    .collect::<Vec<PathCommand>>()
+                (
+                    subpath.origin(),
+                    subpath.iter_commands().collect::<Vec<PathCommand>>(),
+                )
             })
-            .collect::<Vec<Vec<PathCommand>>>();
+            .collect::<Vec<((f64, f64), Vec<PathCommand>)>>();
 
         assert_eq!(
             subpaths,
             vec![
-                vec![
-                    PathCommand::MoveTo(42.0, 43.0),
-                    PathCommand::LineTo(42.0, 43.0),
-                    PathCommand::ClosePath
-                ],
-                vec![
-                    PathCommand::MoveTo(22.0, 22.0),
-                    PathCommand::CurveTo(CubicBezierCurve {
-                        pt1: (22.0, 22.0),
-                        pt2: (44.0, 45.0),
-                        to: (46.0, 47.0)
-                    })
-                ],
-                vec![
-                    PathCommand::MoveTo(69.0, 69.0),
-                    PathCommand::LineTo(42.0, 43.0)
-                ]
+                (
+                    (42.0, 43.0),
+                    vec![
+                        PathCommand::MoveTo(42.0, 43.0),
+                        PathCommand::LineTo(42.0, 43.0),
+                        PathCommand::ClosePath
+                    ]
+                ),
+                (
+                    (22.0, 22.0),
+                    vec![
+                        PathCommand::MoveTo(22.0, 22.0),
+                        PathCommand::CurveTo(CubicBezierCurve {
+                            pt1: (22.0, 22.0),
+                            pt2: (44.0, 45.0),
+                            to: (46.0, 47.0)
+                        })
+                    ]
+                ),
+                (
+                    (69.0, 69.0),
+                    vec![
+                        PathCommand::MoveTo(69.0, 69.0),
+                        PathCommand::LineTo(42.0, 43.0)
+                    ]
+                )
+            ]
+        );
+    }
+
+    #[test]
+    fn zero_length_subpaths() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(42.0, 43.0);
+        builder.move_to(44.0, 45.0);
+        builder.close_path();
+        builder.move_to(46.0, 47.0);
+        builder.line_to(48.0, 49.0);
+
+        let path = builder.into_path();
+
+        let subpaths = path
+            .iter_subpath()
+            .map(|subpath| (subpath.is_zero_length(), subpath.origin()))
+            .collect::<Vec<(bool, (f64, f64))>>();
+
+        assert_eq!(
+            subpaths,
+            vec![
+                (true, (42.0, 43.0)),
+                (true, (44.0, 45.0)),
+                (false, (46.0, 47.0)),
             ]
         );
     }

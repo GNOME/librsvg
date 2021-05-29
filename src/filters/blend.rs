@@ -9,6 +9,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
 use crate::property_defs::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::surface_utils::shared_surface::Operator;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -100,11 +101,9 @@ impl Blend {
             .clipped
             .into();
 
-        let surface = input_1.surface().compose(
-            input_2.surface(),
-            bounds,
-            cairo::Operator::from(self.mode),
-        )?;
+        let surface = input_1
+            .surface()
+            .compose(input_2.surface(), bounds, self.mode.into())?;
 
         Ok(FilterOutput { surface, bounds })
     }
@@ -153,26 +152,28 @@ impl Parse for Mode {
     }
 }
 
-impl From<Mode> for cairo::Operator {
+impl From<Mode> for Operator {
     #[inline]
     fn from(x: Mode) -> Self {
+        use Mode::*;
+
         match x {
-            Mode::Normal => cairo::Operator::Over,
-            Mode::Multiply => cairo::Operator::Multiply,
-            Mode::Screen => cairo::Operator::Screen,
-            Mode::Darken => cairo::Operator::Darken,
-            Mode::Lighten => cairo::Operator::Lighten,
-            Mode::Overlay => cairo::Operator::Overlay,
-            Mode::ColorDodge => cairo::Operator::ColorDodge,
-            Mode::ColorBurn => cairo::Operator::ColorBurn,
-            Mode::HardLight => cairo::Operator::HardLight,
-            Mode::SoftLight => cairo::Operator::SoftLight,
-            Mode::Difference => cairo::Operator::Difference,
-            Mode::Exclusion => cairo::Operator::Exclusion,
-            Mode::HslHue => cairo::Operator::HslHue,
-            Mode::HslSaturation => cairo::Operator::HslSaturation,
-            Mode::HslColor => cairo::Operator::HslColor,
-            Mode::HslLuminosity => cairo::Operator::HslLuminosity,
+            Normal => Operator::Over,
+            Multiply => Operator::Multiply,
+            Screen => Operator::Screen,
+            Darken => Operator::Darken,
+            Lighten => Operator::Lighten,
+            Overlay => Operator::Overlay,
+            ColorDodge => Operator::ColorDodge,
+            ColorBurn => Operator::ColorBurn,
+            HardLight => Operator::HardLight,
+            SoftLight => Operator::SoftLight,
+            Difference => Operator::Difference,
+            Exclusion => Operator::Exclusion,
+            HslHue => Operator::HslHue,
+            HslSaturation => Operator::HslSaturation,
+            HslColor => Operator::HslColor,
+            HslLuminosity => Operator::HslLuminosity,
         }
     }
 }
