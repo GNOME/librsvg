@@ -117,13 +117,20 @@ coverage:
     RUSTDOCFLAGS: "-Zinstrument-coverage"
     LLVM_PROFILE_FILE: "coverage-%p-%m.profraw"
   before_script:
-    - apt update -yqq && apt install -yqq --no-install-recommends libgdk-pixbuf2.0-dev libpango1.0-dev libcairo2-dev lcov
+    - apt update && apt install -y --no-install-recommends libgdk-pixbuf2.0-dev libpango1.0-dev libcairo2-dev
     - rustup component add llvm-tools-preview
     - curl -L https://github.com/mozilla/grcov/releases/latest/download/grcov-linux-x86_64.tar.bz2 | tar jxf -
   script:
     - cargo +nightly test --no-fail-fast || true
-    - ./grcov . --binary-path ./target/debug/ --source-dir . --output-type lcov --llvm --ignore-not-existing --ignore "*cargo*" --output-path lcov.info
-    - lcov --summary lcov.info
+  after_script:
+    - ./grcov . --binary-path ./target/debug/ -s . -t cobertura --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
+    - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
+  coverage: '/Coverage: \d+\.\d+/'
+  artifacts:
+    name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
+    expire_in: 2 days
+    reports:
+      cobertura: coverage.xml
 
 cargo_bench:
   stage: unit test
