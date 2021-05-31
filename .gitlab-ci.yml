@@ -109,7 +109,7 @@ cargo_test:
     - sudo -E cargo test -- --skip loading_crash --skip reference --skip render_crash
 
 coverage:
-  image: "rustlang/rust:nightly"
+  image: "rustlang/rust:nightly-bullseye"
   stage: unit test
   needs:
     - job: check
