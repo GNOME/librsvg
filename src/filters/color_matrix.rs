@@ -114,32 +114,7 @@ impl SetAttributes for FeColorMatrix {
                     }
                     OperationType::HueRotate => {
                         let degrees: f64 = attr.parse(value)?;
-                        let (sin, cos) = degrees.to_radians().sin_cos();
-
-                        let a = Matrix3::new(
-                            0.213, 0.715, 0.072,
-                            0.213, 0.715, 0.072,
-                            0.213, 0.715, 0.072,
-                        );
-
-                        let b = Matrix3::new(
-                             0.787, -0.715, -0.072,
-                            -0.213,  0.285, -0.072,
-                            -0.213, -0.715,  0.928,
-                        );
-
-                        let c = Matrix3::new(
-                            -0.213, -0.715,  0.928,
-                             0.143,  0.140, -0.283,
-                            -0.787,  0.715,  0.072,
-                        );
-
-                        let top_left = a + b * cos + c * sin;
-
-                        let mut matrix = top_left.fixed_resize(0.0);
-                        matrix[(3, 3)] = 1.0;
-                        matrix[(4, 4)] = 1.0;
-                        matrix
+                        ColorMatrix::hue_rotate_matrix(degrees.to_radians())
                     }
                 };
 
@@ -214,6 +189,29 @@ impl ColorMatrix {
             surface: surface.share()?,
             bounds,
         })
+    }
+
+    pub fn hue_rotate_matrix(radians: f64) -> Matrix5<f64> {
+        let (sin, cos) = radians.sin_cos();
+
+        let a = Matrix3::new(
+            0.213, 0.715, 0.072, 0.213, 0.715, 0.072, 0.213, 0.715, 0.072,
+        );
+
+        let b = Matrix3::new(
+            0.787, -0.715, -0.072, -0.213, 0.285, -0.072, -0.213, -0.715, 0.928,
+        );
+
+        let c = Matrix3::new(
+            -0.213, -0.715, 0.928, 0.143, 0.140, -0.283, -0.787, 0.715, 0.072,
+        );
+
+        let top_left = a + b * cos + c * sin;
+
+        let mut matrix = top_left.fixed_resize(0.0);
+        matrix[(3, 3)] = 1.0;
+        matrix[(4, 4)] = 1.0;
+        matrix
     }
 }
 
