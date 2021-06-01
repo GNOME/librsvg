@@ -1366,6 +1366,8 @@ impl DrawingCtx {
             return Ok(saved_cr.draw_ctx.empty_bbox());
         }
 
+        // Fill
+
         let paint_source = values
             .fill()
             .0
@@ -1384,7 +1386,7 @@ impl DrawingCtx {
                 };
             })?;
 
-        let mut need_layout_path = false;
+        // Stroke
 
         let paint_source = values
             .stroke()
@@ -1397,24 +1399,20 @@ impl DrawingCtx {
             .set_paint_source(&paint_source, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
-                    need_layout_path = true;
+                    pangocairo::functions::update_layout(&cr, &layout);
+                    pangocairo::functions::layout_path(&cr, &layout);
+
+                    let (x0, y0, x1, y1) = cr.stroke_extents();
+                    let r = Rect::new(x0, y0, x1, y1);
+                    let ib = BoundingBox::new()
+                        .with_transform(transform)
+                        .with_ink_rect(r);
+                    bbox.insert(&ib);
+                    if values.is_visible() {
+                        cr.stroke();
+                    }
                 }
             })?;
-
-        if need_layout_path {
-            pangocairo::functions::update_layout(&cr, &layout);
-            pangocairo::functions::layout_path(&cr, &layout);
-
-            let (x0, y0, x1, y1) = cr.stroke_extents();
-            let r = Rect::new(x0, y0, x1, y1);
-            let ib = BoundingBox::new()
-                .with_transform(transform)
-                .with_ink_rect(r);
-            bbox.insert(&ib);
-            if values.is_visible() {
-                cr.stroke();
-            }
-        }
 
         Ok(bbox)
     }
