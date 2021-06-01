@@ -1345,11 +1345,7 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        let mut bbox = if clipping {
-            self.empty_bbox()
-        } else {
-            bbox.unwrap()
-        };
+        let mut bbox = bbox.unwrap();
 
         let saved_cr = SavedCr::new(self);
 
@@ -1364,69 +1360,63 @@ impl DrawingCtx {
             cr.rotate(-rotation);
         }
 
-        let res = if !clipping {
-            let paint_source = values
-                .fill()
-                .0
-                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-                .to_user_space(&bbox, saved_cr.draw_ctx, values);
+        if clipping {
+            pangocairo::functions::update_layout(&cr, &layout);
+            pangocairo::functions::layout_path(&cr, &layout);
+            return Ok(saved_cr.draw_ctx.empty_bbox());
+        }
 
-            saved_cr
-                .draw_ctx
-                .set_paint_source(&paint_source, acquired_nodes)
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        pangocairo::functions::update_layout(&cr, &layout);
-                        if values.is_visible() {
-                            pangocairo::functions::show_layout(&cr, &layout);
-                        }
-                    };
-                })
-        } else {
-            Ok(())
-        };
+        let paint_source = values
+            .fill()
+            .0
+            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+            .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
-        if res.is_ok() {
-            let mut need_layout_path = clipping;
-
-            let res = if !clipping {
-                let paint_source = values
-                    .stroke()
-                    .0
-                    .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-                    .to_user_space(&bbox, saved_cr.draw_ctx, values);
-
-                saved_cr
-                    .draw_ctx
-                    .set_paint_source(&paint_source, acquired_nodes)
-                    .map(|had_paint_server| {
-                        if had_paint_server {
-                            need_layout_path = true;
-                        }
-                    })
-            } else {
-                Ok(())
-            };
-
-            if res.is_ok() && need_layout_path {
-                pangocairo::functions::update_layout(&cr, &layout);
-                pangocairo::functions::layout_path(&cr, &layout);
-
-                if !clipping {
-                    let (x0, y0, x1, y1) = cr.stroke_extents();
-                    let r = Rect::new(x0, y0, x1, y1);
-                    let ib = BoundingBox::new()
-                        .with_transform(transform)
-                        .with_ink_rect(r);
-                    bbox.insert(&ib);
+        saved_cr
+            .draw_ctx
+            .set_paint_source(&paint_source, acquired_nodes)
+            .map(|had_paint_server| {
+                if had_paint_server {
+                    pangocairo::functions::update_layout(&cr, &layout);
                     if values.is_visible() {
-                        cr.stroke();
+                        pangocairo::functions::show_layout(&cr, &layout);
                     }
+                };
+            })?;
+
+        let mut need_layout_path = false;
+
+        let paint_source = values
+            .stroke()
+            .0
+            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+            .to_user_space(&bbox, saved_cr.draw_ctx, values);
+
+        saved_cr
+            .draw_ctx
+            .set_paint_source(&paint_source, acquired_nodes)
+            .map(|had_paint_server| {
+                if had_paint_server {
+                    need_layout_path = true;
                 }
+            })?;
+
+        if need_layout_path {
+            pangocairo::functions::update_layout(&cr, &layout);
+            pangocairo::functions::layout_path(&cr, &layout);
+
+            let (x0, y0, x1, y1) = cr.stroke_extents();
+            let r = Rect::new(x0, y0, x1, y1);
+            let ib = BoundingBox::new()
+                .with_transform(transform)
+                .with_ink_rect(r);
+            bbox.insert(&ib);
+            if values.is_visible() {
+                cr.stroke();
             }
         }
 
-        res.map(|_: ()| bbox)
+        Ok(bbox)
     }
 
     pub fn get_snapshot(
