@@ -16,6 +16,7 @@
 
 use cssparser::{Color, Parser, RGBA};
 
+use crate::angle::Angle;
 use crate::coord_units::CoordUnits;
 use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
@@ -46,6 +47,7 @@ pub enum FilterFunction {
     Contrast(Contrast),
     DropShadow(DropShadow),
     Grayscale(Grayscale),
+    HueRotate(HueRotate),
     Invert(Invert),
     Opacity(Opacity),
     Saturate(Saturate),
@@ -93,6 +95,14 @@ pub struct DropShadow {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Grayscale {
     proportion: Option<f64>,
+}
+
+/// Parameters for the `hue-rotate()` filter function
+///
+/// https://www.w3.org/TR/filter-effects/#funcdef-filter-huerotate
+#[derive(Debug, Clone, PartialEq)]
+pub struct HueRotate {
+    angle: Option<Angle>,
 }
 
 /// Parameters for the `invert()` filter function
@@ -220,6 +230,13 @@ fn parse_grayscale<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, Pa
     let proportion = parse_num_or_percentage_clamped(parser);
 
     Ok(FilterFunction::Grayscale(Grayscale { proportion }))
+}
+
+#[allow(clippy::unnecessary_wraps)]
+fn parse_huerotate<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, ParseError<'i>> {
+    let angle = parser.try_parse(|p| Angle::parse(p)).ok();
+
+    Ok(FilterFunction::HueRotate(HueRotate { angle }))
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -443,6 +460,27 @@ impl Grayscale {
     }
 }
 
+impl HueRotate {
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let rads = self.angle.map(|a| a.radians()).unwrap_or(0.0);
+        let user_space_filter = Filter::default().to_user_space(params);
+
+        let huerotate = ResolvedPrimitive {
+            primitive: Primitive::default(),
+            params: PrimitiveParams::ColorMatrix(ColorMatrix {
+                matrix: ColorMatrix::hue_rotate_matrix(rads),
+                ..ColorMatrix::default()
+            }),
+        }
+        .into_user_space(params);
+
+        FilterSpec {
+            user_space_filter,
+            primitives: vec![huerotate],
+        }
+    }
+}
+
 impl Invert {
     fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
         let p = self.proportion.unwrap_or(1.0);
@@ -584,6 +622,7 @@ impl Parse for FilterFunction {
             ("contrast", &parse_contrast),
             ("drop-shadow", &parse_dropshadow),
             ("grayscale", &parse_grayscale),
+            ("hue-rotate", &parse_huerotate),
             ("invert", &parse_invert),
             ("opacity", &parse_opacity),
             ("saturate", &parse_saturate),
@@ -618,6 +657,7 @@ impl FilterFunction {
             FilterFunction::Contrast(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::DropShadow(v) => Ok(v.to_filter_spec(&params, values.color().0)),
             FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::HueRotate(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Invert(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Saturate(v) => Ok(v.to_filter_spec(&params)),
@@ -756,6 +796,28 @@ mod tests {
     }
 
     #[test]
+    fn parses_huerotate() {
+        assert_eq!(
+            FilterFunction::parse_str("hue-rotate()").unwrap(),
+            FilterFunction::HueRotate(HueRotate { angle: None })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("hue-rotate(0)").unwrap(),
+            FilterFunction::HueRotate(HueRotate {
+                angle: Some(Angle::new(0.0))
+            })
+        );
+
+        assert_eq!(
+            FilterFunction::parse_str("hue-rotate(128deg)").unwrap(),
+            FilterFunction::HueRotate(HueRotate {
+                angle: Some(Angle::from_degrees(128.0))
+            })
+        );
+    }
+
+    #[test]
     fn parses_invert() {
         assert_eq!(
             FilterFunction::parse_str("invert()").unwrap(),
@@ -863,6 +925,11 @@ mod tests {
     #[test]
     fn invalid_grayscale_yields_error() {
         assert!(FilterFunction::parse_str("grayscale(foo)").is_err());
+    }
+
+    #[test]
+    fn invalid_huerotate_yields_error() {
+        assert!(FilterFunction::parse_str("hue-rotate(foo)").is_err());
     }
 
     #[test]
