@@ -735,8 +735,11 @@ impl DrawingCtx {
                     // being resolved in userSpaceonUse units, since that is the default
                     // for primitive_units.  So, get the corresponding NormalizeParams
                     // here and pass them down.
-                    let view_params = temporary_draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
-                    let user_space_params = NormalizeParams::new(values, &view_params);
+                    let user_space_params = {
+                        let view_params =
+                            temporary_draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
+                        NormalizeParams::new(values, &view_params)
+                    };
 
                     (
                         temporary_draw_ctx.run_filters(
