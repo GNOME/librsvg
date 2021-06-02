@@ -720,7 +720,7 @@ impl DrawingCtx {
                             .stroke()
                             .0
                             .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
-                            .to_user_space(&bbox, saved_cr.draw_ctx, values),
+                            .to_user_space(&bbox, &temporary_draw_ctx, values),
                     );
 
                     let fill_paint_source = Rc::new(
@@ -728,8 +728,15 @@ impl DrawingCtx {
                             .fill()
                             .0
                             .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
-                            .to_user_space(&bbox, saved_cr.draw_ctx, values),
+                            .to_user_space(&bbox, &temporary_draw_ctx, values),
                     );
+
+                    // Filter functions (like "blend()", not the <filter> element) require
+                    // being resolved in userSpaceonUse units, since that is the default
+                    // for primitive_units.  So, get the corresponding NormalizeParams
+                    // here and pass them down.
+                    let view_params = temporary_draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
+                    let user_space_params = NormalizeParams::new(values, &view_params);
 
                     (
                         temporary_draw_ctx.run_filters(
@@ -737,7 +744,7 @@ impl DrawingCtx {
                             &stacking_ctx.filter,
                             acquired_nodes,
                             &stacking_ctx.element_name,
-                            values,
+                            &user_space_params,
                             stroke_paint_source,
                             fill_paint_source,
                             current_color,
@@ -874,7 +881,7 @@ impl DrawingCtx {
         filters: &Filter,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
-        values: &ComputedValues,
+        user_space_params: &NormalizeParams,
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
         current_color: RGBA,
@@ -886,16 +893,9 @@ impl DrawingCtx {
                 if let Ok(specs) = filter_list
                     .iter()
                     .map(|filter_value| {
-                        // Filter functions (like "blend()", not the <filter> element)
-                        // require being resolved in userSpaceonUse units, since that is
-                        // the default for primitive_units.  So, get the corresponding
-                        // NormalizeParams here and pass them down.
-                        let view_params = self.push_coord_units(CoordUnits::UserSpaceOnUse);
-                        let user_space_params = NormalizeParams::new(values, &view_params);
-
                         filter_value.to_filter_spec(
                             acquired_nodes,
-                            &user_space_params,
+                            user_space_params,
                             current_color,
                             self,
                             node_name,
