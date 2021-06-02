@@ -10,7 +10,7 @@ use crate::length::*;
 use crate::node::*;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    Filter, Opacity, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+    Filter, MixBlendMode, Opacity, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
@@ -36,6 +36,7 @@ pub struct StackingContext {
     pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
+    pub mix_blend_mode: MixBlendMode,
 }
 
 /// Stroke parameters in user-space coordinates.
@@ -122,6 +123,8 @@ impl StackingContext {
             }
         });
 
+        let mix_blend_mode = values.mix_blend_mode();
+
         StackingContext {
             element_name,
             transform,
@@ -130,6 +133,7 @@ impl StackingContext {
             clip_in_user_space,
             clip_in_object_space,
             mask,
+            mix_blend_mode,
         }
     }
 }

@@ -664,7 +664,7 @@ impl DrawingCtx {
             let needs_temporary_surface = !(is_opaque
                 && stacking_ctx.filter == Filter::None
                 && stacking_ctx.mask.is_none()
-                && values.mix_blend_mode() == MixBlendMode::Normal
+                && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
                 && stacking_ctx.clip_in_object_space.is_none());
 
             if needs_temporary_surface {
@@ -770,7 +770,7 @@ impl DrawingCtx {
                     saved_cr
                         .draw_ctx
                         .cr
-                        .set_operator(values.mix_blend_mode().into());
+                        .set_operator(stacking_ctx.mix_blend_mode.into());
 
                     if opacity < 1.0 {
                         saved_cr.draw_ctx.cr.paint_with_alpha(opacity);
