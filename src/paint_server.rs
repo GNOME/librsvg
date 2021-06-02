@@ -6,9 +6,7 @@ use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
-use crate::error::{
-    AcquireError, ImplementationLimit, NodeIdError, ParseError, RenderingError, ValueErrorKind,
-};
+use crate::error::{AcquireError, NodeIdError, ParseError, RenderingError, ValueErrorKind};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
@@ -150,18 +148,18 @@ impl PaintServer {
                     }
                 })
                 .or_else(|err| match (err, alternate) {
-                    (AcquireError::MaxReferencesExceeded, _) => {
-                        rsvg_log!("exceeded maximum number of referenced objects");
-                        Err(RenderingError::LimitExceeded(
-                            ImplementationLimit::TooManyReferencedElements,
-                        ))
-                    }
-
-                    // The following two cases catch AcquireError::CircularReference, which for
-                    // paint servers may mean that there is a pattern or gradient with a reference
-                    // cycle in its "href" attribute.  This is an invalid paint server, and per
-                    // https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint we should try to
-                    // fall back to the alternate color.
+                    // The following cases catch AcquireError::CircularReference and
+                    // AcquireError::MaxReferencesExceeded.
+                    //
+                    // Circular references mean that there is a pattern or gradient with a
+                    // reference cycle in its "href" attribute.  This is an invalid paint
+                    // server, and per
+                    // https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint we should
+                    // try to fall back to the alternate color.
+                    //
+                    // Exceeding the maximum number of references will get caught again
+                    // later in the drawing code, so it should be fine to translate this
+                    // condition to that for an invalid paint server.
                     (_, Some(color)) => {
                         rsvg_log!(
                             "could not resolve paint server \"{}\", using alternate color",
