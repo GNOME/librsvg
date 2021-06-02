@@ -501,19 +501,21 @@ impl DrawingCtx {
             let orig_transform = self.get_transform();
             self.cr.transform(node_transform.into());
 
-            // here we don't push a layer because we are clipping
-            let res = node.draw_children(acquired_nodes, &cascaded, self, true);
+            for child in node.children().filter(|c| c.is_element()) {
+                child.draw(
+                    acquired_nodes,
+                    &CascadedValues::new(&cascaded, &child),
+                    self,
+                    true,
+                )?;
+            }
 
             self.cr.clip();
 
             self.cr.set_matrix(orig_transform.into());
-
-            // Clipping paths do not contribute to bounding boxes, so ignore the bbox from
-            // the clip path.
-            res.map(|_bbox| ())
-        } else {
-            Ok(())
         }
+
+        Ok(())
     }
 
     fn generate_cairo_mask(
