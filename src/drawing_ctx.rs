@@ -1107,26 +1107,6 @@ impl DrawingCtx {
         surface.share()
     }
 
-    fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
-        let view_params = self.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
-
-        let stroke = Stroke::new(values, &params);
-
-        cr.set_line_width(stroke.width);
-        cr.set_miter_limit(stroke.miter_limit.0);
-        cr.set_line_cap(cairo::LineCap::from(stroke.line_cap));
-        cr.set_line_join(cairo::LineJoin::from(stroke.line_join));
-
-        let total_length: f64 = stroke.dashes.iter().sum();
-
-        if total_length > 0.0 {
-            cr.set_dash(&stroke.dashes, stroke.dash_offset);
-        } else {
-            cr.set_dash(&[], 0.0);
-        }
-    }
-
     fn stroke(
         &mut self,
         cr: &cairo::Context,
@@ -1209,7 +1189,14 @@ impl DrawingCtx {
                 }
 
                 cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
-                dc.setup_cr_for_stroke(&cr, values);
+
+                {
+                    let view_params = dc.get_view_params();
+                    let params = NormalizeParams::new(values, &view_params);
+                    let stroke = Stroke::new(values, &params);
+
+                    setup_cr_for_stroke(&cr, &stroke);
+                }
 
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
 
@@ -1353,7 +1340,15 @@ impl DrawingCtx {
         let cr = saved_cr.draw_ctx.cr.clone();
 
         cr.set_antialias(cairo::Antialias::from(values.text_rendering()));
-        saved_cr.draw_ctx.setup_cr_for_stroke(&cr, &values);
+
+        {
+            let view_params = saved_cr.draw_ctx.get_view_params();
+            let params = NormalizeParams::new(values, &view_params);
+            let stroke = Stroke::new(values, &params);
+
+            setup_cr_for_stroke(&cr, &stroke);
+        }
+
         cr.move_to(x, y);
 
         let rotation = gravity.to_rotation();
@@ -1884,6 +1879,21 @@ fn compute_text_box(
         .with_ink_rect(r);
 
     Some(bbox)
+}
+
+fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {
+    cr.set_line_width(stroke.width);
+    cr.set_miter_limit(stroke.miter_limit.0);
+    cr.set_line_cap(cairo::LineCap::from(stroke.line_cap));
+    cr.set_line_join(cairo::LineJoin::from(stroke.line_join));
+
+    let total_length: f64 = stroke.dashes.iter().sum();
+
+    if total_length > 0.0 {
+        cr.set_dash(&stroke.dashes, stroke.dash_offset);
+    } else {
+        cr.set_dash(&[], 0.0);
+    }
 }
 
 // FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
