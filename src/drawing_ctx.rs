@@ -17,6 +17,7 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
+use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -501,19 +502,23 @@ impl DrawingCtx {
             let orig_transform = self.get_transform();
             self.cr.transform(node_transform.into());
 
-            // here we don't push a layer because we are clipping
-            let res = node.draw_children(acquired_nodes, &cascaded, self, true);
+            for child in node.children().filter(|c| {
+                c.is_element() && element_can_be_used_inside_clip_path(&c.borrow_element())
+            }) {
+                child.draw(
+                    acquired_nodes,
+                    &CascadedValues::new(&cascaded, &child),
+                    self,
+                    true,
+                )?;
+            }
 
             self.cr.clip();
 
             self.cr.set_matrix(orig_transform.into());
-
-            // Clipping paths do not contribute to bounding boxes, so ignore the bbox from
-            // the clip path.
-            res.map(|_bbox| ())
-        } else {
-            Ok(())
         }
+
+        Ok(())
     }
 
     fn generate_cairo_mask(
@@ -1345,11 +1350,7 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        let mut bbox = if clipping {
-            self.empty_bbox()
-        } else {
-            bbox.unwrap()
-        };
+        let mut bbox = bbox.unwrap();
 
         let saved_cr = SavedCr::new(self);
 
@@ -1364,55 +1365,48 @@ impl DrawingCtx {
             cr.rotate(-rotation);
         }
 
-        let res = if !clipping {
-            let paint_source = values
-                .fill()
-                .0
-                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-                .to_user_space(&bbox, saved_cr.draw_ctx, values);
+        if clipping {
+            pangocairo::functions::update_layout(&cr, &layout);
+            pangocairo::functions::layout_path(&cr, &layout);
+            return Ok(saved_cr.draw_ctx.empty_bbox());
+        }
 
-            saved_cr
-                .draw_ctx
-                .set_paint_source(&paint_source, acquired_nodes)
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        pangocairo::functions::update_layout(&cr, &layout);
-                        if values.is_visible() {
-                            pangocairo::functions::show_layout(&cr, &layout);
-                        }
-                    };
-                })
-        } else {
-            Ok(())
-        };
+        // Fill
 
-        if res.is_ok() {
-            let mut need_layout_path = clipping;
+        let paint_source = values
+            .fill()
+            .0
+            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+            .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
-            let res = if !clipping {
-                let paint_source = values
-                    .stroke()
-                    .0
-                    .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-                    .to_user_space(&bbox, saved_cr.draw_ctx, values);
+        saved_cr
+            .draw_ctx
+            .set_paint_source(&paint_source, acquired_nodes)
+            .map(|had_paint_server| {
+                if had_paint_server {
+                    pangocairo::functions::update_layout(&cr, &layout);
+                    if values.is_visible() {
+                        pangocairo::functions::show_layout(&cr, &layout);
+                    }
+                };
+            })?;
 
-                saved_cr
-                    .draw_ctx
-                    .set_paint_source(&paint_source, acquired_nodes)
-                    .map(|had_paint_server| {
-                        if had_paint_server {
-                            need_layout_path = true;
-                        }
-                    })
-            } else {
-                Ok(())
-            };
+        // Stroke
 
-            if res.is_ok() && need_layout_path {
-                pangocairo::functions::update_layout(&cr, &layout);
-                pangocairo::functions::layout_path(&cr, &layout);
+        let paint_source = values
+            .stroke()
+            .0
+            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+            .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
-                if !clipping {
+        saved_cr
+            .draw_ctx
+            .set_paint_source(&paint_source, acquired_nodes)
+            .map(|had_paint_server| {
+                if had_paint_server {
+                    pangocairo::functions::update_layout(&cr, &layout);
+                    pangocairo::functions::layout_path(&cr, &layout);
+
                     let (x0, y0, x1, y1) = cr.stroke_extents();
                     let r = Rect::new(x0, y0, x1, y1);
                     let ib = BoundingBox::new()
@@ -1423,10 +1417,9 @@ impl DrawingCtx {
                         cr.stroke();
                     }
                 }
-            }
-        }
+            })?;
 
-        res.map(|_: ()| bbox)
+        Ok(bbox)
     }
 
     pub fn get_snapshot(
@@ -1588,6 +1581,10 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
+        if clipping && !element_can_be_used_inside_use_inside_clip_path(&child.borrow_element()) {
+            return Ok(self.empty_bbox());
+        }
+
         let orig_transform = self.get_transform();
 
         self.cr
@@ -1673,6 +1670,37 @@ impl DrawingCtx {
             res
         }
     }
+}
+
+// https://www.w3.org/TR/css-masking-1/#ClipPathElement
+fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
+    matches!(
+        *element,
+        Element::Circle(_)
+            | Element::Ellipse(_)
+            | Element::Line(_)
+            | Element::Path(_)
+            | Element::Polygon(_)
+            | Element::Polyline(_)
+            | Element::Rect(_)
+            | Element::Text(_)
+            | Element::Use(_)
+    )
+}
+
+// https://www.w3.org/TR/css-masking-1/#ClipPathElement
+fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
+    matches!(
+        *element,
+        Element::Circle(_)
+            | Element::Ellipse(_)
+            | Element::Line(_)
+            | Element::Path(_)
+            | Element::Polygon(_)
+            | Element::Polyline(_)
+            | Element::Rect(_)
+            | Element::Text(_)
+    )
 }
 
 #[derive(Debug)]
