@@ -1,6 +1,6 @@
 //! The `filter` element.
 
-use cssparser::Parser;
+use cssparser::{Parser, RGBA};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::slice::Iter;
 
@@ -114,6 +114,7 @@ impl FilterValue {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
+        current_color: RGBA,
         draw_ctx: &DrawingCtx,
         node_being_filtered_name: &str,
     ) -> Result<FilterSpec, FilterResolveError> {
@@ -125,7 +126,7 @@ impl FilterValue {
                 node_being_filtered_name,
             ),
 
-            FilterValue::Function(ref func) => func.to_filter_spec(values, draw_ctx),
+            FilterValue::Function(ref func) => func.to_filter_spec(values, current_color, draw_ctx),
         }
     }
 }

@@ -645,6 +645,7 @@ impl FilterFunction {
     pub fn to_filter_spec(
         &self,
         values: &ComputedValues,
+        current_color: RGBA,
         draw_ctx: &DrawingCtx,
     ) -> Result<FilterSpec, FilterResolveError> {
         // userSpaceonUse is the default for primitive_units
@@ -655,7 +656,7 @@ impl FilterFunction {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Brightness(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Contrast(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::DropShadow(v) => Ok(v.to_filter_spec(&params, values.color().0)),
+            FilterFunction::DropShadow(v) => Ok(v.to_filter_spec(&params, current_color)),
             FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::HueRotate(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Invert(v) => Ok(v.to_filter_spec(&params)),
