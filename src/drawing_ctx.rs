@@ -68,6 +68,22 @@ impl ViewParams {
             viewport_stack: None,
         }
     }
+
+    pub fn with_units(&self, units: CoordUnits) -> ViewParams {
+        match units {
+            CoordUnits::ObjectBoundingBox => ViewParams {
+                dpi: self.dpi,
+                vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
+                viewport_stack: None,
+            },
+
+            CoordUnits::UserSpaceOnUse => ViewParams {
+                dpi: self.dpi,
+                vbox: self.vbox,
+                viewport_stack: None,
+            },
+        }
+    }
 }
 
 impl Drop for ViewParams {
@@ -731,12 +747,14 @@ impl DrawingCtx {
 
                     let current_color = values.color().0;
 
+                    let params = temporary_draw_ctx.get_view_params();
+
                     let stroke_paint_source = Rc::new(
                         values
                             .stroke()
                             .0
                             .resolve(acquired_nodes, values.stroke_opacity().0, current_color)
-                            .to_user_space(&bbox, &temporary_draw_ctx, values),
+                            .to_user_space(&bbox, &params, values),
                     );
 
                     let fill_paint_source = Rc::new(
@@ -744,7 +762,7 @@ impl DrawingCtx {
                             .fill()
                             .0
                             .resolve(acquired_nodes, values.fill_opacity().0, current_color)
-                            .to_user_space(&bbox, &temporary_draw_ctx, values),
+                            .to_user_space(&bbox, &params, values),
                     );
 
                     // Filter functions (like "blend()", not the <filter> element) require
@@ -753,7 +771,7 @@ impl DrawingCtx {
                     // here and pass them down.
                     let user_space_params = NormalizeParams::new(
                         values,
-                        &temporary_draw_ctx.get_view_params_for_units(CoordUnits::UserSpaceOnUse),
+                        &params.with_units(CoordUnits::UserSpaceOnUse),
                     );
 
                     (

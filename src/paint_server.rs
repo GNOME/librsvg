@@ -4,7 +4,7 @@ use cssparser::Parser;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::Element;
 use crate::error::{AcquireError, NodeIdError, ParseError, ValueErrorKind};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
@@ -193,20 +193,20 @@ impl PaintSource {
     pub fn to_user_space(
         &self,
         bbox: &BoundingBox,
-        draw_ctx: &DrawingCtx,
+        current_params: &ViewParams,
         values: &ComputedValues,
     ) -> UserSpacePaintSource {
         match *self {
             PaintSource::None => UserSpacePaintSource::None,
             PaintSource::SolidColor(c) => UserSpacePaintSource::SolidColor(c),
 
-            PaintSource::Gradient(ref g, c) => match (g.to_user_space(bbox, draw_ctx, values), c) {
+            PaintSource::Gradient(ref g, c) => match (g.to_user_space(bbox, current_params, values), c) {
                 (Some(gradient), c) => UserSpacePaintSource::Gradient(gradient, c),
                 (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
                 (None, None) => UserSpacePaintSource::None,
             },
 
-            PaintSource::Pattern(ref p, c) => match (p.to_user_space(bbox, draw_ctx, values), c) {
+            PaintSource::Pattern(ref p, c) => match (p.to_user_space(bbox, current_params, values), c) {
                 (Some(pattern), c) => UserSpacePaintSource::Pattern(pattern, c),
                 (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
                 (None, None) => UserSpacePaintSource::None,
