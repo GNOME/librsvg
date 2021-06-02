@@ -1,5 +1,6 @@
 //! The main context structure which drives the drawing process.
 
+use cssparser::RGBA;
 use float_cmp::approx_eq;
 use once_cell::sync::Lazy;
 use pango::FontMapExt;
@@ -719,6 +720,7 @@ impl DrawingCtx {
                             acquired_nodes,
                             &stacking_ctx.element_name,
                             values,
+                            values.color().0,
                             bbox,
                         )?,
                         res,
@@ -853,13 +855,14 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
         values: &ComputedValues,
+        current_color: RGBA,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
         let stroke_paint_source = Rc::new(
             values
                 .stroke()
                 .0
-                .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+                .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
                 .to_user_space(&node_bbox, self, values),
         );
 
@@ -867,7 +870,7 @@ impl DrawingCtx {
             values
                 .fill()
                 .0
-                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+                .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
                 .to_user_space(&node_bbox, self, values),
         );
 
@@ -880,7 +883,7 @@ impl DrawingCtx {
                         filter_value.to_filter_spec(
                             acquired_nodes,
                             values,
-                            values.color().0,
+                            current_color,
                             self,
                             node_name,
                         )
