@@ -374,6 +374,23 @@ impl DrawingCtx {
             .expect("viewport_stack must never be empty!")
     }
 
+    // Same as `push_coord_units` but doesn't leave the coordinate space pushed
+    pub fn get_view_params_for_units(&self, units: CoordUnits) -> ViewParams {
+        match units {
+            CoordUnits::ObjectBoundingBox => ViewParams {
+                dpi: self.dpi,
+                vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
+                viewport_stack: None,
+            },
+
+            CoordUnits::UserSpaceOnUse => ViewParams {
+                dpi: self.dpi,
+                vbox: self.get_top_viewport().vbox,
+                viewport_stack: None,
+            },
+        }
+    }
+
     pub fn push_coord_units(&self, units: CoordUnits) -> ViewParams {
         match units {
             CoordUnits::ObjectBoundingBox => self.push_view_box(1.0, 1.0),
@@ -555,8 +572,7 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let view_params = self.push_coord_units(mask_units);
-            let params = NormalizeParams::new(values, &view_params);
+            let params = NormalizeParams::new(values, &self.get_view_params_for_units(mask_units));
             mask.get_rect(&params)
         };
 
@@ -735,11 +751,10 @@ impl DrawingCtx {
                     // being resolved in userSpaceonUse units, since that is the default
                     // for primitive_units.  So, get the corresponding NormalizeParams
                     // here and pass them down.
-                    let user_space_params = {
-                        let view_params =
-                            temporary_draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
-                        NormalizeParams::new(values, &view_params)
-                    };
+                    let user_space_params = NormalizeParams::new(
+                        values,
+                        &temporary_draw_ctx.get_view_params_for_units(CoordUnits::UserSpaceOnUse),
+                    );
 
                     (
                         temporary_draw_ctx.run_filters(

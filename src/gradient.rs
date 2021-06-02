@@ -692,7 +692,7 @@ impl ResolvedGradient {
             return None;
         };
 
-        let view_params = draw_ctx.push_coord_units(units);
+        let view_params = draw_ctx.get_view_params_for_units(units);
         let params = NormalizeParams::new(values, &view_params);
 
         let transform = transform.pre_transform(&self.transform).invert()?;

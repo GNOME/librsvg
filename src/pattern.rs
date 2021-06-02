@@ -332,8 +332,8 @@ impl ResolvedPattern {
     ) -> Option<UserSpacePattern> {
         let node_with_children = self.node_with_children()?;
 
-        let view_params = draw_ctx.push_coord_units(self.units.0);
-        let params = NormalizeParams::new(values, &view_params);
+        let params =
+            NormalizeParams::new(values, &draw_ctx.get_view_params_for_units(self.units.0));
 
         let rect = self.get_rect(&params);
         let bbrect = bbox.rect.unwrap();

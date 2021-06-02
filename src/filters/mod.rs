@@ -256,10 +256,10 @@ pub fn extract_filter_from_filter_node(
 
         let filter = borrow_element_as!(filter_node, Filter);
 
-        // This is in a temporary scope so we don't leave the coord_units pushed during
-        // the execution of all the filter primitives.
-        let params = draw_ctx.push_coord_units(filter.get_filter_units());
-        filter.to_user_space(&NormalizeParams::new(filter_values, &params))
+        filter.to_user_space(&NormalizeParams::new(
+            filter_values,
+            &draw_ctx.get_view_params_for_units(filter.get_filter_units()),
+        ))
     };
 
     let primitives = filter_node
@@ -283,9 +283,11 @@ pub fn extract_filter_from_filter_node(
 
             let primitive_name = format!("{}", primitive_node);
 
-            let view_params = draw_ctx.push_coord_units(user_space_filter.primitive_units);
             let primitive_values = elt.get_computed_values();
-            let params = NormalizeParams::new(&primitive_values, &view_params);
+            let params = NormalizeParams::new(
+                &primitive_values,
+                &draw_ctx.get_view_params_for_units(user_space_filter.primitive_units),
+            );
 
             effect
                 .resolve(acquired_nodes, &primitive_node)
