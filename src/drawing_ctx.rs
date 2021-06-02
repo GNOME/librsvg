@@ -1674,35 +1674,33 @@ impl DrawingCtx {
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
 fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
-    match *element {
+    matches!(
+        *element,
         Element::Circle(_)
-        | Element::Ellipse(_)
-        | Element::Line(_)
-        | Element::Path(_)
-        | Element::Polygon(_)
-        | Element::Polyline(_)
-        | Element::Rect(_)
-        | Element::Text(_)
-        | Element::Use(_) => true,
-
-        _ => false,
-    }
+            | Element::Ellipse(_)
+            | Element::Line(_)
+            | Element::Path(_)
+            | Element::Polygon(_)
+            | Element::Polyline(_)
+            | Element::Rect(_)
+            | Element::Text(_)
+            | Element::Use(_)
+    )
 }
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
 fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
-    match *element {
+    matches!(
+        *element,
         Element::Circle(_)
-        | Element::Ellipse(_)
-        | Element::Line(_)
-        | Element::Path(_)
-        | Element::Polygon(_)
-        | Element::Polyline(_)
-        | Element::Rect(_)
-        | Element::Text(_) => true,
-
-        _ => false,
-    }
+            | Element::Ellipse(_)
+            | Element::Line(_)
+            | Element::Path(_)
+            | Element::Polygon(_)
+            | Element::Polyline(_)
+            | Element::Rect(_)
+            | Element::Text(_)
+    )
 }
 
 #[derive(Debug)]
