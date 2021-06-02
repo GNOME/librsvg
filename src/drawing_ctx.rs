@@ -713,6 +713,24 @@ impl DrawingCtx {
                         &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.get_target()).unwrap(),
                     )?;
 
+                    let current_color = values.color().0;
+
+                    let stroke_paint_source = Rc::new(
+                        values
+                            .stroke()
+                            .0
+                            .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
+                            .to_user_space(&bbox, saved_cr.draw_ctx, values),
+                    );
+
+                    let fill_paint_source = Rc::new(
+                        values
+                            .fill()
+                            .0
+                            .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
+                            .to_user_space(&bbox, saved_cr.draw_ctx, values),
+                    );
+
                     (
                         temporary_draw_ctx.run_filters(
                             surface_to_filter,
@@ -720,7 +738,9 @@ impl DrawingCtx {
                             acquired_nodes,
                             &stacking_ctx.element_name,
                             values,
-                            values.color().0,
+                            stroke_paint_source,
+                            fill_paint_source,
+                            current_color,
                             bbox,
                         )?,
                         res,
@@ -855,25 +875,11 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
         values: &ComputedValues,
+        stroke_paint_source: Rc<UserSpacePaintSource>,
+        fill_paint_source: Rc<UserSpacePaintSource>,
         current_color: RGBA,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
-        let stroke_paint_source = Rc::new(
-            values
-                .stroke()
-                .0
-                .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
-                .to_user_space(&node_bbox, self, values),
-        );
-
-        let fill_paint_source = Rc::new(
-            values
-                .fill()
-                .0
-                .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
-                .to_user_space(&node_bbox, self, values),
-        );
-
         let surface = match filters {
             Filter::None => surface_to_filter,
             Filter::List(filter_list) => {
