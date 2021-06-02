@@ -6,7 +6,7 @@ use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::Element;
-use crate::error::{AcquireError, NodeIdError, ParseError, RenderingError, ValueErrorKind};
+use crate::error::{AcquireError, NodeIdError, ParseError, ValueErrorKind};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
@@ -108,7 +108,7 @@ impl PaintServer {
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         current_color: cssparser::RGBA,
-    ) -> Result<PaintSource, RenderingError> {
+    ) -> PaintSource {
         match self {
             PaintServer::Iri {
                 ref iri,
@@ -147,7 +147,7 @@ impl PaintServer {
                         _ => Err(AcquireError::InvalidLinkType(iri.as_ref().clone())),
                     }
                 })
-                .or_else(|err| match (err, alternate) {
+                .unwrap_or_else(|_| match alternate {
                     // The following cases catch AcquireError::CircularReference and
                     // AcquireError::MaxReferencesExceeded.
                     //
@@ -160,36 +160,30 @@ impl PaintServer {
                     // Exceeding the maximum number of references will get caught again
                     // later in the drawing code, so it should be fine to translate this
                     // condition to that for an invalid paint server.
-                    (_, Some(color)) => {
+                    Some(color) => {
                         rsvg_log!(
                             "could not resolve paint server \"{}\", using alternate color",
                             iri
                         );
 
-                        Ok(PaintSource::SolidColor(resolve_color(
-                            color,
-                            opacity,
-                            current_color,
-                        )))
+                        PaintSource::SolidColor(resolve_color(color, opacity, current_color))
                     }
 
-                    (_, _) => {
+                    None => {
                         rsvg_log!(
                             "could not resolve paint server \"{}\", no alternate color specified",
                             iri
                         );
 
-                        Ok(PaintSource::None)
+                        PaintSource::None
                     }
                 }),
 
-            PaintServer::SolidColor(color) => Ok(PaintSource::SolidColor(resolve_color(
-                color,
-                opacity,
-                current_color,
-            ))),
+            PaintServer::SolidColor(color) => {
+                PaintSource::SolidColor(resolve_color(color, opacity, current_color))
+            }
 
-            PaintServer::None => Ok(PaintSource::None),
+            PaintServer::None => PaintSource::None,
         }
     }
 }

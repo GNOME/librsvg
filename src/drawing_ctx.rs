@@ -735,7 +735,7 @@ impl DrawingCtx {
                         values
                             .stroke()
                             .0
-                            .resolve(acquired_nodes, values.stroke_opacity().0, current_color)?
+                            .resolve(acquired_nodes, values.stroke_opacity().0, current_color)
                             .to_user_space(&bbox, &temporary_draw_ctx, values),
                     );
 
@@ -743,7 +743,7 @@ impl DrawingCtx {
                         values
                             .fill()
                             .0
-                            .resolve(acquired_nodes, values.fill_opacity().0, current_color)?
+                            .resolve(acquired_nodes, values.fill_opacity().0, current_color)
                             .to_user_space(&bbox, &temporary_draw_ctx, values),
                     );
 
@@ -1152,7 +1152,7 @@ impl DrawingCtx {
         let paint_source = values
             .stroke()
             .0
-            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)
             .to_user_space(bbox, self, values);
 
         self.set_paint_source(&paint_source, acquired_nodes)
@@ -1175,7 +1175,7 @@ impl DrawingCtx {
         let paint_source = values
             .fill()
             .0
-            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)
             .to_user_space(bbox, self, values);
 
         self.set_paint_source(&paint_source, acquired_nodes)
@@ -1401,7 +1401,7 @@ impl DrawingCtx {
         let paint_source = values
             .fill()
             .0
-            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
+            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)
             .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
         saved_cr
@@ -1421,7 +1421,7 @@ impl DrawingCtx {
         let paint_source = values
             .stroke()
             .0
-            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
+            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)
             .to_user_space(&bbox, saved_cr.draw_ctx, values);
 
         saved_cr
