@@ -1164,6 +1164,7 @@ impl DrawingCtx {
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        view_params: &ViewParams,
         values: &ComputedValues,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
@@ -1171,7 +1172,7 @@ impl DrawingCtx {
             .stroke()
             .0
             .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)
-            .to_user_space(bbox, self, values);
+            .to_user_space(bbox, view_params, values);
 
         self.set_paint_source(&paint_source, acquired_nodes)
             .map(|had_paint_server| {
@@ -1187,6 +1188,7 @@ impl DrawingCtx {
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        view_params: &ViewParams,
         values: &ComputedValues,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
@@ -1194,7 +1196,7 @@ impl DrawingCtx {
             .fill()
             .0
             .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)
-            .to_user_space(bbox, self, values);
+            .to_user_space(bbox, view_params, values);
 
         self.set_paint_source(&paint_source, acquired_nodes)
             .map(|had_paint_server| {
@@ -1243,8 +1245,8 @@ impl DrawingCtx {
 
                 cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
 
+                let view_params = dc.get_view_params();
                 let stroke = {
-                    let view_params = dc.get_view_params();
                     let params = NormalizeParams::new(values, &view_params);
                     Stroke::new(values, &params)
                 };
@@ -1269,9 +1271,9 @@ impl DrawingCtx {
 
                             if values.is_visible() {
                                 if target == PaintTarget::Stroke {
-                                    dc.stroke(&cr, an, values, &bbox)?;
+                                    dc.stroke(&cr, an, &view_params, values, &bbox)?;
                                 } else {
-                                    dc.fill(&cr, an, values, &bbox)?;
+                                    dc.fill(&cr, an, &view_params, values, &bbox)?;
                                 }
                             }
                         }
@@ -1393,8 +1395,8 @@ impl DrawingCtx {
 
         cr.set_antialias(cairo::Antialias::from(values.text_rendering()));
 
+        let view_params = saved_cr.draw_ctx.get_view_params();
         {
-            let view_params = saved_cr.draw_ctx.get_view_params();
             let params = NormalizeParams::new(values, &view_params);
             let stroke = Stroke::new(values, &params);
 
@@ -1420,7 +1422,7 @@ impl DrawingCtx {
             .fill()
             .0
             .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)
-            .to_user_space(&bbox, saved_cr.draw_ctx, values);
+            .to_user_space(&bbox, &view_params, values);
 
         saved_cr
             .draw_ctx
@@ -1440,7 +1442,7 @@ impl DrawingCtx {
             .stroke()
             .0
             .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)
-            .to_user_space(&bbox, saved_cr.draw_ctx, values);
+            .to_user_space(&bbox, &view_params, values);
 
         saved_cr
             .draw_ctx

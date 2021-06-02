@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
