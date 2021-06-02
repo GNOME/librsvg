@@ -1225,13 +1225,13 @@ impl DrawingCtx {
 
                 cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
 
-                {
+                let stroke = {
                     let view_params = dc.get_view_params();
                     let params = NormalizeParams::new(values, &view_params);
-                    let stroke = Stroke::new(values, &params);
+                    Stroke::new(values, &params)
+                };
 
-                    setup_cr_for_stroke(&cr, &stroke);
-                }
+                setup_cr_for_stroke(&cr, &stroke);
 
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
 
