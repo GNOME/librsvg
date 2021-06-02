@@ -401,3 +401,63 @@ fn switch_element_should_ignore_elements_in_error() {
             "switch_element_should_ignore_elements_in_error",
         );
 }
+
+// https://gitlab.gnome.org/GNOME/librsvg/-/issues/566
+#[test]
+fn accepted_children_inside_clip_path() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200">
+  <defs>
+    <clipPath id="one">
+      <g>
+        <rect x="10" y="10" width="50" height="50"/>
+      </g>
+    </clipPath>
+
+    <clipPath id="two">
+      <use xlink:href="#three"/>
+    </clipPath>
+
+    <use id="three" xlink:href="#four"/>
+
+    <rect id="four" x="10" y="10" width="50" height="50"/>
+  </defs>
+
+  <rect x="10" y="10" width="100" height="100" fill="lime"/>
+
+  <rect x="20" y="20" width="10" height="10" fill="red" clip-path="url(#one)"/>
+
+  <rect x="40" y="40" width="10" height="10" fill="red" clip-path="url(#two)"/>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(200, 200),
+        |_| (),
+        cairo::Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 200.0,
+            height: 200.0,
+        },
+    )
+    .unwrap();
+
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
+
+    {
+        let cr = cairo::Context::new(&reference_surf);
+
+        cr.rectangle(10.0, 10.0, 100.0, 100.0);
+        cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
+        cr.fill();
+    }
+
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "accepted_children_inside_clip_path");
+}
