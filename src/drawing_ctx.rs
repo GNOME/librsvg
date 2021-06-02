@@ -1255,8 +1255,9 @@ impl DrawingCtx {
 
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
 
-                let mut bounding_box: Option<BoundingBox> = None;
-                path_helper.unset();
+                path_helper.set()?;
+                let stroke_paint = values.stroke().0;
+                let bbox = compute_stroke_and_fill_box(&cr, &stroke, &stroke_paint);
 
                 for &target in &values.paint_order().targets {
                     // fill and stroke operations will preserve the path.
@@ -1264,10 +1265,6 @@ impl DrawingCtx {
                     match target {
                         PaintTarget::Fill | PaintTarget::Stroke => {
                             path_helper.set()?;
-                            let bbox = bounding_box.get_or_insert_with(|| {
-                                let stroke_paint = values.stroke().0;
-                                compute_stroke_and_fill_box(&cr, &stroke, &stroke_paint)
-                            });
 
                             if values.is_visible() {
                                 if target == PaintTarget::Stroke {
@@ -1286,7 +1283,7 @@ impl DrawingCtx {
                 }
 
                 path_helper.unset();
-                Ok(bounding_box.unwrap())
+                Ok(bbox)
             },
         )
     }
