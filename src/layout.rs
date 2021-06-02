@@ -2,6 +2,7 @@
 //!
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
+use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
@@ -32,6 +33,8 @@ pub struct StackingContext {
     pub transform: Transform,
     pub opacity: Opacity,
     pub filter: Filter,
+    pub clip_in_user_space: Option<Node>,
+    pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
 }
 
@@ -71,6 +74,27 @@ impl StackingContext {
             }
         }
 
+        let clip_path = values.clip_path();
+        let clip_uri = clip_path.0.get();
+        let (clip_in_user_space, clip_in_object_space) = clip_uri
+            .and_then(|node_id| {
+                acquired_nodes
+                    .acquire(node_id)
+                    .ok()
+                    .filter(|a| is_element_of_type!(*a.get(), ClipPath))
+            })
+            .map(|acquired| {
+                let clip_node = acquired.get().clone();
+
+                let units = borrow_element_as!(clip_node, ClipPath).get_units();
+
+                match units {
+                    CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
+                    CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
+                }
+            })
+            .unwrap_or((None, None));
+
         let mask = values.mask().0.get().and_then(|mask_id| {
             if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
                 let node = acquired.get();
@@ -103,6 +127,8 @@ impl StackingContext {
             transform,
             opacity,
             filter,
+            clip_in_user_space,
+            clip_in_object_space,
             mask,
         }
     }

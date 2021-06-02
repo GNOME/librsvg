@@ -645,16 +645,9 @@ impl DrawingCtx {
         } else {
             let saved_cr = SavedCr::new(self);
 
-            let clip_path_value = values.clip_path();
-
-            let clip_uri = clip_path_value.0.get();
-
             let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
             let affine_at_start = saved_cr.draw_ctx.get_transform();
-
-            let (clip_in_user_space, clip_in_object_space) =
-                get_clip_in_user_and_object_space(acquired_nodes, clip_uri);
 
             if let Some(rect) = clip_rect {
                 clip_to_rectangle(&saved_cr.draw_ctx.cr, &rect);
@@ -662,7 +655,7 @@ impl DrawingCtx {
 
             // Here we are clipping in user space, so the bbox doesn't matter
             saved_cr.draw_ctx.clip_to_node(
-                &clip_in_user_space,
+                &stacking_ctx.clip_in_user_space,
                 acquired_nodes,
                 &saved_cr.draw_ctx.empty_bbox(),
             )?;
@@ -672,7 +665,7 @@ impl DrawingCtx {
                 && stacking_ctx.filter == Filter::None
                 && stacking_ctx.mask.is_none()
                 && values.mix_blend_mode() == MixBlendMode::Normal
-                && clip_in_object_space.is_none());
+                && stacking_ctx.clip_in_object_space.is_none());
 
             if needs_temporary_surface {
                 // Compute our assortment of affines
@@ -744,9 +737,11 @@ impl DrawingCtx {
                     .draw_ctx
                     .cr
                     .set_matrix(affines.outside_temporary_surface.into());
-                saved_cr
-                    .draw_ctx
-                    .clip_to_node(&clip_in_object_space, acquired_nodes, &bbox)?;
+                saved_cr.draw_ctx.clip_to_node(
+                    &stacking_ctx.clip_in_object_space,
+                    acquired_nodes,
+                    &bbox,
+                )?;
 
                 // Mask
 
@@ -1741,31 +1736,6 @@ impl CompositingAffines {
             for_snapshot,
         }
     }
-}
-
-// Returns (clip_in_user_space, clip_in_object_space), both Option<Node>
-fn get_clip_in_user_and_object_space(
-    acquired_nodes: &mut AcquiredNodes<'_>,
-    clip_uri: Option<&NodeId>,
-) -> (Option<Node>, Option<Node>) {
-    clip_uri
-        .and_then(|node_id| {
-            acquired_nodes
-                .acquire(node_id)
-                .ok()
-                .filter(|a| is_element_of_type!(*a.get(), ClipPath))
-        })
-        .map(|acquired| {
-            let clip_node = acquired.get().clone();
-
-            let units = borrow_element_as!(clip_node, ClipPath).get_units();
-
-            match units {
-                CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
-                CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
-            }
-        })
-        .unwrap_or((None, None))
 }
 
 fn compute_stroke_and_fill_box(
