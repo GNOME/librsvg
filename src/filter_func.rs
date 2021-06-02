@@ -17,8 +17,6 @@
 use cssparser::{Color, Parser, RGBA};
 
 use crate::angle::Angle;
-use crate::coord_units::CoordUnits;
-use crate::drawing_ctx::DrawingCtx;
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -34,7 +32,6 @@ use crate::filters::{
 use crate::length::*;
 use crate::paint_server::resolve_color;
 use crate::parsers::{CustomIdent, NumberOrPercentage, Parse};
-use crate::properties::ComputedValues;
 use crate::unit_interval::UnitInterval;
 
 /// CSS Filter functions from the Filter Effects Module Level 1
@@ -644,14 +641,9 @@ impl FilterFunction {
     #[allow(clippy::unnecessary_wraps)]
     pub fn to_filter_spec(
         &self,
-        values: &ComputedValues,
+        params: &NormalizeParams,
         current_color: RGBA,
-        draw_ctx: &DrawingCtx,
     ) -> Result<FilterSpec, FilterResolveError> {
-        // userSpaceonUse is the default for primitive_units
-        let view_params = draw_ctx.push_coord_units(CoordUnits::UserSpaceOnUse);
-        let params = NormalizeParams::new(values, &view_params);
-
         match self {
             FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
             FilterFunction::Brightness(v) => Ok(v.to_filter_spec(&params)),

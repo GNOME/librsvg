@@ -886,9 +886,16 @@ impl DrawingCtx {
                 if let Ok(specs) = filter_list
                     .iter()
                     .map(|filter_value| {
+                        // Filter functions (like "blend()", not the <filter> element)
+                        // require being resolved in userSpaceonUse units, since that is
+                        // the default for primitive_units.  So, get the corresponding
+                        // NormalizeParams here and pass them down.
+                        let view_params = self.push_coord_units(CoordUnits::UserSpaceOnUse);
+                        let user_space_params = NormalizeParams::new(values, &view_params);
+
                         filter_value.to_filter_spec(
                             acquired_nodes,
-                            values,
+                            &user_space_params,
                             current_color,
                             self,
                             node_name,
