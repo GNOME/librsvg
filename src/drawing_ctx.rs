@@ -1581,6 +1581,10 @@ impl DrawingCtx {
 
         let child = acquired.get();
 
+        if clipping && !element_can_be_used_inside_use_inside_clip_path(&child.borrow_element()) {
+            return Ok(self.empty_bbox());
+        }
+
         let orig_transform = self.get_transform();
 
         self.cr
@@ -1680,6 +1684,22 @@ fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
         | Element::Rect(_)
         | Element::Text(_)
         | Element::Use(_) => true,
+
+        _ => false,
+    }
+}
+
+// https://www.w3.org/TR/css-masking-1/#ClipPathElement
+fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
+    match *element {
+        Element::Circle(_)
+        | Element::Ellipse(_)
+        | Element::Line(_)
+        | Element::Path(_)
+        | Element::Polygon(_)
+        | Element::Polyline(_)
+        | Element::Rect(_)
+        | Element::Text(_) => true,
 
         _ => false,
     }
