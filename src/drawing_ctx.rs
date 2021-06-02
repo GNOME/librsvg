@@ -1238,8 +1238,6 @@ impl DrawingCtx {
                 let mut bounding_box: Option<BoundingBox> = None;
                 path_helper.unset();
 
-                let view_params = dc.get_view_params();
-
                 for &target in &values.paint_order().targets {
                     // fill and stroke operations will preserve the path.
                     // markers operation will clear the path.
@@ -1247,7 +1245,8 @@ impl DrawingCtx {
                         PaintTarget::Fill | PaintTarget::Stroke => {
                             path_helper.set()?;
                             let bbox = bounding_box.get_or_insert_with(|| {
-                                compute_stroke_and_fill_box(&cr, &values, &view_params)
+                                let stroke_paint = values.stroke().0;
+                                compute_stroke_and_fill_box(&cr, &stroke, &stroke_paint)
                             });
 
                             if values.is_visible() {
@@ -1780,8 +1779,8 @@ impl CompositingAffines {
 
 fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
-    values: &ComputedValues,
-    view_params: &ViewParams,
+    stroke: &Stroke,
+    stroke_paint: &PaintServer,
 ) -> BoundingBox {
     let affine = Transform::from(cr.get_matrix());
 
@@ -1818,12 +1817,7 @@ fn compute_stroke_and_fill_box(
     // So, see if the stroke width is 0 and just not include the stroke in the
     // bounding box if so.
 
-    let stroke_width = values
-        .stroke_width()
-        .0
-        .to_user(&NormalizeParams::new(values, view_params));
-
-    if !stroke_width.approx_eq_cairo(0.0) && values.stroke().0 != PaintServer::None {
+    if !stroke.width.approx_eq_cairo(0.0) && *stroke_paint != PaintServer::None {
         let (x0, y0, x1, y1) = cr.stroke_extents();
         let sb = BoundingBox::new()
             .with_transform(affine)
