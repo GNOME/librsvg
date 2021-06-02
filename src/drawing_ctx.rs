@@ -14,7 +14,6 @@ use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
 use crate::element::Element;
@@ -22,7 +21,7 @@ use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::StackingContext;
+use crate::layout::{StackingContext, Stroke};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -32,7 +31,7 @@ use crate::pattern::UserSpacePattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintTarget, ShapeRendering,
-    StrokeDasharray, StrokeLinecap, StrokeLinejoin, TextRendering,
+    StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
 use crate::shapes::{Markers, Shape};
@@ -1112,22 +1111,19 @@ impl DrawingCtx {
         let view_params = self.get_view_params();
         let params = NormalizeParams::new(values, &view_params);
 
-        cr.set_line_width(values.stroke_width().0.to_user(&params));
-        cr.set_miter_limit(values.stroke_miterlimit().0);
-        cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap()));
-        cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join()));
+        let stroke = Stroke::new(values, &params);
 
-        if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray() {
-            let normalized_dashes: Vec<f64> = dashes.iter().map(|l| l.to_user(&params)).collect();
+        cr.set_line_width(stroke.width);
+        cr.set_miter_limit(stroke.miter_limit.0);
+        cr.set_line_cap(cairo::LineCap::from(stroke.line_cap));
+        cr.set_line_join(cairo::LineJoin::from(stroke.line_join));
 
-            let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
+        let total_length: f64 = stroke.dashes.iter().sum();
 
-            if total_length > 0.0 {
-                let offset = values.stroke_dashoffset().0.to_user(&params);
-                cr.set_dash(&normalized_dashes, offset);
-            } else {
-                cr.set_dash(&[], 0.0);
-            }
+        if total_length > 0.0 {
+            cr.set_dash(&stroke.dashes, stroke.dash_offset);
+        } else {
+            cr.set_dash(&[], 0.0);
         }
     }
 

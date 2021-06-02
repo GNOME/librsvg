@@ -2,11 +2,15 @@
 //!
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
+use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
+use crate::length::*;
 use crate::node::*;
 use crate::properties::ComputedValues;
-use crate::property_defs::{Filter, Opacity};
+use crate::property_defs::{
+    Filter, Opacity, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+};
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
@@ -29,6 +33,16 @@ pub struct StackingContext {
     pub opacity: Opacity,
     pub filter: Filter,
     pub mask: Option<Node>,
+}
+
+/// Stroke parameters in user-space coordinates.
+pub struct Stroke {
+    pub width: f64,
+    pub miter_limit: StrokeMiterlimit,
+    pub line_cap: StrokeLinecap,
+    pub line_join: StrokeLinejoin,
+    pub dash_offset: f64,
+    pub dashes: Box<[f64]>,
 }
 
 impl StackingContext {
@@ -90,6 +104,33 @@ impl StackingContext {
             opacity,
             filter,
             mask,
+        }
+    }
+}
+
+impl Stroke {
+    pub fn new(values: &ComputedValues, params: &NormalizeParams) -> Stroke {
+        let width = values.stroke_width().0.to_user(params);
+        let miter_limit = values.stroke_miterlimit();
+        let line_cap = values.stroke_line_cap();
+        let line_join = values.stroke_line_join();
+        let dash_offset = values.stroke_dashoffset().0.to_user(&params);
+
+        let dashes = match values.stroke_dasharray() {
+            StrokeDasharray(Dasharray::None) => Box::new([]),
+            StrokeDasharray(Dasharray::Array(dashes)) => dashes
+                .iter()
+                .map(|l| l.to_user(&params))
+                .collect::<Box<[f64]>>(),
+        };
+
+        Stroke {
+            width,
+            miter_limit,
+            line_cap,
+            line_join,
+            dash_offset,
+            dashes,
         }
     }
 }
