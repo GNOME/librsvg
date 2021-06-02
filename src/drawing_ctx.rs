@@ -17,6 +17,7 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
+use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -501,7 +502,9 @@ impl DrawingCtx {
             let orig_transform = self.get_transform();
             self.cr.transform(node_transform.into());
 
-            for child in node.children().filter(|c| c.is_element()) {
+            for child in node.children().filter(|c| {
+                c.is_element() && element_can_be_used_inside_clip_path(&c.borrow_element())
+            }) {
                 child.draw(
                     acquired_nodes,
                     &CascadedValues::new(&cascaded, &child),
@@ -1662,6 +1665,23 @@ impl DrawingCtx {
         } else {
             res
         }
+    }
+}
+
+// https://www.w3.org/TR/css-masking-1/#ClipPathElement
+fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
+    match *element {
+        Element::Circle(_)
+        | Element::Ellipse(_)
+        | Element::Line(_)
+        | Element::Path(_)
+        | Element::Polygon(_)
+        | Element::Polyline(_)
+        | Element::Rect(_)
+        | Element::Text(_)
+        | Element::Use(_) => true,
+
+        _ => false,
     }
 }
 
