@@ -1241,7 +1241,7 @@ impl DrawingCtx {
                 let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
 
                 if values.is_visible() {
-                    for &target in &values.paint_order().targets {
+                    for &target in &shape.paint_order.targets {
                         // fill and stroke operations will preserve the path.
                         // markers operation will clear the path.
                         match target {

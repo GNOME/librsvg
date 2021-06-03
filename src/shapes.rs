@@ -18,7 +18,7 @@ use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
-use crate::property_defs::{ClipRule, FillRule, ShapeRendering};
+use crate::property_defs::{ClipRule, FillRule, PaintOrder, ShapeRendering};
 use crate::xml::Attributes;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -35,6 +35,7 @@ struct ShapeDef {
 pub struct Shape {
     pub path: Rc<SvgPath>,
     pub markers: Markers,
+    pub paint_order: PaintOrder,
     pub stroke: Stroke,
     pub stroke_paint: PaintSource,
     pub fill_paint: PaintSource,
@@ -69,6 +70,8 @@ macro_rules! impl_draw {
                 let params = NormalizeParams::new(values, &view_params);
                 let shape_def = self.make_shape(&params);
 
+                let paint_order = values.paint_order();
+
                 let stroke = Stroke::new(values, &params);
 
                 let stroke_paint = values.stroke().0.resolve(
@@ -90,6 +93,7 @@ macro_rules! impl_draw {
                 let shape = Shape {
                     path: shape_def.path,
                     markers: shape_def.markers,
+                    paint_order,
                     stroke,
                     stroke_paint,
                     fill_paint,
