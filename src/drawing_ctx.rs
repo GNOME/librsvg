@@ -26,7 +26,7 @@ use crate::layout::{StackingContext, Stroke};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
-use crate::paint_server::{PaintServer, UserSpacePaintSource};
+use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::ComputedValues;
@@ -1164,17 +1164,9 @@ impl DrawingCtx {
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        view_params: &ViewParams,
-        values: &ComputedValues,
-        bbox: &BoundingBox,
+        paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        let paint_source = values
-            .stroke()
-            .0
-            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)
-            .to_user_space(bbox, view_params, values);
-
-        self.set_paint_source(&paint_source, acquired_nodes)
+        self.set_paint_source(paint_source, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
                     cr.stroke_preserve();
@@ -1188,17 +1180,9 @@ impl DrawingCtx {
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        view_params: &ViewParams,
-        values: &ComputedValues,
-        bbox: &BoundingBox,
+        paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        let paint_source = values
-            .fill()
-            .0
-            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)
-            .to_user_space(bbox, view_params, values);
-
-        self.set_paint_source(&paint_source, acquired_nodes)
+        self.set_paint_source(paint_source, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
                     cr.fill_preserve();
@@ -1255,9 +1239,20 @@ impl DrawingCtx {
 
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
 
+                let stroke_paint_source =
+                    values
+                        .stroke()
+                        .0
+                        .resolve(an, values.stroke_opacity().0, values.color().0);
+
+                let fill_paint_source =
+                    values
+                        .fill()
+                        .0
+                        .resolve(an, values.fill_opacity().0, values.color().0);
+
                 path_helper.set()?;
-                let stroke_paint = values.stroke().0;
-                let bbox = compute_stroke_and_fill_box(&cr, &stroke, &stroke_paint);
+                let bbox = compute_stroke_and_fill_box(&cr, &stroke, &stroke_paint_source);
 
                 for &target in &values.paint_order().targets {
                     // fill and stroke operations will preserve the path.
@@ -1268,9 +1263,19 @@ impl DrawingCtx {
 
                             if values.is_visible() {
                                 if target == PaintTarget::Stroke {
-                                    dc.stroke(&cr, an, &view_params, values, &bbox)?;
+                                    let source = stroke_paint_source.to_user_space(
+                                        &bbox,
+                                        &view_params,
+                                        values,
+                                    );
+                                    dc.stroke(&cr, an, &source)?;
                                 } else {
-                                    dc.fill(&cr, an, &view_params, values, &bbox)?;
+                                    let source = fill_paint_source.to_user_space(
+                                        &bbox,
+                                        &view_params,
+                                        values,
+                                    );
+                                    dc.fill(&cr, an, &source)?;
                                 }
                             }
                         }
@@ -1797,7 +1802,7 @@ impl CompositingAffines {
 fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     stroke: &Stroke,
-    stroke_paint: &PaintServer,
+    stroke_paint_source: &PaintSource,
 ) -> BoundingBox {
     let affine = Transform::from(cr.get_matrix());
 
@@ -1834,7 +1839,7 @@ fn compute_stroke_and_fill_box(
     // So, see if the stroke width is 0 and just not include the stroke in the
     // bounding box if so.
 
-    if !stroke.width.approx_eq_cairo(0.0) && *stroke_paint != PaintServer::None {
+    if !stroke.width.approx_eq_cairo(0.0) && !matches!(stroke_paint_source, PaintSource::None) {
         let (x0, y0, x1, y1) = cr.stroke_extents();
         let sb = BoundingBox::new()
             .with_transform(affine)
