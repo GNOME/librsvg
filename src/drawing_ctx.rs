@@ -1292,8 +1292,6 @@ impl DrawingCtx {
         cr.paint();
     }
 
-    // TODO: just like we have Shape with all its parameters, do the
-    // same for a layout::Image.
     pub fn draw_image(
         &mut self,
         image: &Image,
