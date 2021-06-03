@@ -24,19 +24,24 @@ pub enum Markers {
     Yes,
 }
 
+struct ShapeDef {
+    path: Rc<SvgPath>,
+    markers: Markers,
+}
+
 pub struct Shape {
     pub path: Rc<SvgPath>,
     pub markers: Markers,
 }
 
-impl Shape {
-    fn new(path: Rc<SvgPath>, markers: Markers) -> Shape {
-        Shape { path, markers }
+impl ShapeDef {
+    fn new(path: Rc<SvgPath>, markers: Markers) -> ShapeDef {
+        ShapeDef { path, markers }
     }
 }
 
 trait BasicShape {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape;
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef;
 }
 
 macro_rules! impl_draw {
@@ -53,7 +58,11 @@ macro_rules! impl_draw {
                 let values = cascaded.get();
                 let view_params = draw_ctx.get_view_params();
                 let params = NormalizeParams::new(values, &view_params);
-                let shape = self.make_shape(&params);
+                let shape_def = self.make_shape(&params);
+                let shape = Shape {
+                    path: shape_def.path,
+                    markers: shape_def.markers,
+                };
                 draw_ctx.draw_shape(&shape, node, acquired_nodes, values, clipping)
             }
         }
@@ -143,8 +152,8 @@ impl SetAttributes for Path {
 }
 
 impl BasicShape for Path {
-    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
-        Shape::new(self.path.clone(), Markers::Yes)
+    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+        ShapeDef::new(self.path.clone(), Markers::Yes)
     }
 }
 
@@ -224,8 +233,8 @@ impl SetAttributes for Polygon {
 }
 
 impl BasicShape for Polygon {
-    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
-        Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
+    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+        ShapeDef::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
     }
 }
 
@@ -249,8 +258,8 @@ impl SetAttributes for Polyline {
 }
 
 impl BasicShape for Polyline {
-    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
-        Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
+    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+        ShapeDef::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
     }
 }
 
@@ -281,7 +290,7 @@ impl SetAttributes for Line {
 }
 
 impl BasicShape for Line {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let mut builder = PathBuilder::default();
 
         let x1 = self.x1.to_user(params);
@@ -292,7 +301,7 @@ impl BasicShape for Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        Shape::new(Rc::new(builder.into_path()), Markers::Yes)
+        ShapeDef::new(Rc::new(builder.into_path()), Markers::Yes)
     }
 }
 
@@ -330,7 +339,7 @@ impl SetAttributes for Rect {
 
 impl BasicShape for Rect {
     #[allow(clippy::many_single_char_names)]
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let x = self.x.to_user(params);
         let y = self.y.to_user(params);
         let w = self.width.to_user(params);
@@ -379,7 +388,7 @@ impl BasicShape for Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return Shape::new(Rc::new(builder.into_path()), Markers::No);
+            return ShapeDef::new(Rc::new(builder.into_path()), Markers::No);
         }
 
         let half_w = w / 2.0;
@@ -505,7 +514,7 @@ impl BasicShape for Rect {
             builder.close_path();
         }
 
-        Shape::new(Rc::new(builder.into_path()), Markers::No)
+        ShapeDef::new(Rc::new(builder.into_path()), Markers::No)
     }
 }
 
@@ -534,12 +543,12 @@ impl SetAttributes for Circle {
 }
 
 impl BasicShape for Circle {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let cx = self.cx.to_user(params);
         let cy = self.cy.to_user(params);
         let r = self.r.to_user(params);
 
-        Shape::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
+        ShapeDef::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
     }
 }
 
@@ -570,13 +579,13 @@ impl SetAttributes for Ellipse {
 }
 
 impl BasicShape for Ellipse {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let cx = self.cx.to_user(params);
         let cy = self.cy.to_user(params);
         let rx = self.rx.to_user(params);
         let ry = self.ry.to_user(params);
 
-        Shape::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
+        ShapeDef::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
     }
 }
 
