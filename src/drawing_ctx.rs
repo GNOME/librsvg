@@ -1194,6 +1194,7 @@ impl DrawingCtx {
 
     pub fn draw_shape(
         &mut self,
+        view_params: &ViewParams,
         shape: &Shape,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -1217,7 +1218,7 @@ impl DrawingCtx {
                 let cr = dc.cr.clone();
                 let transform = dc.get_transform();
                 let mut path_helper =
-                    PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
+                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
 
                 if clipping {
                     if values.is_visible() {
@@ -1229,13 +1230,7 @@ impl DrawingCtx {
 
                 cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
 
-                let view_params = dc.get_view_params();
-                let stroke = {
-                    let params = NormalizeParams::new(values, &view_params);
-                    Stroke::new(values, &params)
-                };
-
-                setup_cr_for_stroke(&cr, &stroke);
+                setup_cr_for_stroke(&cr, &shape.stroke);
 
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
 
@@ -1252,13 +1247,13 @@ impl DrawingCtx {
                         .resolve(an, values.fill_opacity().0, values.color().0);
 
                 path_helper.set()?;
-                let bbox = compute_stroke_and_fill_box(&cr, &stroke, &stroke_paint_source);
+                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &stroke_paint_source);
 
                 let stroke_paint_source =
-                    stroke_paint_source.to_user_space(&bbox, &view_params, values);
+                    stroke_paint_source.to_user_space(&bbox, view_params, values);
 
                 let fill_paint_source =
-                    fill_paint_source.to_user_space(&bbox, &view_params, values);
+                    fill_paint_source.to_user_space(&bbox, view_params, values);
 
                 if values.is_visible() {
                     for &target in &values.paint_order().targets {

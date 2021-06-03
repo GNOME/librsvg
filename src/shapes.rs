@@ -11,6 +11,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::layout::Stroke;
 use crate::length::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{optional_comma, Parse, ParseValue};
@@ -32,6 +33,7 @@ struct ShapeDef {
 pub struct Shape {
     pub path: Rc<SvgPath>,
     pub markers: Markers,
+    pub stroke: Stroke,
 }
 
 impl ShapeDef {
@@ -59,11 +61,15 @@ macro_rules! impl_draw {
                 let view_params = draw_ctx.get_view_params();
                 let params = NormalizeParams::new(values, &view_params);
                 let shape_def = self.make_shape(&params);
+
+                let stroke = Stroke::new(values, &params);
+                
                 let shape = Shape {
                     path: shape_def.path,
                     markers: shape_def.markers,
+                    stroke,
                 };
-                draw_ctx.draw_shape(&shape, node, acquired_nodes, values, clipping)
+                draw_ctx.draw_shape(&view_params, &shape, node, acquired_nodes, values, clipping)
             }
         }
     };
