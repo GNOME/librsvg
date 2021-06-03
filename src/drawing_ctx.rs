@@ -1221,7 +1221,7 @@ impl DrawingCtx {
                     PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
 
                 if clipping {
-                    if values.is_visible() {
+                    if shape.is_visible {
                         cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
                         path_helper.set()?;
                     }
@@ -1240,7 +1240,7 @@ impl DrawingCtx {
                 let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
                 let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
 
-                if values.is_visible() {
+                if shape.is_visible {
                     for &target in &shape.paint_order.targets {
                         // fill and stroke operations will preserve the path.
                         // markers operation will clear the path.

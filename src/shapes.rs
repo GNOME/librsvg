@@ -35,6 +35,7 @@ struct ShapeDef {
 pub struct Shape {
     pub path: Rc<SvgPath>,
     pub markers: Markers,
+    pub is_visible: bool,
     pub paint_order: PaintOrder,
     pub stroke: Stroke,
     pub stroke_paint: PaintSource,
@@ -70,6 +71,7 @@ macro_rules! impl_draw {
                 let params = NormalizeParams::new(values, &view_params);
                 let shape_def = self.make_shape(&params);
 
+                let is_visible = values.is_visible();
                 let paint_order = values.paint_order();
 
                 let stroke = Stroke::new(values, &params);
@@ -93,6 +95,7 @@ macro_rules! impl_draw {
                 let shape = Shape {
                     path: shape_def.path,
                     markers: shape_def.markers,
+                    is_visible,
                     paint_order,
                     stroke,
                     stroke_paint,
