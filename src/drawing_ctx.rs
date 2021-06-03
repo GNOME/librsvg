@@ -1222,7 +1222,7 @@ impl DrawingCtx {
 
                 if clipping {
                     if values.is_visible() {
-                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
+                        cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
                         path_helper.set()?;
                     }
                     return Ok(dc.empty_bbox());
@@ -1232,7 +1232,7 @@ impl DrawingCtx {
 
                 setup_cr_for_stroke(&cr, &shape.stroke);
 
-                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
+                cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
 
                 path_helper.set()?;
                 let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint);
