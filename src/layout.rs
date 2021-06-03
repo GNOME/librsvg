@@ -9,14 +9,16 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
+use crate::font_props::{FontFamily, FontWeight};
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::PaintSource;
 use crate::path_builder::Path;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintOrder, ShapeRendering,
-    StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit, TextRendering,
+    ClipRule, Direction, FillRule, Filter, FontStretch, FontStyle, FontVariant, MixBlendMode,
+    Opacity, Overflow, PaintOrder, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
+    StrokeMiterlimit, TextDecoration, TextRendering, UnicodeBidi, WritingMode, XmlLang,
 };
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -96,6 +98,22 @@ pub struct TextSpan {
     pub stroke_paint: PaintSource,
     pub fill_paint: PaintSource,
     pub text_rendering: TextRendering,
+}
+
+/// Font-related properties extracted from `ComputedValues`.
+pub struct FontProperties {
+    pub xml_lang: XmlLang,
+    pub writing_mode: WritingMode,
+    pub unicode_bidi: UnicodeBidi,
+    pub direction: Direction,
+    pub font_family: FontFamily,
+    pub font_style: FontStyle,
+    pub font_variant: FontVariant,
+    pub font_weight: FontWeight,
+    pub font_stretch: FontStretch,
+    pub font_size: f64,
+    pub letter_spacing: f64,
+    pub text_decoration: TextDecoration,
 }
 
 impl StackingContext {
@@ -210,6 +228,25 @@ impl Stroke {
             line_join,
             dash_offset,
             dashes,
+        }
+    }
+}
+
+impl FontProperties {
+    pub fn new(values: &ComputedValues, params: &NormalizeParams) -> FontProperties {
+        FontProperties {
+            xml_lang: values.xml_lang(),
+            writing_mode: values.writing_mode(),
+            unicode_bidi: values.unicode_bidi(),
+            direction: values.direction(),
+            font_family: values.font_family(),
+            font_style: values.font_style(),
+            font_variant: values.font_variant(),
+            font_weight: values.font_weight(),
+            font_stretch: values.font_stretch(),
+            font_size: values.font_size().to_user(params),
+            letter_spacing: values.letter_spacing().to_user(params),
+            text_decoration: values.text_decoration(),
         }
     }
 }
