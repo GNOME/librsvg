@@ -4,6 +4,7 @@
 
 use std::rc::Rc;
 
+use crate::aspect_ratio::AspectRatio;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
@@ -14,9 +15,11 @@ use crate::paint_server::PaintSource;
 use crate::path_builder::Path;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    ClipRule, FillRule, Filter, MixBlendMode, Opacity, PaintOrder, ShapeRendering, StrokeDasharray,
-    StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+    ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintOrder, ShapeRendering,
+    StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
 };
+use crate::rect::Rect;
+use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
@@ -72,6 +75,14 @@ pub struct Shape {
     pub marker_start: Option<Node>,
     pub marker_mid: Option<Node>,
     pub marker_end: Option<Node>,
+}
+
+/// Image in user-space coordinates.
+pub struct Image {
+    pub surface: SharedImageSurface,
+    pub rect: Rect,
+    pub aspect: AspectRatio,
+    pub overflow: Overflow,
 }
 
 impl StackingContext {

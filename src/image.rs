@@ -9,8 +9,9 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
+use crate::layout::{self, StackingContext};
 use crate::length::*;
-use crate::node::{CascadedValues, Node};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
 use crate::xml::Attributes;
@@ -78,14 +79,20 @@ impl Draw for Image {
         let w = self.width.to_user(&params);
         let h = self.height.to_user(&params);
 
-        draw_ctx.draw_image(
-            &surface,
-            Rect::new(x, y, x + w, y + h),
-            self.aspect,
-            node,
-            acquired_nodes,
-            values,
-            clipping,
-        )
+        let rect = Rect::new(x, y, x + w, y + h);
+
+        let overflow = values.overflow();
+
+        let image = layout::Image {
+            surface,
+            rect,
+            aspect: self.aspect,
+            overflow,
+        };
+
+        let elt = node.borrow_element();
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
+
+        draw_ctx.draw_image(&image, &stacking_ctx, acquired_nodes, values, clipping)
     }
 }

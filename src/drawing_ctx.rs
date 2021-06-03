@@ -22,7 +22,7 @@ use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{Shape, StackingContext, Stroke};
+use crate::layout::{Image, Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -1296,17 +1296,15 @@ impl DrawingCtx {
     // same for a layout::Image.
     pub fn draw_image(
         &mut self,
-        surface: &SharedImageSurface,
-        rect: Rect,
-        aspect: AspectRatio,
-        node: &Node,
+        image: &Image,
+        stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let image_width = surface.width();
-        let image_height = surface.height();
-        if clipping || rect.is_empty() || image_width == 0 || image_height == 0 {
+        let image_width = image.surface.width();
+        let image_height = image.surface.height();
+        if clipping || image.rect.is_empty() || image_width == 0 || image_height == 0 {
             return Ok(self.empty_bbox());
         }
 
@@ -1314,18 +1312,17 @@ impl DrawingCtx {
         let image_height = f64::from(image_height);
         let vbox = ViewBox::from(Rect::from_size(image_width, image_height));
 
-        let clip_mode = if !values.is_overflow() && aspect.is_slice() {
+        let clip_mode = if !(image.overflow == Overflow::Auto
+            || image.overflow == Overflow::Visible)
+            && image.aspect.is_slice()
+        {
             Some(ClipMode::ClipToViewport)
         } else {
             None
         };
 
-        let elt = node.borrow_element();
-
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
-
         self.with_discrete_layer(
-            &stacking_ctx,
+            stacking_ctx,
             acquired_nodes,
             values,
             clipping,
@@ -1333,21 +1330,22 @@ impl DrawingCtx {
             &mut |_an, dc| {
                 let saved_cr = SavedCr::new(dc);
 
-                if let Some(_params) =
-                    saved_cr
-                        .draw_ctx
-                        .push_new_viewport(Some(vbox), rect, aspect, clip_mode)
-                {
+                if let Some(_params) = saved_cr.draw_ctx.push_new_viewport(
+                    Some(vbox),
+                    image.rect,
+                    image.aspect,
+                    clip_mode,
+                ) {
                     if values.is_visible() {
                         saved_cr
                             .draw_ctx
-                            .paint_surface(surface, image_width, image_height);
+                            .paint_surface(&image.surface, image_width, image_height);
                     }
                 }
 
                 // The bounding box for <image> is decided by the values of x, y, w, h
                 // and not by the final computed image bounds.
-                Ok(saved_cr.draw_ctx.empty_bbox().with_rect(rect))
+                Ok(saved_cr.draw_ctx.empty_bbox().with_rect(image.rect))
             },
         )
     }
