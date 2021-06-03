@@ -1196,7 +1196,7 @@ impl DrawingCtx {
         &mut self,
         view_params: &ViewParams,
         shape: &Shape,
-        node: &Node,
+        stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
@@ -1205,11 +1205,8 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
-
         self.with_discrete_layer(
-            &stacking_ctx,
+            stacking_ctx,
             acquired_nodes,
             values,
             clipping,

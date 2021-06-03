@@ -11,9 +11,9 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::layout::Stroke;
+use crate::layout::{StackingContext, Stroke};
 use crate::length::*;
-use crate::node::{CascadedValues, Node};
+use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
@@ -104,7 +104,19 @@ macro_rules! impl_draw {
                     clip_rule,
                     shape_rendering,
                 };
-                draw_ctx.draw_shape(&view_params, &shape, node, acquired_nodes, values, clipping)
+
+                let elt = node.borrow_element();
+                let stacking_ctx =
+                    StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
+
+                draw_ctx.draw_shape(
+                    &view_params,
+                    &shape,
+                    &stacking_ctx,
+                    acquired_nodes,
+                    values,
+                    clipping,
+                )
             }
         }
     };
