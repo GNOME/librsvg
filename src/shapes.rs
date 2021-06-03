@@ -130,7 +130,6 @@ fn acquire_marker(acquired_nodes: &mut AcquiredNodes<'_>, iri: &Iri) -> Option<N
             .acquire(id)
             .map_err(|e| {
                 rsvg_log!("cannot render marker: {}", e);
-                ()
             })
             .ok()
             .and_then(|acquired| {
