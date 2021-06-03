@@ -35,7 +35,7 @@ use crate::property_defs::{
     StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
-use crate::shapes::{Markers, Shape};
+use crate::shapes::Shape;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -1260,12 +1260,8 @@ impl DrawingCtx {
                             }
 
                             PaintTarget::Markers => {
-                                if shape.markers == Markers::Yes {
-                                    path_helper.unset();
-                                    marker::render_markers_for_shape(
-                                        shape, dc, an, values, clipping,
-                                    )?;
-                                }
+                                path_helper.unset();
+                                marker::render_markers_for_shape(shape, dc, an, clipping)?;
                             }
                         }
                     }

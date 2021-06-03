@@ -14,13 +14,11 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::iri::Iri;
 use crate::layout::StackingContext;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
-use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::shapes::Shape;
 use crate::transform::Transform;
@@ -615,18 +613,13 @@ pub fn render_markers_for_shape(
     shape: &Shape,
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
-    values: &ComputedValues,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
     if shape.stroke.width.approx_eq_cairo(0.0) {
         return Ok(draw_ctx.empty_bbox());
     }
 
-    let marker_start = acquire_marker(acquired_nodes, &values.marker_start().0);
-    let marker_mid = acquire_marker(acquired_nodes, &values.marker_mid().0);
-    let marker_end = acquire_marker(acquired_nodes, &values.marker_end().0);
-
-    if marker_start.is_none() && marker_mid.is_none() && marker_end.is_none() {
+    if shape.marker_start.is_none() && shape.marker_mid.is_none() && shape.marker_end.is_none() {
         return Ok(draw_ctx.empty_bbox());
     }
 
@@ -635,9 +628,9 @@ pub fn render_markers_for_shape(
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             let marker_node = match marker_type {
-                MarkerType::Start => &marker_start,
-                MarkerType::Middle => &marker_mid,
-                MarkerType::End => &marker_end,
+                MarkerType::Start => &shape.marker_start,
+                MarkerType::Middle => &shape.marker_mid,
+                MarkerType::End => &shape.marker_end,
             };
 
             if let Some(ref marker) = *marker_node {
@@ -656,28 +649,6 @@ pub fn render_markers_for_shape(
             }
         },
     )
-}
-
-fn acquire_marker(acquired_nodes: &mut AcquiredNodes<'_>, iri: &Iri) -> Option<Node> {
-    iri.get().and_then(|id| {
-        acquired_nodes
-            .acquire(id)
-            .map_err(|e| {
-                rsvg_log!("cannot render marker: {}", e);
-                ()
-            })
-            .ok()
-            .and_then(|acquired| {
-                let node = acquired.get();
-
-                if is_element_of_type!(node, Marker) {
-                    Some(node.clone())
-                } else {
-                    rsvg_log!("{} is not a marker element", id);
-                    None
-                }
-            })
-    })
 }
 
 fn emit_markers_for_path<E>(
