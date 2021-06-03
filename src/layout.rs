@@ -80,6 +80,7 @@ pub struct Shape {
 /// Image in user-space coordinates.
 pub struct Image {
     pub surface: SharedImageSurface,
+    pub is_visible: bool,
     pub rect: Rect,
     pub aspect: AspectRatio,
     pub overflow: Overflow,

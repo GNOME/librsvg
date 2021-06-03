@@ -79,12 +79,15 @@ impl Draw for Image {
         let w = self.width.to_user(&params);
         let h = self.height.to_user(&params);
 
+        let is_visible = values.is_visible();
+
         let rect = Rect::new(x, y, x + w, y + h);
 
         let overflow = values.overflow();
 
         let image = layout::Image {
             surface,
+            is_visible,
             rect,
             aspect: self.aspect,
             overflow,

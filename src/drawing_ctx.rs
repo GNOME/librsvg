@@ -1321,33 +1321,37 @@ impl DrawingCtx {
             None
         };
 
-        self.with_discrete_layer(
-            stacking_ctx,
-            acquired_nodes,
-            values,
-            clipping,
-            None,
-            &mut |_an, dc| {
-                let saved_cr = SavedCr::new(dc);
+        // The bounding box for <image> is decided by the values of the image's x, y, w, h
+        // and not by the final computed image bounds.
+        let bounds = self.empty_bbox().with_rect(image.rect);
 
-                if let Some(_params) = saved_cr.draw_ctx.push_new_viewport(
-                    Some(vbox),
-                    image.rect,
-                    image.aspect,
-                    clip_mode,
-                ) {
-                    if values.is_visible() {
+        if image.is_visible {
+            self.with_discrete_layer(
+                stacking_ctx,
+                acquired_nodes,
+                values,
+                clipping,
+                None,
+                &mut |_an, dc| {
+                    let saved_cr = SavedCr::new(dc);
+
+                    if let Some(_params) = saved_cr.draw_ctx.push_new_viewport(
+                        Some(vbox),
+                        image.rect,
+                        image.aspect,
+                        clip_mode,
+                    ) {
                         saved_cr
                             .draw_ctx
                             .paint_surface(&image.surface, image_width, image_height);
                     }
-                }
 
-                // The bounding box for <image> is decided by the values of x, y, w, h
-                // and not by the final computed image bounds.
-                Ok(saved_cr.draw_ctx.empty_bbox().with_rect(image.rect))
-            },
-        )
+                    Ok(bounds)
+                },
+            )
+        } else {
+            Ok(bounds)
+        }
     }
 
     // TODO: just like we have Shape with all its parameters, do the same for a layout::Text.
