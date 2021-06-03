@@ -32,6 +32,7 @@ struct ShapeDef {
     markers: Markers,
 }
 
+// TODO: move Shape to layout.rs?
 pub struct Shape {
     pub path: Rc<SvgPath>,
     pub markers: Markers,
@@ -43,6 +44,7 @@ pub struct Shape {
     pub fill_rule: FillRule,
     pub clip_rule: ClipRule,
     pub shape_rendering: ShapeRendering,
+    // TODO: resolve the markers here, to avoid passing ComputedValues to render_markers_for_path()
 }
 
 impl ShapeDef {

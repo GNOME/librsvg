@@ -749,6 +749,9 @@ impl DrawingCtx {
 
                     let params = temporary_draw_ctx.get_view_params();
 
+                    // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
+                    // they are also needed for filters in all elements.  Maybe we should make them part
+                    // of the StackingContext instead of Shape?
                     let stroke_paint_source = Rc::new(
                         values
                             .stroke()
@@ -1294,6 +1297,8 @@ impl DrawingCtx {
         cr.paint();
     }
 
+    // TODO: just like we have Shape with all its parameters, do the
+    // same for a layout::Image.
     pub fn draw_image(
         &mut self,
         surface: &SharedImageSurface,
@@ -1352,6 +1357,7 @@ impl DrawingCtx {
         )
     }
 
+    // TODO: just like we have Shape with all its parameters, do the same for a layout::Text.
     pub fn draw_text(
         &mut self,
         layout: &pango::Layout,
@@ -1473,6 +1479,10 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
+            // TODO: apparently DrawingCtx.cr_stack is just a way to store pairs of
+            // (surface, transform).  Can we turn it into a DrawingCtx.surface_stack
+            // instead?  See what CSS isolation would like to call that; are the pairs just
+            // stacking contexts instead, or the result of rendering stacking contexts?
             for (depth, draw) in self.cr_stack.borrow().iter().enumerate() {
                 let affines = CompositingAffines::new(
                     Transform::from(draw.get_matrix()),
