@@ -2,16 +2,26 @@
 //!
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
+use std::rc::Rc;
+
+use crate::aspect_ratio::AspectRatio;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
+use crate::font_props::{FontFamily, FontWeight};
 use crate::length::*;
 use crate::node::*;
+use crate::paint_server::PaintSource;
+use crate::path_builder::Path;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    Filter, MixBlendMode, Opacity, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+    ClipRule, Direction, FillRule, Filter, FontStretch, FontStyle, FontVariant, MixBlendMode,
+    Opacity, Overflow, PaintOrder, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
+    StrokeMiterlimit, TextDecoration, TextRendering, UnicodeBidi, WritingMode, XmlLang,
 };
+use crate::rect::Rect;
+use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
@@ -47,6 +57,63 @@ pub struct Stroke {
     pub line_join: StrokeLinejoin,
     pub dash_offset: f64,
     pub dashes: Box<[f64]>,
+}
+
+/// Paths and basic shapes resolved to a path.
+///
+/// Note that `stroke_paint` and `fill_paint` are not in user-space coordinates;
+/// they are just resolved to a `PaintSource`.  Turning them to a `UserSpacePaintSource`
+/// involves knowing the bounding box of the path.
+pub struct Shape {
+    pub path: Rc<Path>,
+    pub is_visible: bool,
+    pub paint_order: PaintOrder,
+    pub stroke: Stroke,
+    pub stroke_paint: PaintSource,
+    pub fill_paint: PaintSource,
+    pub fill_rule: FillRule,
+    pub clip_rule: ClipRule,
+    pub shape_rendering: ShapeRendering,
+    pub marker_start: Option<Node>,
+    pub marker_mid: Option<Node>,
+    pub marker_end: Option<Node>,
+}
+
+/// Image in user-space coordinates.
+pub struct Image {
+    pub surface: SharedImageSurface,
+    pub is_visible: bool,
+    pub rect: Rect,
+    pub aspect: AspectRatio,
+    pub overflow: Overflow,
+}
+
+/// A single text span in user-space coordinates.
+pub struct TextSpan {
+    pub layout: pango::Layout,
+    pub is_visible: bool,
+    pub x: f64,
+    pub y: f64,
+    pub stroke: Stroke,
+    pub stroke_paint: PaintSource,
+    pub fill_paint: PaintSource,
+    pub text_rendering: TextRendering,
+}
+
+/// Font-related properties extracted from `ComputedValues`.
+pub struct FontProperties {
+    pub xml_lang: XmlLang,
+    pub writing_mode: WritingMode,
+    pub unicode_bidi: UnicodeBidi,
+    pub direction: Direction,
+    pub font_family: FontFamily,
+    pub font_style: FontStyle,
+    pub font_variant: FontVariant,
+    pub font_weight: FontWeight,
+    pub font_stretch: FontStretch,
+    pub font_size: f64,
+    pub letter_spacing: f64,
+    pub text_decoration: TextDecoration,
 }
 
 impl StackingContext {
@@ -161,6 +228,25 @@ impl Stroke {
             line_join,
             dash_offset,
             dashes,
+        }
+    }
+}
+
+impl FontProperties {
+    pub fn new(values: &ComputedValues, params: &NormalizeParams) -> FontProperties {
+        FontProperties {
+            xml_lang: values.xml_lang(),
+            writing_mode: values.writing_mode(),
+            unicode_bidi: values.unicode_bidi(),
+            direction: values.direction(),
+            font_family: values.font_family(),
+            font_style: values.font_style(),
+            font_variant: values.font_variant(),
+            font_weight: values.font_weight(),
+            font_stretch: values.font_stretch(),
+            font_size: values.font_size().to_user(params),
+            letter_spacing: values.letter_spacing().to_user(params),
+            text_decoration: values.text_decoration(),
         }
     }
 }

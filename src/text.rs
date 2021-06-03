@@ -10,7 +10,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::font_props::FontWeight;
-use crate::layout::StackingContext;
+use crate::layout::{self, FontProperties, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -190,7 +190,11 @@ impl MeasuredSpan {
     fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
         let values = span.values.clone();
 
-        let layout = create_pango_layout(draw_ctx, &*values, &span.text);
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&values, &view_params);
+
+        let properties = FontProperties::new(&values, &params);
+        let layout = create_pango_layout(draw_ctx, &properties, &span.text);
         let (w, h) = layout.get_size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -255,8 +259,41 @@ impl PositionedSpan {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&self.values, &view_params);
+
+        let layout = self.layout.clone();
+        let is_visible = self.values.is_visible();
         let (x, y) = self.rendered_position;
-        draw_ctx.draw_text(&self.layout, x, y, acquired_nodes, &self.values, clipping)
+
+        let stroke = Stroke::new(&self.values, &params);
+
+        let stroke_paint = self.values.stroke().0.resolve(
+            acquired_nodes,
+            self.values.stroke_opacity().0,
+            self.values.color().0,
+        );
+
+        let fill_paint = self.values.fill().0.resolve(
+            acquired_nodes,
+            self.values.fill_opacity().0,
+            self.values.color().0,
+        );
+
+        let text_rendering = self.values.text_rendering();
+
+        let span = layout::TextSpan {
+            layout,
+            is_visible,
+            x,
+            y,
+            stroke,
+            stroke_paint,
+            fill_paint,
+            text_rendering,
+        };
+
+        draw_ctx.draw_text_span(&view_params, &span, acquired_nodes, &self.values, clipping)
     }
 }
 
@@ -692,12 +729,6 @@ fn to_pango_units(v: f64) -> i32 {
     (v * f64::from(pango::SCALE) + 0.5) as i32
 }
 
-impl<'a> From<&'a XmlLang> for pango::Language {
-    fn from(l: &'a XmlLang) -> pango::Language {
-        pango::Language::from_string(&l.0)
-    }
-}
-
 impl From<FontStyle> for pango::Style {
     fn from(s: FontStyle) -> pango::Style {
         match s {
@@ -781,25 +812,18 @@ impl From<WritingMode> for pango::Gravity {
     }
 }
 
-fn create_pango_layout(
-    draw_ctx: &DrawingCtx,
-    values: &ComputedValues,
-    text: &str,
-) -> pango::Layout {
+fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str) -> pango::Layout {
     let pango_context = pango::Context::from(draw_ctx);
 
-    // See the construction of the XmlLang property
-    // We use "" there as the default value; this means that the language is not set.
-    // If the language *is* set, we can use it here.
-    if !values.xml_lang().0.is_empty() {
-        pango_context.set_language(&pango::Language::from(&values.xml_lang()));
+    if let XmlLang(Some(ref lang)) = props.xml_lang {
+        pango_context.set_language(&pango::Language::from_string(lang));
     }
 
-    pango_context.set_base_gravity(pango::Gravity::from(values.writing_mode()));
+    pango_context.set_base_gravity(pango::Gravity::from(props.writing_mode));
 
-    match (values.unicode_bidi(), values.direction()) {
+    match (props.unicode_bidi, props.direction) {
         (UnicodeBidi::Override, _) | (UnicodeBidi::Embed, _) => {
-            pango_context.set_base_dir(pango::Direction::from(values.direction()));
+            pango_context.set_base_dir(pango::Direction::from(props.direction));
         }
 
         (_, direction) if direction != Direction::Ltr => {
@@ -807,21 +831,18 @@ fn create_pango_layout(
         }
 
         (_, _) => {
-            pango_context.set_base_dir(pango::Direction::from(values.writing_mode()));
+            pango_context.set_base_dir(pango::Direction::from(props.writing_mode));
         }
     }
 
     let mut font_desc = pango_context.get_font_description().unwrap();
-    font_desc.set_family(values.font_family().as_str());
-    font_desc.set_style(pango::Style::from(values.font_style()));
-    font_desc.set_variant(pango::Variant::from(values.font_variant()));
-    font_desc.set_weight(pango::Weight::from(values.font_weight()));
-    font_desc.set_stretch(pango::Stretch::from(values.font_stretch()));
+    font_desc.set_family(props.font_family.as_str());
+    font_desc.set_style(pango::Style::from(props.font_style));
+    font_desc.set_variant(pango::Variant::from(props.font_variant));
+    font_desc.set_weight(pango::Weight::from(props.font_weight));
+    font_desc.set_stretch(pango::Stretch::from(props.font_stretch));
 
-    let view_params = draw_ctx.get_view_params();
-    let params = NormalizeParams::new(values, &view_params);
-
-    font_desc.set_size(to_pango_units(values.font_size().to_user(&params)));
+    font_desc.set_size(to_pango_units(props.font_size));
 
     let layout = pango::Layout::new(&pango_context);
     layout.set_auto_dir(false);
@@ -842,22 +863,19 @@ fn create_pango_layout(
     let attr_list = pango::AttrList::new();
 
     attr_list.insert(
-        pango::Attribute::new_letter_spacing(to_pango_units(
-            values.letter_spacing().to_user(&params),
-        ))
-        .unwrap(),
+        pango::Attribute::new_letter_spacing(to_pango_units(props.letter_spacing)).unwrap(),
     );
 
-    if values.text_decoration().underline {
+    if props.text_decoration.underline {
         attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single).unwrap());
     }
 
-    if values.text_decoration().strike {
+    if props.text_decoration.strike {
         attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
     }
 
     layout.set_attributes(Some(&attr_list));
-    layout.set_alignment(pango::Alignment::from(values.direction()));
+    layout.set_alignment(pango::Alignment::from(props.direction));
     layout.set_text(text);
 
     layout

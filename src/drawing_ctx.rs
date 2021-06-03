@@ -22,7 +22,7 @@ use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{StackingContext, Stroke};
+use crate::layout::{Image, Shape, StackingContext, Stroke, TextSpan};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -35,7 +35,6 @@ use crate::property_defs::{
     StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
-use crate::shapes::{Markers, Shape};
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -1260,16 +1259,8 @@ impl DrawingCtx {
                             }
 
                             PaintTarget::Markers => {
-                                if shape.markers == Markers::Yes {
-                                    path_helper.unset();
-                                    marker::render_markers_for_path(
-                                        &shape.path,
-                                        dc,
-                                        an,
-                                        values,
-                                        clipping,
-                                    )?;
-                                }
+                                path_helper.unset();
+                                marker::render_markers_for_shape(shape, dc, an, clipping)?;
                             }
                         }
                     }
@@ -1301,21 +1292,17 @@ impl DrawingCtx {
         cr.paint();
     }
 
-    // TODO: just like we have Shape with all its parameters, do the
-    // same for a layout::Image.
     pub fn draw_image(
         &mut self,
-        surface: &SharedImageSurface,
-        rect: Rect,
-        aspect: AspectRatio,
-        node: &Node,
+        image: &Image,
+        stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let image_width = surface.width();
-        let image_height = surface.height();
-        if clipping || rect.is_empty() || image_width == 0 || image_height == 0 {
+        let image_width = image.surface.width();
+        let image_height = image.surface.height();
+        if clipping || image.rect.is_empty() || image_width == 0 || image_height == 0 {
             return Ok(self.empty_bbox());
         }
 
@@ -1323,59 +1310,61 @@ impl DrawingCtx {
         let image_height = f64::from(image_height);
         let vbox = ViewBox::from(Rect::from_size(image_width, image_height));
 
-        let clip_mode = if !values.is_overflow() && aspect.is_slice() {
+        let clip_mode = if !(image.overflow == Overflow::Auto
+            || image.overflow == Overflow::Visible)
+            && image.aspect.is_slice()
+        {
             Some(ClipMode::ClipToViewport)
         } else {
             None
         };
 
-        let elt = node.borrow_element();
+        // The bounding box for <image> is decided by the values of the image's x, y, w, h
+        // and not by the final computed image bounds.
+        let bounds = self.empty_bbox().with_rect(image.rect);
 
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
+        if image.is_visible {
+            self.with_discrete_layer(
+                stacking_ctx,
+                acquired_nodes,
+                values,
+                clipping,
+                None,
+                &mut |_an, dc| {
+                    let saved_cr = SavedCr::new(dc);
 
-        self.with_discrete_layer(
-            &stacking_ctx,
-            acquired_nodes,
-            values,
-            clipping,
-            None,
-            &mut |_an, dc| {
-                let saved_cr = SavedCr::new(dc);
-
-                if let Some(_params) =
-                    saved_cr
-                        .draw_ctx
-                        .push_new_viewport(Some(vbox), rect, aspect, clip_mode)
-                {
-                    if values.is_visible() {
+                    if let Some(_params) = saved_cr.draw_ctx.push_new_viewport(
+                        Some(vbox),
+                        image.rect,
+                        image.aspect,
+                        clip_mode,
+                    ) {
                         saved_cr
                             .draw_ctx
-                            .paint_surface(surface, image_width, image_height);
+                            .paint_surface(&image.surface, image_width, image_height);
                     }
-                }
 
-                // The bounding box for <image> is decided by the values of x, y, w, h
-                // and not by the final computed image bounds.
-                Ok(saved_cr.draw_ctx.empty_bbox().with_rect(rect))
-            },
-        )
+                    Ok(bounds)
+                },
+            )
+        } else {
+            Ok(bounds)
+        }
     }
 
-    // TODO: just like we have Shape with all its parameters, do the same for a layout::Text.
-    pub fn draw_text(
+    pub fn draw_text_span(
         &mut self,
-        layout: &pango::Layout,
-        x: f64,
-        y: f64,
+        view_params: &ViewParams,
+        span: &TextSpan,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let transform = self.get_transform();
 
-        let gravity = layout.get_context().unwrap().get_gravity();
+        let gravity = span.layout.get_context().unwrap().get_gravity();
 
-        let bbox = compute_text_box(layout, x, y, transform, gravity);
+        let bbox = compute_text_box(&span.layout, span.x, span.y, transform, gravity);
         if bbox.is_none() {
             return Ok(self.empty_bbox());
         }
@@ -1386,17 +1375,11 @@ impl DrawingCtx {
 
         let cr = saved_cr.draw_ctx.cr.clone();
 
-        cr.set_antialias(cairo::Antialias::from(values.text_rendering()));
+        cr.set_antialias(cairo::Antialias::from(span.text_rendering));
 
-        let view_params = saved_cr.draw_ctx.get_view_params();
-        {
-            let params = NormalizeParams::new(values, &view_params);
-            let stroke = Stroke::new(values, &params);
+        setup_cr_for_stroke(&cr, &span.stroke);
 
-            setup_cr_for_stroke(&cr, &stroke);
-        }
-
-        cr.move_to(x, y);
+        cr.move_to(span.x, span.y);
 
         let rotation = gravity.to_rotation();
         if !rotation.approx_eq_cairo(0.0) {
@@ -1404,46 +1387,38 @@ impl DrawingCtx {
         }
 
         if clipping {
-            pangocairo::functions::update_layout(&cr, &layout);
-            pangocairo::functions::layout_path(&cr, &layout);
+            pangocairo::functions::update_layout(&cr, &span.layout);
+            pangocairo::functions::layout_path(&cr, &span.layout);
             return Ok(saved_cr.draw_ctx.empty_bbox());
         }
 
         // Fill
 
-        let paint_source = values
-            .fill()
-            .0
-            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)
-            .to_user_space(&bbox, &view_params, values);
+        if span.is_visible {
+            let fill_paint = span.fill_paint.to_user_space(&bbox, &view_params, values);
 
-        saved_cr
-            .draw_ctx
-            .set_paint_source(&paint_source, acquired_nodes)
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    pangocairo::functions::update_layout(&cr, &layout);
-                    if values.is_visible() {
-                        pangocairo::functions::show_layout(&cr, &layout);
-                    }
-                };
-            })?;
+            saved_cr
+                .draw_ctx
+                .set_paint_source(&fill_paint, acquired_nodes)
+                .map(|had_paint_server| {
+                    if had_paint_server {
+                        pangocairo::functions::update_layout(&cr, &span.layout);
+                        pangocairo::functions::show_layout(&cr, &span.layout);
+                    };
+                })?;
+        }
 
         // Stroke
 
-        let paint_source = values
-            .stroke()
-            .0
-            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)
-            .to_user_space(&bbox, &view_params, values);
+        let stroke_paint = span.stroke_paint.to_user_space(&bbox, &view_params, values);
 
         saved_cr
             .draw_ctx
-            .set_paint_source(&paint_source, acquired_nodes)
+            .set_paint_source(&stroke_paint, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
-                    pangocairo::functions::update_layout(&cr, &layout);
-                    pangocairo::functions::layout_path(&cr, &layout);
+                    pangocairo::functions::update_layout(&cr, &span.layout);
+                    pangocairo::functions::layout_path(&cr, &span.layout);
 
                     let (x0, y0, x1, y1) = cr.stroke_extents();
                     let r = Rect::new(x0, y0, x1, y1);
@@ -1451,7 +1426,7 @@ impl DrawingCtx {
                         .with_transform(transform)
                         .with_ink_rect(r);
                     bbox.insert(&ib);
-                    if values.is_visible() {
+                    if span.is_visible {
                         cr.stroke();
                     }
                 }

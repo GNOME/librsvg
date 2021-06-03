@@ -11,18 +11,17 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::layout::{StackingContext, Stroke};
+use crate::iri::Iri;
+use crate::layout::{Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
-use crate::property_defs::{ClipRule, FillRule, PaintOrder, ShapeRendering};
 use crate::xml::Attributes;
 
-#[derive(Copy, Clone, PartialEq)]
-pub enum Markers {
+#[derive(PartialEq)]
+enum Markers {
     No,
     Yes,
 }
@@ -30,21 +29,6 @@ pub enum Markers {
 struct ShapeDef {
     path: Rc<SvgPath>,
     markers: Markers,
-}
-
-// TODO: move Shape to layout.rs?
-pub struct Shape {
-    pub path: Rc<SvgPath>,
-    pub markers: Markers,
-    pub is_visible: bool,
-    pub paint_order: PaintOrder,
-    pub stroke: Stroke,
-    pub stroke_paint: PaintSource,
-    pub fill_paint: PaintSource,
-    pub fill_rule: FillRule,
-    pub clip_rule: ClipRule,
-    pub shape_rendering: ShapeRendering,
-    // TODO: resolve the markers here, to avoid passing ComputedValues to render_markers_for_path()
 }
 
 impl ShapeDef {
@@ -94,9 +78,22 @@ macro_rules! impl_draw {
                 let clip_rule = values.clip_rule();
                 let shape_rendering = values.shape_rendering();
 
+                let marker_start;
+                let marker_mid;
+                let marker_end;
+
+                if shape_def.markers == Markers::Yes {
+                    marker_start = acquire_marker(acquired_nodes, &values.marker_start().0);
+                    marker_mid = acquire_marker(acquired_nodes, &values.marker_mid().0);
+                    marker_end = acquire_marker(acquired_nodes, &values.marker_end().0);
+                } else {
+                    marker_start = None;
+                    marker_mid = None;
+                    marker_end = None;
+                }
+
                 let shape = Shape {
                     path: shape_def.path,
-                    markers: shape_def.markers,
                     is_visible,
                     paint_order,
                     stroke,
@@ -105,6 +102,9 @@ macro_rules! impl_draw {
                     fill_rule,
                     clip_rule,
                     shape_rendering,
+                    marker_start,
+                    marker_mid,
+                    marker_end,
                 };
 
                 let elt = node.borrow_element();
@@ -122,6 +122,27 @@ macro_rules! impl_draw {
             }
         }
     };
+}
+
+fn acquire_marker(acquired_nodes: &mut AcquiredNodes<'_>, iri: &Iri) -> Option<Node> {
+    iri.get().and_then(|id| {
+        acquired_nodes
+            .acquire(id)
+            .map_err(|e| {
+                rsvg_log!("cannot render marker: {}", e);
+            })
+            .ok()
+            .and_then(|acquired| {
+                let node = acquired.get();
+
+                if is_element_of_type!(node, Marker) {
+                    Some(node.clone())
+                } else {
+                    rsvg_log!("{} is not a marker element", id);
+                    None
+                }
+            })
+    })
 }
 
 fn make_ellipse(cx: f64, cy: f64, rx: f64, ry: f64) -> SvgPath {

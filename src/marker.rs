@@ -9,18 +9,16 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
-use crate::document::{AcquiredNodes, NodeId};
+use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::iri::Iri;
-use crate::layout::StackingContext;
+use crate::layout::{Shape, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
-use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::transform::Transform;
 use crate::viewbox::*;
@@ -547,21 +545,23 @@ enum MarkerType {
     End,
 }
 
-fn emit_marker_by_name(
+fn emit_marker_by_node(
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
-    name: &NodeId,
+    marker_node: &Node,
     xpos: f64,
     ypos: f64,
     computed_angle: Angle,
     line_width: f64,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    if let Ok(acquired) = acquired_nodes.acquire(name) {
-        let node = acquired.get();
+    match acquired_nodes.acquire_ref(marker_node) {
+        Ok(acquired) => {
+            let node = acquired.get();
 
-        match *node.borrow_element() {
-            Element::Marker(ref m) => m.render(
+            let marker = borrow_element_as!(marker_node, Marker);
+
+            marker.render(
                 &node,
                 acquired_nodes,
                 draw_ctx,
@@ -570,15 +570,13 @@ fn emit_marker_by_name(
                 computed_angle,
                 line_width,
                 clipping,
-            ),
-            _ => {
-                rsvg_log!("\"{}\" is not marker", name);
-                Ok(draw_ctx.empty_bbox())
-            }
+            )
         }
-    } else {
-        rsvg_log!("marker \"{}\" not found", name);
-        Ok(draw_ctx.empty_bbox())
+
+        Err(e) => {
+            rsvg_log!("could not acquire marker: {}", e);
+            Ok(draw_ctx.empty_bbox())
+        }
     }
 }
 
@@ -610,47 +608,39 @@ where
     emit_fn(marker_type, x, y, orient)
 }
 
-pub fn render_markers_for_path(
-    path: &Path,
+pub fn render_markers_for_shape(
+    shape: &Shape,
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
-    values: &ComputedValues,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    let view_params = draw_ctx.get_view_params();
-    let params = NormalizeParams::new(values, &view_params);
-
-    let line_width = values.stroke_width().0.to_user(&params);
-
-    if line_width.approx_eq_cairo(0.0) {
+    if shape.stroke.width.approx_eq_cairo(0.0) {
         return Ok(draw_ctx.empty_bbox());
     }
 
-    let marker_start = values.marker_start().0;
-    let marker_mid = values.marker_mid().0;
-    let marker_end = values.marker_end().0;
-
-    if let (&Iri::None, &Iri::None, &Iri::None) = (&marker_start, &marker_mid, &marker_end) {
+    if shape.marker_start.is_none() && shape.marker_mid.is_none() && shape.marker_end.is_none() {
         return Ok(draw_ctx.empty_bbox());
     }
 
     emit_markers_for_path(
-        path,
+        &shape.path,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
-            if let Iri::Resource(ref marker) = match marker_type {
-                MarkerType::Start => &marker_start,
-                MarkerType::Middle => &marker_mid,
-                MarkerType::End => &marker_end,
-            } {
-                emit_marker_by_name(
+            let marker_node = match marker_type {
+                MarkerType::Start => &shape.marker_start,
+                MarkerType::Middle => &shape.marker_mid,
+                MarkerType::End => &shape.marker_end,
+            };
+
+            if let Some(ref marker) = *marker_node {
+                emit_marker_by_node(
                     draw_ctx,
                     acquired_nodes,
                     marker,
                     x,
                     y,
                     computed_angle,
-                    line_width,
+                    shape.stroke.width,
                     clipping,
                 )
             } else {
