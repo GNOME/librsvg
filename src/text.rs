@@ -16,8 +16,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    Direction, FontStretch, FontStyle, FontVariant, TextAnchor, UnicodeBidi, WritingMode, XmlLang,
-    XmlSpace,
+    Direction, FontStretch, FontStyle, FontVariant, TextAnchor, UnicodeBidi, WritingMode, XmlSpace,
 };
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use crate::xml::Attributes;
@@ -725,12 +724,6 @@ fn to_pango_units(v: f64) -> i32 {
     (v * f64::from(pango::SCALE) + 0.5) as i32
 }
 
-impl<'a> From<&'a XmlLang> for pango::Language {
-    fn from(l: &'a XmlLang) -> pango::Language {
-        pango::Language::from_string(&l.0)
-    }
-}
-
 impl From<FontStyle> for pango::Style {
     fn from(s: FontStyle) -> pango::Style {
         match s {
@@ -821,11 +814,8 @@ fn create_pango_layout(
 ) -> pango::Layout {
     let pango_context = pango::Context::from(draw_ctx);
 
-    // See the construction of the XmlLang property
-    // We use "" there as the default value; this means that the language is not set.
-    // If the language *is* set, we can use it here.
-    if !values.xml_lang().0.is_empty() {
-        pango_context.set_language(&pango::Language::from(&values.xml_lang()));
+    if let Some(ref lang) = values.xml_lang().0 {
+        pango_context.set_language(&pango::Language::from_string(lang));
     }
 
     pango_context.set_base_gravity(pango::Gravity::from(values.writing_mode()));

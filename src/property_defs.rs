@@ -944,15 +944,15 @@ impl WritingMode {
 make_property!(
     ComputedValues,
     XmlLang,
-    default: "".to_string(), // see create_pango_layout()
+    default: None,
     inherits_automatically: true,
-    newtype: String,
+    newtype: Option<String>,
     parse_impl: {
         impl Parse for XmlLang {
             fn parse<'i>(
                 parser: &mut Parser<'i, '_>,
             ) -> Result<XmlLang, ParseError<'i>> {
-                Ok(XmlLang(parser.expect_ident()?.to_string()))
+                Ok(XmlLang(Some(parser.expect_ident()?.to_string())))
             }
         }
     },
@@ -963,7 +963,7 @@ make_property!(
 fn parses_xml_lang() {
     assert_eq!(
         XmlLang::parse_str("es-MX").unwrap(),
-        XmlLang("es-MX".to_string())
+        XmlLang(Some("es-MX".to_string()))
     );
 
     assert!(XmlLang::parse_str("").is_err());
