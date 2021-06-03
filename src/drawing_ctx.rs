@@ -1228,7 +1228,7 @@ impl DrawingCtx {
                     return Ok(dc.empty_bbox());
                 }
 
-                cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
+                cr.set_antialias(cairo::Antialias::from(shape.shape_rendering));
 
                 setup_cr_for_stroke(&cr, &shape.stroke);
 

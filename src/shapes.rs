@@ -18,6 +18,7 @@ use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
+use crate::property_defs::ShapeRendering;
 use crate::xml::Attributes;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -37,6 +38,7 @@ pub struct Shape {
     pub stroke: Stroke,
     pub stroke_paint: PaintSource,
     pub fill_paint: PaintSource,
+    pub shape_rendering: ShapeRendering,
 }
 
 impl ShapeDef {
@@ -79,12 +81,15 @@ macro_rules! impl_draw {
                     values.color().0,
                 );
 
+                let shape_rendering = values.shape_rendering();
+
                 let shape = Shape {
                     path: shape_def.path,
                     markers: shape_def.markers,
                     stroke,
                     stroke_paint,
                     fill_paint,
+                    shape_rendering,
                 };
                 draw_ctx.draw_shape(&view_params, &shape, node, acquired_nodes, values, clipping)
             }
