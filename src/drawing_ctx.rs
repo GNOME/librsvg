@@ -1254,36 +1254,40 @@ impl DrawingCtx {
                 path_helper.set()?;
                 let bbox = compute_stroke_and_fill_box(&cr, &stroke, &stroke_paint_source);
 
-                for &target in &values.paint_order().targets {
-                    // fill and stroke operations will preserve the path.
-                    // markers operation will clear the path.
-                    match target {
-                        PaintTarget::Fill | PaintTarget::Stroke => {
-                            path_helper.set()?;
+                let stroke_paint_source =
+                    stroke_paint_source.to_user_space(&bbox, &view_params, values);
 
-                            if values.is_visible() {
-                                if target == PaintTarget::Stroke {
-                                    let source = stroke_paint_source.to_user_space(
-                                        &bbox,
-                                        &view_params,
+                let fill_paint_source =
+                    fill_paint_source.to_user_space(&bbox, &view_params, values);
+
+                if values.is_visible() {
+                    for &target in &values.paint_order().targets {
+                        // fill and stroke operations will preserve the path.
+                        // markers operation will clear the path.
+                        match target {
+                            PaintTarget::Fill => {
+                                path_helper.set()?;
+                                dc.fill(&cr, an, &fill_paint_source)?;
+                            }
+
+                            PaintTarget::Stroke => {
+                                path_helper.set()?;
+                                dc.stroke(&cr, an, &stroke_paint_source)?;
+                            }
+
+                            PaintTarget::Markers => {
+                                if shape.markers == Markers::Yes {
+                                    path_helper.unset();
+                                    marker::render_markers_for_path(
+                                        &shape.path,
+                                        dc,
+                                        an,
                                         values,
-                                    );
-                                    dc.stroke(&cr, an, &source)?;
-                                } else {
-                                    let source = fill_paint_source.to_user_space(
-                                        &bbox,
-                                        &view_params,
-                                        values,
-                                    );
-                                    dc.fill(&cr, an, &source)?;
+                                        clipping,
+                                    )?;
                                 }
                             }
                         }
-                        PaintTarget::Markers if shape.markers == Markers::Yes => {
-                            path_helper.unset();
-                            marker::render_markers_for_path(&shape.path, dc, an, values, clipping)?;
-                        }
-                        _ => {}
                     }
                 }
 
