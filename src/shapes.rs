@@ -12,14 +12,12 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::iri::Iri;
-use crate::layout::{StackingContext, Stroke};
+use crate::layout::{Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
-use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
-use crate::property_defs::{ClipRule, FillRule, PaintOrder, ShapeRendering};
 use crate::xml::Attributes;
 
 #[derive(PartialEq)]
@@ -31,22 +29,6 @@ enum Markers {
 struct ShapeDef {
     path: Rc<SvgPath>,
     markers: Markers,
-}
-
-// TODO: move Shape to layout.rs?
-pub struct Shape {
-    pub path: Rc<SvgPath>,
-    pub is_visible: bool,
-    pub paint_order: PaintOrder,
-    pub stroke: Stroke,
-    pub stroke_paint: PaintSource,
-    pub fill_paint: PaintSource,
-    pub fill_rule: FillRule,
-    pub clip_rule: ClipRule,
-    pub shape_rendering: ShapeRendering,
-    pub marker_start: Option<Node>,
-    pub marker_mid: Option<Node>,
-    pub marker_end: Option<Node>,
 }
 
 impl ShapeDef {

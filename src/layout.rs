@@ -2,15 +2,20 @@
 //!
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
+use std::rc::Rc;
+
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
 use crate::length::*;
 use crate::node::*;
+use crate::paint_server::PaintSource;
+use crate::path_builder::Path;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
-    Filter, MixBlendMode, Opacity, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+    ClipRule, FillRule, Filter, MixBlendMode, Opacity, PaintOrder, ShapeRendering, StrokeDasharray,
+    StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
@@ -47,6 +52,26 @@ pub struct Stroke {
     pub line_join: StrokeLinejoin,
     pub dash_offset: f64,
     pub dashes: Box<[f64]>,
+}
+
+/// Paths and basic shapes resolved to a path.
+///
+/// Note that `stroke_paint` and `fill_paint` are not in user-space coordinates;
+/// they are just resolved to a `PaintSource`.  Turning them to a `UserSpacePaintSource`
+/// involves knowing the bounding box of the path.
+pub struct Shape {
+    pub path: Rc<Path>,
+    pub is_visible: bool,
+    pub paint_order: PaintOrder,
+    pub stroke: Stroke,
+    pub stroke_paint: PaintSource,
+    pub fill_paint: PaintSource,
+    pub fill_rule: FillRule,
+    pub clip_rule: ClipRule,
+    pub shape_rendering: ShapeRendering,
+    pub marker_start: Option<Node>,
+    pub marker_mid: Option<Node>,
+    pub marker_end: Option<Node>,
 }
 
 impl StackingContext {

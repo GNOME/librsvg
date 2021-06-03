@@ -22,7 +22,7 @@ use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{StackingContext, Stroke};
+use crate::layout::{Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -35,7 +35,6 @@ use crate::property_defs::{
     StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
-use crate::shapes::Shape;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
