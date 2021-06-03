@@ -2,11 +2,16 @@
 //!
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
+use crate::coord_units::CoordUnits;
+use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
+use crate::length::*;
 use crate::node::*;
 use crate::properties::ComputedValues;
-use crate::property_defs::{Filter, Opacity};
+use crate::property_defs::{
+    Filter, MixBlendMode, Opacity, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+};
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
 
@@ -28,7 +33,20 @@ pub struct StackingContext {
     pub transform: Transform,
     pub opacity: Opacity,
     pub filter: Filter,
+    pub clip_in_user_space: Option<Node>,
+    pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
+    pub mix_blend_mode: MixBlendMode,
+}
+
+/// Stroke parameters in user-space coordinates.
+pub struct Stroke {
+    pub width: f64,
+    pub miter_limit: StrokeMiterlimit,
+    pub line_cap: StrokeLinecap,
+    pub line_join: StrokeLinejoin,
+    pub dash_offset: f64,
+    pub dashes: Box<[f64]>,
 }
 
 impl StackingContext {
@@ -57,6 +75,27 @@ impl StackingContext {
             }
         }
 
+        let clip_path = values.clip_path();
+        let clip_uri = clip_path.0.get();
+        let (clip_in_user_space, clip_in_object_space) = clip_uri
+            .and_then(|node_id| {
+                acquired_nodes
+                    .acquire(node_id)
+                    .ok()
+                    .filter(|a| is_element_of_type!(*a.get(), ClipPath))
+            })
+            .map(|acquired| {
+                let clip_node = acquired.get().clone();
+
+                let units = borrow_element_as!(clip_node, ClipPath).get_units();
+
+                match units {
+                    CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
+                    CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
+                }
+            })
+            .unwrap_or((None, None));
+
         let mask = values.mask().0.get().and_then(|mask_id| {
             if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
                 let node = acquired.get();
@@ -84,12 +123,44 @@ impl StackingContext {
             }
         });
 
+        let mix_blend_mode = values.mix_blend_mode();
+
         StackingContext {
             element_name,
             transform,
             opacity,
             filter,
+            clip_in_user_space,
+            clip_in_object_space,
             mask,
+            mix_blend_mode,
+        }
+    }
+}
+
+impl Stroke {
+    pub fn new(values: &ComputedValues, params: &NormalizeParams) -> Stroke {
+        let width = values.stroke_width().0.to_user(params);
+        let miter_limit = values.stroke_miterlimit();
+        let line_cap = values.stroke_line_cap();
+        let line_join = values.stroke_line_join();
+        let dash_offset = values.stroke_dashoffset().0.to_user(&params);
+
+        let dashes = match values.stroke_dasharray() {
+            StrokeDasharray(Dasharray::None) => Box::new([]),
+            StrokeDasharray(Dasharray::Array(dashes)) => dashes
+                .iter()
+                .map(|l| l.to_user(&params))
+                .collect::<Box<[f64]>>(),
+        };
+
+        Stroke {
+            width,
+            miter_limit,
+            line_cap,
+            line_join,
+            dash_offset,
+            dashes,
         }
     }
 }

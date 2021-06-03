@@ -11,11 +11,14 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::layout::{StackingContext, Stroke};
 use crate::length::*;
-use crate::node::{CascadedValues, Node};
+use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
+use crate::property_defs::{ClipRule, FillRule, PaintOrder, ShapeRendering};
 use crate::xml::Attributes;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -24,19 +27,34 @@ pub enum Markers {
     Yes,
 }
 
+struct ShapeDef {
+    path: Rc<SvgPath>,
+    markers: Markers,
+}
+
+// TODO: move Shape to layout.rs?
 pub struct Shape {
     pub path: Rc<SvgPath>,
     pub markers: Markers,
+    pub is_visible: bool,
+    pub paint_order: PaintOrder,
+    pub stroke: Stroke,
+    pub stroke_paint: PaintSource,
+    pub fill_paint: PaintSource,
+    pub fill_rule: FillRule,
+    pub clip_rule: ClipRule,
+    pub shape_rendering: ShapeRendering,
+    // TODO: resolve the markers here, to avoid passing ComputedValues to render_markers_for_path()
 }
 
-impl Shape {
-    fn new(path: Rc<SvgPath>, markers: Markers) -> Shape {
-        Shape { path, markers }
+impl ShapeDef {
+    fn new(path: Rc<SvgPath>, markers: Markers) -> ShapeDef {
+        ShapeDef { path, markers }
     }
 }
 
 trait BasicShape {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape;
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef;
 }
 
 macro_rules! impl_draw {
@@ -53,8 +71,54 @@ macro_rules! impl_draw {
                 let values = cascaded.get();
                 let view_params = draw_ctx.get_view_params();
                 let params = NormalizeParams::new(values, &view_params);
-                let shape = self.make_shape(&params);
-                draw_ctx.draw_shape(&shape, node, acquired_nodes, values, clipping)
+                let shape_def = self.make_shape(&params);
+
+                let is_visible = values.is_visible();
+                let paint_order = values.paint_order();
+
+                let stroke = Stroke::new(values, &params);
+
+                let stroke_paint = values.stroke().0.resolve(
+                    acquired_nodes,
+                    values.stroke_opacity().0,
+                    values.color().0,
+                );
+
+                let fill_paint = values.fill().0.resolve(
+                    acquired_nodes,
+                    values.fill_opacity().0,
+                    values.color().0,
+                );
+
+                let fill_rule = values.fill_rule();
+                let clip_rule = values.clip_rule();
+                let shape_rendering = values.shape_rendering();
+
+                let shape = Shape {
+                    path: shape_def.path,
+                    markers: shape_def.markers,
+                    is_visible,
+                    paint_order,
+                    stroke,
+                    stroke_paint,
+                    fill_paint,
+                    fill_rule,
+                    clip_rule,
+                    shape_rendering,
+                };
+
+                let elt = node.borrow_element();
+                let stacking_ctx =
+                    StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
+
+                draw_ctx.draw_shape(
+                    &view_params,
+                    &shape,
+                    &stacking_ctx,
+                    acquired_nodes,
+                    values,
+                    clipping,
+                )
             }
         }
     };
@@ -143,8 +207,8 @@ impl SetAttributes for Path {
 }
 
 impl BasicShape for Path {
-    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
-        Shape::new(self.path.clone(), Markers::Yes)
+    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+        ShapeDef::new(self.path.clone(), Markers::Yes)
     }
 }
 
@@ -224,8 +288,8 @@ impl SetAttributes for Polygon {
 }
 
 impl BasicShape for Polygon {
-    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
-        Shape::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
+    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+        ShapeDef::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
     }
 }
 
@@ -249,8 +313,8 @@ impl SetAttributes for Polyline {
 }
 
 impl BasicShape for Polyline {
-    fn make_shape(&self, _params: &NormalizeParams) -> Shape {
-        Shape::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
+    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+        ShapeDef::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
     }
 }
 
@@ -281,7 +345,7 @@ impl SetAttributes for Line {
 }
 
 impl BasicShape for Line {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let mut builder = PathBuilder::default();
 
         let x1 = self.x1.to_user(params);
@@ -292,7 +356,7 @@ impl BasicShape for Line {
         builder.move_to(x1, y1);
         builder.line_to(x2, y2);
 
-        Shape::new(Rc::new(builder.into_path()), Markers::Yes)
+        ShapeDef::new(Rc::new(builder.into_path()), Markers::Yes)
     }
 }
 
@@ -330,7 +394,7 @@ impl SetAttributes for Rect {
 
 impl BasicShape for Rect {
     #[allow(clippy::many_single_char_names)]
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let x = self.x.to_user(params);
         let y = self.y.to_user(params);
         let w = self.width.to_user(params);
@@ -379,7 +443,7 @@ impl BasicShape for Rect {
 
         // Per the spec, w,h must be >= 0
         if w <= 0.0 || h <= 0.0 {
-            return Shape::new(Rc::new(builder.into_path()), Markers::No);
+            return ShapeDef::new(Rc::new(builder.into_path()), Markers::No);
         }
 
         let half_w = w / 2.0;
@@ -505,7 +569,7 @@ impl BasicShape for Rect {
             builder.close_path();
         }
 
-        Shape::new(Rc::new(builder.into_path()), Markers::No)
+        ShapeDef::new(Rc::new(builder.into_path()), Markers::No)
     }
 }
 
@@ -534,12 +598,12 @@ impl SetAttributes for Circle {
 }
 
 impl BasicShape for Circle {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let cx = self.cx.to_user(params);
         let cy = self.cy.to_user(params);
         let r = self.r.to_user(params);
 
-        Shape::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
+        ShapeDef::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
     }
 }
 
@@ -570,13 +634,13 @@ impl SetAttributes for Ellipse {
 }
 
 impl BasicShape for Ellipse {
-    fn make_shape(&self, params: &NormalizeParams) -> Shape {
+    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let cx = self.cx.to_user(params);
         let cy = self.cy.to_user(params);
         let rx = self.rx.to_user(params);
         let ry = self.ry.to_user(params);
 
-        Shape::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
+        ShapeDef::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
     }
 }
 

@@ -1,6 +1,6 @@
 //! The `filter` element.
 
-use cssparser::Parser;
+use cssparser::{Parser, RGBA};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::slice::Iter;
 
@@ -14,7 +14,6 @@ use crate::filters::{extract_filter_from_filter_node, FilterResolveError, Filter
 use crate::length::*;
 use crate::node::NodeBorrow;
 use crate::parsers::{Parse, ParseValue};
-use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::xml::Attributes;
 
@@ -113,7 +112,8 @@ impl FilterValue {
     pub fn to_filter_spec(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
+        user_space_params: &NormalizeParams,
+        current_color: RGBA,
         draw_ctx: &DrawingCtx,
         node_being_filtered_name: &str,
     ) -> Result<FilterSpec, FilterResolveError> {
@@ -125,7 +125,9 @@ impl FilterValue {
                 node_being_filtered_name,
             ),
 
-            FilterValue::Function(ref func) => func.to_filter_spec(values, draw_ctx),
+            FilterValue::Function(ref func) => {
+                func.to_filter_spec(user_space_params, current_color)
+            }
         }
     }
 }

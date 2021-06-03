@@ -338,6 +338,9 @@ pub struct NormalizeParams {
 impl NormalizeParams {
     /// Extracts the information needed to normalize `Length` values from a set of
     /// `ComputedValues` and the viewport size in `ViewParams`.
+    // TODO: It is awkward to pass a `ComputedValues` everywhere just to be able to get
+    // the font size in the end.  Can we instead have a `ComputedFontSize(FontSize)`
+    // newtype, extracted from the `ComputedValues`?
     pub fn new(values: &ComputedValues, params: &ViewParams) -> NormalizeParams {
         NormalizeParams {
             vbox: params.vbox,

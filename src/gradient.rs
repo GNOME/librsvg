@@ -8,7 +8,7 @@ use markup5ever::{
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -682,7 +682,7 @@ impl ResolvedGradient {
     pub fn to_user_space(
         &self,
         bbox: &BoundingBox,
-        draw_ctx: &DrawingCtx,
+        current_params: &ViewParams,
         values: &ComputedValues,
     ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
@@ -692,7 +692,7 @@ impl ResolvedGradient {
             return None;
         };
 
-        let view_params = draw_ctx.push_coord_units(units);
+        let view_params = current_params.with_units(units);
         let params = NormalizeParams::new(values, &view_params);
 
         let transform = transform.pre_transform(&self.transform).invert()?;

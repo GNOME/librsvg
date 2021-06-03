@@ -1,5 +1,6 @@
 //! The main context structure which drives the drawing process.
 
+use cssparser::RGBA;
 use float_cmp::approx_eq;
 use once_cell::sync::Lazy;
 use pango::FontMapExt;
@@ -14,7 +15,6 @@ use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::dasharray::Dasharray;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
 use crate::element::Element;
@@ -22,17 +22,17 @@ use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::StackingContext;
+use crate::layout::{StackingContext, Stroke};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
-use crate::paint_server::{PaintServer, UserSpacePaintSource};
+use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintTarget, ShapeRendering,
-    StrokeDasharray, StrokeLinecap, StrokeLinejoin, TextRendering,
+    StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
 use crate::shapes::{Markers, Shape};
@@ -66,6 +66,22 @@ impl ViewParams {
             dpi,
             vbox: ViewBox::from(Rect::from_size(view_box_width, view_box_height)),
             viewport_stack: None,
+        }
+    }
+
+    pub fn with_units(&self, units: CoordUnits) -> ViewParams {
+        match units {
+            CoordUnits::ObjectBoundingBox => ViewParams {
+                dpi: self.dpi,
+                vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
+                viewport_stack: None,
+            },
+
+            CoordUnits::UserSpaceOnUse => ViewParams {
+                dpi: self.dpi,
+                vbox: self.vbox,
+                viewport_stack: None,
+            },
         }
     }
 }
@@ -374,6 +390,23 @@ impl DrawingCtx {
             .expect("viewport_stack must never be empty!")
     }
 
+    // Same as `push_coord_units` but doesn't leave the coordinate space pushed
+    pub fn get_view_params_for_units(&self, units: CoordUnits) -> ViewParams {
+        match units {
+            CoordUnits::ObjectBoundingBox => ViewParams {
+                dpi: self.dpi,
+                vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
+                viewport_stack: None,
+            },
+
+            CoordUnits::UserSpaceOnUse => ViewParams {
+                dpi: self.dpi,
+                vbox: self.get_top_viewport().vbox,
+                viewport_stack: None,
+            },
+        }
+    }
+
     pub fn push_coord_units(&self, units: CoordUnits) -> ViewParams {
         match units {
             CoordUnits::ObjectBoundingBox => self.push_view_box(1.0, 1.0),
@@ -555,8 +588,7 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let view_params = self.push_coord_units(mask_units);
-            let params = NormalizeParams::new(values, &view_params);
+            let params = NormalizeParams::new(values, &self.get_view_params_for_units(mask_units));
             mask.get_rect(&params)
         };
 
@@ -597,6 +629,10 @@ impl DrawingCtx {
                 mask_cr.transform(bbtransform.into());
             }
 
+            // TODO: this is the last place where push_coord_units() is called.  The call to
+            // draw_children below assumes that the new coordinate system is in place.  Can we
+            // pass the ViewParams to with_discrete_layer / Node::draw instead of having them
+            // assume the viewport from the DrawingCtx?
             let _params = self.push_coord_units(mask.get_content_units());
 
             let mut mask_draw_ctx = self.nested(mask_cr);
@@ -646,16 +682,9 @@ impl DrawingCtx {
         } else {
             let saved_cr = SavedCr::new(self);
 
-            let clip_path_value = values.clip_path();
-
-            let clip_uri = clip_path_value.0.get();
-
             let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
             let affine_at_start = saved_cr.draw_ctx.get_transform();
-
-            let (clip_in_user_space, clip_in_object_space) =
-                get_clip_in_user_and_object_space(acquired_nodes, clip_uri);
 
             if let Some(rect) = clip_rect {
                 clip_to_rectangle(&saved_cr.draw_ctx.cr, &rect);
@@ -663,7 +692,7 @@ impl DrawingCtx {
 
             // Here we are clipping in user space, so the bbox doesn't matter
             saved_cr.draw_ctx.clip_to_node(
-                &clip_in_user_space,
+                &stacking_ctx.clip_in_user_space,
                 acquired_nodes,
                 &saved_cr.draw_ctx.empty_bbox(),
             )?;
@@ -672,8 +701,8 @@ impl DrawingCtx {
             let needs_temporary_surface = !(is_opaque
                 && stacking_ctx.filter == Filter::None
                 && stacking_ctx.mask.is_none()
-                && values.mix_blend_mode() == MixBlendMode::Normal
-                && clip_in_object_space.is_none());
+                && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
+                && stacking_ctx.clip_in_object_space.is_none());
 
             if needs_temporary_surface {
                 // Compute our assortment of affines
@@ -720,13 +749,48 @@ impl DrawingCtx {
                         &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.get_target()).unwrap(),
                     )?;
 
+                    let current_color = values.color().0;
+
+                    let params = temporary_draw_ctx.get_view_params();
+
+                    // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
+                    // they are also needed for filters in all elements.  Maybe we should make them part
+                    // of the StackingContext instead of Shape?
+                    let stroke_paint_source = Rc::new(
+                        values
+                            .stroke()
+                            .0
+                            .resolve(acquired_nodes, values.stroke_opacity().0, current_color)
+                            .to_user_space(&bbox, &params, values),
+                    );
+
+                    let fill_paint_source = Rc::new(
+                        values
+                            .fill()
+                            .0
+                            .resolve(acquired_nodes, values.fill_opacity().0, current_color)
+                            .to_user_space(&bbox, &params, values),
+                    );
+
+                    // Filter functions (like "blend()", not the <filter> element) require
+                    // being resolved in userSpaceonUse units, since that is the default
+                    // for primitive_units.  So, get the corresponding NormalizeParams
+                    // here and pass them down.
+                    let user_space_params = NormalizeParams::new(
+                        values,
+                        &params.with_units(CoordUnits::UserSpaceOnUse),
+                    );
+
                     (
                         temporary_draw_ctx.run_filters(
                             surface_to_filter,
                             &stacking_ctx.filter,
                             acquired_nodes,
                             &stacking_ctx.element_name,
-                            values,
+                            &user_space_params,
+                            stroke_paint_source,
+                            fill_paint_source,
+                            current_color,
                             bbox,
                         )?,
                         res,
@@ -745,9 +809,11 @@ impl DrawingCtx {
                     .draw_ctx
                     .cr
                     .set_matrix(affines.outside_temporary_surface.into());
-                saved_cr
-                    .draw_ctx
-                    .clip_to_node(&clip_in_object_space, acquired_nodes, &bbox)?;
+                saved_cr.draw_ctx.clip_to_node(
+                    &stacking_ctx.clip_in_object_space,
+                    acquired_nodes,
+                    &bbox,
+                )?;
 
                 // Mask
 
@@ -776,7 +842,7 @@ impl DrawingCtx {
                     saved_cr
                         .draw_ctx
                         .cr
-                        .set_operator(values.mix_blend_mode().into());
+                        .set_operator(stacking_ctx.mix_blend_mode.into());
 
                     if opacity < 1.0 {
                         saved_cr.draw_ctx.cr.paint_with_alpha(opacity);
@@ -858,32 +924,25 @@ impl DrawingCtx {
         filters: &Filter,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
-        values: &ComputedValues,
+        user_space_params: &NormalizeParams,
+        stroke_paint_source: Rc<UserSpacePaintSource>,
+        fill_paint_source: Rc<UserSpacePaintSource>,
+        current_color: RGBA,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
-        let stroke_paint_source = Rc::new(
-            values
-                .stroke()
-                .0
-                .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-                .to_user_space(&node_bbox, self, values),
-        );
-
-        let fill_paint_source = Rc::new(
-            values
-                .fill()
-                .0
-                .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-                .to_user_space(&node_bbox, self, values),
-        );
-
         let surface = match filters {
             Filter::None => surface_to_filter,
             Filter::List(filter_list) => {
                 if let Ok(specs) = filter_list
                     .iter()
                     .map(|filter_value| {
-                        filter_value.to_filter_spec(acquired_nodes, values, self, node_name)
+                        filter_value.to_filter_spec(
+                            acquired_nodes,
+                            user_space_params,
+                            current_color,
+                            self,
+                            node_name,
+                        )
                     })
                     .collect::<Result<Vec<FilterSpec>, _>>()
                 {
@@ -1108,43 +1167,13 @@ impl DrawingCtx {
         surface.share()
     }
 
-    fn setup_cr_for_stroke(&self, cr: &cairo::Context, values: &ComputedValues) {
-        let view_params = self.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
-
-        cr.set_line_width(values.stroke_width().0.to_user(&params));
-        cr.set_miter_limit(values.stroke_miterlimit().0);
-        cr.set_line_cap(cairo::LineCap::from(values.stroke_line_cap()));
-        cr.set_line_join(cairo::LineJoin::from(values.stroke_line_join()));
-
-        if let StrokeDasharray(Dasharray::Array(ref dashes)) = values.stroke_dasharray() {
-            let normalized_dashes: Vec<f64> = dashes.iter().map(|l| l.to_user(&params)).collect();
-
-            let total_length = normalized_dashes.iter().fold(0.0, |acc, &len| acc + len);
-
-            if total_length > 0.0 {
-                let offset = values.stroke_dashoffset().0.to_user(&params);
-                cr.set_dash(&normalized_dashes, offset);
-            } else {
-                cr.set_dash(&[], 0.0);
-            }
-        }
-    }
-
     fn stroke(
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
-        bbox: &BoundingBox,
+        paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        let paint_source = values
-            .stroke()
-            .0
-            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-            .to_user_space(bbox, self, values);
-
-        self.set_paint_source(&paint_source, acquired_nodes)
+        self.set_paint_source(paint_source, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
                     cr.stroke_preserve();
@@ -1158,16 +1187,9 @@ impl DrawingCtx {
         &mut self,
         cr: &cairo::Context,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
-        bbox: &BoundingBox,
+        paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        let paint_source = values
-            .fill()
-            .0
-            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-            .to_user_space(bbox, self, values);
-
-        self.set_paint_source(&paint_source, acquired_nodes)
+        self.set_paint_source(paint_source, acquired_nodes)
             .map(|had_paint_server| {
                 if had_paint_server {
                     cr.fill_preserve();
@@ -1179,8 +1201,9 @@ impl DrawingCtx {
 
     pub fn draw_shape(
         &mut self,
+        view_params: &ViewParams,
         shape: &Shape,
-        node: &Node,
+        stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
@@ -1189,11 +1212,8 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
-        let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
-
         self.with_discrete_layer(
-            &stacking_ctx,
+            stacking_ctx,
             acquired_nodes,
             values,
             clipping,
@@ -1202,54 +1222,61 @@ impl DrawingCtx {
                 let cr = dc.cr.clone();
                 let transform = dc.get_transform();
                 let mut path_helper =
-                    PathHelper::new(&cr, transform, &shape.path, values.stroke_line_cap());
+                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
 
                 if clipping {
-                    if values.is_visible() {
-                        cr.set_fill_rule(cairo::FillRule::from(values.clip_rule()));
+                    if shape.is_visible {
+                        cr.set_fill_rule(cairo::FillRule::from(shape.clip_rule));
                         path_helper.set()?;
                     }
                     return Ok(dc.empty_bbox());
                 }
 
-                cr.set_antialias(cairo::Antialias::from(values.shape_rendering()));
-                dc.setup_cr_for_stroke(&cr, values);
+                cr.set_antialias(cairo::Antialias::from(shape.shape_rendering));
 
-                cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
+                setup_cr_for_stroke(&cr, &shape.stroke);
 
-                let mut bounding_box: Option<BoundingBox> = None;
-                path_helper.unset();
+                cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
 
-                let view_params = dc.get_view_params();
+                path_helper.set()?;
+                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint);
 
-                for &target in &values.paint_order().targets {
-                    // fill and stroke operations will preserve the path.
-                    // markers operation will clear the path.
-                    match target {
-                        PaintTarget::Fill | PaintTarget::Stroke => {
-                            path_helper.set()?;
-                            let bbox = bounding_box.get_or_insert_with(|| {
-                                compute_stroke_and_fill_box(&cr, &values, &view_params)
-                            });
+                let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
+                let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
 
-                            if values.is_visible() {
-                                if target == PaintTarget::Stroke {
-                                    dc.stroke(&cr, an, values, &bbox)?;
-                                } else {
-                                    dc.fill(&cr, an, values, &bbox)?;
+                if shape.is_visible {
+                    for &target in &shape.paint_order.targets {
+                        // fill and stroke operations will preserve the path.
+                        // markers operation will clear the path.
+                        match target {
+                            PaintTarget::Fill => {
+                                path_helper.set()?;
+                                dc.fill(&cr, an, &fill_paint)?;
+                            }
+
+                            PaintTarget::Stroke => {
+                                path_helper.set()?;
+                                dc.stroke(&cr, an, &stroke_paint)?;
+                            }
+
+                            PaintTarget::Markers => {
+                                if shape.markers == Markers::Yes {
+                                    path_helper.unset();
+                                    marker::render_markers_for_path(
+                                        &shape.path,
+                                        dc,
+                                        an,
+                                        values,
+                                        clipping,
+                                    )?;
                                 }
                             }
                         }
-                        PaintTarget::Markers if shape.markers == Markers::Yes => {
-                            path_helper.unset();
-                            marker::render_markers_for_path(&shape.path, dc, an, values, clipping)?;
-                        }
-                        _ => {}
                     }
                 }
 
                 path_helper.unset();
-                Ok(bounding_box.unwrap())
+                Ok(bbox)
             },
         )
     }
@@ -1274,6 +1301,8 @@ impl DrawingCtx {
         cr.paint();
     }
 
+    // TODO: just like we have Shape with all its parameters, do the
+    // same for a layout::Image.
     pub fn draw_image(
         &mut self,
         surface: &SharedImageSurface,
@@ -1332,6 +1361,7 @@ impl DrawingCtx {
         )
     }
 
+    // TODO: just like we have Shape with all its parameters, do the same for a layout::Text.
     pub fn draw_text(
         &mut self,
         layout: &pango::Layout,
@@ -1357,7 +1387,15 @@ impl DrawingCtx {
         let cr = saved_cr.draw_ctx.cr.clone();
 
         cr.set_antialias(cairo::Antialias::from(values.text_rendering()));
-        saved_cr.draw_ctx.setup_cr_for_stroke(&cr, &values);
+
+        let view_params = saved_cr.draw_ctx.get_view_params();
+        {
+            let params = NormalizeParams::new(values, &view_params);
+            let stroke = Stroke::new(values, &params);
+
+            setup_cr_for_stroke(&cr, &stroke);
+        }
+
         cr.move_to(x, y);
 
         let rotation = gravity.to_rotation();
@@ -1376,8 +1414,8 @@ impl DrawingCtx {
         let paint_source = values
             .fill()
             .0
-            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)?
-            .to_user_space(&bbox, saved_cr.draw_ctx, values);
+            .resolve(acquired_nodes, values.fill_opacity().0, values.color().0)
+            .to_user_space(&bbox, &view_params, values);
 
         saved_cr
             .draw_ctx
@@ -1396,8 +1434,8 @@ impl DrawingCtx {
         let paint_source = values
             .stroke()
             .0
-            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)?
-            .to_user_space(&bbox, saved_cr.draw_ctx, values);
+            .resolve(acquired_nodes, values.stroke_opacity().0, values.color().0)
+            .to_user_space(&bbox, &view_params, values);
 
         saved_cr
             .draw_ctx
@@ -1445,6 +1483,10 @@ impl DrawingCtx {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
         surface.draw(&mut |cr| {
+            // TODO: apparently DrawingCtx.cr_stack is just a way to store pairs of
+            // (surface, transform).  Can we turn it into a DrawingCtx.surface_stack
+            // instead?  See what CSS isolation would like to call that; are the pairs just
+            // stacking contexts instead, or the result of rendering stacking contexts?
             for (depth, draw) in self.cr_stack.borrow().iter().enumerate() {
                 let affines = CompositingAffines::new(
                     Transform::from(draw.get_matrix()),
@@ -1752,35 +1794,10 @@ impl CompositingAffines {
     }
 }
 
-// Returns (clip_in_user_space, clip_in_object_space), both Option<Node>
-fn get_clip_in_user_and_object_space(
-    acquired_nodes: &mut AcquiredNodes<'_>,
-    clip_uri: Option<&NodeId>,
-) -> (Option<Node>, Option<Node>) {
-    clip_uri
-        .and_then(|node_id| {
-            acquired_nodes
-                .acquire(node_id)
-                .ok()
-                .filter(|a| is_element_of_type!(*a.get(), ClipPath))
-        })
-        .map(|acquired| {
-            let clip_node = acquired.get().clone();
-
-            let units = borrow_element_as!(clip_node, ClipPath).get_units();
-
-            match units {
-                CoordUnits::UserSpaceOnUse => (Some(clip_node), None),
-                CoordUnits::ObjectBoundingBox => (None, Some(clip_node)),
-            }
-        })
-        .unwrap_or((None, None))
-}
-
 fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
-    values: &ComputedValues,
-    view_params: &ViewParams,
+    stroke: &Stroke,
+    stroke_paint_source: &PaintSource,
 ) -> BoundingBox {
     let affine = Transform::from(cr.get_matrix());
 
@@ -1817,12 +1834,7 @@ fn compute_stroke_and_fill_box(
     // So, see if the stroke width is 0 and just not include the stroke in the
     // bounding box if so.
 
-    let stroke_width = values
-        .stroke_width()
-        .0
-        .to_user(&NormalizeParams::new(values, view_params));
-
-    if !stroke_width.approx_eq_cairo(0.0) && values.stroke().0 != PaintServer::None {
+    if !stroke.width.approx_eq_cairo(0.0) && !matches!(stroke_paint_source, PaintSource::None) {
         let (x0, y0, x1, y1) = cr.stroke_extents();
         let sb = BoundingBox::new()
             .with_transform(affine)
@@ -1888,6 +1900,21 @@ fn compute_text_box(
         .with_ink_rect(r);
 
     Some(bbox)
+}
+
+fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {
+    cr.set_line_width(stroke.width);
+    cr.set_miter_limit(stroke.miter_limit.0);
+    cr.set_line_cap(cairo::LineCap::from(stroke.line_cap));
+    cr.set_line_join(cairo::LineJoin::from(stroke.line_join));
+
+    let total_length: f64 = stroke.dashes.iter().sum();
+
+    if total_length > 0.0 {
+        cr.set_dash(&stroke.dashes, stroke.dash_offset);
+    } else {
+        cr.set_dash(&[], 0.0);
+    }
 }
 
 // FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?

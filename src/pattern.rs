@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -327,12 +327,12 @@ impl ResolvedPattern {
     pub fn to_user_space(
         &self,
         bbox: &BoundingBox,
-        draw_ctx: &DrawingCtx,
+        current_params: &ViewParams,
         values: &ComputedValues,
     ) -> Option<UserSpacePattern> {
         let node_with_children = self.node_with_children()?;
 
-        let view_params = draw_ctx.push_coord_units(self.units.0);
+        let view_params = current_params.with_units(self.units.0);
         let params = NormalizeParams::new(values, &view_params);
 
         let rect = self.get_rect(&params);

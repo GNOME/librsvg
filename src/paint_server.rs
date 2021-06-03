@@ -4,11 +4,9 @@ use cssparser::Parser;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::ViewParams;
 use crate::element::Element;
-use crate::error::{
-    AcquireError, ImplementationLimit, NodeIdError, ParseError, RenderingError, ValueErrorKind,
-};
+use crate::error::{AcquireError, NodeIdError, ParseError, ValueErrorKind};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
@@ -110,7 +108,7 @@ impl PaintServer {
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         current_color: cssparser::RGBA,
-    ) -> Result<PaintSource, RenderingError> {
+    ) -> PaintSource {
         match self {
             PaintServer::Iri {
                 ref iri,
@@ -149,49 +147,43 @@ impl PaintServer {
                         _ => Err(AcquireError::InvalidLinkType(iri.as_ref().clone())),
                     }
                 })
-                .or_else(|err| match (err, alternate) {
-                    (AcquireError::MaxReferencesExceeded, _) => {
-                        rsvg_log!("exceeded maximum number of referenced objects");
-                        Err(RenderingError::LimitExceeded(
-                            ImplementationLimit::TooManyReferencedElements,
-                        ))
-                    }
-
-                    // The following two cases catch AcquireError::CircularReference, which for
-                    // paint servers may mean that there is a pattern or gradient with a reference
-                    // cycle in its "href" attribute.  This is an invalid paint server, and per
-                    // https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint we should try to
-                    // fall back to the alternate color.
-                    (_, Some(color)) => {
+                .unwrap_or_else(|_| match alternate {
+                    // The following cases catch AcquireError::CircularReference and
+                    // AcquireError::MaxReferencesExceeded.
+                    //
+                    // Circular references mean that there is a pattern or gradient with a
+                    // reference cycle in its "href" attribute.  This is an invalid paint
+                    // server, and per
+                    // https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint we should
+                    // try to fall back to the alternate color.
+                    //
+                    // Exceeding the maximum number of references will get caught again
+                    // later in the drawing code, so it should be fine to translate this
+                    // condition to that for an invalid paint server.
+                    Some(color) => {
                         rsvg_log!(
                             "could not resolve paint server \"{}\", using alternate color",
                             iri
                         );
 
-                        Ok(PaintSource::SolidColor(resolve_color(
-                            color,
-                            opacity,
-                            current_color,
-                        )))
+                        PaintSource::SolidColor(resolve_color(color, opacity, current_color))
                     }
 
-                    (_, _) => {
+                    None => {
                         rsvg_log!(
                             "could not resolve paint server \"{}\", no alternate color specified",
                             iri
                         );
 
-                        Ok(PaintSource::None)
+                        PaintSource::None
                     }
                 }),
 
-            PaintServer::SolidColor(color) => Ok(PaintSource::SolidColor(resolve_color(
-                color,
-                opacity,
-                current_color,
-            ))),
+            PaintServer::SolidColor(color) => {
+                PaintSource::SolidColor(resolve_color(color, opacity, current_color))
+            }
 
-            PaintServer::None => Ok(PaintSource::None),
+            PaintServer::None => PaintSource::None,
         }
     }
 }
@@ -201,24 +193,28 @@ impl PaintSource {
     pub fn to_user_space(
         &self,
         bbox: &BoundingBox,
-        draw_ctx: &DrawingCtx,
+        current_params: &ViewParams,
         values: &ComputedValues,
     ) -> UserSpacePaintSource {
         match *self {
             PaintSource::None => UserSpacePaintSource::None,
             PaintSource::SolidColor(c) => UserSpacePaintSource::SolidColor(c),
 
-            PaintSource::Gradient(ref g, c) => match (g.to_user_space(bbox, draw_ctx, values), c) {
-                (Some(gradient), c) => UserSpacePaintSource::Gradient(gradient, c),
-                (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
-                (None, None) => UserSpacePaintSource::None,
-            },
+            PaintSource::Gradient(ref g, c) => {
+                match (g.to_user_space(bbox, current_params, values), c) {
+                    (Some(gradient), c) => UserSpacePaintSource::Gradient(gradient, c),
+                    (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
+                    (None, None) => UserSpacePaintSource::None,
+                }
+            }
 
-            PaintSource::Pattern(ref p, c) => match (p.to_user_space(bbox, draw_ctx, values), c) {
-                (Some(pattern), c) => UserSpacePaintSource::Pattern(pattern, c),
-                (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
-                (None, None) => UserSpacePaintSource::None,
-            },
+            PaintSource::Pattern(ref p, c) => {
+                match (p.to_user_space(bbox, current_params, values), c) {
+                    (Some(pattern), c) => UserSpacePaintSource::Pattern(pattern, c),
+                    (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
+                    (None, None) => UserSpacePaintSource::None,
+                }
+            }
         }
     }
 }
