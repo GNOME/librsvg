@@ -629,6 +629,10 @@ impl DrawingCtx {
                 mask_cr.transform(bbtransform.into());
             }
 
+            // TODO: this is the last place where push_coord_units() is called.  The call to
+            // draw_children below assumes that the new coordinate system is in place.  Can we
+            // pass the ViewParams to with_discrete_layer / Node::draw instead of having them
+            // assume the viewport from the DrawingCtx?
             let _params = self.push_coord_units(mask.get_content_units());
 
             let mut mask_draw_ctx = self.nested(mask_cr);
