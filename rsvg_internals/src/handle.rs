@@ -240,12 +240,12 @@ impl Handle {
     ) -> Result<(), RenderingError> {
         check_cairo_context(cr)?;
 
-        cr.save();
-
         let node = self.get_node_or_root(id)?;
         let root = self.document.root();
 
         let viewport = Rect::from(*viewport);
+
+        cr.save();
 
         let res = draw_tree(
             DrawingMode::LimitToStack { node, root },
