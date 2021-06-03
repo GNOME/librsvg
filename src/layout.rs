@@ -16,7 +16,7 @@ use crate::path_builder::Path;
 use crate::properties::ComputedValues;
 use crate::property_defs::{
     ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintOrder, ShapeRendering,
-    StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+    StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit, TextRendering,
 };
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -84,6 +84,18 @@ pub struct Image {
     pub rect: Rect,
     pub aspect: AspectRatio,
     pub overflow: Overflow,
+}
+
+/// A single text span in user-space coordinates.
+pub struct TextSpan {
+    pub layout: pango::Layout,
+    pub is_visible: bool,
+    pub x: f64,
+    pub y: f64,
+    pub stroke: Stroke,
+    pub stroke_paint: PaintSource,
+    pub fill_paint: PaintSource,
+    pub text_rendering: TextRendering,
 }
 
 impl StackingContext {

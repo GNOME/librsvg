@@ -10,7 +10,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::font_props::FontWeight;
-use crate::layout::StackingContext;
+use crate::layout::{self, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -255,8 +255,41 @@ impl PositionedSpan {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
+        let view_params = draw_ctx.get_view_params();
+        let params = NormalizeParams::new(&self.values, &view_params);
+
+        let layout = self.layout.clone();
+        let is_visible = self.values.is_visible();
         let (x, y) = self.rendered_position;
-        draw_ctx.draw_text(&self.layout, x, y, acquired_nodes, &self.values, clipping)
+
+        let stroke = Stroke::new(&self.values, &params);
+
+        let stroke_paint = self.values.stroke().0.resolve(
+            acquired_nodes,
+            self.values.stroke_opacity().0,
+            self.values.color().0,
+        );
+
+        let fill_paint = self.values.fill().0.resolve(
+            acquired_nodes,
+            self.values.fill_opacity().0,
+            self.values.color().0,
+        );
+
+        let text_rendering = self.values.text_rendering();
+
+        let span = layout::TextSpan {
+            layout,
+            is_visible,
+            x,
+            y,
+            stroke,
+            stroke_paint,
+            fill_paint,
+            text_rendering,
+        };
+
+        draw_ctx.draw_text_span(&view_params, &span, acquired_nodes, &self.values, clipping)
     }
 }
 
