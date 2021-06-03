@@ -1234,26 +1234,11 @@ impl DrawingCtx {
 
                 cr.set_fill_rule(cairo::FillRule::from(values.fill_rule()));
 
-                let stroke_paint_source =
-                    values
-                        .stroke()
-                        .0
-                        .resolve(an, values.stroke_opacity().0, values.color().0);
-
-                let fill_paint_source =
-                    values
-                        .fill()
-                        .0
-                        .resolve(an, values.fill_opacity().0, values.color().0);
-
                 path_helper.set()?;
-                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &stroke_paint_source);
+                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint);
 
-                let stroke_paint_source =
-                    stroke_paint_source.to_user_space(&bbox, view_params, values);
-
-                let fill_paint_source =
-                    fill_paint_source.to_user_space(&bbox, view_params, values);
+                let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
+                let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
 
                 if values.is_visible() {
                     for &target in &values.paint_order().targets {
@@ -1262,12 +1247,12 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, &fill_paint_source)?;
+                                dc.fill(&cr, an, &fill_paint)?;
                             }
 
                             PaintTarget::Stroke => {
                                 path_helper.set()?;
-                                dc.stroke(&cr, an, &stroke_paint_source)?;
+                                dc.stroke(&cr, an, &stroke_paint)?;
                             }
 
                             PaintTarget::Markers => {

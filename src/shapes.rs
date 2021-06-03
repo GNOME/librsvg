@@ -14,6 +14,7 @@ use crate::error::*;
 use crate::layout::Stroke;
 use crate::length::*;
 use crate::node::{CascadedValues, Node};
+use crate::paint_server::PaintSource;
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::path_parser;
@@ -34,6 +35,8 @@ pub struct Shape {
     pub path: Rc<SvgPath>,
     pub markers: Markers,
     pub stroke: Stroke,
+    pub stroke_paint: PaintSource,
+    pub fill_paint: PaintSource,
 }
 
 impl ShapeDef {
@@ -63,11 +66,25 @@ macro_rules! impl_draw {
                 let shape_def = self.make_shape(&params);
 
                 let stroke = Stroke::new(values, &params);
-                
+
+                let stroke_paint = values.stroke().0.resolve(
+                    acquired_nodes,
+                    values.stroke_opacity().0,
+                    values.color().0,
+                );
+
+                let fill_paint = values.fill().0.resolve(
+                    acquired_nodes,
+                    values.fill_opacity().0,
+                    values.color().0,
+                );
+
                 let shape = Shape {
                     path: shape_def.path,
                     markers: shape_def.markers,
                     stroke,
+                    stroke_paint,
+                    fill_paint,
                 };
                 draw_ctx.draw_shape(&view_params, &shape, node, acquired_nodes, values, clipping)
             }
