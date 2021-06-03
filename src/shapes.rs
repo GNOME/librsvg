@@ -44,7 +44,7 @@ pub struct Shape {
     pub fill_rule: FillRule,
     pub clip_rule: ClipRule,
     pub shape_rendering: ShapeRendering,
-    // TODO: resolve the markers here, to avoid passing ComputedValues to render_markers_for_path()
+    // TODO: resolve the markers here, to avoid passing ComputedValues to render_markers_for_shape()
 }
 
 impl ShapeDef {

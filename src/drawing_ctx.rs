@@ -1262,12 +1262,8 @@ impl DrawingCtx {
                             PaintTarget::Markers => {
                                 if shape.markers == Markers::Yes {
                                     path_helper.unset();
-                                    marker::render_markers_for_path(
-                                        &shape.path,
-                                        dc,
-                                        an,
-                                        values,
-                                        clipping,
+                                    marker::render_markers_for_shape(
+                                        shape, dc, an, values, clipping,
                                     )?;
                                 }
                             }

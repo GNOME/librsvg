@@ -22,6 +22,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::shapes::Shape;
 use crate::transform::Transform;
 use crate::viewbox::*;
 use crate::xml::Attributes;
@@ -610,19 +611,14 @@ where
     emit_fn(marker_type, x, y, orient)
 }
 
-pub fn render_markers_for_path(
-    path: &Path,
+pub fn render_markers_for_shape(
+    shape: &Shape,
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
     values: &ComputedValues,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
-    let view_params = draw_ctx.get_view_params();
-    let params = NormalizeParams::new(values, &view_params);
-
-    let line_width = values.stroke_width().0.to_user(&params);
-
-    if line_width.approx_eq_cairo(0.0) {
+    if shape.stroke.width.approx_eq_cairo(0.0) {
         return Ok(draw_ctx.empty_bbox());
     }
 
@@ -635,7 +631,7 @@ pub fn render_markers_for_path(
     }
 
     emit_markers_for_path(
-        path,
+        &shape.path,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             if let Iri::Resource(ref marker) = match marker_type {
@@ -650,7 +646,7 @@ pub fn render_markers_for_path(
                     x,
                     y,
                     computed_angle,
-                    line_width,
+                    shape.stroke.width,
                     clipping,
                 )
             } else {
