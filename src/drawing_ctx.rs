@@ -249,10 +249,10 @@ pub fn draw_tree(
 }
 
 /// Does `cairo_save()` on creation, and will `cairo_restore()` on `Drop`.
-struct SavedCr(cairo::Context);
+pub struct SavedCr(cairo::Context);
 
 impl SavedCr {
-    fn new(cr: &cairo::Context) -> SavedCr {
+    pub fn new(cr: &cairo::Context) -> SavedCr {
         cr.save();
         SavedCr(cr.clone())
     }
