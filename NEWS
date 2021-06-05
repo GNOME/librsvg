@@ -1,4 +1,14 @@
 ==============
+Version 2.50.7
+==============
+
+Two cairo-related bug fixes:
+
+- #745 - Fix mismatched cairo_save/restore when running in inside the Cairo test suite.
+- #746 - Possible cairo_save() without cairo_restore() in render_layer().
+
+
+==============
 Version 2.50.6
 ==============
 
