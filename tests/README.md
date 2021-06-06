@@ -5,13 +5,21 @@ Librsvg's test suite is split like this:
 
 * Unit tests in the Rust code, run normally with "cargo test".
 
-* C API tests in this tests/ directory.
-
 * Rust integration tests in this tests/ directory.
+
+* C API tests in this tests/ directory.
 
 The C API and Rust tests run the library with its public APIs in
 both languages.  In addition, the Rust tests also exercise the
 rsvg-convert program.
+
+**For the impatient:** you can use `cargo test` to run most of the
+test suite; this is fine for regular development.  This will *not* run
+the C API tests or some of the long-running tests that exercise the
+hard-coded limits of the library.
+
+To run the full test suite, see ["Running the test
+suite"](#running-the-test-suite) below.
 
 Unit tests
 ----------
@@ -42,12 +50,17 @@ actually draw a line, or an arc?").
 Running the test suite
 ----------------------
 
-The easiest way to run all the tests is to go to librsvg's toplevel
-directory and run `make check`.  This will run both the small unit
-tests and the black box tests in this `tests/` directory.
+For regular development, use `cargo test`.  This will run most of the
+test suite, except for the C API tests and the long-running tests
+which exercise the hard-coded limits of the library.
 
-Alternatively, you can run just the unit tests by going to the
-`rsvg_internals/` directory and doing `cargo test`.
+To run the full test suite, you need to go through autotools.  Run the
+following commands in the toplevel source directory:
+
+```sh
+./autogen.sh
+make check
+```
 
 ## C API tests - `api.c`
 
@@ -70,18 +83,9 @@ functions][gtest], which let you define tests in the C language.
 These are built as a Rust binary in this tests/ directory, and are
 runnable with `cargo test`.
 
-Note that this test binary includes tests for the rsvg-convert
-program.  It needs to be compiled before running the tests with a
-plain `cargo test`.
+### Rust API tests - `api.rs`
 
-To just run the integration tests without testing rsvg-convert, you
-can use this:
-
-```
-cargo test -- --skip cmdline
-```
-
-The following sections describe each test module in the Rust integration tests.
+Tests the public Rust API of librsvg.
 
 ### Crash tests - `loading_crash.rs`
 
@@ -101,6 +105,10 @@ The test files are in the `fixtures/render-crash` directory.  The
 module loads the files and renders them, without comparing the results
 to anything in particular.
 
+## General bug regression tests - `bugs.rs`
+
+These test fixes for specific bugs in the library, so that the bugs don't recur.
+
 ## Error tests - `errors.rs`
 
 These test conditions which should produce errors during loading or rendering.
@@ -116,6 +124,10 @@ intended to prevent uncontrolled CPU consumption from malicious SVG
 files.
 
 The test files are in the `fixtures/errors` directory.
+
+## Tests for SVG filter effects - `filters.rs`
+
+These test the semantics of the `filter` property, and specific filter functions.
 
 ## Reference tests - `reference.rs`
 
@@ -141,16 +153,15 @@ image-based reference test uses two files: `foo.svg` and
 `foo-ref.png`.  The test harness will render `foo.svg` and compare the
 results to `foo-ref.png`.
 
-Test results get written to the `tests/output/` directory; you can
-override this by setting the `OUT_DIR` environment variable.
+Failing tests will appear as part of the `cargo test` output.  It will
+print the filenames for the output and difference images for failed
+tests, as follows.
 
 Each `foo.svg` test file produces a `foo-out.png` result, and if that
 result is *distinguishable* from the reference PNG (per the
 terminology above), the test will also produce a `foo-diff.png` which
 you can examine by hand.  See "[Examining failed reference
 tests](#examining-failed-reference-tests)" below.
-
-You can safely remove the `tests/output/` directory at any time.
 
 **Ignoring tests:** SVG test files in `fixtures/reftests` whose names
 begin with "`ignore`" will be skipped from the tests.  That is,
@@ -242,10 +253,10 @@ test machinery sets up conditions for [reproducible font
 rendering][#reproducible-font-rendering], which are not available to
 rsvg-convert.
 
-Run `make check`, and copy the resulting `tests/output/foo.png` to the
+Run `cargo test`, and copy the resulting `foo-out.png` to the
 `tests/fixtures/.../foo-ref.png` that corresponds to `foo.svg`.
 
-You can then run `make check` again and ensure that the tests pass.
+You can then run `cargo test` again and ensure that the tests pass.
 
 ### Issues with the official SVG test suite
 
