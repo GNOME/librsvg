@@ -62,7 +62,7 @@ check:
   extends: '.cache_push'
   needs: []
   script:
-    - sudo -E cargo check
+    - sudo -E cargo check --all-targets
 
 fmt:
   stage: lint
