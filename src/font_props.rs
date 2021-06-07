@@ -1,4 +1,7 @@
 //! CSS font properties.
+//!
+//! Do not import things directly from this module; use the `properties` module instead,
+//! which re-exports things from here.
 
 use cast::{f64, u16};
 use cssparser::{Parser, Token};

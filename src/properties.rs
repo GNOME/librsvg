@@ -28,11 +28,13 @@ use std::collections::HashSet;
 
 use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
-use crate::font_props::*;
 use crate::parsers::{Parse, ParseValue};
-use crate::property_defs::*;
 use crate::property_macros::Property;
 use crate::xml::Attributes;
+
+// Re-export the actual properties so they are easy to find from a single place `properties::*`.
+pub use crate::font_props::*;
+pub use crate::property_defs::*;
 
 /// Representation of a single CSS property value.
 ///

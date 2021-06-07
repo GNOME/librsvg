@@ -1,5 +1,8 @@
 //! Definitions for CSS property types.
 //!
+//! Do not import things directly from this module; use the `properties` module instead,
+//! which re-exports things from here.
+//!
 //! This module defines most of the CSS property types that librsvg supports.  Each
 //! property requires a Rust type that will hold its values, and that type should
 //! implement a few traits, as follows.

@@ -231,7 +231,7 @@ mod xml;
 #[doc(hidden)]
 pub mod bench_only {
     pub use crate::path_builder::PathBuilder;
-    pub use crate::path_parser::{parse_path_into_builder, Lexer};
+    pub use crate::path_parser::Lexer;
 }
 
 #[doc(hidden)]

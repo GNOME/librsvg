@@ -29,10 +29,9 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
-use crate::properties::ComputedValues;
-use crate::property_defs::{
-    ClipRule, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintTarget, ShapeRendering,
-    StrokeLinecap, StrokeLinejoin, TextRendering,
+use crate::properties::{
+    ClipRule, ComputedValues, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintTarget,
+    ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::Rect;
 use crate::surface_utils::{

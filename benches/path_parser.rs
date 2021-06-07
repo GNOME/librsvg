@@ -2,8 +2,8 @@
 extern crate criterion;
 use criterion::{black_box, Criterion};
 
+use librsvg::bench_only::Lexer;
 use librsvg::bench_only::PathBuilder;
-use librsvg::bench_only::{parse_path_into_builder, Lexer};
 
 static INPUT: &'static str = "M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
 
@@ -37,10 +37,10 @@ fn lex_path(input: &str) {
 fn path_parser(c: &mut Criterion) {
     c.bench_function("parse path into builder", |b| {
         let input = black_box(INPUT);
-        let mut builder = PathBuilder::default();
 
         b.iter(|| {
-            let _ = parse_path_into_builder(&input, &mut builder);
+            let mut builder = PathBuilder::default();
+            let _ = builder.parse(&input);
         });
     });
 

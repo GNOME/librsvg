@@ -17,7 +17,6 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
-use crate::path_parser;
 use crate::xml::Attributes;
 
 #[derive(PartialEq)]
@@ -213,7 +212,7 @@ impl SetAttributes for Path {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "d") {
                 let mut builder = PathBuilder::default();
-                if let Err(e) = path_parser::parse_path_into_builder(value, &mut builder) {
+                if let Err(e) = builder.parse(value) {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
 

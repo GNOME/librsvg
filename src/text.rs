@@ -9,15 +9,13 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::font_props::FontWeight;
 use crate::layout::{self, FontProperties, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
-use crate::properties::ComputedValues;
-use crate::property_defs::{
-    Direction, FontStretch, FontStyle, FontVariant, TextAnchor, UnicodeBidi, WritingMode, XmlLang,
-    XmlSpace,
+use crate::properties::{
+    ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, TextAnchor,
+    UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use crate::xml::Attributes;

@@ -9,7 +9,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
 use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
-use crate::property_defs::ColorInterpolationFilters;
+use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},

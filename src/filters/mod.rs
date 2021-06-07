@@ -15,7 +15,7 @@ use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
-use crate::property_defs::ColorInterpolationFilters;
+use crate::properties::ColorInterpolationFilters;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
 use crate::xml::Attributes;
