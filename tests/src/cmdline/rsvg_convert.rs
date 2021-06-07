@@ -542,6 +542,14 @@ fn pdf_page_size() {
 }
 
 #[test]
+fn does_not_clip_partial_coverage_pixels() {
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/677-partial-pixel.svg")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(2, 2));
+}
+
+#[test]
 fn background_color_option_with_valid_color() {
     RsvgConvert::accepts_arg("--background-color=LimeGreen");
 }
