@@ -9,7 +9,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
-use crate::property_defs::ColorInterpolationFilters;
+use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::{
     shared_surface::{BlurDirection, Horizontal, SharedImageSurface, Vertical},

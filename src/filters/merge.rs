@@ -5,7 +5,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
-use crate::property_defs::ColorInterpolationFilters;
+use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::surface_utils::shared_surface::{Operator, SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;

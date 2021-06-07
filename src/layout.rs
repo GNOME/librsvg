@@ -9,16 +9,15 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
-use crate::font_props::{FontFamily, FontWeight};
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::PaintSource;
 use crate::path_builder::Path;
-use crate::properties::ComputedValues;
-use crate::property_defs::{
-    ClipRule, Direction, FillRule, Filter, FontStretch, FontStyle, FontVariant, MixBlendMode,
-    Opacity, Overflow, PaintOrder, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin,
-    StrokeMiterlimit, TextDecoration, TextRendering, UnicodeBidi, WritingMode, XmlLang,
+use crate::properties::{
+    ClipRule, ComputedValues, Direction, FillRule, Filter, FontFamily, FontStretch, FontStyle,
+    FontVariant, FontWeight, MixBlendMode, Opacity, Overflow, PaintOrder, ShapeRendering,
+    StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit, TextDecoration,
+    TextRendering, UnicodeBidi, WritingMode, XmlLang,
 };
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;

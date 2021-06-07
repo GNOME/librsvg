@@ -9,7 +9,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::filter::UserSpaceFilter;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::CustomIdent;
-use crate::property_defs::ColorInterpolationFilters;
+use crate::properties::ColorInterpolationFilters;
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
