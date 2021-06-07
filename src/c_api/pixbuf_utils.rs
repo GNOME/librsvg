@@ -121,8 +121,8 @@ fn render_to_pixbuf_at_size(
 
     let surface = cairo::ImageSurface::create(
         cairo::Format::ARgb32,
-        checked_i32(desired_width.round())?,
-        checked_i32(desired_height.round())?,
+        checked_i32(desired_width.ceil())?,
+        checked_i32(desired_height.ceil())?,
     )?;
 
     {

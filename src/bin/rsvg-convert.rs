@@ -204,8 +204,9 @@ impl Surface {
     }
 
     fn new_for_png(size: Size, stream: OutputStream) -> Result<Self, Error> {
-        let w = checked_i32(size.w.round())?;
-        let h = checked_i32(size.h.round())?;
+        // We use ceil() to avoid chopping off the last pixel if it is partially covered.
+        let w = checked_i32(size.w.ceil())?;
+        let h = checked_i32(size.h.ceil())?;
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
         Ok(Self::Png(surface, stream))
     }
