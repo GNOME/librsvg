@@ -25,6 +25,7 @@ use std::f64::consts::*;
 use std::slice;
 
 use crate::float_eq_cairo::ApproxEqCairo;
+use crate::path_parser::{ParseError, PathParser};
 use crate::util::clamp;
 
 /// Whether an arc's sweep should be >= 180 degrees, or smaller.
@@ -425,8 +426,10 @@ impl PathCommand {
 
 /// Constructs a path out of commands.
 ///
-/// When you are finished constructing a path builder, turn it into a `Path` with
-/// `into_path`.  You can then iterate on that `Path`'s commands with its methods.
+/// Create this with `PathBuilder::default`; you can then add commands to it or call the
+/// `parse` method.  When you are finished constructing a path builder, turn it into a
+/// `Path` with `into_path`.  You can then iterate on that `Path`'s commands with its
+/// methods.
 #[derive(Default)]
 pub struct PathBuilder {
     path_commands: TinyVec<[PathCommand; 32]>,
@@ -492,6 +495,11 @@ impl PackedCommand {
 }
 
 impl PathBuilder {
+    pub fn parse(&mut self, path_str: &str) -> Result<(), ParseError> {
+        let mut parser = PathParser::new(self, path_str);
+        parser.parse()
+    }
+
     /// Consumes the `PathBuilder` and returns a compact, immutable representation as a `Path`.
     pub fn into_path(self) -> Path {
         let num_coords = self

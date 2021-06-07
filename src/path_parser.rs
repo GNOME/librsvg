@@ -189,7 +189,7 @@ impl Iterator for Lexer<'_> {
     }
 }
 
-struct PathParser<'b> {
+pub struct PathParser<'b> {
     tokens: Lexer<'b>,
     current_pos_and_token: Option<(usize, Result<Token, LexError>)>,
 
@@ -239,7 +239,7 @@ struct PathParser<'b> {
 //     M.1-2,3E2-4
 //     M 0.1 -2 300 -4
 impl<'b> PathParser<'b> {
-    fn new(builder: &'b mut PathBuilder, path_str: &'b str) -> PathParser<'b> {
+    pub fn new(builder: &'b mut PathBuilder, path_str: &'b str) -> PathParser<'b> {
         let mut lexer = Lexer::new(path_str);
         let pt = lexer.next();
         PathParser {
@@ -379,7 +379,7 @@ impl<'b> PathParser<'b> {
     // This is the entry point for parsing a given blob of path data.
     // All the parsing just uses various match_* methods to consume tokens
     // and retrieve the values.
-    fn parse(&mut self) -> Result<(), ParseError> {
+    pub fn parse(&mut self) -> Result<(), ParseError> {
         if self.current_pos_and_token.is_none() {
             return Ok(());
         }
@@ -875,15 +875,6 @@ impl fmt::Display for ParseError {
     }
 }
 
-pub fn parse_path_into_builder(
-    path_str: &str,
-    builder: &mut PathBuilder,
-) -> Result<(), ParseError> {
-    let mut parser = PathParser::new(builder, path_str);
-
-    parser.parse()
-}
-
 #[cfg(test)]
 #[rustfmt::skip]
 mod tests {
@@ -917,7 +908,7 @@ mod tests {
         let expected_result = make_parse_result(error_pos_str, expected_error_kind);
 
         let mut builder = PathBuilder::default();
-        let result = parse_path_into_builder(path_str, &mut builder);
+        let result = builder.parse(path_str);
 
         let path = builder.into_path();
         let commands = path.iter().collect::<Vec<_>>();
