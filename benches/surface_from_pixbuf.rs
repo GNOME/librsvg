@@ -16,7 +16,14 @@ fn bench_surface_from_pixbuf(c: &mut Criterion) {
                 // Fill the surface with interesting data
                 for y in 0..pixbuf.get_width() {
                     for x in 0..pixbuf.get_height() {
-                        pixbuf.put_pixel(x, y, x as u8, y as u8, x.max(y) as u8, 0xff);
+                        pixbuf.put_pixel(
+                            x as u32,
+                            y as u32,
+                            x as u8,
+                            y as u8,
+                            x.max(y) as u8,
+                            0xff,
+                        );
                     }
                 }
 
