@@ -103,8 +103,7 @@ pub trait Property<T> {
 ///
 #[macro_export]
 macro_rules! make_property {
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      default: $default: ident,
      inherits_automatically: $inherits_automatically: expr,
      identifiers:
@@ -117,7 +116,7 @@ macro_rules! make_property {
         }
 
         impl_default!($name, $name::$default);
-        impl_property!($computed_values_type, $name, $inherits_automatically);
+        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
             fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
@@ -129,8 +128,7 @@ macro_rules! make_property {
         }
     };
 
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype_parse: $type: ty,
@@ -139,7 +137,7 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!($computed_values_type, $name, $inherits_automatically);
+        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
             fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
@@ -148,8 +146,7 @@ macro_rules! make_property {
         }
     };
 
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      default: $default: expr,
      property_impl: { $prop: item }
     ) => {
@@ -158,30 +155,27 @@ macro_rules! make_property {
         $prop
     };
 
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
     ) => {
         impl_default!($name, $default);
-        impl_property!($computed_values_type, $name, $inherits_automatically);
+        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
     };
 
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      parse_impl: { $parse: item }
     ) => {
         impl_default!($name, $default);
-        impl_property!($computed_values_type, $name, $inherits_automatically);
+        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
 
         $parse
     };
 
     // pending - only BaselineShift
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      default: $default: expr,
      newtype: $type: ty,
      property_impl: { $prop: item },
@@ -198,8 +192,7 @@ macro_rules! make_property {
     };
 
     // pending - only XmlLang
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype: $type: ty,
@@ -209,13 +202,12 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!($computed_values_type, $name, $inherits_automatically);
+        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
 
         $parse
     };
 
-    ($computed_values_type: ty,
-     $name: ident,
+    ($name: ident,
      inherits_automatically: $inherits_automatically: expr,
      fields: {
        $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
@@ -228,7 +220,7 @@ macro_rules! make_property {
         }
 
         impl_default!($name, $name { $($field_name: $field_default),+ });
-        impl_property!($computed_values_type, $name, $inherits_automatically);
+        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
 
         $parse
     };
@@ -256,31 +248,4 @@ macro_rules! impl_property {
             }
         }
     };
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::parsers::Parse;
-
-    #[test]
-    fn check_identifiers_property() {
-        make_property! {
-            (),
-            Foo,
-            default: Def,
-            inherits_automatically: true,
-
-            identifiers:
-            "def" => Def,
-            "bar" => Bar,
-            "baz" => Baz,
-        }
-
-        assert_eq!(<Foo as Default>::default(), Foo::Def);
-        assert_eq!(<Foo as Property<()>>::inherits_automatically(), true);
-        assert!(<Foo as Parse>::parse_str("blargh").is_err());
-        assert_eq!(<Foo as Parse>::parse_str("bar").unwrap(), Foo::Bar);
-    }
 }

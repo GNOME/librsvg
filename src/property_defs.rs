@@ -63,7 +63,6 @@ use crate::unit_interval::UnitInterval;
 
 // https://www.w3.org/TR/SVG/text.html#BaselineShiftProperty
 make_property!(
-    ComputedValues,
     BaselineShift,
     default: Length::<Both>::parse_str("0.0").unwrap(),
     newtype: Length<Both>,
@@ -123,7 +122,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/masking.html#ClipPathProperty
 make_property!(
-    ComputedValues,
     ClipPath,
     default: Iri::None,
     inherits_automatically: false,
@@ -132,7 +130,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
 make_property!(
-    ComputedValues,
     ClipRule,
     default: NonZero,
     inherits_automatically: true,
@@ -144,7 +141,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/color.html#ColorProperty
 make_property!(
-    ComputedValues,
     Color,
     // The SVG spec allows the user agent to choose its own default for the "color" property.
     // We don't allow passing in an initial CSS in the public API, so we'll start with black.
@@ -159,7 +155,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG11/painting.html#ColorInterpolationProperty
 make_property!(
-    ComputedValues,
     ColorInterpolationFilters,
     default: LinearRgb,
     inherits_automatically: true,
@@ -172,7 +167,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#DirectionProperty
 make_property!(
-    ComputedValues,
     Direction,
     default: Ltr,
     inherits_automatically: true,
@@ -184,7 +178,6 @@ make_property!(
 
 // https://www.w3.org/TR/CSS2/visuren.html#display-prop
 make_property!(
-    ComputedValues,
     Display,
     default: Inline,
     inherits_automatically: false,
@@ -217,7 +210,6 @@ pub enum EnableBackground {
 
 // https://www.w3.org/TR/SVG/filters.html#EnableBackgroundProperty
 make_property!(
-    ComputedValues,
     EnableBackground,
     default: EnableBackground::Accumulate,
     inherits_automatically: false,
@@ -277,7 +269,6 @@ fn parses_enable_background() {
 
 // https://www.w3.org/TR/SVG/painting.html#FillProperty
 make_property!(
-    ComputedValues,
     Fill,
     default: PaintServer::parse_str("#000").unwrap(),
     inherits_automatically: true,
@@ -286,7 +277,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#FillOpacityProperty
 make_property!(
-    ComputedValues,
     FillOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
@@ -295,7 +285,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
 make_property!(
-    ComputedValues,
     FillRule,
     default: NonZero,
     inherits_automatically: true,
@@ -312,7 +301,6 @@ pub enum Filter {
 }
 // https://www.w3.org/TR/SVG/filters.html#FilterProperty
 make_property!(
-    ComputedValues,
     Filter,
     default: Filter::None,
     inherits_automatically: false,
@@ -335,7 +323,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
 make_property!(
-    ComputedValues,
     FloodColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
     inherits_automatically: false,
@@ -344,7 +331,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
 make_property!(
-    ComputedValues,
     FloodOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -353,7 +339,6 @@ make_property!(
 
 // https://drafts.csswg.org/css-fonts-4/#font-prop
 make_property!(
-    ComputedValues,
     Font,
     default: Font::Spec(Default::default()),
     inherits_automatically: true,
@@ -361,7 +346,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
 make_property!(
-    ComputedValues,
     FontFamily,
     default: FontFamily("Times New Roman".to_string()),
     inherits_automatically: true,
@@ -369,7 +353,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#FontSizeProperty
 make_property!(
-    ComputedValues,
     FontSize,
     default: FontSize::Value(Length::<Both>::parse_str("12.0").unwrap()),
     property_impl: {
@@ -387,7 +370,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#FontStretchProperty
 make_property!(
-    ComputedValues,
     FontStretch,
     default: Normal,
     inherits_automatically: true,
@@ -408,7 +390,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#FontStyleProperty
 make_property!(
-    ComputedValues,
     FontStyle,
     default: Normal,
     inherits_automatically: true,
@@ -421,7 +402,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#FontVariantProperty
 make_property!(
-    ComputedValues,
     FontVariant,
     default: Normal,
     inherits_automatically: true,
@@ -433,7 +413,6 @@ make_property!(
 
 // https://drafts.csswg.org/css-fonts-4/#font-weight-prop
 make_property!(
-    ComputedValues,
     FontWeight,
     default: FontWeight::Normal,
     property_impl: {
@@ -451,7 +430,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
 make_property!(
-    ComputedValues,
     LetterSpacing,
     default: LetterSpacing::Normal,
     property_impl: {
@@ -469,7 +447,6 @@ make_property!(
 
 // https://drafts.csswg.org/css2/visudet.html#propdef-line-height
 make_property!(
-    ComputedValues,
     LineHeight,
     default: LineHeight::Normal,
     inherits_automatically: true,
@@ -477,7 +454,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/filters.html#LightingColorProperty
 make_property!(
-    ComputedValues,
     LightingColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
@@ -485,7 +461,6 @@ make_property!(
 );
 
 make_property!(
-    ComputedValues,
     Marker,
     default: Iri::None,
     inherits_automatically: true,
@@ -494,7 +469,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerEndProperty
 make_property!(
-    ComputedValues,
     MarkerEnd,
     default: Iri::None,
     inherits_automatically: true,
@@ -503,7 +477,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerMidProperty
 make_property!(
-    ComputedValues,
     MarkerMid,
     default: Iri::None,
     inherits_automatically: true,
@@ -512,7 +485,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#MarkerStartProperty
 make_property!(
-    ComputedValues,
     MarkerStart,
     default: Iri::None,
     inherits_automatically: true,
@@ -521,7 +493,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/masking.html#MaskProperty
 make_property!(
-    ComputedValues,
     Mask,
     default: Iri::None,
     inherits_automatically: false,
@@ -530,7 +501,6 @@ make_property!(
 
 // https://www.w3.org/TR/compositing/#mix-blend-mode
 make_property!(
-    ComputedValues,
     MixBlendMode,
     default: Normal,
     inherits_automatically: false,
@@ -556,7 +526,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/masking.html#OpacityProperty
 make_property!(
-    ComputedValues,
     Opacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -565,7 +534,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/masking.html#OverflowProperty
 make_property!(
-    ComputedValues,
     Overflow,
     default: Visible,
     inherits_automatically: false,
@@ -587,7 +555,6 @@ pub enum PaintTarget {
 
 // https://www.w3.org/TR/SVG2/painting.html#PaintOrder
 make_property!(
-    ComputedValues,
     PaintOrder,
     inherits_automatically: true,
     fields: {
@@ -663,7 +630,6 @@ fn parses_paint_order() {
 
 // https://www.w3.org/TR/SVG/painting.html#ShapeRenderingProperty
 make_property!(
-    ComputedValues,
     ShapeRendering,
     default: Auto,
     inherits_automatically: true,
@@ -677,7 +643,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/pservers.html#StopColorProperty
 make_property!(
-    ComputedValues,
     StopColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
@@ -686,7 +651,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/pservers.html#StopOpacityProperty
 make_property!(
-    ComputedValues,
     StopOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -695,7 +659,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeProperty
 make_property!(
-    ComputedValues,
     Stroke,
     default: PaintServer::None,
     inherits_automatically: true,
@@ -704,7 +667,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDasharrayProperty
 make_property!(
-    ComputedValues,
     StrokeDasharray,
     default: Dasharray::default(),
     inherits_automatically: true,
@@ -713,7 +675,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeDashoffsetProperty
 make_property!(
-    ComputedValues,
     StrokeDashoffset,
     default: Length::<Both>::default(),
     inherits_automatically: true,
@@ -722,7 +683,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeLinecapProperty
 make_property!(
-    ComputedValues,
     StrokeLinecap,
     default: Butt,
     inherits_automatically: true,
@@ -735,7 +695,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeLinejoinProperty
 make_property!(
-    ComputedValues,
     StrokeLinejoin,
     default: Miter,
     inherits_automatically: true,
@@ -748,7 +707,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeMiterlimitProperty
 make_property!(
-    ComputedValues,
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
@@ -757,7 +715,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeOpacityProperty
 make_property!(
-    ComputedValues,
     StrokeOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
@@ -766,7 +723,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/painting.html#StrokeWidthProperty
 make_property!(
-    ComputedValues,
     StrokeWidth,
     default: Length::<Both>::parse_str("1.0").unwrap(),
     inherits_automatically: true,
@@ -775,7 +731,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#TextAnchorProperty
 make_property!(
-    ComputedValues,
     TextAnchor,
     default: Start,
     inherits_automatically: true,
@@ -788,7 +743,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#TextDecorationProperty
 make_property!(
-    ComputedValues,
     TextDecoration,
     inherits_automatically: false,
 
@@ -884,7 +838,6 @@ fn parses_text_decoration() {
 
 // https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
 make_property!(
-    ComputedValues,
     TextRendering,
     default: Auto,
     inherits_automatically: true,
@@ -898,7 +851,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#UnicodeBidiProperty
 make_property!(
-    ComputedValues,
     UnicodeBidi,
     default: Normal,
     inherits_automatically: false,
@@ -911,7 +863,6 @@ make_property!(
 
 // https://www.w3.org/TR/CSS2/visufx.html#visibility
 make_property!(
-    ComputedValues,
     Visibility,
     default: Visible,
     inherits_automatically: true,
@@ -924,7 +875,6 @@ make_property!(
 
 // https://www.w3.org/TR/SVG/text.html#WritingModeProperty
 make_property!(
-    ComputedValues,
     WritingMode,
     default: LrTb,
     inherits_automatically: true,
@@ -945,7 +895,6 @@ impl WritingMode {
 }
 
 make_property!(
-    ComputedValues,
     XmlLang,
     default: None,
     inherits_automatically: true,
@@ -973,7 +922,6 @@ fn parses_xml_lang() {
 }
 
 make_property!(
-    ComputedValues,
     XmlSpace,
     default: Default,
     inherits_automatically: true,
