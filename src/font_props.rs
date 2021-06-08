@@ -12,8 +12,15 @@ use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
 use crate::property_defs::{FontStretch, FontStyle, FontVariant};
 
-// https://www.w3.org/TR/CSS2/fonts.html#font-shorthand
-// https://drafts.csswg.org/css-fonts-4/#font-prop
+/// `font` shorthand property.
+///
+/// https://www.w3.org/TR/CSS2/fonts.html#font-shorthand
+///
+/// https://www.w3.org/TR/css-fonts-3/#propdef-font
+///
+/// https://drafts.csswg.org/css-fonts-4/#font-prop
+///
+/// This is a shorthand, which expands to the longhands `font-family`, `font-size`, etc.
 // servo/components/style/properties/shorthands/font.mako.rs is a good reference for this
 #[derive(Debug, Clone, PartialEq)]
 pub enum Font {
@@ -26,6 +33,7 @@ pub enum Font {
     Spec(FontSpec),
 }
 
+/// Parameters from the `font` shorthand property.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct FontSpec {
     pub style: FontStyle,
@@ -146,6 +154,7 @@ impl Font {
     }
 }
 
+/// Parses identifiers used for system fonts.
 #[rustfmt::skip]
 fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, ParseError<'i>> {
     Ok(parser.try_parse(|p| {
@@ -161,7 +170,13 @@ fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, 
     })?)
 }
 
-// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
+/// `font-size` property.
+///
+/// https://www.w3.org/TR/SVG/text.html#FontSizeProperty
+///
+/// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
+///
+/// https://www.w3.org/TR/css-fonts-3/#font-size-prop
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FontSize {
@@ -259,7 +274,11 @@ impl Parse for FontSize {
     }
 }
 
-// https://drafts.csswg.org/css-fonts-4/#font-weight-prop
+/// `font-weight` property.
+///
+/// https://drafts.csswg.org/css-fonts-4/#font-weight-prop
+///
+/// https://www.w3.org/TR/css-fonts-3/#propdef-font-weight
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FontWeight {
     Normal,
@@ -347,7 +366,11 @@ impl FontWeight {
     }
 }
 
-// https://www.w3.org/TR/css-text-3/#letter-spacing-property
+/// `letter-spacing` property.
+///
+/// https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
+///
+/// https://www.w3.org/TR/css-text-3/#letter-spacing-property
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum LetterSpacing {
     Normal,
@@ -390,7 +413,11 @@ impl Parse for LetterSpacing {
     }
 }
 
-// https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height
+/// `line-height` property.
+///
+/// https://drafts.csswg.org/css2/visudet.html#propdef-line-height
+///
+/// https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum LineHeight {
     Normal,
@@ -460,7 +487,13 @@ impl Parse for LineHeight {
     }
 }
 
+/// `font-family` property.
+///
+/// https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
+///
 /// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
+///
+/// https://www.w3.org/TR/css-fonts-3/#font-family-prop
 #[derive(Debug, Clone, PartialEq)]
 pub struct FontFamily(pub String);
 
