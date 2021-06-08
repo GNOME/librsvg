@@ -836,7 +836,11 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     let mut font_desc = pango_context.get_font_description().unwrap();
     font_desc.set_family(props.font_family.as_str());
     font_desc.set_style(pango::Style::from(props.font_style));
-    font_desc.set_variant(pango::Variant::from(props.font_variant));
+
+    // PANGO_VARIANT_SMALL_CAPS does nothing: https://gitlab.gnome.org/GNOME/pango/-/issues/566
+    // see below for using the "smcp" OpenType feature for fonts that support it.
+    // font_desc.set_variant(pango::Variant::from(props.font_variant));
+
     font_desc.set_weight(pango::Weight::from(props.font_weight));
     font_desc.set_stretch(pango::Stretch::from(props.font_stretch));
 
@@ -870,6 +874,13 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 
     if props.text_decoration.strike {
         attr_list.insert(pango::Attribute::new_strikethrough(true).unwrap());
+    }
+
+    // FIXME: Using the "smcp" OpenType feature only works for fonts that support it.  We
+    // should query if the font supports small caps, and synthesize them if it doesn't.
+    if props.font_variant == FontVariant::SmallCaps {
+        // smcp - small capitals - https://docs.microsoft.com/en-ca/typography/opentype/spec/features_pt#smcp
+        attr_list.insert(pango::Attribute::new_font_features("'smcp' 1").unwrap());
     }
 
     layout.set_attributes(Some(&attr_list));
