@@ -54,7 +54,7 @@ pub trait Property<T> {
 ///
 /// ```text
 /// make_property!(
-///   ComputedValues,
+///   /// Documentation here.
 ///   StrokeLinejoin,
 ///   default: Miter,
 ///   inherits_automatically: true,
@@ -81,7 +81,7 @@ pub trait Property<T> {
 ///
 /// ```text
 /// make_property!(
-///     ComputedValues,
+///     /// Documentation here.
 ///     FloodColor,
 ///     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
 ///     inherits_automatically: false,
@@ -103,12 +103,14 @@ pub trait Property<T> {
 ///
 #[macro_export]
 macro_rules! make_property {
-    ($name: ident,
+    ($(#[$attr:meta])*
+     $name: ident,
      default: $default: ident,
      inherits_automatically: $inherits_automatically: expr,
      identifiers:
      $($str_prop: expr => $variant: ident,)+
     ) => {
+        $(#[$attr])*
         #[derive(Debug, Copy, Clone, PartialEq)]
         #[repr(C)]
         pub enum $name {
@@ -128,11 +130,13 @@ macro_rules! make_property {
         }
     };
 
-    ($name: ident,
+    ($(#[$attr:meta])*
+     $name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype_parse: $type: ty,
     ) => {
+        $(#[$attr])*
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
 
@@ -146,7 +150,8 @@ macro_rules! make_property {
         }
     };
 
-    ($name: ident,
+    ($(#[$attr:meta])*
+     $name: ident,
      default: $default: expr,
      property_impl: { $prop: item }
     ) => {
@@ -175,12 +180,14 @@ macro_rules! make_property {
     };
 
     // pending - only BaselineShift
-    ($name: ident,
+    ($(#[$attr:meta])*
+     $name: ident,
      default: $default: expr,
      newtype: $type: ty,
      property_impl: { $prop: item },
      parse_impl: { $parse: item }
     ) => {
+        $(#[$attr])*
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
 
@@ -192,12 +199,14 @@ macro_rules! make_property {
     };
 
     // pending - only XmlLang
-    ($name: ident,
+    ($(#[$attr:meta])*
+     $name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype: $type: ty,
      parse_impl: { $parse: item },
     ) => {
+        $(#[$attr])*
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name(pub $type);
 
@@ -207,13 +216,15 @@ macro_rules! make_property {
         $parse
     };
 
-    ($name: ident,
+    ($(#[$attr:meta])*
+     $name: ident,
      inherits_automatically: $inherits_automatically: expr,
      fields: {
        $($field_name: ident : $field_type: ty, default: $field_default : expr,)+
      }
      parse_impl: { $parse: item }
     ) => {
+        $(#[$attr])*
         #[derive(Debug, Clone, PartialEq)]
         pub struct $name {
             $(pub $field_name: $field_type),+
