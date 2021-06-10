@@ -84,7 +84,7 @@ pub fn acquire_stream(
         let stream = MemoryInputStream::from_bytes(&GBytes::from_owned(data));
         Ok(stream.upcast::<InputStream>())
     } else {
-        let file = GFile::new_for_uri(uri);
+        let file = GFile::for_uri(uri);
         let stream = file.read(cancellable)?;
 
         Ok(stream.upcast::<InputStream>())
@@ -101,7 +101,7 @@ pub fn acquire_data(
     if uri.starts_with("data:") {
         Ok(decode_data_uri(uri)?)
     } else {
-        let file = GFile::new_for_uri(uri);
+        let file = GFile::for_uri(uri);
         let (contents, _etag) = file.load_contents(cancellable)?;
 
         let (content_type, _uncertain) = gio::content_type_guess(Some(uri), &contents);

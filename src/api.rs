@@ -132,7 +132,7 @@ impl Loader {
     ///     .unwrap();
     /// ```
     pub fn read_path<P: AsRef<Path>>(self, path: P) -> Result<SvgHandle, LoadingError> {
-        let file = gio::File::new_for_path(path);
+        let file = gio::File::for_path(path);
         self.read_file(&file, None::<&Cancellable>)
     }
 
@@ -143,7 +143,7 @@ impl Loader {
     /// # Example:
     /// ```
     /// let svg_handle = librsvg::Loader::new()
-    ///     .read_file(&gio::File::new_for_path("example.svg"), None::<&gio::Cancellable>)
+    ///     .read_file(&gio::File::for_path("example.svg"), None::<&gio::Cancellable>)
     ///     .unwrap();
     /// ```
     pub fn read_file<F: IsA<gio::File>, P: IsA<Cancellable>>(
@@ -172,7 +172,7 @@ impl Loader {
     /// ```
     /// use gio::prelude::*;
     ///
-    /// let file = gio::File::new_for_path("example.svg");
+    /// let file = gio::File::for_path("example.svg");
     ///
     /// let stream = file.read(None::<&gio::Cancellable>).unwrap();
     ///

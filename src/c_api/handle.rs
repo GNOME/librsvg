@@ -231,7 +231,7 @@ impl BaseUrl {
     }
 
     fn get_gfile(&self) -> Option<gio::File> {
-        self.get().map(|url| gio::File::new_for_uri(url.as_str()))
+        self.get().map(|url| gio::File::for_uri(url.as_str()))
     }
 
     fn get_ptr(&self) -> *const libc::c_char {
@@ -1089,6 +1089,7 @@ fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_get_type() -> glib::ffi::GType {
     CHandle::type_().into_glib()
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_error_get_type() -> glib::ffi::GType {
@@ -1956,7 +1957,7 @@ pub unsafe extern "C" fn rsvg_cleanup() {}
 ///
 /// `rsvg_handle_new_from_file()` takes a `filename` argument, and advertises
 /// that it will detect either a file system path, or a proper URI.  It will then use
-/// `gio::File::new_for_path()` or `gio::File::new_for_uri()` as appropriate.
+/// `gio::File::for_path()` or `gio::File::for_uri()` as appropriate.
 ///
 /// This enum does the magic heuristics to figure this out.
 ///
@@ -2010,8 +2011,8 @@ impl PathOrUrl {
 
     pub fn get_gfile(&self) -> gio::File {
         match *self {
-            PathOrUrl::Path(ref p) => gio::File::new_for_path(p),
-            PathOrUrl::Url(ref u) => gio::File::new_for_uri(u.as_str()),
+            PathOrUrl::Path(ref p) => gio::File::for_path(p),
+            PathOrUrl::Url(ref u) => gio::File::for_uri(u.as_str()),
         }
     }
 }
