@@ -160,7 +160,7 @@ impl Handle {
         let root = self.document.root();
 
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
+        let cr = cairo::Context::new(&target)?;
 
         let bbox = draw_tree(
             DrawingMode::LimitToStack { node, root },
@@ -277,7 +277,7 @@ impl Handle {
         is_testing: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
+        let cr = cairo::Context::new(&target)?;
 
         let node = node.clone();
 

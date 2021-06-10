@@ -126,7 +126,7 @@ fn render_to_pixbuf_at_size(
     )?;
 
     {
-        let cr = cairo::Context::new(&surface);
+        let cr = cairo::Context::new(&surface)?;
         cr.scale(
             desired_width / document_width,
             desired_height / document_height,

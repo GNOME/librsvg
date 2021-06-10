@@ -243,7 +243,7 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, surface.width(), surface.height())?;
 
         {
-            let cr = cairo::Context::new(&copy);
+            let cr = cairo::Context::new(&copy)?;
             cr.set_source_surface(surface, 0f64, 0f64);
             cr.paint();
         }
@@ -403,7 +403,7 @@ impl ImageSurface<Shared> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        let cr = cairo::Context::new(&output_surface);
+        let cr = cairo::Context::new(&output_surface)?;
         let r = cairo::Rectangle::from(bounds);
         cr.rectangle(r.x, r.y, r.width, r.height);
         cr.clip();
@@ -427,7 +427,7 @@ impl ImageSurface<Shared> {
         let output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
@@ -988,7 +988,7 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         if color.alpha > 0 {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
@@ -1022,7 +1022,7 @@ impl ImageSurface<Shared> {
             .translate((dx as i32, dy as i32))
             .intersection(&bounds)
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(output_bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
@@ -1047,7 +1047,7 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         if rect.is_none() || !rect.unwrap().is_empty() {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
@@ -1081,7 +1081,7 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, bounds.width(), bounds.height())?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             self.set_as_source_surface(&cr, f64::from(-bounds.x0), f64::from(-bounds.y0));
             cr.paint();
         }
@@ -1103,7 +1103,7 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
 
             let ptn = image.to_cairo_pattern();
             ptn.set_extend(cairo::Extend::Repeat);
@@ -1137,7 +1137,7 @@ impl ImageSurface<Shared> {
         let output_surface = other.copy_surface(bounds)?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
@@ -1349,7 +1349,7 @@ impl ImageSurface<Exclusive> {
         &mut self,
         draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), cairo::Error>,
     ) -> Result<(), cairo::Error> {
-        let cr = cairo::Context::new(&self.surface);
+        let cr = cairo::Context::new(&self.surface)?;
         draw_fn(cr)
     }
 

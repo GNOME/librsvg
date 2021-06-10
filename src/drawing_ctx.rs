@@ -40,7 +40,6 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
-use crate::util::check_cairo_context;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `CssLength` values to a current viewport.
@@ -597,7 +596,7 @@ impl DrawingCtx {
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
         {
-            let mask_cr = cairo::Context::new(&mask_content_surface);
+            let mask_cr = cairo::Context::new(&mask_content_surface)?;
             mask_cr.set_matrix(mask_transform.into());
 
             let bbtransform = Transform::new_unchecked(
@@ -718,7 +717,7 @@ impl DrawingCtx {
                     Filter::List(_) => {
                         cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)
                     }
-                };
+                }?;
 
                 cr.set_matrix(affines.for_temporary_surface.into());
 
@@ -738,7 +737,7 @@ impl DrawingCtx {
                     // Filter
 
                     let surface_to_filter = SharedImageSurface::copy_from_surface(
-                        &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.get_target()).unwrap(),
+                        &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target()).unwrap(),
                     )?;
 
                     let current_color = values.color().0;
@@ -1024,7 +1023,7 @@ impl DrawingCtx {
             .target()
             .create_similar(cairo::Content::ColorAlpha, pw, ph)?;
 
-        let cr_pattern = cairo::Context::new(&surface);
+        let cr_pattern = cairo::Context::new(&surface)?;
 
         // Set up transformations to be determined by the contents units
         cr_pattern.set_matrix(caffine.into());
@@ -1219,7 +1218,7 @@ impl DrawingCtx {
                 cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
 
                 path_helper.set()?;
-                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint);
+                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint)?;
 
                 let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
                 let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
@@ -1466,7 +1465,7 @@ impl DrawingCtx {
         let save_cr = self.cr.clone();
 
         {
-            let cr = cairo::Context::new(&surface);
+            let cr = cairo::Context::new(&surface)?;
             cr.set_matrix(affine.into());
 
             self.cr = cr;
@@ -1744,7 +1743,7 @@ fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     stroke: &Stroke,
     stroke_paint_source: &PaintSource,
-) -> BoundingBox {
+) -> Result<BoundingBox, RenderingError> {
     let affine = Transform::from(cr.matrix());
 
     let mut bbox = BoundingBox::new().with_transform(affine);
@@ -1763,7 +1762,7 @@ fn compute_stroke_and_fill_box(
     // paths for the icon's shape.  We need to be able to compute the bounding
     // rectangle's extents, even when it has no fill nor stroke.
 
-    let (x0, y0, x1, y1) = cr.fill_extents();
+    let (x0, y0, x1, y1) = cr.fill_extents()?;
     let fb = BoundingBox::new()
         .with_transform(affine)
         .with_ink_rect(Rect::new(x0, y0, x1, y1));
@@ -1781,7 +1780,7 @@ fn compute_stroke_and_fill_box(
     // bounding box if so.
 
     if !stroke.width.approx_eq_cairo(0.0) && !matches!(stroke_paint_source, PaintSource::None) {
-        let (x0, y0, x1, y1) = cr.stroke_extents();
+        let (x0, y0, x1, y1) = cr.stroke_extents()?;
         let sb = BoundingBox::new()
             .with_transform(affine)
             .with_ink_rect(Rect::new(x0, y0, x1, y1));
@@ -1790,7 +1789,7 @@ fn compute_stroke_and_fill_box(
 
     // objectBoundingBox
 
-    let (x0, y0, x1, y1) = cr.path_extents();
+    let (x0, y0, x1, y1) = cr.path_extents()?;
     let ob = BoundingBox::new()
         .with_transform(affine)
         .with_rect(Rect::new(x0, y0, x1, y1));
@@ -1800,7 +1799,7 @@ fn compute_stroke_and_fill_box(
 
     cr.set_tolerance(backup_tolerance);
 
-    bbox
+    Ok(bbox)
 }
 
 fn compute_text_box(
@@ -1983,7 +1982,7 @@ impl From<&DrawingCtx> for pango::Context {
     fn from(draw_ctx: &DrawingCtx) -> pango::Context {
         let cr = draw_ctx.cr.clone();
 
-        let mut options = cairo::FontOptions::new();
+        let mut options = cairo::FontOptions::new().unwrap();
         if draw_ctx.testing {
             options.set_antialias(cairo::Antialias::Gray);
         }
@@ -1993,7 +1992,7 @@ impl From<&DrawingCtx> for pango::Context {
 
         cr.set_font_options(&options);
 
-        let font_map = pangocairo::FontMap::get_default().unwrap();
+        let font_map = pangocairo::FontMap::default().unwrap();
         let context = font_map.create_context().unwrap();
 
         context.set_round_glyph_positions(false);
@@ -2070,7 +2069,7 @@ impl Path {
         // * The *next* call to the cr will probably be something that actually checks the status
         //   (i.e. in cairo-rs), and we don't want to panic there.
 
-        check_cairo_context(&cr)
+        cr.status().map_err(|e| e.into())
     }
 }
 

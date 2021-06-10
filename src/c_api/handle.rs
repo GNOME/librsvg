@@ -968,7 +968,7 @@ impl CHandle {
         )?;
 
         {
-            let cr = cairo::Context::new(&surface);
+            let cr = cairo::Context::new(&surface)?;
             let cr_raw = cr.to_raw_none();
             self.render_cairo_sub(cr_raw, id)?;
         }
