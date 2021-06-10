@@ -357,20 +357,7 @@ impl Stdin {
 
     #[cfg(windows)]
     pub fn stream() -> InputStream {
-        // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
-        // Win32InputStream::with_handle when this is fixed
-
-        extern "C" {
-            pub fn g_win32_input_stream_new(
-                handle: *mut c_void,
-                close_handle: gboolean,
-            ) -> *mut GInputStream;
-        }
-
-        let raw_handle = io::stdin().as_raw_handle();
-        unsafe {
-            InputStream::from_glib_full(g_win32_input_stream_new(raw_handle, false.into_glib()))
-        }
+        Win32InputStream::with_handle(io::stdin()).upcast::<InputStream>()
     }
 }
 
@@ -385,20 +372,7 @@ impl Stdout {
 
     #[cfg(windows)]
     pub fn stream() -> OutputStream {
-        // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
-        // Win32OutputStream::with_handle when this is fixed
-
-        extern "C" {
-            pub fn g_win32_output_stream_new(
-                handle: *mut c_void,
-                close_handle: gboolean,
-            ) -> *mut GOutputStream;
-        }
-
-        let raw_handle = io::stdout().as_raw_handle();
-        unsafe {
-            OutputStream::from_glib_full(g_win32_output_stream_new(raw_handle, false.into_glib()))
-        }
+        Win32InputStream::with_handle(io::stdout()).upcast::<OutputStream>()
     }
 }
 
