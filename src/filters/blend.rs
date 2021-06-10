@@ -113,17 +113,17 @@ impl FilterEffect for FeBlend {
         &self,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
-    ) -> Result<ResolvedPrimitive, FilterResolveError> {
+    ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
         let mut params = self.params.clone();
         params.color_interpolation_filters = values.color_interpolation_filters();
 
-        Ok(ResolvedPrimitive {
+        Ok(vec![ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Blend(params),
-        })
+        }])
     }
 }
 

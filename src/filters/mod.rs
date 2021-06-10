@@ -37,7 +37,7 @@ pub trait FilterEffect: SetAttributes + Draw {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
-    ) -> Result<ResolvedPrimitive, FilterResolveError>;
+    ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError>;
 }
 
 // Filter Effects do not need to draw themselves

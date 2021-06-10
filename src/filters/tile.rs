@@ -100,10 +100,10 @@ impl FilterEffect for FeTile {
         &self,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _node: &Node,
-    ) -> Result<ResolvedPrimitive, FilterResolveError> {
-        Ok(ResolvedPrimitive {
+    ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError> {
+        Ok(vec![ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Tile(self.params.clone()),
-        })
+        }])
     }
 }
