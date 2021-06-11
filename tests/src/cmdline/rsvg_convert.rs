@@ -538,7 +538,7 @@ fn pdf_page_size() {
         .success()
         // TODO: the PDF size and resolution is actually a bug in rsvg-convert,
         // see https://gitlab.gnome.org/GNOME/librsvg/issues/514
-        .stdout(file::is_pdf().with_page_size(200, 100));
+        .stdout(file::is_pdf().with_page_size(200.0, 100.0));
 }
 
 #[test]
