@@ -245,6 +245,63 @@ https://www.rfc-editor.org/info/bcp47
 .RE
 .P
 
+.SS USER STYLESHEET
+
+You can include an extra CSS stylesheet to be used when rendering an SVG document.  The stylesheet
+will have the CSS user origin, while styles declared in the SVG document will have the CSS author
+origin.  This means your extra stylesheet's styles will override or augment the ones in the document, unless the document has
+.B !important
+in its styles.
+.P
+.RS
+.B rsvg-convert
+.BI --stylesheet= extra-styles.css
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+
+For example, if this is
+.IR input.svg :
+.P
+.in +4n
+.EX
+ <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+   <rect width="200" height="100" fill="white"/>
+
+   <rect class="recolorable" x="10" y="10" width="50" height="50" fill="red"/>
+
+   <text x="10" y="80" font-size="20" fill="currentColor">Hello</text>
+ </svg>
+.EE
+.in
+.P
+And this is
+.IR extra-styles.css :
+.P
+.in +4n
+.EX
+ \.recolorable { fill: blue; }
+
+ * { color: green; }
+.EE
+.in
+.P
+Then the PNG created by the command above will have these elements:
+.IP \(bu 2
+A blue square instead of a red one, because of the selector for the the
+.B recolorable
+class.
+.IP \(bu 2
+Text in green, since a fill with
+.B currentColor
+gets substituted to the value of the
+.B color
+property, and the
+.B *
+selector applies to all elements.
+
 
 .SH OPTIONS
 .TP
