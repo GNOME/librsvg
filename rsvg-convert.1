@@ -204,6 +204,46 @@ syntax or CSS named colors like
 #### translucent red - use shell quotes so the # is not interpreted as a comment
 .RE
 
+.SS SELECTING A LANGUAGE FOR MULTI-LANGUAGE SVG
+
+An SVG document can use the
+.B <switch>
+element and children with the
+.B systemLanguage
+attribute to provide different content depending on the user's language.  For example:
+.P
+.in +4n
+.EX
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <rect width="200" height="100" fill="white"/>
+  <g transform="translate(30, 30)" font-size="20">
+    <switch allowReorder="yes">
+      <text systemLanguage="es">Español</text>
+      <text systemLanguage="de">Deutsch</text>
+      <text systemLanguage="fr">Français</text>
+      <text>English fallback</text>
+    </switch>
+  </g>
+</svg>
+.EE
+.in
+.P
+You can use the
+.B --accept-language
+option to select which language to use when rendering.  This option accepts strings formatted like
+an HTTP Accept-Language header, which is a comma-separated list of BCP47 language tags:
+https://www.rfc-editor.org/info/bcp47
+
+.P
+.RS
+.B rsvg-convert
+.BI --accept-language= es-MX
+.I input.svg
+.B >
+.I output.png
+#### selects Mexican Spanish; renders "Español".
+.RE
+.P
 
 
 .SH OPTIONS
