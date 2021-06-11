@@ -12,17 +12,6 @@ Convert an SVG to PNG at its "natural size" and write it to standard output:
 .I output.png
 .RE
 .P
-Read an SVG from standard input and write a PNG to standard output:
-.P
-.RS
-.B cat
-.I input.svg
-.B |
-.B rsvg-convert
-.B >
-.I output.png
-.RE
-.P
 Specify an output filename; the input filename must be the last argument:
 .P
 .RS
@@ -56,8 +45,132 @@ Render an SVG at a specific pixel size, scaled proportionally:
 .P
 
 .SH DESCRIPTION
-Converts SVG images into PNG raster images, PDF, PS, or SVG vector images, or dumps of Cairo XML or
-recording surfaces.
+.BR rsvg-convert
+renders SVG documents into PNG raster images, or converts them to PDF or PS as vector objects.
+By default
+.BR rsvg-convert
+will render an SVG document to a raster PNG image and write it to standard output:
+.P
+.RS
+.B rsvg-convert
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+To select another format, use the
+.B --format
+option:
+.P
+.RS
+.B rsvg-convert --format=pdf
+.I input.svg
+.B >
+.I output.pdf
+.RE
+.P
+Instead of standard output, the
+.B --output
+option lets you specify an output filename, or
+.B -o
+for short. Note that the input filename must be the last argument:
+.P
+.RS
+.B rsvg-convert
+.BI --output= output.png
+.I input.svg
+.RE
+.P
+You can use
+.BR rsvg-convert
+as part of a pipeline; without an argument for the input filename it will just use standard input:
+.P
+.RS
+.B cat
+.I input.svg
+.B |
+.B rsvg-convert
+.B >
+.I output.png
+.RE
+.P
+.SS SPECIFYING AN OUTPUT SIZE
+You can use the
+.B --width
+and
+.B --height
+options to specify the size of the output image.  Most of the time you should specify
+.B --keep-aspect-ratio
+to scale the image proportionally; for compatibility with old versions this is not the default.
+.P
+.RS
+.B rsvg-convert
+.BI --width= 100
+.BI --height= 200
+.B --keep-aspect-ratio
+.I input.svg
+.B >
+.I output.png
+.RE
+
+.SS DEFAULT OUTPUT SIZE FOR RASTER IMAGES
+If you do not specify options for the output size,
+.BR rsvg-convert
+will figure out a "natural size" for the SVG as follows:
+.IP \(bu 2
+.B SVG with width and height in pixel or physical units: 
+The
+.B width
+and
+.B height
+attributes of the toplevel
+.B <svg>
+element get converted to pixels, based on the default dots-per-inch value, which is 96\ DPI.  You
+can change this with the
+.B --dpi-x
+and
+.B --dpi-y
+options.  For example,
+.B <svg\ width="1in"\ height="2in">
+at 96\ DPI will get rendered as a 96*192\ pixel PNG.  If either of these attributes is in
+.B
+px
+(pixel) units, it will be unchanged for the final size.
+.IP \(bu 2
+.B SVG with viewBox only:
+The size of the
+.B viewBox
+attribute gets used for the pixel size of the image.  For example, 
+.B <svg viewBox="0 0 20 30">
+will create a 20*30\ pixel PNG.
+.IP \(bu 2
+.B SVG with width and height in percentages:
+If the
+.B width
+and
+.B height
+attributes of the toplevel
+.B <svg>
+element are in percentage units, for example
+.BR width="100%" ,
+then they will be multiplied by the size of the
+.B viewBox
+attribute.  For example,
+.B <svg width="50%" height="100" viewBox="0 0 20 30">
+will be rendered as a 10*30\ pixel PNG.
+.B Note that this behavior may change in the future.
+.IP \(bu 2
+.B SVG with no width, height, or viewBox:
+.B rsvg-convert
+will measure the extents of all graphical objects in the SVG document and render them at 1:1 scale
+(1\ pixel for each CSS\ px\ unit).  It is strongly recommended that you give SVG documents an
+explicit size with the
+.B width, height,
+or
+.B viewBox
+attributes.
+
+
 .SH OPTIONS
 .TP
 .I "\-d \-\-dpi-x number"
