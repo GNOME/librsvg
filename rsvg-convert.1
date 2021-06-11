@@ -1,11 +1,60 @@
 .\" -*- fill-column:100 -*-
 .TH rsvg-convert 1
 .SH NAME
-rsvg-convert \- turn SVG files into raster images.
+rsvg-convert \- Render SVG documents to PNG images, or convert them to PDF or PS.
 .SH SYNOPSIS
+Convert an SVG to PNG at its "natural size" and write it to standard output:
+.P
+.RS
 .B rsvg-convert
-[options] in.svg > out.png
-.I ""
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+Read an SVG from standard input and write a PNG to standard output:
+.P
+.RS
+.B cat
+.I input.svg
+.B |
+.B rsvg-convert
+.B >
+.I output.png
+.RE
+.P
+Specify an output filename; the input filename must be the last argument:
+.P
+.RS
+.B rsvg-convert
+.BI --output= output.png
+.I input.svg
+.RE
+.P
+Configure dots-per-inch (DPI), default is 96:
+.P
+.RS
+.B rsvg-convert
+.BI --dpi-x= 300
+.BI --dpi-y= 300
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+Render an SVG at a specific pixel size, scaled proportionally:
+.P
+.RS
+.B rsvg-convert
+.BI --width= 1024
+.BI --height= 768
+.B --keep-aspect-ratio
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+
 .SH DESCRIPTION
 Converts SVG images into PNG raster images, PDF, PS, or SVG vector images, or dumps of Cairo XML or
 recording surfaces.
