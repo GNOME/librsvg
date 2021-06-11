@@ -170,6 +170,41 @@ or
 .B viewBox
 attributes.
 
+.SS BACKGROUND COLOR
+You can use the
+.B --background-color
+option (
+.B -b
+for short) to specify the backgroung color that will appear in parts of the image that would otherwise
+be transparent.  This option accepts the same syntax as the CSS
+.B color
+property, so you can use
+.B #rrggbb
+syntax or CSS named colors like
+.BR white .
+
+.P
+.RS
+.B rsvg-convert
+.BI --background-color= white
+.I input.svg
+.B >
+.I output.png
+#### opaque white
+.RE
+.P
+.RS
+.P
+.B rsvg-convert
+.B -b
+.I '#ff000080'
+.I input.svg
+.B >
+.I output.png
+#### translucent red - use shell quotes so the # is not interpreted as a comment
+.RE
+
+
 
 .SH OPTIONS
 .TP
