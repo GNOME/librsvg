@@ -73,10 +73,13 @@ enum Detail {
     CreationDate(DateTime<Utc>),
 }
 
+/// A PDF page's dimensions from its `MediaBox`.
+///
+/// Note that `w` and `h` given in `UserUnit`, which is by default 1.0 = 1/72 inch.
 #[derive(Debug)]
 struct Dimensions {
     w: i64,
-    h: i64,    //
+    h: i64,
     unit: f64, // UserUnit, in points (1/72 of an inch)
 }
 
