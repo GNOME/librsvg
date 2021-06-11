@@ -19,13 +19,13 @@ impl PdfPredicate {
         }
     }
 
-    pub fn with_page_size(self: Self, width: i64, height: i64, dpi: f64) -> DetailPredicate<Self> {
+    pub fn with_page_size(self: Self, width: i64, height: i64) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::PageSize(Dimensions {
                 w: width,
                 h: height,
-                unit: dpi / 72.0,
+                unit: 1.0,
             }),
         }
     }
