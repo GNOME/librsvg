@@ -495,14 +495,18 @@ impl Converter {
                 .with_language(&self.language);
 
             let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
+
+            // natural_size is in pixels
             let natural_size = Size::new(geometry.width, geometry.height);
 
             let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
 
-            let (requested_width, requested_height) = match self.format {
+            // Convert natural size and requested size to pixels or points, depending on the target format,
+            let (natural_size, requested_width, requested_height) = match self.format {
                 Format::Png => {
                     // PNG surface requires units in pixels
                     (
+                        natural_size,
                         self.width.map(|l| l.to_user(&params)),
                         self.height.map(|l| l.to_user(&params)),
                     )
@@ -510,8 +514,13 @@ impl Converter {
 
                 Format::Pdf | Format::Ps | Format::Eps => {
                     // These surfaces require units in points
-
                     (
+                        Size {
+                            w: ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px)
+                                .to_points(&params),
+                            h: ULength::<Vertical>::new(natural_size.h, LengthUnit::Px)
+                                .to_points(&params),
+                        },
                         self.width.map(|l| l.to_points(&params)),
                         self.height.map(|l| l.to_points(&params)),
                     )
@@ -520,6 +529,7 @@ impl Converter {
                 Format::Svg => {
                     // TODO: SVG surface can be created with any unit type; let's use pixels for now
                     (
+                        natural_size,
                         self.width.map(|l| l.to_user(&params)),
                         self.height.map(|l| l.to_user(&params)),
                     )
