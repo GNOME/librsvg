@@ -93,25 +93,25 @@ impl Dimensions {
         })
     }
 
-    pub fn width_in_mm(self: &Self) -> f64 {
-        self.w * self.unit * 72.0 / 254.0
+    pub fn width_in_pt(self: &Self) -> f64 {
+        self.w * self.unit
     }
 
-    pub fn height_in_mm(self: &Self) -> f64 {
-        self.h * self.unit * 72.0 / 254.0
+    pub fn height_in_pt(self: &Self) -> f64 {
+        self.h * self.unit
     }
 }
 
 impl fmt::Display for Dimensions {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} mm x {} mm", self.width_in_mm(), self.height_in_mm())
+        write!(f, "{} pt x {} pt", self.width_in_pt(), self.height_in_pt())
     }
 }
 
 impl cmp::PartialEq for Dimensions {
     fn eq(&self, other: &Self) -> bool {
-        approx_eq!(f64, self.width_in_mm(), other.width_in_mm())
-            && approx_eq!(f64, self.height_in_mm(), other.height_in_mm())
+        approx_eq!(f64, self.width_in_pt(), other.width_in_pt())
+            && approx_eq!(f64, self.height_in_pt(), other.height_in_pt())
     }
 }
 
