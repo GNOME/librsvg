@@ -99,23 +99,14 @@ impl Size {
 #[derive(Clone, Copy, Debug)]
 enum ResizeStrategy {
     Scale(Scale),
-    Fit(ULength<Horizontal>, ULength<Vertical>),
-    FitWidth(ULength<Horizontal>),
-    FitHeight(ULength<Vertical>),
-    FitLargestScale(
-        Scale,
-        Option<ULength<Horizontal>>,
-        Option<ULength<Vertical>>,
-    ),
+    Fit(f64, f64),
+    FitWidth(f64),
+    FitHeight(f64),
+    FitLargestScale(Scale, Option<f64>, Option<f64>),
 }
 
 impl ResizeStrategy {
-    pub fn apply(
-        self,
-        input: Size,
-        keep_aspect_ratio: bool,
-        params: &NormalizeParams,
-    ) -> Option<Size> {
+    pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Option<Size> {
         if input.w == 0.0 || input.h == 0.0 {
             return None;
         }
@@ -125,25 +116,23 @@ impl ResizeStrategy {
                 w: input.w * s.x,
                 h: input.h * s.y,
             },
-            ResizeStrategy::Fit(w, h) => Size {
-                w: w.to_user(params),
-                h: h.to_user(params),
-            },
+            ResizeStrategy::Fit(w, h) => Size { w, h },
             ResizeStrategy::FitWidth(w) => Size {
-                w: w.to_user(params),
-                h: input.h * w.to_user(params) / input.w,
+                w,
+                h: input.h * w / input.w,
             },
             ResizeStrategy::FitHeight(h) => Size {
-                w: input.w * h.to_user(params) / input.h,
-                h: h.to_user(params),
+                w: input.w * h / input.h,
+                h,
             },
             ResizeStrategy::FitLargestScale(s, w, h) => {
                 let scaled_input_w = input.w * s.x;
                 let scaled_input_h = input.h * s.y;
 
-                let f = match (w.map(|l| l.to_user(params)), h.map(|l| l.to_user(params))) {
+                let f = match (w, h) {
                     (Some(w), Some(h)) if w < scaled_input_w || h < scaled_input_h => {
                         let sx = w / scaled_input_w;
+
                         let sy = h / scaled_input_h;
                         if sx > sy {
                             sy
@@ -508,7 +497,34 @@ impl Converter {
             let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
             let natural_size = Size::new(geometry.width, geometry.height);
 
-            let (requested_width, requested_height) = (self.width, self.height);
+            let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
+
+            let (requested_width, requested_height) = match self.format {
+                Format::Png => {
+                    // PNG surface requires units in pixels
+                    (
+                        self.width.map(|l| l.to_user(&params)),
+                        self.height.map(|l| l.to_user(&params)),
+                    )
+                }
+
+                Format::Pdf | Format::Ps | Format::Eps => {
+                    // These surfaces require units in points
+
+                    (
+                        self.width.map(|l| l.to_points(&params)),
+                        self.height.map(|l| l.to_points(&params)),
+                    )
+                }
+
+                Format::Svg => {
+                    // TODO: SVG surface can be created with any unit type; let's use pixels for now
+                    (
+                        self.width.map(|l| l.to_user(&params)),
+                        self.height.map(|l| l.to_user(&params)),
+                    )
+                }
+            };
 
             let strategy = match (requested_width, requested_height) {
                 // when w and h are not specified, scale to the requested zoom (if any)
@@ -523,7 +539,7 @@ impl Converter {
                 (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
 
                 // otherwise scale the image, but cap the zoom to match the requested size
-                _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
+                _ => ResizeStrategy::FitLargestScale(self.zoom, requested_width, requested_height),
             };
 
             let final_size = self.final_size(&strategy, &natural_size, input)?;
@@ -555,13 +571,10 @@ impl Converter {
         natural_size: &Size,
         input: &Input,
     ) -> Result<Size, Error> {
-        let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
-
         strategy
             .apply(
                 Size::new(natural_size.w, natural_size.h),
                 self.keep_aspect_ratio,
-                &params,
             )
             .ok_or_else(|| error!("The SVG {} has no dimensions", input))
     }
