@@ -425,6 +425,41 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
             }
         }
     }
+
+    /// Converts a Length to points.  Pixels are taken to be respect with the DPI.
+    ///
+    /// # Panics
+    ///
+    /// Will panic if the length is in Percent, Em, or Ex units.
+    pub fn to_points(&self, params: &NormalizeParams) -> f64 {
+        match self.unit {
+            LengthUnit::Px => {
+                self.length / <N as Normalize>::normalize(params.dpi.x, params.dpi.y) * 72.0
+            }
+
+            LengthUnit::Percent => {
+                panic!("Cannot convert a percentage length into points");
+            }
+
+            LengthUnit::Em => {
+                panic!("Cannot convert an Em length into points");
+            }
+
+            LengthUnit::Ex => {
+                panic!("Cannot convert an Ex length into points");
+            }
+
+            LengthUnit::In => self.length * POINTS_PER_INCH,
+
+            LengthUnit::Cm => self.length / CM_PER_INCH * POINTS_PER_INCH,
+
+            LengthUnit::Mm => self.length / MM_PER_INCH * POINTS_PER_INCH,
+
+            LengthUnit::Pt => self.length,
+
+            LengthUnit::Pc => self.length / PICA_PER_INCH * POINTS_PER_INCH,
+        }
+    }
 }
 
 fn font_size_from_values(values: &ComputedValues, dpi: Dpi) -> f64 {
@@ -637,6 +672,20 @@ mod tests {
         assert_approx_eq_cairo!(
             Length::<Vertical>::new(1.0, LengthUnit::Ex).to_user(&params),
             6.0
+        );
+    }
+
+    #[test]
+    fn to_points_works() {
+        let params = NormalizeParams::from_dpi(Dpi::new(40.0, 96.0));
+
+        assert_approx_eq_cairo!(
+            Length::<Horizontal>::new(80.0, LengthUnit::Px).to_points(&params),
+            2.0 * 72.0
+        );
+        assert_approx_eq_cairo!(
+            Length::<Vertical>::new(192.0, LengthUnit::Px).to_points(&params),
+            2.0 * 72.0
         );
     }
 }
