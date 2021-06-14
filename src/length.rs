@@ -63,6 +63,7 @@ use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
+use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
 /// Units for length values.
@@ -346,6 +347,15 @@ impl NormalizeParams {
             vbox: params.vbox,
             font_size: font_size_from_values(values, params.dpi),
             dpi: params.dpi,
+        }
+    }
+
+    /// Just used by rsvg-convert, where there is no font size nor viewport.
+    pub fn from_dpi(dpi: Dpi) -> NormalizeParams {
+        NormalizeParams {
+            vbox: ViewBox::from(Rect::default()),
+            font_size: 1.0,
+            dpi,
         }
     }
 }
