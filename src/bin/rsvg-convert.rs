@@ -508,7 +508,9 @@ impl Converter {
             let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
             let natural_size = Size::new(geometry.width, geometry.height);
 
-            let strategy = match (self.width, self.height) {
+            let (requested_width, requested_height) = (self.width, self.height);
+
+            let strategy = match (requested_width, requested_height) {
                 // when w and h are not specified, scale to the requested zoom (if any)
                 (None, None) => ResizeStrategy::Scale(self.zoom),
 
