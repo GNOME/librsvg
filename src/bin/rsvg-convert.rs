@@ -20,8 +20,12 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
-use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
-use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, Loader, Parse, RenderingError};
+use librsvg::rsvg_convert_only::{
+    Dpi, Horizontal, LegacySize, Normalize, NormalizeParams, PathOrUrl, ULength, Vertical,
+};
+use librsvg::{
+    AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
+};
 use once_cell::unsync::OnceCell;
 use std::ops::Deref;
 use std::path::PathBuf;
@@ -95,14 +99,23 @@ impl Size {
 #[derive(Clone, Copy, Debug)]
 enum ResizeStrategy {
     Scale(Scale),
-    Fit(u32, u32),
-    FitWidth(u32),
-    FitHeight(u32),
-    FitLargestScale(Scale, Option<u32>, Option<u32>),
+    Fit(ULength<Horizontal>, ULength<Vertical>),
+    FitWidth(ULength<Horizontal>),
+    FitHeight(ULength<Vertical>),
+    FitLargestScale(
+        Scale,
+        Option<ULength<Horizontal>>,
+        Option<ULength<Vertical>>,
+    ),
 }
 
 impl ResizeStrategy {
-    pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Option<Size> {
+    pub fn apply(
+        self,
+        input: Size,
+        keep_aspect_ratio: bool,
+        params: &NormalizeParams,
+    ) -> Option<Size> {
         if input.w == 0.0 || input.h == 0.0 {
             return None;
         }
@@ -113,22 +126,22 @@ impl ResizeStrategy {
                 h: input.h * s.y,
             },
             ResizeStrategy::Fit(w, h) => Size {
-                w: f64::from(w),
-                h: f64::from(h),
+                w: w.to_user(params),
+                h: h.to_user(params),
             },
             ResizeStrategy::FitWidth(w) => Size {
-                w: f64::from(w),
-                h: input.h * f64::from(w) / input.w,
+                w: w.to_user(params),
+                h: input.h * w.to_user(params) / input.w,
             },
             ResizeStrategy::FitHeight(h) => Size {
-                w: input.w * f64::from(h) / input.h,
-                h: f64::from(h),
+                w: input.w * h.to_user(params) / input.h,
+                h: h.to_user(params),
             },
             ResizeStrategy::FitLargestScale(s, w, h) => {
                 let scaled_input_w = input.w * s.x;
                 let scaled_input_h = input.h * s.y;
 
-                let f = match (w.map(f64::from), h.map(f64::from)) {
+                let f = match (w.map(|l| l.to_user(params)), h.map(|l| l.to_user(params))) {
                     (Some(w), Some(h)) if w < scaled_input_w || h < scaled_input_h => {
                         let sx = w / scaled_input_w;
                         let sy = h / scaled_input_h;
@@ -439,8 +452,8 @@ arg_enum! {
 struct Converter {
     pub dpi: (f64, f64),
     pub zoom: Scale,
-    pub width: Option<u32>,
-    pub height: Option<u32>,
+    pub width: Option<ULength<Horizontal>>,
+    pub height: Option<ULength<Vertical>>,
     pub format: Format,
     pub export_id: Option<String>,
     pub keep_aspect_ratio: bool,
@@ -560,10 +573,13 @@ impl Converter {
         natural_size: &Size,
         input: &Input,
     ) -> Result<Size, Error> {
+        let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
+
         strategy
             .apply(
                 Size::new(natural_size.w, natural_size.h),
                 self.keep_aspect_ratio,
+                &params,
             )
             .ok_or_else(|| error!("The SVG {} has no dimensions", input))
     }
@@ -777,6 +793,15 @@ fn parse_args() -> Result<Converter, Error> {
         }
     };
 
+    let width = value_t!(matches, "size_x", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+    let height = value_t!(matches, "size_y", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+
     let zoom = value_t!(matches, "zoom", f64).or_none()?;
     let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
     let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
@@ -805,8 +830,8 @@ fn parse_args() -> Result<Converter, Error> {
             x: zoom.or(zoom_x).unwrap_or(1.0),
             y: zoom.or(zoom_y).unwrap_or(1.0),
         },
-        width: value_t!(matches, "size_x", u32).or_none()?,
-        height: value_t!(matches, "size_y", u32).or_none()?,
+        width,
+        height,
         format,
         export_id: value_t!(matches, "export_id", String)
             .or_none()?
@@ -883,6 +908,40 @@ fn parse_color_string<T: AsRef<str> + std::fmt::Display>(s: T) -> Result<Color, 
             clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
         }),
     }
+}
+
+fn is_absolute_unit(u: LengthUnit) -> bool {
+    use LengthUnit::*;
+
+    match u {
+        Percent | Em | Ex => false,
+        Px | In | Cm | Mm | Pt | Pc => true,
+    }
+}
+
+fn parse_length<N: Normalize>(s: String) -> Result<ULength<N>, clap::Error> {
+    <ULength<N> as Parse>::parse_str(&s)
+        .map_err(|_| {
+            let desc = format!(
+                "Invalid value: The argument '{}' can not be parsed as a length",
+                s
+            );
+            clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
+        })
+        .and_then(|l| {
+            if is_absolute_unit(l.unit) {
+                Ok(l)
+            } else {
+                let desc = format!(
+                    "Invalid value '{}': supported units are px, in, cm, mm, pt, pc",
+                    s
+                );
+                Err(clap::Error::with_description(
+                    &desc,
+                    clap::ErrorKind::InvalidValue,
+                ))
+            }
+        })
 }
 
 fn main() {
