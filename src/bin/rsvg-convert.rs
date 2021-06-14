@@ -505,7 +505,7 @@ impl Converter {
                 .with_dpi(self.dpi.0, self.dpi.1)
                 .with_language(&self.language);
 
-            let geometry = self.natural_geometry(&renderer, input)?;
+            let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
             let natural_size = Size::new(geometry.width, geometry.height);
 
             let strategy = match (self.width, self.height) {
@@ -547,26 +547,6 @@ impl Converter {
         Ok(())
     }
 
-    fn natural_geometry(
-        &self,
-        renderer: &CairoRenderer,
-        input: &Input,
-    ) -> Result<cairo::Rectangle, Error> {
-        match self.export_id {
-            None => renderer.legacy_layer_geometry(None),
-            Some(ref id) => renderer.geometry_for_element(Some(&id)),
-        }
-        .map(|(ink_r, _)| ink_r)
-        .map_err(|e| match e {
-            RenderingError::IdNotFound => error!(
-                "File {} does not have an object with id \"{}\")",
-                input,
-                self.export_id.as_deref().unwrap()
-            ),
-            _ => error!("Error rendering SVG {}: {}", input, e),
-        })
-    }
-
     fn final_size(
         &self,
         strategy: &ResizeStrategy,
@@ -598,6 +578,26 @@ impl Converter {
 
         Surface::new(self.format, size, output_stream)
     }
+}
+
+fn natural_geometry(
+    renderer: &CairoRenderer,
+    input: &Input,
+    export_id: Option<&str>,
+) -> Result<cairo::Rectangle, Error> {
+    match export_id {
+        None => renderer.legacy_layer_geometry(None),
+        Some(ref id) => renderer.geometry_for_element(Some(&id)),
+    }
+    .map(|(ink_r, _)| ink_r)
+    .map_err(|e| match e {
+        RenderingError::IdNotFound => error!(
+            "File {} does not have an object with id \"{}\")",
+            input,
+            export_id.unwrap()
+        ),
+        _ => error!("Error rendering SVG {}: {}", input, e),
+    })
 }
 
 fn parse_args() -> Result<Converter, Error> {
