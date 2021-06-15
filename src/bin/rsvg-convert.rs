@@ -648,7 +648,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("d")
                 .long("dpi-x")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .default_value("96")
                 .validator(is_valid_resolution)
                 .help("Pixels per inch"),
@@ -658,7 +658,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("p")
                 .long("dpi-y")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .default_value("96")
                 .validator(is_valid_resolution)
                 .help("Pixels per inch"),
@@ -668,7 +668,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("x")
                 .long("x-zoom")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .conflicts_with("zoom")
                 .validator(is_valid_zoom_factor)
                 .help("Horizontal zoom factor"),
@@ -678,7 +678,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("y")
                 .long("y-zoom")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .conflicts_with("zoom")
                 .validator(is_valid_zoom_factor)
                 .help("Vertical zoom factor"),
@@ -688,7 +688,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("z")
                 .long("zoom")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .validator(is_valid_zoom_factor)
                 .help("Zoom factor"),
         )
@@ -697,7 +697,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("w")
                 .long("width")
                 .takes_value(true)
-                .value_name("pixels")
+                .value_name("length")
                 .help("Width [defaults to the width of the SVG]"),
         )
         .arg(
@@ -705,7 +705,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("h")
                 .long("height")
                 .takes_value(true)
-                .value_name("pixels")
+                .value_name("length")
                 .help("Height [defaults to the height of the SVG]"),
         )
         .arg(
@@ -760,6 +760,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("s")
                 .long("stylesheet")
                 .empty_values(false)
+                .value_name("filename.css")
                 .help("Filename of CSS stylesheet to apply"),
         )
         .arg(
