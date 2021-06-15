@@ -94,7 +94,7 @@ as part of a pipeline; without an argument for the input filename it will just u
 .I output.png
 .RE
 .P
-.SS SPECIFYING AN OUTPUT SIZE
+.SS SPECIFYING DIMENSIONS
 You can use the
 .B --width
 and
@@ -113,12 +113,62 @@ to scale the image proportionally; for compatibility with old versions this is n
 .I output.png
 .RE
 
+Options which accept dimensions can take values in CSS length syntax, for example
+.B 10px
+or \"
+.BR 8.5in .
+The units supported are px, in, cm, mm, pt, pc.  You can omit px for dimensions in pixels and just specify a number.
+
+.SS OUTPUT SIZE FOR PNG IMAGES
+
+In this example,
+.B rsvg-convert
+will generate a PNG 300x300 pixels in size, since dimensions are rounded up to the nearest pixel, to avoid
+clipping off the right/bottom edges.
+.P
+.RS
+.B rsvg-convert
+.BI --width= 299.5
+.BI --height= 299.4
+.I input.svg
+.B >
+.I output.png
+#### outputs 300x300 pixel PNG
+.RE
+.P
+If you specify dimensions in physical units, they will be multiplied by the dots-per-inch (DPI) value to obtain
+dimensions in pixels.  For example, this will generate a 96x96 pixel PNG, since it is 1x1 inch at the default 96\ DPI:
+.P
+.RS
+.B rsvg-convert
+.BI --width= 1in
+.BI --height= 1in
+.I input.svg
+.B >
+.I output.png
+#### outputs 96x96 pixel PNG
+.RE
+.P
+Correspondingly, this will generate a 300x300 pixel PNG, since it is 1x1 inch at 300 DPI:
+.P
+.RS
+.B rsvg-convert
+.BI --width= 1in
+.BI --height= 1in
+.BI --dpi-x= 300
+.BI --dpi-y= 300
+.I input.svg
+.B >
+.I output.png
+#### outputs 300x300 pixel PNG
+.RE
+
 .SS DEFAULT OUTPUT SIZE FOR RASTER IMAGES
 If you do not specify options for the output size,
 .BR rsvg-convert
 will figure out a "natural size" for the SVG as follows:
 .IP \(bu 2
-.B SVG with width and height in pixel or physical units: 
+.B SVG with width and height in pixel or physical units:
 The
 .B width
 and
@@ -140,7 +190,7 @@ px
 .B SVG with viewBox only:
 The size of the
 .B viewBox
-attribute gets used for the pixel size of the image.  For example, 
+attribute gets used for the pixel size of the image.  For example,
 .B <svg viewBox="0 0 20 30">
 will create a 20*30\ pixel PNG.
 .IP \(bu 2
@@ -320,13 +370,13 @@ Y Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
 .I "\-z \-\-zoom number"
 Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
 .TP
-.I "\-w \-\-width integer"
+.I "\-w \-\-width length"
 Specify how wide you wish the image to be.  If unspecified, the natural width of the image is used
-as the default.
+as the default.  See the section "SPECIFYING DIMENSIONS" above for details.
 .TP
 .I "\-h \-\-height integer"
 Specify how tall you wish the image to be.  If unspecified, the natural height of the image is used
-as the default.
+as the default.  See the section "SPECIFYING DIMENSIONS" above for details.
 .TP
 .I "\-f \-\-format [png, pdf, ps, eps, svg]"
 Specify the output format you wish the image to be saved in.  If unspecified, PNG is used as the
