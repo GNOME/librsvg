@@ -443,6 +443,7 @@ struct Converter {
     pub zoom: Scale,
     pub width: Option<ULength<Horizontal>>,
     pub height: Option<ULength<Vertical>>,
+    pub page_size: Option<(ULength<Horizontal>, ULength<Vertical>)>,
     pub format: Format,
     pub export_id: Option<String>,
     pub keep_aspect_ratio: bool,
@@ -502,13 +503,17 @@ impl Converter {
             let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
 
             // Convert natural size and requested size to pixels or points, depending on the target format,
-            let (natural_size, requested_width, requested_height) = match self.format {
+            let (natural_size, requested_width, requested_height, page_size) = match self.format {
                 Format::Png => {
                     // PNG surface requires units in pixels
                     (
                         natural_size,
                         self.width.map(|l| l.to_user(&params)),
                         self.height.map(|l| l.to_user(&params)),
+                        self.page_size.map(|(w, h)| Size {
+                            w: w.to_user(&params),
+                            h: h.to_user(&params),
+                        }),
                     )
                 }
 
@@ -523,6 +528,10 @@ impl Converter {
                         },
                         self.width.map(|l| l.to_points(&params)),
                         self.height.map(|l| l.to_points(&params)),
+                        self.page_size.map(|(w, h)| Size {
+                            w: w.to_points(&params),
+                            h: h.to_points(&params),
+                        }),
                     )
                 }
 
@@ -532,6 +541,10 @@ impl Converter {
                         natural_size,
                         self.width.map(|l| l.to_user(&params)),
                         self.height.map(|l| l.to_user(&params)),
+                        self.page_size.map(|(w, h)| Size {
+                            w: w.to_user(&params),
+                            h: h.to_user(&params),
+                        }),
                     )
                 }
             };
@@ -555,7 +568,8 @@ impl Converter {
             let final_size = self.final_size(&strategy, &natural_size, input)?;
 
             // Create the surface once on the first input
-            let s = surface.get_or_try_init(|| self.create_surface(final_size))?;
+            let page_size = page_size.unwrap_or(final_size);
+            let s = surface.get_or_try_init(|| self.create_surface(page_size))?;
 
             s.render(
                 &renderer,
@@ -709,6 +723,20 @@ fn parse_args() -> Result<Converter, Error> {
                 .help("Height [defaults to the height of the SVG]"),
         )
         .arg(
+            clap::Arg::with_name("page_width")
+                .long("page-width")
+                .takes_value(true)
+                .value_name("length")
+                .help("Width of output media [defaults to the width of the SVG]"),
+        )
+        .arg(
+            clap::Arg::with_name("page_height")
+                .long("page-height")
+                .takes_value(true)
+                .value_name("length")
+                .help("Height of output media [defaults to the height of the SVG]"),
+        )
+        .arg(
             clap::Arg::with_name("format")
                 .short("f")
                 .long("format")
@@ -828,6 +856,25 @@ fn parse_args() -> Result<Converter, Error> {
         .map(parse_length)
         .transpose()?;
 
+    let page_width = value_t!(matches, "page_width", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+    let page_height = value_t!(matches, "page_height", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+
+    let page_size = match (page_width, page_height) {
+        (None, None) => None,
+        (Some(_), None) | (None, Some(_)) => {
+            return Err(error!(
+                "Please specify both the --page-width and --page-height options together."
+            ));
+        }
+        (Some(w), Some(h)) => Some((w, h)),
+    };
+
     let zoom = value_t!(matches, "zoom", f64).or_none()?;
     let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
     let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
@@ -858,6 +905,7 @@ fn parse_args() -> Result<Converter, Error> {
         },
         width,
         height,
+        page_size,
         format,
         export_id: value_t!(matches, "export_id", String)
             .or_none()?

@@ -114,8 +114,17 @@ impl fmt::Display for Dimensions {
 
 impl cmp::PartialEq for Dimensions {
     fn eq(&self, other: &Self) -> bool {
-        approx_eq!(f64, self.width_in_pt(), other.width_in_pt())
-            && approx_eq!(f64, self.height_in_pt(), other.height_in_pt())
+        approx_eq!(
+            f64,
+            self.width_in_pt(),
+            other.width_in_pt(),
+            epsilon = 0.000_001
+        ) && approx_eq!(
+            f64,
+            self.height_in_pt(),
+            other.height_in_pt(),
+            epsilon = 0.000_001
+        )
     }
 }
 
