@@ -69,21 +69,9 @@ option:
 .I output.pdf
 .RE
 .P
-Instead of standard output, the
-.B --output
-option lets you specify an output filename, or
-.B -o
-for short. Note that the input filename must be the last argument:
-.P
-.RS
-.B rsvg-convert
-.BI --output= output.png
-.I input.svg
-.RE
-.P
 You can use
 .BR rsvg-convert
-as part of a pipeline; without an argument for the input filename it will just use standard input:
+as part of a pipeline; without an argument for the input filename it will read the document from standard input:
 .P
 .RS
 .B cat
@@ -112,19 +100,121 @@ to scale the image proportionally; for compatibility with old versions this is n
 .B >
 .I output.png
 .RE
-
-Options which accept dimensions can take values in CSS length syntax, for example
+.P
+You can also specify dimensions as CSS lengths, for example
 .B 10px
 or \"
 .BR 8.5in .
-The units supported are px, in, cm, mm, pt, pc.  You can omit px for dimensions in pixels and just specify a number.
-
-.SS OUTPUT SIZE FOR PNG IMAGES
-
-In this example,
+The unit specifiers supported are as follows:
+.RS
+.TS
+tab (@);
+l lx.
+px@T{
+pixels (the unit specifier can be omitted)
+T}
+in@T{
+inches
+T}
+cm@T{
+centimeters
+T}
+mm@T{
+millimeters
+T}
+pt@T{
+points, 1/72 inch
+T}
+pc@T{
+picas, 1/6 inch
+T}
+.TE
+.RE
+.P
+The following will create a 600*900 pixel PNG, or 2*3 inches at 300 dots-per-inch:
+.P
+.RS
 .B rsvg-convert
-will generate a PNG 300x300 pixels in size, since dimensions are rounded up to the nearest pixel, to avoid
-clipping off the right/bottom edges.
+.BI --width= 2in
+.BI --height= 3in
+.B --keep-aspect-ratio
+.BI --dpi-x= 300
+.BI --dpi-y= 300
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+For vector formats (PDF, PS, EPS), you can specify the page size implicitly from the rendered size of the document.  This will scale an SVG document to fit in an A4 page and convert it to PDF:
+.P
+.RS
+.B rsvg-convert
+.BI --format= pdf
+.BI --width= 210mm
+.BI --height= 297mm
+.B --keep-aspect-ratio
+.I input.svg
+.B >
+.I output.pdf
+.RE
+.P
+Alternatively, you can specify the page size separately from the rendered size.  This will scale an SVG document to 10*10\ cm, and render it in a landscape A4 page as a PDF:
+.P
+.RS
+.B rsvg-convert
+.BI --format= pdf
+.BI --width= 10cm
+.BI --height= 10cm
+.B --keep-aspect-ratio
+.BI --page-width= 297mm
+.BI --page-height= 210mm
+.I input.svg
+.B >
+.I output.pdf
+.RE
+.P
+
+.SS CONVERSION OF PIXELS BASED ON THE DOTS-PER-INCH
+.B rsvg-convert
+uses the
+.B --dpi-x
+and
+.B --dpi-y
+options to configure the dots-per-inch (DPI) by which pixels will be converted to/from physical units like inches or centimeters.  The default for both options is 96\ DPI.
+
+Consider this example SVG, which is nominally declared to be 2*3 inches in size:
+.P
+.in +4n
+.EX
+<svg xmlns="http://www.w3.org/2000/svg" width="2in" height="3in">
+  <!-- graphical objects here -->
+</svg>
+.EE
+.in
+.P
+The following commands create PNGs of different sizes for the example SVG above:
+.P
+.RS
+.B rsvg-convert
+.I two-by-three.svg
+.B >
+.I output.png
+#### creates a 192*288\ pixel PNG
+.P
+.B rsvg-convert
+.BI --dpi-x= 300
+.BI --dpi-y= 300
+.I two-by-three.svg
+.B >
+.I output.png
+#### creates a 600*900\ pixel PNG
+.RE
+.P
+
+Note that the final pixel dimensions are rounded up to the nearest pixel, to avoid
+clipping off the right/bottom edges.  In the following example,
+.B rsvg-convert
+will generate a PNG 300x300 pixels in size:
 .P
 .RS
 .B rsvg-convert
@@ -133,7 +223,7 @@ clipping off the right/bottom edges.
 .I input.svg
 .B >
 .I output.png
-#### outputs 300x300 pixel PNG
+#### outputs 300x300 pixel PNG with a fractionally-scaled image
 .RE
 .P
 If you specify dimensions in physical units, they will be multiplied by the dots-per-inch (DPI) value to obtain
@@ -163,36 +253,43 @@ Correspondingly, this will generate a 300x300 pixel PNG, since it is 1x1 inch at
 #### outputs 300x300 pixel PNG
 .RE
 
-.SS DEFAULT OUTPUT SIZE FOR RASTER IMAGES
-If you do not specify options for the output size,
+.SS DEFAULT OUTPUT SIZE
+If you do not specify
+.B --width
+or
+.B --height
+options for the output size,
 .BR rsvg-convert
 will figure out a "natural size" for the SVG as follows:
 .IP \(bu 2
-.B SVG with width and height in pixel or physical units:
-The
-.B width
-and
-.B height
-attributes of the toplevel
-.B <svg>
-element get converted to pixels, based on the default dots-per-inch value, which is 96\ DPI.  You
-can change this with the
+.B SVG with width and height in pixel units (px):
+.B <svg\ width="96px"\ height="192px">
+For PNG output, those same dimensions in pixels are used.  For PDF/PS/EPS, that pixel size is
+converted to physical units based on the DPI value (see the
 .B --dpi-x
 and
 .B --dpi-y
-options.  For example,
+options),
+.IP \(bu 2
+.B SVG with width and height in physical units:
 .B <svg\ width="1in"\ height="2in">
-at 96\ DPI will get rendered as a 96*192\ pixel PNG.  If either of these attributes is in
-.B
-px
-(pixel) units, it will be unchanged for the final size.
+For PNG output, the
+.B width
+and
+.B height
+attributes get converted to pixels, based on the DPI value (see the
+.B --dpi-x
+and
+.B --dpi-y
+options).  For PDF/PS/EPS output, the width/height in physical units define the size of the PDF
+unless you specify options for the page size; see
+.B "PAGE SIZE" below.
 .IP \(bu 2
 .B SVG with viewBox only:
+.B <svg viewBox="0 0 20 30">
 The size of the
 .B viewBox
-attribute gets used for the pixel size of the image.  For example,
-.B <svg viewBox="0 0 20 30">
-will create a 20*30\ pixel PNG.
+attribute gets used for the pixel size of the image as in the first case above.
 .IP \(bu 2
 .B SVG with width and height in percentages:
 If the
@@ -219,6 +316,27 @@ explicit size with the
 or
 .B viewBox
 attributes.
+
+.SS PAGE SIZE
+To define the size of the output media independently of the scaled size of the document, use both the
+.B --page-width
+and
+.B --page-height
+options at the same time.  The following scales an SVG to 2*3 inches and places it in an US Letter page, as a PDF:
+.P
+.RS
+.B rsvg-convert
+.BI --format= pdf
+.BI --width= 2in
+.BI --height= 3in
+.B --keep-aspect-ratio
+.BI --page-width= 8.5in
+.BI --page-height= 11in
+.I input.svg
+.B >
+.I output.pdf
+.RE
+.P
 
 .SS BACKGROUND COLOR
 You can use the
@@ -297,9 +415,11 @@ https://www.rfc-editor.org/info/bcp47
 
 .SS USER STYLESHEET
 
-You can include an extra CSS stylesheet to be used when rendering an SVG document.  The stylesheet
-will have the CSS user origin, while styles declared in the SVG document will have the CSS author
-origin.  This means your extra stylesheet's styles will override or augment the ones in the document, unless the document has
+You can include an extra CSS stylesheet to be used when rendering an SVG document with the
+.B --stylesheet
+option.  The stylesheet will have the CSS user origin, while styles declared in the SVG document
+will have the CSS author origin.  This means your extra stylesheet's styles will override or augment
+the ones in the document, unless the document has
 .B !important
 in its styles.
 .P
@@ -362,42 +482,48 @@ Set the X resolution of the image in pixels per inch.  RSVG's current default is
 Set the Y resolution of the image in pixels per inch.  RSVG's current default is 96\ DPI.
 .TP
 .I "\-x \-\-x\-zoom number"
-X Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
+Horizontal scaling factor.  If unspecified, 1.0 is used as the default.
 .TP
 .I "\-y \-\-y\-zoom number"
-Y Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
+Vertical factor factor.  If unspecified, 1.0 is used as the default.
 .TP
 .I "\-z \-\-zoom number"
-Zoom factor, as a percentage.  If unspecified, 1.0 is used as the default.
+Horizontal and vertical scaling factor.  If unspecified, 1.0 is used as the default.
 .TP
 .I "\-w \-\-width length"
-Specify how wide you wish the image to be.  If unspecified, the natural width of the image is used
+Width of the rendered image.  If unspecified, the natural width of the image is used
 as the default.  See the section "SPECIFYING DIMENSIONS" above for details.
 .TP
 .I "\-h \-\-height integer"
-Specify how tall you wish the image to be.  If unspecified, the natural height of the image is used
+Height of the rendered image.  If unspecified, the natural height of the image is used
 as the default.  See the section "SPECIFYING DIMENSIONS" above for details.
 .TP
+.I "\-a \-\-keep-aspect-ratio"
+Specify that the aspect ratio is to be preserved, i.e. the image is scaled proportionally to fit in the
+.B --width
+and
+.BR --height \.
+If not specified, aspect ratio will not be preserved.
+.TP
+.I "\-\-page-width length \-\-page-height length"
+Page size of the output document; both options must be used together.
+.TP
 .I "\-f \-\-format [png, pdf, ps, eps, svg]"
-Specify the output format you wish the image to be saved in.  If unspecified, PNG is used as the
-default.
+Output format for the rendered document.  The default is png.
 .TP
 .I "\-o \-\-output filename"
-Specify the output filename.  If unspecified, outputs to stdout.
+Specify the output filename.  If unspecified, outputs to standard output.
 .TP
 .I "\-i \-\-export-id object-id"
-Allows to specify an SVG object that should be exported. If unspecified, all objects will be
-exported.
-.TP
-.I "\-a \-\-keep-aspect-ratio"
-Specify that the aspect ratio is to be preserved.  If unspecified, aspect ratio will not be
-preserved.
+Allows to specify an SVG object that should be exported based on its XML id.  If not specified, all
+objects will be exported.
 .TP
 .I "\-b \-\-background-color [black, white, #abccee, #aaa...]"
-Specify the background color.  If unspecified, none is used as the default.
+Specify the background color.  If unspecified, none is used as the default; this will create
+transparent PNGs.
 .TP
-.I "\-s \-\-stylesheet filename"
-Filename of a CSS stylesheet.
+.I "\-s \-\-stylesheet filename.css"
+Filename of a custom CSS stylesheet.
 .TP
 .I "\-l \-\-accept-language [es-MX,fr,en]"
 Specify which languages will be used for SVG documents with multiple languages.  The string is
@@ -405,9 +531,9 @@ formatted like an HTTP Accept-Language header, which is a comma-separated list o
 tags: https://www.rfc-editor.org/info/bcp47
 .TP
 .I "\-u \-\-unlimited"
-The SVG parser has some guards designed to mitigate large CPU or memory consumption in the face of
-malicious XML.  It may also refuse to resolve URIs used to embed image data.  If you are running
-into such issues when converting a SVG, this option allows to turn off these guards.
+The XML parser has some guards designed to mitigate large CPU or memory consumption in the face of
+malicious documents.  It may also refuse to resolve data: URIs used to embed image data.  If you are
+running into such issues when converting a SVG, this option allows to turn off these guards.
 .TP
 .I "\-\-keep-image-data"
 Include the original, compressed images in the final output, rather than uncompressed RGB data. This
@@ -418,7 +544,7 @@ Do not include the original, compressed images but instead embed uncompressed RG
 (E)PS output. This will most likely result in larger documents that are slower to read.
 .TP
 .I "\-v \-\-version"
-Display what version of rsvg this is.
+Display what version of rsvg-convert you are running.
 .SH ENVIRONMENT VARIABLES
 .TP
 .I "SOURCE_DATE_EPOCH"
@@ -428,13 +554,17 @@ decimal number corresponding to a UNIX timestamp, defined as the number of secon
 seconds, since 01 Jan 1970 00:00:00 UTC.  The specification for this can be found at
 https://reproducible-builds.org/specs/source-date-epoch/
 .SH MORE INFORMATION
+
 https://gitlab.gnome.org/GNOME/librsvg
+
 https://wiki.gnome.org/Projects/LibRsvg
 
 http://www.w3.org/TR/SVG11/
+
 http://www.w3.org/TR/SVG2
 
 http://www.gnome.org/
+
 .SH "AUTHORS"
 Dom Lachowicz (cinamod@hotmail.com), Caleb Moore (c.moore@student.unsw.edu.au), Federico
 Mena-Quintero (federico@gnome.org), and a host of others.
