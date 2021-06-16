@@ -576,6 +576,24 @@ fn pdf_page_size() {
         .stdout(file::is_pdf().with_page_size(210.0 / 25.4 * 72.0, 297.0 / 25.4 * 72.0));
 }
 
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
+fn missing_page_size_yields_error() {
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/dimensions-in.svg")
+        .arg("--format=pdf")
+        .arg("--page-width=210mm")
+        .assert()
+        .failure()
+        .stderr(contains("both").and(contains("options")));
+
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/dimensions-in.svg")
+        .arg("--format=pdf")
+        .arg("--page-height=297mm")
+        .assert()
+        .failure()
+        .stderr(contains("both").and(contains("options")));
+}
+
 #[test]
 fn does_not_clip_partial_coverage_pixels() {
     RsvgConvert::new_with_input("tests/fixtures/cmdline/677-partial-pixel.svg")
