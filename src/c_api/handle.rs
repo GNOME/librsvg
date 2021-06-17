@@ -21,7 +21,6 @@
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::ffi::{CStr, CString, OsStr};
 use std::fmt;
-use std::ops;
 use std::path::PathBuf;
 use std::ptr;
 use std::slice;
@@ -33,10 +32,9 @@ use gio::prelude::*;
 use glib::error::ErrorDomain;
 use url::Url;
 
-use glib::object::ObjectClass;
 use glib::subclass::prelude::*;
 use glib::translate::*;
-use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue, Type};
+use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue};
 use once_cell::sync::Lazy;
 
 use glib::types::instance_of;
@@ -146,6 +144,10 @@ pub struct RsvgHandleClass {
     _abi_padding: [glib::ffi::gpointer; 15],
 }
 
+unsafe impl ClassStruct for RsvgHandleClass {
+    type Type = imp::CHandle;
+}
+
 /// GObject instance struct for RsvgHandle.
 ///
 /// This is not done through [`glib::subclass::prelude::InstanceStruct<T>`] because we need
@@ -157,6 +159,10 @@ pub struct RsvgHandle {
     parent: glib::gobject_ffi::GObject,
 
     _abi_padding: [glib::ffi::gpointer; 16],
+}
+
+unsafe impl InstanceStruct for RsvgHandle {
+    type Type = imp::CHandle;
 }
 
 /// State machine for `RsvgHandle`.
@@ -273,217 +279,212 @@ impl From<RsvgRectangle> for cairo::Rectangle {
     }
 }
 
-/// Contains all the interior mutability for a RsvgHandle to be called
-/// from the C API.
-pub struct CHandle {
-    inner: RefCell<CHandleInner>,
-    load_state: RefCell<LoadState>,
-}
+mod imp {
+    use super::*;
+    /// Contains all the interior mutability for a RsvgHandle to be called
+    /// from the C API.
+    pub struct CHandle {
+        pub(super) inner: RefCell<CHandleInner>,
+        pub(super) load_state: RefCell<LoadState>,
+    }
 
-struct CHandleInner {
-    dpi: Dpi,
-    load_flags: LoadFlags,
-    base_url: BaseUrl,
-    size_callback: SizeCallback,
-    is_testing: bool,
-}
+    pub(super) struct CHandleInner {
+        pub(super) dpi: Dpi,
+        pub(super) load_flags: LoadFlags,
+        pub(super) base_url: BaseUrl,
+        pub(super) size_callback: SizeCallback,
+        pub(super) is_testing: bool,
+    }
 
-unsafe impl ClassStruct for RsvgHandleClass {
-    type Type = CHandle;
-}
+    #[glib::object_subclass]
+    impl ObjectSubclass for CHandle {
+        const NAME: &'static str = "RsvgHandle";
 
-unsafe impl InstanceStruct for RsvgHandle {
-    type Type = CHandle;
-}
+        type ParentType = glib::Object;
+        type Type = super::CHandle;
 
-impl ops::Deref for RsvgHandleClass {
-    type Target = ObjectClass;
+        type Instance = RsvgHandle;
+        type Class = RsvgHandleClass;
 
-    fn deref(&self) -> &Self::Target {
-        unsafe {
-            let self_ptr: *const RsvgHandleClass = self;
-            &*(self_ptr as *const Self::Target)
+        fn new() -> Self {
+            CHandle {
+                inner: RefCell::new(CHandleInner {
+                    dpi: Dpi::default(),
+                    load_flags: LoadFlags::default(),
+                    base_url: BaseUrl::default(),
+                    size_callback: SizeCallback::default(),
+                    is_testing: false,
+                }),
+                load_state: RefCell::new(LoadState::Start),
+            }
+        }
+    }
+
+    impl ObjectImpl for CHandle {
+        fn properties() -> &'static [ParamSpec] {
+            static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+                vec![
+                    ParamSpec::new_flags(
+                        "flags",
+                        "Flags",
+                        "Loading flags",
+                        HandleFlags::static_type(),
+                        0,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    ParamSpec::new_double(
+                        "dpi-x",
+                        "Horizontal DPI",
+                        "Horizontal resolution in dots per inch",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                    ),
+                    ParamSpec::new_double(
+                        "dpi-y",
+                        "Vertical DPI",
+                        "Vertical resolution in dots per inch",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                    ),
+                    ParamSpec::new_string(
+                        "base-uri",
+                        "Base URI",
+                        "Base URI for resolving relative references",
+                        None,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                    ),
+                    ParamSpec::new_int(
+                        "width",
+                        "Image width",
+                        "Image width",
+                        0,
+                        i32::MAX,
+                        0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_int(
+                        "height",
+                        "Image height",
+                        "Image height",
+                        0,
+                        i32::MAX,
+                        0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_double(
+                        "em",
+                        "em",
+                        "em",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_double(
+                        "ex",
+                        "ex",
+                        "ex",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_string(
+                        "title",
+                        "deprecated",
+                        "deprecated",
+                        None,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_string(
+                        "desc",
+                        "deprecated",
+                        "deprecated",
+                        None,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_string(
+                        "metadata",
+                        "deprecated",
+                        "deprecated",
+                        None,
+                        ParamFlags::READABLE,
+                    ),
+                ]
+            });
+            PROPERTIES.as_ref()
+        }
+
+        fn set_property(
+            &self,
+            obj: &Self::Type,
+            id: usize,
+            value: &glib::Value,
+            pspec: &ParamSpec,
+        ) {
+            match pspec.name() {
+                "flags" => {
+                    let v: HandleFlags = value.get().expect("flags value has incorrect type");
+                    obj.set_flags(v);
+                }
+
+                "dpi-x" => {
+                    let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
+                    obj.set_dpi_x(dpi_x);
+                }
+
+                "dpi-y" => {
+                    let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
+                    obj.set_dpi_y(dpi_y);
+                }
+
+                "base-uri" => {
+                    let v: Option<String> = value.get().expect("base-uri value has incorrect type");
+
+                    // rsvg_handle_set_base_uri() expects non-NULL URI strings,
+                    // but the "base-uri" property can be set to NULL due to a missing
+                    // construct-time property.
+
+                    if let Some(s) = v {
+                        obj.set_base_url(&s);
+                    }
+                }
+
+                _ => unreachable!("invalid property id {}", id),
+            }
+        }
+
+        fn property(&self, obj: &Self::Type, id: usize, pspec: &ParamSpec) -> glib::Value {
+            match pspec.name() {
+                "flags" => obj.get_flags().to_value(),
+                "dpi-x" => obj.get_dpi_x().to_value(),
+                "dpi-y" => obj.get_dpi_y().to_value(),
+                "base-uri" => obj.get_base_url().to_value(),
+                "width" => obj.get_dimensions_or_empty().width.to_value(),
+                "height" => obj.get_dimensions_or_empty().height.to_value(),
+                "em" => obj.get_dimensions_or_empty().em.to_value(),
+                "ex" => obj.get_dimensions_or_empty().ex.to_value(),
+
+                // the following three are deprecated
+                "title" => None::<String>.to_value(),
+                "desc" => None::<String>.to_value(),
+                "metadata" => None::<String>.to_value(),
+
+                _ => unreachable!("invalid property id={} for RsvgHandle", id),
+            }
         }
     }
 }
 
-impl ops::DerefMut for RsvgHandleClass {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe {
-            let self_ptr: *mut RsvgHandleClass = self;
-            &mut *(self_ptr as *mut Self::Target)
-        }
-    }
-}
-
-#[glib::object_subclass]
-impl ObjectSubclass for CHandle {
-    const NAME: &'static str = "RsvgHandle";
-
-    type ParentType = glib::Object;
-
+glib::wrapper! {
     // We don't use subclass:simple::InstanceStruct and ClassStruct
     // because we need to maintain the respective _abi_padding of each
     // of RsvgHandleClass and RsvgHandle.
-
-    type Instance = RsvgHandle;
-    type Class = RsvgHandleClass;
-
-    fn new() -> Self {
-        CHandle {
-            inner: RefCell::new(CHandleInner {
-                dpi: Dpi::default(),
-                load_flags: LoadFlags::default(),
-                base_url: BaseUrl::default(),
-                size_callback: SizeCallback::default(),
-                is_testing: false,
-            }),
-            load_state: RefCell::new(LoadState::Start),
-        }
-    }
-}
-
-impl StaticType for CHandle {
-    fn static_type() -> Type {
-        CHandle::type_()
-    }
-}
-
-impl ObjectImpl for CHandle {
-    fn properties() -> &'static [ParamSpec] {
-        static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
-            vec![
-                ParamSpec::new_flags(
-                    "flags",
-                    "Flags",
-                    "Loading flags",
-                    HandleFlags::static_type(),
-                    0,
-                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
-                ),
-                ParamSpec::new_double(
-                    "dpi-x",
-                    "Horizontal DPI",
-                    "Horizontal resolution in dots per inch",
-                    0.0,
-                    f64::MAX,
-                    0.0,
-                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                ),
-                ParamSpec::new_double(
-                    "dpi-y",
-                    "Vertical DPI",
-                    "Vertical resolution in dots per inch",
-                    0.0,
-                    f64::MAX,
-                    0.0,
-                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                ),
-                ParamSpec::new_string(
-                    "base-uri",
-                    "Base URI",
-                    "Base URI for resolving relative references",
-                    None,
-                    ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                ),
-                ParamSpec::new_int(
-                    "width",
-                    "Image width",
-                    "Image width",
-                    0,
-                    i32::MAX,
-                    0,
-                    ParamFlags::READABLE,
-                ),
-                ParamSpec::new_int(
-                    "height",
-                    "Image height",
-                    "Image height",
-                    0,
-                    i32::MAX,
-                    0,
-                    ParamFlags::READABLE,
-                ),
-                ParamSpec::new_double("em", "em", "em", 0.0, f64::MAX, 0.0, ParamFlags::READABLE),
-                ParamSpec::new_double("ex", "ex", "ex", 0.0, f64::MAX, 0.0, ParamFlags::READABLE),
-                ParamSpec::new_string(
-                    "title",
-                    "deprecated",
-                    "deprecated",
-                    None,
-                    ParamFlags::READABLE,
-                ),
-                ParamSpec::new_string(
-                    "desc",
-                    "deprecated",
-                    "deprecated",
-                    None,
-                    ParamFlags::READABLE,
-                ),
-                ParamSpec::new_string(
-                    "metadata",
-                    "deprecated",
-                    "deprecated",
-                    None,
-                    ParamFlags::READABLE,
-                ),
-            ]
-        });
-        PROPERTIES.as_ref()
-    }
-
-    fn set_property(&self, _obj: &Self::Type, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-        match pspec.name() {
-            "flags" => {
-                let v: HandleFlags = value.get().expect("flags value has incorrect type");
-                self.set_flags(v);
-            }
-
-            "dpi-x" => {
-                let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
-                self.set_dpi_x(dpi_x);
-            }
-
-            "dpi-y" => {
-                let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
-                self.set_dpi_y(dpi_y);
-            }
-
-            "base-uri" => {
-                let v: Option<String> = value.get().expect("base-uri value has incorrect type");
-
-                // rsvg_handle_set_base_uri() expects non-NULL URI strings,
-                // but the "base-uri" property can be set to NULL due to a missing
-                // construct-time property.
-
-                if let Some(s) = v {
-                    self.set_base_url(&s);
-                }
-            }
-
-            _ => unreachable!("invalid property id {}", id),
-        }
-    }
-
-    fn property(&self, _obj: &Self::Type, id: usize, pspec: &ParamSpec) -> glib::Value {
-        match pspec.name() {
-            "flags" => self.get_flags().to_value(),
-            "dpi-x" => self.get_dpi_x().to_value(),
-            "dpi-y" => self.get_dpi_y().to_value(),
-            "base-uri" => self.get_base_url().to_value(),
-            "width" => self.get_dimensions_or_empty().width.to_value(),
-            "height" => self.get_dimensions_or_empty().height.to_value(),
-            "em" => self.get_dimensions_or_empty().em.to_value(),
-            "ex" => self.get_dimensions_or_empty().ex.to_value(),
-
-            // the following three are deprecated
-            "title" => None::<String>.to_value(),
-            "desc" => None::<String>.to_value(),
-            "metadata" => None::<String>.to_value(),
-
-            _ => unreachable!("invalid property id={} for RsvgHandle", id),
-        }
-    }
+    pub struct CHandle(ObjectSubclass<imp::CHandle>);
 }
 
 // Keep in sync with tests/src/reference.rs
@@ -616,7 +617,8 @@ impl CairoRectangleExt for cairo::Rectangle {
 
 impl CHandle {
     fn set_base_url(&self, url: &str) {
-        let state = self.load_state.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let state = imp.load_state.borrow();
 
         match *state {
             LoadState::Start => (),
@@ -631,7 +633,7 @@ impl CHandle {
         match Url::parse(&url) {
             Ok(u) => {
                 rsvg_log!("setting base_uri to \"{}\"", u.as_str());
-                let mut inner = self.inner.borrow_mut();
+                let mut inner = imp.inner.borrow_mut();
                 inner.base_url.set(u);
             }
 
@@ -650,44 +652,60 @@ impl CHandle {
     }
 
     fn get_base_url(&self) -> Option<String> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.base_url.get().map(|url| url.as_str().to_string())
     }
 
     fn get_base_url_as_ptr(&self) -> *const libc::c_char {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.base_url.get_ptr()
     }
 
     fn set_dpi_x(&self, dpi_x: f64) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         let dpi = inner.dpi;
         inner.dpi = Dpi::new(dpi_x, dpi.y());
     }
 
     fn set_dpi_y(&self, dpi_y: f64) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         let dpi = inner.dpi;
         inner.dpi = Dpi::new(dpi.x(), dpi_y);
     }
 
     fn get_dpi_x(&self) -> f64 {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.dpi.x()
     }
 
     fn get_dpi_y(&self) -> f64 {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.dpi.y()
     }
 
     fn set_flags(&self, flags: HandleFlags) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         inner.load_flags = LoadFlags::from(flags);
     }
 
     fn get_flags(&self) -> HandleFlags {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         HandleFlags::from(inner.load_flags)
     }
 
@@ -697,12 +715,15 @@ impl CHandle {
         user_data: glib::ffi::gpointer,
         destroy_notify: glib::ffi::GDestroyNotify,
     ) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         inner.size_callback = SizeCallback::new(size_func, user_data, destroy_notify);
     }
 
     fn write(&self, buf: &[u8]) {
-        let mut state = self.load_state.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+        let mut state = imp.load_state.borrow_mut();
 
         match *state {
             LoadState::Start => {
@@ -722,8 +743,10 @@ impl CHandle {
     }
 
     fn close(&self) -> Result<(), LoadingError> {
-        let inner = self.inner.borrow();
-        let mut state = self.load_state.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
+        let mut state = imp.load_state.borrow_mut();
 
         match *state {
             LoadState::Start => {
@@ -752,8 +775,10 @@ impl CHandle {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        let state = self.load_state.borrow_mut();
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let state = imp.load_state.borrow_mut();
+        let inner = imp.inner.borrow();
 
         match *state {
             LoadState::Start => {
@@ -784,7 +809,8 @@ impl CHandle {
     }
 
     fn get_handle_ref(&self) -> Result<Ref<'_, SvgHandle>, RenderingError> {
-        let state = self.load_state.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let state = imp.load_state.borrow();
 
         match *state {
             LoadState::Start => {
@@ -813,7 +839,8 @@ impl CHandle {
     }
 
     fn make_loader(&self) -> Loader {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         Loader::new()
             .with_unlimited_size(inner.load_flags.unlimited_size)
@@ -831,7 +858,8 @@ impl CHandle {
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
@@ -874,7 +902,8 @@ impl CHandle {
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         if id.is_none() {
             return Ok(RsvgPositionData { x: 0, y: 0 });
@@ -898,7 +927,8 @@ impl CHandle {
     }
 
     fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         let mut renderer = CairoRenderer::new(&*handle_ref).with_dpi(inner.dpi.x(), inner.dpi.y());
 
@@ -920,7 +950,8 @@ impl CHandle {
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
-        match *self.load_state.borrow_mut() {
+        let imp = imp::CHandle::from_instance(self);
+        match *imp.load_state.borrow_mut() {
             LoadState::ClosedOk { ref mut handle } => handle.set_stylesheet(css),
 
             _ => {
@@ -1060,7 +1091,8 @@ impl CHandle {
     }
 
     fn set_testing(&self, is_testing: bool) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+        let mut inner = imp.inner.borrow_mut();
         inner.is_testing = is_testing;
     }
 }
@@ -1081,14 +1113,14 @@ fn is_cancellable(obj: *mut gio::ffi::GCancellable) -> bool {
     unsafe { instance_of::<gio::Cancellable>(obj as *const _) }
 }
 
-fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
+fn get_rust_handle(handle: *const RsvgHandle) -> CHandle {
     let handle = unsafe { &*handle };
-    handle.impl_()
+    handle.impl_().instance()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_get_type() -> glib::ffi::GType {
-    CHandle::type_().into_glib()
+    CHandle::static_type().into_glib()
 }
 
 #[no_mangle]
@@ -1488,20 +1520,17 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
-    let obj: *mut glib::gobject_ffi::GObject =
-        glib::Object::new::<CHandle>(&[]).unwrap().to_glib_full();
+    let obj = glib::Object::new::<CHandle>(&[]).unwrap();
 
-    obj as *mut _
+    obj.to_glib_full()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj: *mut glib::gobject_ffi::GObject =
-        glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))])
-            .unwrap()
-            .to_glib_full();
+    let obj = glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))])
+        .unwrap();
 
-    obj as *mut _
+    obj.to_glib_full()
 }
 
 #[no_mangle]
