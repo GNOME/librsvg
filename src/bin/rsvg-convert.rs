@@ -21,7 +21,7 @@ mod windows_imports {
 use self::windows_imports::*;
 
 use librsvg::rsvg_convert_only::{
-    Dpi, Horizontal, LegacySize, Normalize, NormalizeParams, PathOrUrl, ULength, Vertical,
+    CssLength, Dpi, Horizontal, LegacySize, Normalize, NormalizeParams, PathOrUrl, ULength, Validate, Vertical,
 };
 use librsvg::{
     AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
@@ -993,8 +993,8 @@ fn is_absolute_unit(u: LengthUnit) -> bool {
     }
 }
 
-fn parse_length<N: Normalize>(s: String) -> Result<ULength<N>, clap::Error> {
-    <ULength<N> as Parse>::parse_str(&s)
+fn parse_length<N: Normalize, V: Validate>(s: String) -> Result<CssLength<N, V>, clap::Error> {
+    <CssLength<N, V> as Parse>::parse_str(&s)
         .map_err(|_| {
             let desc = format!(
                 "Invalid value: The argument '{}' can not be parsed as a length",
