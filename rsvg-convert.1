@@ -474,21 +474,26 @@ selector applies to all elements.
 
 
 .SH OPTIONS
+
+.SS GENERAL OPTIONS
 .TP
-.I "\-d \-\-dpi-x number"
-Set the X resolution of the image in pixels per inch.  RSVG's current default is 96\ DPI.
+.I "\-f \-\-format [png, pdf, ps, eps, svg]"
+Output format for the rendered document.  Default is png.
 .TP
-.I "\-p \-\-dpi-y number"
-Set the Y resolution of the image in pixels per inch.  RSVG's current default is 96\ DPI.
+.I "\-o \-\-output filename"
+Specify the output filename.  If unspecified, outputs to standard output.
 .TP
-.I "\-x \-\-x\-zoom number"
-Horizontal scaling factor.  If unspecified, 1.0 is used as the default.
+.I "\-v \-\-version"
+Display what version of rsvg-convert you are running.
 .TP
-.I "\-y \-\-y\-zoom number"
-Vertical factor factor.  If unspecified, 1.0 is used as the default.
+.I "\-\-help"
+Display a summary of usage and options.
+
+.SS CHANGING THE OUTPUT SIZE
 .TP
-.I "\-z \-\-zoom number"
-Horizontal and vertical scaling factor.  If unspecified, 1.0 is used as the default.
+.I "\-\-page-width length \-\-page-height length"
+Page size of the output document; both options must be used together.  The default is to use the image's
+width and height as modified by the options below.
 .TP
 .I "\-w \-\-width length"
 Width of the rendered image.  If unspecified, the natural width of the image is used
@@ -504,23 +509,28 @@ Specify that the aspect ratio is to be preserved, i.e. the image is scaled propo
 and
 .BR --height \.
 If not specified, aspect ratio will not be preserved.
+
 .TP
-.I "\-\-page-width length \-\-page-height length"
-Page size of the output document; both options must be used together.
+.I "\-d \-\-dpi-x number"
+Set the X resolution of the image in pixels per inch.  Default is 96\ DPI.
 .TP
-.I "\-f \-\-format [png, pdf, ps, eps, svg]"
-Output format for the rendered document.  The default is png.
+.I "\-p \-\-dpi-y number"
+Set the Y resolution of the image in pixels per inch.  Default is 96\ DPI.
 .TP
-.I "\-o \-\-output filename"
-Specify the output filename.  If unspecified, outputs to standard output.
+.I "\-x \-\-x\-zoom number"
+Horizontal scaling factor.  Default is 1.0.
 .TP
-.I "\-i \-\-export-id object-id"
-Allows to specify an SVG object that should be exported based on its XML id.  If not specified, all
-objects will be exported.
+.I "\-y \-\-y\-zoom number"
+Vertical factor factor.  Default is 1.0.
+.TP
+.I "\-z \-\-zoom number"
+Horizontal and vertical scaling factor.  Default is 1.0.
+
+.SS CONTROLLING THE RENDERED APPEARANCE
 .TP
 .I "\-b \-\-background-color [black, white, #abccee, #aaa...]"
 Specify the background color.  If unspecified, none is used as the default; this will create
-transparent PNGs.
+transparent PNGs, or PDF/PS/EPS without a special background.
 .TP
 .I "\-s \-\-stylesheet filename.css"
 Filename of a custom CSS stylesheet.
@@ -528,12 +538,9 @@ Filename of a custom CSS stylesheet.
 .I "\-l \-\-accept-language [es-MX,fr,en]"
 Specify which languages will be used for SVG documents with multiple languages.  The string is
 formatted like an HTTP Accept-Language header, which is a comma-separated list of BCP47 language
-tags: https://www.rfc-editor.org/info/bcp47
-.TP
-.I "\-u \-\-unlimited"
-The XML parser has some guards designed to mitigate large CPU or memory consumption in the face of
-malicious documents.  It may also refuse to resolve data: URIs used to embed image data.  If you are
-running into such issues when converting a SVG, this option allows to turn off these guards.
+tags: https://www.rfc-editor.org/info/bcp47.
+
+.SS OPTIONS SPECIFIC TO PDF/PS/EPS OUTPUT
 .TP
 .I "\-\-keep-image-data"
 Include the original, compressed images in the final output, rather than uncompressed RGB data. This
@@ -542,9 +549,18 @@ is the default behavior for PDF and (E)PS output.
 .I "\-\-no-keep-image-data"
 Do not include the original, compressed images but instead embed uncompressed RGB date in PDF or
 (E)PS output. This will most likely result in larger documents that are slower to read.
+
+.SS MISCELLANEOUS
 .TP
-.I "\-v \-\-version"
-Display what version of rsvg-convert you are running.
+.I "\-i \-\-export-id object-id"
+Allows to specify an SVG object that should be exported based on its XML id.  If not specified, all
+objects will be exported.
+.TP
+.I "\-u \-\-unlimited"
+The XML parser has some guards designed to mitigate large CPU or memory consumption in the face of
+malicious documents.  It may also refuse to resolve data: URIs used to embed image data.  If you are
+running into such issues when converting a SVG, this option allows to turn off these guards.
+
 .SH ENVIRONMENT VARIABLES
 .TP
 .I "SOURCE_DATE_EPOCH"
