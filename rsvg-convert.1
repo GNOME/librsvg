@@ -538,7 +538,8 @@ Filename of a custom CSS stylesheet.
 .I "\-l \-\-accept-language [es-MX,fr,en]"
 Specify which languages will be used for SVG documents with multiple languages.  The string is
 formatted like an HTTP Accept-Language header, which is a comma-separated list of BCP47 language
-tags: https://www.rfc-editor.org/info/bcp47.
+tags: https://www.rfc-editor.org/info/bcp47.  The default is to use the language specified by
+environment variables; see the section "ENVIRONMENT VARIABLES" below.
 
 .SS OPTIONS SPECIFIC TO PDF/PS/EPS OUTPUT
 .TP
@@ -569,6 +570,18 @@ PDF file.  This is useful for reproducible output.  The environment variable mus
 decimal number corresponding to a UNIX timestamp, defined as the number of seconds, excluding leap
 seconds, since 01 Jan 1970 00:00:00 UTC.  The specification for this can be found at
 https://reproducible-builds.org/specs/source-date-epoch/
+.TP
+.I System language
+Unless the
+.B --accept-language
+option is specified, the default is to use the system's environment to detect the user's preferred
+language.  This consults the environment variables
+.IR LANGUAGE ,
+.IR LC_ALL ,
+.IR LC_MESSAGES ,
+and
+.IR LANG .
+
 .SH MORE INFORMATION
 
 https://gitlab.gnome.org/GNOME/librsvg
