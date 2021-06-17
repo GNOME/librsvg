@@ -32,7 +32,7 @@ fn simple_opacity_with_transform() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 150, 150).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
         cr.rectangle(10.0, 10.0, 30.0, 30.0);
@@ -74,7 +74,7 @@ fn simple_opacity_with_offset_viewport() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 150, 150).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
         cr.rectangle(10.0, 10.0, 30.0, 30.0);
@@ -120,7 +120,7 @@ fn simple_opacity_with_scale() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 500).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
         cr.scale(8.0, 8.0);
@@ -169,7 +169,7 @@ fn markers_with_scale() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 800, 800).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.scale(4.0, 4.0);
 
@@ -222,7 +222,7 @@ fn opacity_inside_transformed_group() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 140, 140).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(20.0, 20.0);
         cr.rectangle(20.0, 20.0, 60.0, 60.0);
@@ -269,7 +269,7 @@ fn compound_opacity() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 380).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(10.0, 10.0);
 
@@ -340,7 +340,7 @@ fn nested_masks() {
         cairo::ImageSurface::create(cairo::Format::ARgb32, 321 + 20, 27 + 20).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(10.0, 10.0);
         cr.scale(321.0 / 6420.0, 27.0 / 540.0);

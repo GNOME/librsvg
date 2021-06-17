@@ -32,7 +32,7 @@ fn rendering_instancing_limit(name: &str) {
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 500).unwrap();
-    let cr = cairo::Context::new(&surface);
+    let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
 
     // Note that at least 515-patttern-billion-laughs.svg requires a viewport of this size
     // or bigger; a smaller one causes the recursive patterns to get so small that they

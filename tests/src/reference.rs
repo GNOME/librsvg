@@ -65,7 +65,7 @@ fn reference_test(path: &str) {
     .unwrap();
 
     {
-        let cr = cairo::Context::new(&surface);
+        let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
         cr.translate(f64::from(FRAME_SIZE), f64::from(FRAME_SIZE));
         renderer
             .render_document(
@@ -107,7 +107,7 @@ fn extract_rectangle(
     h: i32,
 ) -> Result<cairo::ImageSurface, cairo::Error> {
     let dest = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
-    let cr = cairo::Context::new(&dest);
+    let cr = cairo::Context::new(&dest).expect("Failed to create a cairo context");
     cr.set_source_surface(&source, f64::from(-x), f64::from(-y));
     cr.paint();
     Ok(dest)

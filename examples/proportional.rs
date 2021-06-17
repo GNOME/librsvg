@@ -40,7 +40,7 @@ fn main() {
     let renderer = librsvg::CairoRenderer::new(&handle);
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
-    let cr = cairo::Context::new(&surface);
+    let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
 
     let res = renderer.render_document(
         &cr,

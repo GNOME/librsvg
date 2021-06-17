@@ -52,7 +52,7 @@ fn render_layer() {
     let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 300, 300).unwrap();
 
     let res = {
-        let cr = cairo::Context::new(&output);
+        let cr = cairo::Context::new(&output).expect("Failed to create cairo context");
         let viewport = cairo::Rectangle {
             x: 100.0,
             y: 100.0,
@@ -70,7 +70,7 @@ fn render_layer() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 300, 300).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(100.0, 100.0);
 
@@ -134,7 +134,7 @@ fn untransformed_element() {
     let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 300, 300).unwrap();
 
     let res = {
-        let cr = cairo::Context::new(&output);
+        let cr = cairo::Context::new(&output).expect("Failed to create cairo context");
         let viewport = cairo::Rectangle {
             x: 100.0,
             y: 100.0,
@@ -152,7 +152,7 @@ fn untransformed_element() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 300, 300).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(100.0, 100.0);
 
@@ -190,7 +190,7 @@ fn set_stylesheet() {
     let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
 
     let res = {
-        let cr = cairo::Context::new(&output);
+        let cr = cairo::Context::new(&output).expect("Failed to create cairo context");
         let viewport = cairo::Rectangle {
             x: 0.0,
             y: 0.0,
@@ -208,7 +208,7 @@ fn set_stylesheet() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.rectangle(10.0, 20.0, 30.0, 40.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);

@@ -69,7 +69,7 @@ fn nonexistent_image_shouldnt_cancel_rendering() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 50, 50).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).unwrap();
 
         cr.rectangle(10.0, 10.0, 30.0, 30.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
@@ -118,7 +118,7 @@ fn href_attribute_overrides_xlink_href() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 500).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).unwrap();
 
         cr.rectangle(100.0, 100.0, 100.0, 100.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
@@ -159,7 +159,7 @@ fn nonexistent_filter_leaves_object_unfiltered() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 500).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).unwrap();
 
         cr.rectangle(100.0, 100.0, 100.0, 100.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
@@ -224,7 +224,7 @@ fn recursive_paint_servers_fallback_to_color() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).unwrap();
 
         cr.rectangle(0.0, 100.0, 200.0, 100.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
@@ -387,7 +387,7 @@ fn switch_element_should_ignore_elements_in_error() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).unwrap();
 
         cr.rectangle(10.0, 10.0, 10.0, 10.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
