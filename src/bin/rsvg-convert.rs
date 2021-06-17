@@ -21,7 +21,8 @@ mod windows_imports {
 use self::windows_imports::*;
 
 use librsvg::rsvg_convert_only::{
-    CssLength, Dpi, Horizontal, LegacySize, Normalize, NormalizeParams, PathOrUrl, ULength, Validate, Vertical,
+    CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, PathOrUrl, ULength,
+    Validate, Vertical,
 };
 use librsvg::{
     AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
@@ -254,6 +255,8 @@ impl Surface {
     pub fn render(
         &self,
         renderer: &CairoRenderer,
+        left: f64,
+        top: f64,
         final_size: Size,
         geometry: cairo::Rectangle,
         background_color: Option<Color>,
@@ -271,6 +274,8 @@ impl Surface {
 
             cr.paint();
         }
+
+        cr.translate(left, top);
 
         // Note that we don't scale the viewport; we change the cr's transform instead.  This
         // is because SVGs are rendered proportionally to fit within the viewport, regardless
@@ -443,6 +448,8 @@ struct Converter {
     pub zoom: Scale,
     pub width: Option<ULength<Horizontal>>,
     pub height: Option<ULength<Vertical>>,
+    pub left: Option<Length<Horizontal>>,
+    pub top: Option<Length<Vertical>>,
     pub page_size: Option<(ULength<Horizontal>, ULength<Vertical>)>,
     pub format: Format,
     pub export_id: Option<String>,
@@ -571,8 +578,13 @@ impl Converter {
             let page_size = page_size.unwrap_or(final_size);
             let s = surface.get_or_try_init(|| self.create_surface(page_size))?;
 
+            let left = self.left.map(|l| l.to_user(&params)).unwrap_or(0.0);
+            let top = self.top.map(|l| l.to_user(&params)).unwrap_or(0.0);
+
             s.render(
                 &renderer,
+                left,
+                top,
                 final_size,
                 geometry,
                 self.background_color,
@@ -723,6 +735,20 @@ fn parse_args() -> Result<Converter, Error> {
                 .help("Height [defaults to the height of the SVG]"),
         )
         .arg(
+            clap::Arg::with_name("top")
+                .long("top")
+                .takes_value(true)
+                .value_name("length")
+                .help("Distance between top edge of page and the image [defaults to 0]"),
+        )
+        .arg(
+            clap::Arg::with_name("left")
+                .long("left")
+                .takes_value(true)
+                .value_name("length")
+                .help("Distance between left edge of page and the image [defaults to 0]"),
+        )
+        .arg(
             clap::Arg::with_name("page_width")
                 .long("page-width")
                 .takes_value(true)
@@ -856,6 +882,15 @@ fn parse_args() -> Result<Converter, Error> {
         .map(parse_length)
         .transpose()?;
 
+    let left = value_t!(matches, "left", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+    let top = value_t!(matches, "top", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+
     let page_width = value_t!(matches, "page_width", String)
         .or_none()?
         .map(parse_length)
@@ -905,6 +940,8 @@ fn parse_args() -> Result<Converter, Error> {
         },
         width,
         height,
+        left,
+        top,
         page_size,
         format,
         export_id: value_t!(matches, "export_id", String)

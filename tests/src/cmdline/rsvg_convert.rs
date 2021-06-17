@@ -541,6 +541,20 @@ fn zero_offset_png() {
         .stdout(file::is_png().with_contents("tests/fixtures/cmdline/zero-offset-png.png"));
 }
 
+#[test]
+fn offset_png() {
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/dimensions-in.svg")
+        .arg("--page-width=640")
+        .arg("--page-height=480")
+        .arg("--width=200")
+        .arg("--height=100")
+        .arg("--left=100")
+        .arg("--top=50")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/cmdline/offset-png.png"));
+}
+
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn unscaled_pdf_size() {
