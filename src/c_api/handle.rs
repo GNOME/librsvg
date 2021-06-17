@@ -34,6 +34,7 @@ use url::Url;
 
 use glib::subclass::prelude::*;
 use glib::translate::*;
+use glib::{ffi::gpointer, gobject_ffi};
 use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue};
 use once_cell::sync::Lazy;
 
@@ -139,9 +140,9 @@ impl From<LoadFlags> for HandleFlags {
 #[repr(C)]
 pub struct RsvgHandleClass {
     // Keep this in sync with rsvg.h:RsvgHandleClass
-    parent: glib::gobject_ffi::GObjectClass,
+    parent: gobject_ffi::GObjectClass,
 
-    _abi_padding: [glib::ffi::gpointer; 15],
+    _abi_padding: [gpointer; 15],
 }
 
 unsafe impl ClassStruct for RsvgHandleClass {
@@ -156,9 +157,9 @@ unsafe impl ClassStruct for RsvgHandleClass {
 #[repr(C)]
 pub struct RsvgHandle {
     // Keep this in sync with rsvg.h:RsvgHandle
-    parent: glib::gobject_ffi::GObject,
+    parent: gobject_ffi::GObject,
 
-    _abi_padding: [glib::ffi::gpointer; 16],
+    _abi_padding: [gpointer; 16],
 }
 
 unsafe impl InstanceStruct for RsvgHandle {
@@ -527,13 +528,13 @@ pub type RsvgSizeFunc = Option<
     unsafe extern "C" fn(
         inout_width: *mut libc::c_int,
         inout_height: *mut libc::c_int,
-        user_data: glib::ffi::gpointer,
+        user_data: gpointer,
     ),
 >;
 
 struct SizeCallback {
     size_func: RsvgSizeFunc,
-    user_data: glib::ffi::gpointer,
+    user_data: gpointer,
     destroy_notify: glib::ffi::GDestroyNotify,
     in_loop: Cell<bool>,
 }
@@ -541,7 +542,7 @@ struct SizeCallback {
 impl SizeCallback {
     fn new(
         size_func: RsvgSizeFunc,
-        user_data: glib::ffi::gpointer,
+        user_data: gpointer,
         destroy_notify: glib::ffi::GDestroyNotify,
     ) -> Self {
         SizeCallback {
@@ -712,7 +713,7 @@ impl CHandle {
     fn set_size_callback(
         &self,
         size_func: RsvgSizeFunc,
-        user_data: glib::ffi::gpointer,
+        user_data: gpointer,
         destroy_notify: glib::ffi::GDestroyNotify,
     ) {
         let imp = imp::CHandle::from_instance(self);
@@ -1223,7 +1224,7 @@ pub unsafe extern "C" fn rsvg_handle_set_dpi_x_y(
 pub unsafe extern "C" fn rsvg_handle_set_size_callback(
     handle: *const RsvgHandle,
     size_func: RsvgSizeFunc,
-    user_data: glib::ffi::gpointer,
+    user_data: gpointer,
     destroy_notify: glib::ffi::GDestroyNotify,
 ) {
     rsvg_return_if_fail! {
@@ -1591,7 +1592,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
-            glib::gobject_ffi::g_object_unref(raw_handle as *mut _);
+            gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
     }
@@ -1631,7 +1632,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
-            glib::gobject_ffi::g_object_unref(raw_handle as *mut _);
+            gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
     }
@@ -1674,7 +1675,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
         error,
     );
 
-    glib::gobject_ffi::g_object_unref(raw_stream as *mut _);
+    gobject_ffi::g_object_unref(raw_stream as *mut _);
     ret
 }
 
@@ -1700,7 +1701,7 @@ unsafe fn set_out_param<T: Copy>(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_free(handle: *mut RsvgHandle) {
-    glib::gobject_ffi::g_object_unref(handle as *mut _);
+    gobject_ffi::g_object_unref(handle as *mut _);
 }
 
 #[no_mangle]
