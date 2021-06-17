@@ -376,27 +376,6 @@ or
 .B viewBox
 attributes.
 
-.SS PAGE SIZE
-To define the size of the output media independently of the scaled size of the document, use both the
-.B --page-width
-and
-.B --page-height
-options at the same time.  The following scales an SVG to 2*3 inches and places it in an US Letter page, as a PDF:
-.P
-.RS
-.B rsvg-convert
-.BI --format= pdf
-.BI --width= 2in
-.BI --height= 3in
-.B --keep-aspect-ratio
-.BI --page-width= 8.5in
-.BI --page-height= 11in
-.I input.svg
-.B >
-.I output.pdf
-.RE
-.P
-
 .SS BACKGROUND COLOR
 You can use the
 .B --background-color
