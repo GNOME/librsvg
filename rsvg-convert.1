@@ -145,7 +145,7 @@ The following will create a 600*900 pixel PNG, or 2*3 inches at 300 dots-per-inc
 .I output.png
 .RE
 .P
-For vector formats (PDF, PS, EPS), you can specify the page size implicitly from the rendered size of the document.  This will scale an SVG document to fit in an A4 page and convert it to PDF:
+This will scale an SVG document to fit in an A4 page and convert it to PDF:
 .P
 .RS
 .B rsvg-convert
@@ -158,16 +158,35 @@ For vector formats (PDF, PS, EPS), you can specify the page size implicitly from
 .I output.pdf
 .RE
 .P
-Alternatively, you can specify the page size separately from the rendered size.  This will scale an SVG document to 10*10\ cm, and render it in a landscape A4 page as a PDF:
+
+.SS SPECIFYING A PAGE SIZE
+By default the size of the output comes from the rendered size specified with the
+.B --width
+and
+.B --height
+options, but you can specify a page size independently of the rendered size with
+.B --page-width
+and
+.BR --page-height ,
+together with
+.B --top
+and
+.B --left
+to control the position of the rendered image within the page.
+
+This will create a PDF with a landscape A4 page, by scaling an SVG document to 10*10\ cm, and
+placing it with its top-left corner 5\ cm away from the top and 8\ cm from the left of the page:
 .P
 .RS
 .B rsvg-convert
 .BI --format= pdf
+.BI --page-width= 297mm
+.BI --page-height= 210mm
 .BI --width= 10cm
 .BI --height= 10cm
 .B --keep-aspect-ratio
-.BI --page-width= 297mm
-.BI --page-height= 210mm
+.BI --top= 5cm
+.BI --left= 8cm
 .I input.svg
 .B >
 .I output.pdf
