@@ -82,7 +82,7 @@ as part of a pipeline; without an argument for the input filename it will read t
 .I output.png
 .RE
 .P
-.SS SPECIFYING DIMENSIONS
+.SS SPECIFYING THE RENDERED SIZE
 You can use the
 .B --width
 and
@@ -192,6 +192,46 @@ placing it with its top-left corner 5\ cm away from the top and 8\ cm from the l
 .I output.pdf
 .RE
 .P
+
+.SS SPECIFYING A SCALE FACTOR INSTEAD OF A RENDERED SIZE
+The
+.B --zoom
+option lets you scale the natural size of an SVG document.  For example, if
+.I input.svg
+is a document with a declared size of 100*200\ pixels, then the following command will render it at 250*500\ pixels (zoom\ 2.5):
+.P
+.RS
+.B rsvg-convert
+.BI --zoom=2.5
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+You can limit the maximum scaled size by specifying the
+.B --width
+and
+.B --height
+options together with
+.BR --zoom.
+Here, the image will be scaled 10x, but limited to 1000*1000\ pixels at the most:
+.P
+.RS
+.B rsvg-convert
+.BI --zoom=10
+.BI --width=1000
+.BI --height=1000
+.I input.svg
+.B >
+.I output.png
+.RE
+.P
+If you need different scale factors for the horizontal and vertical dimensions, use the
+.B --x-zoom
+and
+.B --y-zoom
+options instead of
+.BR --zoom.
 
 .SS CONVERSION OF PIXELS BASED ON THE DOTS-PER-INCH
 .B rsvg-convert
