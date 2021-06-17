@@ -20,8 +20,13 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
-use librsvg::rsvg_convert_only::{LegacySize, PathOrUrl};
-use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, Loader, Parse, RenderingError};
+use librsvg::rsvg_convert_only::{
+    CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, PathOrUrl, ULength,
+    Validate, Vertical,
+};
+use librsvg::{
+    AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
+};
 use once_cell::unsync::OnceCell;
 use std::ops::Deref;
 use std::path::PathBuf;
@@ -95,10 +100,10 @@ impl Size {
 #[derive(Clone, Copy, Debug)]
 enum ResizeStrategy {
     Scale(Scale),
-    Fit(u32, u32),
-    FitWidth(u32),
-    FitHeight(u32),
-    FitLargestScale(Scale, Option<u32>, Option<u32>),
+    Fit(f64, f64),
+    FitWidth(f64),
+    FitHeight(f64),
+    FitLargestScale(Scale, Option<f64>, Option<f64>),
 }
 
 impl ResizeStrategy {
@@ -112,25 +117,23 @@ impl ResizeStrategy {
                 w: input.w * s.x,
                 h: input.h * s.y,
             },
-            ResizeStrategy::Fit(w, h) => Size {
-                w: f64::from(w),
-                h: f64::from(h),
-            },
+            ResizeStrategy::Fit(w, h) => Size { w, h },
             ResizeStrategy::FitWidth(w) => Size {
-                w: f64::from(w),
-                h: input.h * f64::from(w) / input.w,
+                w,
+                h: input.h * w / input.w,
             },
             ResizeStrategy::FitHeight(h) => Size {
-                w: input.w * f64::from(h) / input.h,
-                h: f64::from(h),
+                w: input.w * h / input.h,
+                h,
             },
             ResizeStrategy::FitLargestScale(s, w, h) => {
                 let scaled_input_w = input.w * s.x;
                 let scaled_input_h = input.h * s.y;
 
-                let f = match (w.map(f64::from), h.map(f64::from)) {
+                let f = match (w, h) {
                     (Some(w), Some(h)) if w < scaled_input_w || h < scaled_input_h => {
                         let sx = w / scaled_input_w;
+
                         let sy = h / scaled_input_h;
                         if sx > sy {
                             sy
@@ -249,9 +252,12 @@ impl Surface {
         Err(Error("unsupported format".to_string()))
     }
 
+    #[allow(clippy::too_many_arguments)] // yeah, yeah, we'll refactor it eventually
     pub fn render(
         &self,
         renderer: &CairoRenderer,
+        left: f64,
+        top: f64,
         final_size: Size,
         geometry: cairo::Rectangle,
         background_color: Option<Color>,
@@ -269,6 +275,8 @@ impl Surface {
 
             cr.paint();
         }
+
+        cr.translate(left, top);
 
         // Note that we don't scale the viewport; we change the cr's transform instead.  This
         // is because SVGs are rendered proportionally to fit within the viewport, regardless
@@ -439,8 +447,11 @@ arg_enum! {
 struct Converter {
     pub dpi: (f64, f64),
     pub zoom: Scale,
-    pub width: Option<u32>,
-    pub height: Option<u32>,
+    pub width: Option<ULength<Horizontal>>,
+    pub height: Option<ULength<Vertical>>,
+    pub left: Option<Length<Horizontal>>,
+    pub top: Option<Length<Vertical>>,
+    pub page_size: Option<(ULength<Horizontal>, ULength<Vertical>)>,
     pub format: Format,
     pub export_id: Option<String>,
     pub keep_aspect_ratio: bool,
@@ -492,10 +503,61 @@ impl Converter {
                 .with_dpi(self.dpi.0, self.dpi.1)
                 .with_language(&self.language);
 
-            let geometry = self.natural_geometry(&renderer, input)?;
+            let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
+
+            // natural_size is in pixels
             let natural_size = Size::new(geometry.width, geometry.height);
 
-            let strategy = match (self.width, self.height) {
+            let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
+
+            // Convert natural size and requested size to pixels or points, depending on the target format,
+            let (natural_size, requested_width, requested_height, page_size) = match self.format {
+                Format::Png => {
+                    // PNG surface requires units in pixels
+                    (
+                        natural_size,
+                        self.width.map(|l| l.to_user(&params)),
+                        self.height.map(|l| l.to_user(&params)),
+                        self.page_size.map(|(w, h)| Size {
+                            w: w.to_user(&params),
+                            h: h.to_user(&params),
+                        }),
+                    )
+                }
+
+                Format::Pdf | Format::Ps | Format::Eps => {
+                    // These surfaces require units in points
+                    (
+                        Size {
+                            w: ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px)
+                                .to_points(&params),
+                            h: ULength::<Vertical>::new(natural_size.h, LengthUnit::Px)
+                                .to_points(&params),
+                        },
+                        self.width.map(|l| l.to_points(&params)),
+                        self.height.map(|l| l.to_points(&params)),
+                        self.page_size.map(|(w, h)| Size {
+                            w: w.to_points(&params),
+                            h: h.to_points(&params),
+                        }),
+                    )
+                }
+
+                Format::Svg => {
+                    // TODO: SVG surface can be created with any unit type; let's use pixels for now
+                    (
+                        natural_size,
+                        self.width.map(|l| l.to_user(&params)),
+                        self.height.map(|l| l.to_user(&params)),
+                        self.page_size.map(|(w, h)| Size {
+                            w: w.to_user(&params),
+                            h: h.to_user(&params),
+                        }),
+                    )
+                }
+            };
+
+            let strategy = match (requested_width, requested_height) {
                 // when w and h are not specified, scale to the requested zoom (if any)
                 (None, None) => ResizeStrategy::Scale(self.zoom),
 
@@ -508,16 +570,22 @@ impl Converter {
                 (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
 
                 // otherwise scale the image, but cap the zoom to match the requested size
-                _ => ResizeStrategy::FitLargestScale(self.zoom, self.width, self.height),
+                _ => ResizeStrategy::FitLargestScale(self.zoom, requested_width, requested_height),
             };
 
             let final_size = self.final_size(&strategy, &natural_size, input)?;
 
             // Create the surface once on the first input
-            let s = surface.get_or_try_init(|| self.create_surface(final_size))?;
+            let page_size = page_size.unwrap_or(final_size);
+            let s = surface.get_or_try_init(|| self.create_surface(page_size))?;
+
+            let left = self.left.map(|l| l.to_user(&params)).unwrap_or(0.0);
+            let top = self.top.map(|l| l.to_user(&params)).unwrap_or(0.0);
 
             s.render(
                 &renderer,
+                left,
+                top,
                 final_size,
                 geometry,
                 self.background_color,
@@ -532,26 +600,6 @@ impl Converter {
         };
 
         Ok(())
-    }
-
-    fn natural_geometry(
-        &self,
-        renderer: &CairoRenderer,
-        input: &Input,
-    ) -> Result<cairo::Rectangle, Error> {
-        match self.export_id {
-            None => renderer.legacy_layer_geometry(None),
-            Some(ref id) => renderer.geometry_for_element(Some(&id)),
-        }
-        .map(|(ink_r, _)| ink_r)
-        .map_err(|e| match e {
-            RenderingError::IdNotFound => error!(
-                "File {} does not have an object with id \"{}\")",
-                input,
-                self.export_id.as_deref().unwrap()
-            ),
-            _ => error!("Error rendering SVG {}: {}", input, e),
-        })
     }
 
     fn final_size(
@@ -584,6 +632,26 @@ impl Converter {
     }
 }
 
+fn natural_geometry(
+    renderer: &CairoRenderer,
+    input: &Input,
+    export_id: Option<&str>,
+) -> Result<cairo::Rectangle, Error> {
+    match export_id {
+        None => renderer.legacy_layer_geometry(None),
+        Some(ref id) => renderer.geometry_for_element(Some(&id)),
+    }
+    .map(|(ink_r, _)| ink_r)
+    .map_err(|e| match e {
+        RenderingError::IdNotFound => error!(
+            "File {} does not have an object with id \"{}\")",
+            input,
+            export_id.unwrap()
+        ),
+        _ => error!("Error rendering SVG {}: {}", input, e),
+    })
+}
+
 fn parse_args() -> Result<Converter, Error> {
     let supported_formats = vec![
         "Png",
@@ -607,7 +675,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("d")
                 .long("dpi-x")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .default_value("96")
                 .validator(is_valid_resolution)
                 .help("Pixels per inch"),
@@ -617,7 +685,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("p")
                 .long("dpi-y")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .default_value("96")
                 .validator(is_valid_resolution)
                 .help("Pixels per inch"),
@@ -627,7 +695,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("x")
                 .long("x-zoom")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .conflicts_with("zoom")
                 .validator(is_valid_zoom_factor)
                 .help("Horizontal zoom factor"),
@@ -637,7 +705,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("y")
                 .long("y-zoom")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .conflicts_with("zoom")
                 .validator(is_valid_zoom_factor)
                 .help("Vertical zoom factor"),
@@ -647,7 +715,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("z")
                 .long("zoom")
                 .takes_value(true)
-                .value_name("float")
+                .value_name("number")
                 .validator(is_valid_zoom_factor)
                 .help("Zoom factor"),
         )
@@ -656,7 +724,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("w")
                 .long("width")
                 .takes_value(true)
-                .value_name("pixels")
+                .value_name("length")
                 .help("Width [defaults to the width of the SVG]"),
         )
         .arg(
@@ -664,8 +732,36 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("h")
                 .long("height")
                 .takes_value(true)
-                .value_name("pixels")
+                .value_name("length")
                 .help("Height [defaults to the height of the SVG]"),
+        )
+        .arg(
+            clap::Arg::with_name("top")
+                .long("top")
+                .takes_value(true)
+                .value_name("length")
+                .help("Distance between top edge of page and the image [defaults to 0]"),
+        )
+        .arg(
+            clap::Arg::with_name("left")
+                .long("left")
+                .takes_value(true)
+                .value_name("length")
+                .help("Distance between left edge of page and the image [defaults to 0]"),
+        )
+        .arg(
+            clap::Arg::with_name("page_width")
+                .long("page-width")
+                .takes_value(true)
+                .value_name("length")
+                .help("Width of output media [defaults to the width of the SVG]"),
+        )
+        .arg(
+            clap::Arg::with_name("page_height")
+                .long("page-height")
+                .takes_value(true)
+                .value_name("length")
+                .help("Height of output media [defaults to the height of the SVG]"),
         )
         .arg(
             clap::Arg::with_name("format")
@@ -719,6 +815,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .short("s")
                 .long("stylesheet")
                 .empty_values(false)
+                .value_name("filename.css")
                 .help("Filename of CSS stylesheet to apply"),
         )
         .arg(
@@ -777,6 +874,43 @@ fn parse_args() -> Result<Converter, Error> {
         }
     };
 
+    let width = value_t!(matches, "size_x", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+    let height = value_t!(matches, "size_y", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+
+    let left = value_t!(matches, "left", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+    let top = value_t!(matches, "top", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+
+    let page_width = value_t!(matches, "page_width", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+    let page_height = value_t!(matches, "page_height", String)
+        .or_none()?
+        .map(parse_length)
+        .transpose()?;
+
+    let page_size = match (page_width, page_height) {
+        (None, None) => None,
+        (Some(_), None) | (None, Some(_)) => {
+            return Err(error!(
+                "Please specify both the --page-width and --page-height options together."
+            ));
+        }
+        (Some(w), Some(h)) => Some((w, h)),
+    };
+
     let zoom = value_t!(matches, "zoom", f64).or_none()?;
     let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
     let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
@@ -805,8 +939,11 @@ fn parse_args() -> Result<Converter, Error> {
             x: zoom.or(zoom_x).unwrap_or(1.0),
             y: zoom.or(zoom_y).unwrap_or(1.0),
         },
-        width: value_t!(matches, "size_x", u32).or_none()?,
-        height: value_t!(matches, "size_y", u32).or_none()?,
+        width,
+        height,
+        left,
+        top,
+        page_size,
         format,
         export_id: value_t!(matches, "export_id", String)
             .or_none()?
@@ -883,6 +1020,40 @@ fn parse_color_string<T: AsRef<str> + std::fmt::Display>(s: T) -> Result<Color, 
             clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
         }),
     }
+}
+
+fn is_absolute_unit(u: LengthUnit) -> bool {
+    use LengthUnit::*;
+
+    match u {
+        Percent | Em | Ex => false,
+        Px | In | Cm | Mm | Pt | Pc => true,
+    }
+}
+
+fn parse_length<N: Normalize, V: Validate>(s: String) -> Result<CssLength<N, V>, clap::Error> {
+    <CssLength<N, V> as Parse>::parse_str(&s)
+        .map_err(|_| {
+            let desc = format!(
+                "Invalid value: The argument '{}' can not be parsed as a length",
+                s
+            );
+            clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
+        })
+        .and_then(|l| {
+            if is_absolute_unit(l.unit) {
+                Ok(l)
+            } else {
+                let desc = format!(
+                    "Invalid value '{}': supported units are px, in, cm, mm, pt, pc",
+                    s
+                );
+                Err(clap::Error::with_description(
+                    &desc,
+                    clap::ErrorKind::InvalidValue,
+                ))
+            }
+        })
 }
 
 fn main() {

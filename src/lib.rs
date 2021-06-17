@@ -250,4 +250,9 @@ pub mod doctest_only {
 pub mod rsvg_convert_only {
     pub use crate::c_api::handle::PathOrUrl;
     pub use crate::c_api::sizing::LegacySize;
+    pub use crate::dpi::Dpi;
+    pub use crate::error::ParseError;
+    pub use crate::length::{
+        CssLength, Horizontal, Length, Normalize, NormalizeParams, ULength, Validate, Vertical,
+    };
 }

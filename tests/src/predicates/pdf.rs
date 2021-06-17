@@ -19,13 +19,17 @@ impl PdfPredicate {
         }
     }
 
-    pub fn with_page_size(self: Self, width: i64, height: i64, dpi: f64) -> DetailPredicate<Self> {
+    pub fn with_page_size(
+        self: Self,
+        width_in_points: f64,
+        height_in_points: f64,
+    ) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::PageSize(Dimensions {
-                w: width,
-                h: height,
-                unit: dpi / 72.0,
+                w: width_in_points,
+                h: height_in_points,
+                unit: 1.0,
             }),
         }
     }
@@ -73,10 +77,13 @@ enum Detail {
     CreationDate(DateTime<Utc>),
 }
 
+/// A PDF page's dimensions from its `MediaBox`.
+///
+/// Note that `w` and `h` given in `UserUnit`, which is by default 1.0 = 1/72 inch.
 #[derive(Debug)]
 struct Dimensions {
-    w: i64,
-    h: i64,    //
+    w: f64,
+    h: f64,
     unit: f64, // UserUnit, in points (1/72 of an inch)
 }
 
@@ -84,31 +91,40 @@ impl Dimensions {
     pub fn from_media_box(obj: &lopdf::Object, unit: Option<f64>) -> lopdf::Result<Dimensions> {
         let a = obj.as_array()?;
         Ok(Dimensions {
-            w: a[2].as_i64()?,
-            h: a[3].as_i64()?,
+            w: a[2].as_float()?,
+            h: a[3].as_float()?,
             unit: unit.unwrap_or(1.0),
         })
     }
 
-    pub fn width_in_mm(self: &Self) -> f64 {
-        self.w as f64 * self.unit * 72.0 / 254.0
+    pub fn width_in_pt(self: &Self) -> f64 {
+        self.w * self.unit
     }
 
-    pub fn height_in_mm(self: &Self) -> f64 {
-        self.h as f64 * self.unit * 72.0 / 254.0
+    pub fn height_in_pt(self: &Self) -> f64 {
+        self.h * self.unit
     }
 }
 
 impl fmt::Display for Dimensions {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} mm x {} mm", self.width_in_mm(), self.height_in_mm())
+        write!(f, "{} pt x {} pt", self.width_in_pt(), self.height_in_pt())
     }
 }
 
 impl cmp::PartialEq for Dimensions {
     fn eq(&self, other: &Self) -> bool {
-        approx_eq!(f64, self.width_in_mm(), other.width_in_mm())
-            && approx_eq!(f64, self.height_in_mm(), other.height_in_mm())
+        approx_eq!(
+            f64,
+            self.width_in_pt(),
+            other.width_in_pt(),
+            epsilon = 0.000_001
+        ) && approx_eq!(
+            f64,
+            self.height_in_pt(),
+            other.height_in_pt(),
+            epsilon = 0.000_001
+        )
     }
 }
 
@@ -161,16 +177,35 @@ impl DetailPredicate<PdfPredicate> {
     }
 }
 
+// Extensions to lopdf::Object; can be removed after lopdf 0.26
+trait ObjExt {
+    /// Get the object value as a float.
+    /// Unlike as_f64() this will also cast an Integer to a Real.
+    fn as_float(&self) -> lopdf::Result<f64>;
+}
+
+impl ObjExt for lopdf::Object {
+    fn as_float(&self) -> lopdf::Result<f64> {
+        match *self {
+            lopdf::Object::Integer(ref value) => Ok(*value as f64),
+            lopdf::Object::Real(ref value) => Ok(*value),
+            _ => Err(lopdf::Error::Type),
+        }
+    }
+}
+
 impl Details for lopdf::Document {
     fn get_page_count(self: &Self) -> usize {
         self.get_pages().len()
     }
 
     fn get_page_size(self: &Self) -> Option<Dimensions> {
-        let to_f64 = |obj: &lopdf::Object| obj.as_f64();
         match self.get_from_first_page(b"MediaBox") {
             Ok(obj) => {
-                let unit = self.get_from_first_page(b"UserUnit").and_then(to_f64).ok();
+                let unit = self
+                    .get_from_first_page(b"UserUnit")
+                    .and_then(ObjExt::as_float)
+                    .ok();
                 Dimensions::from_media_box(obj, unit).ok()
             }
             Err(_) => None,
