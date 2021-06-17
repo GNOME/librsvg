@@ -252,6 +252,7 @@ impl Surface {
         Err(Error("unsupported format".to_string()))
     }
 
+    #[allow(clippy::too_many_arguments)] // yeah, yeah, we'll refactor it eventually
     pub fn render(
         &self,
         renderer: &CairoRenderer,
