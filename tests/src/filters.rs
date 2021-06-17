@@ -1,46 +1,8 @@
 use cairo;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
+use crate::test_compare_render_output;
 use crate::utils::{load_svg, render_document, SurfaceSize};
-
-macro_rules! test_compare_render_output {
-    ($test_name:ident, $test:expr, $reference:expr $(,)?) => {
-        #[test]
-        fn $test_name() {
-            let svg = load_svg($test).unwrap();
-            let output_surf = render_document(
-                &svg,
-                SurfaceSize(400, 400),
-                |_| (),
-                cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 400.0,
-                    height: 400.0,
-                },
-            )
-            .unwrap();
-
-            let reference = load_svg($reference).unwrap();
-            let reference_surf = render_document(
-                &reference,
-                SurfaceSize(400, 400),
-                |_| (),
-                cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 400.0,
-                    height: 400.0,
-                },
-            )
-            .unwrap();
-
-            Reference::from_surface(reference_surf.into_image_surface().unwrap())
-                .compare(&output_surf)
-                .evaluate(&output_surf, stringify!($test_name));
-        }
-    };
-}
 
 #[test]
 fn invalid_filter_reference_cancels_filter_chain() {
@@ -140,6 +102,8 @@ fn non_filter_reference_cancels_filter_chain() {
 
 test_compare_render_output!(
     blur_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="lime" filter="blur(5)"/>
@@ -160,6 +124,8 @@ test_compare_render_output!(
 
 test_compare_render_output!(
     brightness_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="green" filter="brightness(125%)"/>
@@ -184,6 +150,8 @@ br##"<?xml version="1.0" encoding="UTF-8"?>
 
 test_compare_render_output!(
     contrast_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="green" filter="contrast(125%)"/>
@@ -208,6 +176,8 @@ br##"<?xml version="1.0" encoding="UTF-8"?>
 
 test_compare_render_output!(
     dropshadow_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="green" filter="drop-shadow(#ff0000 1px 4px 6px)"/>
@@ -235,6 +205,8 @@ br##"<?xml version="1.0" encoding="UTF-8"?>
 
 test_compare_render_output!(
     grayscale_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="lime" filter="grayscale(0.75)"/>
@@ -255,6 +227,8 @@ test_compare_render_output!(
 
 test_compare_render_output!(
     huerotate_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="green" filter="hue-rotate(128deg)"/>
@@ -275,6 +249,8 @@ test_compare_render_output!(
 
 test_compare_render_output!(
     invert_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="lime" filter="invert(0.75)"/>
@@ -299,6 +275,8 @@ test_compare_render_output!(
 
 test_compare_render_output!(
     opacity_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="red"/>
@@ -323,6 +301,8 @@ test_compare_render_output!(
 
 test_compare_render_output!(
     saturate_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="lime" filter="saturate(0.75)"/>
@@ -343,6 +323,8 @@ test_compare_render_output!(
 
 test_compare_render_output!(
     sepia_filter_func,
+    400,
+    400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="400">
   <rect x="100" y="100" width="200" height="200" fill="lime" filter="sepia(0.75)"/>
