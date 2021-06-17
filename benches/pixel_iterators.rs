@@ -21,7 +21,7 @@ fn bench_pixel_iterators(c: &mut Criterion) {
         let mut surface =
             ExclusiveImageSurface::new(SURFACE_SIDE, SURFACE_SIDE, SurfaceType::SRgb).unwrap();
         let stride = surface.stride() as i32;
-        let data = surface.get_data();
+        let data = surface.data();
 
         let bounds = black_box(BOUNDS);
 
