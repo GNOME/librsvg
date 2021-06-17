@@ -2,7 +2,7 @@
 extern crate clap;
 
 use gio::prelude::*;
-use gio::{Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream};
+use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
 
 #[cfg(unix)]
 use gio::{UnixInputStream, UnixOutputStream};
@@ -263,7 +263,7 @@ impl Surface {
         background_color: Option<Color>,
         id: Option<&str>,
     ) -> Result<(), Error> {
-        let cr = cairo::Context::new(self);
+        let cr = cairo::Context::new(self)?;
 
         if let Some(Color::RGBA(rgba)) = background_color {
             cr.set_source_rgba(
@@ -273,7 +273,7 @@ impl Surface {
                 rgba.alpha_f32().into(),
             );
 
-            cr.paint();
+            cr.paint()?;
         }
 
         cr.translate(left, top);
@@ -303,7 +303,7 @@ impl Surface {
         }
 
         if !matches!(self, Self::Png(_, _)) {
-            cr.show_page();
+            cr.show_page()?;
         }
 
         Ok(())
@@ -351,7 +351,7 @@ struct Stdin;
 impl Stdin {
     #[cfg(unix)]
     pub fn stream() -> InputStream {
-        let stream = unsafe { UnixInputStream::new(0) };
+        let stream = unsafe { UnixInputStream::with_fd(0) };
         stream.upcast::<InputStream>()
     }
 
@@ -366,7 +366,7 @@ struct Stdout;
 impl Stdout {
     #[cfg(unix)]
     pub fn stream() -> OutputStream {
-        let stream = unsafe { UnixOutputStream::new(1) };
+        let stream = unsafe { UnixOutputStream::with_fd(1) };
         stream.upcast::<OutputStream>()
     }
 
@@ -594,7 +594,7 @@ impl Converter {
         let output_stream = match self.output {
             Output::Stdout => Stdout::stream(),
             Output::Path(ref p) => {
-                let file = gio::File::new_for_path(p);
+                let file = gio::File::for_path(p);
                 let stream = file
                     .replace(None, false, FileCreateFlags::NONE, None::<&Cancellable>)
                     .map_err(|e| error!("Error opening output \"{}\": {}", self.output, e))?;

@@ -868,8 +868,8 @@ impl DrawingCtx {
         if o < 1.0 {
             self.cr.push_group();
             res = draw_fn(self);
-            self.cr.pop_group_to_source();
-            self.cr.paint_with_alpha(o);
+            self.cr.pop_group_to_source()?;
+            self.cr.paint_with_alpha(o)?;
         } else {
             res = draw_fn(self);
         }
@@ -1075,7 +1075,7 @@ impl DrawingCtx {
         }
         pattern.set_extend(cairo::Extend::Repeat);
         pattern.set_filter(cairo::Filter::Best);
-        self.cr.set_source(&pattern);
+        self.cr.set_source(&pattern)?;
 
         Ok(true)
     }
@@ -1440,8 +1440,8 @@ impl DrawingCtx {
                 );
 
                 cr.set_matrix(affines.for_snapshot.into());
-                cr.set_source_surface(&draw.target(), 0.0, 0.0);
-                cr.paint();
+                cr.set_source_surface(&draw.target(), 0.0, 0.0)?;
+                cr.paint()?;
             }
 
             Ok(())

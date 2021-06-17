@@ -244,8 +244,8 @@ impl ImageSurface<Shared> {
 
         {
             let cr = cairo::Context::new(&copy)?;
-            cr.set_source_surface(surface, 0f64, 0f64);
-            cr.paint();
+            cr.set_source_surface(surface, 0f64, 0f64)?;
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(copy, SurfaceType::SRgb)
@@ -408,8 +408,8 @@ impl ImageSurface<Shared> {
         cr.rectangle(r.x, r.y, r.width, r.height);
         cr.clip();
 
-        cr.set_source_surface(&self.surface, 0f64, 0f64);
-        cr.paint();
+        cr.set_source_surface(&self.surface, 0f64, 0f64)?;
+        cr.paint()?;
 
         Ok(output_surface)
     }
@@ -434,7 +434,7 @@ impl ImageSurface<Shared> {
 
             cr.scale(x, y);
             self.set_as_source_surface(&cr, 0.0, 0.0);
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -999,7 +999,7 @@ impl ImageSurface<Shared> {
                 f64::from(color.blue_f32()),
                 f64::from(color.alpha_f32()),
             );
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -1028,7 +1028,7 @@ impl ImageSurface<Shared> {
             cr.clip();
 
             self.set_as_source_surface(&cr, dx, dy);
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -1068,7 +1068,7 @@ impl ImageSurface<Shared> {
                 cr.source().set_matrix(matrix);
             }
 
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, image.surface_type)
@@ -1083,7 +1083,7 @@ impl ImageSurface<Shared> {
         {
             let cr = cairo::Context::new(&output_surface)?;
             self.set_as_source_surface(&cr, f64::from(-bounds.x0), f64::from(-bounds.y0));
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -1115,8 +1115,8 @@ impl ImageSurface<Shared> {
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            cr.set_source(&ptn);
-            cr.paint();
+            cr.set_source(&ptn)?;
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, image.surface_type)
@@ -1144,7 +1144,7 @@ impl ImageSurface<Shared> {
 
             self.set_as_source_surface(&cr, 0.0, 0.0);
             cr.set_operator(operator.into());
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(

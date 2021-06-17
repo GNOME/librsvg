@@ -108,7 +108,7 @@ impl Loader {
     /// let mut output = env::temp_dir();
     /// output.push("output.pdf");
     /// let surface = cairo::PdfSurface::new(640.0, 480.0, output)?;
-    /// let cr = cairo::Context::new(&surface);
+    /// let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
     ///
     /// let renderer = librsvg::CairoRenderer::new(&svg_handle);
     /// renderer.render_document(
