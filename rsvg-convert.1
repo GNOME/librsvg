@@ -508,11 +508,19 @@ Display what version of rsvg-convert you are running.
 .I "\-\-help"
 Display a summary of usage and options.
 
-.SS CHANGING THE OUTPUT SIZE
+.SS SIZE AND POSITION
 .TP
 .I "\-\-page-width length \-\-page-height length"
 Page size of the output document; both options must be used together.  The default is to use the image's
 width and height as modified by the options below.
+
+.TP
+.I "\-\-top length"
+Distance between top edge of the page and the rendered image.  Default is 0.
+.TP
+.I "\-\-left length"
+Distance between left edge of the page and the rendered image.  Default is 0.
+
 .TP
 .I "\-w \-\-width length"
 Width of the rendered image.  If unspecified, the natural width of the image is used
