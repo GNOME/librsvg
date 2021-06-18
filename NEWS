@@ -1,4 +1,58 @@
 ==============
+Version 2.51.3
+==============
+
+The big news is that rsvg-convert is now aware of physical units, and
+fixes a bug where PDFs were created at the wrong size.  Do you need to
+render an SVG in a PDF file, scaled to 10x10 cm, placed at a certain
+position of a landscape A4 page?
+
+  rsvg-convert --format=pdf \
+    --page-width=297mm --page-height=210mm \
+    --width=10cm --height=10cm --keep-aspect-ratio \
+    --top=5cm --left=8cm \
+    foo.svg > foo.pdf
+
+Please see the rsvg-convert(1) man page for more details and plenty of
+examples.
+
+SVG2 features:
+
+Markers now implement orient="auto-start-reverse".  The work on
+markers is by Madds H., who is doing their Outreachy internship for
+librsvg.
+
+All the <filter-function> types in SVG2 are now supported, thanks to
+John Ledbetter.
+
+- The Minimum Supported Rust Version (MSRV) is now Rust 1.52.  This
+  takes care of CVE-2021-28878 in the Rust standard library.
+
+- #514 - rsvg-convert is now aware of physical units.
+
+- #484 - Markers can now have orient="auto-start-reverse" per SVG2
+  (Madds H - Outreachy internship).
+
+- #711 - Implement the drop-shadow() filter function (John Ledbetter).
+
+- #713 - Implement the hue-rotate() filter function (John Ledbetter).
+
+- #677 - rsvg-convert, do not clip the rightmost/bottomost pixels of
+  an image with partial pixel coverage.
+
+- Partial fix for #668 - Render small caps for fonts that support the
+  "smcp" OpenType feature.  Librsvg and Pango are not yet able to
+  synthesize small caps for fonts that do not support them, but for
+  those that do, they should work fine now.
+
+- #566 - Restrict which elements can appear inside a clipPath, to be
+  spec compliant.
+
+- #746 - Possible cairo_save() without cairo_restore() in render_layer().
+
+- Various updates to the developer's documentation.
+
+==============
 Version 2.51.2
 ==============
 
