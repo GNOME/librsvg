@@ -3,6 +3,8 @@
 //! This module has utility functions that are used in the test suite
 //! to compare rendered surfaces to reference images.
 
+use cairo;
+
 use std::convert::TryFrom;
 use std::env;
 use std::fs::{self, File};

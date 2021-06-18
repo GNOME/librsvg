@@ -7,6 +7,7 @@
 //!
 
 #![cfg(test)]
+use crate::test_compare_render_output;
 use test_generator::test_resources;
 
 use cairo;
@@ -17,7 +18,7 @@ use librsvg::{
 use std::path::PathBuf;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{setup_font_map, setup_language};
+use crate::utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
 
 // The original reference images from the SVG1.1 test suite are at 72 DPI.
 const TEST_SUITE_DPI: f64 = 72.0;
@@ -224,3 +225,35 @@ fn svg_1_1(name: &str) {
 fn svg_2(name: &str) {
     reference_test(name);
 }
+
+test_compare_render_output!(
+    marker_orient_auto_start_reverse,
+    100,
+    100,
+    br##"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+    <defs>
+      <marker id="marker" orient="auto-start-reverse" viewBox="0 0 10 10"
+              refX="0" refY="5" markerWidth="10" markerHeight="10"
+              markerUnits="userSpaceOnUse">
+        <path d="M0,0 L10,5 L0,10 Z" fill="green"/>
+      </marker>
+    </defs>
+  
+    <path d="M20,50 L80,50" marker-start="url(#marker)" marker-end="url(#marker)" stroke-width="10" stroke="black"/>
+  </svg>"##,
+    br##"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+      <path
+         d="M 20,55 10,50 20,45 Z"
+         id="triangle1" fill="green"/>
+      <path
+         d="m 80,45 10,5 -10,5 z"
+         id="triangle2" fill="green"/>
+      <rect
+         id="rectangle"
+         width="60"
+         height="10"
+         x="20"
+         y="45" fill="black"/>
+    </svg>"##,
+  );
