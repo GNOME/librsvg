@@ -47,6 +47,7 @@ impl Parse for MarkerUnits {
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum MarkerOrient {
     Auto,
+    AutoStartReverse,
     Angle(Angle),
 }
 
@@ -54,9 +55,21 @@ enum_default!(MarkerOrient, MarkerOrient::Angle(Angle::new(0.0)));
 
 impl Parse for MarkerOrient {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, ParseError<'i>> {
-        parser
-            .try_parse(|p| p.expect_ident_matching("auto").map(|_| MarkerOrient::Auto))
-            .or_else(|_| Angle::parse(parser).map(MarkerOrient::Angle))
+        if parser
+            .try_parse(|p| p.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            return Ok(MarkerOrient::Auto);
+        }
+
+        if parser
+            .try_parse(|p| p.expect_ident_matching("auto-start-reverse"))
+            .is_ok()
+        {
+            Ok(MarkerOrient::AutoStartReverse)
+        } else {
+            Angle::parse(parser).map(MarkerOrient::Angle)
+        }
     }
 }
 
@@ -98,6 +111,7 @@ impl Marker {
         computed_angle: Angle,
         line_width: f64,
         clipping: bool,
+        marker_type: MarkerType,
     ) -> Result<BoundingBox, RenderingError> {
         let cascaded = CascadedValues::new_from_node(&node);
         let values = cascaded.get();
@@ -116,6 +130,13 @@ impl Marker {
 
         let rotation = match self.orient {
             MarkerOrient::Auto => computed_angle,
+            MarkerOrient::AutoStartReverse => {
+                if marker_type == MarkerType::Start {
+                    computed_angle.flip()
+                } else {
+                    computed_angle
+                }
+            }
             MarkerOrient::Angle(a) => a,
         };
 
@@ -554,6 +575,7 @@ fn emit_marker_by_node(
     computed_angle: Angle,
     line_width: f64,
     clipping: bool,
+    marker_type: MarkerType,
 ) -> Result<BoundingBox, RenderingError> {
     match acquired_nodes.acquire_ref(marker_node) {
         Ok(acquired) => {
@@ -570,6 +592,7 @@ fn emit_marker_by_node(
                 computed_angle,
                 line_width,
                 clipping,
+                marker_type,
             )
         }
 
@@ -642,6 +665,7 @@ pub fn render_markers_for_shape(
                     computed_angle,
                     shape.stroke.width,
                     clipping,
+                    marker_type,
                 )
             } else {
                 Ok(draw_ctx.empty_bbox())
@@ -814,6 +838,10 @@ mod parser_tests {
     #[test]
     fn parses_marker_orient() {
         assert_eq!(MarkerOrient::parse_str("auto").unwrap(), MarkerOrient::Auto);
+        assert_eq!(
+            MarkerOrient::parse_str("auto-start-reverse").unwrap(),
+            MarkerOrient::AutoStartReverse
+        );
 
         assert_eq!(
             MarkerOrient::parse_str("0").unwrap(),

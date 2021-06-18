@@ -3,6 +3,8 @@
 //! This module has utility functions that are used in the test suite
 //! to compare rendered surfaces to reference images.
 
+use cairo;
+
 use std::convert::TryFrom;
 use std::env;
 use std::fs::{self, File};
@@ -180,4 +182,49 @@ where
         cr.paint();
     }
     Ok(argb)
+}
+
+/// Macro test that compares render outputs
+///
+/// Takes in SurfaceSize width and height, setting the cairo surface
+#[macro_export]
+macro_rules! test_compare_render_output {
+    ($test_name:ident, $width:expr, $height:expr, $test:expr, $reference:expr $(,)?) => {
+        #[test]
+        fn $test_name() {
+            let sx: i32 = $width;
+            let sy: i32 = $height;
+            let svg = load_svg($test).unwrap();
+            let output_surf = render_document(
+                &svg,
+                SurfaceSize(sx, sy),
+                |_| (),
+                cairo::Rectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: sx as f64,
+                    height: sy as f64,
+                },
+            )
+            .unwrap();
+
+            let reference = load_svg($reference).unwrap();
+            let reference_surf = render_document(
+                &reference,
+                SurfaceSize(sx, sy),
+                |_| (),
+                cairo::Rectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: sx as f64,
+                    height: sy as f64,
+                },
+            )
+            .unwrap();
+
+            Reference::from_surface(reference_surf.into_image_surface().unwrap())
+                .compare(&output_surf)
+                .evaluate(&output_surf, stringify!($test_name));
+        }
+    };
 }

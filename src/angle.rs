@@ -44,6 +44,11 @@ impl Angle {
         }
     }
 
+    //Flips an angle to be 180deg or PI radians rotated
+    pub fn flip(self) -> Angle {
+        Angle::new(self.radians() + PI)
+    }
+
     // Normalizes an angle to [0.0, 2*PI)
     fn normalize(rad: f64) -> f64 {
         let res = rad % (PI * 2.0);
