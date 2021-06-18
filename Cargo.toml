@@ -1,6 +1,6 @@
 [package]
 name = "librsvg"
-version = "2.51.2"
+version = "2.51.3"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 build = "build.rs"
 edition = "2018"
@@ -56,7 +56,7 @@ language-tags = "0.3.1"
 libc = "0.2"
 locale_config = "*" # recommended explicitly by locale_config's README.md
 markup5ever = "0.10"
-nalgebra = "0.26.1"
+nalgebra = "0.27.1"
 num-traits = "0.2"
 once_cell = "1.2.0"
 pango = { version="0.9.1", features=["v1_44"] }

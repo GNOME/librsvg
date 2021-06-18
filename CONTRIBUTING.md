@@ -167,14 +167,6 @@ of CI pipelines will fail:
     indentation, but don't want it to make changes on its own:  
     `cargo fmt --all -- --check`
 
-***Installing rustfmt*** As of 2018/Sep, our continuous integration
-pipeline assumes the version of rustfmt that is distributed through the
-nightly channel of [rustup](rustup.rs).  You can install it with
-
-```
-rustup component add rustfmt-preview --toolchain=nightly
-```
-
 ### Test suite
 
 Please make sure that the test suite passes with the changes in your
@@ -201,11 +193,11 @@ librsvg, and run this:
 
 ```
 cd /src/librsvg
-libtool --mode=execute ./rsvg-convert -o foo.png foo.svg
+cargo build
+./target/debug/rsvg-convert -o foo.png foo.svg
 ```
 
-Then you can view the resulting `foo.png` image.  Alternatively, you
-can use `./rsvg-view-3` for a quick-and-dirty SVG viewer.
+Then you can view the resulting `foo.png` image.
 
 **Please update the test suite** with a suitable example file once you
 have things working (or before even writing code, if you like
