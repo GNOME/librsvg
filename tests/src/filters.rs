@@ -42,7 +42,7 @@ fn invalid_filter_reference_cancels_filter_chain() {
 
         cr.rectangle(100.0, 100.0, 200.0, 200.0);
         cr.set_source_rgb(0.0, 1.0, 0.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -92,7 +92,7 @@ fn non_filter_reference_cancels_filter_chain() {
 
         cr.rectangle(100.0, 100.0, 200.0, 200.0);
         cr.set_source_rgb(0.0, 1.0, 0.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)

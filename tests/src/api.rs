@@ -76,7 +76,7 @@ fn render_layer() {
 
         cr.rectangle(20.0, 20.0, 30.0, 30.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -158,11 +158,11 @@ fn untransformed_element() {
 
         cr.rectangle(10.0, 10.0, 60.0, 80.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
-        cr.fill_preserve();
+        cr.fill_preserve().unwrap();
 
         cr.set_line_width(20.0);
         cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
-        cr.stroke();
+        cr.stroke().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -212,7 +212,7 @@ fn set_stylesheet() {
 
         cr.rectangle(10.0, 20.0, 30.0, 40.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)

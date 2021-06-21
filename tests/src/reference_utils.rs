@@ -177,8 +177,8 @@ where
     {
         // convert to ARGB; the PNG may come as Rgb24
         let cr = cairo::Context::new(&argb).expect("Failed to create a cairo context");
-        cr.set_source_surface(&png, 0.0, 0.0);
-        cr.paint();
+        cr.set_source_surface(&png, 0.0, 0.0).unwrap();
+        cr.paint().unwrap();
     }
     Ok(argb)
 }

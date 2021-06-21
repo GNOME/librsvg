@@ -108,8 +108,9 @@ fn extract_rectangle(
 ) -> Result<cairo::ImageSurface, cairo::Error> {
     let dest = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
     let cr = cairo::Context::new(&dest).expect("Failed to create a cairo context");
-    cr.set_source_surface(&source, f64::from(-x), f64::from(-y));
-    cr.paint();
+    cr.set_source_surface(&source, f64::from(-x), f64::from(-y))
+        .unwrap();
+    cr.paint().unwrap();
     Ok(dest)
 }
 
