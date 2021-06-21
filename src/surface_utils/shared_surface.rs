@@ -388,8 +388,8 @@ impl ImageSurface<Shared> {
 
     /// Calls `set_source_surface()` on the given Cairo context.
     #[inline]
-    pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) {
-        cr.set_source_surface(&self.surface, x, y);
+    pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) -> Result<(), cairo::Error> {
+        cr.set_source_surface(&self.surface, x, y)
     }
 
     /// Creates a Cairo surface pattern from the surface
@@ -433,7 +433,7 @@ impl ImageSurface<Shared> {
             cr.clip();
 
             cr.scale(x, y);
-            self.set_as_source_surface(&cr, 0.0, 0.0);
+            self.set_as_source_surface(&cr, 0.0, 0.0)?;
             cr.paint()?;
         }
 
@@ -1027,7 +1027,7 @@ impl ImageSurface<Shared> {
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            self.set_as_source_surface(&cr, dx, dy);
+            self.set_as_source_surface(&cr, dx, dy)?;
             cr.paint()?;
         }
 
@@ -1052,7 +1052,7 @@ impl ImageSurface<Shared> {
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            image.set_as_source_surface(&cr, 0f64, 0f64);
+            image.set_as_source_surface(&cr, 0f64, 0f64)?;
 
             if let Some(rect) = rect {
                 let mut matrix = cairo::Matrix::new(
@@ -1082,7 +1082,7 @@ impl ImageSurface<Shared> {
 
         {
             let cr = cairo::Context::new(&output_surface)?;
-            self.set_as_source_surface(&cr, f64::from(-bounds.x0), f64::from(-bounds.y0));
+            self.set_as_source_surface(&cr, f64::from(-bounds.x0), f64::from(-bounds.y0))?;
             cr.paint()?;
         }
 
@@ -1142,7 +1142,7 @@ impl ImageSurface<Shared> {
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            self.set_as_source_surface(&cr, 0.0, 0.0);
+            self.set_as_source_surface(&cr, 0.0, 0.0)?;
             cr.set_operator(operator.into());
             cr.paint()?;
         }

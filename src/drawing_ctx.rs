@@ -792,7 +792,7 @@ impl DrawingCtx {
                 // Set temporary surface as source
 
                 self.cr.set_matrix(affines.compositing.into());
-                source_surface.set_as_source_surface(&self.cr, 0.0, 0.0);
+                source_surface.set_as_source_surface(&self.cr, 0.0, 0.0)?;
 
                 // Clip
 

@@ -140,7 +140,7 @@ impl DisplacementMap {
                 cr.reset_clip();
                 cr.clip();
 
-                input_1.surface().set_as_source_surface(&cr, -ox, -oy);
+                input_1.surface().set_as_source_surface(&cr, -ox, -oy)?;
                 cr.paint()?;
             }
 
