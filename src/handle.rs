@@ -253,7 +253,7 @@ impl Handle {
 
         let viewport = Rect::from(*viewport);
 
-        let _saved_cr = SavedCr::new(&cr);
+        let _saved_cr = SavedCr::new(&cr)?;
 
         let res = draw_tree(
             DrawingMode::LimitToStack { node, root },
@@ -345,7 +345,7 @@ impl Handle {
 
         // Render, transforming so element is at the new viewport's origin
 
-        let _saved_cr = SavedCr::new(&cr);
+        let _saved_cr = SavedCr::new(&cr)?;
 
         let factor =
             (element_viewport.width / ink_r.width()).min(element_viewport.height / ink_r.height());

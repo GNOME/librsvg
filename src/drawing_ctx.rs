@@ -250,9 +250,9 @@ pub fn draw_tree(
 pub struct SavedCr(cairo::Context);
 
 impl SavedCr {
-    pub fn new(cr: &cairo::Context) -> SavedCr {
-        cr.save();
-        SavedCr(cr.clone())
+    pub fn new(cr: &cairo::Context) -> Result<SavedCr, cairo::Error> {
+        cr.save()?;
+        Ok(SavedCr(cr.clone()))
     }
 }
 
@@ -675,7 +675,7 @@ impl DrawingCtx {
         let res = if clipping {
             draw_fn(acquired_nodes, self)
         } else {
-            let _saved_cr = SavedCr::new(&self.cr);
+            let _saved_cr = SavedCr::new(&self.cr)?;
 
             let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
@@ -1311,7 +1311,7 @@ impl DrawingCtx {
                 clipping,
                 None,
                 &mut |_an, dc| {
-                    let _saved_cr = SavedCr::new(&dc.cr);
+                    let _saved_cr = SavedCr::new(&dc.cr)?;
 
                     if let Some(_params) =
                         dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
@@ -1346,7 +1346,7 @@ impl DrawingCtx {
 
         let mut bbox = bbox.unwrap();
 
-        let _saved_cr = SavedCr::new(&self.cr);
+        let _saved_cr = SavedCr::new(&self.cr)?;
 
         self.cr
             .set_antialias(cairo::Antialias::from(span.text_rendering));
