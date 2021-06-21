@@ -824,9 +824,9 @@ impl DrawingCtx {
                     self.cr.set_operator(stacking_ctx.mix_blend_mode.into());
 
                     if opacity < 1.0 {
-                        self.cr.paint_with_alpha(opacity);
+                        self.cr.paint_with_alpha(opacity)?;
                     } else {
-                        self.cr.paint();
+                        self.cr.paint()?;
                     }
                 }
 
