@@ -42,8 +42,10 @@ default = []
 capi = []
 
 [package.metadata.capi.header]
+# This is so cargo-c will put the correct Cflags in the .pc file, otherwise it leaves them empty
+enabled = true
+generation = false
 # For now we have hand-written .h files, so disable generation of headers
-enabled = false
 
 [package.metadata.capi.pkg_config]
 name = "librsvg"
