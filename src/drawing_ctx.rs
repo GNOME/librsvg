@@ -1151,12 +1151,10 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        self.set_paint_source(paint_source, acquired_nodes)
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    cr.stroke_preserve();
-                }
-            })?;
+        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes)?;
+        if had_paint_server {
+            cr.stroke_preserve()?;
+        }
 
         Ok(())
     }
@@ -1167,12 +1165,10 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        self.set_paint_source(paint_source, acquired_nodes)
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    cr.fill_preserve();
-                }
-            })?;
+        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes)?;
+        if had_paint_server {
+            cr.fill_preserve()?;
+        }
 
         Ok(())
     }
