@@ -258,7 +258,8 @@ impl SavedCr {
 
 impl Drop for SavedCr {
     fn drop(&mut self) {
-        self.0.restore();
+        // Ignore cairo errors :(
+        let _ = self.0.restore();
     }
 }
 
