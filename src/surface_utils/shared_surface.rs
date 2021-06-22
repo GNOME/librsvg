@@ -388,7 +388,12 @@ impl ImageSurface<Shared> {
 
     /// Calls `set_source_surface()` on the given Cairo context.
     #[inline]
-    pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) -> Result<(), cairo::Error> {
+    pub fn set_as_source_surface(
+        &self,
+        cr: &cairo::Context,
+        x: f64,
+        y: f64,
+    ) -> Result<(), cairo::Error> {
         cr.set_source_surface(&self.surface, x, y)
     }
 
@@ -1345,10 +1350,10 @@ impl ImageSurface<Exclusive> {
 
     /// Draw on the surface using cairo
     #[inline]
-    pub fn draw(
+    pub fn draw<E: From<cairo::Error>>(
         &mut self,
-        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), cairo::Error>,
-    ) -> Result<(), cairo::Error> {
+        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), E>,
+    ) -> Result<(), E> {
         let cr = cairo::Context::new(&self.surface)?;
         draw_fn(cr)
     }

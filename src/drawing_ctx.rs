@@ -946,7 +946,10 @@ impl DrawingCtx {
         Ok(surface)
     }
 
-    fn set_gradient(self: &mut DrawingCtx, gradient: &UserSpaceGradient) -> Result<(), cairo::Error> {
+    fn set_gradient(
+        self: &mut DrawingCtx,
+        gradient: &UserSpaceGradient,
+    ) -> Result<(), cairo::Error> {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -1123,26 +1126,24 @@ impl DrawingCtx {
         height: i32,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
-    ) -> Result<SharedImageSurface, cairo::Error> {
+    ) -> Result<SharedImageSurface, RenderingError> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        surface.draw(&mut |cr| {
+        surface.draw::<RenderingError>(&mut |cr| {
             let mut temporary_draw_ctx = self.nested(cr);
 
             // FIXME: we are ignoring any error
 
-            let _ = temporary_draw_ctx
-                .set_paint_source(paint_source, acquired_nodes)
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        temporary_draw_ctx.cr.paint();
-                    }
-                });
+            let had_paint_server =
+                temporary_draw_ctx.set_paint_source(paint_source, acquired_nodes)?;
+            if had_paint_server {
+                temporary_draw_ctx.cr.paint()?;
+            }
 
             Ok(())
         })?;
 
-        surface.share()
+        Ok(surface.share()?)
     }
 
     fn stroke(
@@ -1247,7 +1248,12 @@ impl DrawingCtx {
         )
     }
 
-    fn paint_surface(&mut self, surface: &SharedImageSurface, width: f64, height: f64) -> Result<(), cairo::Error> {
+    fn paint_surface(
+        &mut self,
+        surface: &SharedImageSurface,
+        width: f64,
+        height: f64,
+    ) -> Result<(), cairo::Error> {
         let cr = self.cr.clone();
 
         // We need to set extend appropriately, so can't use cr.set_source_surface().
@@ -1421,7 +1427,7 @@ impl DrawingCtx {
         //   https://www.w3.org/TR/compositing-1/#isolation
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        surface.draw(&mut |cr| {
+        surface.draw::<cairo::Error>(&mut |cr| {
             // TODO: apparently DrawingCtx.cr_stack is just a way to store pairs of
             // (surface, transform).  Can we turn it into a DrawingCtx.surface_stack
             // instead?  See what CSS isolation would like to call that; are the pairs just

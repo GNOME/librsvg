@@ -115,7 +115,7 @@ impl DisplacementMap {
             input_1.surface().surface_type(),
         )?;
 
-        surface.draw(&mut |cr| {
+        surface.draw::<cairo::Error>(&mut |cr| {
             for (x, y, displacement_pixel) in Pixels::within(&displacement_surface, bounds) {
                 let get_value = |channel| match channel {
                     ColorChannel::R => displacement_pixel.r,

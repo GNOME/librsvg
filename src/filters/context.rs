@@ -204,14 +204,12 @@ impl FilterContext {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<SharedImageSurface, FilterError> {
         let res = self.stroke_paint_surface.get_or_init(|| {
-            draw_ctx
-                .get_paint_source_surface(
-                    self.source_surface.width(),
-                    self.source_surface.height(),
-                    acquired_nodes,
-                    &self.stroke_paint,
-                )
-                .map_err(FilterError::CairoError)
+            Ok(draw_ctx.get_paint_source_surface(
+                self.source_surface.width(),
+                self.source_surface.height(),
+                acquired_nodes,
+                &self.stroke_paint,
+            )?)
         });
 
         res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
@@ -226,14 +224,12 @@ impl FilterContext {
         draw_ctx: &mut DrawingCtx,
     ) -> Result<SharedImageSurface, FilterError> {
         let res = self.fill_paint_surface.get_or_init(|| {
-            draw_ctx
-                .get_paint_source_surface(
-                    self.source_surface.width(),
-                    self.source_surface.height(),
-                    acquired_nodes,
-                    &self.fill_paint,
-                )
-                .map_err(FilterError::CairoError)
+            Ok(draw_ctx.get_paint_source_surface(
+                self.source_surface.width(),
+                self.source_surface.height(),
+                acquired_nodes,
+                &self.fill_paint,
+            )?)
         });
 
         res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
