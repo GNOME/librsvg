@@ -1251,7 +1251,7 @@ impl DrawingCtx {
         )
     }
 
-    fn paint_surface(&mut self, surface: &SharedImageSurface, width: f64, height: f64) {
+    fn paint_surface(&mut self, surface: &SharedImageSurface, width: f64, height: f64) -> Result<(), cairo::Error> {
         let cr = self.cr.clone();
 
         // We need to set extend appropriately, so can't use cr.set_source_surface().
@@ -1263,12 +1263,12 @@ impl DrawingCtx {
         // transparent almost everywhere without this fix (which it shouldn't).
         let ptn = surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
-        cr.set_source(&ptn);
+        cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
         clip_to_rectangle(&cr, &Rect::from_size(width, height));
 
-        cr.paint();
+        cr.paint()
     }
 
     pub fn draw_image(
@@ -1315,7 +1315,7 @@ impl DrawingCtx {
                     if let Some(_params) =
                         dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
                     {
-                        dc.paint_surface(&image.surface, image_width, image_height);
+                        dc.paint_surface(&image.surface, image_width, image_height)?;
                     }
 
                     Ok(bounds)
