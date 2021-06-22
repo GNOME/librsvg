@@ -809,10 +809,12 @@ impl DrawingCtx {
                             &bbox,
                             acquired_nodes,
                         )
-                        .map(|mask_surf| {
+                        .and_then(|mask_surf| {
                             if let Some(surf) = mask_surf {
                                 self.cr.set_matrix(affines.compositing.into());
-                                self.cr.mask_surface(&surf, 0.0, 0.0);
+                                Ok(self.cr.mask_surface(&surf, 0.0, 0.0)?)
+                            } else {
+                                Ok(())
                             }
                         })
                         .map(|_: ()| bbox)
