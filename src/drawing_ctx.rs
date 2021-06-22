@@ -1383,23 +1383,22 @@ impl DrawingCtx {
 
         let stroke_paint = span.stroke_paint.to_user_space(&bbox, &view_params, values);
 
-        self.set_paint_source(&stroke_paint, acquired_nodes)
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    pangocairo::functions::update_layout(&self.cr, &span.layout);
-                    pangocairo::functions::layout_path(&self.cr, &span.layout);
+        let had_paint_server = self.set_paint_source(&stroke_paint, acquired_nodes)?;
 
-                    let (x0, y0, x1, y1) = self.cr.stroke_extents();
-                    let r = Rect::new(x0, y0, x1, y1);
-                    let ib = BoundingBox::new()
-                        .with_transform(transform)
-                        .with_ink_rect(r);
-                    bbox.insert(&ib);
-                    if span.is_visible {
-                        self.cr.stroke();
-                    }
-                }
-            })?;
+        if had_paint_server {
+            pangocairo::functions::update_layout(&self.cr, &span.layout);
+            pangocairo::functions::layout_path(&self.cr, &span.layout);
+
+            let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
+            let r = Rect::new(x0, y0, x1, y1);
+            let ib = BoundingBox::new()
+                .with_transform(transform)
+                .with_ink_rect(r);
+            bbox.insert(&ib);
+            if span.is_visible {
+                self.cr.stroke()?;
+            }
+        }
 
         Ok(bbox)
     }
