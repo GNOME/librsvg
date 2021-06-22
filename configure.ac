@@ -101,6 +101,10 @@ AC_CHECK_TOOL(RUSTC, [rustc], [no])
 AS_IF(test x$RUSTC = xno,
     AC_MSG_ERROR([rustc is required.  Please install the Rust toolchain from https://www.rust-lang.org/])
 )
+AC_CHECK_TOOL(CARGO_C, [cargo-cbuild], [no])
+AS_IF(test x$CARGO_C = xno,
+    AC_MSG_ERROR([cargo-c is required.  Please install it from https://github.com/lu-zero/cargo-c/])
+)
 
 dnl MSRV - Minimum Supported Rust Version
 dnl If you change this, please update COMPILING.md
