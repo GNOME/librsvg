@@ -136,6 +136,7 @@
 //! [SVG 1.1]: https://www.w3.org/TR/SVG11/
 //! [SVG 2]: https://www.w3.org/TR/SVG2/
 
+#![allow(rustdoc::private_intra_doc_links)]
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::too_many_arguments)]
@@ -144,7 +145,6 @@
 #![warn(renamed_and_removed_lints)]
 // Standalone lints
 #![warn(trivial_casts, trivial_numeric_casts)]
-
 // The public API is exported here
 pub use crate::api::*;
 
