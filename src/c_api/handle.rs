@@ -5,8 +5,8 @@
 //!
 //! * [`RsvgHandle`] and [`RsvgHandleClass`] are derivatives of `GObject` and
 //! `GObjectClass`.  These are coded explicitly, instead of using
-//! `glib::subclass::simple::InstanceStruct<T>` and
-//! `glib::subclass::simple::ClassStruct<T>`, as the structs need need to be kept
+//! [`glib::subclass::prelude::InstanceStruct<T>`] and
+//! [`glib::subclass::prelude::ClassStruct<T>`], as the structs need need to be kept
 //! ABI-compatible with the traditional C API/ABI.
 //!
 //! * The actual data for a handle (e.g. the `RsvgHandle`'s private data, in GObject
@@ -15,12 +15,8 @@
 //! * Public C ABI functions are the `#[no_mangle]` functions with an `rsvg_` prefix.
 //!
 //! The C API is implemented in terms of the Rust API in `librsvg_crate`.  In effect,
-//! `RsvgHandle` is a rather convoluted builder or adapter pattern that translates all the
+//! [`RsvgHandle`] is a rather convoluted builder or adapter pattern that translates all the
 //! historical idiosyncrasies of the C API into the simple Rust API.
-//!
-//! [`RsvgHandle`]: struct.RsvgHandle.html
-//! [`RsvgHandleClass`]: struct.RsvgHandleClass.html
-//! [`CHandle`]: struct.CHandle.html
 
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::ffi::{CStr, CString, OsStr};
@@ -143,7 +139,7 @@ impl From<LoadFlags> for HandleFlags {
 
 /// GObject class struct for RsvgHandle.
 ///
-/// This is not done through `glib::subclass::simple::ClassStruct<T>` because we need
+/// This is not done through [`glib::subclass::prelude::ClassStruct<T>`] because we need
 /// to include the `_abi_padding` field for ABI compatibility with the C headers, and
 /// `simple::ClassStruct` does not allow that.
 #[repr(C)]
@@ -156,7 +152,7 @@ pub struct RsvgHandleClass {
 
 /// GObject instance struct for RsvgHandle.
 ///
-/// This is not done through `glib::subclass::simple::InstanceStruct<T>` because we need
+/// This is not done through [`glib::subclass::prelude::InstanceStruct<T>`] because we need
 /// to include the `_abi_padding` field for ABI compatibility with the C headers, and
 /// `simple::InstanceStruct` does not allow that.
 #[repr(C)]
