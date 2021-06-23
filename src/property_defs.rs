@@ -16,34 +16,24 @@
 //! in this module.
 //!
 //! * An initial value per the CSS or SVG specs, given through an implementation of the
-//! `Default` trait.
+//! [`Default`] trait.
 //!
-//! * Whether the property's computed value inherits to child elements, given
-//! through an implementation of the [`inherits_automatically`] method of the [`Property`]
-//! trait.
+//! * Whether the property's computed value inherits to child elements, given through an
+//! implementation of the [`Property`] trait and its
+//! [`inherits_automatically`][Property::inherits_automatically] method.
 //!
 //! * A way to derive the CSS *computed value* for the property, given through an
-//! implementation of the [`compute`] method of the [`Property`] trait.
+//! implementation of the [`Property`] trait and its [`compute`][Property::compute] method.
 //!
 //! * The actual underlying type.  For example, the [`make_property`] macro can generate a
 //! field-less enum for properties like the `clip-rule` property, which just has
 //! identifier-based values like `nonzero` and `evenodd`.  For general-purpose types like
 //! [`Length`], the macro can wrap them in a newtype like `struct`
-//! [`StrokeWidth`]`(Length)`.  For custom types, the macro call can be used just to
+//! [`StrokeWidth`]`(`[`Length`]`)`.  For custom types, the macro call can be used just to
 //! define the initial/default value and whether the property inherits automatically; you
 //! should provide the other required trait implementations separately.
 //!
 //! * An implementation of the [`Parse`] trait for the underlying type.
-//!
-//! [`compute`]: ../property_macros/trait.Property.html#tymethod.compute
-//! [`inherits_automatically`]: ../property_macros/trait.Property.html#tymethod.inherits_automatically
-//! [`Fill`]: struct.Fill.html
-//! [`Length`]: ../length/struct.Length.html
-//! [`make_property`]: ../macro.make_property.html
-//! [`Opacity`]: struct.Opacity.html
-//! [`Parse`]: ../trait.Parse.html
-//! [`Property`]: ../property_macros/trait.Property.html
-//! [`UnitInterval`]: ../unit_interval/struct.UnitInterval.html
 use std::convert::TryInto;
 
 use cssparser::{Parser, Token};
@@ -163,7 +153,7 @@ make_property!(
     /// override this by specifing a custom CSS stylesheet.
     ///
     /// Most of the time the `color` property is used to call
-    /// [`resolve_color`](../paint_server/fn.resolve_color.html).
+    /// [`crate::paint_server::resolve_color`].
     Color,
     default: cssparser::RGBA::new(0, 0, 0, 0xff),
     inherits_automatically: true,
@@ -653,7 +643,7 @@ make_property!(
     "auto" => Auto,
 );
 
-/// One of the three operations for the `paint-order` property; see [`PaintOrder`](struct.PaintOrder.html).
+/// One of the three operations for the `paint-order` property; see [`PaintOrder`].
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum PaintTarget {

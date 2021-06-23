@@ -1,15 +1,11 @@
 //! Tree nodes, the representation of SVG elements.
 //!
 //! Librsvg uses the [rctree crate][rctree] to represent the SVG tree of elements.
-//! Its [`Node`] struct provides a generic wrapper over nodes in a tree.
-//! Librsvg puts a [`NodeData`] as the type parameter of [`Node`].  For convenience,
-//! librsvg has a type alias `Node = Node<NodeData>`.
+//! Its [`rctree::Node`] struct provides a generic wrapper over nodes in a tree.
+//! Librsvg puts a [`NodeData`] as the type parameter of [`rctree::Node`].  For convenience,
+//! librsvg has a type alias [`Node`]` = rctree::Node<NodeData>`.
 //!
 //! Nodes are not constructed directly by callers;
-//!
-//! [rctree]: ../../rctree/index.html
-//! [`Node`]: ../../rctree/struct.Node.html
-//! [`NodeData`]: struct.NodeData.html
 
 use markup5ever::QualName;
 use std::cell::{Ref, RefMut};
@@ -26,12 +22,12 @@ use crate::xml::Attributes;
 
 /// Strong reference to an element in the SVG tree.
 ///
-/// See the [module documentation](index.html) for more information.
+/// See the [module documentation][self] for more information.
 pub type Node = rctree::Node<NodeData>;
 
 /// Weak reference to an element in the SVG tree.
 ///
-/// See the [module documentation](index.html) for more information.
+/// See the [module documentation][self] for more information.
 pub type WeakNode = rctree::WeakNode<NodeData>;
 
 /// Data for a single DOM node.

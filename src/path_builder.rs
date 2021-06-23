@@ -3,13 +3,13 @@
 //! Path data can consume a significant amount of memory in complex SVG documents.  This
 //! module deals with this as follows:
 //!
-//! * The path parser pushes commands into a [`PathBuilder`](struct.PathBuilder.html).  This is a
-//! mutable, temporary storage for path data.
+//! * The path parser pushes commands into a [`PathBuilder`].  This is a mutable,
+//! temporary storage for path data.
 //!
-//! * Then, the `PathBuilder` gets turned into a long-term, immutable [`Path`](struct.Path.html) that
-//! has a more compact representation.
+//! * Then, the [`PathBuilder`] gets turned into a long-term, immutable [`Path`] that has
+//! a more compact representation.
 //!
-//! The code tries to reduce work in the allocator, by using a `TinyVec` with space for at
+//! The code tries to reduce work in the allocator, by using a [`TinyVec`] with space for at
 //! least 32 commands on the stack for `PathBuilder`; most paths in SVGs in the wild have
 //! fewer than 32 commands, and larger ones will spill to the heap.
 //!

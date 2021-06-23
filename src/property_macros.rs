@@ -3,9 +3,7 @@
 /// Trait which all CSS property types should implement.
 ///
 /// This is generic on `T` for testing purposes; in the actual code `T` needs to
-/// be [`ComputedValues`].
-///
-/// [`ComputedValues`]: ../properties/struct.ComputedValues.html
+/// be [`ComputedValues`][crate::properties::ComputedValues].
 pub trait Property<T> {
     /// Whether the property's computed value inherits from parent to child elements.
     ///
@@ -15,7 +13,9 @@ pub trait Property<T> {
     /// element (`true`), or whether it resets to the initial/default value (`false`).
     fn inherits_automatically() -> bool;
 
-    /// Derive the CSS computed value from the parent element's `ComputedValues` and the `self` value.
+    /// Derive the CSS computed value from the parent element's
+    /// [`ComputedValues`][crate::properties::ComputedValues] and the
+    /// `self` value.
     ///
     /// The CSS or SVG specs say how to derive this for each property.
     fn compute(&self, _: &T) -> Self;
@@ -29,18 +29,19 @@ pub trait Property<T> {
 ///
 /// * A [`Parse`] implementation to parse the property.
 ///
-/// * A `Default` implementation to define the property's *initial* value.
+/// * A [`Default`] implementation to define the property's *initial* value.
 ///
 /// * A [`Property`] implementation to define whether the property
-/// inherits from the parent element, and how the property derives
-/// its computed value.
+/// inherits from the parent element, and how the property derives its
+/// computed value.
 ///
-/// When going from [`SpecifiedValues`] to [`ComputedValues`], properties
-/// which inherit automatically from the parent element will just have
-/// their values cloned.  Properties which do not inherit will be reset back
-/// to their initial value (i.e. their `Default`).
+/// When going from [`SpecifiedValues`] to [`ComputedValues`],
+/// properties which inherit automatically from the parent element
+/// will just have their values cloned.  Properties which do not
+/// inherit will be reset back to their initial value (i.e. their
+/// [`Default`]).
 ///
-/// The default implementation of `Property::compute()` is to just
+/// The default implementation of [`Property::compute()`] is to just
 /// clone the property's value.  Properties which need more
 /// sophisticated computation can override this.
 ///
@@ -67,7 +68,7 @@ pub trait Property<T> {
 /// ```
 ///
 /// This generates a simple enum like the following, with implementations of [`Parse`],
-/// `Default`, and [`Property`].
+/// [`Default`], and [`Property`].
 ///
 /// ```
 /// pub enum StrokeLinejoin { Miter, Round, Bevel }
@@ -96,10 +97,11 @@ pub trait Property<T> {
 /// define the custom type separately, and use the macro to specify the default value and
 /// the `Property` implementation.
 ///
-/// [`Parse`]: ../trait.Parse.html
-/// [`Property`]: ../property_macros/trait.Property.html
-/// [`ComputedValues`]: ../properties/struct.ComputedValues.html
-/// [`SpecifiedValues`]: ../properties/struct.SpecifiedValues.html
+/// [`Parse`]: crate::parsers::Parse
+/// [`Property`]: crate::property_macros::Property
+/// [`ComputedValues`]: crate::properties::ComputedValues
+/// [`SpecifiedValues`]: crate::properties::SpecifiedValues
+/// [`Property::compute()`]: crate::property_macros::Property::compute
 ///
 #[macro_export]
 macro_rules! make_property {

@@ -23,16 +23,14 @@ use crate::{
     url_resolver::UrlResolver,
 };
 
-/// Builder for loading an [`SvgHandle`][SvgHandle].
+/// Builder for loading an [`SvgHandle`].
 ///
 /// This is the starting point for using librsvg.  This struct
-/// implements a builder pattern for configuring an
-/// [`SvgHandle`][SvgHandle]'s options, and then loading the SVG data.
-/// You can call the methods of `Loader` in sequence to configure
-/// how SVG data should be loaded, and finally use one of the loading
-/// functions to load an [`SvgHandle`][SvgHandle].
-///
-/// [SvgHandle]: struct.SvgHandle.html
+/// implements a builder pattern for configuring an [`SvgHandle`]'s
+/// options, and then loading the SVG data.  You can call the methods
+/// of `Loader` in sequence to configure how SVG data should be
+/// loaded, and finally use one of the loading functions to load an
+/// [`SvgHandle`].
 #[derive(Default)]
 pub struct Loader {
     unlimited_size: bool,
@@ -159,9 +157,8 @@ impl Loader {
 
     /// Reads an SVG stream from a `gio::InputStream`.
     ///
-    /// This is similar to the [`read`](#method.read) method, but
-    /// takes a `gio::InputStream`.  The `base_file`, if it is not
-    /// `None`, is used to extract the base URL for this stream.
+    /// The `base_file`, if it is not `None`, is used to extract the
+    /// [base URL][crate#the-base-file-and-resolving-references-to-external-files] for this stream.
     ///
     /// Reading an SVG document may involve resolving relative URLs if the
     /// SVG references things like raster images, or other SVG files.
@@ -216,7 +213,7 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 /// Handle used to hold SVG data in memory.
 ///
 /// You can create this from one of the `read` methods in
-/// [`Loader`](#struct.Loader.html).
+/// [`Loader`].
 pub struct SvgHandle(Handle);
 
 impl SvgHandle {
@@ -270,8 +267,6 @@ const DEFAULT_DPI_Y: f64 = 96.0;
 /// <svg xmlns="http://www.w3.org/2000/svg" width="100" height="400">
 /// ```
 /// In this case, the length fields will be set to `Some()`, and `vbox` to `None`.
-///
-/// [`CairoRenderer::intrinsic_dimensions`]: struct.CairoRenderer.html#method.intrinsic_dimensions
 pub struct IntrinsicDimensions {
     /// `width` attribute of the `<svg>`, if present
     pub width: Option<Length>,

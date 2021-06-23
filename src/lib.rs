@@ -71,10 +71,6 @@
 //! }
 //! ```
 //!
-//! [`Loader`]: api/struct.Loader.html
-//! [`SvgHandle`]: api/struct.SvgHandle.html
-//! [`CairoRenderer`]: api/struct.CairoRenderer.html
-//!
 //! # The "base file" and resolving references to external files
 //!
 //! When you load an SVG, librsvg needs to know the location of the "base file"
@@ -110,11 +106,10 @@
 //! file.
 //!
 //! 2. All other URL schemes in references require a base URL.  For
-//! example, this means that if you load an SVG with
-//! [`Loader.read`](api/struct.Loader.html#method.read) without
-//! providing a `base_url`, then any referenced files will not be
-//! allowed (e.g. raster images to be loaded from other files will not
-//! work).
+//! example, this means that if you load an SVG with [`Loader::read_stream`]
+//! without providing a `base_file`, then any referenced files will not
+//! be allowed (e.g. raster images to be loaded from other files will
+//! not work).
 //!
 //! 3. If referenced URLs are absolute, rather than relative, then
 //! they must have the same scheme as the base URL.  For example, if
@@ -141,6 +136,7 @@
 //! [SVG 1.1]: https://www.w3.org/TR/SVG11/
 //! [SVG 2]: https://www.w3.org/TR/SVG2/
 
+#![allow(rustdoc::private_intra_doc_links)]
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::too_many_arguments)]
@@ -149,7 +145,6 @@
 #![warn(renamed_and_removed_lints)]
 // Standalone lints
 #![warn(trivial_casts, trivial_numeric_casts)]
-
 // The public API is exported here
 pub use crate::api::*;
 

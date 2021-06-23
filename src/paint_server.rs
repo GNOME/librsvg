@@ -21,8 +21,7 @@ use crate::util;
 /// `ComputedValues`), or a paint server like a gradient or pattern which is referenced by
 /// a URL that points to a certain document node.
 ///
-/// Use [`PaintServer.resolve`](#method.resolve) to turn this into a
-/// [`PaintSource`](enum.PaintSource.html).
+/// Use [`PaintServer.resolve`](#method.resolve) to turn this into a [`PaintSource`].
 #[derive(Debug, Clone, PartialEq)]
 pub enum PaintServer {
     /// For example, `fill="none"`.
@@ -41,7 +40,7 @@ pub enum PaintServer {
 /// Paint server with resolved references, with unnormalized lengths.
 ///
 /// Use [`PaintSource.to_user_space`](#method.to_user_space) to turn this into a
-/// [`UserSpacePaintSource`](enum.UserSpacePaintSource.html).
+/// [`UserSpacePaintSource`].
 pub enum PaintSource {
     None,
     Gradient(ResolvedGradient, Option<cssparser::RGBA>),

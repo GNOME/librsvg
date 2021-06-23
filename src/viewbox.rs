@@ -12,10 +12,8 @@ use crate::rect::Rect;
 /// A `ViewBox` is a new user-space coordinate system mapped onto the rectangle defined by
 /// the current viewport.  See https://www.w3.org/TR/SVG2/coords.html#ViewBoxAttribute
 ///
-/// `ViewBox` derefs to `Rect`, so you can use `Rect`'s methods and fields directly like
+/// `ViewBox` derefs to [`Rect`], so you can use [`Rect`]'s methods and fields directly like
 /// `vbox.x0` or `vbox.width()`.
-///
-/// [`Rect`]: rect/type.Rect.html
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ViewBox(Rect);
 
