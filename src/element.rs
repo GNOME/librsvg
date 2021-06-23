@@ -466,9 +466,6 @@ impl Element {
     ///
     /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
     /// element.
-    ///
-    /// [`Element`]: type.Element.html
-    /// [`NonRendering`]: ../structure/struct.NonRendering.html
     pub fn new(name: &QualName, attrs: Attributes) -> Element {
         let mut id = None;
         let mut class = None;
