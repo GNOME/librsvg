@@ -892,8 +892,8 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 /**
  * rsvg_handle_get_intrinsic_size_in_pixels:
  * @handle: An #RsvgHandle
- * @out_width: (out)(optional): Will be set to the computed width
- * @out_height: (out)(optional): Will be set to the computed height
+ * @out_width: (out)(optional): Will be set to the computed width; you should round this up to get integer pixels.
+ * @out_height: (out)(optional): Will be set to the computed height; you should round this up to get integer pixels.
  *
  * Converts an SVG document's intrinsic dimensions to pixels, and returns the result.
  *
@@ -939,8 +939,12 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  *
  *
  * Returns: %TRUE if the dimensions could be converted directly to pixels; in this case
- * @out_width and @out_height will be set accordingly.  If the dimensions cannot be converted
- * to pixels, returns %FALSE and puts 0.0 in both @out_width and @out_height.
+ * @out_width and @out_height will be set accordingly.  Note that the dimensions are
+ * floating-point numbers, so your application can know the exact size of an SVG document.
+ * To get integer dimensions, you should use `ceil()` to round up to the nearest integer
+ * (just using `round()`, may may chop off pixels with fractional coverage).  If the
+ * dimensions cannot be converted to pixels, returns %FALSE and puts 0.0 in both
+ * @out_width and @out_height.
  *
  * Since: 2.52
  */
