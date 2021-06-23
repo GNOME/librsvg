@@ -14,7 +14,6 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
-use crate::util::check_cairo_context;
 
 /// Loading options for SVG documents.
 #[derive(Clone)]
@@ -161,7 +160,7 @@ impl Handle {
         let root = self.document.root();
 
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
+        let cr = cairo::Context::new(&target)?;
 
         let bbox = draw_tree(
             DrawingMode::LimitToStack { node, root },
@@ -247,14 +246,14 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        cr.status()?;
 
         let node = self.get_node_or_root(id)?;
         let root = self.document.root();
 
         let viewport = Rect::from(*viewport);
 
-        let _saved_cr = SavedCr::new(&cr);
+        let _saved_cr = SavedCr::new(&cr)?;
 
         let res = draw_tree(
             DrawingMode::LimitToStack { node, root },
@@ -278,7 +277,7 @@ impl Handle {
         is_testing: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
-        let cr = cairo::Context::new(&target);
+        let cr = cairo::Context::new(&target)?;
 
         let node = node.clone();
 
@@ -327,7 +326,7 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), RenderingError> {
-        check_cairo_context(cr)?;
+        cr.status()?;
 
         let node = self.get_node_or_root(id)?;
 
@@ -346,7 +345,7 @@ impl Handle {
 
         // Render, transforming so element is at the new viewport's origin
 
-        let _saved_cr = SavedCr::new(&cr);
+        let _saved_cr = SavedCr::new(&cr)?;
 
         let factor =
             (element_viewport.width / ink_r.width()).min(element_viewport.height / ink_r.height());

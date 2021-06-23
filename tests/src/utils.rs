@@ -38,7 +38,7 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
     let output = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
 
     let res = {
-        let cr = cairo::Context::new(&output);
+        let cr = cairo::Context::new(&output).expect("Failed to create a cairo context");
         cr_transform(&cr);
         Ok(renderer.render_document(&cr, &viewport)?)
     };
@@ -81,8 +81,8 @@ mod pango_ft2 {
             }
         }
 
-        let font_map = FontMap::new_for_font_type(cairo::FontType::FontTypeFt).unwrap();
-        let raw_font_map: *mut pango_sys::PangoFontMap = font_map.to_glib_none().0;
+        let font_map = FontMap::for_font_type(cairo::FontType::FontTypeFt).unwrap();
+        let raw_font_map: *mut pango::ffi::PangoFontMap = font_map.to_glib_none().0;
 
         pango_fc_font_map_set_config(raw_font_map as *mut _, config);
         fontconfig::FcConfigDestroy(config);

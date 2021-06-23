@@ -78,7 +78,7 @@ pub enum Operator {
 /// Wrapper for a Cairo image surface that enforces exclusive access when modifying it.
 ///
 /// Shared access to `cairo::ImageSurface` is tricky since a read-only borrowed reference
-/// can still be cloned and then modified. We can't simply use `cairo::ImageSurface::get_data()`
+/// can still be cloned and then modified. We can't simply use `cairo::ImageSurface::data()`
 /// because in the filter code we have surfaces referenced from multiple places and it would
 /// probably add more complexity to remove that and start passing around references.
 ///
@@ -202,13 +202,13 @@ impl ImageSurface<Shared> {
         surface_type: SurfaceType,
     ) -> Result<SharedImageSurface, cairo::Error> {
         // get_pixel() assumes ARgb32.
-        assert_eq!(surface.get_format(), cairo::Format::ARgb32);
+        assert_eq!(surface.format(), cairo::Format::ARgb32);
 
         let reference_count =
-            unsafe { cairo_sys::cairo_surface_get_reference_count(surface.to_raw_none()) };
+            unsafe { cairo::ffi::cairo_surface_get_reference_count(surface.to_raw_none()) };
         assert_eq!(reference_count, 1);
 
-        let (width, height) = (surface.get_width(), surface.get_height());
+        let (width, height) = (surface.width(), surface.height());
 
         // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
         // is implementation-defined.  So, we can't assume NonNull below.  This is
@@ -217,11 +217,12 @@ impl ImageSurface<Shared> {
 
         surface.flush();
 
-        let data_ptr =
-            NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
-                .unwrap();
+        let data_ptr = NonNull::new(unsafe {
+            cairo::ffi::cairo_image_surface_get_data(surface.to_raw_none())
+        })
+        .unwrap();
 
-        let stride = surface.get_stride() as isize;
+        let stride = surface.stride() as isize;
 
         Ok(SharedImageSurface {
             state: Shared,
@@ -238,16 +239,13 @@ impl ImageSurface<Shared> {
     /// does not have a reference count of 1.
     #[inline]
     pub fn copy_from_surface(surface: &cairo::ImageSurface) -> Result<Self, cairo::Error> {
-        let copy = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            surface.get_width(),
-            surface.get_height(),
-        )?;
+        let copy =
+            cairo::ImageSurface::create(cairo::Format::ARgb32, surface.width(), surface.height())?;
 
         {
-            let cr = cairo::Context::new(&copy);
-            cr.set_source_surface(surface, 0f64, 0f64);
-            cr.paint();
+            let cr = cairo::Context::new(&copy)?;
+            cr.set_source_surface(surface, 0f64, 0f64)?;
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(copy, SurfaceType::SRgb)
@@ -265,7 +263,7 @@ impl ImageSurface<Shared> {
     #[inline]
     pub fn into_image_surface(self) -> Result<cairo::ImageSurface, cairo::Error> {
         let reference_count =
-            unsafe { cairo_sys::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
+            unsafe { cairo::ffi::cairo_surface_get_reference_count(self.surface.to_raw_none()) };
 
         if reference_count == 1 {
             Ok(self.surface)
@@ -280,19 +278,19 @@ impl ImageSurface<Shared> {
         content_type: Option<&str>,
         mime_data: Option<Vec<u8>>,
     ) -> Result<SharedImageSurface, cairo::Error> {
-        assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
-        assert!(pixbuf.get_bits_per_sample() == 8);
+        assert!(pixbuf.colorspace() == Colorspace::Rgb);
+        assert!(pixbuf.bits_per_sample() == 8);
 
-        let n_channels = pixbuf.get_n_channels();
+        let n_channels = pixbuf.n_channels();
         assert!(n_channels == 3 || n_channels == 4);
         let has_alpha = n_channels == 4;
 
-        let width = pixbuf.get_width();
-        let height = pixbuf.get_height();
-        let stride = pixbuf.get_rowstride() as usize;
+        let width = pixbuf.width();
+        let height = pixbuf.height();
+        let stride = pixbuf.rowstride() as usize;
         assert!(width > 0 && height > 0 && stride > 0);
 
-        let pixbuf_data = unsafe { pixbuf.get_pixels() };
+        let pixbuf_data = unsafe { pixbuf.pixels() };
 
         let mut surf = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
@@ -328,12 +326,12 @@ impl ImageSurface<Shared> {
 
         let pixbuf = Pixbuf::new(Colorspace::Rgb, true, 8, width, height)?;
 
-        assert!(pixbuf.get_colorspace() == Colorspace::Rgb);
-        assert!(pixbuf.get_bits_per_sample() == 8);
-        assert!(pixbuf.get_n_channels() == 4);
+        assert!(pixbuf.colorspace() == Colorspace::Rgb);
+        assert!(pixbuf.bits_per_sample() == 8);
+        assert!(pixbuf.n_channels() == 4);
 
-        let pixbuf_data = unsafe { pixbuf.get_pixels() };
-        let stride = pixbuf.get_rowstride() as usize;
+        let pixbuf_data = unsafe { pixbuf.pixels() };
+        let stride = pixbuf.rowstride() as usize;
 
         // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
         // to make the last row *not* have the full stride (i.e. it is
@@ -390,8 +388,13 @@ impl ImageSurface<Shared> {
 
     /// Calls `set_source_surface()` on the given Cairo context.
     #[inline]
-    pub fn set_as_source_surface(&self, cr: &cairo::Context, x: f64, y: f64) {
-        cr.set_source_surface(&self.surface, x, y);
+    pub fn set_as_source_surface(
+        &self,
+        cr: &cairo::Context,
+        x: f64,
+        y: f64,
+    ) -> Result<(), cairo::Error> {
+        cr.set_source_surface(&self.surface, x, y)
     }
 
     /// Creates a Cairo surface pattern from the surface
@@ -405,13 +408,13 @@ impl ImageSurface<Shared> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        let cr = cairo::Context::new(&output_surface);
+        let cr = cairo::Context::new(&output_surface)?;
         let r = cairo::Rectangle::from(bounds);
         cr.rectangle(r.x, r.y, r.width, r.height);
         cr.clip();
 
-        cr.set_source_surface(&self.surface, 0f64, 0f64);
-        cr.paint();
+        cr.set_source_surface(&self.surface, 0f64, 0f64)?;
+        cr.paint()?;
 
         Ok(output_surface)
     }
@@ -429,14 +432,14 @@ impl ImageSurface<Shared> {
         let output_surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
             cr.scale(x, y);
-            self.set_as_source_surface(&cr, 0.0, 0.0);
-            cr.paint();
+            self.set_as_source_surface(&cr, 0.0, 0.0)?;
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -465,9 +468,9 @@ impl ImageSurface<Shared> {
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        let output_stride = output_surface.get_stride() as usize;
+        let output_stride = output_surface.stride() as usize;
         {
-            let mut output_data = output_surface.get_data().unwrap();
+            let mut output_data = output_surface.data().unwrap();
 
             for (x, y, Pixel { a, .. }) in Pixels::within(self, bounds) {
                 let output_pixel = Pixel {
@@ -495,9 +498,9 @@ impl ImageSurface<Shared> {
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        let stride = output_surface.get_stride() as usize;
+        let stride = output_surface.stride() as usize;
         {
-            let mut data = output_surface.get_data().unwrap();
+            let mut data = output_surface.data().unwrap();
             let opacity = u8::from(opacity);
 
             for (x, y, pixel) in Pixels::within(self, bounds) {
@@ -521,9 +524,9 @@ impl ImageSurface<Shared> {
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        let stride = output_surface.get_stride() as usize;
+        let stride = output_surface.stride() as usize;
         {
-            let mut data = output_surface.get_data().unwrap();
+            let mut data = output_surface.data().unwrap();
 
             for (x, y, pixel) in Pixels::within(self, bounds) {
                 data.set_pixel(stride, pixel.unpremultiply(), x, y);
@@ -576,9 +579,9 @@ impl ImageSurface<Shared> {
         let mut output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        let output_stride = output_surface.get_stride() as usize;
+        let output_stride = output_surface.stride() as usize;
         {
-            let mut output_data = output_surface.get_data().unwrap();
+            let mut output_data = output_surface.data().unwrap();
 
             if self.is_alpha_only() {
                 for (x, y, _pixel) in Pixels::within(self, bounds) {
@@ -712,13 +715,13 @@ impl ImageSurface<Shared> {
                 /// to Cairo.
                 #[inline]
                 unsafe fn new(surface: &mut cairo::ImageSurface) -> Self {
-                    assert_eq!(surface.get_format(), cairo::Format::ARgb32);
-                    let ptr = surface.get_data().unwrap().as_mut_ptr();
+                    assert_eq!(surface.format(), cairo::Format::ARgb32);
+                    let ptr = surface.data().unwrap().as_mut_ptr();
 
                     Self {
-                        width: surface.get_width() as u32,
-                        height: surface.get_height() as u32,
-                        stride: surface.get_stride() as isize,
+                        width: surface.width() as u32,
+                        height: surface.height() as u32,
+                        stride: surface.stride() as isize,
                         ptr: NonNull::new(ptr).unwrap(),
                         _marker: PhantomData,
                     }
@@ -948,7 +951,7 @@ impl ImageSurface<Shared> {
 
         // Don't forget to manually mark the surface as dirty (due to usage of
         // `UnsafeSendPixelData`).
-        unsafe { cairo_sys::cairo_surface_mark_dirty(output_surface.to_raw_none()) }
+        unsafe { cairo::ffi::cairo_surface_mark_dirty(output_surface.to_raw_none()) }
     }
 
     /// Performs a horizontal or vertical box blur.
@@ -990,7 +993,7 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         if color.alpha > 0 {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
@@ -1001,7 +1004,7 @@ impl ImageSurface<Shared> {
                 f64::from(color.blue_f32()),
                 f64::from(color.alpha_f32()),
             );
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -1024,13 +1027,13 @@ impl ImageSurface<Shared> {
             .translate((dx as i32, dy as i32))
             .intersection(&bounds)
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(output_bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            self.set_as_source_surface(&cr, dx, dy);
-            cr.paint();
+            self.set_as_source_surface(&cr, dx, dy)?;
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -1049,12 +1052,12 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         if rect.is_none() || !rect.unwrap().is_empty() {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            image.set_as_source_surface(&cr, 0f64, 0f64);
+            image.set_as_source_surface(&cr, 0f64, 0f64)?;
 
             if let Some(rect) = rect {
                 let mut matrix = cairo::Matrix::new(
@@ -1067,10 +1070,10 @@ impl ImageSurface<Shared> {
                 );
                 matrix.invert();
 
-                cr.get_source().set_matrix(matrix);
+                cr.source().set_matrix(matrix);
             }
 
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, image.surface_type)
@@ -1083,9 +1086,9 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, bounds.width(), bounds.height())?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
-            self.set_as_source_surface(&cr, f64::from(-bounds.x0), f64::from(-bounds.y0));
-            cr.paint();
+            let cr = cairo::Context::new(&output_surface)?;
+            self.set_as_source_surface(&cr, f64::from(-bounds.x0), f64::from(-bounds.y0))?;
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, self.surface_type)
@@ -1105,7 +1108,7 @@ impl ImageSurface<Shared> {
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
 
             let ptn = image.to_cairo_pattern();
             ptn.set_extend(cairo::Extend::Repeat);
@@ -1117,8 +1120,8 @@ impl ImageSurface<Shared> {
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            cr.set_source(&ptn);
-            cr.paint();
+            cr.set_source(&ptn)?;
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(output_surface, image.surface_type)
@@ -1139,14 +1142,14 @@ impl ImageSurface<Shared> {
         let output_surface = other.copy_surface(bounds)?;
 
         {
-            let cr = cairo::Context::new(&output_surface);
+            let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x, r.y, r.width, r.height);
             cr.clip();
 
-            self.set_as_source_surface(&cr, 0.0, 0.0);
+            self.set_as_source_surface(&cr, 0.0, 0.0)?;
             cr.set_operator(operator.into());
-            cr.paint();
+            cr.paint()?;
         }
 
         SharedImageSurface::wrap(
@@ -1300,18 +1303,19 @@ impl ImageSurface<Exclusive> {
     ) -> Result<ExclusiveImageSurface, cairo::Error> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
-        let (width, height) = (surface.get_width(), surface.get_height());
+        let (width, height) = (surface.width(), surface.height());
 
         // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
         // is implementation-defined.  So, we can't assume NonNull below.  This is
         // why we disallow zero-sized surfaces here.
         assert!(width > 0 && height > 0);
 
-        let data_ptr =
-            NonNull::new(unsafe { cairo_sys::cairo_image_surface_get_data(surface.to_raw_none()) })
-                .unwrap();
+        let data_ptr = NonNull::new(unsafe {
+            cairo::ffi::cairo_image_surface_get_data(surface.to_raw_none())
+        })
+        .unwrap();
 
-        let stride = surface.get_stride() as isize;
+        let stride = surface.stride() as isize;
 
         Ok(ExclusiveImageSurface {
             state: Exclusive,
@@ -1331,35 +1335,35 @@ impl ImageSurface<Exclusive> {
 
     /// Raw access to the image data as a slice
     #[inline]
-    pub fn get_data(&mut self) -> cairo::ImageSurfaceData<'_> {
-        self.surface.get_data().unwrap()
+    pub fn data(&mut self) -> cairo::ImageSurfaceData<'_> {
+        self.surface.data().unwrap()
     }
 
     /// Modify the image data
     #[inline]
     pub fn modify(&mut self, draw_fn: &mut dyn FnMut(&mut cairo::ImageSurfaceData<'_>, usize)) {
         let stride = self.stride() as usize;
-        let mut data = self.get_data();
+        let mut data = self.data();
 
         draw_fn(&mut data, stride)
     }
 
     /// Draw on the surface using cairo
     #[inline]
-    pub fn draw(
+    pub fn draw<E: From<cairo::Error>>(
         &mut self,
-        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), cairo::Error>,
-    ) -> Result<(), cairo::Error> {
-        let cr = cairo::Context::new(&self.surface);
+        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), E>,
+    ) -> Result<(), E> {
+        let cr = cairo::Context::new(&self.surface)?;
         draw_fn(cr)
     }
 
     pub fn rows_mut(&mut self) -> RowsMut<'_> {
-        let width = self.surface.get_width();
-        let height = self.surface.get_height();
-        let stride = self.surface.get_stride();
+        let width = self.surface.width();
+        let height = self.surface.height();
+        let stride = self.surface.stride();
 
-        let data = self.surface.get_data().unwrap();
+        let data = self.surface.data().unwrap();
 
         RowsMut {
             width,
@@ -1418,7 +1422,7 @@ mod tests {
 
         // Fill the surface with some data.
         {
-            let mut data = surface.get_data();
+            let mut data = surface.data();
 
             let mut counter = 0u16;
             for x in data.iter_mut() {

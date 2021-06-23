@@ -38,11 +38,11 @@ fn invalid_filter_reference_cancels_filter_chain() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 400, 400).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.rectangle(100.0, 100.0, 200.0, 200.0);
         cr.set_source_rgb(0.0, 1.0, 0.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -88,11 +88,11 @@ fn non_filter_reference_cancels_filter_chain() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 400, 400).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.rectangle(100.0, 100.0, 200.0, 200.0);
         cr.set_source_rgb(0.0, 1.0, 0.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)

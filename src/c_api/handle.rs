@@ -21,7 +21,6 @@
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::ffi::{CStr, CString, OsStr};
 use std::fmt;
-use std::ops;
 use std::path::PathBuf;
 use std::ptr;
 use std::slice;
@@ -33,15 +32,11 @@ use gio::prelude::*;
 use glib::error::ErrorDomain;
 use url::Url;
 
-use glib::object::ObjectClass;
-use glib::subclass;
-use glib::subclass::object::ObjectClassSubclassExt;
 use glib::subclass::prelude::*;
 use glib::translate::*;
-use glib::{
-    glib_object_impl, glib_object_subclass, Bytes, Cast, ParamFlags, ParamSpec, StaticType,
-    ToValue, Type,
-};
+use glib::{ffi::gpointer, gobject_ffi};
+use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue};
+use once_cell::sync::Lazy;
 
 use glib::types::instance_of;
 
@@ -145,9 +140,13 @@ impl From<LoadFlags> for HandleFlags {
 #[repr(C)]
 pub struct RsvgHandleClass {
     // Keep this in sync with rsvg.h:RsvgHandleClass
-    parent: gobject_sys::GObjectClass,
+    parent: gobject_ffi::GObjectClass,
 
-    _abi_padding: [glib_sys::gpointer; 15],
+    _abi_padding: [gpointer; 15],
+}
+
+unsafe impl ClassStruct for RsvgHandleClass {
+    type Type = imp::CHandle;
 }
 
 /// GObject instance struct for RsvgHandle.
@@ -158,9 +157,13 @@ pub struct RsvgHandleClass {
 #[repr(C)]
 pub struct RsvgHandle {
     // Keep this in sync with rsvg.h:RsvgHandle
-    parent: gobject_sys::GObject,
+    parent: gobject_ffi::GObject,
 
-    _abi_padding: [glib_sys::gpointer; 16],
+    _abi_padding: [gpointer; 16],
+}
+
+unsafe impl InstanceStruct for RsvgHandle {
+    type Type = imp::CHandle;
 }
 
 /// State machine for `RsvgHandle`.
@@ -235,7 +238,7 @@ impl BaseUrl {
     }
 
     fn get_gfile(&self) -> Option<gio::File> {
-        self.get().map(|url| gio::File::new_for_uri(url.as_str()))
+        self.get().map(|url| gio::File::for_uri(url.as_str()))
     }
 
     fn get_ptr(&self) -> *const libc::c_char {
@@ -277,238 +280,212 @@ impl From<RsvgRectangle> for cairo::Rectangle {
     }
 }
 
-/// Contains all the interior mutability for a RsvgHandle to be called
-/// from the C API.
-pub struct CHandle {
-    inner: RefCell<CHandleInner>,
-    load_state: RefCell<LoadState>,
-}
+mod imp {
+    use super::*;
+    /// Contains all the interior mutability for a RsvgHandle to be called
+    /// from the C API.
+    pub struct CHandle {
+        pub(super) inner: RefCell<CHandleInner>,
+        pub(super) load_state: RefCell<LoadState>,
+    }
 
-struct CHandleInner {
-    dpi: Dpi,
-    load_flags: LoadFlags,
-    base_url: BaseUrl,
-    size_callback: SizeCallback,
-    is_testing: bool,
-}
+    pub(super) struct CHandleInner {
+        pub(super) dpi: Dpi,
+        pub(super) load_flags: LoadFlags,
+        pub(super) base_url: BaseUrl,
+        pub(super) size_callback: SizeCallback,
+        pub(super) is_testing: bool,
+    }
 
-unsafe impl ClassStruct for RsvgHandleClass {
-    type Type = CHandle;
-}
+    #[glib::object_subclass]
+    impl ObjectSubclass for CHandle {
+        const NAME: &'static str = "RsvgHandle";
 
-unsafe impl InstanceStruct for RsvgHandle {
-    type Type = CHandle;
-}
+        type ParentType = glib::Object;
+        type Type = super::CHandle;
 
-impl ops::Deref for RsvgHandleClass {
-    type Target = ObjectClass;
+        type Instance = RsvgHandle;
+        type Class = RsvgHandleClass;
 
-    fn deref(&self) -> &Self::Target {
-        unsafe {
-            let self_ptr: *const RsvgHandleClass = self;
-            &*(self_ptr as *const Self::Target)
+        fn new() -> Self {
+            CHandle {
+                inner: RefCell::new(CHandleInner {
+                    dpi: Dpi::default(),
+                    load_flags: LoadFlags::default(),
+                    base_url: BaseUrl::default(),
+                    size_callback: SizeCallback::default(),
+                    is_testing: false,
+                }),
+                load_state: RefCell::new(LoadState::Start),
+            }
+        }
+    }
+
+    impl ObjectImpl for CHandle {
+        fn properties() -> &'static [ParamSpec] {
+            static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+                vec![
+                    ParamSpec::new_flags(
+                        "flags",
+                        "Flags",
+                        "Loading flags",
+                        HandleFlags::static_type(),
+                        0,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    ParamSpec::new_double(
+                        "dpi-x",
+                        "Horizontal DPI",
+                        "Horizontal resolution in dots per inch",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                    ),
+                    ParamSpec::new_double(
+                        "dpi-y",
+                        "Vertical DPI",
+                        "Vertical resolution in dots per inch",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                    ),
+                    ParamSpec::new_string(
+                        "base-uri",
+                        "Base URI",
+                        "Base URI for resolving relative references",
+                        None,
+                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
+                    ),
+                    ParamSpec::new_int(
+                        "width",
+                        "Image width",
+                        "Image width",
+                        0,
+                        i32::MAX,
+                        0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_int(
+                        "height",
+                        "Image height",
+                        "Image height",
+                        0,
+                        i32::MAX,
+                        0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_double(
+                        "em",
+                        "em",
+                        "em",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_double(
+                        "ex",
+                        "ex",
+                        "ex",
+                        0.0,
+                        f64::MAX,
+                        0.0,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_string(
+                        "title",
+                        "deprecated",
+                        "deprecated",
+                        None,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_string(
+                        "desc",
+                        "deprecated",
+                        "deprecated",
+                        None,
+                        ParamFlags::READABLE,
+                    ),
+                    ParamSpec::new_string(
+                        "metadata",
+                        "deprecated",
+                        "deprecated",
+                        None,
+                        ParamFlags::READABLE,
+                    ),
+                ]
+            });
+            PROPERTIES.as_ref()
+        }
+
+        fn set_property(
+            &self,
+            obj: &Self::Type,
+            id: usize,
+            value: &glib::Value,
+            pspec: &ParamSpec,
+        ) {
+            match pspec.name() {
+                "flags" => {
+                    let v: HandleFlags = value.get().expect("flags value has incorrect type");
+                    obj.set_flags(v);
+                }
+
+                "dpi-x" => {
+                    let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
+                    obj.set_dpi_x(dpi_x);
+                }
+
+                "dpi-y" => {
+                    let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
+                    obj.set_dpi_y(dpi_y);
+                }
+
+                "base-uri" => {
+                    let v: Option<String> = value.get().expect("base-uri value has incorrect type");
+
+                    // rsvg_handle_set_base_uri() expects non-NULL URI strings,
+                    // but the "base-uri" property can be set to NULL due to a missing
+                    // construct-time property.
+
+                    if let Some(s) = v {
+                        obj.set_base_url(&s);
+                    }
+                }
+
+                _ => unreachable!("invalid property id {}", id),
+            }
+        }
+
+        fn property(&self, obj: &Self::Type, id: usize, pspec: &ParamSpec) -> glib::Value {
+            match pspec.name() {
+                "flags" => obj.get_flags().to_value(),
+                "dpi-x" => obj.get_dpi_x().to_value(),
+                "dpi-y" => obj.get_dpi_y().to_value(),
+                "base-uri" => obj.get_base_url().to_value(),
+                "width" => obj.get_dimensions_or_empty().width.to_value(),
+                "height" => obj.get_dimensions_or_empty().height.to_value(),
+                "em" => obj.get_dimensions_or_empty().em.to_value(),
+                "ex" => obj.get_dimensions_or_empty().ex.to_value(),
+
+                // the following three are deprecated
+                "title" => None::<String>.to_value(),
+                "desc" => None::<String>.to_value(),
+                "metadata" => None::<String>.to_value(),
+
+                _ => unreachable!("invalid property id={} for RsvgHandle", id),
+            }
         }
     }
 }
 
-impl ops::DerefMut for RsvgHandleClass {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe {
-            let self_ptr: *mut RsvgHandleClass = self;
-            &mut *(self_ptr as *mut Self::Target)
-        }
-    }
-}
-
-static PROPERTIES: [subclass::Property<'_>; 11] = [
-    subclass::Property("flags", |name| {
-        ParamSpec::flags(
-            name,
-            "Flags",
-            "Loading flags",
-            HandleFlags::static_type(),
-            0,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
-        )
-    }),
-    subclass::Property("dpi-x", |name| {
-        ParamSpec::double(
-            name,
-            "Horizontal DPI",
-            "Horizontal resolution in dots per inch",
-            0.0,
-            f64::MAX,
-            0.0,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-        )
-    }),
-    subclass::Property("dpi-y", |name| {
-        ParamSpec::double(
-            name,
-            "Vertical DPI",
-            "Vertical resolution in dots per inch",
-            0.0,
-            f64::MAX,
-            0.0,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-        )
-    }),
-    subclass::Property("base-uri", |name| {
-        ParamSpec::string(
-            name,
-            "Base URI",
-            "Base URI for resolving relative references",
-            None,
-            ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-        )
-    }),
-    subclass::Property("width", |name| {
-        ParamSpec::int(
-            name,
-            "Image width",
-            "Image width",
-            0,
-            i32::MAX,
-            0,
-            ParamFlags::READABLE,
-        )
-    }),
-    subclass::Property("height", |name| {
-        ParamSpec::int(
-            name,
-            "Image height",
-            "Image height",
-            0,
-            i32::MAX,
-            0,
-            ParamFlags::READABLE,
-        )
-    }),
-    subclass::Property("em", |name| {
-        ParamSpec::double(name, "em", "em", 0.0, f64::MAX, 0.0, ParamFlags::READABLE)
-    }),
-    subclass::Property("ex", |name| {
-        ParamSpec::double(name, "ex", "ex", 0.0, f64::MAX, 0.0, ParamFlags::READABLE)
-    }),
-    subclass::Property("title", |name| {
-        ParamSpec::string(name, "deprecated", "deprecated", None, ParamFlags::READABLE)
-    }),
-    subclass::Property("desc", |name| {
-        ParamSpec::string(name, "deprecated", "deprecated", None, ParamFlags::READABLE)
-    }),
-    subclass::Property("metadata", |name| {
-        ParamSpec::string(name, "deprecated", "deprecated", None, ParamFlags::READABLE)
-    }),
-];
-
-impl ObjectSubclass for CHandle {
-    const NAME: &'static str = "RsvgHandle";
-
-    type ParentType = glib::Object;
-
+glib::wrapper! {
     // We don't use subclass:simple::InstanceStruct and ClassStruct
     // because we need to maintain the respective _abi_padding of each
     // of RsvgHandleClass and RsvgHandle.
-
-    type Instance = RsvgHandle;
-    type Class = RsvgHandleClass;
-
-    glib_object_subclass!();
-
-    fn class_init(klass: &mut RsvgHandleClass) {
-        klass.install_properties(&PROPERTIES);
-    }
-
-    fn new() -> Self {
-        CHandle {
-            inner: RefCell::new(CHandleInner {
-                dpi: Dpi::default(),
-                load_flags: LoadFlags::default(),
-                base_url: BaseUrl::default(),
-                size_callback: SizeCallback::default(),
-                is_testing: false,
-            }),
-            load_state: RefCell::new(LoadState::Start),
-        }
-    }
-}
-
-impl StaticType for CHandle {
-    fn static_type() -> Type {
-        CHandle::get_type()
-    }
-}
-
-impl ObjectImpl for CHandle {
-    glib_object_impl!();
-
-    fn set_property(&self, _obj: &glib::Object, id: usize, value: &glib::Value) {
-        let prop = &PROPERTIES[id];
-
-        match *prop {
-            subclass::Property("flags", ..) => {
-                let v: HandleFlags = value.get_some().expect("flags value has incorrect type");
-                self.set_flags(v);
-            }
-
-            subclass::Property("dpi-x", ..) => {
-                let dpi_x: f64 = value.get_some().expect("dpi-x value has incorrect type");
-                self.set_dpi_x(dpi_x);
-            }
-
-            subclass::Property("dpi-y", ..) => {
-                let dpi_y: f64 = value.get_some().expect("dpi-y value has incorrect type");
-                self.set_dpi_y(dpi_y);
-            }
-
-            subclass::Property("base-uri", ..) => {
-                let v: Option<String> = value.get().expect("base-uri value has incorrect type");
-
-                // rsvg_handle_set_base_uri() expects non-NULL URI strings,
-                // but the "base-uri" property can be set to NULL due to a missing
-                // construct-time property.
-
-                if let Some(s) = v {
-                    self.set_base_url(&s);
-                }
-            }
-
-            _ => unreachable!("invalid property id {}", id),
-        }
-    }
-
-    #[rustfmt::skip]
-    fn get_property(&self, _obj: &glib::Object, id: usize) -> Result<glib::Value, ()> {
-        let prop = &PROPERTIES[id];
-
-        match *prop {
-            subclass::Property("flags", ..) => Ok(self.get_flags().to_value()),
-
-            subclass::Property("dpi-x", ..) => Ok(self.get_dpi_x().to_value()),
-            subclass::Property("dpi-y", ..) => Ok(self.get_dpi_y().to_value()),
-
-            subclass::Property("base-uri", ..) => Ok(self.get_base_url().to_value()),
-
-            subclass::Property("width", ..) =>
-                Ok(self.get_dimensions_or_empty().width.to_value()),
-
-            subclass::Property("height", ..) =>
-                Ok(self.get_dimensions_or_empty().height.to_value()),
-
-            subclass::Property("em", ..) =>
-                Ok(self.get_dimensions_or_empty().em.to_value()),
-
-            subclass::Property("ex", ..) =>
-                Ok(self.get_dimensions_or_empty().ex.to_value()),
-
-            // the following three are deprecated
-            subclass::Property("title", ..)    => Ok(None::<String>.to_value()),
-            subclass::Property("desc", ..)     => Ok(None::<String>.to_value()),
-            subclass::Property("metadata", ..) => Ok(None::<String>.to_value()),
-
-            _ => unreachable!("invalid property id={} for RsvgHandle", id),
-        }
-    }
+    pub struct CHandle(ObjectSubclass<imp::CHandle>);
 }
 
 // Keep in sync with tests/src/reference.rs
@@ -551,22 +528,22 @@ pub type RsvgSizeFunc = Option<
     unsafe extern "C" fn(
         inout_width: *mut libc::c_int,
         inout_height: *mut libc::c_int,
-        user_data: glib_sys::gpointer,
+        user_data: gpointer,
     ),
 >;
 
 struct SizeCallback {
     size_func: RsvgSizeFunc,
-    user_data: glib_sys::gpointer,
-    destroy_notify: glib_sys::GDestroyNotify,
+    user_data: gpointer,
+    destroy_notify: glib::ffi::GDestroyNotify,
     in_loop: Cell<bool>,
 }
 
 impl SizeCallback {
     fn new(
         size_func: RsvgSizeFunc,
-        user_data: glib_sys::gpointer,
-        destroy_notify: glib_sys::GDestroyNotify,
+        user_data: gpointer,
+        destroy_notify: glib::ffi::GDestroyNotify,
     ) -> Self {
         SizeCallback {
             size_func,
@@ -641,7 +618,8 @@ impl CairoRectangleExt for cairo::Rectangle {
 
 impl CHandle {
     fn set_base_url(&self, url: &str) {
-        let state = self.load_state.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let state = imp.load_state.borrow();
 
         match *state {
             LoadState::Start => (),
@@ -656,7 +634,7 @@ impl CHandle {
         match Url::parse(&url) {
             Ok(u) => {
                 rsvg_log!("setting base_uri to \"{}\"", u.as_str());
-                let mut inner = self.inner.borrow_mut();
+                let mut inner = imp.inner.borrow_mut();
                 inner.base_url.set(u);
             }
 
@@ -671,63 +649,82 @@ impl CHandle {
     }
 
     fn set_base_gfile(&self, file: &gio::File) {
-        self.set_base_url(&file.get_uri());
+        self.set_base_url(&file.uri());
     }
 
     fn get_base_url(&self) -> Option<String> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.base_url.get().map(|url| url.as_str().to_string())
     }
 
     fn get_base_url_as_ptr(&self) -> *const libc::c_char {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.base_url.get_ptr()
     }
 
     fn set_dpi_x(&self, dpi_x: f64) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         let dpi = inner.dpi;
         inner.dpi = Dpi::new(dpi_x, dpi.y());
     }
 
     fn set_dpi_y(&self, dpi_y: f64) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         let dpi = inner.dpi;
         inner.dpi = Dpi::new(dpi.x(), dpi_y);
     }
 
     fn get_dpi_x(&self) -> f64 {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.dpi.x()
     }
 
     fn get_dpi_y(&self) -> f64 {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         inner.dpi.y()
     }
 
     fn set_flags(&self, flags: HandleFlags) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         inner.load_flags = LoadFlags::from(flags);
     }
 
     fn get_flags(&self) -> HandleFlags {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
         HandleFlags::from(inner.load_flags)
     }
 
     fn set_size_callback(
         &self,
         size_func: RsvgSizeFunc,
-        user_data: glib_sys::gpointer,
-        destroy_notify: glib_sys::GDestroyNotify,
+        user_data: gpointer,
+        destroy_notify: glib::ffi::GDestroyNotify,
     ) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let mut inner = imp.inner.borrow_mut();
         inner.size_callback = SizeCallback::new(size_func, user_data, destroy_notify);
     }
 
     fn write(&self, buf: &[u8]) {
-        let mut state = self.load_state.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+        let mut state = imp.load_state.borrow_mut();
 
         match *state {
             LoadState::Start => {
@@ -747,8 +744,10 @@ impl CHandle {
     }
 
     fn close(&self) -> Result<(), LoadingError> {
-        let inner = self.inner.borrow();
-        let mut state = self.load_state.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+
+        let inner = imp.inner.borrow();
+        let mut state = imp.load_state.borrow_mut();
 
         match *state {
             LoadState::Start => {
@@ -777,8 +776,10 @@ impl CHandle {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        let state = self.load_state.borrow_mut();
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+
+        let state = imp.load_state.borrow_mut();
+        let inner = imp.inner.borrow();
 
         match *state {
             LoadState::Start => {
@@ -809,7 +810,8 @@ impl CHandle {
     }
 
     fn get_handle_ref(&self) -> Result<Ref<'_, SvgHandle>, RenderingError> {
-        let state = self.load_state.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let state = imp.load_state.borrow();
 
         match *state {
             LoadState::Start => {
@@ -838,7 +840,8 @@ impl CHandle {
     }
 
     fn make_loader(&self) -> Loader {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         Loader::new()
             .with_unlimited_size(inner.load_flags.unlimited_size)
@@ -856,7 +859,8 @@ impl CHandle {
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
@@ -899,7 +903,8 @@ impl CHandle {
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         if id.is_none() {
             return Ok(RsvgPositionData { x: 0, y: 0 });
@@ -923,7 +928,8 @@ impl CHandle {
     }
 
     fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
-        let inner = self.inner.borrow();
+        let imp = imp::CHandle::from_instance(self);
+        let inner = imp.inner.borrow();
 
         let mut renderer = CairoRenderer::new(&*handle_ref).with_dpi(inner.dpi.x(), inner.dpi.y());
 
@@ -945,7 +951,8 @@ impl CHandle {
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
-        match *self.load_state.borrow_mut() {
+        let imp = imp::CHandle::from_instance(self);
+        match *imp.load_state.borrow_mut() {
             LoadState::ClosedOk { ref mut handle } => handle.set_stylesheet(css),
 
             _ => {
@@ -960,7 +967,7 @@ impl CHandle {
 
     fn render_cairo_sub(
         &self,
-        cr: *mut cairo_sys::cairo_t,
+        cr: *mut cairo::ffi::cairo_t,
         id: Option<&str>,
     ) -> Result<(), RenderingError> {
         let dimensions = self.get_dimensions_sub(None)?;
@@ -993,7 +1000,7 @@ impl CHandle {
         )?;
 
         {
-            let cr = cairo::Context::new(&surface);
+            let cr = cairo::Context::new(&surface)?;
             let cr_raw = cr.to_raw_none();
             self.render_cairo_sub(cr_raw, id)?;
         }
@@ -1005,7 +1012,7 @@ impl CHandle {
 
     fn render_document(
         &self,
-        cr: *mut cairo_sys::cairo_t,
+        cr: *mut cairo::ffi::cairo_t,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
         let cr = check_cairo_context(cr)?;
@@ -1031,7 +1038,7 @@ impl CHandle {
 
     fn render_layer(
         &self,
-        cr: *mut cairo_sys::cairo_t,
+        cr: *mut cairo::ffi::cairo_t,
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
@@ -1059,7 +1066,7 @@ impl CHandle {
 
     fn render_element(
         &self,
-        cr: *mut cairo_sys::cairo_t,
+        cr: *mut cairo::ffi::cairo_t,
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
@@ -1085,7 +1092,8 @@ impl CHandle {
     }
 
     fn set_testing(&self, is_testing: bool) {
-        let mut inner = self.inner.borrow_mut();
+        let imp = imp::CHandle::from_instance(self);
+        let mut inner = imp.inner.borrow_mut();
         inner.is_testing = is_testing;
     }
 }
@@ -1094,36 +1102,36 @@ fn is_rsvg_handle(obj: *const RsvgHandle) -> bool {
     unsafe { instance_of::<CHandle>(obj as *const _) }
 }
 
-fn is_input_stream(obj: *mut gio_sys::GInputStream) -> bool {
+fn is_input_stream(obj: *mut gio::ffi::GInputStream) -> bool {
     unsafe { instance_of::<gio::InputStream>(obj as *const _) }
 }
 
-fn is_gfile(obj: *const gio_sys::GFile) -> bool {
+fn is_gfile(obj: *const gio::ffi::GFile) -> bool {
     unsafe { instance_of::<gio::File>(obj as *const _) }
 }
 
-fn is_cancellable(obj: *mut gio_sys::GCancellable) -> bool {
+fn is_cancellable(obj: *mut gio::ffi::GCancellable) -> bool {
     unsafe { instance_of::<gio::Cancellable>(obj as *const _) }
 }
 
-fn get_rust_handle<'a>(handle: *const RsvgHandle) -> &'a CHandle {
+fn get_rust_handle(handle: *const RsvgHandle) -> CHandle {
     let handle = unsafe { &*handle };
-    handle.get_impl()
+    handle.impl_().instance()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_get_type() -> glib_sys::GType {
-    CHandle::get_type().to_glib()
+pub unsafe extern "C" fn rsvg_handle_get_type() -> glib::ffi::GType {
+    CHandle::static_type().into_glib()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_error_get_type() -> glib_sys::GType {
-    Error::static_type().to_glib()
+pub unsafe extern "C" fn rsvg_error_get_type() -> glib::ffi::GType {
+    Error::static_type().into_glib()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn rsvg_handle_flags_get_type() -> glib_sys::GType {
-    HandleFlags::static_type().to_glib()
+pub unsafe extern "C" fn rsvg_handle_flags_get_type() -> glib::ffi::GType {
+    HandleFlags::static_type().into_glib()
 }
 
 #[no_mangle]
@@ -1149,7 +1157,7 @@ pub unsafe extern "C" fn rsvg_handle_set_base_uri(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_set_base_gfile(
     handle: *const RsvgHandle,
-    raw_gfile: *mut gio_sys::GFile,
+    raw_gfile: *mut gio::ffi::GFile,
 ) {
     rsvg_return_if_fail! {
         rsvg_handle_set_base_gfile;
@@ -1216,8 +1224,8 @@ pub unsafe extern "C" fn rsvg_handle_set_dpi_x_y(
 pub unsafe extern "C" fn rsvg_handle_set_size_callback(
     handle: *const RsvgHandle,
     size_func: RsvgSizeFunc,
-    user_data: glib_sys::gpointer,
-    destroy_notify: glib_sys::GDestroyNotify,
+    user_data: gpointer,
+    destroy_notify: glib::ffi::GDestroyNotify,
 ) {
     rsvg_return_if_fail! {
         rsvg_handle_set_size_callback;
@@ -1233,7 +1241,7 @@ pub unsafe extern "C" fn rsvg_handle_set_size_callback(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
     handle: *const RsvgHandle,
-    testing: glib_sys::gboolean,
+    testing: glib::ffi::gboolean,
 ) {
     rsvg_return_if_fail! {
         rsvg_handle_internal_set_testing;
@@ -1249,19 +1257,19 @@ pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
 trait IntoGError {
     type GlibResult;
 
-    fn into_gerror(self, error: *mut *mut glib_sys::GError) -> Self::GlibResult;
+    fn into_gerror(self, error: *mut *mut glib::ffi::GError) -> Self::GlibResult;
 }
 
 impl<E: fmt::Display> IntoGError for Result<(), E> {
-    type GlibResult = glib_sys::gboolean;
+    type GlibResult = glib::ffi::gboolean;
 
-    fn into_gerror(self, error: *mut *mut glib_sys::GError) -> Self::GlibResult {
+    fn into_gerror(self, error: *mut *mut glib::ffi::GError) -> Self::GlibResult {
         match self {
-            Ok(()) => true.to_glib(),
+            Ok(()) => true.into_glib(),
 
             Err(e) => {
                 set_gerror(error, 0, &format!("{}", e));
-                false.to_glib()
+                false.into_glib()
             }
         }
     }
@@ -1270,12 +1278,12 @@ impl<E: fmt::Display> IntoGError for Result<(), E> {
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
     handle: *const RsvgHandle,
-    stream: *mut gio_sys::GInputStream,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    stream: *mut gio::ffi::GInputStream,
+    cancellable: *mut gio::ffi::GCancellable,
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_read_stream_sync => false.to_glib();
+        rsvg_handle_read_stream_sync => false.into_glib();
 
         is_rsvg_handle(handle),
         is_input_stream(stream),
@@ -1298,10 +1306,10 @@ pub unsafe extern "C" fn rsvg_handle_write(
     handle: *const RsvgHandle,
     buf: *const u8,
     count: usize,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_write => false.to_glib();
+        rsvg_handle_write => false.into_glib();
 
         is_rsvg_handle(handle),
         error.is_null() || (*error).is_null(),
@@ -1312,16 +1320,16 @@ pub unsafe extern "C" fn rsvg_handle_write(
     let buffer = slice::from_raw_parts(buf, count);
     rhandle.write(buffer);
 
-    true.to_glib()
+    true.into_glib()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_close(
     handle: *const RsvgHandle,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_close => false.to_glib();
+        rsvg_handle_close => false.into_glib();
 
         is_rsvg_handle(handle),
         error.is_null() || (*error).is_null(),
@@ -1336,9 +1344,9 @@ pub unsafe extern "C" fn rsvg_handle_close(
 pub unsafe extern "C" fn rsvg_handle_has_sub(
     handle: *const RsvgHandle,
     id: *const libc::c_char,
-) -> glib_sys::gboolean {
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_has_sub => false.to_glib();
+        rsvg_handle_has_sub => false.into_glib();
 
         is_rsvg_handle(handle),
     }
@@ -1346,20 +1354,20 @@ pub unsafe extern "C" fn rsvg_handle_has_sub(
     let rhandle = get_rust_handle(handle);
 
     if id.is_null() {
-        return false.to_glib();
+        return false.into_glib();
     }
 
     let id: String = from_glib_none(id);
-    rhandle.has_sub(&id).unwrap_or(false).to_glib()
+    rhandle.has_sub(&id).unwrap_or(false).into_glib()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_render_cairo(
     handle: *const RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
-) -> glib_sys::gboolean {
+    cr: *mut cairo::ffi::cairo_t,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_cairo => false.to_glib();
+        rsvg_handle_render_cairo => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1375,11 +1383,11 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
     handle: *const RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
+    cr: *mut cairo::ffi::cairo_t,
     id: *const libc::c_char,
-) -> glib_sys::gboolean {
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_cairo_sub => false.to_glib();
+        rsvg_handle_render_cairo_sub => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1396,7 +1404,7 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
     handle: *const RsvgHandle,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     rsvg_return_val_if_fail! {
         rsvg_handle_get_pixbuf => ptr::null_mut();
 
@@ -1418,7 +1426,7 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
     handle: *const RsvgHandle,
     id: *const libc::c_char,
-) -> *mut gdk_pixbuf_sys::GdkPixbuf {
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     rsvg_return_val_if_fail! {
         rsvg_handle_get_pixbuf_sub => ptr::null_mut();
 
@@ -1450,9 +1458,9 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
     handle: *const RsvgHandle,
     dimension_data: *mut RsvgDimensionData,
     id: *const libc::c_char,
-) -> glib_sys::gboolean {
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_dimensions_sub => false.to_glib();
+        rsvg_handle_get_dimensions_sub => false.into_glib();
 
         is_rsvg_handle(handle),
         !dimension_data.is_null(),
@@ -1465,13 +1473,13 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
     match rhandle.get_dimensions_sub(id.as_deref()) {
         Ok(dimensions) => {
             *dimension_data = dimensions;
-            true.to_glib()
+            true.into_glib()
         }
 
         Err(e) => {
             rsvg_log!("could not get dimensions: {}", e);
             *dimension_data = RsvgDimensionData::empty();
-            false.to_glib()
+            false.into_glib()
         }
     }
 }
@@ -1481,9 +1489,9 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
     handle: *const RsvgHandle,
     position_data: *mut RsvgPositionData,
     id: *const libc::c_char,
-) -> glib_sys::gboolean {
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_position_sub => false.to_glib();
+        rsvg_handle_get_position_sub => false.into_glib();
 
         is_rsvg_handle(handle),
         !position_data.is_null(),
@@ -1496,7 +1504,7 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
     match rhandle.get_position_sub(id.as_deref()) {
         Ok(position) => {
             *position_data = position;
-            true.to_glib()
+            true.into_glib()
         }
 
         Err(e) => {
@@ -1506,36 +1514,30 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
             p.y = 0;
 
             rsvg_log!("could not get position: {}", e);
-            false.to_glib()
+            false.into_glib()
         }
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
-    let obj: *mut gobject_sys::GObject = glib::Object::new(CHandle::get_type(), &[])
-        .unwrap()
-        .to_glib_full();
+    let obj = glib::Object::new::<CHandle>(&[]).unwrap();
 
-    obj as *mut _
+    obj.to_glib_full()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj: *mut gobject_sys::GObject = glib::Object::new(
-        CHandle::get_type(),
-        &[("flags", &HandleFlags::from_bits_truncate(flags))],
-    )
-    .unwrap()
-    .to_glib_full();
+    let obj = glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))])
+        .unwrap();
 
-    obj as *mut _
+    obj.to_glib_full()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_from_file(
     filename: *const libc::c_char,
-    error: *mut *mut glib_sys::GError,
+    error: *mut *mut glib::ffi::GError,
 ) -> *const RsvgHandle {
     rsvg_return_val_if_fail! {
         rsvg_handle_new_from_file => ptr::null();
@@ -1558,10 +1560,10 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
-    file: *mut gio_sys::GFile,
+    file: *mut gio::ffi::GFile,
     flags: RsvgHandleFlags,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
+    cancellable: *mut gio::ffi::GCancellable,
+    error: *mut *mut glib::ffi::GError,
 ) -> *const RsvgHandle {
     rsvg_return_val_if_fail! {
         rsvg_handle_new_from_gfile_sync => ptr::null();
@@ -1590,7 +1592,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
-            gobject_sys::g_object_unref(raw_handle as *mut _);
+            gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
     }
@@ -1598,11 +1600,11 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
-    input_stream: *mut gio_sys::GInputStream,
-    base_file: *mut gio_sys::GFile,
+    input_stream: *mut gio::ffi::GInputStream,
+    base_file: *mut gio::ffi::GFile,
     flags: RsvgHandleFlags,
-    cancellable: *mut gio_sys::GCancellable,
-    error: *mut *mut glib_sys::GError,
+    cancellable: *mut gio::ffi::GCancellable,
+    error: *mut *mut glib::ffi::GError,
 ) -> *const RsvgHandle {
     rsvg_return_val_if_fail! {
         rsvg_handle_new_from_stream_sync => ptr::null();
@@ -1630,7 +1632,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
 
         Err(e) => {
             set_gerror(error, 0, &format!("{}", e));
-            gobject_sys::g_object_unref(raw_handle as *mut _);
+            gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
     }
@@ -1640,7 +1642,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
 pub unsafe extern "C" fn rsvg_handle_new_from_data(
     data: *const u8,
     data_len: usize,
-    error: *mut *mut glib_sys::GError,
+    error: *mut *mut glib::ffi::GError,
 ) -> *const RsvgHandle {
     rsvg_return_val_if_fail! {
         rsvg_handle_new_from_data => ptr::null();
@@ -1663,7 +1665,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     assert!(data_len <= std::isize::MAX as usize);
     let data_len = data_len as isize;
 
-    let raw_stream = gio_sys::g_memory_input_stream_new_from_data(data as *mut u8, data_len, None);
+    let raw_stream = gio::ffi::g_memory_input_stream_new_from_data(data as *mut u8, data_len, None);
 
     let ret = rsvg_handle_new_from_stream_sync(
         raw_stream,
@@ -1673,12 +1675,12 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
         error,
     );
 
-    gobject_sys::g_object_unref(raw_stream as *mut _);
+    gobject_ffi::g_object_unref(raw_stream as *mut _);
     ret
 }
 
 unsafe fn set_out_param<T: Copy>(
-    out_has_param: *mut glib_sys::gboolean,
+    out_has_param: *mut glib::ffi::gboolean,
     out_param: *mut T,
     value: &Option<T>,
 ) {
@@ -1693,13 +1695,13 @@ unsafe fn set_out_param<T: Copy>(
     };
 
     if !out_has_param.is_null() {
-        *out_has_param = has_value.to_glib();
+        *out_has_param = has_value.into_glib();
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_free(handle: *mut RsvgHandle) {
-    gobject_sys::g_object_unref(handle as *mut _);
+    gobject_ffi::g_object_unref(handle as *mut _);
 }
 
 #[no_mangle]
@@ -1707,10 +1709,10 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
     handle: *const RsvgHandle,
     css: *const u8,
     css_len: usize,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_set_stylesheet => false.to_glib();
+        rsvg_handle_set_stylesheet => false.into_glib();
 
         is_rsvg_handle(handle),
         !css.is_null() || (css.is_null() && css_len == 0),
@@ -1727,7 +1729,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
                 Ok(s) => s,
                 Err(e) => {
                     set_gerror(error, 0, &format!("CSS is not valid UTF-8: {}", e));
-                    return false.to_glib();
+                    return false.into_glib();
                 }
             }
         }
@@ -1739,11 +1741,11 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_get_intrinsic_dimensions(
     handle: *const RsvgHandle,
-    out_has_width: *mut glib_sys::gboolean,
+    out_has_width: *mut glib::ffi::gboolean,
     out_width: *mut RsvgLength,
-    out_has_height: *mut glib_sys::gboolean,
+    out_has_height: *mut glib::ffi::gboolean,
     out_height: *mut RsvgLength,
-    out_has_viewbox: *mut glib_sys::gboolean,
+    out_has_viewbox: *mut glib::ffi::gboolean,
     out_viewbox: *mut RsvgRectangle,
 ) {
     rsvg_return_if_fail! {
@@ -1772,9 +1774,9 @@ pub unsafe extern "C" fn rsvg_handle_get_intrinsic_size_in_pixels(
     handle: *const RsvgHandle,
     out_width: *mut f64,
     out_height: *mut f64,
-) -> glib_sys::gboolean {
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_intrinsic_size_in_pixels => false.to_glib();
+        rsvg_handle_get_intrinsic_size_in_pixels => false.into_glib();
 
         is_rsvg_handle(handle),
     }
@@ -1795,18 +1797,18 @@ pub unsafe extern "C" fn rsvg_handle_get_intrinsic_size_in_pixels(
         *out_height = h;
     }
 
-    dim.is_some().to_glib()
+    dim.is_some().into_glib()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_render_document(
     handle: *const RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
+    cr: *mut cairo::ffi::cairo_t,
     viewport: *const RsvgRectangle,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_document => false.to_glib();
+        rsvg_handle_render_document => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1828,10 +1830,10 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
     viewport: *const RsvgRectangle,
     out_ink_rect: *mut RsvgRectangle,
     out_logical_rect: *mut RsvgRectangle,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_geometry_for_layer => false.to_glib();
+        rsvg_handle_get_geometry_for_layer => false.into_glib();
 
         is_rsvg_handle(handle),
         !viewport.is_null(),
@@ -1859,13 +1861,13 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_render_layer(
     handle: *const RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
+    cr: *mut cairo::ffi::cairo_t,
     id: *const libc::c_char,
     viewport: *const RsvgRectangle,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_layer => false.to_glib();
+        rsvg_handle_render_layer => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1887,10 +1889,10 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
     id: *const libc::c_char,
     out_ink_rect: *mut RsvgRectangle,
     out_logical_rect: *mut RsvgRectangle,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_get_geometry_for_element => false.to_glib();
+        rsvg_handle_get_geometry_for_element => false.into_glib();
 
         is_rsvg_handle(handle),
         error.is_null() || (*error).is_null(),
@@ -1917,13 +1919,13 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_render_element(
     handle: *const RsvgHandle,
-    cr: *mut cairo_sys::cairo_t,
+    cr: *mut cairo::ffi::cairo_t,
     id: *const libc::c_char,
     element_viewport: *const RsvgRectangle,
-    error: *mut *mut glib_sys::GError,
-) -> glib_sys::gboolean {
+    error: *mut *mut glib::ffi::GError,
+) -> glib::ffi::gboolean {
     rsvg_return_val_if_fail! {
-        rsvg_handle_render_element => false.to_glib();
+        rsvg_handle_render_element => false.into_glib();
 
         is_rsvg_handle(handle),
         !cr.is_null(),
@@ -1985,7 +1987,7 @@ pub unsafe extern "C" fn rsvg_cleanup() {}
 ///
 /// `rsvg_handle_new_from_file()` takes a `filename` argument, and advertises
 /// that it will detect either a file system path, or a proper URI.  It will then use
-/// `gio::File::new_for_path()` or `gio::File::new_for_uri()` as appropriate.
+/// `gio::File::for_path()` or `gio::File::for_uri()` as appropriate.
 ///
 /// This enum does the magic heuristics to figure this out.
 ///
@@ -2039,8 +2041,8 @@ impl PathOrUrl {
 
     pub fn get_gfile(&self) -> gio::File {
         match *self {
-            PathOrUrl::Path(ref p) => gio::File::new_for_path(p),
-            PathOrUrl::Url(ref u) => gio::File::new_for_uri(u.as_str()),
+            PathOrUrl::Path(ref p) => gio::File::for_path(p),
+            PathOrUrl::Url(ref u) => gio::File::for_uri(u.as_str()),
         }
     }
 }
@@ -2054,10 +2056,10 @@ impl fmt::Display for PathOrUrl {
     }
 }
 
-fn check_cairo_context(cr: *mut cairo_sys::cairo_t) -> Result<cairo::Context, RenderingError> {
-    let status = unsafe { cairo_sys::cairo_status(cr) };
+fn check_cairo_context(cr: *mut cairo::ffi::cairo_t) -> Result<cairo::Context, RenderingError> {
+    let status = unsafe { cairo::ffi::cairo_status(cr) };
 
-    if status == cairo_sys::STATUS_SUCCESS {
+    if status == cairo::ffi::STATUS_SUCCESS {
         Ok(unsafe { from_glib_none(cr) })
     } else {
         let status: cairo::Error = status.into();
@@ -2073,7 +2075,7 @@ fn check_cairo_context(cr: *mut cairo_sys::cairo_t) -> Result<cairo::Context, Re
     }
 }
 
-pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) {
+pub(crate) fn set_gerror(err: *mut *mut glib::ffi::GError, code: u32, msg: &str) {
     unsafe {
         // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
         assert!(code == 0);
@@ -2085,7 +2087,7 @@ pub(crate) fn set_gerror(err: *mut *mut glib_sys::GError, code: u32, msg: &str) 
         // passed a NULL GError and so we had no easy way to see what was wrong.
         rsvg_log!("{}", msg);
 
-        glib_sys::g_set_error_literal(
+        glib::ffi::g_set_error_literal(
             err,
             rsvg_error_quark(),
             code as libc::c_int,
@@ -2128,8 +2130,8 @@ impl ErrorDomain for RsvgError {
 }
 
 #[no_mangle]
-pub extern "C" fn rsvg_error_quark() -> glib_sys::GQuark {
-    RsvgError::domain().to_glib()
+pub extern "C" fn rsvg_error_quark() -> glib::ffi::GQuark {
+    RsvgError::domain().into_glib()
 }
 
 #[cfg(test)]

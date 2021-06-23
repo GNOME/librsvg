@@ -3,7 +3,7 @@
 use cssparser::RGBA;
 use float_cmp::approx_eq;
 use once_cell::sync::Lazy;
-use pango::FontMapExt;
+use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
@@ -40,7 +40,6 @@ use crate::surface_utils::{
 };
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
-use crate::util::check_cairo_context;
 use crate::viewbox::ViewBox;
 
 /// Holds values that are required to normalize `CssLength` values to a current viewport.
@@ -206,7 +205,7 @@ pub fn draw_tree(
 
     // Preserve the user's transform and use it for the outermost bounding box.  All bounds/extents
     // will be converted to this transform in the end.
-    let user_transform = Transform::from(cr.get_matrix());
+    let user_transform = Transform::from(cr.matrix());
     let mut user_bbox = BoundingBox::new().with_transform(user_transform);
 
     // https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem
@@ -251,15 +250,16 @@ pub fn draw_tree(
 pub struct SavedCr(cairo::Context);
 
 impl SavedCr {
-    pub fn new(cr: &cairo::Context) -> SavedCr {
-        cr.save();
-        SavedCr(cr.clone())
+    pub fn new(cr: &cairo::Context) -> Result<SavedCr, cairo::Error> {
+        cr.save()?;
+        Ok(SavedCr(cr.clone()))
     }
 }
 
 impl Drop for SavedCr {
     fn drop(&mut self) {
-        self.0.restore();
+        // Ignore cairo errors :(
+        let _ = self.0.restore();
     }
 }
 
@@ -335,7 +335,7 @@ impl DrawingCtx {
     }
 
     fn get_transform(&self) -> Transform {
-        Transform::from(self.cr.get_matrix())
+        Transform::from(self.cr.matrix())
     }
 
     pub fn empty_bbox(&self) -> BoundingBox {
@@ -597,7 +597,7 @@ impl DrawingCtx {
         // Use a scope because mask_cr needs to release the
         // reference to the surface before we access the pixels
         {
-            let mask_cr = cairo::Context::new(&mask_content_surface);
+            let mask_cr = cairo::Context::new(&mask_content_surface)?;
             mask_cr.set_matrix(mask_transform.into());
 
             let bbtransform = Transform::new_unchecked(
@@ -676,7 +676,7 @@ impl DrawingCtx {
         let res = if clipping {
             draw_fn(acquired_nodes, self)
         } else {
-            let _saved_cr = SavedCr::new(&self.cr);
+            let _saved_cr = SavedCr::new(&self.cr)?;
 
             let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
@@ -713,13 +713,12 @@ impl DrawingCtx {
 
                 let cr = match stacking_ctx.filter {
                     Filter::None => cairo::Context::new(
-                        &self
-                            .create_similar_surface_for_toplevel_viewport(&self.cr.get_target())?,
+                        &self.create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
                     ),
                     Filter::List(_) => {
                         cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)
                     }
-                };
+                }?;
 
                 cr.set_matrix(affines.for_temporary_surface.into());
 
@@ -739,7 +738,7 @@ impl DrawingCtx {
                     // Filter
 
                     let surface_to_filter = SharedImageSurface::copy_from_surface(
-                        &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.get_target()).unwrap(),
+                        &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target()).unwrap(),
                     )?;
 
                     let current_color = values.color().0;
@@ -794,7 +793,7 @@ impl DrawingCtx {
                 // Set temporary surface as source
 
                 self.cr.set_matrix(affines.compositing.into());
-                source_surface.set_as_source_surface(&self.cr, 0.0, 0.0);
+                source_surface.set_as_source_surface(&self.cr, 0.0, 0.0)?;
 
                 // Clip
 
@@ -811,10 +810,12 @@ impl DrawingCtx {
                             &bbox,
                             acquired_nodes,
                         )
-                        .map(|mask_surf| {
+                        .and_then(|mask_surf| {
                             if let Some(surf) = mask_surf {
                                 self.cr.set_matrix(affines.compositing.into());
-                                self.cr.mask_surface(&surf, 0.0, 0.0);
+                                Ok(self.cr.mask_surface(&surf, 0.0, 0.0)?)
+                            } else {
+                                Ok(())
                             }
                         })
                         .map(|_: ()| bbox)
@@ -826,9 +827,9 @@ impl DrawingCtx {
                     self.cr.set_operator(stacking_ctx.mix_blend_mode.into());
 
                     if opacity < 1.0 {
-                        self.cr.paint_with_alpha(opacity);
+                        self.cr.paint_with_alpha(opacity)?;
                     } else {
-                        self.cr.paint();
+                        self.cr.paint()?;
                     }
                 }
 
@@ -870,8 +871,8 @@ impl DrawingCtx {
         if o < 1.0 {
             self.cr.push_group();
             res = draw_fn(self);
-            self.cr.pop_group_to_source();
-            self.cr.paint_with_alpha(o);
+            self.cr.pop_group_to_source()?;
+            self.cr.paint_with_alpha(o)?;
         } else {
             res = draw_fn(self);
         }
@@ -948,7 +949,10 @@ impl DrawingCtx {
         Ok(surface)
     }
 
-    fn set_gradient(self: &mut DrawingCtx, gradient: &UserSpaceGradient) {
+    fn set_gradient(
+        self: &mut DrawingCtx,
+        gradient: &UserSpaceGradient,
+    ) -> Result<(), cairo::Error> {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -979,8 +983,7 @@ impl DrawingCtx {
             );
         }
 
-        let cr = self.cr.clone();
-        cr.set_source(&g);
+        self.cr.set_source(&g)
     }
 
     fn set_pattern(
@@ -1022,10 +1025,10 @@ impl DrawingCtx {
         // Draw to another surface
         let surface = self
             .cr
-            .get_target()
+            .target()
             .create_similar(cairo::Content::ColorAlpha, pw, ph)?;
 
-        let cr_pattern = cairo::Context::new(&surface);
+        let cr_pattern = cairo::Context::new(&surface)?;
 
         // Set up transformations to be determined by the contents units
         cr_pattern.set_matrix(caffine.into());
@@ -1077,7 +1080,7 @@ impl DrawingCtx {
         }
         pattern.set_extend(cairo::Extend::Repeat);
         pattern.set_filter(cairo::Filter::Best);
-        self.cr.set_source(&pattern);
+        self.cr.set_source(&pattern)?;
 
         Ok(true)
     }
@@ -1098,7 +1101,7 @@ impl DrawingCtx {
     ) -> Result<bool, RenderingError> {
         match *paint_source {
             UserSpacePaintSource::Gradient(ref gradient, _c) => {
-                self.set_gradient(gradient);
+                self.set_gradient(gradient)?;
                 Ok(true)
             }
             UserSpacePaintSource::Pattern(ref pattern, c) => {
@@ -1126,26 +1129,24 @@ impl DrawingCtx {
         height: i32,
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
-    ) -> Result<SharedImageSurface, cairo::Error> {
+    ) -> Result<SharedImageSurface, RenderingError> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        surface.draw(&mut |cr| {
+        surface.draw::<RenderingError>(&mut |cr| {
             let mut temporary_draw_ctx = self.nested(cr);
 
             // FIXME: we are ignoring any error
 
-            let _ = temporary_draw_ctx
-                .set_paint_source(paint_source, acquired_nodes)
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        temporary_draw_ctx.cr.paint();
-                    }
-                });
+            let had_paint_server =
+                temporary_draw_ctx.set_paint_source(paint_source, acquired_nodes)?;
+            if had_paint_server {
+                temporary_draw_ctx.cr.paint()?;
+            }
 
             Ok(())
         })?;
 
-        surface.share()
+        Ok(surface.share()?)
     }
 
     fn stroke(
@@ -1154,12 +1155,10 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        self.set_paint_source(paint_source, acquired_nodes)
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    cr.stroke_preserve();
-                }
-            })?;
+        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes)?;
+        if had_paint_server {
+            cr.stroke_preserve()?;
+        }
 
         Ok(())
     }
@@ -1170,12 +1169,10 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         paint_source: &UserSpacePaintSource,
     ) -> Result<(), RenderingError> {
-        self.set_paint_source(paint_source, acquired_nodes)
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    cr.fill_preserve();
-                }
-            })?;
+        let had_paint_server = self.set_paint_source(paint_source, acquired_nodes)?;
+        if had_paint_server {
+            cr.fill_preserve()?;
+        }
 
         Ok(())
     }
@@ -1220,7 +1217,7 @@ impl DrawingCtx {
                 cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
 
                 path_helper.set()?;
-                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint);
+                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint)?;
 
                 let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
                 let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
@@ -1254,7 +1251,12 @@ impl DrawingCtx {
         )
     }
 
-    fn paint_surface(&mut self, surface: &SharedImageSurface, width: f64, height: f64) {
+    fn paint_surface(
+        &mut self,
+        surface: &SharedImageSurface,
+        width: f64,
+        height: f64,
+    ) -> Result<(), cairo::Error> {
         let cr = self.cr.clone();
 
         // We need to set extend appropriately, so can't use cr.set_source_surface().
@@ -1266,12 +1268,12 @@ impl DrawingCtx {
         // transparent almost everywhere without this fix (which it shouldn't).
         let ptn = surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
-        cr.set_source(&ptn);
+        cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
         clip_to_rectangle(&cr, &Rect::from_size(width, height));
 
-        cr.paint();
+        cr.paint()
     }
 
     pub fn draw_image(
@@ -1313,12 +1315,12 @@ impl DrawingCtx {
                 clipping,
                 None,
                 &mut |_an, dc| {
-                    let _saved_cr = SavedCr::new(&dc.cr);
+                    let _saved_cr = SavedCr::new(&dc.cr)?;
 
                     if let Some(_params) =
                         dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
                     {
-                        dc.paint_surface(&image.surface, image_width, image_height);
+                        dc.paint_surface(&image.surface, image_width, image_height)?;
                     }
 
                     Ok(bounds)
@@ -1339,7 +1341,7 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, RenderingError> {
         let transform = self.get_transform();
 
-        let gravity = span.layout.get_context().unwrap().get_gravity();
+        let gravity = span.layout.context().unwrap().gravity();
 
         let bbox = compute_text_box(&span.layout, span.x, span.y, transform, gravity);
         if bbox.is_none() {
@@ -1348,7 +1350,7 @@ impl DrawingCtx {
 
         let mut bbox = bbox.unwrap();
 
-        let _saved_cr = SavedCr::new(&self.cr);
+        let _saved_cr = SavedCr::new(&self.cr)?;
 
         self.cr
             .set_antialias(cairo::Antialias::from(span.text_rendering));
@@ -1386,23 +1388,22 @@ impl DrawingCtx {
 
         let stroke_paint = span.stroke_paint.to_user_space(&bbox, &view_params, values);
 
-        self.set_paint_source(&stroke_paint, acquired_nodes)
-            .map(|had_paint_server| {
-                if had_paint_server {
-                    pangocairo::functions::update_layout(&self.cr, &span.layout);
-                    pangocairo::functions::layout_path(&self.cr, &span.layout);
+        let had_paint_server = self.set_paint_source(&stroke_paint, acquired_nodes)?;
 
-                    let (x0, y0, x1, y1) = self.cr.stroke_extents();
-                    let r = Rect::new(x0, y0, x1, y1);
-                    let ib = BoundingBox::new()
-                        .with_transform(transform)
-                        .with_ink_rect(r);
-                    bbox.insert(&ib);
-                    if span.is_visible {
-                        self.cr.stroke();
-                    }
-                }
-            })?;
+        if had_paint_server {
+            pangocairo::functions::update_layout(&self.cr, &span.layout);
+            pangocairo::functions::layout_path(&self.cr, &span.layout);
+
+            let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
+            let r = Rect::new(x0, y0, x1, y1);
+            let ib = BoundingBox::new()
+                .with_transform(transform)
+                .with_ink_rect(r);
+            bbox.insert(&ib);
+            if span.is_visible {
+                self.cr.stroke()?;
+            }
+        }
 
         Ok(bbox)
     }
@@ -1429,21 +1430,21 @@ impl DrawingCtx {
         //   https://www.w3.org/TR/compositing-1/#isolation
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        surface.draw(&mut |cr| {
+        surface.draw::<cairo::Error>(&mut |cr| {
             // TODO: apparently DrawingCtx.cr_stack is just a way to store pairs of
             // (surface, transform).  Can we turn it into a DrawingCtx.surface_stack
             // instead?  See what CSS isolation would like to call that; are the pairs just
             // stacking contexts instead, or the result of rendering stacking contexts?
             for (depth, draw) in self.cr_stack.borrow().iter().enumerate() {
                 let affines = CompositingAffines::new(
-                    Transform::from(draw.get_matrix()),
+                    Transform::from(draw.matrix()),
                     self.initial_transform_with_offset(),
                     depth,
                 );
 
                 cr.set_matrix(affines.for_snapshot.into());
-                cr.set_source_surface(&draw.get_target(), 0.0, 0.0);
-                cr.paint();
+                cr.set_source_surface(&draw.target(), 0.0, 0.0)?;
+                cr.paint()?;
             }
 
             Ok(())
@@ -1467,7 +1468,7 @@ impl DrawingCtx {
         let save_cr = self.cr.clone();
 
         {
-            let cr = cairo::Context::new(&surface);
+            let cr = cairo::Context::new(&surface)?;
             cr.set_matrix(affine.into());
 
             self.cr = cr;
@@ -1745,15 +1746,15 @@ fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     stroke: &Stroke,
     stroke_paint_source: &PaintSource,
-) -> BoundingBox {
-    let affine = Transform::from(cr.get_matrix());
+) -> Result<BoundingBox, RenderingError> {
+    let affine = Transform::from(cr.matrix());
 
     let mut bbox = BoundingBox::new().with_transform(affine);
 
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
     // really needed here? */
-    let backup_tolerance = cr.get_tolerance();
+    let backup_tolerance = cr.tolerance();
     cr.set_tolerance(1.0);
 
     // Bounding box for fill
@@ -1764,7 +1765,7 @@ fn compute_stroke_and_fill_box(
     // paths for the icon's shape.  We need to be able to compute the bounding
     // rectangle's extents, even when it has no fill nor stroke.
 
-    let (x0, y0, x1, y1) = cr.fill_extents();
+    let (x0, y0, x1, y1) = cr.fill_extents()?;
     let fb = BoundingBox::new()
         .with_transform(affine)
         .with_ink_rect(Rect::new(x0, y0, x1, y1));
@@ -1782,7 +1783,7 @@ fn compute_stroke_and_fill_box(
     // bounding box if so.
 
     if !stroke.width.approx_eq_cairo(0.0) && !matches!(stroke_paint_source, PaintSource::None) {
-        let (x0, y0, x1, y1) = cr.stroke_extents();
+        let (x0, y0, x1, y1) = cr.stroke_extents()?;
         let sb = BoundingBox::new()
             .with_transform(affine)
             .with_ink_rect(Rect::new(x0, y0, x1, y1));
@@ -1791,7 +1792,7 @@ fn compute_stroke_and_fill_box(
 
     // objectBoundingBox
 
-    let (x0, y0, x1, y1) = cr.path_extents();
+    let (x0, y0, x1, y1) = cr.path_extents()?;
     let ob = BoundingBox::new()
         .with_transform(affine)
         .with_rect(Rect::new(x0, y0, x1, y1));
@@ -1801,7 +1802,7 @@ fn compute_stroke_and_fill_box(
 
     cr.set_tolerance(backup_tolerance);
 
-    bbox
+    Ok(bbox)
 }
 
 fn compute_text_box(
@@ -1813,7 +1814,7 @@ fn compute_text_box(
 ) -> Option<BoundingBox> {
     #![allow(clippy::many_single_char_names)]
 
-    let (ink, _) = layout.get_extents();
+    let (ink, _) = layout.extents();
     if ink.width == 0 || ink.height == 0 {
         return None;
     }
@@ -1984,7 +1985,7 @@ impl From<&DrawingCtx> for pango::Context {
     fn from(draw_ctx: &DrawingCtx) -> pango::Context {
         let cr = draw_ctx.cr.clone();
 
-        let mut options = cairo::FontOptions::new();
+        let mut options = cairo::FontOptions::new().unwrap();
         if draw_ctx.testing {
             options.set_antialias(cairo::Antialias::Gray);
         }
@@ -1994,7 +1995,7 @@ impl From<&DrawingCtx> for pango::Context {
 
         cr.set_font_options(&options);
 
-        let font_map = pangocairo::FontMap::get_default().unwrap();
+        let font_map = pangocairo::FontMap::default().unwrap();
         let context = font_map.create_context().unwrap();
 
         context.set_round_glyph_positions(false);
@@ -2071,7 +2072,7 @@ impl Path {
         // * The *next* call to the cr will probably be something that actually checks the status
         //   (i.e. in cairo-rs), and we don't want to panic there.
 
-        check_cairo_context(&cr)
+        cr.status().map_err(|e| e.into())
     }
 }
 

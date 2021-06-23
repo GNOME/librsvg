@@ -32,12 +32,12 @@ fn simple_opacity_with_transform() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 150, 150).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
         cr.rectangle(10.0, 10.0, 30.0, 30.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -74,12 +74,12 @@ fn simple_opacity_with_offset_viewport() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 150, 150).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
         cr.rectangle(10.0, 10.0, 30.0, 30.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -120,13 +120,13 @@ fn simple_opacity_with_scale() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 500).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
         cr.scale(8.0, 8.0);
         cr.rectangle(10.0, 10.0, 30.0, 30.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -169,7 +169,7 @@ fn markers_with_scale() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 800, 800).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.scale(4.0, 4.0);
 
@@ -177,14 +177,14 @@ fn markers_with_scale() {
         cr.line_to(170.0, 100.0);
         cr.set_source_rgb(0.0, 0.5, 0.0);
         cr.set_line_width(1.0);
-        cr.stroke();
+        cr.stroke().unwrap();
 
         for (x, y) in &[(30.0, 100.0), (170.0, 100.0)] {
             cr.move_to(x + 20.0 - 10.0, y + 10.0 - 10.0);
             cr.line_to(x + 0.0 - 10.0, y + 16.0 - 10.0);
             cr.line_to(x + 0.0 - 10.0, y + 4.0 - 10.0);
             cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
-            cr.fill();
+            cr.fill().unwrap();
         }
     }
 
@@ -222,12 +222,12 @@ fn opacity_inside_transformed_group() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 140, 140).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(20.0, 20.0);
         cr.rectangle(20.0, 20.0, 60.0, 60.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -269,7 +269,7 @@ fn compound_opacity() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 500, 380).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(10.0, 10.0);
 
@@ -277,14 +277,14 @@ fn compound_opacity() {
 
         cr.rectangle(60.0, 230.0, 80.0, 40.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 0.5);
-        cr.fill();
+        cr.fill().unwrap();
 
         cr.rectangle(70.0, 240.0, 80.0, 40.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 0.5);
-        cr.fill();
+        cr.fill().unwrap();
 
-        cr.pop_group_to_source();
-        cr.paint_with_alpha(0.5);
+        cr.pop_group_to_source().unwrap();
+        cr.paint_with_alpha(0.5).unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -340,18 +340,18 @@ fn nested_masks() {
         cairo::ImageSurface::create(cairo::Format::ARgb32, 321 + 20, 27 + 20).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(10.0, 10.0);
         cr.scale(321.0 / 6420.0, 27.0 / 540.0);
 
         cr.set_source_rgba(0.0, 0.0, 0.0, 1.0);
         cr.rectangle(0.0, 0.0, 6420.0, 540.0);
-        cr.fill();
+        cr.fill().unwrap();
 
         cr.set_operator(cairo::Operator::Clear);
         cr.rectangle(2760.0, 20.0, 900.0, 480.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)

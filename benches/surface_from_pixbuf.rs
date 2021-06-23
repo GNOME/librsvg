@@ -14,8 +14,8 @@ fn bench_surface_from_pixbuf(c: &mut Criterion) {
                 let pixbuf = Pixbuf::new(Colorspace::Rgb, *alpha, 8, 256, 256).unwrap();
 
                 // Fill the surface with interesting data
-                for y in 0..pixbuf.get_width() {
-                    for x in 0..pixbuf.get_height() {
+                for y in 0..pixbuf.width() {
+                    for x in 0..pixbuf.height() {
                         pixbuf.put_pixel(
                             x as u32,
                             y as u32,

@@ -3,7 +3,7 @@
 #![allow(clippy::upper_case_acronyms)]
 #![allow(non_snake_case, non_camel_case_types)]
 
-use glib_sys::gpointer;
+use glib::ffi::gpointer;
 
 pub const XML_CHAR_ENCODING_NONE: libc::c_int = 0;
 

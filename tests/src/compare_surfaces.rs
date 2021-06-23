@@ -67,7 +67,7 @@ pub fn compare_surfaces(
     }
 
     let mut surf_diff = cairo::ImageSurface::create(cairo::Format::ARgb32, a_width, a_height)?;
-    let diff_stride = surf_diff.get_stride() as usize;
+    let diff_stride = surf_diff.stride() as usize;
 
     let mut num_pixels_changed = 0;
     let mut max_diff = 0;
@@ -75,7 +75,7 @@ pub fn compare_surfaces(
     let black = Pixel::default().alpha(255);
 
     {
-        let mut diff_data = surf_diff.get_data().unwrap();
+        let mut diff_data = surf_diff.data().unwrap();
 
         for ((xa, ya, pixel_a), (_, _, pixel_b)) in Pixels::new(surf_a).zip(Pixels::new(surf_b)) {
             let dest = if pixel_a != pixel_b {

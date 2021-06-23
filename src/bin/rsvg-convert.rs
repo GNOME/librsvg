@@ -2,16 +2,16 @@
 extern crate clap;
 
 use gio::prelude::*;
-use gio::{Cancellable, FileCreateFlags, FileExt, InputStream, OutputStream};
+use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
 
 #[cfg(unix)]
 use gio::{UnixInputStream, UnixOutputStream};
 
 #[cfg(windows)]
 mod windows_imports {
-    pub use gio_sys::{GInputStream, GOutputStream};
+    pub use gio::ffi::{GInputStream, GOutputStream};
+    pub use glib::ffi::gboolean;
     pub use glib::translate::*;
-    pub use glib_sys::gboolean;
     pub use libc::c_void;
     pub use std::io;
     pub use std::os::windows::io::AsRawHandle;
@@ -263,7 +263,7 @@ impl Surface {
         background_color: Option<Color>,
         id: Option<&str>,
     ) -> Result<(), Error> {
-        let cr = cairo::Context::new(self);
+        let cr = cairo::Context::new(self)?;
 
         if let Some(Color::RGBA(rgba)) = background_color {
             cr.set_source_rgba(
@@ -273,7 +273,7 @@ impl Surface {
                 rgba.alpha_f32().into(),
             );
 
-            cr.paint();
+            cr.paint()?;
         }
 
         cr.translate(left, top);
@@ -303,7 +303,7 @@ impl Surface {
         }
 
         if !matches!(self, Self::Png(_, _)) {
-            cr.show_page();
+            cr.show_page()?;
         }
 
         Ok(())
@@ -351,26 +351,13 @@ struct Stdin;
 impl Stdin {
     #[cfg(unix)]
     pub fn stream() -> InputStream {
-        let stream = unsafe { UnixInputStream::new(0) };
+        let stream = unsafe { UnixInputStream::with_fd(0) };
         stream.upcast::<InputStream>()
     }
 
     #[cfg(windows)]
     pub fn stream() -> InputStream {
-        // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
-        // Win32InputStream::with_handle when this is fixed
-
-        extern "C" {
-            pub fn g_win32_input_stream_new(
-                handle: *mut c_void,
-                close_handle: gboolean,
-            ) -> *mut GInputStream;
-        }
-
-        let raw_handle = io::stdin().as_raw_handle();
-        unsafe {
-            InputStream::from_glib_full(g_win32_input_stream_new(raw_handle, false.to_glib()))
-        }
+        Win32InputStream::with_handle(io::stdin()).upcast::<InputStream>()
     }
 }
 
@@ -379,26 +366,13 @@ struct Stdout;
 impl Stdout {
     #[cfg(unix)]
     pub fn stream() -> OutputStream {
-        let stream = unsafe { UnixOutputStream::new(1) };
+        let stream = unsafe { UnixOutputStream::with_fd(1) };
         stream.upcast::<OutputStream>()
     }
 
     #[cfg(windows)]
     pub fn stream() -> OutputStream {
-        // https://github.com/gtk-rs/gtk-rs/issues/381 - do this with
-        // Win32OutputStream::with_handle when this is fixed
-
-        extern "C" {
-            pub fn g_win32_output_stream_new(
-                handle: *mut c_void,
-                close_handle: gboolean,
-            ) -> *mut GOutputStream;
-        }
-
-        let raw_handle = io::stdout().as_raw_handle();
-        unsafe {
-            OutputStream::from_glib_full(g_win32_output_stream_new(raw_handle, false.to_glib()))
-        }
+        Win32InputStream::with_handle(io::stdout()).upcast::<OutputStream>()
     }
 }
 
@@ -620,7 +594,7 @@ impl Converter {
         let output_stream = match self.output {
             Output::Stdout => Stdout::stream(),
             Output::Path(ref p) => {
-                let file = gio::File::new_for_path(p);
+                let file = gio::File::for_path(p);
                 let stream = file
                     .replace(None, false, FileCreateFlags::NONE, None::<&Cancellable>)
                     .map_err(|e| error!("Error opening output \"{}\": {}", self.output, e))?;

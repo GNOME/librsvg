@@ -5,8 +5,8 @@
 //! prefix, to be clear that they should only be used from the implementation of the C API
 //! and not from the main Rust code of the library.
 
+use glib::ffi::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
 use glib::translate::*;
-use glib_sys::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LEVEL_WARNING};
 
 /*
   G_LOG_LEVEL_CRITICAL          = 1 << 3,
@@ -40,7 +40,7 @@ use glib_sys::{g_log_structured_array, GLogField, G_LOG_LEVEL_CRITICAL, G_LOG_LE
 ///
 /// If the implementation of g_warning() or g_critical() changes, we'll have
 /// to change this function.
-fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
+fn rsvg_g_log(level: glib::ffi::GLogLevelFlags, msg: &str) {
     // stolen from gmessages.c:log_level_to_priority()
     let priority = match level {
         G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL => b"4\0",
@@ -88,7 +88,7 @@ fn rsvg_g_log(level: glib_sys::GLogLevelFlags, msg: &str) {
 ///   so it's best to have a warning on the console to at least have a hope of someone
 ///   noticing the error.
 pub(crate) fn rsvg_g_warning(msg: &str) {
-    rsvg_g_log(glib_sys::G_LOG_LEVEL_WARNING, msg);
+    rsvg_g_log(glib::ffi::G_LOG_LEVEL_WARNING, msg);
 }
 
 /// Replacement for `g_critical()`.
@@ -99,7 +99,7 @@ pub(crate) fn rsvg_g_warning(msg: &str) {
 /// critical message, and return.  Development versions of GNOME will crash the program
 /// if this happens; release versions will ignore the error.
 pub(crate) fn rsvg_g_critical(msg: &str) {
-    rsvg_g_log(glib_sys::G_LOG_LEVEL_CRITICAL, msg);
+    rsvg_g_log(glib::ffi::G_LOG_LEVEL_CRITICAL, msg);
 }
 
 /// Replacement for `g_return_if_fail()`.
@@ -113,7 +113,7 @@ macro_rules! rsvg_return_if_fail {
     } => {
         $(
             if !$condition {
-                glib_sys::g_return_if_fail_warning(
+                glib::ffi::g_return_if_fail_warning(
                     b"librsvg\0" as *const u8 as *const _,
                     concat!(stringify!($func_name), "\0").as_ptr() as *const _,
                     concat!(stringify!($condition), "\0").as_ptr() as *const _,
@@ -133,7 +133,7 @@ macro_rules! rsvg_return_val_if_fail {
     } => {
         $(
             if !$condition {
-                glib_sys::g_return_if_fail_warning(
+                glib::ffi::g_return_if_fail_warning(
                     b"librsvg\0" as *const u8 as *const _,
                     concat!(stringify!($func_name), "\0").as_ptr() as *const _,
                     concat!(stringify!($condition), "\0").as_ptr() as *const _,

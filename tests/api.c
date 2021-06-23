@@ -26,12 +26,25 @@
 */
 
 static void
-handle_has_gtype (void)
+handle_has_correct_type_info (void)
 {
+    GTypeQuery q;
     RsvgHandle *handle;
 
+    g_type_query (RSVG_TYPE_HANDLE, &q);
+    g_assert (q.type == RSVG_TYPE_HANDLE);
+    g_assert (q.type == rsvg_handle_get_type ());
+
+    g_assert_cmpstr (q.type_name, ==, "RsvgHandle");
+
+    /* These test that the sizes of the structs in the header file actually match the
+     * sizes of structs and the glib-subclass machinery in the Rust side.
+     */
+    g_assert (sizeof (RsvgHandleClass) == (gsize) q.class_size);
+    g_assert (sizeof (RsvgHandle) == (gsize) q.instance_size);
+
     handle = rsvg_handle_new();
-    g_assert (G_OBJECT_TYPE (handle) == rsvg_handle_get_type ());
+    g_assert (G_OBJECT_TYPE (handle) == RSVG_TYPE_HANDLE);
     g_object_unref (handle);
 }
 
@@ -1638,7 +1651,7 @@ add_pixbuf_tests (void)
 static void
 add_api_tests (void)
 {
-    g_test_add_func ("/api/handle_has_gtype", handle_has_gtype);
+    g_test_add_func ("/api/handle_has_correct_type_info", handle_has_correct_type_info);
     g_test_add_func ("/api/flags_registration", flags_registration);
     g_test_add_func ("/api/error_registration", error_registration);
     g_test_add_func ("/api/noops", noops);

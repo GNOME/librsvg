@@ -16,7 +16,7 @@ fn loading_crash(path: &str) {
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
-    let cr = cairo::Context::new(&surface);
+    let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
 
     // We just test for crashes during rendering, and don't care about success/error.
     let _ = CairoRenderer::new(&handle).render_document(

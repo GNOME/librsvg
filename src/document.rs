@@ -1,7 +1,7 @@
 //! Main SVG document structure.
 
 use data_url::mime::Mime;
-use gdk_pixbuf::{PixbufLoader, PixbufLoaderExt};
+use gdk_pixbuf::{prelude::PixbufLoaderExt, PixbufLoader};
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
 use std::cell::RefCell;
@@ -268,7 +268,7 @@ fn load_image(
     loader.write(&bytes)?;
     loader.close()?;
 
-    let pixbuf = loader.get_pixbuf().ok_or_else(|| {
+    let pixbuf = loader.pixbuf().ok_or_else(|| {
         LoadingError::Other(format!("loading image: {}", human_readable_url(aurl)))
     })?;
 

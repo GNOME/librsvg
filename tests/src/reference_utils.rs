@@ -173,13 +173,12 @@ where
     R: Read,
 {
     let png = cairo::ImageSurface::create_from_png(stream)?;
-    let argb =
-        cairo::ImageSurface::create(cairo::Format::ARgb32, png.get_width(), png.get_height())?;
+    let argb = cairo::ImageSurface::create(cairo::Format::ARgb32, png.width(), png.height())?;
     {
         // convert to ARGB; the PNG may come as Rgb24
-        let cr = cairo::Context::new(&argb);
-        cr.set_source_surface(&png, 0.0, 0.0);
-        cr.paint();
+        let cr = cairo::Context::new(&argb).expect("Failed to create a cairo context");
+        cr.set_source_surface(&png, 0.0, 0.0).unwrap();
+        cr.paint().unwrap();
     }
     Ok(argb)
 }

@@ -10,12 +10,12 @@ pub use crate::{
     length::{LengthUnit, RsvgLength as Length},
 };
 
-use glib::prelude::*;
 use url::Url;
 
 use std::path::Path;
 
-use gio::{Cancellable, FileExt};
+use gio::prelude::*; // Re-exposes glib's prelude as well
+use gio::Cancellable;
 
 use crate::{
     dpi::Dpi,
@@ -108,7 +108,7 @@ impl Loader {
     /// let mut output = env::temp_dir();
     /// output.push("output.pdf");
     /// let surface = cairo::PdfSurface::new(640.0, 480.0, output)?;
-    /// let cr = cairo::Context::new(&surface);
+    /// let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
     ///
     /// let renderer = librsvg::CairoRenderer::new(&svg_handle);
     /// renderer.render_document(
@@ -132,7 +132,7 @@ impl Loader {
     ///     .unwrap();
     /// ```
     pub fn read_path<P: AsRef<Path>>(self, path: P) -> Result<SvgHandle, LoadingError> {
-        let file = gio::File::new_for_path(path);
+        let file = gio::File::for_path(path);
         self.read_file(&file, None::<&Cancellable>)
     }
 
@@ -143,7 +143,7 @@ impl Loader {
     /// # Example:
     /// ```
     /// let svg_handle = librsvg::Loader::new()
-    ///     .read_file(&gio::File::new_for_path("example.svg"), None::<&gio::Cancellable>)
+    ///     .read_file(&gio::File::for_path("example.svg"), None::<&gio::Cancellable>)
     ///     .unwrap();
     /// ```
     pub fn read_file<F: IsA<gio::File>, P: IsA<Cancellable>>(
@@ -172,7 +172,7 @@ impl Loader {
     /// ```
     /// use gio::prelude::*;
     ///
-    /// let file = gio::File::new_for_path("example.svg");
+    /// let file = gio::File::for_path("example.svg");
     ///
     /// let stream = file.read(None::<&gio::Cancellable>).unwrap();
     ///
@@ -207,7 +207,7 @@ impl Loader {
 }
 
 fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
-    Url::parse(&file.get_uri()).map_err(|_| LoadingError::BadUrl)
+    Url::parse(&file.uri()).map_err(|_| LoadingError::BadUrl)
 }
 
 /// Handle used to hold SVG data in memory.

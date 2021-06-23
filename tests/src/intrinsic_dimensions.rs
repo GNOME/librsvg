@@ -449,13 +449,13 @@ fn render_to_viewport_with_different_size() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 128, 128).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.scale(128.0 / 48.0, 128.0 / 48.0);
 
         cr.rectangle(8.0, 8.0, 32.0, 32.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -490,13 +490,13 @@ fn render_to_offsetted_viewport() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(10.0, 20.0);
 
         cr.rectangle(8.0, 8.0, 32.0, 32.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -533,14 +533,14 @@ fn render_to_viewport_with_transform() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(10.0, 20.0);
         cr.translate(-10.0, -10.0);
 
         cr.rectangle(18.0, 18.0, 32.0, 32.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -583,7 +583,7 @@ fn clip_on_transformed_viewport() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
 
@@ -591,13 +591,13 @@ fn clip_on_transformed_viewport() {
 
         cr.rectangle(10.0, 10.0, 40.0, 40.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
 
         cr.rectangle(50.0, 50.0, 40.0, 40.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
 
-        cr.pop_group_to_source();
+        cr.pop_group_to_source().unwrap();
 
         cr.move_to(50.0, 10.0);
         cr.line_to(90.0, 50.0);
@@ -606,7 +606,7 @@ fn clip_on_transformed_viewport() {
         cr.close_path();
 
         cr.clip();
-        cr.paint();
+        cr.paint().unwrap();
     }
 
     Reference::from_surface(reference_surf)
@@ -649,7 +649,7 @@ fn mask_on_transformed_viewport() {
     let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 200, 200).unwrap();
 
     {
-        let cr = cairo::Context::new(&reference_surf);
+        let cr = cairo::Context::new(&reference_surf).expect("Failed to create a cairo context");
 
         cr.translate(50.0, 50.0);
 
@@ -657,13 +657,13 @@ fn mask_on_transformed_viewport() {
 
         cr.rectangle(10.0, 10.0, 40.0, 40.0);
         cr.set_source_rgba(0.0, 0.0, 1.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
 
         cr.rectangle(50.0, 50.0, 40.0, 40.0);
         cr.set_source_rgba(0.0, 1.0, 0.0, 1.0);
-        cr.fill();
+        cr.fill().unwrap();
 
-        cr.pop_group_to_source();
+        cr.pop_group_to_source().unwrap();
 
         cr.move_to(50.0, 10.0);
         cr.line_to(90.0, 50.0);
@@ -672,7 +672,7 @@ fn mask_on_transformed_viewport() {
         cr.close_path();
 
         cr.clip();
-        cr.paint();
+        cr.paint().unwrap();
     }
 
     Reference::from_surface(reference_surf)

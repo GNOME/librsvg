@@ -39,7 +39,7 @@
 //!     let handle = librsvg::Loader::new().read_path("example.svg").unwrap();
 //!
 //!     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap();
-//!     let cr = cairo::Context::new(&surface);
+//!     let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
 //!
 //!     let renderer = librsvg::CairoRenderer::new(&handle);
 //!     renderer.render_document(

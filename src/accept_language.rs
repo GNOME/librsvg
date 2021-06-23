@@ -259,7 +259,8 @@ impl UserLanguage {
 fn locale_from_environment() -> Locale {
     let mut locale = Locale::invariant();
 
-    for name in glib::get_language_names() {
+    for name in glib::language_names() {
+        let name = name.as_str();
         if let Ok(range) = LanguageRange::from_unix(&name) {
             locale.add(&range);
         }
