@@ -14,8 +14,8 @@
 //! For ease of use, we define two type aliases [`Length`] and [`ULength`] corresponding to
 //! signed and unsigned.
 //!
-//! For example, the implementation of [`Circle`] defines this structure with fields for the
-//! `(center_x, center_y, radius)`:
+//! For example, the implementation of [`Circle`][crate::shapes::Circle] defines this
+//! structure with fields for the `(center_x, center_y, radius)`:
 //!
 //! ```
 //! # use librsvg::doctest_only::{Length,ULength,Horizontal,Vertical,Both};
@@ -38,21 +38,9 @@
 //! of the current viewport.
 //!
 //! The `N` type parameter of `CssLength<N, I>` is enough to know how to normalize a length
-//! value; the [`normalize`] method will handle it automatically.
+//! value; the [`CssLength::to_user`] method will handle it automatically.
 //!
-//! [`Circle`]: ../shapes/struct.Circle.html
-//! [`CssLength`]: struct.CssLength.html
-//! [`Length`]: type.Length.html
-//! [`ULength`]: type.ULength.html
-//! [`Horizontal`]: struct.Horizontal.html
-//! [`Vertical`]: struct.Vertical.html
-//! [`Both`]: struct.Both.html
-//! [`Normalize`]: trait.Normalize.html
-//! [`Signed`]: struct.Signed.html
-//! [`Unsigned`]: struct.Unsigned.html
-//! [`Validate`]: trait.Validate.html
 //! [diag]: https://www.w3.org/TR/SVG/coords.html#Units
-//! [`normalize`]: struct.CssLength.html#method.normalize
 
 use cssparser::{Parser, Token};
 use std::f64::consts::*;
@@ -105,15 +93,11 @@ pub enum LengthUnit {
 ///
 /// [CSS lengths]: https://www.w3.org/TR/CSS22/syndata.html#length-units
 ///
-/// It is up to the calling application to convert lengths in non-pixel units
-/// (i.e. those where the [`unit`] field is not [`LengthUnit::Px`]) into something
+/// It is up to the calling application to convert lengths in non-pixel units (i.e. those
+/// where the [`unit`][RsvgLength::unit] field is not [`LengthUnit::Px`]) into something
 /// meaningful to the application.  For example, if your application knows the
 /// dots-per-inch (DPI) it is using, it can convert lengths with [`unit`] in
 /// [`LengthUnit::In`] or other physical units.
-///
-/// [`unit`]: #structfield.unit
-/// [`LengthUnit::Px`]: enum.LengthUnit.html#variant.Px
-/// [`LengthUnit::In`]: enum.LengthUnit.html#variant.In
 // Keep this in sync with rsvg.h:RsvgLength
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -135,11 +119,10 @@ impl RsvgLength {
 pub trait Normalize {
     /// Computes an orientation-based scaling factor.
     ///
-    /// This is used in the [`CssLength.normalize`] method to resolve lengths with percentage
+    /// This is used in the [`CssLength::to_user`] method to resolve lengths with percentage
     /// units; they need to be resolved with respect to the width, height, or [normalized
     /// diagonal][diag] of the current viewport.
     ///
-    /// [`CssLength.normalize`]: struct.CssLength.html#method.normalize
     /// [diag]: https://www.w3.org/TR/SVG/coords.html#Units
     fn normalize(x: f64, y: f64) -> f64;
 }
@@ -233,19 +216,8 @@ impl Validate for Unsigned {
 /// let radius = ULength::<Both>::parse_str("5px").unwrap();
 /// ```
 ///
-/// During the rendering phase, a `CssLength` needs to be normalized into the current
-/// coordinate system's units with the [`normalize`] method.
-///
-/// [`Length`]: type.Length.html
-/// [`ULength`]: type.ULength.html
-/// [`Normalize`]: trait.Normalize.html
-/// [`Horizontal`]: struct.Horizontal.html
-/// [`Vertical`]: struct.Vertical.html
-/// [`Both`]: struct.Both.html
-/// [`new`]: #method.new
-/// [`normalize`]: #method.normalize
-/// [`cssparser::Parser`]: https://docs.rs/cssparser/0.27.1/cssparser/struct.Parser.html
-/// [`Parse`]: ../parsers/trait.Parse.html
+/// During the rendering phase, a `CssLength` needs to be converted to user-space
+/// coordinates with the [`CssLength::to_user`] method.
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct CssLength<N: Normalize, V: Validate> {
     /// Numeric part of the length
@@ -329,7 +301,7 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
     }
 }
 
-/// Parameters to normalize `Length` values to user-space distances.
+/// Parameters to normalize [`Length`] values to user-space distances.
 pub struct NormalizeParams {
     vbox: ViewBox,
     font_size: f64,
@@ -337,8 +309,8 @@ pub struct NormalizeParams {
 }
 
 impl NormalizeParams {
-    /// Extracts the information needed to normalize `Length` values from a set of
-    /// `ComputedValues` and the viewport size in `ViewParams`.
+    /// Extracts the information needed to normalize [`Length`] values from a set of
+    /// [`ComputedValues`] and the viewport size in [`ViewParams`].
     // TODO: It is awkward to pass a `ComputedValues` everywhere just to be able to get
     // the font size in the end.  Can we instead have a `ComputedFontSize(FontSize)`
     // newtype, extracted from the `ComputedValues`?
@@ -388,10 +360,10 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
     ///
     /// Lengths may come with non-pixel units, and when rendering, they need to be normalized
     /// to pixels based on the current viewport (e.g. for lengths with percent units), and
-    /// based on the current element's set of `ComputedValues` (e.g. for lengths with `Em`
+    /// based on the current element's set of [`ComputedValues`] (e.g. for lengths with `Em`
     /// units that need to be resolved against the current font size).
     ///
-    /// Those parameters can be obtained with `NormalizeParams::new()`.
+    /// Those parameters can be obtained with [`NormalizeParams::new()`].
     pub fn to_user(&self, params: &NormalizeParams) -> f64 {
         match self.unit {
             LengthUnit::Px => self.length,
