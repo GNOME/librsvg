@@ -6,13 +6,10 @@
 //! equivalent of writing a full `<filter>` with a `<feGaussianBlur>` element.
 //!
 //! This module has a type for each of the filter functions in SVG2 with the function's
-//! parameters, for example [`Blur`](struct.Blur.html) stores the blur's standard
-//! deviation parameter.
+//! parameters, for example [`Blur`] stores the blur's standard deviation parameter.
 //!
-//! Those types get aggregated in the [`FilterFunction`](enum.FilterFunction.html) enum.
-//! A `FilterFunction` can then convert itself into a
-//! [`FilterSpec`](../filters/struct.FilterSpec.html), which is ready to be rendered on a
-//! surface.
+//! Those types get aggregated in the [`FilterFunction`] enum.  A [`FilterFunction`] can
+//! then convert itself into a [`FilterSpec`], which is ready to be rendered on a surface.
 
 use cssparser::{Color, Parser, RGBA};
 
