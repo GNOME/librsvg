@@ -5,18 +5,14 @@
 //! * Create a type that will hold the property's values.  Please do this in the file
 //! `property_defs.rs`; you should cut-and-paste from the existing property definitions or
 //! read the documentation of the [`make_property`] macro.  You should read the
-//! documentation for the [`property_defs`] module to see all that is involved in creating
-//! a type for a property.
+//! documentation for the [`property_defs`][crate::property_defs] module to see all that
+//! is involved in creating a type for a property.
 //!
 //! * Modify the call to the `make_properties` macro in this module to include the new
 //! property's name.
 //!
 //! * Modify the rest of librsvg wherever the computed value of the property needs to be used.
 //! This is available in methods that take an argument of type [`ComputedValues`].
-//!
-//! [`make_property`]: ../macro.make_property.html
-//! [`property_defs`]: ../property_defs/index.html
-//! [`ComputedValues`]: ../struct.ComputedValues.html
 
 use cssparser::{
     self, BasicParseErrorKind, DeclarationListParser, ParseErrorKind, Parser, ParserInput, ToCss,
