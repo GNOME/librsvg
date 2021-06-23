@@ -12,7 +12,6 @@
 //! );
 //! ```
 //!
-//! [`AspectRatio`]: struct.AspectRatio.html
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
 use cssparser::{BasicParseError, Parser};
