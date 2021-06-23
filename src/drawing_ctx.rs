@@ -983,7 +983,7 @@ impl DrawingCtx {
             );
         }
 
-        Ok(self.cr.set_source(&g)?)
+        self.cr.set_source(&g)
     }
 
     fn set_pattern(
