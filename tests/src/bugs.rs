@@ -461,3 +461,32 @@ fn accepted_children_inside_clip_path() {
         .compare(&output_surf)
         .evaluate(&output_surf, "accepted_children_inside_clip_path");
 }
+
+#[test]
+fn can_draw_to_non_image_surface() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="400" viewBox="0 0 100 400">
+  <rect id="one" x="0" y="0" width="100" height="200" fill="rgb(0,255,0)"/>
+  <rect id="two" x="0" y="200" width="100" height="200" fill="rgb(0,0,255)"/>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 200.0,
+        height: 200.0,
+    };
+
+    let output = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, viewport).unwrap();
+
+    let cr = cairo::Context::new(&output).expect("Failed to create a cairo context");
+    renderer
+        .render_document(&cr, &viewport)
+        .expect("Failed to render to non-image surface");
+}
