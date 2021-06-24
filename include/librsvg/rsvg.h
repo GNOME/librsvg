@@ -417,7 +417,8 @@ struct _RsvgHandle {
  * individual element from rsvg_handle_get_dimensions_sub().  Please see
  * the deprecation documentation for those functions.
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Use rsvg_handle_get_intrinsic_size_in_pixels() or
+ * rsvg_handle_get_geometry_for_layer() instead.
  */
 struct _RsvgDimensionData {
     int width;
@@ -705,9 +706,13 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri);
  * This function depends on the #RsvgHandle's DPI to compute dimensions in
  * pixels, so you should call rsvg_handle_set_dpi() beforehand.
  *
+ * Deprecated: 2.52.  Use rsvg_handle_get_intrinsic_size_in_pixels() instead.  This
+ * function is deprecated because it is not able to return exact fractional dimensions,
+ * only integer pixels.
+ *
  * Since: 2.14
  */
-RSVG_API
+RSVG_DEPRECATED_FOR(rsvg_handle_get_intrinsic_size_in_pixels)
 void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data);
 
 /**
