@@ -950,7 +950,7 @@ impl DrawingCtx {
     }
 
     fn set_gradient(
-        self: &mut DrawingCtx,
+        &mut self,
         gradient: &UserSpaceGradient,
     ) -> Result<(), cairo::Error> {
         let g = match gradient.variant {
