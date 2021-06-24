@@ -435,7 +435,7 @@ struct _RsvgDimensionData {
  * Position of an SVG fragment from rsvg_handle_get_position_sub().  Please
  * the deprecation documentation for that function.
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
  */
 struct _RsvgPositionData {
     int x;
@@ -760,7 +760,9 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.  This function is
+ * deprecated since it is not able to return exact floating-point positions, only integer
+ * pixels.
  *
  * Since: 2.22
  */
