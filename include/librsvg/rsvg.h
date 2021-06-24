@@ -942,6 +942,9 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 200"/>
  * ]|
  *
+ * Instead of querying an SVG document's size, applications are encouraged to render SVG
+ * documents to a size chosen by the application, by passing a suitably-sized viewport to
+ * rsvg_handle_render_document().
  *
  * Returns: %TRUE if the dimensions could be converted directly to pixels; in this case
  * @out_width and @out_height will be set accordingly.  Note that the dimensions are
