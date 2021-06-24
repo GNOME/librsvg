@@ -19,6 +19,7 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
 use crate::element::Element;
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
+use crate::filter::FilterValueList;
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
@@ -714,11 +715,11 @@ impl DrawingCtx {
                 let cr = match stacking_ctx.filter {
                     Filter::None => cairo::Context::new(
                         &self.create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
-                    ),
+                    )?,
                     Filter::List(_) => {
-                        cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)
+                        cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)?
                     }
-                }?;
+                };
 
                 cr.set_matrix(affines.for_temporary_surface.into());
 
@@ -735,65 +736,69 @@ impl DrawingCtx {
                         BoundingBox::new().with_transform(affines.for_temporary_surface)
                     };
 
-                    // Filter
+                    if let Filter::List(ref filter_list) = stacking_ctx.filter {
+                        let surface_to_filter = SharedImageSurface::copy_from_surface(
+                            &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target()).unwrap(),
+                        )?;
 
-                    let surface_to_filter = SharedImageSurface::copy_from_surface(
-                        &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target()).unwrap(),
-                    )?;
+                        let current_color = values.color().0;
 
-                    let current_color = values.color().0;
+                        let params = temporary_draw_ctx.get_view_params();
 
-                    let params = temporary_draw_ctx.get_view_params();
+                        // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
+                        // they are also needed for filters in all elements.  Maybe we should make them part
+                        // of the StackingContext instead of Shape?
+                        let stroke_paint_source = Rc::new(
+                            values
+                                .stroke()
+                                .0
+                                .resolve(acquired_nodes, values.stroke_opacity().0, current_color)
+                                .to_user_space(&bbox, &params, values),
+                        );
 
-                    // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
-                    // they are also needed for filters in all elements.  Maybe we should make them part
-                    // of the StackingContext instead of Shape?
-                    let stroke_paint_source = Rc::new(
-                        values
-                            .stroke()
-                            .0
-                            .resolve(acquired_nodes, values.stroke_opacity().0, current_color)
-                            .to_user_space(&bbox, &params, values),
-                    );
+                        let fill_paint_source = Rc::new(
+                            values
+                                .fill()
+                                .0
+                                .resolve(acquired_nodes, values.fill_opacity().0, current_color)
+                                .to_user_space(&bbox, &params, values),
+                        );
 
-                    let fill_paint_source = Rc::new(
-                        values
-                            .fill()
-                            .0
-                            .resolve(acquired_nodes, values.fill_opacity().0, current_color)
-                            .to_user_space(&bbox, &params, values),
-                    );
+                        // Filter functions (like "blend()", not the <filter> element) require
+                        // being resolved in userSpaceonUse units, since that is the default
+                        // for primitive_units.  So, get the corresponding NormalizeParams
+                        // here and pass them down.
+                        let user_space_params = NormalizeParams::new(
+                            values,
+                            &params.with_units(CoordUnits::UserSpaceOnUse),
+                        );
 
-                    // Filter functions (like "blend()", not the <filter> element) require
-                    // being resolved in userSpaceonUse units, since that is the default
-                    // for primitive_units.  So, get the corresponding NormalizeParams
-                    // here and pass them down.
-                    let user_space_params = NormalizeParams::new(
-                        values,
-                        &params.with_units(CoordUnits::UserSpaceOnUse),
-                    );
+                        let filtered_surface = temporary_draw_ctx
+                            .run_filters(
+                                surface_to_filter,
+                                filter_list,
+                                acquired_nodes,
+                                &stacking_ctx.element_name,
+                                &user_space_params,
+                                stroke_paint_source,
+                                fill_paint_source,
+                                current_color,
+                                bbox,
+                            )?
+                            .into_image_surface()?;
 
-                    (
-                        temporary_draw_ctx.run_filters(
-                            surface_to_filter,
-                            &stacking_ctx.filter,
-                            acquired_nodes,
-                            &stacking_ctx.element_name,
-                            &user_space_params,
-                            stroke_paint_source,
-                            fill_paint_source,
-                            current_color,
-                            bbox,
-                        )?,
-                        res,
-                        bbox,
-                    )
+                        let generic_surface: &cairo::Surface = &filtered_surface; // deref to Surface
+
+                        (generic_surface.clone(), res, bbox)
+                    } else {
+                        (temporary_draw_ctx.cr.target(), res, bbox)
+                    }
                 };
 
                 // Set temporary surface as source
 
                 self.cr.set_matrix(affines.compositing.into());
-                source_surface.set_as_source_surface(&self.cr, 0.0, 0.0)?;
+                self.cr.set_source_surface(&source_surface, 0.0, 0.0)?;
 
                 // Clip
 
@@ -903,7 +908,7 @@ impl DrawingCtx {
     fn run_filters(
         &mut self,
         surface_to_filter: SharedImageSurface,
-        filters: &Filter,
+        filter_list: &FilterValueList,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
         user_space_params: &NormalizeParams,
@@ -912,47 +917,39 @@ impl DrawingCtx {
         current_color: RGBA,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
-        let surface = match filters {
-            Filter::None => surface_to_filter,
-            Filter::List(filter_list) => {
-                if let Ok(specs) = filter_list
-                    .iter()
-                    .map(|filter_value| {
-                        filter_value.to_filter_spec(
-                            acquired_nodes,
-                            user_space_params,
-                            current_color,
-                            self,
-                            node_name,
-                        )
-                    })
-                    .collect::<Result<Vec<FilterSpec>, _>>()
-                {
-                    specs.iter().try_fold(surface_to_filter, |surface, spec| {
-                        filters::render(
-                            &spec,
-                            stroke_paint_source.clone(),
-                            fill_paint_source.clone(),
-                            surface,
-                            acquired_nodes,
-                            self,
-                            self.get_transform(),
-                            node_bbox,
-                        )
-                    })?
-                } else {
-                    surface_to_filter
-                }
-            }
+        let surface = if let Ok(specs) = filter_list
+            .iter()
+            .map(|filter_value| {
+                filter_value.to_filter_spec(
+                    acquired_nodes,
+                    user_space_params,
+                    current_color,
+                    self,
+                    node_name,
+                )
+            })
+            .collect::<Result<Vec<FilterSpec>, _>>()
+        {
+            specs.iter().try_fold(surface_to_filter, |surface, spec| {
+                filters::render(
+                    &spec,
+                    stroke_paint_source.clone(),
+                    fill_paint_source.clone(),
+                    surface,
+                    acquired_nodes,
+                    self,
+                    self.get_transform(),
+                    node_bbox,
+                )
+            })?
+        } else {
+            surface_to_filter
         };
 
         Ok(surface)
     }
 
-    fn set_gradient(
-        &mut self,
-        gradient: &UserSpaceGradient,
-    ) -> Result<(), cairo::Error> {
+    fn set_gradient(&mut self, gradient: &UserSpaceGradient) -> Result<(), cairo::Error> {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
