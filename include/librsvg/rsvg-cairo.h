@@ -182,7 +182,7 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const ch
  * render anything, and instead will return an error.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <ulink url="#API-ordering">API ordering</ulink> for details.
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -230,7 +230,7 @@ gboolean rsvg_handle_render_document (RsvgHandle           *handle,
  * the child elements.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <ulink url="#API-ordering">API ordering</ulink> for details.
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -276,7 +276,7 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * root element.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <ulink url="#API-ordering">API ordering</ulink> for details.
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -330,7 +330,7 @@ gboolean rsvg_handle_render_layer (RsvgHandle           *handle,
  * the child elements.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <ulink url="#API-ordering">API ordering</ulink> for details.
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -372,7 +372,7 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  * be rendered.  FIXME: mention proportional scaling.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <ulink url="#API-ordering">API ordering</ulink> for details.
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *

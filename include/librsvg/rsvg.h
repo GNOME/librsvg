@@ -874,7 +874,7 @@ typedef struct {
  * ]|
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <ulink url="#API-ordering">API ordering</ulink> for details.
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
