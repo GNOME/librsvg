@@ -461,3 +461,47 @@ fn accepted_children_inside_clip_path() {
         .compare(&output_surf)
         .evaluate(&output_surf, "accepted_children_inside_clip_path");
 }
+
+#[test]
+fn can_draw_to_non_image_surface() {
+    // This tries to exercise the various tricky code paths in DrawingCtx::with_discrete_layer()
+    // that depend on whether there are filter/masks/opacity - they are easy to break when
+    // the application is using something other than a cairo::ImageSurface.
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100">
+  <!-- code path with opacity, no mask -->
+  <rect x="0" y="0" width="100" height="100" fill="lime" opacity="0.5"/>
+
+  <!-- code path with mask -->
+  <mask id="mask" maskUnits="objectBoundingBox">
+    <rect x="10%" y="10%" width="80%" height="80%" fill="white"/>
+  </mask>
+  <rect x="100" y="0" width="100" height="100" fill="lime" mask="url(#mask)"/>
+
+  <!-- code path with filter -->
+  <rect x="200" y="0" width="100" height="100" fill="lime" filter="blur(5)"/>
+
+  <!-- code path with filter and mask-->
+  <rect x="300" y="0" width="100" height="100" fill="lime" filter="blur(5)" mask="url(#mask)"/>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 200.0,
+        height: 200.0,
+    };
+
+    let output = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, viewport).unwrap();
+
+    let cr = cairo::Context::new(&output).expect("Failed to create a cairo context");
+    renderer
+        .render_document(&cr, &viewport)
+        .expect("Failed to render to non-image surface");
+}
