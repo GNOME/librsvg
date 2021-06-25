@@ -123,7 +123,9 @@ mod rect {
     impl Rect<i32> {
         #[inline]
         pub fn is_empty(&self) -> bool {
-            self.width() == Zero::zero() || self.height() == Zero::zero()
+            // Give an explicit type to the right hand side of the ==, since sometimes
+            // type inference fails to figure it out.  I have no idea why.
+            self.width() == <i32 as Zero>::zero() || self.height() == <i32 as Zero>::zero()
         }
 
         #[inline]
