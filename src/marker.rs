@@ -14,7 +14,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
-use crate::layout::{Shape, StackingContext};
+use crate::layout::{self, Shape, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -112,8 +112,12 @@ impl Marker {
         line_width: f64,
         clipping: bool,
         marker_type: MarkerType,
+        marker: &layout::Marker,
     ) -> Result<BoundingBox, RenderingError> {
-        let cascaded = CascadedValues::new_from_node(&node);
+        let mut cascaded = CascadedValues::new_from_node(&node);
+        cascaded.context_fill = Some(marker.context_fill.clone());
+        cascaded.context_stroke = Some(marker.context_stroke.clone());
+
         let values = cascaded.get();
 
         let view_params = draw_ctx.get_view_params();
@@ -569,7 +573,7 @@ enum MarkerType {
 fn emit_marker_by_node(
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
-    marker_node: &Node,
+    marker: &layout::Marker,
     xpos: f64,
     ypos: f64,
     computed_angle: Angle,
@@ -577,13 +581,13 @@ fn emit_marker_by_node(
     clipping: bool,
     marker_type: MarkerType,
 ) -> Result<BoundingBox, RenderingError> {
-    match acquired_nodes.acquire_ref(marker_node) {
+    match acquired_nodes.acquire_ref(marker.node_ref.as_ref().unwrap()) {
         Ok(acquired) => {
             let node = acquired.get();
 
-            let marker = borrow_element_as!(marker_node, Marker);
+            let marker_elt = borrow_element_as!(node, Marker);
 
-            marker.render(
+            marker_elt.render(
                 &node,
                 acquired_nodes,
                 draw_ctx,
@@ -593,6 +597,7 @@ fn emit_marker_by_node(
                 line_width,
                 clipping,
                 marker_type,
+                marker,
             )
         }
 
@@ -641,7 +646,10 @@ pub fn render_markers_for_shape(
         return Ok(draw_ctx.empty_bbox());
     }
 
-    if shape.marker_start.is_none() && shape.marker_mid.is_none() && shape.marker_end.is_none() {
+    if shape.marker_start.node_ref.is_none()
+        && shape.marker_mid.node_ref.is_none()
+        && shape.marker_end.node_ref.is_none()
+    {
         return Ok(draw_ctx.empty_bbox());
     }
 
@@ -649,13 +657,13 @@ pub fn render_markers_for_shape(
         &shape.path,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
-            let marker_node = match marker_type {
+            let marker = match marker_type {
                 MarkerType::Start => &shape.marker_start,
                 MarkerType::Middle => &shape.marker_mid,
                 MarkerType::End => &shape.marker_end,
             };
 
-            if let Some(ref marker) = *marker_node {
+            if marker.node_ref.is_some() {
                 emit_marker_by_node(
                     draw_ctx,
                     acquired_nodes,

@@ -35,12 +35,19 @@ pub enum PaintServer {
 
     /// For example, `fill="blue"`.
     SolidColor(cssparser::Color),
+
+    /// For example, `fill="context-fill"`
+    ContextFill,
+
+    /// For example, `fill="context-stroke"`
+    ContextStroke,
 }
 
 /// Paint server with resolved references, with unnormalized lengths.
 ///
 /// Use [`PaintSource.to_user_space`](#method.to_user_space) to turn this into a
 /// [`UserSpacePaintSource`].
+#[derive(Clone)]
 pub enum PaintSource {
     None,
     Gradient(ResolvedGradient, Option<cssparser::RGBA>),
@@ -65,6 +72,16 @@ impl Parse for PaintServer {
             .is_ok()
         {
             Ok(PaintServer::None)
+        } else if parser
+            .try_parse(|i| i.expect_ident_matching("context-fill"))
+            .is_ok()
+        {
+            Ok(PaintServer::ContextFill)
+        } else if parser
+            .try_parse(|i| i.expect_ident_matching("context-stroke"))
+            .is_ok()
+        {
+            Ok(PaintServer::ContextStroke)
         } else if let Ok(url) = parser.try_parse(|i| i.expect_url()) {
             let loc = parser.current_source_location();
 
@@ -107,6 +124,7 @@ impl PaintServer {
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         current_color: cssparser::RGBA,
+        context: Option<PaintSource>,
     ) -> PaintSource {
         match self {
             PaintServer::Iri {
@@ -182,6 +200,22 @@ impl PaintServer {
                 PaintSource::SolidColor(resolve_color(color, opacity, current_color))
             }
 
+            PaintServer::ContextFill => {
+                if let Some(paint) = context {
+                    paint
+                } else {
+                    PaintSource::None
+                }
+            }
+
+            PaintServer::ContextStroke => {
+                if let Some(paint) = context {
+                    paint
+                } else {
+                    PaintSource::None
+                }
+            }
+
             PaintServer::None => PaintSource::None,
         }
     }
@@ -244,6 +278,17 @@ pub fn resolve_color(
     let alpha = alpha as u8;
 
     cssparser::RGBA { alpha, ..rgba }
+}
+
+impl std::fmt::Debug for PaintSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match *self {
+            PaintSource::None => f.write_str("PaintSource::None"),
+            PaintSource::Gradient(_, _) => f.write_str("PaintSource::Gradient"),
+            PaintSource::Pattern(_, _) => f.write_str("PaintSource::Pattern"),
+            PaintSource::SolidColor(_) => f.write_str("PaintSource::SolidColor"),
+        }
+    }
 }
 
 #[cfg(test)]

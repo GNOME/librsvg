@@ -752,7 +752,12 @@ impl DrawingCtx {
                             values
                                 .stroke()
                                 .0
-                                .resolve(acquired_nodes, values.stroke_opacity().0, current_color)
+                                .resolve(
+                                    acquired_nodes,
+                                    values.stroke_opacity().0,
+                                    current_color,
+                                    None,
+                                )
                                 .to_user_space(&bbox, &params, values),
                         );
 
@@ -760,7 +765,12 @@ impl DrawingCtx {
                             values
                                 .fill()
                                 .0
-                                .resolve(acquired_nodes, values.fill_opacity().0, current_color)
+                                .resolve(
+                                    acquired_nodes,
+                                    values.fill_opacity().0,
+                                    current_color,
+                                    None,
+                                )
                                 .to_user_space(&bbox, &params, values),
                         );
 
