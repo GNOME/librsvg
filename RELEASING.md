@@ -18,6 +18,7 @@ off items while making a release.
 - [ ] `git push` the signed tag to gitlab.gnome.org/GNOME/librsvg
 - [ ] `scp librsvg-x.y.z.tar.xz master.gnome.org:`
 - [ ] `ssh master.gnome.org` and then `ftpadmin install librsvg-x.y.z.tar.xz`
+- [ ] Create a [release in Gitlab](#gitlab-release).
       
 For `x.y.0` releases, at least, do the following:
 
@@ -26,6 +27,27 @@ For `x.y.0` releases, at least, do the following:
       `GNOME/releng` project.
       
 - [ ] `cargo-audit audit` and ensure we don't have vulnerable dependencies.
+
+## Gitlab release
+
+- [ ] Go to https://gitlab.gnome.org/GNOME/librsvg/-/releases and click the **New release** button.
+
+- [ ] Select the tag `x.y.z` you created as part of the release steps.
+
+- [ ] If there is an associated milestone, select it too.
+
+- [ ] Fill in the release title - `x.y.z - stable` or `x.y.z - development`.
+
+- [ ] Copy the release notes from NEWS.
+
+- [ ] Add a release asset link to
+      `https://download.gnome.org/sources/librsvg/x.y/librsvg-x.y.z.tar.xz`
+      and call it `librsvg-x.y.z.tar.xz - release tarball`.
+
+- [ ] Add a release asset link to
+      `https://download.gnome.org/sources/librsvg/x.y/librsvg-x.y.z.sha256sum`
+      and call it `librsvg-x.y.z.sha256sum - release tarball
+      sha256sum`.
 
 ## Version numbers
 
@@ -96,8 +118,9 @@ distributors][distributors] about their plans!  (That is, posts on
 
 The `NEWS` file contains the release notes.  Please use something
 close to this format; it is not mandatory, but makes the formatting
-consistent, and is what tooling expects elsewhere.  Skim bits of the
-NEWS file for examples on style and content.
+consistent, and is what tooling expects elsewhere - also by writing
+Markdown, you can just cut&paste it into a Gitlab release.  You can
+skim bits of the NEWS file for examples on style and content.
 
 New entries go at the **top** of the file.
 
@@ -110,18 +133,27 @@ Commentary on the release; put anything here that you want to
 highlight.  Note changes in the build process, if any, or any other
 things that may trip up distributors.
 
+## Description of a special feature
+
+You can include headings with `##` in Markdown syntax.
+
+Blah blah blah.
+
+
 Next is a list of features added and issues fixed; use gitlab's issue
 numbers. I tend to use this order: first security bugs, then new
 features and user-visible changes, finally regular bugs.  The
 rationale is that if people stop reading early, at least they will
 have seen the most important stuff first.
 
+## Changes:
+
 - #123 - title of the issue, or short summary if it warrants more
   discussion than just the title.
 
 - #456 - fix blah blah (Contributor's Name).
 
-Special thanks for this release:
+## Special thanks for this release:
 
 - Any people that you want to highlight.  Feel free to omit this
   section if the release is otherwise unremarkable.
