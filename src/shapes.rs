@@ -66,6 +66,7 @@ macro_rules! impl_draw {
                     acquired_nodes,
                     values.stroke_opacity().0,
                     values.color().0,
+                    cascaded.context_fill.clone(),
                     cascaded.context_stroke.clone(),
                 );
 
@@ -74,6 +75,7 @@ macro_rules! impl_draw {
                     values.fill_opacity().0,
                     values.color().0,
                     cascaded.context_fill.clone(),
+                    cascaded.context_stroke.clone(),
                 );
 
                 let fill_rule = values.fill_rule();

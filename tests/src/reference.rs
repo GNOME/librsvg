@@ -265,28 +265,58 @@ test_compare_render_output!(
     400,
     400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
-  <style>
-    .path1 {
-      fill: none;
-      stroke-width: 4px;
-      marker: url(#marker1);
-    }
-  </style>
-
-  <path class="path1" d="M20,20 L200,20 L380,20" stroke="lime"/>
-
-  <marker id="marker1" markerWidth="12" markerHeight="12" refX="6" refY="6"
-          markerUnits="userSpaceOnUse">
-    <circle cx="6" cy="6" r="3"
-            fill="white" stroke="context-stroke" stroke-width="2"/>
-  </marker>
-</svg>"##,
+    <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
+      <style>
+        .path1 {
+          fill: none;
+          stroke-width: 4px;
+          marker: url(#marker1);
+        }
+    
+        .path2 {
+          fill: darkblue;
+          stroke: mediumseagreen;
+          stroke-width: 4px;
+          marker: url(#marker2);
+        }
+      </style>
+    
+      <path class="path1" d="M20,20 L200,20 L380,20" stroke="lime"/>
+    
+      <path class="path2" d="M20,40 h360 v320 h-360 v-320 Z"/>
+    
+      <marker id="marker1" markerWidth="12" markerHeight="12" refX="6" refY="6"
+              markerUnits="userSpaceOnUse">
+        <circle cx="6" cy="6" r="3"
+                fill="white" stroke="context-stroke" stroke-width="2"/>
+      </marker>
+    
+      <marker id="marker2" markerWidth="12" markerHeight="12" refX="6" refY="6"
+              markerUnits="userSpaceOnUse">
+        <!-- Note that here the paint is reversed:
+             fill=context-stroke,
+             stroke=context-fill 
+        -->
+        <circle cx="6" cy="6" r="3"
+                fill="context-stroke" stroke="context-fill" stroke-width="2"/>
+      </marker>
+    </svg>
+    "##,
     br##"<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
-  <path d="M20,20 L200,20 L380,20" stroke="lime" stroke-width="4"/>
-  <circle cx="20" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
-  <circle cx="200" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
-  <circle cx="380" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
-</svg>"##,
+    <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
+      <path d="M20,20 L200,20 L380,20" stroke="lime" stroke-width="4"/>
+      <circle cx="20" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
+      <circle cx="200" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
+      <circle cx="380" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
+    
+      <path class="path2" d="M20,40 h360 v320 h-360 v-320 Z" fill="darkblue"
+            stroke="mediumseagreen" stroke-width="4"/>
+      <circle cx="20"  cy="40"  r="3" fill="mediumseagreen" stroke="darkblue" stroke-width="2"/>
+      <circle cx="20"  cy="40"  r="3" fill="mediumseagreen" stroke="darkblue" stroke-width="2"/>
+      <circle cx="380" cy="40"  r="3" fill="mediumseagreen" stroke="darkblue" stroke-width="2"/>
+      <circle cx="380" cy="360" r="3" fill="mediumseagreen" stroke="darkblue" stroke-width="2"/>
+      <circle cx="20"  cy="360" r="3" fill="mediumseagreen" stroke="darkblue" stroke-width="2"/>
+      <circle cx="20"  cy="40"  r="3" fill="mediumseagreen" stroke="darkblue" stroke-width="2"/>
+    </svg>
+    "##,
 );
