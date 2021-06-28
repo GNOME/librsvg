@@ -83,3 +83,9 @@ librsvg-*.tar.xz
 librsvg-*.tar.bz2
 _rsvg_dummy.c
 include/librsvg/rsvg-version.h
+tools/docker/debian/build-librsvg.sh
+tools/docker/debian/librsvg.tar.gz
+tools/docker/opensuse/build-librsvg.sh
+tools/docker/opensuse/librsvg.tar.gz
+tools/docker/fedora/build-librsvg.sh
+tools/docker/fedora/librsvg.tar.gz
