@@ -16,6 +16,7 @@ use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::*;
 use crate::error::*;
+use crate::paint_server::PaintSource;
 use crate::properties::ComputedValues;
 use crate::text::Chars;
 use crate::xml::Attributes;
@@ -100,6 +101,8 @@ impl fmt::Display for NodeData {
 /// `&ComputedValues` whose fields you can access.
 pub struct CascadedValues<'a> {
     inner: CascadedInner<'a>,
+    pub context_stroke: Option<PaintSource>,
+    pub context_fill: Option<PaintSource>,
 }
 
 enum CascadedInner<'a> {
@@ -117,6 +120,8 @@ impl<'a> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
                 inner: CascadedInner::FromNode(node.borrow_element()),
+                context_fill: self.context_fill.clone(),
+                context_stroke: self.context_stroke.clone(),
             },
 
             CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, &*v),
@@ -131,6 +136,8 @@ impl<'a> CascadedValues<'a> {
     pub fn new_from_node(node: &Node) -> CascadedValues<'_> {
         CascadedValues {
             inner: CascadedInner::FromNode(node.borrow_element()),
+            context_fill: None,
+            context_stroke: None,
         }
     }
 
@@ -147,6 +154,8 @@ impl<'a> CascadedValues<'a> {
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
+            context_fill: None,
+            context_stroke: None,
         }
     }
 
@@ -159,6 +168,13 @@ impl<'a> CascadedValues<'a> {
             CascadedInner::FromNode(ref e) => e.get_computed_values(),
             CascadedInner::FromValues(ref v) => &*v,
         }
+
+        // if values.fill == "context-fill" {
+        //     values.fill=self.context_fill
+        // }
+        // if values.stroke == "context-stroke" {
+        //     values.stroke=self.context_stroke
+        // }
     }
 }
 

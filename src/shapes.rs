@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::iri::Iri;
-use crate::layout::{Shape, StackingContext, Stroke};
+use crate::layout::{Marker, Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
@@ -50,6 +50,7 @@ macro_rules! impl_draw {
                 cascaded: &CascadedValues<'_>,
                 draw_ctx: &mut DrawingCtx,
                 clipping: bool,
+                //context: &CascadedValues<'_>.inner::FromNode,
             ) -> Result<BoundingBox, RenderingError> {
                 let values = cascaded.get();
                 let view_params = draw_ctx.get_view_params();
@@ -65,31 +66,51 @@ macro_rules! impl_draw {
                     acquired_nodes,
                     values.stroke_opacity().0,
                     values.color().0,
+                    cascaded.context_stroke.clone(),
                 );
 
                 let fill_paint = values.fill().0.resolve(
                     acquired_nodes,
                     values.fill_opacity().0,
                     values.color().0,
+                    cascaded.context_fill.clone(),
                 );
 
                 let fill_rule = values.fill_rule();
                 let clip_rule = values.clip_rule();
                 let shape_rendering = values.shape_rendering();
 
-                let marker_start;
-                let marker_mid;
-                let marker_end;
+                let marker_start_node;
+                let marker_mid_node;
+                let marker_end_node;
 
                 if shape_def.markers == Markers::Yes {
-                    marker_start = acquire_marker(acquired_nodes, &values.marker_start().0);
-                    marker_mid = acquire_marker(acquired_nodes, &values.marker_mid().0);
-                    marker_end = acquire_marker(acquired_nodes, &values.marker_end().0);
+                    marker_start_node = acquire_marker(acquired_nodes, &values.marker_start().0);
+                    marker_mid_node = acquire_marker(acquired_nodes, &values.marker_mid().0);
+                    marker_end_node = acquire_marker(acquired_nodes, &values.marker_end().0);
                 } else {
-                    marker_start = None;
-                    marker_mid = None;
-                    marker_end = None;
+                    marker_start_node = None;
+                    marker_mid_node = None;
+                    marker_end_node = None;
                 }
+
+                let marker_start = Marker {
+                    node_ref: marker_start_node,
+                    context_stroke: stroke_paint.clone(),
+                    context_fill: fill_paint.clone(),
+                };
+
+                let marker_mid = Marker {
+                    node_ref: marker_mid_node,
+                    context_stroke: stroke_paint.clone(),
+                    context_fill: fill_paint.clone(),
+                };
+
+                let marker_end = Marker {
+                    node_ref: marker_end_node,
+                    context_stroke: stroke_paint.clone(),
+                    context_fill: fill_paint.clone(),
+                };
 
                 let shape = Shape {
                     path: shape_def.path,

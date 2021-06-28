@@ -270,12 +270,14 @@ impl PositionedSpan {
             acquired_nodes,
             self.values.stroke_opacity().0,
             self.values.color().0,
+            None,
         );
 
         let fill_paint = self.values.fill().0.resolve(
             acquired_nodes,
             self.values.fill_opacity().0,
             self.values.color().0,
+            None,
         );
 
         let text_rendering = self.values.text_rendering();

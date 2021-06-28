@@ -242,6 +242,7 @@ test_compare_render_output!(
   
     <path d="M20,50 L80,50" marker-start="url(#marker)" marker-end="url(#marker)" stroke-width="10" stroke="black"/>
   </svg>"##,
+
     br##"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
     <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
       <path
@@ -257,4 +258,35 @@ test_compare_render_output!(
          x="20"
          y="45" fill="black"/>
     </svg>"##,
-  );
+);
+
+test_compare_render_output!(
+    marker_context_stroke,
+    400,
+    400,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
+  <style>
+    .path1 {
+      fill: none;
+      stroke-width: 4px;
+      marker: url(#marker1);
+    }
+  </style>
+
+  <path class="path1" d="M20,20 L200,20 L380,20" stroke="lime"/>
+
+  <marker id="marker1" markerWidth="12" markerHeight="12" refX="6" refY="6"
+          markerUnits="userSpaceOnUse">
+    <circle cx="6" cy="6" r="3"
+            fill="white" stroke="context-stroke" stroke-width="2"/>
+  </marker>
+</svg>"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
+  <path d="M20,20 L200,20 L380,20" stroke="lime" stroke-width="4"/>
+  <circle cx="20" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
+  <circle cx="200" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
+  <circle cx="380" cy="20" r="3" stroke-width="2" fill="white" stroke="lime"/>
+</svg>"##,
+);

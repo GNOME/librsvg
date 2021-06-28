@@ -73,9 +73,15 @@ pub struct Shape {
     pub fill_rule: FillRule,
     pub clip_rule: ClipRule,
     pub shape_rendering: ShapeRendering,
-    pub marker_start: Option<Node>,
-    pub marker_mid: Option<Node>,
-    pub marker_end: Option<Node>,
+    pub marker_start: Marker,
+    pub marker_mid: Marker,
+    pub marker_end: Marker,
+}
+
+pub struct Marker {
+    pub node_ref: Option<Node>,
+    pub context_stroke: PaintSource,
+    pub context_fill: PaintSource,
 }
 
 /// Image in user-space coordinates.
