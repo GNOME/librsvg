@@ -124,7 +124,8 @@ impl PaintServer {
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         current_color: cssparser::RGBA,
-        context: Option<PaintSource>,
+        context_fill: Option<PaintSource>,
+        context_stroke: Option<PaintSource>,
     ) -> PaintSource {
         match self {
             PaintServer::Iri {
@@ -201,7 +202,7 @@ impl PaintServer {
             }
 
             PaintServer::ContextFill => {
-                if let Some(paint) = context {
+                if let Some(paint) = context_fill {
                     paint
                 } else {
                     PaintSource::None
@@ -209,7 +210,7 @@ impl PaintServer {
             }
 
             PaintServer::ContextStroke => {
-                if let Some(paint) = context {
+                if let Some(paint) = context_stroke {
                     paint
                 } else {
                     PaintSource::None

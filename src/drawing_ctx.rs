@@ -757,6 +757,7 @@ impl DrawingCtx {
                                     values.stroke_opacity().0,
                                     current_color,
                                     None,
+                                    None,
                                 )
                                 .to_user_space(&bbox, &params, values),
                         );
@@ -769,6 +770,7 @@ impl DrawingCtx {
                                     acquired_nodes,
                                     values.fill_opacity().0,
                                     current_color,
+                                    None,
                                     None,
                                 )
                                 .to_user_space(&bbox, &params, values),
