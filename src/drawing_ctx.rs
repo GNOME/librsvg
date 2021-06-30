@@ -247,20 +247,18 @@ pub fn draw_tree(
     Ok(user_bbox)
 }
 
-/// Does `cairo_save()` on creation, and will `cairo_restore()` on `Drop`.
-pub struct SavedCr(cairo::Context);
+pub fn with_saved_cr<O, F>(cr: &cairo::Context, f: F) -> Result<O, RenderingError>
+where
+    F: FnOnce() -> Result<O, RenderingError>,
+{
+    cr.save()?;
+    match f() {
+        Ok(o) => {
+            cr.restore()?;
+            Ok(o)
+        }
 
-impl SavedCr {
-    pub fn new(cr: &cairo::Context) -> Result<SavedCr, cairo::Error> {
-        cr.save()?;
-        Ok(SavedCr(cr.clone()))
-    }
-}
-
-impl Drop for SavedCr {
-    fn drop(&mut self) {
-        // Ignore cairo errors :(
-        let _ = self.0.restore();
+        Err(e) => Err(e),
     }
 }
 
@@ -459,7 +457,7 @@ impl DrawingCtx {
     /// Note that this actually changes the `draw_ctx.cr`'s transformation to match
     /// the new coordinate space, but the old one is not restored after the
     /// result's `ViewParams` is dropped.  Thus, this function must be called
-    /// inside `SavedCr` scope or `draw_ctx.with_discrete_layer`.
+    /// inside `with_saved_cr` or `draw_ctx.with_discrete_layer`.
     pub fn push_new_viewport(
         &self,
         vbox: Option<ViewBox>,
@@ -677,185 +675,187 @@ impl DrawingCtx {
         let res = if clipping {
             draw_fn(acquired_nodes, self)
         } else {
-            let _saved_cr = SavedCr::new(&self.cr)?;
+            with_saved_cr(&self.cr.clone(), || {
+                let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
-            let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
+                let affine_at_start = self.get_transform();
 
-            let affine_at_start = self.get_transform();
-
-            if let Some(rect) = clip_rect {
-                clip_to_rectangle(&self.cr, &rect);
-            }
-
-            // Here we are clipping in user space, so the bbox doesn't matter
-            self.clip_to_node(
-                &stacking_ctx.clip_in_user_space,
-                acquired_nodes,
-                &self.empty_bbox(),
-            )?;
-
-            let is_opaque = approx_eq!(f64, opacity, 1.0);
-            let needs_temporary_surface = !(is_opaque
-                && stacking_ctx.filter == Filter::None
-                && stacking_ctx.mask.is_none()
-                && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
-                && stacking_ctx.clip_in_object_space.is_none());
-
-            if needs_temporary_surface {
-                // Compute our assortment of affines
-
-                let affines = CompositingAffines::new(
-                    affine_at_start,
-                    self.initial_transform_with_offset(),
-                    self.cr_stack.borrow().len(),
-                );
-
-                // Create temporary surface and its cr
-
-                let cr = match stacking_ctx.filter {
-                    Filter::None => cairo::Context::new(
-                        &self.create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
-                    )?,
-                    Filter::List(_) => {
-                        cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)?
-                    }
-                };
-
-                cr.set_matrix(affines.for_temporary_surface.into());
-
-                let (source_surface, mut res, bbox) = {
-                    let mut temporary_draw_ctx = self.nested(cr);
-
-                    // Draw!
-
-                    let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
-
-                    let bbox = if let Ok(ref bbox) = res {
-                        *bbox
-                    } else {
-                        BoundingBox::new().with_transform(affines.for_temporary_surface)
-                    };
-
-                    if let Filter::List(ref filter_list) = stacking_ctx.filter {
-                        let surface_to_filter = SharedImageSurface::copy_from_surface(
-                            &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target()).unwrap(),
-                        )?;
-
-                        let current_color = values.color().0;
-
-                        let params = temporary_draw_ctx.get_view_params();
-
-                        // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
-                        // they are also needed for filters in all elements.  Maybe we should make them part
-                        // of the StackingContext instead of Shape?
-                        let stroke_paint_source = Rc::new(
-                            values
-                                .stroke()
-                                .0
-                                .resolve(
-                                    acquired_nodes,
-                                    values.stroke_opacity().0,
-                                    current_color,
-                                    None,
-                                    None,
-                                )
-                                .to_user_space(&bbox, &params, values),
-                        );
-
-                        let fill_paint_source = Rc::new(
-                            values
-                                .fill()
-                                .0
-                                .resolve(
-                                    acquired_nodes,
-                                    values.fill_opacity().0,
-                                    current_color,
-                                    None,
-                                    None,
-                                )
-                                .to_user_space(&bbox, &params, values),
-                        );
-
-                        // Filter functions (like "blend()", not the <filter> element) require
-                        // being resolved in userSpaceonUse units, since that is the default
-                        // for primitive_units.  So, get the corresponding NormalizeParams
-                        // here and pass them down.
-                        let user_space_params = NormalizeParams::new(
-                            values,
-                            &params.with_units(CoordUnits::UserSpaceOnUse),
-                        );
-
-                        let filtered_surface = temporary_draw_ctx
-                            .run_filters(
-                                surface_to_filter,
-                                filter_list,
-                                acquired_nodes,
-                                &stacking_ctx.element_name,
-                                &user_space_params,
-                                stroke_paint_source,
-                                fill_paint_source,
-                                current_color,
-                                bbox,
-                            )?
-                            .into_image_surface()?;
-
-                        let generic_surface: &cairo::Surface = &filtered_surface; // deref to Surface
-
-                        (generic_surface.clone(), res, bbox)
-                    } else {
-                        (temporary_draw_ctx.cr.target(), res, bbox)
-                    }
-                };
-
-                // Set temporary surface as source
-
-                self.cr.set_matrix(affines.compositing.into());
-                self.cr.set_source_surface(&source_surface, 0.0, 0.0)?;
-
-                // Clip
-
-                self.cr.set_matrix(affines.outside_temporary_surface.into());
-                self.clip_to_node(&stacking_ctx.clip_in_object_space, acquired_nodes, &bbox)?;
-
-                // Mask
-
-                if let Some(ref mask_node) = stacking_ctx.mask {
-                    res = res.and_then(|bbox| {
-                        self.generate_cairo_mask(
-                            mask_node,
-                            affines.for_temporary_surface,
-                            &bbox,
-                            acquired_nodes,
-                        )
-                        .and_then(|mask_surf| {
-                            if let Some(surf) = mask_surf {
-                                self.cr.set_matrix(affines.compositing.into());
-                                Ok(self.cr.mask_surface(&surf, 0.0, 0.0)?)
-                            } else {
-                                Ok(())
-                            }
-                        })
-                        .map(|_: ()| bbox)
-                    });
-                } else {
-                    // No mask, so composite the temporary surface
-
-                    self.cr.set_matrix(affines.compositing.into());
-                    self.cr.set_operator(stacking_ctx.mix_blend_mode.into());
-
-                    if opacity < 1.0 {
-                        self.cr.paint_with_alpha(opacity)?;
-                    } else {
-                        self.cr.paint()?;
-                    }
+                if let Some(rect) = clip_rect {
+                    clip_to_rectangle(&self.cr, &rect);
                 }
 
-                self.cr.set_matrix(affine_at_start.into());
+                // Here we are clipping in user space, so the bbox doesn't matter
+                self.clip_to_node(
+                    &stacking_ctx.clip_in_user_space,
+                    acquired_nodes,
+                    &self.empty_bbox(),
+                )?;
 
-                res
-            } else {
-                draw_fn(acquired_nodes, self)
-            }
+                let is_opaque = approx_eq!(f64, opacity, 1.0);
+                let needs_temporary_surface = !(is_opaque
+                    && stacking_ctx.filter == Filter::None
+                    && stacking_ctx.mask.is_none()
+                    && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
+                    && stacking_ctx.clip_in_object_space.is_none());
+
+                if needs_temporary_surface {
+                    // Compute our assortment of affines
+
+                    let affines = CompositingAffines::new(
+                        affine_at_start,
+                        self.initial_transform_with_offset(),
+                        self.cr_stack.borrow().len(),
+                    );
+
+                    // Create temporary surface and its cr
+
+                    let cr = match stacking_ctx.filter {
+                        Filter::None => cairo::Context::new(
+                            &self
+                                .create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
+                        )?,
+                        Filter::List(_) => {
+                            cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)?
+                        }
+                    };
+
+                    cr.set_matrix(affines.for_temporary_surface.into());
+
+                    let (source_surface, mut res, bbox) = {
+                        let mut temporary_draw_ctx = self.nested(cr);
+
+                        // Draw!
+
+                        let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
+
+                        let bbox = if let Ok(ref bbox) = res {
+                            *bbox
+                        } else {
+                            BoundingBox::new().with_transform(affines.for_temporary_surface)
+                        };
+
+                        if let Filter::List(ref filter_list) = stacking_ctx.filter {
+                            let surface_to_filter = SharedImageSurface::copy_from_surface(
+                                &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target())
+                                    .unwrap(),
+                            )?;
+
+                            let current_color = values.color().0;
+
+                            let params = temporary_draw_ctx.get_view_params();
+
+                            // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
+                            // they are also needed for filters in all elements.  Maybe we should make them part
+                            // of the StackingContext instead of Shape?
+                            let stroke_paint_source = Rc::new(
+                                values
+                                    .stroke()
+                                    .0
+                                    .resolve(
+                                        acquired_nodes,
+                                        values.stroke_opacity().0,
+                                        current_color,
+                                        None,
+                                        None,
+                                    )
+                                    .to_user_space(&bbox, &params, values),
+                            );
+
+                            let fill_paint_source = Rc::new(
+                                values
+                                    .fill()
+                                    .0
+                                    .resolve(
+                                        acquired_nodes,
+                                        values.fill_opacity().0,
+                                        current_color,
+                                        None,
+                                        None,
+                                    )
+                                    .to_user_space(&bbox, &params, values),
+                            );
+
+                            // Filter functions (like "blend()", not the <filter> element) require
+                            // being resolved in userSpaceonUse units, since that is the default
+                            // for primitive_units.  So, get the corresponding NormalizeParams
+                            // here and pass them down.
+                            let user_space_params = NormalizeParams::new(
+                                values,
+                                &params.with_units(CoordUnits::UserSpaceOnUse),
+                            );
+
+                            let filtered_surface = temporary_draw_ctx
+                                .run_filters(
+                                    surface_to_filter,
+                                    filter_list,
+                                    acquired_nodes,
+                                    &stacking_ctx.element_name,
+                                    &user_space_params,
+                                    stroke_paint_source,
+                                    fill_paint_source,
+                                    current_color,
+                                    bbox,
+                                )?
+                                .into_image_surface()?;
+
+                            let generic_surface: &cairo::Surface = &filtered_surface; // deref to Surface
+
+                            (generic_surface.clone(), res, bbox)
+                        } else {
+                            (temporary_draw_ctx.cr.target(), res, bbox)
+                        }
+                    };
+
+                    // Set temporary surface as source
+
+                    self.cr.set_matrix(affines.compositing.into());
+                    self.cr.set_source_surface(&source_surface, 0.0, 0.0)?;
+
+                    // Clip
+
+                    self.cr.set_matrix(affines.outside_temporary_surface.into());
+                    self.clip_to_node(&stacking_ctx.clip_in_object_space, acquired_nodes, &bbox)?;
+
+                    // Mask
+
+                    if let Some(ref mask_node) = stacking_ctx.mask {
+                        res = res.and_then(|bbox| {
+                            self.generate_cairo_mask(
+                                mask_node,
+                                affines.for_temporary_surface,
+                                &bbox,
+                                acquired_nodes,
+                            )
+                            .and_then(|mask_surf| {
+                                if let Some(surf) = mask_surf {
+                                    self.cr.set_matrix(affines.compositing.into());
+                                    Ok(self.cr.mask_surface(&surf, 0.0, 0.0)?)
+                                } else {
+                                    Ok(())
+                                }
+                            })
+                            .map(|_: ()| bbox)
+                        });
+                    } else {
+                        // No mask, so composite the temporary surface
+
+                        self.cr.set_matrix(affines.compositing.into());
+                        self.cr.set_operator(stacking_ctx.mix_blend_mode.into());
+
+                        if opacity < 1.0 {
+                            self.cr.paint_with_alpha(opacity)?;
+                        } else {
+                            self.cr.paint()?;
+                        }
+                    }
+
+                    self.cr.set_matrix(affine_at_start.into());
+
+                    res
+                } else {
+                    draw_fn(acquired_nodes, self)
+                }
+            })
         };
 
         self.cr.set_matrix(orig_transform.into());
@@ -1324,15 +1324,15 @@ impl DrawingCtx {
                 clipping,
                 None,
                 &mut |_an, dc| {
-                    let _saved_cr = SavedCr::new(&dc.cr)?;
+                    with_saved_cr(&dc.cr.clone(), || {
+                        if let Some(_params) =
+                            dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
+                        {
+                            dc.paint_surface(&image.surface, image_width, image_height)?;
+                        }
 
-                    if let Some(_params) =
-                        dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
-                    {
-                        dc.paint_surface(&image.surface, image_width, image_height)?;
-                    }
-
-                    Ok(bounds)
+                        Ok(bounds)
+                    })
                 },
             )
         } else {
@@ -1359,62 +1359,62 @@ impl DrawingCtx {
 
         let mut bbox = bbox.unwrap();
 
-        let _saved_cr = SavedCr::new(&self.cr)?;
+        with_saved_cr(&self.cr.clone(), || {
+            self.cr
+                .set_antialias(cairo::Antialias::from(span.text_rendering));
 
-        self.cr
-            .set_antialias(cairo::Antialias::from(span.text_rendering));
+            setup_cr_for_stroke(&self.cr, &span.stroke);
 
-        setup_cr_for_stroke(&self.cr, &span.stroke);
+            self.cr.move_to(span.x, span.y);
 
-        self.cr.move_to(span.x, span.y);
-
-        let rotation = gravity.to_rotation();
-        if !rotation.approx_eq_cairo(0.0) {
-            self.cr.rotate(-rotation);
-        }
-
-        if clipping {
-            pangocairo::functions::update_layout(&self.cr, &span.layout);
-            pangocairo::functions::layout_path(&self.cr, &span.layout);
-            return Ok(self.empty_bbox());
-        }
-
-        // Fill
-
-        if span.is_visible {
-            let fill_paint = span.fill_paint.to_user_space(&bbox, &view_params, values);
-
-            self.set_paint_source(&fill_paint, acquired_nodes)
-                .map(|had_paint_server| {
-                    if had_paint_server {
-                        pangocairo::functions::update_layout(&self.cr, &span.layout);
-                        pangocairo::functions::show_layout(&self.cr, &span.layout);
-                    };
-                })?;
-        }
-
-        // Stroke
-
-        let stroke_paint = span.stroke_paint.to_user_space(&bbox, &view_params, values);
-
-        let had_paint_server = self.set_paint_source(&stroke_paint, acquired_nodes)?;
-
-        if had_paint_server {
-            pangocairo::functions::update_layout(&self.cr, &span.layout);
-            pangocairo::functions::layout_path(&self.cr, &span.layout);
-
-            let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
-            let r = Rect::new(x0, y0, x1, y1);
-            let ib = BoundingBox::new()
-                .with_transform(transform)
-                .with_ink_rect(r);
-            bbox.insert(&ib);
-            if span.is_visible {
-                self.cr.stroke()?;
+            let rotation = gravity.to_rotation();
+            if !rotation.approx_eq_cairo(0.0) {
+                self.cr.rotate(-rotation);
             }
-        }
 
-        Ok(bbox)
+            if clipping {
+                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                pangocairo::functions::layout_path(&self.cr, &span.layout);
+                return Ok(self.empty_bbox());
+            }
+
+            // Fill
+
+            if span.is_visible {
+                let fill_paint = span.fill_paint.to_user_space(&bbox, &view_params, values);
+
+                self.set_paint_source(&fill_paint, acquired_nodes)
+                    .map(|had_paint_server| {
+                        if had_paint_server {
+                            pangocairo::functions::update_layout(&self.cr, &span.layout);
+                            pangocairo::functions::show_layout(&self.cr, &span.layout);
+                        };
+                    })?;
+            }
+
+            // Stroke
+
+            let stroke_paint = span.stroke_paint.to_user_space(&bbox, &view_params, values);
+
+            let had_paint_server = self.set_paint_source(&stroke_paint, acquired_nodes)?;
+
+            if had_paint_server {
+                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                pangocairo::functions::layout_path(&self.cr, &span.layout);
+
+                let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
+                let r = Rect::new(x0, y0, x1, y1);
+                let ib = BoundingBox::new()
+                    .with_transform(transform)
+                    .with_ink_rect(r);
+                bbox.insert(&ib);
+                if span.is_visible {
+                    self.cr.stroke()?;
+                }
+            }
+
+            Ok(bbox)
+        })
     }
 
     pub fn get_snapshot(

@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{draw_tree, DrawingMode, SavedCr, ViewParams};
+use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, ViewParams};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -253,20 +253,19 @@ impl Handle {
 
         let viewport = Rect::from(*viewport);
 
-        let _saved_cr = SavedCr::new(&cr)?;
-
-        let res = draw_tree(
-            DrawingMode::LimitToStack { node, root },
-            cr,
-            viewport,
-            user_language,
-            dpi,
-            false,
-            is_testing,
-            &mut AcquiredNodes::new(&self.document),
-        );
-
-        res.map(|_bbox| ())
+        with_saved_cr(cr, || {
+            draw_tree(
+                DrawingMode::LimitToStack { node, root },
+                cr,
+                viewport,
+                user_language,
+                dpi,
+                false,
+                is_testing,
+                &mut AcquiredNodes::new(&self.document),
+            )
+            .map(|_bbox| ())
+        })
     }
 
     fn get_bbox_for_element(
@@ -345,27 +344,26 @@ impl Handle {
 
         // Render, transforming so element is at the new viewport's origin
 
-        let _saved_cr = SavedCr::new(&cr)?;
+        with_saved_cr(cr, || {
+            let factor = (element_viewport.width / ink_r.width())
+                .min(element_viewport.height / ink_r.height());
 
-        let factor =
-            (element_viewport.width / ink_r.width()).min(element_viewport.height / ink_r.height());
+            cr.translate(element_viewport.x, element_viewport.y);
+            cr.scale(factor, factor);
+            cr.translate(-ink_r.x0, -ink_r.y0);
 
-        cr.translate(element_viewport.x, element_viewport.y);
-        cr.scale(factor, factor);
-        cr.translate(-ink_r.x0, -ink_r.y0);
-
-        let res = draw_tree(
-            DrawingMode::OnlyNode(node),
-            &cr,
-            unit_rectangle(),
-            user_language,
-            dpi,
-            false,
-            is_testing,
-            &mut AcquiredNodes::new(&self.document),
-        );
-
-        res.map(|_bbox| ())
+            draw_tree(
+                DrawingMode::OnlyNode(node),
+                &cr,
+                unit_rectangle(),
+                user_language,
+                dpi,
+                false,
+                is_testing,
+                &mut AcquiredNodes::new(&self.document),
+            )
+            .map(|_bbox| ())
+        })
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
