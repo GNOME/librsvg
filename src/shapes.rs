@@ -50,7 +50,6 @@ macro_rules! impl_draw {
                 cascaded: &CascadedValues<'_>,
                 draw_ctx: &mut DrawingCtx,
                 clipping: bool,
-                //context: &CascadedValues<'_>.inner::FromNode,
             ) -> Result<BoundingBox, RenderingError> {
                 let values = cascaded.get();
                 let view_params = draw_ctx.get_view_params();

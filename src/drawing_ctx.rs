@@ -1564,6 +1564,8 @@ impl DrawingCtx {
         use_rect: Rect,
         link: &NodeId,
         clipping: bool,
+        fill_paint: PaintSource,
+        stroke_paint: PaintSource,
     ) -> Result<BoundingBox, RenderingError> {
         // <use> is an element that is used directly, unlike
         // <pattern>, which is used through a fill="url(#...)"
@@ -1659,7 +1661,12 @@ impl DrawingCtx {
 
                     child.draw_children(
                         an,
-                        &CascadedValues::new_from_values(&child, values),
+                        &CascadedValues::new_from_values(
+                            &child,
+                            values,
+                            Some(fill_paint.clone()),
+                            Some(stroke_paint.clone()),
+                        ),
                         dc,
                         clipping,
                     )
@@ -1684,7 +1691,12 @@ impl DrawingCtx {
                 &mut |an, dc| {
                     child.draw(
                         an,
-                        &CascadedValues::new_from_values(&child, values),
+                        &CascadedValues::new_from_values(
+                            &child,
+                            values,
+                            Some(fill_paint.clone()),
+                            Some(stroke_paint.clone()),
+                        ),
                         dc,
                         clipping,
                     )

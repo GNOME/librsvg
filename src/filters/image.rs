@@ -67,7 +67,8 @@ impl Image {
         // referenced resource is rendered according to the behavior of the use element."
         // I think this means that we use the same cascading mode as <use>, i.e. the
         // referenced object inherits its properties from the feImage element.
-        let cascaded = CascadedValues::new_from_values(&referenced_node, &self.feimage_values);
+        let cascaded =
+            CascadedValues::new_from_values(&referenced_node, &self.feimage_values, None, None);
 
         let image = draw_ctx.draw_node_to_surface(
             &referenced_node,
