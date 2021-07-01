@@ -44,8 +44,12 @@ capi = []
 [package.metadata.capi.header]
 # This is so cargo-c will put the correct Cflags in the .pc file, otherwise it leaves them empty
 enabled = true
-generation = false
+subdirectory = "librsvg-2.0"
 # For now we have hand-written .h files, so disable generation of headers
+generation = false
+
+[package.metadata.capi.install.include]
+asset = [{from = "include/**/*.h"}]
 
 [package.metadata.capi.pkg_config]
 name = "librsvg"
