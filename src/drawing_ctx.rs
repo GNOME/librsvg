@@ -1350,6 +1350,8 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, RenderingError> {
         let transform = self.get_transform();
 
+        let paint_order = values.paint_order();
+
         let gravity = span.layout.context().unwrap().gravity();
 
         let bbox = compute_text_box(&span.layout, span.x, span.y, transform, gravity);
@@ -1365,51 +1367,82 @@ impl DrawingCtx {
 
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
-            self.cr.move_to(span.x, span.y);
-
-            let rotation = gravity.to_rotation();
-            if !rotation.approx_eq_cairo(0.0) {
-                self.cr.rotate(-rotation);
-            }
+            let rotation_from_gravity = gravity.to_rotation();
+            let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
+                Some(-rotation_from_gravity)
+            } else {
+                None
+            };
 
             if clipping {
+                self.cr.move_to(span.x, span.y);
+
+                let matrix = self.cr.matrix();
+                if let Some(rot) = rotation {
+                    self.cr.rotate(rot);
+                }
+
                 pangocairo::functions::update_layout(&self.cr, &span.layout);
                 pangocairo::functions::layout_path(&self.cr, &span.layout);
+
+                self.cr.set_matrix(matrix);
+
                 return Ok(self.empty_bbox());
             }
 
-            // Fill
-
             if span.is_visible {
-                let fill_paint = span.fill_paint.to_user_space(&bbox, &view_params, values);
+                for &target in &paint_order.targets {
+                    match target {
+                        PaintTarget::Fill => {
+                            self.cr.move_to(span.x, span.y);
 
-                self.set_paint_source(&fill_paint, acquired_nodes)
-                    .map(|had_paint_server| {
-                        if had_paint_server {
-                            pangocairo::functions::update_layout(&self.cr, &span.layout);
-                            pangocairo::functions::show_layout(&self.cr, &span.layout);
-                        };
-                    })?;
-            }
+                            let matrix = self.cr.matrix();
+                            if let Some(rot) = rotation {
+                                self.cr.rotate(rot);
+                            }
 
-            // Stroke
+                            let fill_paint =
+                                span.fill_paint.to_user_space(&bbox, &view_params, values);
+                            let had_paint_server =
+                                self.set_paint_source(&fill_paint, acquired_nodes)?;
+                            if had_paint_server {
+                                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                                pangocairo::functions::show_layout(&self.cr, &span.layout);
+                            }
 
-            let stroke_paint = span.stroke_paint.to_user_space(&bbox, &view_params, values);
+                            self.cr.set_matrix(matrix);
+                        }
 
-            let had_paint_server = self.set_paint_source(&stroke_paint, acquired_nodes)?;
+                        PaintTarget::Stroke => {
+                            self.cr.move_to(span.x, span.y);
 
-            if had_paint_server {
-                pangocairo::functions::update_layout(&self.cr, &span.layout);
-                pangocairo::functions::layout_path(&self.cr, &span.layout);
+                            let matrix = self.cr.matrix();
+                            if let Some(rot) = rotation {
+                                self.cr.rotate(rot);
+                            }
 
-                let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
-                let r = Rect::new(x0, y0, x1, y1);
-                let ib = BoundingBox::new()
-                    .with_transform(transform)
-                    .with_ink_rect(r);
-                bbox.insert(&ib);
-                if span.is_visible {
-                    self.cr.stroke()?;
+                            let stroke_paint =
+                                span.stroke_paint.to_user_space(&bbox, &view_params, values);
+                            let had_paint_server =
+                                self.set_paint_source(&stroke_paint, acquired_nodes)?;
+                            if had_paint_server {
+                                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                                pangocairo::functions::layout_path(&self.cr, &span.layout);
+
+                                let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
+                                let r = Rect::new(x0, y0, x1, y1);
+                                let ib = BoundingBox::new()
+                                    .with_transform(transform)
+                                    .with_ink_rect(r);
+                                bbox.insert(&ib);
+                                self.cr.stroke()?;
+                            }
+
+                            self.cr.set_matrix(matrix);
+                        }
+
+                        PaintTarget::Markers => {}
+                    }
                 }
             }
 

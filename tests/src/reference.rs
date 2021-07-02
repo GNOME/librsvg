@@ -261,7 +261,7 @@ test_compare_render_output!(
 );
 
 test_compare_render_output!(
-    marker_context_stroke,
+    marker_context_stroke_fill,
     400,
     400,
     br##"<?xml version="1.0" encoding="UTF-8"?>
@@ -300,8 +300,7 @@ test_compare_render_output!(
         <circle cx="6" cy="6" r="3"
                 fill="context-stroke" stroke="context-fill" stroke-width="2"/>
       </marker>
-    </svg>
-    "##,
+    </svg>"##,
     br##"<?xml version="1.0" encoding="UTF-8"?>
     <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
       <path d="M20,20 L200,20 L380,20" stroke="lime" stroke-width="4"/>
