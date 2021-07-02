@@ -301,7 +301,6 @@ test_compare_render_output!(
                 fill="context-stroke" stroke="context-fill" stroke-width="2"/>
       </marker>
     </svg>"##,
-
     br##"<?xml version="1.0" encoding="UTF-8"?>
     <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
       <path d="M20,20 L200,20 L380,20" stroke="lime" stroke-width="4"/>
