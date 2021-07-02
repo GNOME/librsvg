@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="200">
+  <defs>
+    <text id="hello" style='font: bold 80px sans-serif;' stroke-width="8">
+      <tspan x="10" y="80" stroke="green" fill="midnightblue">Hello</tspan>
+      <tspan x="250" y="80" stroke="lime" fill="orange">World!</tspan>
+    </text>
+  </defs>
+
+  <use href="#hello" style="paint-order: normal;"/>
+  <use href="#hello" style="paint-order: stroke fill;" transform="translate(0, 100)"/>
+</svg>
