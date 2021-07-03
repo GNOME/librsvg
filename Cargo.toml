@@ -52,6 +52,7 @@ generation = false
 asset = [{from = "include/**/*.h"}]
 
 [package.metadata.capi.pkg_config]
+filename = "librsvg-2.0"
 name = "librsvg"
 description = "library that renders svg files"
 # version = "..." # defaults to the crate version
