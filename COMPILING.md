@@ -33,6 +33,7 @@ minimum version is listed here; you may use a newer version instead.
 * a C compiler and `make` tool; we recommend GNU `make`.
 * rust 1.52 or later
 * cargo
+* cargo-c 0.9 or later - https://github.com/lu-zero/cargo-c
 
 **Mandatory dependencies:**
 
@@ -55,6 +56,8 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
 
 **Build dependencies on Debian Testing or Ubuntu 18.10:**
 
+**Note: cargo-c is not available yet; you need to install it by hand if you wish to build the C API library.**
+
 ```sh
 apt-get install -y gcc make rustc cargo \
 automake autoconf libtool gtk-doc-tools git \
@@ -71,7 +74,7 @@ PATH="$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0"
 ### Fedora based systems
 
 ```sh
-dnf install -y gcc rust rust-std-static cargo make \
+dnf install -y gcc rust rust-std-static cargo cargo-c make \
 automake autoconf libtool gtk-doc git redhat-rpm-config \
 gdk-pixbuf2-devel gobject-introspection-devel \
 libxml2-devel cairo-devel cairo-gobject-devel pango-devel
@@ -80,7 +83,7 @@ libxml2-devel cairo-devel cairo-gobject-devel pango-devel
 ### openSUSE based systems
 
 ```sh
-zypper install -y gcc rust rust-std cargo make \
+zypper install -y gcc rust rust-std cargo cargo-c make \
 automake autoconf libtool gtk-doc git \
 gdk-pixbuf-devel gobject-introspection-devel \
 libxml2-devel cairo-devel pango-devel
