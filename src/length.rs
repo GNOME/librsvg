@@ -470,6 +470,31 @@ pub type Length<N> = CssLength<N, Signed>;
 /// Alias for `CssLength` types that are non negative
 pub type ULength<N> = CssLength<N, Unsigned>;
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum LengthOrAuto<N: Normalize> {
+    Length(CssLength<N, Unsigned>),
+    Auto,
+}
+
+impl<N: Normalize> Default for LengthOrAuto<N> {
+    fn default() -> Self {
+        LengthOrAuto::Auto
+    }
+}
+
+impl<N: Normalize> Parse for LengthOrAuto<N> {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<LengthOrAuto<N>, ParseError<'i>> {
+        if parser
+            .try_parse(|i| i.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            Ok(LengthOrAuto::Auto)
+        } else {
+            Ok(LengthOrAuto::Length(CssLength::parse(parser)?))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

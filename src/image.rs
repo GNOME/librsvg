@@ -20,8 +20,8 @@ use crate::xml::Attributes;
 pub struct Image {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    width: ULength<Horizontal>,
-    height: ULength<Vertical>,
+    width: LengthOrAuto<Horizontal>,
+    height: LengthOrAuto<Vertical>,
     aspect: AspectRatio,
     href: Option<String>,
 }
@@ -76,8 +76,15 @@ impl Draw for Image {
 
         let x = self.x.to_user(&params);
         let y = self.y.to_user(&params);
-        let w = self.width.to_user(&params);
-        let h = self.height.to_user(&params);
+
+        let w = match self.width {
+            LengthOrAuto::Length(l) => l.to_user(&params),
+            LengthOrAuto::Auto => surface.width() as f64,
+        };
+        let h = match self.height {
+            LengthOrAuto::Length(l) => l.to_user(&params),
+            LengthOrAuto::Auto => surface.height() as f64,
+        };
 
         let is_visible = values.is_visible();
 

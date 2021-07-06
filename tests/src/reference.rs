@@ -319,3 +319,19 @@ test_compare_render_output!(
     </svg>
     "##,
 );
+
+test_compare_render_output!(
+    image_auto_width_height,
+    30,
+    30,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+      <image
+        href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAIAAAACUFjqAAAAFElEQVQY02Nk+M+ABzAxMIxKYwIAQC0BEwZFOw4AAAAASUVORK5CYII="
+        x="10" y="10"/>
+    </svg>"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+      <rect x="10" y="10" width="10" height="10" fill="lime"/>
+    </svg>"##,
+);
