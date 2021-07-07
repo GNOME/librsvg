@@ -383,6 +383,15 @@ fn unsupported_unit_in_width_and_height() {
 }
 
 #[test]
+fn invalid_length() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--page-width=foo")
+        .assert()
+        .failure()
+        .stderr(contains("can not be parsed as a length"));
+}
+
+#[test]
 fn zoom_factor() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--zoom=0.8")
