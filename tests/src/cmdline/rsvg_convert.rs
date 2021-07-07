@@ -472,6 +472,24 @@ fn huge_zoom_factor_yields_error() {
 }
 
 #[test]
+fn negative_zoom_factor_yields_error() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--zoom=-2")
+        .assert()
+        .failure()
+        .stderr(contains("Invalid zoom"));
+}
+
+#[test]
+fn invalid_zoom_factor_yields_error() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--zoom=foo")
+        .assert()
+        .failure()
+        .stderr(contains("Invalid value"));
+}
+
+#[test]
 fn default_resolution_is_96dpi() {
     RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .assert()
