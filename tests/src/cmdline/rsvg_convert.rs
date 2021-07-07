@@ -850,6 +850,16 @@ fn accept_language_fallback() {
 }
 
 #[test]
+fn accept_language_invalid_tag() {
+    // underscores are not valid in BCP47 language tags
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/accept-language.svg")
+        .arg("--accept-language=foo_bar")
+        .assert()
+        .failure()
+        .stderr(contains("invalid language tag"));
+}
+
+#[test]
 fn keep_image_data_option() {
     RsvgConvert::accepts_arg("--keep-image-data");
 }
