@@ -1,6 +1,7 @@
 use cairo;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
+use crate::test_compare_render_output;
 use crate::utils::{load_svg, render_document, SurfaceSize};
 
 #[test]
@@ -358,3 +359,16 @@ fn nested_masks() {
         .compare(&output_surf)
         .evaluate(&output_surf, "nested_masks");
 }
+
+test_compare_render_output!(
+    image_element_with_no_href,
+    30,
+    30,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+      <image x="10" y="10"/>
+    </svg>"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+    </svg>"##,
+);

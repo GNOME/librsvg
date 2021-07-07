@@ -374,6 +374,24 @@ fn width_and_height_options() {
 }
 
 #[test]
+fn unsupported_unit_in_width_and_height() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--height=200ex")
+        .assert()
+        .failure()
+        .stderr(contains("supported units"));
+}
+
+#[test]
+fn invalid_length() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--page-width=foo")
+        .assert()
+        .failure()
+        .stderr(contains("can not be parsed as a length"));
+}
+
+#[test]
 fn zoom_factor() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--zoom=0.8")
@@ -451,6 +469,24 @@ fn huge_zoom_factor_yields_error() {
         .stderr(starts_with(
             "The resulting image would be larger than 32767 pixels",
         ));
+}
+
+#[test]
+fn negative_zoom_factor_yields_error() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--zoom=-2")
+        .assert()
+        .failure()
+        .stderr(contains("Invalid zoom"));
+}
+
+#[test]
+fn invalid_zoom_factor_yields_error() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--zoom=foo")
+        .assert()
+        .failure()
+        .stderr(contains("Invalid value"));
 }
 
 #[test]
@@ -731,6 +767,16 @@ fn export_id_short_option() {
 }
 
 #[test]
+fn export_id_with_hash_prefix() {
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
+        .arg("-i")
+        .arg("#two")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(100, 200));
+}
+
+#[test]
 fn export_id_option_error() {
     RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--export-id=foobar")
@@ -819,6 +865,16 @@ fn accept_language_fallback() {
         .stdout(
             file::is_png().with_contents("tests/fixtures/cmdline/accept-language-fallback.png"),
         );
+}
+
+#[test]
+fn accept_language_invalid_tag() {
+    // underscores are not valid in BCP47 language tags
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/accept-language.svg")
+        .arg("--accept-language=foo_bar")
+        .assert()
+        .failure()
+        .stderr(contains("invalid language tag"));
 }
 
 #[test]

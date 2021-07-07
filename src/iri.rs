@@ -18,12 +18,6 @@ pub enum Iri {
     Resource(Box<NodeId>),
 }
 
-impl Default for Iri {
-    fn default() -> Iri {
-        Iri::None
-    }
-}
-
 impl Iri {
     /// Returns the contents of an `IRI::Resource`, or `None`
     pub fn get(&self) -> Option<&NodeId> {
