@@ -374,6 +374,15 @@ fn width_and_height_options() {
 }
 
 #[test]
+fn unsupported_unit_in_width_and_height() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--height=200ex")
+        .assert()
+        .failure()
+        .stderr(contains("supported units"));
+}
+
+#[test]
 fn zoom_factor() {
     RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
         .arg("--zoom=0.8")
