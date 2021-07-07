@@ -749,6 +749,16 @@ fn export_id_short_option() {
 }
 
 #[test]
+fn export_id_with_hash_prefix() {
+    RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
+        .arg("-i")
+        .arg("#two")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_size(100, 200));
+}
+
+#[test]
 fn export_id_option_error() {
     RsvgConvert::new_with_input("tests/fixtures/api/dpi.svg")
         .arg("--export-id=foobar")
