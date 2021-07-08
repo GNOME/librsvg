@@ -407,8 +407,8 @@ impl BasicShape for Line {
 pub struct Rect {
     x: Length<Horizontal>,
     y: Length<Vertical>,
-    width: ULength<Horizontal>,
-    height: ULength<Vertical>,
+    width: LengthOrAuto<Horizontal>,
+    height: LengthOrAuto<Vertical>,
 
     // Radiuses for rounded corners
     rx: Option<Length<Horizontal>>,
@@ -440,8 +440,15 @@ impl BasicShape for Rect {
     fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
         let x = self.x.to_user(params);
         let y = self.y.to_user(params);
-        let w = self.width.to_user(params);
-        let h = self.height.to_user(params);
+
+        let w = match self.width {
+            LengthOrAuto::Length(l) => l.to_user(&params),
+            LengthOrAuto::Auto => 0.0,
+        };
+        let h = match self.height {
+            LengthOrAuto::Length(l) => l.to_user(&params),
+            LengthOrAuto::Auto => 0.0,
+        };
 
         let specified_rx = self.rx.map(|l| l.to_user(params));
         let specified_ry = self.ry.map(|l| l.to_user(params));

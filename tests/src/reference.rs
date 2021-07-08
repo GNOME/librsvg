@@ -335,3 +335,16 @@ test_compare_render_output!(
       <rect x="10" y="10" width="10" height="10" fill="lime"/>
     </svg>"##,
 );
+
+test_compare_render_output!(
+    rect_auto_width_height,
+    30,
+    30,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+      <rect x="10" y="10" width="auto" height="auto" fill="lime"/>
+    </svg>"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+    </svg>"##
+);
