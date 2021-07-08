@@ -20,7 +20,7 @@ build-info-librsvg:
 	@echo Build Type: $(BUILD_TYPE)
 	@echo.
 	@echo Built Tools:
-	@for %%t in ($(RSVG_TOOLS:.exe=) $(RSVG_EXTRA_TOOLS:.exe=)) do @echo %%~nt
+	@for %%t in ($(RSVG_TOOLS:.exe=)) do @echo %%~nt
 	@echo.
 	@echo Introspection: $(BUILD_INTROSPECTION)
 

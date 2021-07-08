@@ -32,7 +32,7 @@ VALID_MSC = TRUE
 # Include the Makefile portion to convert the source and header lists
 # into the lists we need for compilation and introspection
 
-all: $(RSVG_TOOLS) $(RSVG_EXTRA_TOOLS) $(EXTRA_TARGETS) build-info-librsvg
+all: $(RSVG_TOOLS) $(EXTRA_TARGETS) build-info-librsvg
 
 # Include the build rules for Rust builds, sources, DLLs and executables
 !include rsvg-rust.mak
