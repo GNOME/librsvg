@@ -25,6 +25,10 @@ You will also need the following tools:
  matches the architecture that is being built.  It is recommended to use the
  'rustup' tool from https://www.rust-lang.org/ to install and configure
  Rust, which will install Rust in %HOMEPATH%\.cargo by default.
+-pkg-config tool (or something that is compatible, set via PKG_CONFIG 
+ in the NMake command line if cross-compiling, or if in a non-standard
+ location).  PKG_CONFIG_PATH in the NMake command line is also supported,
+ for similar reasons.
 -Python (optional, recommended, to generate the pkg-config files and
  build the introspection files; if building the introspection files, the
  Python installation must match the version, architecture and configuration
@@ -34,11 +38,11 @@ You will also need the following tools:
  system where the build is being carried out.  This means, specifically,
  introspection files for ARM64 builds are not currently supported also due to a
  lack of an official native ARM64 Python build.
--For introspection builds, the pkg-config (or compatible) tool is also needed
- and the introspection files and pkg-config files for the dependent libraries
- (if applicable) are also needed.  You will need to set PKG_CONFIG_PATH
- if the pkg-config files cannot be found from the default locations that
- pkg-config will look for.
+-For introspection builds, the introspection files and pkg-config
+ files for the dependent libraries (if applicable) are also needed.
+ You will need to set or pass in PKG_CONFIG_PATH if the pkg-config
+ files cannot be found from the default locations that pkg-config will 
+ look for.
 
 It is now possible to cross-compile librsvg for ARM64 Windows, as well as for
 x64 Windows on 32-bit or ARM64 Windows systems, using this set of NMake Makefiles.
@@ -107,19 +111,25 @@ for all targets.
          BINDIR\..\lib\gobject-introspection and the dependent introspection files are
          looked for in BINDIR\..\share\gir-1.0 and BINDIR\..\lib\girepository-1.0
          respectively for .gir files and .typelib files.
--PYTHON: Path to your Python interpreter executable, if not already in your %PATH% or
-         using a different installation of Python is desired.  Please see note above
-         on Python usage.  If Python cannot be found, you will not be able to build
-         introspection files and the librsvg-2.0.pc pkg-config file will not be
-         generated using the 'install' build target.
--PKG_CONFIG: Path to your pkg-config (or compatible) tool, if not already in your
-             %PATH%.  This is required for introspection builds.
--LIBINTL_LIB: Full file name of your gettext-runtime library .lib file, if it is not
-              intl.lib.  This should be in the directories indicated by %LIB% or in
-              $(LIBDIR), or should be passed in with the full path.  Note that its
-              DLL, if applicable, should be found in %PATH% or in $(BINDIR) as well,
-              for building the introspection files or for creating the GDK-Pixbuf
-              loaders cache file.
+-PYTHON: Path to your Python interpreter executable, if not already in 
+         your %PATH% or using a different installation of Python is 
+         desired.  Please see note above on Python usage.  If Python 
+         cannot be found, you will not be able to build 
+         introspection files and the librsvg-2.0.pc pkg-config file will 
+         not be generated using the 'install' build target.
+-PKG_CONFIG: Path to your pkg-config (or compatible) tool, if not
+             already in your %PATH%.  This is required for introspection 
+             builds.
+-LIBINTL_LIB:  Full file name of your gettext-runtime, libxml2, FreeType
+ LIBXML2_LIB:  and/or HarfBuzz library .lib file, if not intl.lib,
+ HARFBUZZ_LIB: libxml2.lib, harfbuzz.lib and freetype.lib
+ FREETYPE_LIB: respectively.  These should be in the directories
+               indicated by %LIB% or in $(LIBDIR), or should be passed in 
+               with the full path. 
+               Note that their DLLs, if applicable, should be found in
+               %PATH% or in $(BINDIR) as well, for building the
+               introspection files or for creating the GDK-Pixbuf
+               loaders cache file.
 
 <other_options> is as follows, activate the options using <option>=1:
 -INTROSPECTION: Build the introspection files.  Please see notes above.
