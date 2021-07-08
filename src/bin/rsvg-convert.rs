@@ -9,7 +9,7 @@ use gio::{UnixInputStream, UnixOutputStream};
 
 #[cfg(windows)]
 mod windows_imports {
-    pub use gio::ffi::{GInputStream, GOutputStream};
+    pub use gio::{Win32InputStream, Win32OutputStream};
     pub use glib::ffi::gboolean;
     pub use glib::translate::*;
     pub use libc::c_void;
@@ -357,7 +357,8 @@ impl Stdin {
 
     #[cfg(windows)]
     pub fn stream() -> InputStream {
-        Win32InputStream::with_handle(io::stdin()).upcast::<InputStream>()
+        let stream = unsafe { Win32InputStream::with_handle(io::stdin()) };
+        stream.upcast::<InputStream>()
     }
 }
 
@@ -372,7 +373,8 @@ impl Stdout {
 
     #[cfg(windows)]
     pub fn stream() -> OutputStream {
-        Win32InputStream::with_handle(io::stdout()).upcast::<OutputStream>()
+        let stream = unsafe { Win32OutputStream::with_handle(io::stdout()) };
+        stream.upcast::<OutputStream>()
     }
 }
 
