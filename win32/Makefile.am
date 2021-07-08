@@ -11,6 +11,7 @@ EXTRA_DIST = \
 	info-msvc.mak		\
 	install-msvc.mak	\
 	introspection-msvc.mak	\
+	librsvg.symbols	\
 	Makefile.vc		\
 	README.txt		\
 	rsvg-rust.mak		\
