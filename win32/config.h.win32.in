@@ -3,13 +3,6 @@
 /* Define if building universal (internal helper macro) */
 /* #undef AC_APPLE_UNIVERSAL_BUILD */
 
-/* Define to 1 if translation of program messages to the user's native
-   language is requested. */
-#define ENABLE_NLS 1
-
-/* Define to the gettext package name. */
-#define GETTEXT_PACKAGE "@GETTEXT_PACKAGE@"
-
 /* Define to 1 if you have the Mac OS X function CFLocaleCopyCurrent in the
    CoreFoundation framework. */
 /* #undef HAVE_CFLOCALECOPYCURRENT */
