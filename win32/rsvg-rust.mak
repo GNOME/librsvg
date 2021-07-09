@@ -100,16 +100,16 @@ build-$(PLAT)-$(CFG).pre.bat:
 
 build-$(PLAT)-$(CFG)-lib.bat: build-$(PLAT)-$(CFG).pre.bat
 	@type $**>$@
-	@echo $(CARGO_CMD) --verbose --lib>>$@
+	@echo $(CARGO_CMD: build = cbuild )>>$@
 
 build-$(PLAT)-$(CFG)-bin.bat: build-$(PLAT)-$(CFG).pre.bat
 	@type $**>$@
-	@echo $(CARGO_CMD) --verbose --bin rsvg-convert>>$@
+	@echo $(CARGO_CMD) --bin rsvg-convert>>$@
 
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\librsvg.lib: build-$(PLAT)-$(CFG)-lib.bat
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-2.dll.lib: build-$(PLAT)-$(CFG)-lib.bat
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe: build-$(PLAT)-$(CFG)-bin.bat
 
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\librsvg.lib	\
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-2.dll.lib	\
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe:
 	@echo Please do not manually close the command window that pops up...
 	@echo.
@@ -120,7 +120,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\r
 	@start "Building the Rust bits for $(PLAT) Windows MSVC Build, please do not close this console window..." /wait /i cmd /c $**
 
 !else
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\librsvg.lib:
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-2.dll.lib:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
@@ -129,7 +129,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\l
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)
 	$(RUSTUP_CMD)
 	@cd ..
-	$(CARGO_CMD) --verbose --lib
+	$(CARGO_CMD: build = cbuild )
 	@cd win32
 	@set GTK_LIB_DIR=
 	@set CARGO_TARGET_DIR=
@@ -143,7 +143,7 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\r
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)
 	$(RUSTUP_CMD)
 	@cd ..
-	$(CARGO_CMD) --verbose --bin $(@B)
+	$(CARGO_CMD) --bin $(@B)
 	@cd win32
 	@set GTK_LIB_DIR=
 	@set CARGO_TARGET_DIR=

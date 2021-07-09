@@ -44,15 +44,6 @@ NULL=
 !if [call create-lists.bat footer rsvg_objs.mak]
 !endif
 
-!if [call create-lists.bat header rsvg_objs.mak librsvg_OBJS]
-!endif
-
-!if [for %c in ($(OUTDIR)\librsvg\_rsvg_dummy.c) do @if "%~xc" == ".c" @call create-lists.bat file rsvg_objs.mak ^$(OUTDIR)\librsvg\%~nc.obj]
-!endif
-
-!if [call create-lists.bat footer rsvg_objs.mak]
-!endif
-
 !if [call create-lists.bat header rsvg_objs.mak rsvg_tests]
 !endif
 

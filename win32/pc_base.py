@@ -23,7 +23,8 @@ class BasePCItems:
         self.libdir = ''
         self.prefix = ''
         self.srcdir = os.path.dirname(__file__)
-        self.top_srcdir = self.srcdir + os.sep + '..'
+        self.source = ''
+        self.output = ''
         self.version = ''
 
     def setup(self, argv, parser=None):
@@ -42,13 +43,23 @@ class BasePCItems:
                                   if different from ${prefix}/lib')
         parser.add_argument('--version', help='Version of the package',
                             required=True)
+        parser.add_argument('--source', help='Base pc file template',
+                            required=True)
+        parser.add_argument( '-o', '--output', help='Output of processed pc file',
+                            required=True)
         args = parser.parse_args()
 
         self.version = args.version
+        self.source = args.source
+        self.output = args.output
 
         # check whether the prefix and exec_prefix are valid
         if not os.path.exists(args.prefix):
             raise SystemExit('Specified prefix \'%s\' is invalid' % args.prefix)
+
+        # check whether output directory is valid
+        if not os.path.exists(os.path.dirname(self.output)):
+            raise SystemExit('Specified path for output \'%s\' is invalid' % self.output)
 
         # use absolute paths for prefix
         self.prefix = os.path.abspath(args.prefix).replace('\\','/')
