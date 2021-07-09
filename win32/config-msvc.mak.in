@@ -106,7 +106,8 @@ TEST_DEP_LIBS =	\
 	fontconfig.lib
 !endif
 
-RSVG_INTERNAL_LIB = $(OUTDIR)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\librsvg.lib
+RUST_OUTDIR = $(OUTDIR)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)
+RSVG_INTERNAL_LIB = $(RUST_OUTDIR)\rsvg-2.dll.lib
 
 LIBRSVG_DEP_LIBS =			\
 	$(RSVG_INTERNAL_LIB)		\
@@ -133,7 +134,6 @@ LIBRSVG_DLL_FILENAME = $(OUTDIR)\rsvg-$(RSVG_API_VER)-vs$(VSVER)
 
 LIBRSVG_DLL = $(LIBRSVG_DLL_FILENAME).dll
 LIBRSVG_LIB = $(OUTDIR)\rsvg-$(RSVG_API_VER).lib
-LIBRSVG_DEF = $(OUTDIR)\librsvg\librsvg.def
 
 GDK_PIXBUF_SVG_LOADER = $(OUTDIR)\libpixbufloader-svg.dll
 
