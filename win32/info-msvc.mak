@@ -56,9 +56,9 @@ help:
 	@echo will be searched for in ^$(INCLUDEDIR)\glib-2.0 and
 	@echo ^$(LIBDIR)\glib-2.0\include.
 	@echo.
-	@echo PKG_CONFIG_PATH: Full path to pkg-config.exe.  Required if building
-	@echo introspection files and if pkg-config.exe is not in your PATH or it
+	@echo PKG_CONFIG: Full path to pkg-config.exe.  Required if pkg-config.exe is not in your PATH or it
 	@echo is called something other than pkg-config.
+	@echo PKG_CONFIG_PATH: Other paths to search for pkg-config outside of paths search by default; separate paths by ';'.
 	@echo.
 	@echo PYTHON: Full path to your Python interpreter executable.  Required
 	@echo if building introspection files and if python.exe is not in your PATH.

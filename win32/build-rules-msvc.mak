@@ -61,7 +61,7 @@ $(OUTDIR)\rsvg-gdk-pixbuf-loader\io-svg.obj
 # <<
 # 	@-if exist $@.manifest mt /manifest $@.manifest /outputresource:$@;1
 $(OUTDIR)\rsvg-convert.exe:	\
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg-convert\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe
 	@copy /b $** $@
 	@if exist $(**D)\rsvg_convert.pdb copy /b $(**D)\rsvg_convert.pdb $(@D)
 
@@ -110,6 +110,7 @@ $(OUTDIR)\Rsvg-2.0.typelib: $(OUTDIR)\Rsvg-2.0.gir
 clean:
 	@if exist $(OUTDIR)\Rsvg-$(RSVG_API_VER).typelib del /f /q $(OUTDIR)\Rsvg-$(RSVG_API_VER).typelib
 	@if exist $(OUTDIR)\Rsvg-$(RSVG_API_VER).gir del /f /q $(OUTDIR)\Rsvg-$(RSVG_API_VER).gir
+	@-del /f /q $(OUTDIR)\librsvg-2.0.pc
 	@-del /f /q $(OUTDIR)\*.dll
 	@-del /f /q $(OUTDIR)\*.exe
 	@-del /f /q $(OUTDIR)\*.pdb
@@ -129,4 +130,3 @@ clean:
 	@-rmdir /s /q $(OUTDIR)\librsvg
 	$(MAKE) /f rsvg-rust.mak CFG=$(CFG) cargo-clean
 	@-rmdir /s /q $(OUTDIR)\obj
-	@-del build-$(PLAT)-$(CFG)*.bat

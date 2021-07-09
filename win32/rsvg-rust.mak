@@ -91,26 +91,28 @@ build-$(PLAT)-$(CFG).pre.bat:
 	@echo set __VSCMD_script_err_count=>>$@
 	@echo if not "$(__VSCMD_PREINIT_PATH)" == "" set PATH=$(__VSCMD_PREINIT_PATH);%HOMEPATH%\.cargo\bin>>$@
 	@echo if "$(__VSCMD_PREINIT_PATH)" == "" set PATH=c:\Windows\system;c:\Windows;c:\Windows\system32\wbem;%HOMEPATH%\.cargo\bin>>$@
-	@echo set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api>>$@
 	@echo set GTK_LIB_DIR=$(LIBDIR)>>$@
 	@echo set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)>>$@
 	@if not "$(PKG_CONFIG_PATH)" == "" echo set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)>>$@
 	@if not "$(PKG_CONFIG)" == "" echo set PKG_CONFIG=$(PKG_CONFIG)>>$@
 	@echo cd ..>>$@
 
-build-$(PLAT)-$(CFG)-lib.bat: build-$(PLAT)-$(CFG).pre.bat
-	@type $**>$@
+build-$(PLAT)-$(CFG)-lib.bat: build-$(PLAT)-$(CFG).pre.bat build-$(PLAT)-$(CFG)-bin.bat
+	@type build-$(PLAT)-$(CFG).pre.bat>$@
+	@echo set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api>>$@
 	@echo $(CARGO_CMD: build = cbuild )>>$@
+	@del /f/q build-$(PLAT)-$(CFG).pre.bat
 
 build-$(PLAT)-$(CFG)-bin.bat: build-$(PLAT)-$(CFG).pre.bat
 	@type $**>$@
+	@echo set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\convert>>$@
 	@echo $(CARGO_CMD) --bin rsvg-convert>>$@
 
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-2.dll.lib: build-$(PLAT)-$(CFG)-lib.bat
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe: build-$(PLAT)-$(CFG)-bin.bat
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg-convert\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe: build-$(PLAT)-$(CFG)-bin.bat
 
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-2.dll.lib	\
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe:
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg-convert\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe:
 	@echo Please do not manually close the command window that pops up...
 	@echo.
 	@echo If this fails due to LNK1112 or a linker executable cannot be found, run
@@ -118,6 +120,8 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\r
 	@echo and then run 'start /i /wait cmd /c $**', and then continue
 	@echo the build with your original NMake command line.
 	@start "Building the Rust bits for $(PLAT) Windows MSVC Build, please do not close this console window..." /wait /i cmd /c $**
+	@if "$(@F)" == "rsvg-2.dll.lib" del /f/q build-$(PLAT)-$(CFG)-lib.bat
+	@if "$(@F)" == "rsvg-convert.exe" del /f/q build-$(PLAT)-$(CFG)-bin.bat
 
 !else
 vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-2.dll.lib:
@@ -134,9 +138,9 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\r
 	@set GTK_LIB_DIR=
 	@set CARGO_TARGET_DIR=
 
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe:
+vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg-convert\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
-	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
+	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg-convert
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
@@ -151,8 +155,11 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\r
 
 cargo-clean:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
+	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg-convert
+	@cd ..
+	@$(CARGO) clean
+	@cd win32
 	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
-	@if exist build-$(PLAT)-$(CFG).bat del /f/q build-$(PLAT)-$(CFG).bat
 	@cd ..
 	@$(CARGO) clean
 	@cd win32
