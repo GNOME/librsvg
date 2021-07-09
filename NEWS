@@ -1,4 +1,26 @@
 ==============
+Version 2.51.4
+==============
+
+- #618 - SVG2: Implement context-fill and context-stroke for markers
+  (Madds H).
+
+- #727 - SVG2: Implement paint-order for text elements (Madds H).
+
+- #747 - SVG2: Support width="auto" and height="auto" for the image element.
+
+- Fix the Windows build (Chun-wei Fan).
+
+- The tools/docker directory now has scripts that developers can use
+  to test librsvg on containers for various Linux distributions.
+
+- Gtk-rs dependency is updated to 0.14.0 (Bilal Elmoussaoui, Chun-wei Fan).
+
+- #758 - Panic when rendering with masks or opacity to a non-image surface.
+
+- #757 - Fix 32-bit builds.
+
+==============
 Version 2.51.3
 ==============
 
