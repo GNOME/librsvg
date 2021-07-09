@@ -76,7 +76,7 @@ tests/rsvg-test
 tests/*.log
 tests/*.trs
 win32/config-msvc.mak
-win32/*.bat
+win32/build-*.bat
 win32/vs12
 win32/vs14
 win32/__pycache__

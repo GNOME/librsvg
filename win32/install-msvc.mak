@@ -26,7 +26,7 @@ install: all
 	@-$(PYTHON) rsvgpc.py --version=$(RSVG_PKG_VERSION) --prefix=$(PREFIX) --source=$(OUTDIR)\librsvg-2.0.pc -o $(OUTDIR)\librsvg-2.0.pc.real
 	@if not exist $(OUTDIR)\librsvg-2.0.pc.real echo *** librsvg-2.0.pc may not contain a ^$prefix that matches your build config.  Please check it.
 	@if not exist $(PREFIX)\lib\pkgconfig mkdir $(PREFIX)\lib\pkgconfig
-	@if exist $(OUTDIR)\librsvg-2.0.pc.real copy $(OUTDIR)\librsvg-2.0.pc.real $(PREFIX)\lib\pkgconfig\librsvg-2.0.pc
+	@if exist $(OUTDIR)\librsvg-2.0.pc.real move $(OUTDIR)\librsvg-2.0.pc.real $(PREFIX)\lib\pkgconfig\librsvg-2.0.pc
 	@if not exist $(OUTDIR)\librsvg-2.0.pc.real copy $(OUTDIR)\librsvg-2.0.pc $(PREFIX)\lib\pkgconfig
 	@echo.
 	@echo ******* WARNING *******
