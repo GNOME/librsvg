@@ -103,7 +103,16 @@ AS_IF(test x$RUSTC = xno,
 )
 AC_CHECK_TOOL(CARGO_C, [cargo-cbuild], [no])
 AS_IF(test x$CARGO_C = xno,
-    AC_MSG_ERROR([cargo-c is required.  Please install it from https://github.com/lu-zero/cargo-c/])
+    AC_MSG_ERROR([cargo-c 0.9 or later is required.  Please install it from https://github.com/lu-zero/cargo-c/])
+)
+
+dnl Check the cargo-c version
+CARGO_CBUILD_VERSION_MINIMUM=0.9
+
+cargo_c_version=`cargo-cbuild --version | sed -e 's/^cargo-c \([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/'`
+AX_COMPARE_VERSION([$cargo_c_version], [ge], [$CARGO_CBUILD_VERSION_MINIMUM],
+  AC_MSG_NOTICE([cargo-cbuild version $cargo_c_version]),
+  AC_MSG_ERROR([cargo-cbuild is too old; please use $CARGO_CBUILD_VERSION_MINIMUM at least])
 )
 
 dnl MSRV - Minimum Supported Rust Version
