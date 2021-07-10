@@ -1,6 +1,6 @@
 [package]
 name = "librsvg"
-version = "2.51.3"
+version = "2.51.4"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 build = "build.rs"
 edition = "2018"
@@ -85,7 +85,7 @@ matches = "0.1"
 pango = "0.14.0"
 pangocairo = "0.14.0"
 png = "0.16.1"
-predicates = "1.0.2"
+predicates = "2.0.0"
 proptest = "0.10.1"
 tempfile = "3"
 test-generator = "0.3"
