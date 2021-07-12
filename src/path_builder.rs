@@ -40,7 +40,7 @@ pub enum Sweep {
 }
 
 /// "c" command for paths; describes a cubic Bézier segment.
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct CubicBezierCurve {
     /// The (x, y) coordinates of the first control point.
     pub pt1: (f64, f64),
@@ -98,7 +98,7 @@ pub enum ArcParameterization {
 }
 
 /// "a" command for paths; describes  an elliptical arc in terms of its endpoints.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct EllipticalArc {
     /// The (x-axis, y-axis) radii for the ellipse.
     pub r: (f64, f64),
@@ -123,7 +123,7 @@ impl EllipticalArc {
     ///
     /// See section B.2.4. Conversion from endpoint to center parameterization
     /// https://www.w3.org/TR/SVG2/implnote.html#ArcConversionEndpointToCenter
-    pub(crate) fn center_parameterization(self) -> ArcParameterization {
+    pub(crate) fn center_parameterization(&self) -> ArcParameterization {
         let Self {
             r: (mut rx, mut ry),
             x_axis_rotation,
@@ -131,7 +131,7 @@ impl EllipticalArc {
             sweep,
             from: (x1, y1),
             to: (x2, y2),
-        } = self;
+        } = *self;
 
         // Ensure radii are non-zero.
         // Otherwise this arc is treated as a line segment joining the end points.

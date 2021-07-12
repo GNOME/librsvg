@@ -2123,15 +2123,15 @@ impl PathCommand {
         match *self {
             PathCommand::MoveTo(x, y) => cr.move_to(x, y),
             PathCommand::LineTo(x, y) => cr.line_to(x, y),
-            PathCommand::CurveTo(curve) => curve.to_cairo(cr),
-            PathCommand::Arc(arc) => arc.to_cairo(cr),
+            PathCommand::CurveTo(ref curve) => curve.to_cairo(cr),
+            PathCommand::Arc(ref arc) => arc.to_cairo(cr),
             PathCommand::ClosePath => cr.close_path(),
         }
     }
 }
 
 impl EllipticalArc {
-    fn to_cairo(self, cr: &cairo::Context) {
+    fn to_cairo(&self, cr: &cairo::Context) {
         match self.center_parameterization() {
             ArcParameterization::CenterParameters {
                 center,
@@ -2159,8 +2159,8 @@ impl EllipticalArc {
 }
 
 impl CubicBezierCurve {
-    fn to_cairo(self, cr: &cairo::Context) {
-        let Self { pt1, pt2, to } = self;
+    fn to_cairo(&self, cr: &cairo::Context) {
+        let Self { pt1, pt2, to } = *self;
         cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
     }
 }
