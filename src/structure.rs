@@ -120,16 +120,26 @@ pub struct Svg {
     preserve_aspect_ratio: AspectRatio,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
-    width: Option<ULength<Horizontal>>,
-    height: Option<ULength<Vertical>>,
+    width: Option<LengthOrAuto<Horizontal>>,
+    height: Option<LengthOrAuto<Vertical>>,
     vbox: Option<ViewBox>,
 }
 
 impl Svg {
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        let w = self.width.map(|length_or_auto| match length_or_auto {
+            LengthOrAuto::Auto => ULength::<Horizontal>::parse_str("100%").unwrap(),
+            LengthOrAuto::Length(l) => l,
+        });
+
+        let h = self.height.map(|length_or_auto| match length_or_auto {
+            LengthOrAuto::Auto => ULength::<Vertical>::parse_str("100%").unwrap(),
+            LengthOrAuto::Length(l) => l,
+        });
+
         IntrinsicDimensions {
-            width: self.width,
-            height: self.height,
+            width: w,
+            height: h,
             vbox: self.vbox,
         }
     }
@@ -148,13 +158,14 @@ impl Svg {
 
     fn get_unnormalized_size(&self) -> (ULength<Horizontal>, ULength<Vertical>) {
         // these defaults are per the spec
-        let w = self
-            .width
-            .unwrap_or_else(|| ULength::<Horizontal>::parse_str("100%").unwrap());
-        let h = self
-            .height
-            .unwrap_or_else(|| ULength::<Vertical>::parse_str("100%").unwrap());
-
+        let w = match self.width {
+            None | Some(LengthOrAuto::Auto) => ULength::<Horizontal>::parse_str("100%").unwrap(),
+            Some(LengthOrAuto::Length(l)) => l,
+        };
+        let h = match self.height {
+            None | Some(LengthOrAuto::Auto) => ULength::<Vertical>::parse_str("100%").unwrap(),
+            Some(LengthOrAuto::Length(l)) => l,
+        };
         (w, h)
     }
 
