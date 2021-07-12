@@ -496,23 +496,15 @@ impl<'b> PathParser<'b> {
         );
     }
 
-    fn moveto_argument_sequence(
-        &mut self,
-        absolute: bool,
-        is_initial_moveto: bool,
-    ) -> Result<(), ParseError> {
+    fn moveto_argument_sequence(&mut self, absolute: bool) -> Result<(), ParseError> {
         let (mut x, mut y) = self.coordinate_pair()?;
 
-        if is_initial_moveto {
-            self.emit_move_to(x, y);
-        } else {
-            if !absolute {
-                x += self.current_x;
-                y += self.current_y;
-            }
-
-            self.emit_move_to(x, y);
+        if !absolute {
+            x += self.current_x;
+            y += self.current_y;
         }
+
+        self.emit_move_to(x, y);
 
         if self.match_comma().is_ok() || self.peek_number().is_some() {
             self.lineto_argument_sequence(absolute)
@@ -521,25 +513,22 @@ impl<'b> PathParser<'b> {
         }
     }
 
-    fn moveto(&mut self, is_initial_moveto: bool) -> Result<(), ParseError> {
+    fn moveto(&mut self) -> Result<(), ParseError> {
         match self.match_command()? {
-            b'M' => self.moveto_argument_sequence(true, is_initial_moveto),
-            b'm' => self.moveto_argument_sequence(false, is_initial_moveto),
+            b'M' => self.moveto_argument_sequence(true),
+            b'm' => self.moveto_argument_sequence(false),
             c => Err(self.error(ErrorKind::UnexpectedCommand(c))),
         }
     }
 
-    fn moveto_drawto_command_group(&mut self, is_initial_moveto: bool) -> Result<(), ParseError> {
-        self.moveto(is_initial_moveto)?;
+    fn moveto_drawto_command_group(&mut self) -> Result<(), ParseError> {
+        self.moveto()?;
         self.optional_drawto_commands().map(|_| ())
     }
 
     fn moveto_drawto_command_groups(&mut self) -> Result<(), ParseError> {
-        let mut initial = true;
-
         loop {
-            self.moveto_drawto_command_group(initial)?;
-            initial = false;
+            self.moveto_drawto_command_group()?;
 
             if self.current_pos_and_token.is_none() {
                 break;
