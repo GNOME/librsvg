@@ -513,7 +513,6 @@ impl BasicShape for Rect {
             builder.line_to(x + w, y + h);
             builder.line_to(x, y + h);
             builder.line_to(x, y);
-            builder.close_path();
         } else {
             /* Hard case, rounded corners
              *
@@ -608,9 +607,9 @@ impl BasicShape for Rect {
                 top_x1,
                 top_y,
             );
-
-            builder.close_path();
         }
+
+        builder.close_path();
 
         ShapeDef::new(Rc::new(builder.into_path()), Markers::No)
     }

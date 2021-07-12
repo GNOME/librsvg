@@ -178,7 +178,7 @@ fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, 
 ///
 /// https://www.w3.org/TR/css-fonts-3/#font-size-prop
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FontSize {
     Smaller,
     Larger,
@@ -371,7 +371,7 @@ impl FontWeight {
 /// https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
 ///
 /// https://www.w3.org/TR/css-text-3/#letter-spacing-property
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LetterSpacing {
     Normal,
     Value(Length<Horizontal>),
@@ -418,7 +418,7 @@ impl Parse for LetterSpacing {
 /// https://drafts.csswg.org/css2/visudet.html#propdef-line-height
 ///
 /// https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LineHeight {
     Normal,
     Number(f32),
