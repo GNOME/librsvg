@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <a href="https://example.com">
+    <rect x="100" y="100" width="200" height="200" fill="lime"/>
+  </a>
+</svg>
