@@ -164,8 +164,8 @@ impl<'a> CascadedValues<'a> {
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
-            context_fill: fill.clone(),
-            context_stroke: stroke.clone(),
+            context_fill: fill,
+            context_stroke: stroke,
         }
     }
 
