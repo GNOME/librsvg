@@ -364,3 +364,32 @@ test_compare_render_output!(
       <rect x="10" y="10" width="100%" height="100%" fill="lime"/>
     </svg>"##,
 );
+
+test_compare_render_output!(
+    use_context_stroke,
+    400,
+    400,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg width="100" height="20" viewBox="0 0 40 10" xmlns="http://www.w3.org/2000/svg">
+  <g id="group">
+    <circle cx="5" cy="5" r="4" stroke="context-stroke" fill="black"/>
+    <circle cx="14" cy="5" r="4" stroke="context-fill"/>
+  </g>
+  <use href="#group" x="20" stroke="blue" fill="yellow"/>
+  <!--
+  Modified from: https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
+  -->
+</svg>
+    "##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+    <svg width="100" height="20" viewBox="0 0 40 10" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="5" cy="5" r="4" fill="black"/>
+    <circle cx="14" cy="5" r="4" fill="black"/>
+    <circle cx="25" cy="5" r="4" stroke="blue" fill="black"/>
+    <circle cx="34" cy="5" r="4" stroke="yellow" fill="yellow"/>
+    <!--
+    Modified from: https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
+    -->
+  </svg>
+    "##,
+);

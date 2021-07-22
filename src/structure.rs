@@ -347,7 +347,32 @@ impl Draw for Use {
             let params = NormalizeParams::new(values, &view_params);
             let rect = self.get_rect(&params);
 
-            draw_ctx.draw_from_use_node(node, acquired_nodes, values, rect, link, clipping)
+            let stroke_paint = values.stroke().0.resolve(
+                acquired_nodes,
+                values.stroke_opacity().0,
+                values.color().0,
+                cascaded.context_fill.clone(),
+                cascaded.context_stroke.clone(),
+            );
+
+            let fill_paint = values.fill().0.resolve(
+                acquired_nodes,
+                values.fill_opacity().0,
+                values.color().0,
+                cascaded.context_fill.clone(),
+                cascaded.context_stroke.clone(),
+            );
+
+            draw_ctx.draw_from_use_node(
+                node,
+                acquired_nodes,
+                values,
+                rect,
+                link,
+                clipping,
+                fill_paint,
+                stroke_paint,
+            )
         } else {
             Ok(draw_ctx.empty_bbox())
         }

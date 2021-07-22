@@ -124,7 +124,12 @@ impl<'a> CascadedValues<'a> {
                 context_stroke: self.context_stroke.clone(),
             },
 
-            CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(node, &*v),
+            CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(
+                node,
+                &*v,
+                self.context_fill.clone(),
+                self.context_stroke.clone(),
+            ),
         }
     }
 
@@ -146,7 +151,12 @@ impl<'a> CascadedValues<'a> {
     ///
     /// This is for the `<use>` element, which draws the element which it references with the
     /// `<use>`'s own cascade, not with the element's original cascade.
-    pub fn new_from_values(node: &'a Node, values: &ComputedValues) -> CascadedValues<'a> {
+    pub fn new_from_values(
+        node: &'a Node,
+        values: &ComputedValues,
+        fill: Option<PaintSource>,
+        stroke: Option<PaintSource>,
+    ) -> CascadedValues<'a> {
         let mut v = Box::new(values.clone());
         node.borrow_element()
             .get_specified_values()
@@ -154,8 +164,8 @@ impl<'a> CascadedValues<'a> {
 
         CascadedValues {
             inner: CascadedInner::FromValues(v),
-            context_fill: None,
-            context_stroke: None,
+            context_fill: fill,
+            context_stroke: stroke,
         }
     }
 
