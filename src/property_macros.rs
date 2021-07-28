@@ -1,10 +1,12 @@
 //! Macros to define CSS properties.
 
+use crate::properties::ComputedValues;
+
 /// Trait which all CSS property types should implement.
 ///
 /// This is generic on `T` for testing purposes; in the actual code `T` needs to
 /// be [`ComputedValues`][crate::properties::ComputedValues].
-pub trait Property<T> {
+pub trait Property {
     /// Whether the property's computed value inherits from parent to child elements.
     ///
     /// For each property, the CSS or SVG specs say whether the property inherits
@@ -18,7 +20,7 @@ pub trait Property<T> {
     /// `self` value.
     ///
     /// The CSS or SVG specs say how to derive this for each property.
-    fn compute(&self, _: &T) -> Self;
+    fn compute(&self, _: &ComputedValues) -> Self;
 }
 
 /// Generates a type for a CSS property.
@@ -120,7 +122,7 @@ macro_rules! make_property {
         }
 
         impl_default!($name, $name::$default);
-        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
+        impl_property!($name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
             fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
@@ -143,7 +145,7 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
+        impl_property!($name, $inherits_automatically);
 
         impl crate::parsers::Parse for $name {
             fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
@@ -167,7 +169,7 @@ macro_rules! make_property {
      inherits_automatically: $inherits_automatically: expr,
     ) => {
         impl_default!($name, $default);
-        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
+        impl_property!($name, $inherits_automatically);
     };
 
     ($name: ident,
@@ -176,7 +178,7 @@ macro_rules! make_property {
      parse_impl: { $parse: item }
     ) => {
         impl_default!($name, $default);
-        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
+        impl_property!($name, $inherits_automatically);
 
         $parse
     };
@@ -213,7 +215,7 @@ macro_rules! make_property {
         pub struct $name(pub $type);
 
         impl_default!($name, $name($default));
-        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
+        impl_property!($name, $inherits_automatically);
 
         $parse
     };
@@ -233,7 +235,7 @@ macro_rules! make_property {
         }
 
         impl_default!($name, $name { $($field_name: $field_default),+ });
-        impl_property!(crate::properties::ComputedValues, $name, $inherits_automatically);
+        impl_property!($name, $inherits_automatically);
 
         $parse
     };
@@ -250,13 +252,13 @@ macro_rules! impl_default {
 }
 
 macro_rules! impl_property {
-    ($computed_values_type:ty, $name:ident, $inherits_automatically:expr) => {
-        impl crate::property_macros::Property<$computed_values_type> for $name {
+    ($name:ident, $inherits_automatically:expr) => {
+        impl crate::property_macros::Property for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
             }
 
-            fn compute(&self, _v: &$computed_values_type) -> Self {
+            fn compute(&self, _v: &crate::properties::ComputedValues) -> Self {
                 self.clone()
             }
         }

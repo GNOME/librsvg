@@ -61,7 +61,7 @@ make_property!(
     default: Length::<Both>::parse_str("0.0").unwrap(),
     newtype: Length<Both>,
     property_impl: {
-        impl Property<ComputedValues> for BaselineShift {
+        impl Property for BaselineShift {
             fn inherits_automatically() -> bool {
                 false
             }
@@ -408,7 +408,7 @@ make_property!(
     FontSize,
     default: FontSize::Value(Length::<Both>::parse_str("12.0").unwrap()),
     property_impl: {
-        impl Property<ComputedValues> for FontSize {
+        impl Property for FontSize {
             fn inherits_automatically() -> bool {
                 true
             }
@@ -482,7 +482,7 @@ make_property!(
     FontWeight,
     default: FontWeight::Normal,
     property_impl: {
-        impl Property<ComputedValues> for FontWeight {
+        impl Property for FontWeight {
             fn inherits_automatically() -> bool {
                 true
             }
@@ -499,7 +499,7 @@ make_property!(
     LetterSpacing,
     default: LetterSpacing::Normal,
     property_impl: {
-        impl Property<ComputedValues> for LetterSpacing {
+        impl Property for LetterSpacing {
             fn inherits_automatically() -> bool {
                 true
             }
