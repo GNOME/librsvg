@@ -66,6 +66,7 @@ check:
 
 fmt:
   stage: lint
+  extends: '.cache'
   needs:
     - job: check
   script:

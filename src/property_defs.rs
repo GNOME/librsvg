@@ -368,11 +368,11 @@ make_property!(
 make_property!(
     /// `flood-color` property, for `feFlood` and `feDropShadow` filter elements.
     ///
-    /// https://www.w3.org/TR/SVG/filters.html#FloodColorProperty
+    /// https://www.w3.org/TR/SVG11/filters.html#feFloodElement
     ///
     /// https://www.w3.org/TR/filter-effects/#FloodColorProperty
     FloodColor,
-    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 0)),
+    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
 );
@@ -380,7 +380,7 @@ make_property!(
 make_property!(
     /// `flood-opacity` property, for `feFlood` and `feDropShadow` filter elements.
     ///
-    /// https://www.w3.org/TR/SVG/filters.html#FloodOpacityProperty
+    /// https://www.w3.org/TR/SVG11/filters.html#feFloodElement
     ///
     /// https://www.w3.org/TR/filter-effects/#FloodOpacityProperty
     FloodOpacity,
