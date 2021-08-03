@@ -36,7 +36,7 @@ struct ImageParams {
 pub struct Image {
     aspect: AspectRatio,
     source: Source,
-    feimage_values: ComputedValues,
+    feimage_values: Box<ComputedValues>,
 }
 
 /// What a feImage references for rendering.
@@ -205,7 +205,7 @@ impl FilterEffect for FeImage {
             params: PrimitiveParams::Image(Image {
                 aspect: self.params.aspect,
                 source,
-                feimage_values,
+                feimage_values: Box::new(feimage_values),
             }),
         })
     }
