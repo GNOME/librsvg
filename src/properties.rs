@@ -240,6 +240,9 @@ macro_rules! make_properties {
             $(
                 $nonprop_field: $nonprop_name,
             )+
+
+            // TODO for madds: this will go away
+            transform: Transform,
         }
 
         impl ParsedProperty {
@@ -638,6 +641,9 @@ impl SpecifiedValues {
         compute!(WritingMode, writing_mode);
         compute!(XmlLang, xml_lang);
         compute!(XmlSpace, xml_space);
+
+        // TODO for madds: this will go away
+        computed.transform = self.transform;
     }
 
     pub fn is_overflow(&self) -> bool {
