@@ -192,12 +192,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .unwrap_or(true)
     }
 
-    // TODO for madds: this function will go away, because we want code to be doing
-    // values.transform() instead.
-    fn get_transform(&self) -> Transform {
-        self.specified_values.get_transform()
-    }
-
     // TODO for madds: this whole function will go away, as the transform attribute will be
     // handled automatically by set_presentation_attributes() below.
     fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
@@ -535,10 +529,6 @@ impl Element {
 
     pub fn get_cond(&self, user_language: &UserLanguage) -> bool {
         call_inner!(self, get_cond, user_language)
-    }
-
-    pub fn get_transform(&self) -> Transform {
-        call_inner!(self, get_transform)
     }
 
     pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {

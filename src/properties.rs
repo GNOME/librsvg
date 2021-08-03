@@ -109,6 +109,12 @@ impl Default for SpecifiedValues {
 }
 
 impl ComputedValues {
+    // TODO for madds: this function will go away, to be replaced by the one generated
+    // automatically by the macros.
+    pub fn transform(&self) -> Transform {
+        self.transform
+    }
+
     pub fn is_overflow(&self) -> bool {
         matches!(self.overflow(), Overflow::Auto | Overflow::Visible)
     }
@@ -443,12 +449,6 @@ impl SpecifiedValues {
     // used by ElementInner::set_transform_attribute(), which in turn will go away.
     pub fn set_transform(&mut self, transform: Transform) {
         self.transform = transform;
-    }
-
-    // TODO for madds: this function will go away; it's just a getter
-    // used by ElementInner::get_transform()
-    pub fn get_transform(&self) -> Transform {
-        self.transform
     }
 
     fn property_index(&self, id: PropertyId) -> Option<usize> {
