@@ -26,6 +26,7 @@ use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_macros::Property;
+use crate::transform::Transform;
 use crate::xml::Attributes;
 
 // Re-export the actual properties so they are easy to find from a single place `properties::*`.
@@ -90,6 +91,10 @@ impl PropertyId {
 pub struct SpecifiedValues {
     indices: [u8; PropertyId::UnsetProperty as usize],
     props: Vec<ParsedProperty>,
+
+    // TODO for madds: the following field will go away once the machinery for properties
+    // actually knows about the transform property.
+    transform: Transform,
 }
 
 impl Default for SpecifiedValues {
@@ -98,6 +103,7 @@ impl Default for SpecifiedValues {
             // this many elements, with the same value
             indices: [PropertyId::UnsetProperty.as_u8(); PropertyId::UnsetProperty as usize],
             props: Vec::new(),
+            transform: Default::default(),
         }
     }
 }
@@ -430,6 +436,18 @@ make_properties! {
 }
 
 impl SpecifiedValues {
+    // TODO for madds: this function will go away; it's just a setter
+    // used by ElementInner::set_transform_attribute(), which in turn will go away.
+    pub fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
+    }
+
+    // TODO for madds: this function will go away; it's just a getter
+    // used by ElementInner::get_transform()
+    pub fn get_transform(&self) -> Transform {
+        self.transform
+    }
+
     fn property_index(&self, id: PropertyId) -> Option<usize> {
         let v = self.indices[id.as_usize()];
 

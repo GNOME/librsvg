@@ -102,7 +102,6 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
     result: ElementResult,
-    transform: Transform,
     values: ComputedValues,
     required_extensions: Option<RequiredExtensions>,
     required_features: Option<RequiredFeatures>,
@@ -127,7 +126,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             specified_values: Default::default(),
             important_styles: Default::default(),
             result,
-            transform: Default::default(),
             values: Default::default(),
             required_extensions: Default::default(),
             required_features: Default::default(),
@@ -194,17 +192,23 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .unwrap_or(true)
     }
 
+    // TODO for madds: this function will go away, because we want code to be doing
+    // values.transform() instead.
     fn get_transform(&self) -> Transform {
-        self.transform
+        self.specified_values.get_transform()
     }
 
+    // TODO for madds: this whole function will go away, as the transform attribute will be
+    // handled automatically by set_presentation_attributes() below.
     fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
-        self.transform = self
+        let transform = self
             .attributes
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
             .map(|(attr, value)| Transform::parse_str(value).attribute(attr))
             .unwrap_or_else(|| Ok(Transform::default()))?;
+
+        self.specified_values.set_transform(transform);
 
         Ok(())
     }
