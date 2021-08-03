@@ -26,6 +26,7 @@ use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_macros::Property;
+use crate::transform::Transform;
 use crate::xml::Attributes;
 
 // Re-export the actual properties so they are easy to find from a single place `properties::*`.
@@ -90,6 +91,10 @@ impl PropertyId {
 pub struct SpecifiedValues {
     indices: [u8; PropertyId::UnsetProperty as usize],
     props: Vec<ParsedProperty>,
+
+    // TODO for madds: the following field will go away once the machinery for properties
+    // actually knows about the transform property.
+    transform: Transform,
 }
 
 impl Default for SpecifiedValues {
@@ -98,11 +103,18 @@ impl Default for SpecifiedValues {
             // this many elements, with the same value
             indices: [PropertyId::UnsetProperty.as_u8(); PropertyId::UnsetProperty as usize],
             props: Vec::new(),
+            transform: Default::default(),
         }
     }
 }
 
 impl ComputedValues {
+    // TODO for madds: this function will go away, to be replaced by the one generated
+    // automatically by the macros.
+    pub fn transform(&self) -> Transform {
+        self.transform
+    }
+
     pub fn is_overflow(&self) -> bool {
         matches!(self.overflow(), Overflow::Auto | Overflow::Visible)
     }
@@ -234,6 +246,9 @@ macro_rules! make_properties {
             $(
                 $nonprop_field: $nonprop_name,
             )+
+
+            // TODO for madds: this will go away
+            transform: Transform,
         }
 
         impl ParsedProperty {
@@ -430,6 +445,12 @@ make_properties! {
 }
 
 impl SpecifiedValues {
+    // TODO for madds: this function will go away; it's just a setter
+    // used by ElementInner::set_transform_attribute(), which in turn will go away.
+    pub fn set_transform(&mut self, transform: Transform) {
+        self.transform = transform;
+    }
+
     fn property_index(&self, id: PropertyId) -> Option<usize> {
         let v = self.indices[id.as_usize()];
 
@@ -620,6 +641,9 @@ impl SpecifiedValues {
         compute!(WritingMode, writing_mode);
         compute!(XmlLang, xml_lang);
         compute!(XmlSpace, xml_space);
+
+        // TODO for madds: this will go away
+        computed.transform = self.transform;
     }
 
     pub fn is_overflow(&self) -> bool {

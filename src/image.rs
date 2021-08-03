@@ -101,7 +101,7 @@ impl Draw for Image {
         };
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, elt.get_transform(), values);
+        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
 
         draw_ctx.draw_image(&image, &stacking_ctx, acquired_nodes, values, clipping)
     }

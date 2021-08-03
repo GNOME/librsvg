@@ -520,12 +520,10 @@ impl DrawingCtx {
         let units = borrow_element_as!(node, ClipPath).get_units();
 
         if let Ok(transform) = bbox.rect_to_transform(units) {
-            let node_transform = node
-                .borrow_element()
-                .get_transform()
-                .post_transform(&transform);
-
             let cascaded = CascadedValues::new_from_node(node);
+            let values = cascaded.get();
+
+            let node_transform = values.transform().post_transform(&transform);
 
             let orig_transform = self.get_transform();
             self.cr.transform(node_transform.into());
@@ -589,7 +587,7 @@ impl DrawingCtx {
 
         let mask_element = mask_node.borrow_element();
 
-        let mask_transform = mask_element.get_transform().post_transform(&transform);
+        let mask_transform = values.transform().post_transform(&transform);
 
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
@@ -1621,8 +1619,7 @@ impl DrawingCtx {
 
         let orig_transform = self.get_transform();
 
-        self.cr
-            .transform(node.borrow_element().get_transform().into());
+        self.cr.transform(values.transform().into());
 
         let use_element = node.borrow_element();
 
