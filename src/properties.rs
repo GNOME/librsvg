@@ -45,7 +45,7 @@ pub use crate::property_defs::*;
 #[derive(Clone)]
 pub enum SpecifiedValue<T>
 where
-    T: Property<ComputedValues> + Clone + Default,
+    T: Property + Clone + Default,
 {
     Unspecified,
     Inherit,
@@ -54,12 +54,12 @@ where
 
 impl<T> SpecifiedValue<T>
 where
-    T: Property<ComputedValues> + Clone + Default,
+    T: Property + Clone + Default,
 {
     pub fn compute(&self, src: &T, src_values: &ComputedValues) -> T {
         let value: T = match *self {
             SpecifiedValue::Unspecified => {
-                if <T as Property<ComputedValues>>::inherits_automatically() {
+                if <T as Property>::inherits_automatically() {
                     src.clone()
                 } else {
                     Default::default()
@@ -796,7 +796,7 @@ impl SpecifiedValues {
 // Parses the value for the type `T` of the property out of the Parser, including `inherit` values.
 fn parse_input<'i, T>(input: &mut Parser<'i, '_>) -> Result<SpecifiedValue<T>, ParseError<'i>>
 where
-    T: Property<ComputedValues> + Clone + Default + Parse,
+    T: Property + Clone + Default + Parse,
 {
     if input
         .try_parse(|p| p.expect_ident_matching("inherit"))
@@ -898,10 +898,7 @@ mod tests {
 
     #[test]
     fn computes_property_that_does_not_inherit_automatically() {
-        assert_eq!(
-            <Opacity as Property<ComputedValues>>::inherits_automatically(),
-            false
-        );
+        assert_eq!(<Opacity as Property>::inherits_automatically(), false);
 
         let half_opacity = Opacity::parse_str("0.5").unwrap();
 
