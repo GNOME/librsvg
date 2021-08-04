@@ -49,6 +49,7 @@ use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::rect::Rect;
+use crate::transform::TransformProperty;
 use crate::unit_interval::UnitInterval;
 
 make_property!(
@@ -983,6 +984,16 @@ make_property!(
     "optimizeSpeed" => OptimizeSpeed,
     "optimizeLegibility" => OptimizeLegibility,
     "geometricPrecision" => GeometricPrecision,
+);
+
+make_property!(
+    /// `transform` property.
+    ///
+    /// https://www.w3.org/TR/css-transforms-1/#transform-property
+    Transform,
+    default: TransformProperty::None,
+    inherits_automatically: false,
+    newtype_parse: TransformProperty,
 );
 
 make_property!(

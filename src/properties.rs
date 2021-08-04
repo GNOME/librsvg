@@ -27,6 +27,7 @@ use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_macros::Property;
 use crate::transform::Transform;
+use crate::transform::TransformProperty;
 use crate::xml::Attributes;
 
 // Re-export the actual properties so they are easy to find from a single place `properties::*`.
@@ -424,6 +425,7 @@ make_properties! {
         "text-anchor"                 => text_anchor                 : TextAnchor,
         "text-decoration"             => text_decoration             : TextDecoration,
         "text-rendering"              => text_rendering              : TextRendering,
+        "transform"                   => transform_property          : TransformProperty,
         "unicode-bidi"                => unicode_bidi                : UnicodeBidi,
         "visibility"                  => visibility                  : Visibility,
         "writing-mode"                => writing_mode                : WritingMode,
@@ -636,6 +638,7 @@ impl SpecifiedValues {
         compute!(TextAnchor, text_anchor);
         compute!(TextDecoration, text_decoration);
         compute!(TextRendering, text_rendering);
+        compute!(TransformProperty, transform_property);
         compute!(UnicodeBidi, unicode_bidi);
         compute!(Visibility, visibility);
         compute!(WritingMode, writing_mode);

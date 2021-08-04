@@ -2,7 +2,7 @@
 //!
 //! This module handles `transform` values [per the SVG specification][spec].
 //!
-//! [spec]:  https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
+//! [spec]:  https://www.w3.org/TR/SVG11/coords.html#TransformAttribute and https://www.w3.org/TR/css-transforms-1/#transform-property
 
 use cssparser::{Parser, Token};
 
@@ -10,6 +10,94 @@ use crate::angle::Angle;
 use crate::error::*;
 use crate::parsers::{optional_comma, Parse};
 use crate::rect::Rect;
+
+// https://www.w3.org/TR/css-transforms-1/#transform-property
+#[derive(Debug, Clone)]
+pub enum TransformProperty {
+    None,
+    List(TransformList),
+}
+
+#[derive(Debug, Clone)]
+pub type TransformList = Vec<TransformFunction>;
+
+// https://www.w3.org/TR/css-transforms-1/#typedef-transform-function
+#[derive(Debug, Clone)]
+enum TransformFunction {
+    Matrix(),
+    Translate(),
+    TranslateX(),
+    TranslateY(),
+    Scale(),
+    ScaleX(),
+    ScaleY(),
+    Rotate(),
+    Skew(),
+    SkewX(),
+    SkewY(),
+}
+
+impl Parse for TransformProperty {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TransformProperty, ParseError<'i>> {
+        // look at the impl Parse later in this file for an example
+        let loc = parser.current_source_location();
+
+        let t = parse_transform_prop_function_list(parser)?;
+
+        Ok(TransformProperty::List(t))
+    }
+}
+
+fn parse_transform_prop_function_list<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformList, ParseError<'i>> {
+    //TODO: What does this need to be set to?
+    let mut t = TransformFunction::Translate();
+
+    loop {
+        if parser.is_exhausted() {
+            break;
+        }
+        t = parse_transform_prop_function_command(parser)?.post_transform(&t);
+    }
+
+    Ok(t)
+}
+
+fn parse_transform_prop_function_command<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    let loc = parser.current_source_location();
+
+    match parser.next()?.clone() {
+        Token::Function(ref name) => parse_transform_prop_function_name(name, parser),
+        tok => Err(loc.new_unexpected_token_error(tok.clone())),
+    }
+}
+
+fn parse_transform_function_internal<'i>(
+    name: &str,
+    parser: &mut Parser<'i, '_>,
+) -> Result<Transform, ParseError<'i>> {
+    let loc = parser.current_source_location();
+
+    match name {
+        "matrix" => parse_matrix_args(parser),
+        "translate" => parse_translate_args(parser),
+        "translateX" => parse_translate_x_args(parser),
+        "translateY" => parse_translate_y_args(parser),
+        "scale" => parse_scale_args(parser),
+        "scaleX" => parse_scale_x_args(parser),
+        "scaleY" => parse_scale_y_args(parser),
+        "rotate" => parse_rotate_args(parser),
+        "skew" => parse_skew_args(parser),
+        "skewX" => parse_skew_x_args(parser),
+        "skewY" => parse_skew_y_args(parser),
+        _ => Err(loc.new_custom_error(ValueErrorKind::parse_error(
+            "expected matrix|translate|translateX|translateY|scale|scaleX|scaleY|rotate|skewX|skewY",
+        ))),
+    }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Transform {
@@ -307,6 +395,22 @@ fn parse_translate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Pa
     })
 }
 
+fn parse_translate_x_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let tx = f64::parse(p)?;
+
+        Ok(Transform::new_translate(tx, 0.0))
+    })
+}
+
+fn parse_translate_y_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let ty = f64::parse(p)?;
+
+        Ok(Transform::new_translate(0.0, ty))
+    })
+}
+
 fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
     parser.parse_nested_block(|p| {
         let x = f64::parse(p)?;
@@ -319,6 +423,22 @@ fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseE
             .unwrap_or(x);
 
         Ok(Transform::new_scale(x, y))
+    })
+}
+
+fn parse_scale_x_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let x = f64::parse(p)?;
+
+        Ok(Transform::new_scale(x, 0.0))
+    })
+}
+
+fn parse_scale_y_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let y = f64::parse(p)?;
+
+        Ok(Transform::new_scale(0.0, y))
     })
 }
 
@@ -341,6 +461,21 @@ fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Parse
         Ok(Transform::new_translate(tx, ty)
             .pre_rotate(angle)
             .pre_translate(-tx, -ty))
+    })
+}
+
+fn parse_skew_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let ax = Angle::from_degrees(f64::parse(p)?);
+
+        let ay = Angle::from_degrees(
+            p.try_parse(|p| {
+                optional_comma(p);
+                f64::parse(p)
+            })
+            .unwrap_or(0.0),
+        );
+        Ok(Transform::new_skew(ax, ay))
     })
 }
 
@@ -587,4 +722,9 @@ mod tests {
     fn parses_empty() {
         assert_transform_eq(&parse_transform("").unwrap(), &Transform::identity());
     }
+}
+
+#[test]
+fn test_parse_transform_property() {
+    // TODO for madds: put your tests in here
 }
