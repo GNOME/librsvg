@@ -548,22 +548,6 @@ fn parse_translate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Pa
     })
 }
 
-fn parse_translate_x_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-    parser.parse_nested_block(|p| {
-        let tx = f64::parse(p)?;
-
-        Ok(Transform::new_translate(tx, 0.0))
-    })
-}
-
-fn parse_translate_y_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-    parser.parse_nested_block(|p| {
-        let ty = f64::parse(p)?;
-
-        Ok(Transform::new_translate(0.0, ty))
-    })
-}
-
 fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
     parser.parse_nested_block(|p| {
         let x = f64::parse(p)?;
@@ -576,22 +560,6 @@ fn parse_scale_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseE
             .unwrap_or(x);
 
         Ok(Transform::new_scale(x, y))
-    })
-}
-
-fn parse_scale_x_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-    parser.parse_nested_block(|p| {
-        let x = f64::parse(p)?;
-
-        Ok(Transform::new_scale(x, 0.0))
-    })
-}
-
-fn parse_scale_y_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-    parser.parse_nested_block(|p| {
-        let y = f64::parse(p)?;
-
-        Ok(Transform::new_scale(0.0, y))
     })
 }
 
@@ -614,21 +582,6 @@ fn parse_rotate_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Parse
         Ok(Transform::new_translate(tx, ty)
             .pre_rotate(angle)
             .pre_translate(-tx, -ty))
-    })
-}
-
-fn parse_skew_args<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-    parser.parse_nested_block(|p| {
-        let ax = Angle::from_degrees(f64::parse(p)?);
-
-        let ay = Angle::from_degrees(
-            p.try_parse(|p| {
-                optional_comma(p);
-                f64::parse(p)
-            })
-            .unwrap_or(0.0),
-        );
-        Ok(Transform::new_skew(ax, ay))
     })
 }
 
