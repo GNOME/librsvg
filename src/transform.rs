@@ -37,6 +37,13 @@ impl Property for TransformProperty {
     }
 }
 
+impl TransformProperty {
+    pub fn to_transform(&self) -> Transform {
+        // TODO for madds - compose the individual functions here into a single matrix
+        Transform::identity()
+    }
+}
+
 // https://www.w3.org/TR/css-transforms-1/#typedef-transform-function
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransformFunction {

@@ -93,9 +93,7 @@ pub struct SpecifiedValues {
     indices: [u8; PropertyId::UnsetProperty as usize],
     props: Vec<ParsedProperty>,
 
-    // TODO for madds: the following field will go away once the machinery for properties
-    // actually knows about the transform property.
-    transform: Transform,
+    transform: Option<Transform>,
 }
 
 impl Default for SpecifiedValues {
@@ -104,7 +102,7 @@ impl Default for SpecifiedValues {
             // this many elements, with the same value
             indices: [PropertyId::UnsetProperty.as_u8(); PropertyId::UnsetProperty as usize],
             props: Vec::new(),
-            transform: Default::default(),
+            transform: None,
         }
     }
 }
@@ -248,7 +246,6 @@ macro_rules! make_properties {
                 $nonprop_field: $nonprop_name,
             )+
 
-            // TODO for madds: this will go away
             transform: Transform,
         }
 
@@ -639,8 +636,12 @@ impl SpecifiedValues {
         compute!(XmlLang, xml_lang);
         compute!(XmlSpace, xml_space);
 
-        // TODO for madds: this will go away
-        computed.transform = self.transform;
+        computed.transform = self.transform.unwrap_or_else(|| {
+            match self.get_property(PropertyId::TransformProperty) {
+                ParsedProperty::TransformProperty(SpecifiedValue::Specified(ref t)) => t.to_transform(),
+                _ => Transform::identity(),
+            }
+        });
     }
 
     pub fn is_overflow(&self) -> bool {
@@ -750,7 +751,7 @@ impl SpecifiedValues {
                     // a better way to distinguish attributes whose values have different
                     // grammars than properties.
                     let transform = Transform::parse_str(value).unwrap_or_else(|_| Transform::default());
-                    self.transform = transform;
+                    self.transform = Some(transform);
                 }
 
                 expanded_name!(xml "lang") => {
