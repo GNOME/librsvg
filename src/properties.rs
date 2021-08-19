@@ -447,12 +447,6 @@ make_properties! {
 }
 
 impl SpecifiedValues {
-    // TODO for madds: this function will go away; it's just a setter
-    // used by ElementInner::set_transform_attribute(), which in turn will go away.
-    pub fn set_transform(&mut self, transform: Transform) {
-        self.transform = transform;
-    }
-
     fn property_index(&self, id: PropertyId) -> Option<usize> {
         let v = self.indices[id.as_usize()];
 
@@ -756,7 +750,7 @@ impl SpecifiedValues {
                     // a better way to distinguish attributes whose values have different
                     // grammars than properties.
                     let transform = Transform::parse_str(value).unwrap_or_else(|_| Transform::default());
-                    self.set_transform(transform);
+                    self.transform = transform;
                 }
 
                 expanded_name!(xml "lang") => {
