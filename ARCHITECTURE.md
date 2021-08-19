@@ -44,7 +44,7 @@ API/ABI.  It also exports a more idiomatic Rust API as well.
 
 [libart]: https://levien.com/libart/
 [Cairo]: https://www.cairographics.org/
-[GObject Introspection]: https://developer.gnome.org/platform-overview/unstable/tech-gobject.html.en
+[GObject Introspection]: https://gi.readthedocs.io/en/latest/
 [gi]: https://people.gnome.org/~federico/blog/magic-of-gobject-introspection.html
 
 # The C and Rust APIs

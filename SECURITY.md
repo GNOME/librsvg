@@ -176,7 +176,7 @@ documents.
 external files by itself: XML XInclude, `xlink:href` attributes, etc.
 Please see the section "Security and locations of referenced files" in
 the [developer's
-documentation](https://developer.gnome.org/rsvg/stable/RsvgHandle.html)
+documentation](https://developer-old.gnome.org/rsvg/unstable/RsvgHandle.html)
 to see what criteria is used to accept or reject a file based on its
 location.  If your application has more stringent requirements, it may
 need to sandbox its use of librsvg.

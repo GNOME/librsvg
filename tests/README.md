@@ -327,7 +327,7 @@ is set up with a hardcoded mode for antialiasing, hinting, and hint
 metrics.
 
 
-[gtest]: https://developer.gnome.org/glib/stable/glib-Testing.html
+[gtest]: https://docs.gtk.org/glib/testing.html
 [bug]: ../CONTRIBUTING.md#reporting-bugs
 [pull-requests]: ../CONTRIBUTING.md#pull-requests
 [maintainer]: README.md#maintainers

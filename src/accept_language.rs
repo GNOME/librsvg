@@ -19,7 +19,7 @@ pub enum Language {
     /// Use the Unix environment variables `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` and `LANG` to obtain the
     /// user's language.  This uses [`g_get_language_names()`][ggln] underneath.
     ///
-    /// [ggln]: https://developer.gnome.org/glib/stable/glib-I18N.html#g-get-language-names
+    /// [ggln]: https://docs.gtk.org/glib/func.get_language_names.html
     FromEnvironment,
     AcceptLanguage(AcceptLanguage),
 }
