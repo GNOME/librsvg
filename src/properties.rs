@@ -751,6 +751,14 @@ impl SpecifiedValues {
     ) -> Result<(), ElementError> {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
+                expanded_name!("", "transform") => {
+                    // FIXME: we parse the transform attribute here because we don't yet have
+                    // a better way to distinguish attributes whose values have different
+                    // grammars than properties.
+                    let transform = Transform::parse_str(value).unwrap_or_else(|_| Transform::default());
+                    self.set_transform(transform);
+                }
+
                 expanded_name!(xml "lang") => {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
