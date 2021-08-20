@@ -454,17 +454,7 @@ impl Default for Transform {
 
 impl Parse for Transform {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-        let loc = parser.current_source_location();
-
-        let t = parse_transform_list(parser)?;
-
-        if !t.is_invertible() {
-            return Err(loc.new_custom_error(ValueErrorKind::Value(
-                "invalid transformation matrix".to_string(),
-            )));
-        }
-
-        Ok(t)
+        parse_transform_list(parser)
     }
 }
 
@@ -713,13 +703,6 @@ mod tests {
         assert_parse_error("skewX (1,2)");
         assert_parse_error("skewY ()");
         assert_parse_error("skewY");
-    }
-
-    #[test]
-    fn invalid_transform_yields_value_error() {
-        assert!(parse_transform("matrix (0 0 0 0 0 0)").is_err());
-        assert!(parse_transform("scale (0), translate (10, 10)").is_err());
-        assert!(parse_transform("scale (0), skewX (90)").is_err());
     }
 
     #[test]

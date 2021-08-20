@@ -666,6 +666,15 @@ impl DrawingCtx {
             &mut DrawingCtx,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
+        if !stacking_ctx.transform.is_invertible() {
+            // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
+            //
+            // "If a transform function causes the current transformation matrix of an
+            // object to be non-invertible, the object and its content do not get
+            // displayed."
+            return Ok(self.empty_bbox());
+        }
+
         let orig_transform = self.get_transform();
 
         self.cr.transform(stacking_ctx.transform.into());
