@@ -180,7 +180,7 @@ fn parse_prop_translate_args<'i>(
                 p.expect_comma()?;
                 Length::parse(p)
             })
-            .unwrap_or(Length::<Vertical>::new(0.0, LengthUnit::Px));
+            .unwrap_or_else(|_| Length::<Vertical>::new(0.0, LengthUnit::Px));
 
         Ok(TransformFunction::Translate(tx, ty))
     })
@@ -258,7 +258,7 @@ fn parse_prop_skew_args<'i>(
         p.expect_comma()?;
         let ay = p
             .try_parse(|p| Angle::parse(p))
-            .unwrap_or(Angle::from_degrees(0.0));
+            .unwrap_or_else(|_| Angle::from_degrees(0.0));
 
         Ok(TransformFunction::Skew(ax, ay))
     })
