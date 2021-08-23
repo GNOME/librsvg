@@ -638,7 +638,9 @@ impl SpecifiedValues {
 
         computed.transform = self.transform.unwrap_or_else(|| {
             match self.get_property(PropertyId::TransformProperty) {
-                ParsedProperty::TransformProperty(SpecifiedValue::Specified(ref t)) => t.to_transform(),
+                ParsedProperty::TransformProperty(SpecifiedValue::Specified(ref t)) => {
+                    t.to_transform()
+                }
                 _ => Transform::identity(),
             }
         });
@@ -750,7 +752,8 @@ impl SpecifiedValues {
                     // FIXME: we parse the transform attribute here because we don't yet have
                     // a better way to distinguish attributes whose values have different
                     // grammars than properties.
-                    let transform = Transform::parse_str(value).unwrap_or_else(|_| Transform::default());
+                    let transform =
+                        Transform::parse_str(value).unwrap_or_else(|_| Transform::default());
                     self.transform = Some(transform);
                 }
 
