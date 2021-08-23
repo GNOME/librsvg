@@ -942,7 +942,7 @@ impl DrawingCtx {
         {
             specs.iter().try_fold(surface_to_filter, |surface, spec| {
                 filters::render(
-                    &spec,
+                    spec,
                     stroke_paint_source.clone(),
                     fill_paint_source.clone(),
                     surface,
@@ -1400,7 +1400,7 @@ impl DrawingCtx {
                             }
 
                             let fill_paint =
-                                span.fill_paint.to_user_space(&bbox, &view_params, values);
+                                span.fill_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
                                 self.set_paint_source(&fill_paint, acquired_nodes)?;
                             if had_paint_server {
@@ -1420,7 +1420,7 @@ impl DrawingCtx {
                             }
 
                             let stroke_paint =
-                                span.stroke_paint.to_user_space(&bbox, &view_params, values);
+                                span.stroke_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
                                 self.set_paint_source(&stroke_paint, acquired_nodes)?;
                             if had_paint_server {
@@ -1659,7 +1659,7 @@ impl DrawingCtx {
                     child.draw_children(
                         an,
                         &CascadedValues::new_from_values(
-                            &child,
+                            child,
                             values,
                             Some(fill_paint.clone()),
                             Some(stroke_paint.clone()),
@@ -1689,7 +1689,7 @@ impl DrawingCtx {
                     child.draw(
                         an,
                         &CascadedValues::new_from_values(
-                            &child,
+                            child,
                             values,
                             Some(fill_paint.clone()),
                             Some(stroke_paint.clone()),

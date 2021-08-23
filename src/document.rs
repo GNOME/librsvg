@@ -251,7 +251,7 @@ fn load_image(
     let BinaryData {
         data: bytes,
         mime_type,
-    } = io::acquire_data(&aurl, None)?;
+    } = io::acquire_data(aurl, None)?;
 
     if bytes.is_empty() {
         return Err(LoadingError::Other(String::from("no image data")));
@@ -403,10 +403,10 @@ impl<'i> AcquiredNodes<'i> {
     }
 
     pub fn acquire_ref(&self, node: &Node) -> Result<AcquiredNode, AcquireError> {
-        if self.node_stack.borrow().contains(&node) {
+        if self.node_stack.borrow().contains(node) {
             Err(AcquireError::CircularReference(node.clone()))
         } else {
-            self.node_stack.borrow_mut().push(&node);
+            self.node_stack.borrow_mut().push(node);
             Ok(AcquiredNode {
                 stack: Some(self.node_stack.clone()),
                 node: node.clone(),

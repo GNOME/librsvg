@@ -631,7 +631,7 @@ impl CHandle {
             }
         }
 
-        match Url::parse(&url) {
+        match Url::parse(url) {
             Ok(u) => {
                 rsvg_log!("setting base_uri to \"{}\"", u.as_str());
                 let mut inner = imp.inner.borrow_mut();

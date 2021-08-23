@@ -184,13 +184,13 @@ impl Deref for Surface {
 
     fn deref(&self) -> &cairo::Surface {
         match self {
-            Self::Png(surface, _) => &surface,
+            Self::Png(surface, _) => surface,
             #[cfg(system_deps_have_cairo_pdf)]
-            Self::Pdf(surface, _) => &surface,
+            Self::Pdf(surface, _) => surface,
             #[cfg(system_deps_have_cairo_ps)]
-            Self::Ps(surface, _) => &surface,
+            Self::Ps(surface, _) => surface,
             #[cfg(system_deps_have_cairo_svg)]
-            Self::Svg(surface, _) => &surface,
+            Self::Svg(surface, _) => surface,
         }
     }
 }
@@ -471,7 +471,7 @@ impl Converter {
 
             if let Some(ref css) = stylesheet {
                 handle
-                    .set_stylesheet(&css)
+                    .set_stylesheet(css)
                     .map_err(|e| error!("Error applying stylesheet: {}", e))?;
             }
 
@@ -615,7 +615,7 @@ fn natural_geometry(
 ) -> Result<cairo::Rectangle, Error> {
     match export_id {
         None => renderer.legacy_layer_geometry(None),
-        Some(ref id) => renderer.geometry_for_element(Some(&id)),
+        Some(id) => renderer.geometry_for_element(Some(id)),
     }
     .map(|(ink_r, _)| ink_r)
     .map_err(|e| match e {

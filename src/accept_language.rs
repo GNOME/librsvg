@@ -132,7 +132,7 @@ impl Item {
                 if qvalue.starts_with(&['0', '1'][..]) {
                     let first_digit = qvalue.chars().next().unwrap();
 
-                    if let Some(decimals) = qvalue[1..].strip_prefix(".") {
+                    if let Some(decimals) = qvalue[1..].strip_prefix('.') {
                         if (first_digit == '0'
                             && decimals.len() <= 3
                             && decimals.chars().all(|c| c.is_digit(10)))
@@ -261,7 +261,7 @@ fn locale_from_environment() -> Locale {
 
     for name in glib::language_names() {
         let name = name.as_str();
-        if let Ok(range) = LanguageRange::from_unix(&name) {
+        if let Ok(range) = LanguageRange::from_unix(name) {
             locale.add(&range);
         }
     }

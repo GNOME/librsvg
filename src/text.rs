@@ -446,7 +446,7 @@ impl Chars {
         dy: f64,
         depth: usize,
     ) {
-        if let Some(span) = self.make_span(&node, values, dx, dy, depth) {
+        if let Some(span) = self.make_span(node, values, dx, dy, depth) {
             let num_chunks = chunks.len();
             assert!(num_chunks > 0);
 
@@ -481,9 +481,9 @@ impl Text {
 
         let values = cascaded.get();
         let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(values, &view_params);
 
-        chunks.push(Chunk::new(&values, Some(x), Some(y)));
+        chunks.push(Chunk::new(values, Some(x), Some(y)));
 
         let dx = self.dx.to_user(&params);
         let dy = self.dy.to_user(&params);
@@ -529,7 +529,7 @@ impl Draw for Text {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(values, &view_params);
 
         let elt = node.borrow_element();
 
@@ -557,7 +557,7 @@ impl Draw for Text {
                     let chunk_x = chunk.x.unwrap_or(x);
                     let chunk_y = chunk.y.unwrap_or(y);
 
-                    let positioned = PositionedChunk::from_measured(&chunk, dc, chunk_x, chunk_y);
+                    let positioned = PositionedChunk::from_measured(chunk, dc, chunk_x, chunk_y);
 
                     x = positioned.next_chunk_x;
                     y = positioned.next_chunk_y;
@@ -607,12 +607,7 @@ impl TRef {
 
         if let Ok(acquired) = acquired_nodes.acquire(link) {
             let c = acquired.get();
-            extract_chars_children_to_chunks_recursively(
-                chunks,
-                &c,
-                Rc::new(values.clone()),
-                depth,
-            );
+            extract_chars_children_to_chunks_recursively(chunks, c, Rc::new(values.clone()), depth);
         } else {
             rsvg_log!(
                 "element {} references a nonexistent text source \"{}\"",

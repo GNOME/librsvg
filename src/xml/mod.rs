@@ -194,10 +194,10 @@ impl XmlState {
             Context::Style => self.inside_style_start_element(&name),
             Context::UnsupportedStyleChild => self.unsupported_style_start_element(&name),
 
-            Context::XInclude(ref ctx) => self.inside_xinclude_start_element(&ctx, &name),
+            Context::XInclude(ref ctx) => self.inside_xinclude_start_element(ctx, &name),
             Context::UnsupportedXIncludeChild => self.unsupported_xinclude_start_element(&name),
             Context::XIncludeFallback(ref ctx) => {
-                self.xinclude_fallback_start_element(&ctx, &name, attrs)
+                self.xinclude_fallback_start_element(ctx, &name, attrs)
             }
 
             Context::FatalError(_) => unreachable!(),
@@ -248,7 +248,7 @@ impl XmlState {
 
             Context::XInclude(_) => (),
             Context::UnsupportedXIncludeChild => (),
-            Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(&ctx, text),
+            Context::XIncludeFallback(ref ctx) => self.xinclude_fallback_characters(ctx, text),
             Context::FatalError(_) => (),
         }
     }

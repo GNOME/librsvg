@@ -441,11 +441,11 @@ impl BasicShape for Rect {
         let y = self.y.to_user(params);
 
         let w = match self.width {
-            LengthOrAuto::Length(l) => l.to_user(&params),
+            LengthOrAuto::Length(l) => l.to_user(params),
             LengthOrAuto::Auto => 0.0,
         };
         let h = match self.height {
-            LengthOrAuto::Length(l) => l.to_user(&params),
+            LengthOrAuto::Length(l) => l.to_user(params),
             LengthOrAuto::Auto => 0.0,
         };
 

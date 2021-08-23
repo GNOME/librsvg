@@ -285,7 +285,7 @@ pub fn extract_filter_from_filter_node(
 
             let primitive_values = elt.get_computed_values();
             let params = NormalizeParams::new(
-                &primitive_values,
+                primitive_values,
                 &draw_ctx.get_view_params_for_units(user_space_filter.primitive_units),
             );
 
@@ -332,7 +332,7 @@ pub fn render(
         for user_space_primitive in &filter.primitives {
             let start = Instant::now();
 
-            match render_primitive(&user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
+            match render_primitive(user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
                 Ok(output) => {
                     let elapsed = start.elapsed();
                     rsvg_log!(

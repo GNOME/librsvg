@@ -642,16 +642,16 @@ impl FilterFunction {
         current_color: RGBA,
     ) -> Result<FilterSpec, FilterResolveError> {
         match self {
-            FilterFunction::Blur(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::Brightness(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::Contrast(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::DropShadow(v) => Ok(v.to_filter_spec(&params, current_color)),
-            FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::HueRotate(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::Invert(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::Opacity(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::Saturate(v) => Ok(v.to_filter_spec(&params)),
-            FilterFunction::Sepia(v) => Ok(v.to_filter_spec(&params)),
+            FilterFunction::Blur(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::Brightness(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::Contrast(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::DropShadow(v) => Ok(v.to_filter_spec(params, current_color)),
+            FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::HueRotate(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::Invert(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::Opacity(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::Saturate(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::Sepia(v) => Ok(v.to_filter_spec(params)),
         }
     }
 }

@@ -679,7 +679,7 @@ impl Stylesheet {
             .for_each(|rule| match rule {
                 Rule::AtRule(AtRule::Import(url)) => {
                     // ignore invalid imports
-                    let _ = self.load(&url, &url_resolver);
+                    let _ = self.load(&url, url_resolver);
                 }
                 Rule::QualifiedRule(qr) => self.qualified_rules.push(qr),
             });
