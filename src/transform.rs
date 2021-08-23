@@ -101,18 +101,14 @@ impl Parse for TransformProperty {
 fn parse_transform_prop_function_list<'i>(
     parser: &mut Parser<'i, '_>,
 ) -> Result<Vec<TransformFunction>, ParseError<'i>> {
-    //TODO: How do I appease clippy here?
-    let mut t = TransformFunction::Translate(
-        Length::<Horizontal>::new(0.0, LengthUnit::Px),
-        Length::<Vertical>::new(0.0, LengthUnit::Px),
-    );
     let mut v = Vec::<TransformFunction>::new();
+
     loop {
         if parser.is_exhausted() {
             break;
         }
-        t = parse_transform_prop_function_command(parser)?;
-        v.push(t);
+
+        v.push(parse_transform_prop_function_command(parser)?);
     }
 
     Ok(v)
