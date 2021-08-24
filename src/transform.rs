@@ -495,7 +495,7 @@ fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Pa
             break;
         }
 
-        t = dbg!(parse_transform_command(parser)?.post_transform(&t));
+        t = parse_transform_command(parser)?.post_transform(&t);
         optional_comma(parser);
     }
 
