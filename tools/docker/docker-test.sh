@@ -27,7 +27,7 @@ function copy_build_script {
 }
 
 #Package librsvg for inclusion in the Docker image
-function package_librsvg {
+function prepare_librsvg {
 	echo "Packaging Librsvg"
 
 	if [[ ! -f "$SYS/librsvg.tar.gz" ]]
@@ -39,7 +39,9 @@ function package_librsvg {
 
 		mkdir $TMPDIR
 		echo "Copying librsvg to $TMPDIR"
-		cp -r $LIBDIR/. $TMPDIR
+		rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
+		#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
+		#cp -r $LIBDIR/. $TMPDIR 
 		cd $TMPDIR
 
 		#Run autogen, this prepares librsvg for building, and allows make clean to be ran
@@ -231,7 +233,7 @@ function main {
 	check_dir
 	check_system
 	copy_build_script
-	package_librsvg
+	prepare_librsvg
 	build_base_image
 	build_docker
 	run_docker
