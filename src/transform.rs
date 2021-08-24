@@ -66,7 +66,7 @@ impl TransformProperty {
                     TransformFunction::SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
                     TransformFunction::SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
                 };
-                final_transform = Transform::multiply(&final_transform, &t);
+                final_transform = final_transform.post_transform(&t);
             }
         }
 
