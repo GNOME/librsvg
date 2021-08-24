@@ -32,24 +32,27 @@ function prepare_librsvg {
 
 	if [[ ! -f "$SYS/librsvg.tar.gz" ]]
 	then
-		if [[ $INT == true ]]
+		if [[! $REPACKAGE == false]] 
 		then
-			read -p "Making a copy, then running make clean and packaging Librsvg, press any key to continue" -n1 -s
+			if [[ $INT == true ]]
+			then
+				read -p "Making a copy, then running make clean and packaging Librsvg, press any key to continue" -n1 -s
+			fi
+
+			mkdir $TMPDIR
+			echo "Copying librsvg to $TMPDIR"
+			rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
+			#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
+			#cp -r $LIBDIR/. $TMPDIR 
+			cd $TMPDIR
+
+			#Run autogen, this prepares librsvg for building, and allows make clean to be ran
+			./autogen.sh
+			#run make clean which makes the resulting tar much smaller.
+			make clean
+			cd $DIR
+			tar -cvzf $SYS/librsvg.tar.gz -C $TMPDIR . --xform='s!^\./!!'
 		fi
-
-		mkdir $TMPDIR
-		echo "Copying librsvg to $TMPDIR"
-		rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
-		#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
-		#cp -r $LIBDIR/. $TMPDIR 
-		cd $TMPDIR
-
-		#Run autogen, this prepares librsvg for building, and allows make clean to be ran
-		./autogen.sh
-		#run make clean which makes the resulting tar much smaller.
-		make clean
-		cd $DIR
-		tar -cvzf $SYS/librsvg.tar.gz -C $TMPDIR . --xform='s!^\./!!'
 	fi
 
 	if [[ $REPACKAGE == true ]]
