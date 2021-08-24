@@ -32,7 +32,7 @@ function prepare_librsvg {
 
 	if [[ ! -f "$SYS/librsvg.tar.gz" ]]
 	then
-		if [[! $REPACKAGE == false]] 
+		if [[ $REPACKAGE == false ]] 
 		then
 			if [[ $INT == true ]]
 			then
@@ -88,7 +88,7 @@ function build_system_image {
 #removes the system image and rebuilds it, this doesn't touch the system images
 function rebuild_docker {
 	echo "removing old image"
-	sudo docker rmi librsvg/librsvg-$SYS
+	sudo docker rmi --force librsvg/librsvg-$SYS
 	sudo docker build -t librsvg/librsvg-$SYS --no-cache -f $SYS/Dockerfile $SYS/.
 }
 
@@ -118,9 +118,17 @@ function remove_system_image {
 	sudo docker rmi --force librsvg/librsvg-base-$SYS
 }
 
+#removes the librsvg image
 function remove_librsvg_image {
 	echo "removing librsvg image librsvg-$SYS"
 	sudo docker rmi --force librsvg/librsvg-$SYS
+}
+
+function remove_distro_image {
+	echo "removing base system images"
+	sudo docker rmi --force debian
+	sudo docker rmi --force opensuse/tumbleweed
+	sudo docker rmi --force fedora
 }
 
 function cleanup {
@@ -138,10 +146,13 @@ function cleanup {
 		rm $SYS/librsvg.tar.gz
 		rm $SYS/build-librsvg.sh
 		SYS=debian
-		emove_librsvg_image
+		remove_librsvg_image
 		remove_system_image
 		rm $SYS/librsvg.tar.gz
 		rm $SYS/build-rsvg.sh
+
+		confirm_rm_distro
+		remove_distro_image
 
 		confirm_rm_dir
 		if [[ "$TMPDIR" == "/" ]] 
@@ -171,8 +182,19 @@ function confirm {
    		esac
 	done
 }
+
 function confirm_rm_dir {
 	echo "Would you like to also remove the librsvg files from the tmp directory: $TMPDIR"
+	select yn in "Yes" "No"; do
+    	case $yn in
+    	    Yes ) break;;
+    	    No ) exit 1;;
+   		esac
+	done
+}
+
+function confirm_rm_distro {
+	echo "Would you like to remove the base system images ie. opensuse (do this if you don't plan to build librsvg with this tool in the future, otherwise keep them, it takes a while to build)"
 	select yn in "Yes" "No"; do
     	case $yn in
     	    Yes ) break;;
