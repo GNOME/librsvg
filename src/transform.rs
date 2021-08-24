@@ -49,7 +49,7 @@ impl TransformProperty {
 
         if let TransformProperty::List(l) = self {
             for f in l.iter() {
-                let t = match f {
+                let transform_matrix = match f {
                     TransformFunction::Matrix(xx, yx, xy, yy, x0, y0) => {
                         Transform::new_unchecked(*xx, *yx, *xy, *yy, *x0, *y0)
                     }
@@ -59,14 +59,14 @@ impl TransformProperty {
                     TransformFunction::TranslateX(h) => Transform::new_translate(h.length, 0.0),
                     TransformFunction::TranslateY(v) => Transform::new_translate(0.0, v.length),
                     TransformFunction::Scale(x, y) => Transform::new_scale(*x, *y),
-                    TransformFunction::ScaleX(x) => Transform::new_scale(*x, 0.0),
-                    TransformFunction::ScaleY(y) => Transform::new_scale(0.0, *y),
+                    TransformFunction::ScaleX(x) => Transform::new_scale(*x, 1.0),
+                    TransformFunction::ScaleY(y) => Transform::new_scale(1.0, *y),
                     TransformFunction::Rotate(a) => Transform::new_rotate(*a),
                     TransformFunction::Skew(ax, ay) => Transform::new_skew(*ax, *ay),
                     TransformFunction::SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
                     TransformFunction::SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
                 };
-                final_transform = dbg!(final_transform.post_transform(&t));
+                final_transform = transform_matrix.post_transform(&final_transform);
             }
         }
 
