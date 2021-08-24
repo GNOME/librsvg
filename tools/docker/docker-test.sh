@@ -57,7 +57,10 @@ function prepare_librsvg {
 		echo "Repackaging Librsvg"
 		mkdir $TMPDIR
 		echo "Copying librsvg to $TMPDIR"
-		cp -r $LIBDIR/. $TMPDIR
+		rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
+
+		#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
+		#cp -r $LIBDIR/. $TMPDIR
 		cd $TMPDIR
 
 		#Run autogen, this prepares librsvg for building, and allows make clean to be ran
@@ -109,12 +112,12 @@ function build_docker {
 #removes the designated system image
 function remove_system_image {
 	echo "removing system image librsvg-base-$SYS"
-	sudo docker rmi librsvg/librsvg-base-$SYS
+	sudo docker rmi --force librsvg/librsvg-base-$SYS
 }
 
 function remove_librsvg_image {
 	echo "removing librsvg image librsvg-$SYS"
-	sudo docker rmi librsvg/librsvg-$SYS
+	sudo docker rmi --force librsvg/librsvg-$SYS
 }
 
 function cleanup {
@@ -136,6 +139,21 @@ function cleanup {
 		remove_system_image
 		rm $SYS/librsvg.tar.gz
 		rm $SYS/build-rsvg.sh
+
+		confirm_rm_dir
+		if [[ "$TMPDIR" == "/" ]] 
+		then
+			echo "Tried to delete root, exiting"
+			exit 1
+		fi
+
+		if [[ ! -d "$TMPDIR" ]] 
+		then
+			echo "$TMPDIR does not exist, exiting"
+			exit 0
+		fi
+		rm -rf $TMPDIR
+
 		exit 0
 	fi
 	
@@ -143,6 +161,15 @@ function cleanup {
 
 function confirm {
 	echo "Are you sure? This will remove all Docker images and the packaged librsvg.tar.gz"
+	select yn in "Yes" "No"; do
+    	case $yn in
+    	    Yes ) break;;
+    	    No ) exit 1;;
+   		esac
+	done
+}
+function confirm_rm_dir {
+	echo "Would you like to also remove the librsvg files from the tmp directory: $TMPDIR"
 	select yn in "Yes" "No"; do
     	case $yn in
     	    Yes ) break;;
