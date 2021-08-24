@@ -66,7 +66,7 @@ impl TransformProperty {
                     TransformFunction::SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
                     TransformFunction::SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
                 };
-                final_transform = final_transform.post_transform(&t);
+                final_transform = dbg!(final_transform.post_transform(&t));
             }
         }
 
@@ -120,7 +120,7 @@ fn parse_transform_prop_function_command<'i>(
     let loc = parser.current_source_location();
 
     match parser.next()?.clone() {
-        Token::Function(ref name) => parse_transform_prop_function_internal(name, parser),
+        Token::Function(ref name) => dbg!(parse_transform_prop_function_internal(name, parser)),
         tok => Err(loc.new_unexpected_token_error(tok.clone())),
     }
 }
@@ -495,7 +495,7 @@ fn parse_transform_list<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, Pa
             break;
         }
 
-        t = parse_transform_command(parser)?.post_transform(&t);
+        t = dbg!(parse_transform_command(parser)?.post_transform(&t));
         optional_comma(parser);
     }
 
