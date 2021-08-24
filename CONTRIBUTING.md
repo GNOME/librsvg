@@ -174,6 +174,12 @@ branch.  The easiest way to run all the tests is to go to librsvg's
 toplevel directory and run `make check`.  This will run both the small
 unit tests and the black box tests in the `librsvg/tests` directory.
 
+It's possible that a wide swath of tests will fail when you do this,
+don't panic! that's likely just text rendering, which varies a bit
+from distro to distro. To run the test suite on the same OS as the 
+CI, first install docker then see this file 
+[`tools/docker/README.md`][docker-tests-readme].
+
 If you need to add new tests (you should, for new features, or for
 things that we weren't testing!), or for additional information on how
 the test suite works, please see the file
@@ -287,3 +293,4 @@ interesting options to generate plots and such.  You can see the
 [benches]: rsvg-internals/benches
 [Criterion]: https://crates.io/crates/criterion
 [criterion-options]: https://japaric.github.io/criterion.rs/book/user_guide/command_line_options.html
+[docker-tests-readme]: tools/docker/README.md
