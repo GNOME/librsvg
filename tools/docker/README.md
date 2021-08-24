@@ -10,23 +10,29 @@ Docker requires root for nearly all of its commands so the script will ask for r
 ```
 This tool lets you run Librsvg's test suite under a couple different docker containers for testing, it requires sudo privleges, which it will ask for in the terminal (this is by the docker commands, which require root)
 
-Use -d [DIRECTORY] pointing at your librsvg directory
-Use -s [SYSTEM] to determine what docker container to use (Fedora, OpenSUSE, or Debian)
-use -h to return this help
-use -i to have it pause periodically to check output
-use -r to rebuild the docker image forcefully
-use -p to repackage the librsvg image (use in conjunction with -r otherwise the cache will stop changes from taking
-use -t to specify a temporary directory (default: /tmp/librsvg)
+Use -d [DIRECTORY] pointing at your librsvg Directory
+Use -s [SYSTEM] to determine what docker container to use (Fedora, OpenSUSE, Debian)
+Use -h to return this Help
+Use -i to have it Interactively pause periodically to check output (the cleanup scripts is always interactive unless -y is passed)
+Use -p to recoPy the librsvg library folder to the tmp directory, removing everything that is there, useful for cleaning the cargo cache
+Use -r to Rebuild the build dependencies docker image forcefully
+Use -t to specify a Temporary directory (default: /tmp/librsvg)
+Use -y to answer Yes to any prompts (This currently only includes the cleanup scripts)
+Use -c to Cleanup ALL related docker images (this will not run the test suite)
 ```
 
 ### Example:
 ```
 If the librsvg folder is in your home directory:
-./docker-test.sh -d ~/librsvg -s opensuse -i 
+~/librsvg/tools/docker/docker-test.sh -d ~/librsvg -s opensuse -i 
 
 This will run it pointing at /home/Username/librsvg (-d) with opensuse tumbleweed docker image (-s), and interactive (-i), meaning it pauses and has the user input a keystroke before continuing, useful for debugging or catching typos. 
 
 The first run will take some time as Docker downloads and installs the system, updates the packages, and installs the build requirements, but it's set up so that it won't re-download the system image each time, which takes more disk space but saves on bandwidth.
+
+What I use, from the librsvg directory:
+
+tools/docker/docker-test.sh -s opensuse
 ```
 
 
