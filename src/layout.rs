@@ -216,13 +216,13 @@ impl Stroke {
         let miter_limit = values.stroke_miterlimit();
         let line_cap = values.stroke_line_cap();
         let line_join = values.stroke_line_join();
-        let dash_offset = values.stroke_dashoffset().0.to_user(&params);
+        let dash_offset = values.stroke_dashoffset().0.to_user(params);
 
         let dashes = match values.stroke_dasharray() {
             StrokeDasharray(Dasharray::None) => Box::new([]),
             StrokeDasharray(Dasharray::Array(dashes)) => dashes
                 .iter()
-                .map(|l| l.to_user(&params))
+                .map(|l| l.to_user(params))
                 .collect::<Box<[f64]>>(),
         };
 

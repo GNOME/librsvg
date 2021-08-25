@@ -68,10 +68,10 @@ impl Image {
         // I think this means that we use the same cascading mode as <use>, i.e. the
         // referenced object inherits its properties from the feImage element.
         let cascaded =
-            CascadedValues::new_from_values(&referenced_node, &self.feimage_values, None, None);
+            CascadedValues::new_from_values(referenced_node, &self.feimage_values, None, None);
 
         let image = draw_ctx.draw_node_to_surface(
-            &referenced_node,
+            referenced_node,
             acquired_nodes,
             &cascaded,
             ctx.paffine(),
@@ -157,7 +157,7 @@ impl Image {
                         acquired_nodes,
                         draw_ctx,
                         bounds.clipped,
-                        &acquired.get(),
+                        acquired.get(),
                     )?
                 } else {
                     return Err(FilterError::InvalidInput);

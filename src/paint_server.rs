@@ -139,7 +139,7 @@ impl PaintServer {
 
                     match *node.borrow_element() {
                         Element::LinearGradient(ref g) => {
-                            g.resolve(&node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity).map(|g| {
                                 PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
@@ -147,7 +147,7 @@ impl PaintServer {
                             })
                         }
                         Element::Pattern(ref p) => {
-                            p.resolve(&node, acquired_nodes, opacity).map(|p| {
+                            p.resolve(node, acquired_nodes, opacity).map(|p| {
                                 PaintSource::Pattern(
                                     p,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
@@ -155,7 +155,7 @@ impl PaintServer {
                             })
                         }
                         Element::RadialGradient(ref g) => {
-                            g.resolve(&node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity).map(|g| {
                                 PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),

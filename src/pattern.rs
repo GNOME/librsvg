@@ -421,7 +421,7 @@ impl Pattern {
 
         while !pattern.is_resolved() {
             if let Some(ref node_id) = fallback {
-                match acquired_nodes.acquire(&node_id) {
+                match acquired_nodes.acquire(node_id) {
                     Ok(acquired) => {
                         let acquired_node = acquired.get();
 
@@ -431,7 +431,7 @@ impl Pattern {
 
                         match *acquired_node.borrow_element() {
                             Element::Pattern(ref p) => {
-                                let unresolved = p.get_unresolved(&acquired_node);
+                                let unresolved = p.get_unresolved(acquired_node);
                                 pattern = pattern.resolve_from_fallback(&unresolved.pattern);
                                 fallback = unresolved.fallback;
 

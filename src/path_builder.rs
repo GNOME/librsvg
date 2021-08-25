@@ -704,7 +704,7 @@ impl Path {
     /// Get an iterator over a path `Subpath`s.
     pub fn iter_subpath(&self) -> SubPathIter<'_> {
         SubPathIter {
-            path: &self,
+            path: self,
             commands_start: 0,
             coords_start: 0,
         }

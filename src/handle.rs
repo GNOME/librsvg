@@ -136,7 +136,7 @@ impl Handle {
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
 
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(values, &view_params);
 
         Some((w.to_user(&params), h.to_user(&params)))
     }
@@ -200,7 +200,7 @@ impl Handle {
     }
 
     fn lookup_node(&self, id: &str) -> Result<Node, DefsLookupErrorKind> {
-        let node_id = NodeId::parse(&id).map_err(|_| DefsLookupErrorKind::InvalidId)?;
+        let node_id = NodeId::parse(id).map_err(|_| DefsLookupErrorKind::InvalidId)?;
 
         // The public APIs to get geometries of individual elements, or to render
         // them, should only allow referencing elements within the main handle's
@@ -354,7 +354,7 @@ impl Handle {
 
             draw_tree(
                 DrawingMode::OnlyNode(node),
-                &cr,
+                cr,
                 unit_rectangle(),
                 user_language,
                 dpi,

@@ -132,12 +132,9 @@ impl Morphology {
                     a: initial,
                 };
 
-                for (_x, _y, pixel) in PixelRectangle::within(
-                    &input_1.surface(),
-                    bounds,
-                    kernel_bounds,
-                    EdgeMode::None,
-                ) {
+                for (_x, _y, pixel) in
+                    PixelRectangle::within(input_1.surface(), bounds, kernel_bounds, EdgeMode::None)
+                {
                     let op = match self.operator {
                         Operator::Erode => min,
                         Operator::Dilate => max,

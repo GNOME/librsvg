@@ -1188,7 +1188,7 @@ impl ImageSurface<Shared> {
 
     pub fn rows(&self) -> Rows<'_> {
         Rows {
-            surface: &self,
+            surface: self,
             next_row: 0,
         }
     }

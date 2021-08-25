@@ -114,14 +114,14 @@ impl Marker {
         marker_type: MarkerType,
         marker: &layout::Marker,
     ) -> Result<BoundingBox, RenderingError> {
-        let mut cascaded = CascadedValues::new_from_node(&node);
+        let mut cascaded = CascadedValues::new_from_node(node);
         cascaded.context_fill = Some(marker.context_fill.clone());
         cascaded.context_stroke = Some(marker.context_stroke.clone());
 
         let values = cascaded.get();
 
         let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(values, &view_params);
 
         let marker_width = self.width.to_user(&params);
         let marker_height = self.height.to_user(&params);
@@ -167,7 +167,7 @@ impl Marker {
             draw_ctx.push_view_box(marker_width, marker_height)
         };
 
-        let content_params = NormalizeParams::new(&values, &content_view_params);
+        let content_params = NormalizeParams::new(values, &content_view_params);
 
         transform = transform.pre_translate(
             -self.ref_x.to_user(&content_params),
@@ -588,7 +588,7 @@ fn emit_marker_by_node(
             let marker_elt = borrow_element_as!(node, Marker);
 
             marker_elt.render(
-                &node,
+                node,
                 acquired_nodes,
                 draw_ctx,
                 xpos,
