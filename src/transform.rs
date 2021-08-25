@@ -50,9 +50,7 @@ impl TransformProperty {
         if let TransformProperty::List(l) = self {
             for f in l.iter() {
                 let transform_matrix = match f {
-                    TransformFunction::Matrix(xx, yx, xy, yy, x0, y0) => {
-                        Transform::new_unchecked(*xx, *yx, *xy, *yy, *x0, *y0)
-                    }
+                    TransformFunction::Matrix(trans_matrix) => *trans_matrix,
                     TransformFunction::Translate(h, v) => {
                         Transform::new_translate(h.length, v.length)
                     }
@@ -77,7 +75,7 @@ impl TransformProperty {
 // https://www.w3.org/TR/css-transforms-1/#typedef-transform-function
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransformFunction {
-    Matrix(f64, f64, f64, f64, f64, f64),
+    Matrix(Transform),
     Translate(Length<Horizontal>, Length<Vertical>),
     TranslateX(Length<Horizontal>),
     TranslateY(Length<Vertical>),
@@ -165,7 +163,9 @@ fn parse_prop_matrix_args<'i>(
         p.expect_comma()?;
         let y0 = f64::parse(p)?;
 
-        Ok(TransformFunction::Matrix(xx, yx, xy, yy, x0, y0))
+        Ok(TransformFunction::Matrix(Transform::new_unchecked(
+            xx, yx, xy, yy, x0, y0,
+        )))
     })
 }
 
@@ -175,12 +175,11 @@ fn parse_prop_translate_args<'i>(
     parser.parse_nested_block(|p| {
         let tx: Length<Horizontal> = Length::parse(p)?;
 
-        let ty: Length<Vertical> = p
-            .try_parse(|p| {
-                p.expect_comma()?;
-                Length::parse(p)
-            })
-            .unwrap_or_else(|_| Length::<Vertical>::new(0.0, LengthUnit::Px));
+        let ty: Length<Vertical> = if p.try_parse(|p| p.expect_comma()).is_ok() {
+            Length::parse(p)?
+        } else {
+            Length::new(0.0, LengthUnit::Px)
+        };
 
         Ok(TransformFunction::Translate(tx, ty))
     })
@@ -212,12 +211,11 @@ fn parse_prop_scale_args<'i>(
     parser.parse_nested_block(|p| {
         let x = f64::parse(p)?;
 
-        let y = p
-            .try_parse(|p| {
-                p.expect_comma()?;
-                f64::parse(p)
-            })
-            .unwrap_or(x);
+        let y = if p.try_parse(|p| p.expect_comma()).is_ok() {
+            f64::parse(p)?
+        } else {
+            x
+        };
 
         Ok(TransformFunction::Scale(x, y))
     })
@@ -259,12 +257,11 @@ fn parse_prop_skew_args<'i>(
     parser.parse_nested_block(|p| {
         let ax = Angle::parse(p)?;
 
-        let ay = p
-            .try_parse(|p| {
-                p.expect_comma()?;
-                Angle::parse(p)
-            })
-            .unwrap_or_else(|_| Angle::from_degrees(0.0));
+        let ay = if p.try_parse(|p| p.expect_comma()).is_ok() {
+            Angle::parse(p)?
+        } else {
+            Angle::from_degrees(0.0)
+        };
 
         Ok(TransformFunction::Skew(ax, ay))
     })
@@ -855,28 +852,31 @@ mod tests {
     #[test]
     fn test_parse_transform_property_matrix() {
         let tp = TransformProperty::List(vec![TransformFunction::Matrix(
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
         )]);
 
-        assert_eq!(&tp, &parse_transform_prop("matrix(1,1,1,1,1,1)").unwrap());
-        assert!(parse_transform_prop("matrix(1 1 1 1 1 1)").is_err());
-        assert!(parse_transform_prop("Matrix(1,1,1,1,1,1)").is_err());
+        assert_eq!(&tp, &parse_transform_prop("matrix(1,2,3,4,5,6)").unwrap());
+        assert!(parse_transform_prop("matrix(1 2 3 4 5 6)").is_err());
+        assert!(parse_transform_prop("Matrix(1,2,3,4,5,6)").is_err());
     }
 
     #[test]
     fn test_parse_transform_property_translate() {
         let tpt = TransformProperty::List(vec![TransformFunction::Translate(
             Length::<Horizontal>::new(100.0, LengthUnit::Px),
-            Length::<Vertical>::new(100.0, LengthUnit::Px),
+            Length::<Vertical>::new(200.0, LengthUnit::Px),
         )]);
 
         assert_eq!(
             &tpt,
-            &parse_transform_prop("translate(100px,100px)").unwrap()
+            &parse_transform_prop("translate(100px,200px)").unwrap()
         );
+
         assert!(parse_transform_prop("translate(1)").is_ok());
-        assert!(parse_transform_prop("translate(100 100)").is_err());
-        assert!(parse_transform_prop("translate(1px,1px,1px,1px)").is_err());
+        assert!(parse_transform_prop("translate(100, foo)").is_err());
+        assert!(parse_transform_prop("translate(100, )").is_err());
+        assert!(parse_transform_prop("translate(100 200)").is_err());
+        assert!(parse_transform_prop("translate(1px,2px,3px,4px)").is_err());
     }
 
     #[test]
@@ -912,6 +912,8 @@ mod tests {
         assert_eq!(&tps, &parse_transform_prop("scale(1,10)").unwrap());
         assert!(parse_transform_prop("scale(1)").is_ok());
 
+        assert!(parse_transform_prop("scale(100, foo)").is_err());
+        assert!(parse_transform_prop("scale(100, )").is_err());
         assert!(parse_transform_prop("scale(1 10)").is_err());
         assert!(parse_transform_prop("scale(1px,10px)").is_err());
         assert!(parse_transform_prop("scale(1%)").is_err());
@@ -941,10 +943,6 @@ mod tests {
     fn test_parse_transform_property_rotate() {
         let tpr =
             TransformProperty::List(vec![TransformFunction::Rotate(Angle::from_degrees(100.0))]);
-        match parse_transform_prop("rotate(100deg)") {
-            Err(e) => eprintln!("TEST ERROR: {:?}", e),
-            _ => {}
-        }
         assert_eq!(&tpr, &parse_transform_prop("rotate(100deg)").unwrap());
         assert!(parse_transform_prop("rotate(100deg 100)").is_err());
         assert!(parse_transform_prop("rotate(3px)").is_err());
@@ -954,13 +952,16 @@ mod tests {
     fn test_parse_transform_property_skew() {
         let tpsk = TransformProperty::List(vec![TransformFunction::Skew(
             Angle::from_degrees(90.0),
-            Angle::from_degrees(90.0),
+            Angle::from_degrees(120.0),
         )]);
 
-        assert_eq!(&tpsk, &parse_transform_prop("skew(90deg,90deg)").unwrap());
+        assert_eq!(&tpsk, &parse_transform_prop("skew(90deg,120deg)").unwrap());
         assert!(parse_transform_prop("skew(1)").is_ok());
         assert!(parse_transform_prop("skew(1.0,1.0)").is_ok());
         assert!(parse_transform_prop("skew(1rad,1rad)").is_ok());
+
+        assert!(parse_transform_prop("skew(100, foo)").is_err());
+        assert!(parse_transform_prop("skew(100, )").is_err());
         assert!(parse_transform_prop("skew(1.0px)").is_err());
         assert!(parse_transform_prop("skew(1.0,1.0,1deg)").is_err());
     }
