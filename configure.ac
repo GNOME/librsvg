@@ -114,45 +114,19 @@ dnl ===========================================================================
 
 #AC_CANONICAL_HOST
 
-AC_MSG_CHECKING([for some Win32 platform])
-case "$host" in
-  *-*-mingw*|*-*-cygwin*)
-    platform_win32=yes
-    ;;
-  *)
-    platform_win32=no
-    ;;
-esac
-AC_MSG_RESULT([$platform_win32])
-AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
-
-AC_MSG_CHECKING([for native Win32])
-case "$host" in
-  *-*-mingw*)
-    native_win32=yes
-    ;;
-  *)
-    native_win32=no
-    ;;
-esac
-AC_MSG_RESULT([$native_win32])
-AM_CONDITIONAL(OS_WIN32, test "$native_win32" = "yes")
-
-dnl ===========================================================================
-
-#AC_CANONICAL_HOST
-
-AC_MSG_CHECKING([for darwin])
-case "$host" in
-  *-*-darwin*)
-    native_darwin=yes
-    ;;
-  *)
-    native_darwin=no
-    ;;
-esac
-AC_MSG_RESULT([$native_darwin])
-AM_CONDITIONAL(OS_DARWIN, test "$native_darwin" = "yes")
+AC_MSG_CHECKING([platform])
+platform=POSIX
+gio_backend=unix
+AS_CASE(["$host"],
+  [*-*-mingw*],  [platform=Windows gio_backend=windows],
+  [*-*-cygwin*], [platform=Cygwin],
+  [*-*-darwin*], [platform=Darwin],
+)
+AC_MSG_RESULT([$platform])
+AM_CONDITIONAL(PLATFORM_WIN32,
+    [test x"$platform" = xWindows || test x"$platform" = xCygwin])
+AM_CONDITIONAL(OS_WIN32,  [test x"$platform" = xWindows])
+AM_CONDITIONAL(OS_DARWIN, [test x"$platform" = xDarwin])
 
 dnl ===========================================================================
 
@@ -179,14 +153,7 @@ PKG_CHECK_MODULES([GTHREAD],[gthread-2.0 >= $GLIB_REQUIRED])
 
 PKG_CHECK_MODULES([GMODULE],[gmodule-2.0])
 
-case "$host" in
-  *-*-mingw*)
-    PKG_CHECK_MODULES([RSVG_CONVERT],[gio-2.0 gio-windows-2.0 gdk-pixbuf-2.0 cairo pangocairo])
-    ;;
-  *)
-    PKG_CHECK_MODULES([RSVG_CONVERT],[gio-2.0 gio-unix-2.0 gdk-pixbuf-2.0 cairo pangocairo])
-    ;;
-esac
+PKG_CHECK_MODULES([RSVG_CONVERT],[gio-2.0 "gio-${gio_backend}-2.0" gdk-pixbuf-2.0 cairo pangocairo])
 
 GLIB_TESTS
 
