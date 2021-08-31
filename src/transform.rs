@@ -118,7 +118,7 @@ fn parse_transform_prop_function_command<'i>(
     let loc = parser.current_source_location();
 
     match parser.next()?.clone() {
-        Token::Function(ref name) => dbg!(parse_transform_prop_function_internal(name, parser)),
+        Token::Function(ref name) => parse_transform_prop_function_internal(name, parser),
         tok => Err(loc.new_unexpected_token_error(tok.clone())),
     }
 }
