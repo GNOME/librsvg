@@ -169,10 +169,22 @@ fn parse_prop_matrix_args<'i>(
     })
 }
 
+fn length_is_in_pixels<N: Normalize>(l: &Length<N>) -> bool {
+    l.unit == LengthUnit::Px
+}
+
+fn only_pixels_error<'i>(loc: cssparser::SourceLocation) -> ParseError<'i> {
+    loc.new_custom_error(ValueErrorKind::parse_error(
+        "only translations in pixels are supported for now",
+    ))
+}
+
 fn parse_prop_translate_args<'i>(
     parser: &mut Parser<'i, '_>,
 ) -> Result<TransformFunction, ParseError<'i>> {
     parser.parse_nested_block(|p| {
+        let loc = p.current_source_location();
+
         let tx: Length<Horizontal> = Length::parse(p)?;
 
         let ty: Length<Vertical> = if p.try_parse(|p| p.expect_comma()).is_ok() {
@@ -180,6 +192,10 @@ fn parse_prop_translate_args<'i>(
         } else {
             Length::new(0.0, LengthUnit::Px)
         };
+
+        if !(length_is_in_pixels(&tx) && length_is_in_pixels(&ty)) {
+            return Err(only_pixels_error(loc));
+        }
 
         Ok(TransformFunction::Translate(tx, ty))
     })
@@ -189,7 +205,13 @@ fn parse_prop_translate_x_args<'i>(
     parser: &mut Parser<'i, '_>,
 ) -> Result<TransformFunction, ParseError<'i>> {
     parser.parse_nested_block(|p| {
+        let loc = p.current_source_location();
+
         let tx: Length<Horizontal> = Length::parse(p)?;
+
+        if !length_is_in_pixels(&tx) {
+            return Err(only_pixels_error(loc));
+        }
 
         Ok(TransformFunction::TranslateX(tx))
     })
@@ -199,7 +221,13 @@ fn parse_prop_translate_y_args<'i>(
     parser: &mut Parser<'i, '_>,
 ) -> Result<TransformFunction, ParseError<'i>> {
     parser.parse_nested_block(|p| {
+        let loc = p.current_source_location();
+
         let ty: Length<Vertical> = Length::parse(p)?;
+
+        if !length_is_in_pixels(&ty) {
+            return Err(only_pixels_error(loc));
+        }
 
         Ok(TransformFunction::TranslateY(ty))
     })
@@ -906,7 +934,14 @@ mod tests {
         assert!(parse_transform_prop("translateY(1)").is_ok());
         assert!(parse_transform_prop("translateY(100 100)").is_err());
         assert!(parse_transform_prop("translatey(1px)").is_err());
-        assert!(parse_transform_prop("translateY(1%)").is_ok());
+    }
+
+    #[test]
+    fn test_translate_only_supports_pixel_units() {
+        assert!(parse_transform_prop("translate(1in, 2)").is_err());
+        assert!(parse_transform_prop("translate(1, 2in)").is_err());
+        assert!(parse_transform_prop("translateX(1cm)").is_err());
+        assert!(parse_transform_prop("translateY(1cm)").is_err());
     }
 
     #[test]
