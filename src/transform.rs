@@ -109,11 +109,11 @@ fn parse_transform_prop_function_list<'i>(
     let mut v = Vec::<TransformFunction>::new();
 
     loop {
+        v.push(parse_transform_prop_function_command(parser)?);
+
         if parser.is_exhausted() {
             break;
         }
-
-        v.push(parse_transform_prop_function_command(parser)?);
     }
 
     Ok(v)
@@ -898,6 +898,15 @@ mod tests {
             parse_transform_prop("none").unwrap().to_transform(),
             Transform::identity()
         );
+    }
+
+    #[test]
+    fn empty_transform_property_is_error() {
+        // https://www.w3.org/TR/css-transforms-1/#transform-property
+        //
+        // <transform-list> = <transform-function>+
+        //                                        ^ one or more required
+        assert!(parse_transform_prop("").is_err());
     }
 
     #[test]
