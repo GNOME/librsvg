@@ -893,6 +893,14 @@ mod tests {
     }
 
     #[test]
+    fn none_transform_is_identity() {
+        assert_eq!(
+            parse_transform_prop("none").unwrap().to_transform(),
+            Transform::identity()
+        );
+    }
+
+    #[test]
     fn test_parse_transform_property_matrix() {
         let tp = TransformProperty::List(vec![TransformFunction::Matrix(
             Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
