@@ -872,7 +872,11 @@ mod tests {
             &parse_transform_prop("translate(100px,200px)").unwrap()
         );
 
-        assert!(parse_transform_prop("translate(1)").is_ok());
+        assert_eq!(
+            parse_transform_prop("translate(1)").unwrap(),
+            parse_transform_prop("translate(1, 0)").unwrap()
+        );
+
         assert!(parse_transform_prop("translate(100, foo)").is_err());
         assert!(parse_transform_prop("translate(100, )").is_err());
         assert!(parse_transform_prop("translate(100 200)").is_err());
@@ -910,7 +914,11 @@ mod tests {
         let tps = TransformProperty::List(vec![TransformFunction::Scale(1.0, 10.0)]);
 
         assert_eq!(&tps, &parse_transform_prop("scale(1,10)").unwrap());
-        assert!(parse_transform_prop("scale(1)").is_ok());
+
+        assert_eq!(
+            parse_transform_prop("scale(2)").unwrap(),
+            parse_transform_prop("scale(2, 2)").unwrap()
+        );
 
         assert!(parse_transform_prop("scale(100, foo)").is_err());
         assert!(parse_transform_prop("scale(100, )").is_err());
@@ -956,7 +964,12 @@ mod tests {
         )]);
 
         assert_eq!(&tpsk, &parse_transform_prop("skew(90deg,120deg)").unwrap());
-        assert!(parse_transform_prop("skew(1)").is_ok());
+
+        assert_eq!(
+            parse_transform_prop("skew(45deg)").unwrap(),
+            parse_transform_prop("skew(45deg, 0)").unwrap()
+        );
+
         assert!(parse_transform_prop("skew(1.0,1.0)").is_ok());
         assert!(parse_transform_prop("skew(1rad,1rad)").is_ok());
 
