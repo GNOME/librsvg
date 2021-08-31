@@ -36,14 +36,12 @@ use crate::gradient::{LinearGradient, RadialGradient, Stop};
 use crate::image::Image;
 use crate::marker::Marker;
 use crate::node::*;
-use crate::parsers::Parse;
 use crate::pattern::Pattern;
 use crate::properties::{ComputedValues, SpecifiedValues};
 use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
-use crate::transform::Transform;
 use crate::xml::Attributes;
 
 // After creating/parsing a Element, it will be in a success or an error state.
@@ -134,7 +132,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         };
 
         let mut set_attributes = || -> Result<(), ElementError> {
-            e.set_transform_attribute()?;
             e.set_conditional_processing_attributes()?;
             e.set_presentation_attributes()?;
             Ok(())
@@ -190,21 +187,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .as_ref()
                 .map(|v| v.eval(user_language))
                 .unwrap_or(true)
-    }
-
-    // TODO for madds: this whole function will go away, as the transform attribute will be
-    // handled automatically by set_presentation_attributes() below.
-    fn set_transform_attribute(&mut self) -> Result<(), ElementError> {
-        let transform = self
-            .attributes
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "transform"))
-            .map(|(attr, value)| Transform::parse_str(value).attribute(attr))
-            .unwrap_or_else(|| Ok(Transform::default()))?;
-
-        self.specified_values.set_transform(transform);
-
-        Ok(())
     }
 
     fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {

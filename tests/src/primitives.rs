@@ -372,3 +372,31 @@ test_compare_render_output!(
     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
     </svg>"##,
 );
+
+test_compare_render_output!(
+    transform_property,
+    100,
+    100,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <rect x="50" y="50" width="20" height="20" fill="black"/>
+</svg>"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <rect x="10" y="10" width="20" height="20" fill="black" style="transform: translate(40px, 40px);"/>
+</svg>"##,
+);
+
+test_compare_render_output!(
+    compound_transform_property,
+    100,
+    100,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="-30 -30 60 60">
+  <rect x="0" y="0" width="20" height="20" fill="black" style="transform: translate(-10px, -20px) scale(2) rotate(45deg);"/>
+</svg>"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="-30 -30 60 60">
+  <rect x="0" y="0" width="20" height="20" fill="black" transform="translate(-10 -20) scale(2) rotate(45)"/>
+</svg>"##,
+);

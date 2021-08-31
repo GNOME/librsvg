@@ -2,14 +2,316 @@
 //!
 //! This module handles `transform` values [per the SVG specification][spec].
 //!
-//! [spec]:  https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
+//! [spec]:  https://www.w3.org/TR/SVG11/coords.html#TransformAttribute and https://www.w3.org/TR/css-transforms-1/#transform-property
 
 use cssparser::{Parser, Token};
 
 use crate::angle::Angle;
 use crate::error::*;
+use crate::length::*;
 use crate::parsers::{optional_comma, Parse};
+use crate::properties::ComputedValues;
+use crate::property_macros::Property;
 use crate::rect::Rect;
+
+// https://www.w3.org/TR/css-transforms-1/#transform-property
+#[derive(Debug, Clone, PartialEq)]
+pub enum TransformProperty {
+    None,
+    List(Vec<TransformFunction>),
+}
+
+impl Default for TransformProperty {
+    fn default() -> Self {
+        TransformProperty::None
+    }
+}
+
+impl Property for TransformProperty {
+    fn inherits_automatically() -> bool {
+        false
+    }
+
+    fn compute(&self, _v: &ComputedValues) -> Self {
+        self.clone()
+    }
+}
+
+impl TransformProperty {
+    pub fn to_transform(&self) -> Transform {
+        // From the spec (https://www.w3.org/TR/css-transforms-1/#current-transformation-matrix):
+        // Start with the identity matrix.
+        // TODO: implement (#685) - Translate by the computed X and Y of transform-origin
+        // Multiply by each of the transform functions in transform property from left to right
+        // TODO: implement - Translate by the negated computed X and Y values of transform-origin
+
+        let mut final_transform = Transform::identity();
+
+        if let TransformProperty::List(l) = self {
+            for f in l.iter() {
+                let transform_matrix = match f {
+                    TransformFunction::Matrix(trans_matrix) => *trans_matrix,
+                    TransformFunction::Translate(h, v) => {
+                        Transform::new_translate(h.length, v.length)
+                    }
+                    TransformFunction::TranslateX(h) => Transform::new_translate(h.length, 0.0),
+                    TransformFunction::TranslateY(v) => Transform::new_translate(0.0, v.length),
+                    TransformFunction::Scale(x, y) => Transform::new_scale(*x, *y),
+                    TransformFunction::ScaleX(x) => Transform::new_scale(*x, 1.0),
+                    TransformFunction::ScaleY(y) => Transform::new_scale(1.0, *y),
+                    TransformFunction::Rotate(a) => Transform::new_rotate(*a),
+                    TransformFunction::Skew(ax, ay) => Transform::new_skew(*ax, *ay),
+                    TransformFunction::SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
+                    TransformFunction::SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
+                };
+                final_transform = transform_matrix.post_transform(&final_transform);
+            }
+        }
+
+        final_transform
+    }
+}
+
+// https://www.w3.org/TR/css-transforms-1/#typedef-transform-function
+#[derive(Debug, Clone, PartialEq)]
+pub enum TransformFunction {
+    Matrix(Transform),
+    Translate(Length<Horizontal>, Length<Vertical>),
+    TranslateX(Length<Horizontal>),
+    TranslateY(Length<Vertical>),
+    Scale(f64, f64),
+    ScaleX(f64),
+    ScaleY(f64),
+    Rotate(Angle),
+    Skew(Angle, Angle),
+    SkewX(Angle),
+    SkewY(Angle),
+}
+
+impl Parse for TransformProperty {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TransformProperty, ParseError<'i>> {
+        let t = parse_transform_prop_function_list(parser)?;
+
+        Ok(TransformProperty::List(t))
+    }
+}
+
+fn parse_transform_prop_function_list<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<Vec<TransformFunction>, ParseError<'i>> {
+    let mut v = Vec::<TransformFunction>::new();
+
+    loop {
+        if parser.is_exhausted() {
+            break;
+        }
+
+        v.push(parse_transform_prop_function_command(parser)?);
+    }
+
+    Ok(v)
+}
+
+fn parse_transform_prop_function_command<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    let loc = parser.current_source_location();
+
+    match parser.next()?.clone() {
+        Token::Function(ref name) => parse_transform_prop_function_internal(name, parser),
+        tok => Err(loc.new_unexpected_token_error(tok.clone())),
+    }
+}
+
+fn parse_transform_prop_function_internal<'i>(
+    name: &str,
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    let loc = parser.current_source_location();
+
+    match name {
+        "matrix" => parse_prop_matrix_args(parser),
+        "translate" => parse_prop_translate_args(parser),
+        "translateX" => parse_prop_translate_x_args(parser),
+        "translateY" => parse_prop_translate_y_args(parser),
+        "scale" => parse_prop_scale_args(parser),
+        "scaleX" => parse_prop_scale_x_args(parser),
+        "scaleY" => parse_prop_scale_y_args(parser),
+        "rotate" => parse_prop_rotate_args(parser),
+        "skew" => parse_prop_skew_args(parser),
+        "skewX" => parse_prop_skew_x_args(parser),
+        "skewY" => parse_prop_skew_y_args(parser),
+        _ => Err(loc.new_custom_error(ValueErrorKind::parse_error(
+            "expected matrix|translate|translateX|translateY|scale|scaleX|scaleY|rotate|skewX|skewY",
+        ))),
+    }
+}
+
+fn parse_prop_matrix_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let xx = f64::parse(p)?;
+        p.expect_comma()?;
+        let yx = f64::parse(p)?;
+        p.expect_comma()?;
+        let xy = f64::parse(p)?;
+        p.expect_comma()?;
+        let yy = f64::parse(p)?;
+        p.expect_comma()?;
+        let x0 = f64::parse(p)?;
+        p.expect_comma()?;
+        let y0 = f64::parse(p)?;
+
+        Ok(TransformFunction::Matrix(Transform::new_unchecked(
+            xx, yx, xy, yy, x0, y0,
+        )))
+    })
+}
+
+fn length_is_in_pixels<N: Normalize>(l: &Length<N>) -> bool {
+    l.unit == LengthUnit::Px
+}
+
+fn only_pixels_error<'i>(loc: cssparser::SourceLocation) -> ParseError<'i> {
+    loc.new_custom_error(ValueErrorKind::parse_error(
+        "only translations in pixels are supported for now",
+    ))
+}
+
+fn parse_prop_translate_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let loc = p.current_source_location();
+
+        let tx: Length<Horizontal> = Length::parse(p)?;
+
+        let ty: Length<Vertical> = if p.try_parse(|p| p.expect_comma()).is_ok() {
+            Length::parse(p)?
+        } else {
+            Length::new(0.0, LengthUnit::Px)
+        };
+
+        if !(length_is_in_pixels(&tx) && length_is_in_pixels(&ty)) {
+            return Err(only_pixels_error(loc));
+        }
+
+        Ok(TransformFunction::Translate(tx, ty))
+    })
+}
+
+fn parse_prop_translate_x_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let loc = p.current_source_location();
+
+        let tx: Length<Horizontal> = Length::parse(p)?;
+
+        if !length_is_in_pixels(&tx) {
+            return Err(only_pixels_error(loc));
+        }
+
+        Ok(TransformFunction::TranslateX(tx))
+    })
+}
+
+fn parse_prop_translate_y_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let loc = p.current_source_location();
+
+        let ty: Length<Vertical> = Length::parse(p)?;
+
+        if !length_is_in_pixels(&ty) {
+            return Err(only_pixels_error(loc));
+        }
+
+        Ok(TransformFunction::TranslateY(ty))
+    })
+}
+
+fn parse_prop_scale_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let x = f64::parse(p)?;
+
+        let y = if p.try_parse(|p| p.expect_comma()).is_ok() {
+            f64::parse(p)?
+        } else {
+            x
+        };
+
+        Ok(TransformFunction::Scale(x, y))
+    })
+}
+
+fn parse_prop_scale_x_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let x = f64::parse(p)?;
+
+        Ok(TransformFunction::ScaleX(x))
+    })
+}
+
+fn parse_prop_scale_y_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let y = f64::parse(p)?;
+
+        Ok(TransformFunction::ScaleY(y))
+    })
+}
+
+fn parse_prop_rotate_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let angle = Angle::parse(p)?;
+
+        Ok(TransformFunction::Rotate(angle))
+    })
+}
+
+fn parse_prop_skew_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let ax = Angle::parse(p)?;
+
+        let ay = if p.try_parse(|p| p.expect_comma()).is_ok() {
+            Angle::parse(p)?
+        } else {
+            Angle::from_degrees(0.0)
+        };
+
+        Ok(TransformFunction::Skew(ax, ay))
+    })
+}
+
+fn parse_prop_skew_x_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let angle = Angle::parse(p)?;
+        Ok(TransformFunction::SkewX(angle))
+    })
+}
+
+fn parse_prop_skew_y_args<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<TransformFunction, ParseError<'i>> {
+    parser.parse_nested_block(|p| {
+        let angle = Angle::parse(p)?;
+        Ok(TransformFunction::SkewY(angle))
+    })
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Transform {
@@ -206,17 +508,7 @@ impl Default for Transform {
 
 impl Parse for Transform {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-        let loc = parser.current_source_location();
-
-        let t = parse_transform_list(parser)?;
-
-        if !t.is_invertible() {
-            return Err(loc.new_custom_error(ValueErrorKind::Value(
-                "invalid transformation matrix".to_string(),
-            )));
-        }
-
-        Ok(t)
+        parse_transform_list(parser)
     }
 }
 
@@ -374,6 +666,10 @@ mod tests {
         Transform::parse_str(s)
     }
 
+    fn parse_transform_prop(s: &str) -> Result<TransformProperty, ParseError<'_>> {
+        TransformProperty::parse_str(s)
+    }
+
     fn assert_transform_eq(t1: &Transform, t2: &Transform) {
         let epsilon = 8.0 * f64::EPSILON; // kind of arbitrary, but allow for some sloppiness
 
@@ -465,13 +761,6 @@ mod tests {
         assert_parse_error("skewX (1,2)");
         assert_parse_error("skewY ()");
         assert_parse_error("skewY");
-    }
-
-    #[test]
-    fn invalid_transform_yields_value_error() {
-        assert!(parse_transform("matrix (0 0 0 0 0 0)").is_err());
-        assert!(parse_transform("scale (0), translate (10, 10)").is_err());
-        assert!(parse_transform("scale (0), skewX (90)").is_err());
     }
 
     #[test]
@@ -586,5 +875,166 @@ mod tests {
     #[test]
     fn parses_empty() {
         assert_transform_eq(&parse_transform("").unwrap(), &Transform::identity());
+    }
+
+    #[test]
+    fn test_parse_transform_property_matrix() {
+        let tp = TransformProperty::List(vec![TransformFunction::Matrix(
+            Transform::new_unchecked(1.0, 2.0, 3.0, 4.0, 5.0, 6.0),
+        )]);
+
+        assert_eq!(&tp, &parse_transform_prop("matrix(1,2,3,4,5,6)").unwrap());
+        assert!(parse_transform_prop("matrix(1 2 3 4 5 6)").is_err());
+        assert!(parse_transform_prop("Matrix(1,2,3,4,5,6)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_translate() {
+        let tpt = TransformProperty::List(vec![TransformFunction::Translate(
+            Length::<Horizontal>::new(100.0, LengthUnit::Px),
+            Length::<Vertical>::new(200.0, LengthUnit::Px),
+        )]);
+
+        assert_eq!(
+            &tpt,
+            &parse_transform_prop("translate(100px,200px)").unwrap()
+        );
+
+        assert_eq!(
+            parse_transform_prop("translate(1)").unwrap(),
+            parse_transform_prop("translate(1, 0)").unwrap()
+        );
+
+        assert!(parse_transform_prop("translate(100, foo)").is_err());
+        assert!(parse_transform_prop("translate(100, )").is_err());
+        assert!(parse_transform_prop("translate(100 200)").is_err());
+        assert!(parse_transform_prop("translate(1px,2px,3px,4px)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_translate_x() {
+        let tptx = TransformProperty::List(vec![TransformFunction::TranslateX(
+            Length::<Horizontal>::new(100.0, LengthUnit::Px),
+        )]);
+
+        assert_eq!(&tptx, &parse_transform_prop("translateX(100px)").unwrap());
+        assert!(parse_transform_prop("translateX(1)").is_ok());
+        assert!(parse_transform_prop("translateX(100 100)").is_err());
+        assert!(parse_transform_prop("translatex(1px)").is_err());
+        assert!(parse_transform_prop("translatex(1rad)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_translate_y() {
+        let tpty = TransformProperty::List(vec![TransformFunction::TranslateY(
+            Length::<Vertical>::new(100.0, LengthUnit::Px),
+        )]);
+
+        assert_eq!(&tpty, &parse_transform_prop("translateY(100px)").unwrap());
+        assert!(parse_transform_prop("translateY(1)").is_ok());
+        assert!(parse_transform_prop("translateY(100 100)").is_err());
+        assert!(parse_transform_prop("translatey(1px)").is_err());
+    }
+
+    #[test]
+    fn test_translate_only_supports_pixel_units() {
+        assert!(parse_transform_prop("translate(1in, 2)").is_err());
+        assert!(parse_transform_prop("translate(1, 2in)").is_err());
+        assert!(parse_transform_prop("translateX(1cm)").is_err());
+        assert!(parse_transform_prop("translateY(1cm)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_scale() {
+        let tps = TransformProperty::List(vec![TransformFunction::Scale(1.0, 10.0)]);
+
+        assert_eq!(&tps, &parse_transform_prop("scale(1,10)").unwrap());
+
+        assert_eq!(
+            parse_transform_prop("scale(2)").unwrap(),
+            parse_transform_prop("scale(2, 2)").unwrap()
+        );
+
+        assert!(parse_transform_prop("scale(100, foo)").is_err());
+        assert!(parse_transform_prop("scale(100, )").is_err());
+        assert!(parse_transform_prop("scale(1 10)").is_err());
+        assert!(parse_transform_prop("scale(1px,10px)").is_err());
+        assert!(parse_transform_prop("scale(1%)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_scale_x() {
+        let tpsx = TransformProperty::List(vec![TransformFunction::ScaleX(10.0)]);
+
+        assert_eq!(&tpsx, &parse_transform_prop("scaleX(10)").unwrap());
+
+        assert!(parse_transform_prop("scaleX(100 100)").is_err());
+        assert!(parse_transform_prop("scalex(10)").is_err());
+        assert!(parse_transform_prop("scaleX(10px)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_scale_y() {
+        let tpsy = TransformProperty::List(vec![TransformFunction::ScaleY(10.0)]);
+
+        assert_eq!(&tpsy, &parse_transform_prop("scaleY(10)").unwrap());
+        assert!(parse_transform_prop("scaleY(10 1)").is_err());
+        assert!(parse_transform_prop("scaleY(1px)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_rotate() {
+        let tpr =
+            TransformProperty::List(vec![TransformFunction::Rotate(Angle::from_degrees(100.0))]);
+        assert_eq!(&tpr, &parse_transform_prop("rotate(100deg)").unwrap());
+        assert!(parse_transform_prop("rotate(100deg 100)").is_err());
+        assert!(parse_transform_prop("rotate(3px)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_skew() {
+        let tpsk = TransformProperty::List(vec![TransformFunction::Skew(
+            Angle::from_degrees(90.0),
+            Angle::from_degrees(120.0),
+        )]);
+
+        assert_eq!(&tpsk, &parse_transform_prop("skew(90deg,120deg)").unwrap());
+
+        assert_eq!(
+            parse_transform_prop("skew(45deg)").unwrap(),
+            parse_transform_prop("skew(45deg, 0)").unwrap()
+        );
+
+        assert!(parse_transform_prop("skew(1.0,1.0)").is_ok());
+        assert!(parse_transform_prop("skew(1rad,1rad)").is_ok());
+
+        assert!(parse_transform_prop("skew(100, foo)").is_err());
+        assert!(parse_transform_prop("skew(100, )").is_err());
+        assert!(parse_transform_prop("skew(1.0px)").is_err());
+        assert!(parse_transform_prop("skew(1.0,1.0,1deg)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_skew_x() {
+        let tpskx =
+            TransformProperty::List(vec![TransformFunction::SkewX(Angle::from_degrees(90.0))]);
+
+        assert_eq!(&tpskx, &parse_transform_prop("skewX(90deg)").unwrap());
+        assert!(parse_transform_prop("skewX(1.0)").is_ok());
+        assert!(parse_transform_prop("skewX(1rad)").is_ok());
+        assert!(parse_transform_prop("skewx(1.0)").is_err());
+        assert!(parse_transform_prop("skewX(1.0,1.0)").is_err());
+    }
+
+    #[test]
+    fn test_parse_transform_property_skew_y() {
+        let tpsky =
+            TransformProperty::List(vec![TransformFunction::SkewY(Angle::from_degrees(90.0))]);
+
+        assert_eq!(&tpsky, &parse_transform_prop("skewY(90deg)").unwrap());
+        assert!(parse_transform_prop("skewY(1.0)").is_ok());
+        assert!(parse_transform_prop("skewY(1rad)").is_ok());
+        assert!(parse_transform_prop("skewy(1.0)").is_err());
+        assert!(parse_transform_prop("skewY(1.0,1.0)").is_err());
     }
 }
