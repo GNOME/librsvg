@@ -90,9 +90,16 @@ pub enum TransformFunction {
 
 impl Parse for TransformProperty {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TransformProperty, ParseError<'i>> {
-        let t = parse_transform_prop_function_list(parser)?;
+        if parser
+            .try_parse(|p| p.expect_ident_matching("none"))
+            .is_ok()
+        {
+            Ok(TransformProperty::None)
+        } else {
+            let t = parse_transform_prop_function_list(parser)?;
 
-        Ok(TransformProperty::List(t))
+            Ok(TransformProperty::List(t))
+        }
     }
 }
 
@@ -875,6 +882,14 @@ mod tests {
     #[test]
     fn parses_empty() {
         assert_transform_eq(&parse_transform("").unwrap(), &Transform::identity());
+    }
+
+    #[test]
+    fn test_parse_transform_property_none() {
+        assert_eq!(
+            parse_transform_prop("none").unwrap(),
+            TransformProperty::None
+        );
     }
 
     #[test]
