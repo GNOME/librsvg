@@ -45,30 +45,34 @@ impl TransformProperty {
         // Multiply by each of the transform functions in transform property from left to right
         // TODO: implement - Translate by the negated computed X and Y values of transform-origin
 
-        let mut final_transform = Transform::identity();
+        match self {
+            TransformProperty::None => Transform::identity(),
 
-        if let TransformProperty::List(l) = self {
-            for f in l.iter() {
-                let transform_matrix = match f {
-                    TransformFunction::Matrix(trans_matrix) => *trans_matrix,
-                    TransformFunction::Translate(h, v) => {
-                        Transform::new_translate(h.length, v.length)
-                    }
-                    TransformFunction::TranslateX(h) => Transform::new_translate(h.length, 0.0),
-                    TransformFunction::TranslateY(v) => Transform::new_translate(0.0, v.length),
-                    TransformFunction::Scale(x, y) => Transform::new_scale(*x, *y),
-                    TransformFunction::ScaleX(x) => Transform::new_scale(*x, 1.0),
-                    TransformFunction::ScaleY(y) => Transform::new_scale(1.0, *y),
-                    TransformFunction::Rotate(a) => Transform::new_rotate(*a),
-                    TransformFunction::Skew(ax, ay) => Transform::new_skew(*ax, *ay),
-                    TransformFunction::SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
-                    TransformFunction::SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
-                };
-                final_transform = transform_matrix.post_transform(&final_transform);
+            TransformProperty::List(l) => {
+                let mut final_transform = Transform::identity();
+
+                for f in l.iter() {
+                    use TransformFunction::*;
+
+                    let transform_matrix = match f {
+                        Matrix(trans_matrix) => *trans_matrix,
+                        Translate(h, v) => Transform::new_translate(h.length, v.length),
+                        TranslateX(h) => Transform::new_translate(h.length, 0.0),
+                        TranslateY(v) => Transform::new_translate(0.0, v.length),
+                        Scale(x, y) => Transform::new_scale(*x, *y),
+                        ScaleX(x) => Transform::new_scale(*x, 1.0),
+                        ScaleY(y) => Transform::new_scale(1.0, *y),
+                        Rotate(a) => Transform::new_rotate(*a),
+                        Skew(ax, ay) => Transform::new_skew(*ax, *ay),
+                        SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
+                        SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
+                    };
+                    final_transform = transform_matrix.post_transform(&final_transform);
+                }
+
+                final_transform
             }
         }
-
-        final_transform
     }
 }
 
