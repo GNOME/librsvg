@@ -15,7 +15,7 @@ use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
-use crate::transform::Transform;
+use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
 use crate::xml::Attributes;
@@ -134,7 +134,8 @@ impl SetAttributes for Pattern {
                     self.common.preserve_aspect_ratio = attr.parse(value)?
                 }
                 expanded_name!("", "patternTransform") => {
-                    self.common.transform = attr.parse(value)?
+                    let transform_attr: TransformAttribute = attr.parse(value)?;
+                    self.common.transform = Some(transform_attr.to_transform());
                 }
                 ref a if is_href(a) => {
                     set_href(

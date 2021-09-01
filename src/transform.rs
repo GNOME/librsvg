@@ -1,8 +1,16 @@
-//! Handling of `transform` values.
+//! Handling of transform values.
 //!
-//! This module handles `transform` values [per the SVG specification][spec].
+//! This module contains the following:
 //!
-//! [spec]:  https://www.w3.org/TR/SVG11/coords.html#TransformAttribute and https://www.w3.org/TR/css-transforms-1/#transform-property
+//! * [`Transform`] to represent 2D transforms in general; it's just a matrix.
+//!
+//! * [`TransformProperty`] for the [`transform` property][prop] in SVG2/CSS3.
+//!
+//! * [`Transform`] also handles the [`transform` attribute][attr] in SVG1.1, which has a different
+//! grammar than the `transform` property from SVG2.
+//!
+//! [prop]: https://www.w3.org/TR/css-transforms-1/#transform-property
+//! [attr]: https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
 
 use cssparser::{Parser, Token};
 
@@ -14,12 +22,31 @@ use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::rect::Rect;
 
-// https://www.w3.org/TR/css-transforms-1/#transform-property
+/// A 2D transformation matrix.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Transform {
+    pub xx: f64,
+    pub yx: f64,
+    pub xy: f64,
+    pub yy: f64,
+    pub x0: f64,
+    pub y0: f64,
+}
+
+/// The `transform` property from the CSS Transforms Module Level 1.
+///
+/// https://www.w3.org/TR/css-transforms-1/#transform-property
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransformProperty {
     None,
     List(Vec<TransformFunction>),
 }
+
+/// The `transform` attribute from SVG1.1
+///
+/// https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct TransformAttribute(Transform);
 
 impl Default for TransformProperty {
     fn default() -> Self {
@@ -45,30 +72,34 @@ impl TransformProperty {
         // Multiply by each of the transform functions in transform property from left to right
         // TODO: implement - Translate by the negated computed X and Y values of transform-origin
 
-        let mut final_transform = Transform::identity();
+        match self {
+            TransformProperty::None => Transform::identity(),
 
-        if let TransformProperty::List(l) = self {
-            for f in l.iter() {
-                let transform_matrix = match f {
-                    TransformFunction::Matrix(trans_matrix) => *trans_matrix,
-                    TransformFunction::Translate(h, v) => {
-                        Transform::new_translate(h.length, v.length)
-                    }
-                    TransformFunction::TranslateX(h) => Transform::new_translate(h.length, 0.0),
-                    TransformFunction::TranslateY(v) => Transform::new_translate(0.0, v.length),
-                    TransformFunction::Scale(x, y) => Transform::new_scale(*x, *y),
-                    TransformFunction::ScaleX(x) => Transform::new_scale(*x, 1.0),
-                    TransformFunction::ScaleY(y) => Transform::new_scale(1.0, *y),
-                    TransformFunction::Rotate(a) => Transform::new_rotate(*a),
-                    TransformFunction::Skew(ax, ay) => Transform::new_skew(*ax, *ay),
-                    TransformFunction::SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
-                    TransformFunction::SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
-                };
-                final_transform = transform_matrix.post_transform(&final_transform);
+            TransformProperty::List(l) => {
+                let mut final_transform = Transform::identity();
+
+                for f in l.iter() {
+                    use TransformFunction::*;
+
+                    let transform_matrix = match f {
+                        Matrix(trans_matrix) => *trans_matrix,
+                        Translate(h, v) => Transform::new_translate(h.length, v.length),
+                        TranslateX(h) => Transform::new_translate(h.length, 0.0),
+                        TranslateY(v) => Transform::new_translate(0.0, v.length),
+                        Scale(x, y) => Transform::new_scale(*x, *y),
+                        ScaleX(x) => Transform::new_scale(*x, 1.0),
+                        ScaleY(y) => Transform::new_scale(1.0, *y),
+                        Rotate(a) => Transform::new_rotate(*a),
+                        Skew(ax, ay) => Transform::new_skew(*ax, *ay),
+                        SkewX(ax) => Transform::new_skew(*ax, Angle::new(0.0)),
+                        SkewY(ay) => Transform::new_skew(Angle::new(0.0), *ay),
+                    };
+                    final_transform = transform_matrix.post_transform(&final_transform);
+                }
+
+                final_transform
             }
         }
-
-        final_transform
     }
 }
 
@@ -90,9 +121,16 @@ pub enum TransformFunction {
 
 impl Parse for TransformProperty {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TransformProperty, ParseError<'i>> {
-        let t = parse_transform_prop_function_list(parser)?;
+        if parser
+            .try_parse(|p| p.expect_ident_matching("none"))
+            .is_ok()
+        {
+            Ok(TransformProperty::None)
+        } else {
+            let t = parse_transform_prop_function_list(parser)?;
 
-        Ok(TransformProperty::List(t))
+            Ok(TransformProperty::List(t))
+        }
     }
 }
 
@@ -102,11 +140,11 @@ fn parse_transform_prop_function_list<'i>(
     let mut v = Vec::<TransformFunction>::new();
 
     loop {
+        v.push(parse_transform_prop_function_command(parser)?);
+
         if parser.is_exhausted() {
             break;
         }
-
-        v.push(parse_transform_prop_function_command(parser)?);
     }
 
     Ok(v)
@@ -313,16 +351,6 @@ fn parse_prop_skew_y_args<'i>(
     })
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Transform {
-    pub xx: f64,
-    pub yx: f64,
-    pub xy: f64,
-    pub yy: f64,
-    pub x0: f64,
-    pub y0: f64,
-}
-
 impl Transform {
     #[inline]
     pub fn new_unchecked(xx: f64, yx: f64, xy: f64, yy: f64, x0: f64, y0: f64) -> Self {
@@ -506,9 +534,15 @@ impl Default for Transform {
     }
 }
 
-impl Parse for Transform {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-        parse_transform_list(parser)
+impl TransformAttribute {
+    pub fn to_transform(&self) -> Transform {
+        self.0
+    }
+}
+
+impl Parse for TransformAttribute {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TransformAttribute, ParseError<'i>> {
+        Ok(TransformAttribute(parse_transform_list(parser)?))
     }
 }
 
@@ -663,7 +697,8 @@ mod tests {
     }
 
     fn parse_transform(s: &str) -> Result<Transform, ParseError<'_>> {
-        Transform::parse_str(s)
+        let transform_attr = TransformAttribute::parse_str(s)?;
+        Ok(transform_attr.to_transform())
     }
 
     fn parse_transform_prop(s: &str) -> Result<TransformProperty, ParseError<'_>> {
@@ -875,6 +910,31 @@ mod tests {
     #[test]
     fn parses_empty() {
         assert_transform_eq(&parse_transform("").unwrap(), &Transform::identity());
+    }
+
+    #[test]
+    fn test_parse_transform_property_none() {
+        assert_eq!(
+            parse_transform_prop("none").unwrap(),
+            TransformProperty::None
+        );
+    }
+
+    #[test]
+    fn none_transform_is_identity() {
+        assert_eq!(
+            parse_transform_prop("none").unwrap().to_transform(),
+            Transform::identity()
+        );
+    }
+
+    #[test]
+    fn empty_transform_property_is_error() {
+        // https://www.w3.org/TR/css-transforms-1/#transform-property
+        //
+        // <transform-list> = <transform-function>+
+        //                                        ^ one or more required
+        assert!(parse_transform_prop("").is_err());
     }
 
     #[test]
