@@ -1,8 +1,16 @@
-//! Handling of `transform` values.
+//! Handling of transform values.
 //!
-//! This module handles `transform` values [per the SVG specification][spec].
+//! This module contains the following:
 //!
-//! [spec]:  https://www.w3.org/TR/SVG11/coords.html#TransformAttribute and https://www.w3.org/TR/css-transforms-1/#transform-property
+//! * [`Transform`] to represent 2D transforms in general; it's just a matrix.
+//!
+//! * [`TransformProperty`] for the [`transform` property][prop] in SVG2/CSS3.
+//!
+//! * [`Transform`] also handles the [`transform` attribute][attr] in SVG1.1, which has a different
+//! grammar than the `transform` property from SVG2.
+//!
+//! [prop]: https://www.w3.org/TR/css-transforms-1/#transform-property
+//! [attr]: https://www.w3.org/TR/SVG11/coords.html#TransformAttribute and https://www.w3.org/TR/css-transforms-1/#transform-property
 
 use cssparser::{Parser, Token};
 
@@ -14,7 +22,20 @@ use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::rect::Rect;
 
-// https://www.w3.org/TR/css-transforms-1/#transform-property
+/// A 2D transformation matrix.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Transform {
+    pub xx: f64,
+    pub yx: f64,
+    pub xy: f64,
+    pub yy: f64,
+    pub x0: f64,
+    pub y0: f64,
+}
+
+/// The `transform` property from the CSS Transforms Module Level 1.
+///
+/// https://www.w3.org/TR/css-transforms-1/#transform-property
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransformProperty {
     None,
@@ -322,16 +343,6 @@ fn parse_prop_skew_y_args<'i>(
         let angle = Angle::parse(p)?;
         Ok(TransformFunction::SkewY(angle))
     })
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Transform {
-    pub xx: f64,
-    pub yx: f64,
-    pub xy: f64,
-    pub yy: f64,
-    pub x0: f64,
-    pub y0: f64,
 }
 
 impl Transform {
