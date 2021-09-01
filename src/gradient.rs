@@ -17,7 +17,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::transform::Transform;
+use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
 use crate::xml::Attributes;
 
@@ -536,7 +536,10 @@ impl SetAttributes for Common {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => self.units = attr.parse(value)?,
-                expanded_name!("", "gradientTransform") => self.transform = attr.parse(value)?,
+                expanded_name!("", "gradientTransform") => {
+                    let transform_attr: TransformAttribute = attr.parse(value)?;
+                    self.transform = Some(transform_attr.to_transform());
+                }
                 expanded_name!("", "spreadMethod") => self.spread = attr.parse(value)?,
                 ref a if is_href(a) => {
                     set_href(

@@ -26,8 +26,7 @@ use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_macros::Property;
-use crate::transform::Transform;
-use crate::transform::TransformProperty;
+use crate::transform::{Transform, TransformAttribute, TransformProperty};
 use crate::xml::Attributes;
 
 // Re-export the actual properties so they are easy to find from a single place `properties::*`.
@@ -752,9 +751,9 @@ impl SpecifiedValues {
                     // FIXME: we parse the transform attribute here because we don't yet have
                     // a better way to distinguish attributes whose values have different
                     // grammars than properties.
-                    let transform =
-                        Transform::parse_str(value).unwrap_or_else(|_| Transform::default());
-                    self.transform = Some(transform);
+                    let transform_attr = TransformAttribute::parse_str(value)
+                        .unwrap_or_else(|_| TransformAttribute::default());
+                    self.transform = Some(transform_attr.to_transform());
                 }
 
                 expanded_name!(xml "lang") => {

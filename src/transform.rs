@@ -10,7 +10,7 @@
 //! grammar than the `transform` property from SVG2.
 //!
 //! [prop]: https://www.w3.org/TR/css-transforms-1/#transform-property
-//! [attr]: https://www.w3.org/TR/SVG11/coords.html#TransformAttribute and https://www.w3.org/TR/css-transforms-1/#transform-property
+//! [attr]: https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
 
 use cssparser::{Parser, Token};
 
@@ -41,6 +41,12 @@ pub enum TransformProperty {
     None,
     List(Vec<TransformFunction>),
 }
+
+/// The `transform` attribute from SVG1.1
+///
+/// https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct TransformAttribute(Transform);
 
 impl Default for TransformProperty {
     fn default() -> Self {
@@ -528,9 +534,15 @@ impl Default for Transform {
     }
 }
 
-impl Parse for Transform {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Transform, ParseError<'i>> {
-        parse_transform_list(parser)
+impl TransformAttribute {
+    pub fn to_transform(&self) -> Transform {
+        self.0
+    }
+}
+
+impl Parse for TransformAttribute {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<TransformAttribute, ParseError<'i>> {
+        Ok(TransformAttribute(parse_transform_list(parser)?))
     }
 }
 
@@ -685,7 +697,8 @@ mod tests {
     }
 
     fn parse_transform(s: &str) -> Result<Transform, ParseError<'_>> {
-        Transform::parse_str(s)
+        let transform_attr = TransformAttribute::parse_str(s)?;
+        Ok(transform_attr.to_transform())
     }
 
     fn parse_transform_prop(s: &str) -> Result<TransformProperty, ParseError<'_>> {
