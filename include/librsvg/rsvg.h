@@ -1307,11 +1307,12 @@ void rsvg_handle_set_size_callback (RsvgHandle    *handle,
 
 /**
  * SECTION: rsvg-pixbuf
- * @short_description: How to render SVGs into GdkPixbufs, for easy use in GTK+
- *  applications
  *
- * GdkPixbuf is a library for image loading and manipulation. It is part of the
- * cross-platform GTK+ widget toolkit.
+ * Years ago, GNOME and GTK used the gdk-pixbuf library as a general mechanism to load
+ * raster images into memory (PNG, JPEG, etc.) and pass them around.  The general idiom
+ * was, "load this image file and give me a #GdkPixbuf object", which is basically a pixel
+ * buffer.  Librsvg supports this kind of interface to load and render SVG documents, but
+ * it is deprecated in favor of rendering to Cairo contexts.
  */
 
 /**

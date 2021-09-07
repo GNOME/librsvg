@@ -87,7 +87,7 @@ rsvg_handle_render_cairo_sub
 
 <SECTION>
 <FILE>rsvg-pixbuf</FILE>
-<TITLE>Using RSVG with GdkPixbuf</TITLE>
+<TITLE>Deprecated functions to render to GdkPixbuf</TITLE>
 rsvg_handle_get_pixbuf
 rsvg_handle_get_pixbuf_sub
 rsvg_pixbuf_from_file
