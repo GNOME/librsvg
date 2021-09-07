@@ -64,8 +64,7 @@ See your disk usage with:
 docker system df
 ```
 
-# I want to add more OS's to test, how do I do that?
-
+### I want to add more OS's to test, how do I do that?
 To add a new OS clone one of the `tools/docker/librsvg-base` folders, renaming it to the OS you wish to add, eg. If I wanted to test Alpine, I would rename the folder to "alpine" all lower case, one word, to make things easy. 
 
 
@@ -84,7 +83,7 @@ Finally go to `clean_distro_image` and copy one of the `docker rmi --force` line
 
 You're done! Now running the script with `./docker-test.sh -s youros` will use your OS, setting the docker images, base image, and everything else correctly!
 
-### How does this tool work?
+## How does this tool work?
 
 See the docker-test.sh file for the script itself, below is the architecture of the script.
 The dockerfiles in the debian/fedora/opensuse folders have the build dependency install commands that are used to build each of the base images. 
@@ -169,7 +168,7 @@ The dockerfiles in the debian/fedora/opensuse folders have the build dependency 
 ┌──────────────────────────────────────────────────────┐
 │run_docker                                            |
 │ Runs the docker container with this command:         |
-│ 	sudo docker run --name librsvg-$SYS-test \         |
+│   sudo docker run --name librsvg-$SYS-test \         |
 |    -v $TMPDIR:$TMPDIR -w $TMPDIR -t --rm \           |
 |    librsvg/librsvg-$SYS-base cargo test              |
 |                                                      |
