@@ -638,7 +638,7 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
 /**
  * rsvg_handle_get_pixbuf_sub:
  * @handle: An #RsvgHandle
- * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
@@ -719,7 +719,7 @@ void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimensio
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
- * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
@@ -746,7 +746,7 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
  * rsvg_handle_get_position_sub:
  * @handle: A #RsvgHandle
  * @position_data: (out): A place to store the SVG fragment's position.
- * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
@@ -774,7 +774,7 @@ gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
 /**
  * rsvg_handle_has_sub:
  * @handle: a #RsvgHandle
- * @id: An element's id within the SVG, starting with "##" (a single hash
+ * @id: An element's id within the SVG, starting with "#" (a single hash
  * character), for example, "##layer1".  This notation corresponds to a URL's
  * fragment ID.
  *
