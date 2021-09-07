@@ -92,6 +92,7 @@
     <xi:include href="xml/rsvg-handle.xml"/>
     <xi:include href="xml/rsvg-gio.xml"/>
     <xi:include href="xml/rsvg-cairo.xml"/>
+    <xi:include href="xml/rsvg-cairo-deprecated.xml"/>
     <xi:include href="xml/rsvg-pixbuf.xml"/>
     <xi:include href="xml/rsvg-features.xml"/>
   </part>
