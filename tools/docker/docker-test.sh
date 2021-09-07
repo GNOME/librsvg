@@ -1,5 +1,8 @@
 #!/bin/bash
-REPACKAGE=false
+
+# Here is all of the variables used, 
+#  changed by passing through command line arguments
+RECOPY=false
 INT=false
 SYS="no"
 REBUILD=false
@@ -9,7 +12,7 @@ TMPDIR=/tmp/librsvg
 YES=false
 
 CLEANUP=false
-RMDISTRO=false
+RMDISTROIMG=false
 RMSYSTEMIMG=false
 RMTMP=false
 
@@ -27,145 +30,61 @@ function usage {
 		echo "Use -c to Cleanup ALL related docker images (this will not run the test suite)"
 }
 
-#Package librsvg for inclusion in the Docker image
-function prepare_librsvg {
-	echo "Preparing Librsvg"
-
-	if [[ $REPACKAGE == false ]] 
-		then
-			if [[ $INT == true ]]
-			then
-				read -p "Making a copy, then running make clean and packaging Librsvg, press any key to continue" -n1 -s
-				echo " "
-			fi
-
-			mkdir $TMPDIR
-			echo "Copying librsvg to $TMPDIR"
-			rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
-
-			#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
-			#cp -r $LIBDIR/. $TMPDIR 
-			cd $TMPDIR
-
-			if [[ $INT == true ]]
-			then
-				read -p "Running autogen to prepare for building in $TMPDIR, then running make clean, press any key to continue" -n1 -s
-				echo " "
-			fi
-
-			#Run autogen, this prepares librsvg for building, and allows make clean to be ran
-			./autogen.sh
-			#run make clean which makes the resulting tar much smaller.
-			make clean
-	else
-		echo "Recopying Librsvg"
-		if [[ ! -d "$TMPDIR" ]] 
-		then
-			echo "$TMPDIR does not exist, creating"
-			mkdir $TMPDIR
-		else
-			echo "Erasing $TMPDIR and recreating"
-			clean_tmp_dir
-			mkdir $TMPDIR
-		fi
-
-		echo "Copying librsvg to $TMPDIR"
-		rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
-
-		#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
-		#cp -r $LIBDIR/. $TMPDIR
-		cd $TMPDIR
-
-		if [[ $INT == true ]]
-		then
-			read -p "Running autogen to prepare for building in $TMPDIR, then running make clean, press any key to continue" -n1 -s
-			echo " "
-		fi
-
-		#Run autogen, this prepares librsvg for building, and allows make clean to be ran
-		./autogen.sh
-		#run make clean to clean up the folder
-		make clean
-
-	fi	
-}
-
+# Confirm with user to remove Librsvg system docker image 
 function confirm {
 	if [[ $YES == false ]] 
 	then
-		echo "Would you like to remove the librsvg docker image with the build dependencies (it will take a while to rebuild if removed)"
-		select yn in "Yes" "No"; do
-    		case $yn in
-    		    Yes ) RMSYSTEMIMG=true;;
-    		    No ) RMSYSTEMIMG=false;;
-   			esac
-		done
-		echo " "
+		echo
+		read -p $'Would you like to remove the librsvg docker image with the build dependencies?\x0a(it will take a while to rebuild if removed)\x0aY/N: ' -n 1 -r
+		echo 
+		if [[ $REPLY =~ ^[Yy]$ ]]
+		then
+			RMSYSTEMIMG=true
+		else
+			RMSYSTEMIMG=false
+		fi
 	fi
 }
 
+# Confirm with user to remove $TMPDIR
 function confirm_rm_dir {
 	if [[ $YES == false ]] 
 	then
-		echo "Would you like to remove the librsvg files from the tmp directory: $TMPDIR"
-		select yn in "Yes" "No"; do
-    		case $yn in
-    		    Yes ) RMTMP=true;;
-    		    No ) RMTMP=false;;
-   			esac
-		done
-		echo " "
+		echo
+		read -p $'Would you like to remove the librsvg files from the tmp directory?\x0aY/N: ' -n 1 -r
+		echo 
+		if [[ $REPLY =~ ^[Yy]$ ]]
+		then
+			RMTMP=true
+		else
+			RMTMP=false
+		fi
 	fi
 }
 
+# Confirm with user to remove distro docker images
 function confirm_rm_distro {
 	if [[ $YES == false ]] 
 	then
-		echo "Would you like to remove the base docker system images ie. opensuse (do this if you don't plan to build librsvg with this tool in the future, otherwise keep them, it takes a while to build)"
-		select yn in "Yes" "No"; do
-    		case $yn in
-    		    Yes ) RMDISTROIMG=true;;
-    		    No ) RMDISTROIMG=false;;
-   			esac
-		done
-		echo " "
-	fi
-
-
-}
-
-#build the base image, this contains the dependencies for librsvg to be built, and is used to build the system image
-function build_base_image {
-
-	if [[ $REBUILD == true ]]
+		echo
+		read -p $'Would you like to remove the base docker system images ie. opensuse?\x0a(do this if you dont plan to build librsvg with this tool in the future, otherwise keep them, it takes a while to build)\x0aY/N: ' -n 1 -r
+		echo 
+		if [[ $REPLY =~ ^[Yy]$ ]]
 		then
-		if [[ $INT == true ]]
-			then
-				read -p "Rebuilding the Librsvg build dependencies docker container, this will take a moment" -n1 -s
-				echo " "
+			RMDISTROIMG=true
+		else
+			RMDISTROIMG=false
 		fi
-
-		clean_base_image
-		sudo docker build -t librsvg/librsvg-$SYS-base -f tools/docker/librsvg-base/$SYS/Dockerfile tools/docker/librsvg-base/$SYS/.	
-
 	fi
-
-	if [[ $INT == true ]]
-	then
-		read -p "Building the Librsvg build dependencies docker container, this will take a moment, press any key to continue" -n1 -s
-		echo " "
-	fi
-
-	sudo docker build -t librsvg/librsvg-$SYS-base -f tools/docker/librsvg-base/$SYS/Dockerfile tools/docker/librsvg-base/$SYS/.	
 }
 
-#removes the designated base system image
+# Removes the designated base system docker image
 function clean_base_image {
 	echo "removing system image librsvg-base-$SYS"
 	sudo docker rmi --force librsvg/librsvg-$SYS-base
 }
 
-#removes distro images
+# Removes distro docker images
 function clean_distro_image {
 	echo "removing base system images"
 	sudo docker rmi --force debian
@@ -173,6 +92,7 @@ function clean_distro_image {
 	sudo docker rmi --force fedora
 }
 
+# Clean the temporary directory
 function clean_tmp_dir {
 	if [[ "$TMPDIR" == "/" ]] 
 	then
@@ -186,15 +106,16 @@ function clean_tmp_dir {
 		exit 0
 	fi
 	echo "This requires sudo because the build is done with the docker image, so build files cannot be removed without it"
-	echo " "
+	echo 
 	if [[ $INT == true ]]
 	then
 		read -p "Pausing, press any key to continue, you may be asked for admin password in the next step" -n1 -s
-		echo " "
+		echo 
 	fi
 	sudo rm -rf $TMPDIR
 }
 
+# Cleanup the various directories and docker images
 function cleanup {
 	if [[ $CLEANUP == true ]]
 	then
@@ -202,13 +123,13 @@ function cleanup {
 
 		if [ $RMSYSTEMIMG == "true" ]
 		then
-			SYS=opensuse
+			SYS="opensuse"
 			clean_base_image
 
-			SYS=fedora
+			SYS="fedora"
 			clean_base_image
 
-			SYS=debian
+			SYS="debian"
 			clean_base_image
 
 		fi
@@ -232,16 +153,24 @@ function cleanup {
 	
 }
 
-#runs the built docker image, this runs cargo check automatically attached to the console
-function run_docker {
-	sudo docker run --name librsvg-$SYS-test -v /tmp/librsvg/:/tmp/librsvg/ -w /tmp/librsvg/ -t --rm librsvg/librsvg-$SYS-base cargo test 
+# Check for a docker installation, the script will not continue if Docker is not present.
+function check_docker {
+	if command -v docker
+	then
+		echo "Docker found, proceeding"
+	else
+		echo "No Docker, please install Docker, exiting"
+		exit 1
+	fi
 }
 
+# Check the library directory, defaulting to the current working directory if none is provided
 function check_dir {
 	echo "Checking if $LIBDIR exists"
 	if [[ ! -d "$LIBDIR" ]]
 	then
 		echo "Library directory: '$LIBDIR' does not exist or isn't set, defaulting to current working directory"
+		echo
 		LIBDIR=$PWD
 	fi
 	
@@ -250,12 +179,14 @@ function check_dir {
 		echo "Directory is good!"
 	else
 		echo "Directory missing last /, adding"
+		echo
 		LIBDIR+="/"
 	fi
 	
 	DIR=$PWD
 }
 
+# Manually correct for a few different spellings of supported distros 
 function check_system {
 	echo "Checking what system $SYSTEM is"
 	if [[ $SYSTEM == "fedora" ]]
@@ -285,22 +216,116 @@ function check_system {
 	else 
 		echo "Wrong system selected, must be fedora, opensuse, or debian"
 		echo $flag
+		echo
 		exit 2
 	fi
 }
 
+# Build the base image, this contains the dependencies for librsvg to be built, and is used to build the system image
+function build_base_image {
+	if [[ $REBUILD == true ]]
+		then
+		if [[ $INT == true ]]
+			then
+				read -p "Rebuilding the Librsvg build dependencies docker container, this will take a moment" -n1 -s
+				echo 
+		fi
+
+		clean_base_image
+		sudo docker build -t librsvg/librsvg-$SYS-base -f tools/docker/librsvg-base/$SYS/Dockerfile tools/docker/librsvg-base/$SYS/.	
+
+	fi
+
+	if [[ $INT == true ]]
+	then
+		read -p "Building the Librsvg build dependencies docker container, this will take a moment, press any key to continue" -n1 -s
+		echo 
+	fi
+
+	sudo docker build -t librsvg/librsvg-$SYS-base -f tools/docker/librsvg-base/$SYS/Dockerfile tools/docker/librsvg-base/$SYS/.	
+}
+
+#Package librsvg for inclusion in the Docker image
+function prepare_librsvg {
+	echo "Preparing Librsvg"
+
+	if [[ $RECOPY == false ]] 
+		then
+			if [[ $INT == true ]]
+			then
+				read -p "Making a copy, then packaging Librsvg, press any key to continue" -n1 -s
+				echo 
+			fi
+
+			mkdir $TMPDIR
+			echo "Copying librsvg to $TMPDIR"
+			echo
+			rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
+
+			#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
+			#cp -r $LIBDIR/. $TMPDIR 
+			cd $TMPDIR
+
+			if [[ $INT == true ]]
+			then
+				read -p "Running autogen to prepare for building in $TMPDIR, press any key to continue" -n1 -s
+				echo 
+			fi
+
+			#Run autogen, this prepares librsvg for building
+			./autogen.sh
+
+	else
+		echo "Recopying Librsvg"
+		echo
+		if [[ ! -d "$TMPDIR" ]] 
+		then
+			echo "$TMPDIR does not exist, creating"
+			mkdir $TMPDIR
+		else
+			echo "Erasing $TMPDIR and recreating"
+			clean_tmp_dir
+			mkdir $TMPDIR
+		fi
+
+		echo "Copying librsvg to $TMPDIR"
+		rsync -av --exclude '.git' --exclude 'target' $LIBDIR/ $TMPDIR/
+
+		#Uncomment this line if your distro doesn't have rsync, it'll make a lot of text when copying the git folder, but works
+		#cp -r $LIBDIR/. $TMPDIR
+		cd $TMPDIR
+
+		if [[ $INT == true ]]
+		then
+			read -p "Running autogen to prepare for building in $TMPDIR, then running make clean, press any key to continue" -n1 -s
+			echo 
+		fi
+
+		#Run autogen, this prepares librsvg for building
+		./autogen.sh
+
+	fi	
+}
+
+# Runs the built docker image, this runs cargo check automatically attached to the console
+function run_docker {
+	sudo docker run --name librsvg-$SYS-test -v $TMPDIR:$TMPDIR -w $TMPDIR -t --rm librsvg/librsvg-$SYS-base cargo test 
+}
+
+# Get the command line arguments
 if [[ ${#} -eq 0 ]]; then
    usage
    exit 1
 fi
 
+# Switch through the command line arguments
 while getopts "d:s:irpt:ch" flag; do
 	case "${flag}" in
 		d) LIBDIR=${OPTARG};;
 		s) SYSTEM=${OPTARG};;
 		i) INT=true;;
 		r) REBUILD=true; echo "Rebuilding";;
-		p) REPACKAGE=true; echo "Repackaging";;
+		p) RECOPY=true; echo "Recopying";;
 		t) TMPDIR=${OPTARG};;
 		c) CLEANUP=true;;
 		h) usage; exit 0;;
@@ -309,8 +334,9 @@ while getopts "d:s:irpt:ch" flag; do
 	esac
 done
 
-# Runs the script then cleans up (if there's write permissions, which there should be)
+# Runs the script
 function main {
+	check_docker
 	cleanup
 	check_dir
 	check_system

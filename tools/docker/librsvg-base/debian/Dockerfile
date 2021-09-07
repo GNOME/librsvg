@@ -1,5 +1,5 @@
 FROM debian:testing
-MAINTAINER librsvg
+LABEL MAINTAINER=librsvg
 RUN apt-get update && apt-get upgrade -y && apt-get install -y gcc make rustc cargo \
 automake autoconf libtool gtk-doc-tools git \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
