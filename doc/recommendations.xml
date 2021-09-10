@@ -15,10 +15,10 @@
 
     <para>
       SVG renderers are supposed to use the viewport provided by the
-      application, plus the SVG document's <literal>width</literal>
-      and <literal>height</literal> attributes, and its
-      <literal>viewBox</literal> attribute, to compute the position
-      and size for the rendered document.
+      application, plus the SVG document's <literal>width</literal>,
+      <literal>height</literal>, and <literal>viewBox</literal>
+      attributes, to compute the position and size for the rendered
+      document.
     </para>
 
     <para>
@@ -28,13 +28,16 @@
       proportions and "natural size" of the document.  When those
       attributes are present, the SVG renderer can unambiguously
       figure out the natural aspect ratio of the document, and can
-      also suggest a natural size for the document.  Since SVGs are
-      scalable, it is not mandatory to actually use its natural size;
-      it can be scaled arbitrarily.  Of course, it is up to each
-      application how an SVG document will be scaled:  a web browser
-      would want to consider the semantics of embedding images in
-      HTML, which may be different from a GUI toolkit loading SVG
-      assets with hard-coded sizes.
+      also suggest a natural size for the document.  For example,
+      <literal>&lt;svg width="100px" height="50px"&gt;</literal> has
+      a natural size of 100x50 pixels, but it could also be rendered
+      scaled at 200x100 pixels.  Since SVGs are scalable, it is not
+      mandatory to actually use its natural size; it can be scaled
+      arbitrarily.  Of course, it is up to each application how an SVG
+      document will be scaled: a web browser would want to consider
+      the semantics of embedding images in HTML, which may be
+      different from a GUI toolkit loading SVG assets with hard-coded
+      sizes.
     </para>
 
     <para>
@@ -42,16 +45,21 @@
       element does not have <literal>width</literal> and
       <literal>height</literal> attributes, then the SVG renderer can
       try to figure out the document's aspect ratio from the
-      <literal>viewBox</literal> attribute.  If there is no
-      <literal>viewBox</literal> either, then the SVG renderer cannot
-      easily figure out the natural size of the document.  It can
-      either set a 1:1 scaling matrix within the application's
-      viewport and render the SVG there, or it can actually try to
-      compute the size of each object in the SVG document to figure
-      out the size.  The latter is a moderately expensive operation,
-      and can be avoided by having the SVG document specify
-      <literal>width</literal> and <literal>height</literal>
-      attributes.
+      <literal>viewBox</literal> attribute.  For example, there is no natural size for <literal>&lt;svg viewBox="0 0 100 50"&gt;</literal>, but it has a 2:1 (or 100:50) aspect ratio, so it is twice as wide as it is tall.
+    </para>
+
+    <para>
+      If there is no <literal>viewBox</literal> either, then the SVG
+      renderer cannot easily figure out the natural size of the
+      document.  It can either set a 1:1 scaling matrix within the
+      application's viewport and render the SVG there, or it can
+      actually try to compute the size of each object in the SVG
+      document to figure out the size.  The latter is a moderately
+      expensive operation, and can be avoided by having the SVG
+      document specify <literal>width</literal> and
+      <literal>height</literal> attributes.  Try not to have SVG
+      documents that just start with <literal>&lt;svg&gt;</literal>
+      without any of those attributes.
     </para>
 
     <section>
