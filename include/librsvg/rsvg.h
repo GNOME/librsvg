@@ -622,15 +622,17 @@ gboolean rsvg_handle_close (RsvgHandle *handle, GError **error);
  * @handle: An #RsvgHandle
  *
  * Returns the pixbuf loaded by @handle.  The pixbuf returned will be reffed, so
- * the caller of this function must assume that ref.  If insufficient data has
- * been read to create the pixbuf, or an error occurred in loading, then %NULL
- * will be returned.  Note that the pixbuf may not be complete until
- * @rsvg_handle_close has been called.
+ * the caller of this function must assume that ref.
  *
- * This function depends on the #RsvgHandle's DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
- * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
+ * This function depends on the #RsvgHandle's dots-per-inch value (DPI) to compute the
+ * "natural size" of the document in pixels, so you should call rsvg_handle_set_dpi()
+ * beforehand.
+ *
+ * Returns: (transfer full) (nullable): a pixbuf, or %NULL if an error occurs
+ * during rendering.
  **/
 RSVG_API
 GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
@@ -647,8 +649,9 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
  * sub-sub-elements recursively).  If @id is #NULL, this function renders the
  * whole SVG.
  *
- * This function depends on the #RsvgHandle's DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * This function depends on the #RsvgHandle's dots-per-inch value (DPI) to compute the
+ * "natural size" of the document in pixels, so you should call rsvg_handle_set_dpi()
+ * beforehand.
  *
  * If you need to render an image which is only big enough to fit a particular
  * sub-element of the SVG, consider using rsvg_handle_render_element().
@@ -656,6 +659,9 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
  * Element IDs should look like an URL fragment identifier; for example, pass
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Returns: (transfer full) (nullable): a pixbuf, or %NULL if an error occurs
  * during rendering.
