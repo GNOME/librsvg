@@ -230,7 +230,7 @@ GType rsvg_error_get_type (void);
  * Due to the way the librsvg API evolved over time, an #RsvgHandle object is available
  * for use as soon as it is constructed.  However, not all of its methods can be
  * called at any time.  For example, an #RsvgHandle just constructed with rsvg_handle_new()
- * is not loaded yet, and it does not make sense to call rsvg_handle_get_dimensions() on it
+ * is not loaded yet, and it does not make sense to call rsvg_handle_render_document() on it
  * just at that point.
  *
  * The documentation for the available methods in #RsvgHandle may mention that a particular
