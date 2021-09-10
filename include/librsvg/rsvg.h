@@ -651,10 +651,7 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
  * pixels, so you should call rsvg_handle_set_dpi() beforehand.
  *
  * If you need to render an image which is only big enough to fit a particular
- * sub-element of the SVG, consider using rsvg_handle_render_cairo_sub(), upon a
- * surface that is just the size returned by rsvg_handle_get_dimensions_sub().
- * You will need to offset the rendering by the amount returned in
- * rsvg_handle_get_position_sub().
+ * sub-element of the SVG, consider using rsvg_handle_render_element().
  *
  * Element IDs should look like an URL fragment identifier; for example, pass
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
@@ -1234,9 +1231,11 @@ void rsvg_handle_free (RsvgHandle *handle);
  *
  * Function to let a user of the library specify the SVG's dimensions
  *
- * Deprecated: 2.14.  Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  * See the documentation for rsvg_handle_set_size_callback() for an example, and
  * for the reasons for deprecation.
+ *
+ * Deprecated: 2.14.  Use rsvg_handle_render_document() instead, which lets you specify
+ * a viewport size in which to render the SVG document.
  */
 typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 
@@ -1264,33 +1263,7 @@ typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
  * @size_func, which may then modify these values to set the final size of the
  * generated image.
  *
- * Deprecated: 2.14.  Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
- * You can call rsvg_handle_get_dimensions() to figure out the size of your SVG,
- * and then scale it to the desired size via Cairo.  For example, the following
- * code renders an SVG at a specified size, scaled proportionally from whatever
- * original size it may have had:
- *
- * |[<!-- language="C" -->
- * void
- * render_scaled_proportionally (RsvgHandle *handle, cairo_t cr, int width, int height)
- * {
- *     RsvgDimensionData dimensions;
- *     double x_factor, y_factor;
- *     double scale_factor;
- *
- *     rsvg_handle_get_dimensions (handle, &dimensions);
- *
- *     x_factor = (double) width / dimensions.width;
- *     y_factor = (double) height / dimensions.height;
- *
- *     scale_factor = MIN (x_factor, y_factor);
- *
- *     cairo_scale (cr, scale_factor, scale_factor);
- *
- *     rsvg_handle_render_cairo (handle, cr);
- * }
- * ]|
- *
+ * Deprecated: 2.14.  Use rsvg_handle_render_document() instead.
  * This function was deprecated because when the @size_func is used, it makes it
  * unclear when the librsvg functions which call the @size_func will use the
  * size computed originally, or the callback-specified size, or whether it
