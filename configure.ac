@@ -255,9 +255,7 @@ fi
 AM_CONDITIONAL([DEBUG_RELEASE], [test "x$debug_release" = "xyes"])
 
 AC_ARG_VAR(RUST_TARGET, [Set rust target (default=$host)])
-if test "x$RUST_TARGET" = x; then
-	RUST_TARGET=$host
-fi
+: ${RUST_TARGET:=$host}
 
 AM_CONDITIONAL(CROSS_COMPILING, test $cross_compiling = yes)
 if test "x$cross_compiling" = "xyes" ; then
@@ -269,9 +267,7 @@ dnl ===========================================================================
 dnl Build introspectable bindings
 
 # No automagic please!
-if test -z "$enable_introspection"; then
-  enable_introspection=yes
-fi
+: ${enable_introspection:=yes}
 
 GOBJECT_INTROSPECTION_CHECK([0.10.8])
 
