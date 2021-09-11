@@ -1,3 +1,5 @@
+AC_PREREQ([2.69])
+
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[51])
