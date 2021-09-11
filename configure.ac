@@ -104,17 +104,11 @@ AS_IF(test x$RUSTC = xno,
 
 dnl MSRV - Minimum Supported Rust Version
 dnl If you change this, please update COMPILING.md
-MINIMUM_RUST_MAJOR=1
-MINIMUM_RUST_MINOR=52
-
-rust_version=`$RUSTC --version`
-version=`echo "$rust_version" | sed -e 's/^rustc //g'`
-major=`echo "$version" | cut -d. -f1`
-minor=`echo "$version" | cut -d. -f2`
-
-AS_IF(test "$major" -lt "$MINIMUM_RUST_MAJOR" -o "$minor" -lt "$MINIMUM_RUST_MINOR",
-    AC_MSG_ERROR([librsvg needs at rustc version at least $MINIMUM_RUST_MAJOR.$MINIMUM_RUST_MINOR])
-)
+MINIMUM_RUST_VER=1.52
+rust_version=`$RUSTC --version | sed -e 's/^rustc //g'`
+AX_COMPARE_VERSION([$rust_version],[lt],[$MINIMUM_RUST_VER], [
+    AC_MSG_ERROR([librsvg needs at least rustc version $MINIMUM_RUST_VER])
+])
 
 dnl ===========================================================================
 
@@ -131,7 +125,6 @@ case "$host" in
 esac
 AC_MSG_RESULT([$platform_win32])
 AM_CONDITIONAL(PLATFORM_WIN32, test "$platform_win32" = "yes")
-AM_CONDITIONAL(LIB_NAME_WORKAROUND, test "$platform_win32" = "yes" -a \( "$major" -lt 1 -o "$minor" -lt 44 \))
 
 AC_MSG_CHECKING([for native Win32])
 case "$host" in
@@ -371,7 +364,7 @@ librsvg-$VERSION
 
 	prefix:                         ${prefix}
 	C compiler:                     ${CC}
-	rustc:                          ${rust_version}
+	rustc:                          rustc ${rust_version}
 
 	Cairo version:                  ${CAIRO_VERSION}
 	Pango version:                  ${PANGO_VERSION}

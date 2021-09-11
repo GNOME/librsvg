@@ -149,13 +149,7 @@ cargo_verbose_1 = --verbose
 LIBRSVG_BUILD_DIR=@abs_top_builddir@
 CARGO_TARGET_DIR=$(LIBRSVG_BUILD_DIR)/target
 
-if LIB_NAME_WORKAROUND
-# Workaround for https://github.com/rust-lang/rust/issues/69904
-# can be removed when our minimum Rust version is at least 1.44.
-RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/liblibrsvg.lib
-else
 RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/liblibrsvg.a
-endif
 
 check-local:
 	cd $(srcdir) &&					\
