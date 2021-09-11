@@ -35,6 +35,8 @@
       <year>2017</year>
       <year>2018</year>
       <year>2019</year>
+      <year>2020</year>
+      <year>2021</year>
       <holder>Federico Mena Quintero</holder>
     </copyright>
   </bookinfo>
@@ -43,20 +45,18 @@
     <title>API Reference</title>
     <partintro>
       <para>
-        Librsvg is a library for rendering Scalable Vector Graphics 1.1
-        files (<ulink url="https://www.w3.org/TR/SVG/">SVG 1.1</ulink>).
-        Specifically, it can take non-animated, non-scripted SVG data
-        and render it into a <ulink url="https://www.cairographics.org/">Cairo</ulink>
-        surface.  Normally this means an in-memory raster surface, but
-        it could also be any of the other surface types that Cairo
-        supports.
+        Librsvg is a library for rendering Scalable Vector Graphics files (SVG).
+        Specifically, it can take non-animated, non-scripted SVG documents and render them
+        into a <ulink url="https://www.cairographics.org/">Cairo</ulink> surface.
+        Normally this means an in-memory raster surface, but it could also be any of the
+        other surface types that Cairo supports.
       </para>
 
       <para>
 	Librsvg supports many of the graphic features in the <ulink
-	url="https://www.w3.org/TR/SVG/">SVG 1.1
-	specification</ulink>.  The main features of SVG 1.1 that
-	librsvg does not support are the following:
+	url="https://www.w3.org/TR/SVG/">SVG 1.1</ulink> and <ulink
+	url="https://www.w3.org/TR/SVG2/">SVG2</ulink> specifications.  The main features
+	of SVG that librsvg does not support are the following:
       </para>
 
       <itemizedlist>
@@ -92,6 +92,7 @@
     <xi:include href="xml/rsvg-handle.xml"/>
     <xi:include href="xml/rsvg-gio.xml"/>
     <xi:include href="xml/rsvg-cairo.xml"/>
+    <xi:include href="xml/rsvg-cairo-deprecated.xml"/>
     <xi:include href="xml/rsvg-pixbuf.xml"/>
     <xi:include href="xml/rsvg-features.xml"/>
   </part>

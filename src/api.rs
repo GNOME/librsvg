@@ -355,6 +355,11 @@ impl<'a> CairoRenderer<'a> {
     /// `height` attributes with physical dimensions (CSS pixels, cm, in, etc.) or
     /// font-based dimensions (em, ex).
     ///
+    /// Note that the dimensions are floating-point numbers, so your application can know
+    /// the exact size of an SVG document.  To get integer dimensions, you should use
+    /// [`f64::ceil()`] to round up to the nearest integer (just using [`f64::round()`],
+    /// may may chop off pixels with fractional coverage).
+    ///
     /// If the SVG document has percentage-based `width` and `height` attributes, or if
     /// either of those attributes are not present, returns `None`.  Dimensions of that
     /// kind require more information to be resolved to pixels; for example, the calling

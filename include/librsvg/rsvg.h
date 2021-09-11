@@ -230,7 +230,7 @@ GType rsvg_error_get_type (void);
  * Due to the way the librsvg API evolved over time, an #RsvgHandle object is available
  * for use as soon as it is constructed.  However, not all of its methods can be
  * called at any time.  For example, an #RsvgHandle just constructed with rsvg_handle_new()
- * is not loaded yet, and it does not make sense to call rsvg_handle_get_dimensions() on it
+ * is not loaded yet, and it does not make sense to call rsvg_handle_render_document() on it
  * just at that point.
  *
  * The documentation for the available methods in #RsvgHandle may mention that a particular
@@ -417,7 +417,8 @@ struct _RsvgHandle {
  * individual element from rsvg_handle_get_dimensions_sub().  Please see
  * the deprecation documentation for those functions.
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Use rsvg_handle_get_intrinsic_size_in_pixels() or
+ * rsvg_handle_get_geometry_for_layer() instead.
  */
 struct _RsvgDimensionData {
     int width;
@@ -434,7 +435,7 @@ struct _RsvgDimensionData {
  * Position of an SVG fragment from rsvg_handle_get_position_sub().  Please
  * the deprecation documentation for that function.
  *
- * Deprecated: 2.46.  FIXME: point to deprecation documentation.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
  */
 struct _RsvgPositionData {
     int x;
@@ -621,15 +622,17 @@ gboolean rsvg_handle_close (RsvgHandle *handle, GError **error);
  * @handle: An #RsvgHandle
  *
  * Returns the pixbuf loaded by @handle.  The pixbuf returned will be reffed, so
- * the caller of this function must assume that ref.  If insufficient data has
- * been read to create the pixbuf, or an error occurred in loading, then %NULL
- * will be returned.  Note that the pixbuf may not be complete until
- * @rsvg_handle_close has been called.
+ * the caller of this function must assume that ref.
  *
- * This function depends on the #RsvgHandle's DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
- * Returns: (transfer full) (nullable): the pixbuf loaded by @handle, or %NULL.
+ * This function depends on the #RsvgHandle's dots-per-inch value (DPI) to compute the
+ * "natural size" of the document in pixels, so you should call rsvg_handle_set_dpi()
+ * beforehand.
+ *
+ * Returns: (transfer full) (nullable): a pixbuf, or %NULL if an error occurs
+ * during rendering.
  **/
 RSVG_API
 GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
@@ -637,7 +640,7 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
 /**
  * rsvg_handle_get_pixbuf_sub:
  * @handle: An #RsvgHandle
- * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
@@ -646,18 +649,19 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
  * sub-sub-elements recursively).  If @id is #NULL, this function renders the
  * whole SVG.
  *
- * This function depends on the #RsvgHandle's DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * This function depends on the #RsvgHandle's dots-per-inch value (DPI) to compute the
+ * "natural size" of the document in pixels, so you should call rsvg_handle_set_dpi()
+ * beforehand.
  *
  * If you need to render an image which is only big enough to fit a particular
- * sub-element of the SVG, consider using rsvg_handle_render_cairo_sub(), upon a
- * surface that is just the size returned by rsvg_handle_get_dimensions_sub().
- * You will need to offset the rendering by the amount returned in
- * rsvg_handle_get_position_sub().
+ * sub-element of the SVG, consider using rsvg_handle_render_element().
  *
  * Element IDs should look like an URL fragment identifier; for example, pass
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Returns: (transfer full) (nullable): a pixbuf, or %NULL if an error occurs
  * during rendering.
@@ -705,16 +709,20 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri);
  * This function depends on the #RsvgHandle's DPI to compute dimensions in
  * pixels, so you should call rsvg_handle_set_dpi() beforehand.
  *
+ * Deprecated: 2.52.  Use rsvg_handle_get_intrinsic_size_in_pixels() instead.  This
+ * function is deprecated because it is not able to return exact fractional dimensions,
+ * only integer pixels.
+ *
  * Since: 2.14
  */
-RSVG_API
+RSVG_DEPRECATED_FOR(rsvg_handle_get_intrinsic_size_in_pixels)
 void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimension_data);
 
 /**
  * rsvg_handle_get_dimensions_sub:
  * @handle: A #RsvgHandle
  * @dimension_data: (out): A place to store the SVG's size
- * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
@@ -741,7 +749,7 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
  * rsvg_handle_get_position_sub:
  * @handle: A #RsvgHandle
  * @position_data: (out): A place to store the SVG fragment's position.
- * @id: (nullable): An element's id within the SVG, starting with "##" (a single
+ * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, "##layer1".  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass %NULL to use the whole SVG.
  *
@@ -755,7 +763,9 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
  * "##foo" (hash <literal>foo</literal>) to get the geometry of the element that
  * has an <literal>id="foo"</literal> attribute.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
+ * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.  This function is
+ * deprecated since it is not able to return exact floating-point positions, only integer
+ * pixels.
  *
  * Since: 2.22
  */
@@ -767,7 +777,7 @@ gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
 /**
  * rsvg_handle_has_sub:
  * @handle: a #RsvgHandle
- * @id: An element's id within the SVG, starting with "##" (a single hash
+ * @id: An element's id within the SVG, starting with "#" (a single hash
  * character), for example, "##layer1".  This notation corresponds to a URL's
  * fragment ID.
  *
@@ -874,7 +884,7 @@ typedef struct {
  * ]|
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section <ulink url="#API-ordering">API ordering</ulink> for details.
+ * the section <ulink url="RsvgHandle.html#API-ordering">API ordering</ulink> for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -892,8 +902,8 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 /**
  * rsvg_handle_get_intrinsic_size_in_pixels:
  * @handle: An #RsvgHandle
- * @out_width: (out)(optional): Will be set to the computed width
- * @out_height: (out)(optional): Will be set to the computed height
+ * @out_width: (out)(optional): Will be set to the computed width; you should round this up to get integer pixels.
+ * @out_height: (out)(optional): Will be set to the computed height; you should round this up to get integer pixels.
  *
  * Converts an SVG document's intrinsic dimensions to pixels, and returns the result.
  *
@@ -937,10 +947,17 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 200"/>
  * ]|
  *
+ * Instead of querying an SVG document's size, applications are encouraged to render SVG
+ * documents to a size chosen by the application, by passing a suitably-sized viewport to
+ * rsvg_handle_render_document().
  *
  * Returns: %TRUE if the dimensions could be converted directly to pixels; in this case
- * @out_width and @out_height will be set accordingly.  If the dimensions cannot be converted
- * to pixels, returns %FALSE and puts 0.0 in both @out_width and @out_height.
+ * @out_width and @out_height will be set accordingly.  Note that the dimensions are
+ * floating-point numbers, so your application can know the exact size of an SVG document.
+ * To get integer dimensions, you should use `ceil()` to round up to the nearest integer
+ * (just using `round()`, may may chop off pixels with fractional coverage).  If the
+ * dimensions cannot be converted to pixels, returns %FALSE and puts 0.0 in both
+ * @out_width and @out_height.
  *
  * Since: 2.52
  */
@@ -1220,9 +1237,11 @@ void rsvg_handle_free (RsvgHandle *handle);
  *
  * Function to let a user of the library specify the SVG's dimensions
  *
- * Deprecated: 2.14.  Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
  * See the documentation for rsvg_handle_set_size_callback() for an example, and
  * for the reasons for deprecation.
+ *
+ * Deprecated: 2.14.  Use rsvg_handle_render_document() instead, which lets you specify
+ * a viewport size in which to render the SVG document.
  */
 typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 
@@ -1250,33 +1269,7 @@ typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
  * @size_func, which may then modify these values to set the final size of the
  * generated image.
  *
- * Deprecated: 2.14.  Set up a cairo matrix and use rsvg_handle_render_cairo() instead.
- * You can call rsvg_handle_get_dimensions() to figure out the size of your SVG,
- * and then scale it to the desired size via Cairo.  For example, the following
- * code renders an SVG at a specified size, scaled proportionally from whatever
- * original size it may have had:
- *
- * |[<!-- language="C" -->
- * void
- * render_scaled_proportionally (RsvgHandle *handle, cairo_t cr, int width, int height)
- * {
- *     RsvgDimensionData dimensions;
- *     double x_factor, y_factor;
- *     double scale_factor;
- *
- *     rsvg_handle_get_dimensions (handle, &dimensions);
- *
- *     x_factor = (double) width / dimensions.width;
- *     y_factor = (double) height / dimensions.height;
- *
- *     scale_factor = MIN (x_factor, y_factor);
- *
- *     cairo_scale (cr, scale_factor, scale_factor);
- *
- *     rsvg_handle_render_cairo (handle, cr);
- * }
- * ]|
- *
+ * Deprecated: 2.14.  Use rsvg_handle_render_document() instead.
  * This function was deprecated because when the @size_func is used, it makes it
  * unclear when the librsvg functions which call the @size_func will use the
  * size computed originally, or the callback-specified size, or whether it
@@ -1293,11 +1286,12 @@ void rsvg_handle_set_size_callback (RsvgHandle    *handle,
 
 /**
  * SECTION: rsvg-pixbuf
- * @short_description: How to render SVGs into GdkPixbufs, for easy use in GTK+
- *  applications
  *
- * GdkPixbuf is a library for image loading and manipulation. It is part of the
- * cross-platform GTK+ widget toolkit.
+ * Years ago, GNOME and GTK used the gdk-pixbuf library as a general mechanism to load
+ * raster images into memory (PNG, JPEG, etc.) and pass them around.  The general idiom
+ * was, "load this image file and give me a #GdkPixbuf object", which is basically a pixel
+ * buffer.  Librsvg supports this kind of interface to load and render SVG documents, but
+ * it is deprecated in favor of rendering to Cairo contexts.
  */
 
 /**
@@ -1310,7 +1304,7 @@ void rsvg_handle_set_size_callback (RsvgHandle    *handle,
  * set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file (const gchar *filename,
@@ -1329,7 +1323,7 @@ GdkPixbuf *rsvg_pixbuf_from_file (const gchar *filename,
  * occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
@@ -1351,7 +1345,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
  * error occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_size (const gchar *filename,
@@ -1372,7 +1366,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_size (const gchar *filename,
  * @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
@@ -1395,7 +1389,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
  * returned pixbuf. If an error occurred, @error is set and %NULL is returned.
  * 
  * Return value: A newly allocated #GdkPixbuf, or %NULL
- * Deprecated: Set up a cairo matrix and use rsvg_handle_new_from_file() + rsvg_handle_render_cairo() instead.
+ * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
