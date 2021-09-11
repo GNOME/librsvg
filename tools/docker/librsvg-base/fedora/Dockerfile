@@ -1,5 +1,5 @@
 FROM fedora
-MAINTAINER librsvg
+LABEL MAINTAINER=librsvg
 RUN dnf update -y && dnf install -y gcc rust rust-std-static cargo make \
 automake autoconf libtool gtk-doc git redhat-rpm-config \
 gdk-pixbuf2-devel gobject-introspection-devel \
