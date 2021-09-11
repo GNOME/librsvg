@@ -231,7 +231,7 @@ dnl Specify --enable-debug to make a development release.  By default,
 dnl we build in public release mode.
 
 AC_ARG_ENABLE(debug,
-              AC_HELP_STRING([--enable-debug],
+              AS_HELP_STRING([--enable-debug],
                              [Build Rust code with debugging information [default=no]]),
               [debug_release=$enableval],
 	      [AS_CASE(["$LIBRSVG_DEBUG"],
