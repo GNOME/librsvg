@@ -69,12 +69,13 @@ PANGO_REQUIRED=1.44.0
 dnl ===========================================================================
 
 AC_PROG_LN_S
-AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_AWK
 AC_STDC_HEADERS
 AM_PROG_CC_C_O
+# Check if -lcposix is required (for ISC UNIX)
+AC_SEARCH_LIBS([strerror], [cposix])
 
 AC_C_BIGENDIAN
 
