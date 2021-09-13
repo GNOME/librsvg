@@ -1,3 +1,5 @@
+AC_PREREQ([2.69])
+
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[51])
@@ -69,12 +71,12 @@ PANGO_REQUIRED=1.44.0
 dnl ===========================================================================
 
 AC_PROG_LN_S
-AC_ISC_POSIX
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_AWK
-AC_STDC_HEADERS
 AM_PROG_CC_C_O
+# Check if -lcposix is required (for ISC UNIX)
+AC_SEARCH_LIBS([strerror], [cposix])
 
 AC_C_BIGENDIAN
 
@@ -168,21 +170,21 @@ AC_ARG_ENABLE([pixbuf-loader],
 AC_MSG_RESULT([$enable_pixbuf_loader])
 
 gdk_pixbuf_moduledir=
-if test "$enable_pixbuf_loader" = "yes"; then
+AS_IF([test "x$enable_pixbuf_loader" = "xyes"], [
   PKG_CHECK_MODULES([GDK_PIXBUF],[gdk-pixbuf-2.0 >= $GDK_PIXBUF_REQUIRED])
 
   AC_PATH_PROGS([GDK_PIXBUF_QUERYLOADERS],[gdk-pixbuf-query-loaders gdk-pixbuf-query-loaders-64 gdk-pixbuf-query-loaders-32],[none])
 
-  if test "x$GDK_PIXBUF_QUERYLOADERS" = "xnone"; then
+  AS_IF([test "x$GDK_PIXBUF_QUERYLOADERS" = "xnone"], [
     AC_MSG_ERROR([gdk-pixbuf-query-loaders not found in path])
-  fi
+  ])
 
   # First try the standalone gdk-pixbuf
   gdk_pixbuf_binary_version="`$PKG_CONFIG --variable=gdk_pixbuf_binary_version gdk-pixbuf-2.0`"
   gdk_pixbuf_binarydir="`$PKG_CONFIG --variable=gdk_pixbuf_binarydir gdk-pixbuf-2.0`"
   gdk_pixbuf_moduledir=`$PKG_CONFIG --variable gdk_pixbuf_moduledir gdk-pixbuf-2.0`
   gdk_pixbuf_cache_file=`$PKG_CONFIG --variable gdk_pixbuf_cache_file gdk-pixbuf-2.0`
-fi
+])
 
 AC_SUBST([gdk_pixbuf_binary_version])
 AC_SUBST([gdk_pixbuf_binarydir])
@@ -202,16 +204,16 @@ AC_ARG_ENABLE([Bsymbolic],
   [enable_Bsymbolic=no],[enable_Bsymbolic=auto])
 
 BSYMBOLIC_LDFLAG=
-if test "$enable_Bsymbolic" != "no"; then
+AS_IF([test "x$enable_Bsymbolic" != "xno"], [
   CC_CHECK_LDFLAGS(["-Wl,-Bsymbolic-functions"],
     [BSYMBOLIC_LDFLAG="-Wl,-Bsymbolic-functions"],
-    [if test "$enable_Bsymbolic" = "auto"; then
+    [AS_IF([test "x$enable_Bsymbolic" = "xauto"], [
        AC_MSG_WARN([-Bsymbolic not supported by ld; disabling])
        enable_Bsymbolic=no
-     else
+     ], [
        AC_MSG_ERROR([-Bsymbolic requested but not supported by ld. Use --disable-Bsymbolic to disable])
-     fi])
-fi
+     ])])
+])
 
 AC_SUBST([BSYMBOLIC_LDFLAG])
 
@@ -231,47 +233,38 @@ dnl Specify --enable-debug to make a development release.  By default,
 dnl we build in public release mode.
 
 AC_ARG_ENABLE(debug,
-              AC_HELP_STRING([--enable-debug],
+              AS_HELP_STRING([--enable-debug],
                              [Build Rust code with debugging information [default=no]]),
               [debug_release=$enableval],
-	      [
-	        if test "x$LIBRSVG_DEBUG" = "x"; then
-		  debug_release="no"
-		elif test "x$LIBRSVG_DEBUG" = "xyes"; then
-		  debug_release="yes"
-		elif test "x$LIBRSVG_DEBUG" = "xno"; then
-		  debug_release="no"
-		fi
+	      [AS_CASE(["$LIBRSVG_DEBUG"],
+		[yes], [debug_release=yes],
+		[no|''], [debug_release=no])
 	      ])
 
 AC_MSG_CHECKING(whether to build Rust code with debugging information)
-if test "x$debug_release" = "xyes" ; then
+AS_IF([test "x$debug_release" = "xyes"], [
 	AC_MSG_RESULT(yes)
 	RUST_TARGET_SUBDIR=debug
-else
+], [
 	AC_MSG_RESULT(no)
 	RUST_TARGET_SUBDIR=release
-fi
+])
 AM_CONDITIONAL([DEBUG_RELEASE], [test "x$debug_release" = "xyes"])
 
 AC_ARG_VAR(RUST_TARGET, [Set rust target (default=$host)])
-if test "x$RUST_TARGET" = x; then
-	RUST_TARGET=$host
-fi
+: ${RUST_TARGET:=$host}
 
-AM_CONDITIONAL(CROSS_COMPILING, test $cross_compiling = yes)
-if test "x$cross_compiling" = "xyes" ; then
+AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" = xyes])
+AS_IF([test "x$cross_compiling" = "xyes"], [
 	RUST_TARGET_SUBDIR="$RUST_TARGET/$RUST_TARGET_SUBDIR"
-fi
+])
 AC_SUBST([RUST_TARGET_SUBDIR])
 
 dnl ===========================================================================
 dnl Build introspectable bindings
 
 # No automagic please!
-if test -z "$enable_introspection"; then
-  enable_introspection=yes
-fi
+: ${enable_introspection:=yes}
 
 GOBJECT_INTROSPECTION_CHECK([0.10.8])
 
@@ -283,15 +276,16 @@ dnl ===========================================================================
 m4_copy([AC_DEFUN],[glib_DEFUN])
 glib_DEFUN([GLIB_LC_MESSAGES],
   [AC_CHECK_HEADERS([locale.h])
-    if test $ac_cv_header_locale_h = yes; then
+  AS_IF([test "x$ac_cv_header_locale_h" = xyes], [
     AC_CACHE_CHECK([for LC_MESSAGES], am_cv_val_LC_MESSAGES,
-      [AC_TRY_LINK([#include <locale.h>], [return LC_MESSAGES],
-       am_cv_val_LC_MESSAGES=yes, am_cv_val_LC_MESSAGES=no)])
-    if test $am_cv_val_LC_MESSAGES = yes; then
+      [AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <locale.h>]],
+          [[return LC_MESSAGES]])],
+	[am_cv_val_LC_MESSAGES=yes],
+	[am_cv_val_LC_MESSAGES=no])])
+    AS_IF([test "x$am_cv_val_LC_MESSAGES" = xyes], [
       AC_DEFINE(HAVE_LC_MESSAGES, 1,
         [Define if your <locale.h> file defines LC_MESSAGES.])
-    fi
-  fi])
+  ])])])
 
 GLIB_LC_MESSAGES
 
