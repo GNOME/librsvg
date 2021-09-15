@@ -260,5 +260,118 @@ rsvg_handle_render_document (handle, cr, &amp;viewport, NULL);
         </para>
       </note>
     </section>
+
+    <section>
+      <title>New API for obtaining an SVG's dimensions</title>
+
+      <para>
+        Per the previous section, you should seldom need to obtain the
+        "natural size" of an SVG document now that you can render it
+        directly into a viewport.  But if you still need to know what
+        the SVG document specifies for its own size, you can use the
+        following functions, depending on the level of detail you
+        require:
+      </para>
+
+      <programlisting lang="c">
+gboolean rsvg_handle_get_intrinsic_size_in_pixels (RsvgHandle *handle,
+                                                   gdouble    *out_width,
+                                                   gdouble    *out_height);
+      </programlisting>
+
+      <para>
+        This returns an exact width and height in floating-point
+        pixels.  <emphasis>You should round up to the next integer</emphasis> if you need to allocate a pixel buffer big enough, to avoid clipping the last column or row of pixels, which may be only partially covered.
+      </para>
+
+      <para>
+        <function>rsvg_handle_get_intrinsic_size_in_pixels</function>
+        works by resolving the <literal>width/height</literal>
+        attributes of the toplevel <literal>&lt;svg&gt;</literal>
+        element against the handle's current DPI and the
+        <literal>font-size</literal> that is defined for the
+        <literal>&lt;svg&gt;</literal> element.
+      </para>
+
+      <para>
+        However, that is only possible if the
+        <literal>width/height</literal> attributes actually exist and
+        are in physical units.  The function will return FALSE if the
+        SVG has no resolvable units, for example if the
+        <literal>width/height</literal> attributes are specified in
+        percentages (e.g. <literal>width="50%"</literal>), since the
+        function has no knowledge of the viewport where you will place
+        the SVG, or if those attributes are not specified.
+      </para>
+
+      <para>
+        The other way of obtaining an SVG's dimensions is to actually
+        query its "intrinsic dimensions", i.e. what is actually
+        specified in the SVG document:
+      </para>
+      
+      <programlisting lang="c">
+typedef enum {
+    RSVG_UNIT_PERCENT,
+    RSVG_UNIT_PX,
+    RSVG_UNIT_EM,
+    RSVG_UNIT_EX,
+    RSVG_UNIT_IN,
+    RSVG_UNIT_CM,
+    RSVG_UNIT_MM,
+    RSVG_UNIT_PT,
+    RSVG_UNIT_PC
+} RsvgUnit;
+
+typedef struct {
+    double   length;
+    RsvgUnit unit;
+} RsvgLength;
+
+void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
+                                           gboolean   *out_has_width,
+                                           RsvgLength *out_width,
+                                           gboolean   *out_has_height,
+                                           RsvgLength *out_height,
+                                           gboolean   *out_has_viewbox,
+                                           RsvgRectangle *out_viewbox);
+      </programlisting>
+
+      <para>
+        This function will tell you precisely if the toplevel
+        <literal>&lt;svg&gt;</literal> has
+        <literal>width/height</literal> attributes and their values,
+        and also whether it has a <literal>viewBox</literal> and its
+        value.
+      </para>
+
+      <note>
+        <para>
+          Remember that SVGs are <emphasis>scalable</emphasis>.  They
+          are not like raster images which have an exact size in
+          pixels, and which you must always take into account to scale
+          them to a convenient size.  For SVGs, you can just render
+          them to a viewport, and avoid working directly with their
+          size — which is kind of arbitrary, and all that matters is
+          the document's aspect ratio.
+        </para>
+      </note>
+    </section>
+
+    <section>
+      <title>SVGs with no intrinsic dimensions nor aspect ratio</title>
+
+      <para>
+        SVG documents that have none of the <literal>width</literal>,
+        <literal>height</literal>, or <literal>viewBox</literal>
+        attributes are thankfully not very common, but they are hard
+        to deal with: the software cannot immediately know their
+        natural size or aspect ratio, so they cannot be easily scaled
+        to fit within a viewport.  Librsvg has to actually measure the
+        extents of every single element in the SVG document in that
+        case.  If you need to do this by hand, use
+        <function>rsvg_handle_get_geometry_for_layer</function>.
+      </para>
+    </section>
   </section>
 </chapter>
