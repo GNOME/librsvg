@@ -205,6 +205,7 @@ debian:testing:
     - ../autogen.sh --enable-gtk-doc --enable-vala
     - make
     - make check
+  allow_failure: true
 
 distcheck:
   stage: release
