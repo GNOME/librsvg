@@ -182,6 +182,13 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle,
       </para>
 
       <programlisting lang="c">
+typedef struct {
+    double x;
+    double y;
+    double width;
+    double height;
+} RsvgRectangle;
+
 gboolean rsvg_handle_render_document (RsvgHandle           *handle,
                                       cairo_t              *cr,
                                       const RsvgRectangle  *viewport,
@@ -373,5 +380,75 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
         <function>rsvg_handle_get_geometry_for_layer</function>.
       </para>
     </section>
+  </section>
+
+  <section id="migrating-to-geometry-apis">
+    <title>Migrating to the geometry APIs</title>
+
+    <para>
+      Until librsvg 2.44, the available APIs to query the geometry of a layer or element were these:
+    </para>
+
+    <programlisting lang="c">
+struct _RsvgPositionData {
+    int x;
+    int y;
+};
+
+gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
+                                       RsvgPositionData *position_data,
+                                       const char       *id);
+
+struct _RsvgDimensionData {
+    int width;
+    int height;
+    gdouble em;
+    gdouble ex;
+};
+
+gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
+                                         RsvgDimensionData *dimension_data,
+                                         const char        *id);
+    </programlisting>
+
+    <para>
+      These functions are inconvenient — separate calls to get the
+      position and dimensions —, and also inexact, since they only
+      return integer values, while SVG uses floating-point units.
+    </para>
+
+    <para>
+      Since librsvg 2.46, you can use these functions instead:
+    </para>
+
+    <programlisting lang="c">
+typedef struct {
+    double x;
+    double y;
+    double width;
+    double height;
+} RsvgRectangle;
+
+gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle           *handle,
+                                             const char           *id,
+                                             const RsvgRectangle  *viewport,
+                                             RsvgRectangle        *out_ink_rect,
+                                             RsvgRectangle        *out_logical_rect,
+                                             GError              **error);
+
+gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
+                                               const char     *id,
+                                               RsvgRectangle  *out_ink_rect,
+                                               RsvgRectangle  *out_logical_rect,
+                                               GError        **error);
+    </programlisting>
+
+    <para>
+      These functions return exact floating-point values.  They also
+      give you the <firstterm>ink rectangle</firstterm>, or area
+      covered by paint, as well as the <firstterm>logical
+      rectangle</firstterm>, which is the extents of unstroked paths
+      (i.e. just the outlines).
+    </para>
   </section>
 </chapter>
