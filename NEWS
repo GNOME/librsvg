@@ -1,4 +1,165 @@
 ==============
+Version 2.52.0
+==============
+
+This is a big release!  What follows is a summary from the 2.51.x
+release notes; you can also read them for more detail.
+
+The biggest user-visible change is that rsvg-convert has been ported
+to Rust (Sven Neumann, Paolo Borelli), and it has new features!
+
+## New features in rsvg-convert
+
+### Support for physical units
+
+rsvg-convert is now aware of physical units, and
+fixes a bug where PDFs were created at the wrong size.  Do you need to
+render an SVG in a PDF file, scaled to 10x10 cm, placed at a certain
+position of a landscape A4 page?
+
+  rsvg-convert --format=pdf \
+    --page-width=297mm --page-height=210mm \
+    --width=10cm --height=10cm --keep-aspect-ratio \
+    --top=5cm --left=8cm \
+    foo.svg > foo.pdf
+
+Please see the rsvg-convert(1) man page for more details and plenty of
+examples.
+
+### Support for Accept-Language
+
+Previously, librsvg picked up the user's language preferences through
+environment variables like LANG and LC_MESSAGES.  This is inconvenient
+for applications that call rsvg-convert but don't want to synthesize a
+LANG variable.
+
+There is a new option in rsvg-convert so you can pass
+--accept-language=<languages> formatted as an HTTP Accept-Language
+header.  This is used to specify which languages will be chosen from
+elements with the "systemLanguage" attribute:
+
+    rsvg-convert --accept-language=es-MX,en foo.svg
+
+That command will select Mexican Spanish and English from suitable SVG
+elements.  Please see the man page for details.
+
+### Miscellaneous
+
+rsvg-convert's default DPI is now 96, to better match W3C
+standards.  It was 90 before for historical reasons.  We can change
+this back to 90 if it breaks too many scripts.  You can use the
+options "--dpi-x=90 --dpi-y=90" to restore the old behavior.
+
+rsvg-convert no longer supports the "xml" or "recording" output
+formats.  These are useful only for debugging Cairo, not for general
+usage.
+
+## SVG2/CSS3 features
+
+The following features are supported now.  Madds H, John Ledbetter,
+worked on these features.
+
+- transform property from SVG2; previously librsvg only supported the
+  transform attribute from SVG1.1, which has different syntax.
+
+- context-fill and context-stroke for <marker> and <use> elements.
+
+- markers now support orient="auto-start-reverse".
+
+- paint-order for text elements.
+
+- "auto" values for the width and height attributes of the <image>,
+  <rect>, and <svg> elements.
+
+- All the <filter-function> types from the Filter Effects Module Level
+  1 specification: blur(), brightness(), contrast(), drop-shadow(),
+  grayscale(), hue-rotate(), invert(), opacity(), sepia(), saturate().
+
+- The filter property now supports chains of uri() filters or
+  <filter-function> shortcuts.
+
+- Support CSS selectors for attribute matching, like rect[attr^="prefix"]
+
+## New APIs
+
+See the HTML documentation for details:
+
+- rsvg_handle_get_intrinsic_size_in_pixels()
+
+- rsvg_major_version / rsvg_minor_version / rsvg_micro_version
+  variables - used to obtain the librsvg version from languages other
+  than C, since they do not have access to the C macros like
+  LIBRSVG_MAJOR_VERSION.
+
+## Deprecations
+
+The following APIs are deprecated but still available:
+
+- rsvg_handle_render_cairo() - use rsvg_handle_render_document() instead.
+
+- rsvg_handle_render_cairo_sub() - use rsvg_handle_render_layer() or
+  rsvg_handle_render_element() depending on what you want to do.
+
+Please see the "Migrating from old APIs" chapter in the HTML
+documentation for details.
+
+## News for developers
+
+If you want to run the librsvg test suite easily, there are now Docker
+scripts to do so.  Please see the tools/docker/README.md file for
+details. (Madds H)
+
+There is no leftover C code in the library; all of the implementation
+and the publically-visible symbols are defined in the Rust code.  The
+remaining .h files are all public and do not reflect any .c
+code. (Sven Neumann)
+
+The test suite is now ported to Rust.  The only remaining tests in C
+are for the C API itself (tests/api.c).  With the test suite in
+Rust, the tests are automatically run in parallel across CPU cores,
+making test runs much faster.  (Sven Neumann, Dunja Lalic)
+
+"cargo build", "cargo test" now work without running autotools first,
+so you can in general develop librsvg as a normal Rust project.
+
+The HTML documentation has new chapters; you may find interesting
+things there!
+
+## News for distributors
+
+There is a new list of librsvg releases with security fixes in
+SECURITY.md.  That file also contains security-related information
+on librsvg's dependencies.
+
+The Minimum Supported Rust Version (MSRV) is now Rust 1.52.
+
+## Special thanks
+
+Paolo Borelli and Sven Neumann did a lot of painstaking work to finish
+porting the library and rsvg-convert to Rust.
+
+Sven Neumann and Dunja Lalic ported the test suite to Rust, making it
+much faster.
+
+Dunja Lalic rewrote the Continuous Integration infrastructure, making
+it MUCH faster.
+
+Madds H did their Outreachy internship for librsvg and implemented a
+bunch of useful SVG2/CSS3 features.
+
+John Ledbetter methodically went through all the <filter-function>
+shortcuts and implemented them for SVG2.
+
+Ismael Luceno has been cleaning up our autotools scripts.
+
+Andre Klapper has been wrangling numerous bug reports from Wikimedia
+as usual.
+
+Chun-wei Fan, Abraham Toriz, Christian Hergert, Ignacio Casal Quinteiro
+have been keeping the Windows and MacOS builds working.
+
+
+==============
 Version 2.51.4
 ==============
 
@@ -184,7 +345,9 @@ Special thanks to Dunja Lalic for adding the start of code coverage
 analysis to the build.
 
 
+==============
 Version 2.51.0
+==============
 
 There are many changes in this development release!  This experimental
 release is meant for early testing, with the understanding that some
@@ -310,6 +473,139 @@ Special thanks for this release:
   it.
 
 - Paolo Borelli for constant refactoring.
+
+
+==============
+Version 2.50.7
+==============
+
+Two cairo-related bug fixes:
+
+- #745 - Fix mismatched cairo_save/restore when running in inside the Cairo test suite.
+- #746 - Possible cairo_save() without cairo_restore() in render_layer().
+
+
+==============
+Version 2.50.6
+==============
+
+This release fixes an important bug about text spacing.  The bug fix
+requires an update to at least Pango 1.44.  Sorry for the increased
+requirements!
+
+- Librsvg now requires at least Pango 1.44.
+
+- #730 - Incorrect text spacing when the transform is not 1:1.  You
+  can see this when a small font-size is scaled up due to a
+  transform.  It is less visible for a large font-size scaled down.
+
+- #704 - Fix circle/ellipse in paths when they are made out of a
+  single Arc command.
+
+
+==============
+Version 2.50.5
+==============
+
+- #699 - Images embedded as data: URLs didn't render if they had a
+  MIME type with a charset parameter.
+
+- #691 - Don't allow number lists with unbounded lengths in
+  tableValues attributes, for feComponentTransfer and
+  feConvolveMatrix (Madds H).
+
+- #718 - Negative rx/ry in rect element should be ignored.
+
+
+==============
+Version 2.50.4
+==============
+
+Update dependent crates that had security vulnerabilities:
+
+  generic-array to 0.13.3 - RUSTSEC-2020-0146
+
+- #686 - Reduced stack usage (Sebastian Dröge).
+
+- #698 - Add limit for too-large radiuses on the feMorphology filter (Madds H).
+
+- #703 - Properly ignore elements in an error state inside the "switch" element.
+
+
+
+Version 2.50.3
+
+- #601 - Compute correct bounds for objects with stroke-width=0.
+
+- #545 - Fix MacOS build (Ignacio Casal Quinteiro, Christian Hergert).
+
+- Fix test suite on Rust 1.49 (Sven Neumann).
+
+Version 2.50.2
+
+- #642 - Fix dx/dy offsets in nested <tspan> elements.
+
+Version 2.50.1
+
+- #615: SVG2: Support a chain of uri() filters in the "filter" property
+  (John Ledbetter, Sven Neumann).
+
+- #483: Support CSS selectors for attribute matching, like rect[attr^="prefix"]
+
+- #554: Fixed the geometry_for_layer() APIs to not ignore the passed viewport.
+
+- Fixed CSS "import" so it allows only files from the same base directory
+  (Lars Schmertmann).
+
+- #623 - The pkg-config files (*.pc) do not define the 'svgz_supported' and
+  'css_supported' variables anymore.  These variables were hardcoded
+  to 'true' and unchanged since 2011.
+
+- #624 - The source repository no longer produces a librsvg-uninstalled.pc file.
+
+Version 2.50.0
+
+- The following is a summary of changes between 2.48.x and 2.50.0.  For
+  full details, please see the 2.49.x release notes below.
+
+- This release requires at least Rust 1.40.
+
+- Windows builds now support ARM64, thanks to Chun-wei Fan.
+
+- Librsvg now consumes much less memory for large SVG files.  The limit for
+  the maximum number of elements in an SVG is bigger now at 1 million
+  elements (this limit exists to avoid unbounded memory consumption by
+  maliciously large files, and is plenty to render even very detailed
+  maps).  Thanks to Sergey "Shnatsel" Davidoff and Adam Reichold for making
+  this possible.
+
+- #34 - The 'font' shorthand in is now supported in CSS.  Librsvg
+  ignores the 'line-height' sub-property because it cannot be done
+  easily with Pango, but everything else in 'font' should work now.
+
+- Many new features from SVG2:
+
+- #508 - radialGradient now supports the "fr" property from SVG2
+  (Dunja Lalic, Corentin Rossignon).
+
+- #568 - Support href attribute in addition to xlink:href per SVG2.
+
+- #560 - Ignore missing filter references per SVG2.
+
+- #607 - Support the mix-blend-mode property from SVG2 and the
+  Compositing and Blending Level 1 specification, so layers can be
+  composited with operators like multiply/screen/color-burn, etc.
+  https://www.w3.org/TR/compositing-1/ (John Ledbetter).
+
+- #473 - Support the paint-order property from SVG2, so one can pick
+  the order in which a path's fill/stroke/markers are drawn (John Ledbetter).
+
+- Many bug fixes and little optimizations; see the 2.49.x release notes for
+  details.  Thanks to Paolo Borelli, Daniel Kolesa, Ernestas Kulik.
+  Sven Neumann, Bastien Orivel, Jordan Petridis, Emile Snyder.
+
+- Special thanks to Sven Neumann for fixing all the cargo-clippy lints.
+
 
 Version 2.49.5
 
