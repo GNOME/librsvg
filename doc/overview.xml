@@ -11,7 +11,7 @@
     it to render itself to a Cairo context.
   </para>
 
-  <formalpara>
+  <section>
     <title>Loading</title>
 
     <para>
@@ -23,9 +23,19 @@
       loading completes successfully, the RsvgHandle will be ready for
       rendering.
     </para>
-  </formalpara>
 
-  <formalpara>
+    <para>
+      Generally you should use
+      <function>rsvg_handle_new_from_gfile_sync()</function> or
+      <function>rsvg_handle_new_from_stream_sync()</function> to load
+      an SVG document into an RsvgHandle.  There are other convenience
+      functions to load an SVG document, but these two functions let
+      one set the "base file" and the RsvgHandleFlags in a single
+      call.
+    </para>
+  </section>
+
+  <section>
     <title>Rendering</title>
 
     <para>
@@ -36,5 +46,53 @@
       render only that element; this is so that sub-elements can be
       extracted conveniently out of a larger SVG.
     </para>
-  </formalpara>
+
+    <para>
+      Generally you should use
+      <function>rsvg_handle_render_document()</function> to render the
+      whole SVG document at any size you choose into a Cairo context.
+    </para>
+  </section>
+
+  <section>
+    <title>Example: simple loading and rendering</title>
+
+    <para>
+      The following program loads <filename>hello.svg</filename>,
+      renders it scaled to fit within 640x480 pixels, and writes a
+      <filename>hello.png</filename> file.
+    </para>
+
+    <para>
+      Note the following:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+        <para>
+          <function>rsvg_handle_render_document()</function> will
+          scale the document proportionally to fit the viewport you
+          specify, and it will center the image within that viewport.
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+          Librsvg does not paint a background color by default, so in
+          the following example all unfilled areas of the SVG will
+          appear as fully transparent.  If you wish to have a specific
+          background, fill the viewport area yourself before rendering
+          the SVG.
+        </para>
+      </listitem>
+    </itemizedlist>
+
+    <example>
+      <title>Load and render an SVG document as a PNG</title>
+
+      <programlisting>
+        <xi:include href="load-and-render.c" parse="text" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+      </programlisting>
+    </example>
+  </section>
 </chapter>

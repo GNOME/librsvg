@@ -127,5 +127,19 @@
       icon from a document full of icons —, applications can use
       <function>rsvg_handle_render_element</function>.
     </para>
+
+    <section>
+      <title>Injecting a user stylesheet</title>
+
+      <para>
+        It is sometimes convenient for applications to inject an extra
+        stylesheet while rendering an SVG document.  You can do this
+        with <function>rsvg_handle_set_stylesheet</function>.  During
+        the CSS cascade, the specified stylesheet will be used with a
+        <ulink
+        url="https://drafts.csswg.org/css-cascade-3/#cascading-origins">"User"
+        origin</ulink>.
+      </para>
+    </section>
   </section>
 </chapter>
