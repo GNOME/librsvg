@@ -184,7 +184,9 @@ Special thanks to Dunja Lalic for adding the start of code coverage
 analysis to the build.
 
 
+==============
 Version 2.51.0
+==============
 
 There are many changes in this development release!  This experimental
 release is meant for early testing, with the understanding that some
@@ -310,6 +312,139 @@ Special thanks for this release:
   it.
 
 - Paolo Borelli for constant refactoring.
+
+
+==============
+Version 2.50.7
+==============
+
+Two cairo-related bug fixes:
+
+- #745 - Fix mismatched cairo_save/restore when running in inside the Cairo test suite.
+- #746 - Possible cairo_save() without cairo_restore() in render_layer().
+
+
+==============
+Version 2.50.6
+==============
+
+This release fixes an important bug about text spacing.  The bug fix
+requires an update to at least Pango 1.44.  Sorry for the increased
+requirements!
+
+- Librsvg now requires at least Pango 1.44.
+
+- #730 - Incorrect text spacing when the transform is not 1:1.  You
+  can see this when a small font-size is scaled up due to a
+  transform.  It is less visible for a large font-size scaled down.
+
+- #704 - Fix circle/ellipse in paths when they are made out of a
+  single Arc command.
+
+
+==============
+Version 2.50.5
+==============
+
+- #699 - Images embedded as data: URLs didn't render if they had a
+  MIME type with a charset parameter.
+
+- #691 - Don't allow number lists with unbounded lengths in
+  tableValues attributes, for feComponentTransfer and
+  feConvolveMatrix (Madds H).
+
+- #718 - Negative rx/ry in rect element should be ignored.
+
+
+==============
+Version 2.50.4
+==============
+
+Update dependent crates that had security vulnerabilities:
+
+  generic-array to 0.13.3 - RUSTSEC-2020-0146
+
+- #686 - Reduced stack usage (Sebastian Dröge).
+
+- #698 - Add limit for too-large radiuses on the feMorphology filter (Madds H).
+
+- #703 - Properly ignore elements in an error state inside the "switch" element.
+
+
+
+Version 2.50.3
+
+- #601 - Compute correct bounds for objects with stroke-width=0.
+
+- #545 - Fix MacOS build (Ignacio Casal Quinteiro, Christian Hergert).
+
+- Fix test suite on Rust 1.49 (Sven Neumann).
+
+Version 2.50.2
+
+- #642 - Fix dx/dy offsets in nested <tspan> elements.
+
+Version 2.50.1
+
+- #615: SVG2: Support a chain of uri() filters in the "filter" property
+  (John Ledbetter, Sven Neumann).
+
+- #483: Support CSS selectors for attribute matching, like rect[attr^="prefix"]
+
+- #554: Fixed the geometry_for_layer() APIs to not ignore the passed viewport.
+
+- Fixed CSS "import" so it allows only files from the same base directory
+  (Lars Schmertmann).
+
+- #623 - The pkg-config files (*.pc) do not define the 'svgz_supported' and
+  'css_supported' variables anymore.  These variables were hardcoded
+  to 'true' and unchanged since 2011.
+
+- #624 - The source repository no longer produces a librsvg-uninstalled.pc file.
+
+Version 2.50.0
+
+- The following is a summary of changes between 2.48.x and 2.50.0.  For
+  full details, please see the 2.49.x release notes below.
+
+- This release requires at least Rust 1.40.
+
+- Windows builds now support ARM64, thanks to Chun-wei Fan.
+
+- Librsvg now consumes much less memory for large SVG files.  The limit for
+  the maximum number of elements in an SVG is bigger now at 1 million
+  elements (this limit exists to avoid unbounded memory consumption by
+  maliciously large files, and is plenty to render even very detailed
+  maps).  Thanks to Sergey "Shnatsel" Davidoff and Adam Reichold for making
+  this possible.
+
+- #34 - The 'font' shorthand in is now supported in CSS.  Librsvg
+  ignores the 'line-height' sub-property because it cannot be done
+  easily with Pango, but everything else in 'font' should work now.
+
+- Many new features from SVG2:
+
+- #508 - radialGradient now supports the "fr" property from SVG2
+  (Dunja Lalic, Corentin Rossignon).
+
+- #568 - Support href attribute in addition to xlink:href per SVG2.
+
+- #560 - Ignore missing filter references per SVG2.
+
+- #607 - Support the mix-blend-mode property from SVG2 and the
+  Compositing and Blending Level 1 specification, so layers can be
+  composited with operators like multiply/screen/color-burn, etc.
+  https://www.w3.org/TR/compositing-1/ (John Ledbetter).
+
+- #473 - Support the paint-order property from SVG2, so one can pick
+  the order in which a path's fill/stroke/markers are drawn (John Ledbetter).
+
+- Many bug fixes and little optimizations; see the 2.49.x release notes for
+  details.  Thanks to Paolo Borelli, Daniel Kolesa, Ernestas Kulik.
+  Sven Neumann, Bastien Orivel, Jordan Petridis, Emile Snyder.
+
+- Special thanks to Sven Neumann for fixing all the cargo-clippy lints.
+
 
 Version 2.49.5
 
