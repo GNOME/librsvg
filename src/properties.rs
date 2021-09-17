@@ -378,6 +378,18 @@ make_properties! {
         "marker"                      => marker                      : Marker,
     }
 
+    // longhands that are presentation attributes right now, but need to be turned into properties:
+    // "cx" - applies only to circle, ellipse
+    // "cy" - applies only to circle, ellipse
+    // "height" - applies only to foreignObject, image, rect, svg, symbol, use
+    // "width"  - applies only to foreignObject, image, rect, svg, symbol, use
+    // "x"      - applies only to foreignObject, image, rect, svg, symbol, use
+    // "y"      - applies only to foreignObject, image, rect, svg, symbol, use
+    // "r"      - applies only to circle
+    // "rx"     - applies only to ellipse, rect
+    // "ry"     - applies only to ellipse, rect
+    // "d"      - applies only to path
+
     longhands: {
         "baseline-shift"              => baseline_shift              : BaselineShift,
         "clip-path"                   => clip_path                   : ClipPath,
@@ -387,7 +399,11 @@ make_properties! {
         "direction"                   => direction                   : Direction,
         "display"                     => display                     : Display,
         "enable-background"           => enable_background           : EnableBackground,
+
+        // "applies to any element except animation elements"
+        // https://www.w3.org/TR/SVG2/styling.html#PresentationAttributes
         "fill"                        => fill                        : Fill,
+
         "fill-opacity"                => fill_opacity                : FillOpacity,
         "fill-rule"                   => fill_rule                   : FillRule,
         "filter"                      => filter                      : Filter,
