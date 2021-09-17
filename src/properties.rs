@@ -391,13 +391,17 @@ make_properties! {
     // "d"      - applies only to path
 
     longhands: {
+        // "alignment-baseline"          unimplemented - presentation attribute
         "baseline-shift"              => baseline_shift              : BaselineShift,
         "clip-path"                   => clip_path                   : ClipPath,
         "clip-rule"                   => clip_rule                   : ClipRule,
         "color"                       => color                       : Color,
+        // "color-interpolation"         unimplemented - presentation attribute
         "color-interpolation-filters" => color_interpolation_filters : ColorInterpolationFilters,
+        // "cursor"                      unimplemented - presentation attribute
         "direction"                   => direction                   : Direction,
         "display"                     => display                     : Display,
+        // "dominant-baseline"           unimplemented - presentation attribute
         "enable-background"           => enable_background           : EnableBackground,
 
         // "applies to any element except animation elements"
@@ -411,18 +415,23 @@ make_properties! {
         "flood-opacity"               => flood_opacity               : FloodOpacity,
         "font-family"                 => font_family                 : FontFamily,
         "font-size"                   => font_size                   : FontSize,
+        // "font-size-adjust"            unimplemented - presentation attribute
         "font-stretch"                => font_stretch                : FontStretch,
         "font-style"                  => font_style                  : FontStyle,
         "font-variant"                => font_variant                : FontVariant,
         "font-weight"                 => font_weight                 : FontWeight,
+        // "glyph-orientation-vertical" - obsolete, now shorthand - https://svgwg.org/svg2-draft/text.html#GlyphOrientationVerticalProperty
+        // "image-rendering"             unimplemented - presentation attribute
         "letter-spacing"              => letter_spacing              : LetterSpacing,
         "lighting-color"              => lighting_color              : LightingColor,
         "marker-end"                  => marker_end                  : MarkerEnd,
         "marker-mid"                  => marker_mid                  : MarkerMid,
         "marker-start"                => marker_start                : MarkerStart,
         "mask"                        => mask                        : Mask,
+        // "mask-type"                   unimplemented - presentation attribute
         "opacity"                     => opacity                     : Opacity,
         "overflow"                    => overflow                    : Overflow,
+        // "pointer-events"              unimplemented - presentation attribute
         "shape-rendering"             => shape_rendering             : ShapeRendering,
         "stop-color"                  => stop_color                  : StopColor,
         "stop-opacity"                => stop_opacity                : StopOpacity,
@@ -436,17 +445,29 @@ make_properties! {
         "stroke-width"                => stroke_width                : StrokeWidth,
         "text-anchor"                 => text_anchor                 : TextAnchor,
         "text-decoration"             => text_decoration             : TextDecoration,
+        // "text-overflow"               unimplemented - presentation attribute
         "text-rendering"              => text_rendering              : TextRendering,
+
+        // "transform" - Special case as presentation attribute:
+        // The SVG1.1 "transform" attribute has a different grammar than the
+        // SVG2 "transform" property.  Here we define for the properties machinery,
+        // and it is handled specially as an attribute in parse_presentation_attributes().
         "transform"                   => transform_property          : TransformProperty,
+
+        // "transform-box"               unimplemented - not presentation attribute
+        // "transform-origin"            unimplemented - presentation attribute
         "unicode-bidi"                => unicode_bidi                : UnicodeBidi,
+        // "vector-effect"               unimplemented - presentation attribute
         "visibility"                  => visibility                  : Visibility,
+        // "white-space"                 unimplemented - presentation attribute
+        // "word-spacing"                unimplemented - presentation attribute
         "writing-mode"                => writing_mode                : WritingMode,
     }
 
     longhands_not_supported_by_markup5ever: {
-        "line-height"                 => line_height                 : LineHeight,
-        "mix-blend-mode"              => mix_blend_mode              : MixBlendMode,
-        "paint-order"                 => paint_order                 : PaintOrder,
+        "line-height"                 => line_height                 : LineHeight, // not presentation attribute
+        "mix-blend-mode"              => mix_blend_mode              : MixBlendMode, // not presentation attribute
+        "paint-order"                 => paint_order                 : PaintOrder, // presentation attribute
     }
 
     // These are not properties, but presentation attributes.  However,
