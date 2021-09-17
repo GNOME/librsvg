@@ -90,7 +90,7 @@ use std::str;
 use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
-use crate::properties::{parse_property, ComputedValues, ParsedProperty};
+use crate::properties::{parse_property, ComputedValues, ParseAs, ParsedProperty};
 use crate::url_resolver::UrlResolver;
 
 /// A parsed CSS declaration
@@ -122,7 +122,7 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         input: &mut Parser<'i, 't>,
     ) -> Result<Declaration, ParseError<'i>> {
         let prop_name = QualName::new(None, ns!(), LocalName::from(name.as_ref()));
-        let property = parse_property(&prop_name, input, true)?;
+        let property = parse_property(&prop_name, input, ParseAs::Property)?;
 
         let important = input.try_parse(parse_important).is_ok();
 

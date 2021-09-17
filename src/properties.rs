@@ -85,6 +85,13 @@ enum PresentationAttr {
     Yes,
 }
 
+/// How to parse a value, whether it comes from a property or from a presentation attribute
+#[derive(PartialEq)]
+pub enum ParseAs {
+    Property,
+    PresentationAttr,
+}
+
 impl PropertyId {
     fn as_u8(&self) -> u8 {
         *self as u8
@@ -344,25 +351,30 @@ macro_rules! make_properties {
         pub fn parse_property<'i>(
             prop_name: &QualName,
             input: &mut Parser<'i, '_>,
-            accept_shorthands: bool
+            parse_as: ParseAs,
         ) -> Result<ParsedProperty, ParseError<'i>> {
             match prop_name.expanded() {
                 $(
-                    expanded_name!("", $long_str) =>
-                        Ok(ParsedProperty::$long_name(parse_input(input)?)),
+                    expanded_name!("", $long_str) if !(parse_as == ParseAs::PresentationAttr && $long_presentation_attr == PresentationAttr::No) => {
+                        Ok(ParsedProperty::$long_name(parse_input(input)?))
+                    }
                 )+
 
                 $(
                     e if e == ExpandedName {
                         ns: &ns!(),
                         local: &LocalName::from($long_m5e_str),
-                    } =>
-                        Ok(ParsedProperty::$long_m5e_name(parse_input(input)?)),
+                    } && !(parse_as == ParseAs::PresentationAttr && $long_m5e_presentation_attr == PresentationAttr::No) => {
+                        Ok(ParsedProperty::$long_m5e_name(parse_input(input)?))
+                    }
                 )+
 
                 $(
                     expanded_name!("", $short_str) => {
-                        if accept_shorthands {
+                        // No shorthand has a presentation attribute.
+                        assert!($short_presentation_attr == PresentationAttr::No);
+
+                        if parse_as == ParseAs::Property {
                             Ok(ParsedProperty::$short_name(parse_input(input)?))
                         } else {
                             let loc = input.current_source_location();
@@ -713,7 +725,7 @@ impl SpecifiedValues {
         // Presentation attributes don't accept shorthands, e.g. there is no
         // attribute like marker="#foo" and it needs to be set in the style attribute
         // like style="marker: #foo;".  So, pass false for accept_shorthands here.
-        match parse_property(&attr, &mut parser, false) {
+        match parse_property(&attr, &mut parser, ParseAs::PresentationAttr) {
             Ok(prop) => {
                 if parser.expect_exhausted().is_ok() {
                     self.set_parsed_property(&prop);
