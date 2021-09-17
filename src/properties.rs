@@ -76,6 +76,15 @@ where
     }
 }
 
+/// Whether a property also has a presentation attribute.
+///
+/// https://svgwg.org/svg2-draft/styling.html#PresentationAttributes
+#[derive(PartialEq)]
+enum PresentationAttr {
+    No,
+    Yes,
+}
+
 impl PropertyId {
     fn as_u8(&self) -> u8 {
         *self as u8
@@ -164,17 +173,17 @@ impl ComputedValues {
 macro_rules! make_properties {
     {
         shorthands: {
-            $($short_str:tt => $short_field:ident: $short_name:ident,)*
+            $($short_str:tt => ( $short_presentation_attr:expr, $short_field:ident: $short_name:ident ),)*
         }
 
         longhands: {
-            $($long_str:tt => $long_field:ident: $long_name:ident,)+
+            $($long_str:tt => ( $long_presentation_attr:expr, $long_field:ident: $long_name:ident ),)+
         }
 
         // These are for when expanded_name!("" "foo") is not defined yet
         // in markup5ever.  We create an ExpandedName by hand in that case.
         longhands_not_supported_by_markup5ever: {
-            $($long_m5e_str:tt => $long_m5e_field:ident: $long_m5e_name:ident,)+
+            $($long_m5e_str:tt => ($long_m5e_presentation_attr:expr, $long_m5e_field:ident: $long_m5e_name:ident ),)+
         }
 
         non_properties: {
@@ -374,8 +383,9 @@ macro_rules! make_properties {
 #[rustfmt::skip]
 make_properties! {
     shorthands: {
-        "font"                        => font                        : Font,
-        "marker"                      => marker                      : Marker,
+        // No shorthand has a presentation attribute.
+        "font"    => (PresentationAttr::No, font   : Font),
+        "marker"  => (PresentationAttr::No, marker : Marker),
     }
 
     // longhands that are presentation attributes right now, but need to be turned into properties:
@@ -391,83 +401,84 @@ make_properties! {
     // "d"      - applies only to path
 
     longhands: {
-        // "alignment-baseline"          unimplemented - presentation attribute
-        "baseline-shift"              => baseline_shift              : BaselineShift,
-        "clip-path"                   => clip_path                   : ClipPath,
-        "clip-rule"                   => clip_rule                   : ClipRule,
-        "color"                       => color                       : Color,
-        // "color-interpolation"         unimplemented - presentation attribute
-        "color-interpolation-filters" => color_interpolation_filters : ColorInterpolationFilters,
-        // "cursor"                      unimplemented - presentation attribute
-        "direction"                   => direction                   : Direction,
-        "display"                     => display                     : Display,
-        // "dominant-baseline"           unimplemented - presentation attribute
-        "enable-background"           => enable_background           : EnableBackground,
+        // "alignment-baseline"       => (PresentationAttr::Yes, unimplemented),
+        "baseline-shift"              => (PresentationAttr::Yes, baseline_shift              : BaselineShift),
+        "clip-path"                   => (PresentationAttr::Yes, clip_path                   : ClipPath),
+        "clip-rule"                   => (PresentationAttr::Yes, clip_rule                   : ClipRule),
+        "color"                       => (PresentationAttr::Yes, color                       : Color),
+        // "color-interpolation"      => (PresentationAttr::Yes, unimplemented),
+        "color-interpolation-filters" => (PresentationAttr::Yes, color_interpolation_filters : ColorInterpolationFilters),
+        // "cursor"                   => (PresentationAttr::Yes, unimplemented),
+        "direction"                   => (PresentationAttr::Yes, direction                   : Direction),
+        "display"                     => (PresentationAttr::Yes, display                     : Display),
+        // "dominant-baseline"        => (PresentationAttr::Yes, unimplemented),
+        "enable-background"           => (PresentationAttr::Yes, enable_background           : EnableBackground),
 
         // "applies to any element except animation elements"
         // https://www.w3.org/TR/SVG2/styling.html#PresentationAttributes
-        "fill"                        => fill                        : Fill,
+        "fill"                        => (PresentationAttr::Yes, fill                        : Fill),
 
-        "fill-opacity"                => fill_opacity                : FillOpacity,
-        "fill-rule"                   => fill_rule                   : FillRule,
-        "filter"                      => filter                      : Filter,
-        "flood-color"                 => flood_color                 : FloodColor,
-        "flood-opacity"               => flood_opacity               : FloodOpacity,
-        "font-family"                 => font_family                 : FontFamily,
-        "font-size"                   => font_size                   : FontSize,
-        // "font-size-adjust"            unimplemented - presentation attribute
-        "font-stretch"                => font_stretch                : FontStretch,
-        "font-style"                  => font_style                  : FontStyle,
-        "font-variant"                => font_variant                : FontVariant,
-        "font-weight"                 => font_weight                 : FontWeight,
+        "fill-opacity"                => (PresentationAttr::Yes, fill_opacity                : FillOpacity),
+        "fill-rule"                   => (PresentationAttr::Yes, fill_rule                   : FillRule),
+        "filter"                      => (PresentationAttr::Yes, filter                      : Filter),
+        "flood-color"                 => (PresentationAttr::Yes, flood_color                 : FloodColor),
+        "flood-opacity"               => (PresentationAttr::Yes, flood_opacity               : FloodOpacity),
+        "font-family"                 => (PresentationAttr::Yes, font_family                 : FontFamily),
+        "font-size"                   => (PresentationAttr::Yes, font_size                   : FontSize),
+        // "font-size-adjust"         => (PresentationAttr::Yes, unimplemented),
+        "font-stretch"                => (PresentationAttr::Yes, font_stretch                : FontStretch),
+        "font-style"                  => (PresentationAttr::Yes, font_style                  : FontStyle),
+        "font-variant"                => (PresentationAttr::Yes, font_variant                : FontVariant),
+        "font-weight"                 => (PresentationAttr::Yes, font_weight                 : FontWeight),
+        // "glyph-orientation-horizontal" - obsolete, removed from SVG2
         // "glyph-orientation-vertical" - obsolete, now shorthand - https://svgwg.org/svg2-draft/text.html#GlyphOrientationVerticalProperty
-        // "image-rendering"             unimplemented - presentation attribute
-        "letter-spacing"              => letter_spacing              : LetterSpacing,
-        "lighting-color"              => lighting_color              : LightingColor,
-        "marker-end"                  => marker_end                  : MarkerEnd,
-        "marker-mid"                  => marker_mid                  : MarkerMid,
-        "marker-start"                => marker_start                : MarkerStart,
-        "mask"                        => mask                        : Mask,
-        // "mask-type"                   unimplemented - presentation attribute
-        "opacity"                     => opacity                     : Opacity,
-        "overflow"                    => overflow                    : Overflow,
-        // "pointer-events"              unimplemented - presentation attribute
-        "shape-rendering"             => shape_rendering             : ShapeRendering,
-        "stop-color"                  => stop_color                  : StopColor,
-        "stop-opacity"                => stop_opacity                : StopOpacity,
-        "stroke"                      => stroke                      : Stroke,
-        "stroke-dasharray"            => stroke_dasharray            : StrokeDasharray,
-        "stroke-dashoffset"           => stroke_dashoffset           : StrokeDashoffset,
-        "stroke-linecap"              => stroke_line_cap             : StrokeLinecap,
-        "stroke-linejoin"             => stroke_line_join            : StrokeLinejoin,
-        "stroke-miterlimit"           => stroke_miterlimit           : StrokeMiterlimit,
-        "stroke-opacity"              => stroke_opacity              : StrokeOpacity,
-        "stroke-width"                => stroke_width                : StrokeWidth,
-        "text-anchor"                 => text_anchor                 : TextAnchor,
-        "text-decoration"             => text_decoration             : TextDecoration,
-        // "text-overflow"               unimplemented - presentation attribute
-        "text-rendering"              => text_rendering              : TextRendering,
+        // "image-rendering"          => (PresentationAttr::Yes, unimplemented),
+        "letter-spacing"              => (PresentationAttr::Yes, letter_spacing              : LetterSpacing),
+        "lighting-color"              => (PresentationAttr::Yes, lighting_color              : LightingColor),
+        "marker-end"                  => (PresentationAttr::Yes, marker_end                  : MarkerEnd),
+        "marker-mid"                  => (PresentationAttr::Yes, marker_mid                  : MarkerMid),
+        "marker-start"                => (PresentationAttr::Yes, marker_start                : MarkerStart),
+        "mask"                        => (PresentationAttr::Yes, mask                        : Mask),
+        // "mask-type"                => (PresentationAttr::Yes, unimplemented),
+        "opacity"                     => (PresentationAttr::Yes, opacity                     : Opacity),
+        "overflow"                    => (PresentationAttr::Yes, overflow                    : Overflow),
+        // "pointer-events"           => (PresentationAttr::Yes, unimplemented),
+        "shape-rendering"             => (PresentationAttr::Yes, shape_rendering             : ShapeRendering),
+        "stop-color"                  => (PresentationAttr::Yes, stop_color                  : StopColor),
+        "stop-opacity"                => (PresentationAttr::Yes, stop_opacity                : StopOpacity),
+        "stroke"                      => (PresentationAttr::Yes, stroke                      : Stroke),
+        "stroke-dasharray"            => (PresentationAttr::Yes, stroke_dasharray            : StrokeDasharray),
+        "stroke-dashoffset"           => (PresentationAttr::Yes, stroke_dashoffset           : StrokeDashoffset),
+        "stroke-linecap"              => (PresentationAttr::Yes, stroke_line_cap             : StrokeLinecap),
+        "stroke-linejoin"             => (PresentationAttr::Yes, stroke_line_join            : StrokeLinejoin),
+        "stroke-miterlimit"           => (PresentationAttr::Yes, stroke_miterlimit           : StrokeMiterlimit),
+        "stroke-opacity"              => (PresentationAttr::Yes, stroke_opacity              : StrokeOpacity),
+        "stroke-width"                => (PresentationAttr::Yes, stroke_width                : StrokeWidth),
+        "text-anchor"                 => (PresentationAttr::Yes, text_anchor                 : TextAnchor),
+        "text-decoration"             => (PresentationAttr::Yes, text_decoration             : TextDecoration),
+        // "text-overflow"            => (PresentationAttr::Yes, unimplemented),
+        "text-rendering"              => (PresentationAttr::Yes, text_rendering              : TextRendering),
 
         // "transform" - Special case as presentation attribute:
         // The SVG1.1 "transform" attribute has a different grammar than the
         // SVG2 "transform" property.  Here we define for the properties machinery,
         // and it is handled specially as an attribute in parse_presentation_attributes().
-        "transform"                   => transform_property          : TransformProperty,
+        "transform"                   => (PresentationAttr::No, transform_property           : TransformProperty),
 
-        // "transform-box"               unimplemented - not presentation attribute
-        // "transform-origin"            unimplemented - presentation attribute
-        "unicode-bidi"                => unicode_bidi                : UnicodeBidi,
-        // "vector-effect"               unimplemented - presentation attribute
-        "visibility"                  => visibility                  : Visibility,
-        // "white-space"                 unimplemented - presentation attribute
-        // "word-spacing"                unimplemented - presentation attribute
-        "writing-mode"                => writing_mode                : WritingMode,
+        // "transform-box"            => (PresentationAttr::Yes, unimplemented),
+        // "transform-origin"         => (PresentationAttr::Yes, unimplemented),
+        "unicode-bidi"                => (PresentationAttr::Yes, unicode_bidi                : UnicodeBidi),
+        // "vector-effect"            => (PresentationAttr::Yes, unimplemented),
+        "visibility"                  => (PresentationAttr::Yes, visibility                  : Visibility),
+        // "white-space"              => (PresentationAttr::Yes, unimplemented),
+        // "word-spacing"             => (PresentationAttr::Yes, unimplemented),
+        "writing-mode"                => (PresentationAttr::Yes, writing_mode                : WritingMode),
     }
 
     longhands_not_supported_by_markup5ever: {
-        "line-height"                 => line_height                 : LineHeight, // not presentation attribute
-        "mix-blend-mode"              => mix_blend_mode              : MixBlendMode, // not presentation attribute
-        "paint-order"                 => paint_order                 : PaintOrder, // presentation attribute
+        "line-height"                 => (PresentationAttr::No,  line_height                 : LineHeight),
+        "mix-blend-mode"              => (PresentationAttr::No,  mix_blend_mode              : MixBlendMode),
+        "paint-order"                 => (PresentationAttr::Yes, paint_order                 : PaintOrder),
     }
 
     // These are not properties, but presentation attributes.  However,
