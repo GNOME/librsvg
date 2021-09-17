@@ -370,16 +370,11 @@ macro_rules! make_properties {
                 )+
 
                 $(
-                    expanded_name!("", $short_str) => {
+                    expanded_name!("", $short_str) if parse_as == ParseAs::Property => {
                         // No shorthand has a presentation attribute.
                         assert!($short_presentation_attr == PresentationAttr::No);
 
-                        if parse_as == ParseAs::Property {
-                            Ok(ParsedProperty::$short_name(parse_input(input)?))
-                        } else {
-                            let loc = input.current_source_location();
-                            Err(loc.new_custom_error(ValueErrorKind::UnknownProperty))
-                        }
+                        Ok(ParsedProperty::$short_name(parse_input(input)?))
                     }
                 )+
 
