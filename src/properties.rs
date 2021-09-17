@@ -718,9 +718,6 @@ impl SpecifiedValues {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
-        // Presentation attributes don't accept shorthands, e.g. there is no
-        // attribute like marker="#foo" and it needs to be set in the style attribute
-        // like style="marker: #foo;".  So, pass false for accept_shorthands here.
         match parse_value(&attr, &mut parser, ParseAs::PresentationAttr) {
             Ok(prop) => {
                 if parser.expect_exhausted().is_ok() {
