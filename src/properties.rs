@@ -155,7 +155,7 @@ impl ComputedValues {
 /// * `PropertyId`, an fieldless enum with simple values to identify all the properties.
 /// * `ParsedProperty`, a variant enum for all the specified property values.
 /// * `ComputedValue`, a variant enum for all the computed values.
-/// * `parse_property`, the main function to parse a property declaration from user input.
+/// * `parse_value`, the main function to parse a property or attribute value from user input.
 ///
 /// There is a lot of repetitive code, for example, because sometimes
 /// we need to operate on `PropertyId::Foo`, `ParsedProperty::Foo` and
@@ -348,7 +348,8 @@ macro_rules! make_properties {
             }
         }
 
-        pub fn parse_property<'i>(
+        /// Parses a value from either a style property or from an element's attribute.
+        pub fn parse_value<'i>(
             prop_name: &QualName,
             input: &mut Parser<'i, '_>,
             parse_as: ParseAs,
@@ -720,7 +721,7 @@ impl SpecifiedValues {
         // Presentation attributes don't accept shorthands, e.g. there is no
         // attribute like marker="#foo" and it needs to be set in the style attribute
         // like style="marker: #foo;".  So, pass false for accept_shorthands here.
-        match parse_property(&attr, &mut parser, ParseAs::PresentationAttr) {
+        match parse_value(&attr, &mut parser, ParseAs::PresentationAttr) {
             Ok(prop) => {
                 if parser.expect_exhausted().is_ok() {
                     self.set_parsed_property(&prop);
