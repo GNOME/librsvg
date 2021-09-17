@@ -575,7 +575,9 @@ RsvgHandle *rsvg_handle_new (void);
  * @count: length of the @buf buffer in bytes
  * @error: (optional): a location to store a #GError, or %NULL
  *
- * Loads the next @count bytes of the image.
+ * Loads the next @count bytes of the image.  You can call this function multiple
+ * times until the whole document is consumed; then you must call rsvg_handle_close()
+ * to actually parse the document.
  *
  * Before calling this function for the first time, you may need to call
  * rsvg_handle_set_base_uri() or rsvg_handle_set_base_gfile() to set the "base
@@ -603,9 +605,15 @@ gboolean rsvg_handle_write (RsvgHandle   *handle,
  * @handle: a #RsvgHandle
  * @error: (optional): a location to store a #GError, or %NULL
  *
- * Closes @handle, to indicate that loading the image is complete.  This will
- * return %TRUE if the loader closed successfully and the SVG data was parsed
- * correctly.  Note that @handle isn't freed until @g_object_unref is called.
+ * This is used after calling rsvg_handle_write() to indicate that there is no more data
+ * to consume, and to start the actual parsing of the SVG document.  The only reason to
+ * call this function is if you use use rsvg_handle_write() to feed data into the @handle;
+ * if you use the other methods like rsvg_handle_new_from_file() or
+ * rsvg_handle_read_stream_sync(), then you do not need to call this function.
+ *
+ * This will return %TRUE if the loader closed successfully and the
+ * SVG data was parsed correctly.  Note that @handle isn't freed until
+ * @g_object_unref is called.
  *
  * Returns: %TRUE on success, or %FALSE on error.
  *
