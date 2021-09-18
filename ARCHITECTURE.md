@@ -227,7 +227,7 @@ method takes the name of a CSS property name like `fill`, plus a value
 like `rgb(255, 0, 0)`, and it must return a value that represents a
 parsed declaration.  Librsvg uses the `Declaration` struct for this.
 
-The core of parsing CSS is the `parse_property` function, which returns a `ParsedProperty`:
+The core of parsing CSS is the `parse_value` function, which returns a `ParsedProperty`:
 
 ```rust
 pub enum ParsedProperty {
