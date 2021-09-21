@@ -343,7 +343,7 @@ impl ImageSurface<Shared> {
             .map(|row| row.as_rgba_mut())
             .zip(self.rows())
             .flat_map(|(dest_row, src_row)| src_row.iter().zip(dest_row.iter_mut()))
-            .for_each(|(src, dest)| *dest = Pixel::from(*src).unpremultiply().to_pixbuf_rgba());
+            .for_each(|(src, dest)| *dest = src.to_pixel().unpremultiply().to_pixbuf_rgba());
 
         Some(pixbuf)
     }

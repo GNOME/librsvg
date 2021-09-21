@@ -93,6 +93,18 @@ impl ToGdkPixbufRGBA for Pixel {
     }
 }
 
+impl ToPixel for CairoARGB {
+    #[inline]
+    fn to_pixel(&self) -> Pixel {
+        Pixel {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
+}
+
 impl ToPixel for GdkPixbufRGBA {
     #[inline]
     fn to_pixel(&self) -> Pixel {
