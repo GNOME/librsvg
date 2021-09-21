@@ -22,6 +22,9 @@ use rgb::alt::ARGB8;
 #[allow(clippy::upper_case_acronyms)]
 pub type CairoARGB = ARGB8;
 
+/// GdkPixbuf's endian-independent RGBA8 pixel layout.
+pub type GdkPixbufRGBA = rgb::RGBA8;
+
 /// Analogous to `rgb::FromSlice`, to convert from `[T]` to `[CairoARGB]`
 #[allow(clippy::upper_case_acronyms)]
 pub trait AsCairoARGB<T: Copy> {
@@ -55,6 +58,26 @@ pub enum EdgeMode {
     Wrap,
     /// Zero RGBA values are returned.
     None,
+}
+
+/// Trait to convert pixels in various formats to RGBA, for GdkPixbuf.
+///
+/// GdkPixbuf unconditionally uses RGBA ordering regardless of endianness,
+/// but we need to convert to it from Cairo's endian-dependent 0xaarrggbb.
+pub trait ToGdkPixbufRGBA {
+    fn to_pixbuf_rgba(&self) -> GdkPixbufRGBA;
+}
+
+impl ToGdkPixbufRGBA for Pixel {
+    #[inline]
+    fn to_pixbuf_rgba(&self) -> GdkPixbufRGBA {
+        GdkPixbufRGBA {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
 }
 
 /// Extension methods for `cairo::ImageSurfaceData`.

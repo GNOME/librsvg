@@ -15,7 +15,7 @@ use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},
-    AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps,
+    AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps, ToGdkPixbufRGBA,
 };
 
 /// Types of pixel data in a `ImageSurface`.
@@ -342,7 +342,7 @@ impl ImageSurface<Shared> {
             .map(|row| row.as_rgba_mut())
             .zip(self.rows())
             .flat_map(|(dest_row, src_row)| src_row.iter().zip(dest_row.iter_mut()))
-            .for_each(|(src, dest)| *dest = Pixel::from(*src).unpremultiply());
+            .for_each(|(src, dest)| *dest = Pixel::from(*src).unpremultiply().to_pixbuf_rgba());
 
         Some(pixbuf)
     }
