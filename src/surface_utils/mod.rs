@@ -76,6 +76,11 @@ pub trait ToPixel {
     fn to_pixel(&self) -> Pixel;
 }
 
+/// Trait to convert pixels in various formats to Cairo's endian-dependent 0xaarrggbb.
+pub trait ToCairoARGB {
+    fn to_cairo_argb(&self) -> CairoARGB;
+}
+
 impl ToGdkPixbufRGBA for Pixel {
     #[inline]
     fn to_pixbuf_rgba(&self) -> GdkPixbufRGBA {
@@ -108,6 +113,18 @@ impl ToPixel for GdkPixbufRGB {
             g: self.g,
             b: self.b,
             a: 255,
+        }
+    }
+}
+
+impl ToCairoARGB for Pixel {
+    #[inline]
+    fn to_cairo_argb(&self) -> CairoARGB {
+        CairoARGB {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
         }
     }
 }
