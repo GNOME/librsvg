@@ -438,6 +438,7 @@ struct Converter {
     pub keep_image_data: bool,
     pub input: Vec<Input>,
     pub output: Output,
+    pub testing: bool,
 }
 
 impl Converter {
@@ -477,7 +478,8 @@ impl Converter {
 
             let renderer = CairoRenderer::new(&handle)
                 .with_dpi(self.dpi.0, self.dpi.1)
-                .with_language(&self.language);
+                .with_language(&self.language)
+                .test_mode(self.testing);
 
             let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
 
@@ -811,6 +813,12 @@ fn parse_args() -> Result<Converter, Error> {
                 .help("Do not keep image data"),
         )
         .arg(
+            clap::Arg::with_name("testing")
+                .long("testing")
+                .help("Render images for librsvg's test suite")
+                .hidden(true),
+        )
+        .arg(
             clap::Arg::with_name("FILE")
                 .help("The input file(s) to convert")
                 .multiple(true),
@@ -936,6 +944,7 @@ fn parse_args() -> Result<Converter, Error> {
             .map(PathBuf::from)
             .map(Output::Path)
             .unwrap_or(Output::Stdout),
+        testing: matches.is_present("testing"),
     })
 }
 

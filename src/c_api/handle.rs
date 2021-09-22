@@ -931,13 +931,9 @@ impl CHandle {
         let imp = imp::CHandle::from_instance(self);
         let inner = imp.inner.borrow();
 
-        let mut renderer = CairoRenderer::new(&*handle_ref).with_dpi(inner.dpi.x(), inner.dpi.y());
-
-        if inner.is_testing {
-            renderer = renderer.test_mode();
-        }
-
-        renderer
+        CairoRenderer::new(&*handle_ref)
+            .with_dpi(inner.dpi.x(), inner.dpi.y())
+            .test_mode(inner.is_testing)
     }
 
     fn get_geometry_sub(
