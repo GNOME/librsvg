@@ -22,6 +22,12 @@ use rgb::alt::ARGB8;
 #[allow(clippy::upper_case_acronyms)]
 pub type CairoARGB = ARGB8;
 
+/// GdkPixbuf's endian-independent RGBA8 pixel layout.
+pub type GdkPixbufRGBA = rgb::RGBA8;
+
+/// GdkPixbuf's packed RGB pixel layout.
+pub type GdkPixbufRGB = rgb::RGB8;
+
 /// Analogous to `rgb::FromSlice`, to convert from `[T]` to `[CairoARGB]`
 #[allow(clippy::upper_case_acronyms)]
 pub trait AsCairoARGB<T: Copy> {
@@ -55,6 +61,84 @@ pub enum EdgeMode {
     Wrap,
     /// Zero RGBA values are returned.
     None,
+}
+
+/// Trait to convert pixels in various formats to RGBA, for GdkPixbuf.
+///
+/// GdkPixbuf unconditionally uses RGBA ordering regardless of endianness,
+/// but we need to convert to it from Cairo's endian-dependent 0xaarrggbb.
+pub trait ToGdkPixbufRGBA {
+    fn to_pixbuf_rgba(&self) -> GdkPixbufRGBA;
+}
+
+/// Trait to convert pixels in various formats to our own Pixel layout.
+pub trait ToPixel {
+    fn to_pixel(&self) -> Pixel;
+}
+
+/// Trait to convert pixels in various formats to Cairo's endian-dependent 0xaarrggbb.
+pub trait ToCairoARGB {
+    fn to_cairo_argb(&self) -> CairoARGB;
+}
+
+impl ToGdkPixbufRGBA for Pixel {
+    #[inline]
+    fn to_pixbuf_rgba(&self) -> GdkPixbufRGBA {
+        GdkPixbufRGBA {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
+}
+
+impl ToPixel for CairoARGB {
+    #[inline]
+    fn to_pixel(&self) -> Pixel {
+        Pixel {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
+}
+
+impl ToPixel for GdkPixbufRGBA {
+    #[inline]
+    fn to_pixel(&self) -> Pixel {
+        Pixel {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
+}
+
+impl ToPixel for GdkPixbufRGB {
+    #[inline]
+    fn to_pixel(&self) -> Pixel {
+        Pixel {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: 255,
+        }
+    }
+}
+
+impl ToCairoARGB for Pixel {
+    #[inline]
+    fn to_cairo_argb(&self) -> CairoARGB {
+        CairoARGB {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
 }
 
 /// Extension methods for `cairo::ImageSurfaceData`.
