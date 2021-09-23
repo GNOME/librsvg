@@ -135,8 +135,12 @@ impl PositionedChunk {
 
         // Position each span
 
+        let view_params = draw_ctx.get_view_params();
+
         for measured_span in &measured.spans {
-            let positioned_span = PositionedSpan::from_measured(measured_span, draw_ctx, x, y);
+            let params = NormalizeParams::new(&measured_span.values, &view_params);
+
+            let positioned_span = PositionedSpan::from_measured(measured_span, &params, x, y);
 
             x = positioned_span.next_span_x;
             y = positioned_span.next_span_y;
@@ -222,15 +226,12 @@ impl MeasuredSpan {
 impl PositionedSpan {
     fn from_measured(
         measured: &MeasuredSpan,
-        draw_ctx: &DrawingCtx,
+        params: &NormalizeParams,
         x: f64,
         y: f64,
     ) -> PositionedSpan {
         let layout = measured.layout.clone();
         let values = measured.values.clone();
-
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(&values, &view_params);
 
         let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
         let baseline_shift = values.baseline_shift().0.to_user(&params);
