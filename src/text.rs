@@ -74,7 +74,6 @@ struct MeasuredSpan {
 struct PositionedSpan {
     layout: pango::Layout,
     values: Rc<ComputedValues>,
-    _position: (f64, f64),
     rendered_position: (f64, f64),
     next_span_x: f64,
     next_span_y: f64,
@@ -248,7 +247,6 @@ impl PositionedSpan {
         PositionedSpan {
             layout,
             values,
-            _position: (x, y),
             rendered_position: (render_x, render_y),
             next_span_x: x + measured.advance.0 + dx,
             next_span_y: y + measured.advance.1 + dy,
