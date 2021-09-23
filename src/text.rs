@@ -302,10 +302,6 @@ impl PositionedSpan {
 /// Walks the children of a `<text>`, `<tspan>`, or `<tref>` element
 /// and appends chunks/spans from them into the specified `chunks`
 /// array.
-///
-/// `x` and `y` are the absolute position for the first chunk.  If the
-/// first child is a `<tspan>` with a specified absolute position, it
-/// will be used instead of the given arguments.
 fn children_to_chunks(
     chunks: &mut Vec<Chunk>,
     node: &Node,
