@@ -246,7 +246,7 @@ impl PositionedSpan {
         };
 
         PositionedSpan {
-            layout: measured.layout.clone(),
+            layout,
             values,
             _position: (x, y),
             rendered_position: (render_x, render_y),
