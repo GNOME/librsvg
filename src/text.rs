@@ -146,10 +146,10 @@ impl PositionedChunk {
             let dx = mspan.dx;
             let dy = mspan.dy;
 
-            let rendered_position = if values.writing_mode().is_vertical() {
-                (x + offset + dx, y + dy)
-            } else {
+            let rendered_position = if values.writing_mode().is_horizontal() {
                 (x + dx, y - offset + dy)
+            } else {
+                (x + offset + dx, y + dy)
             };
 
             let positioned_span = PositionedSpan {
@@ -177,17 +177,17 @@ fn text_anchor_advance(
     writing_mode: WritingMode,
     advance: (f64, f64),
 ) -> (f64, f64) {
-    if writing_mode.is_vertical() {
-        match anchor {
-            TextAnchor::Start => (0.0, 0.0),
-            TextAnchor::Middle => (0.0, -advance.1 / 2.0),
-            TextAnchor::End => (0.0, -advance.1),
-        }
-    } else {
+    if writing_mode.is_horizontal() {
         match anchor {
             TextAnchor::Start => (0.0, 0.0),
             TextAnchor::Middle => (-advance.0 / 2.0, 0.0),
             TextAnchor::End => (-advance.0, 0.0),
+        }
+    } else {
+        match anchor {
+            TextAnchor::Start => (0.0, 0.0),
+            TextAnchor::Middle => (0.0, -advance.1 / 2.0),
+            TextAnchor::End => (0.0, -advance.1),
         }
     }
 }
@@ -222,10 +222,10 @@ impl MeasuredSpan {
         assert!(w >= 0.0);
         assert!(h >= 0.0);
 
-        let advance = if values.writing_mode().is_vertical() {
-            (0.0, w)
-        } else {
+        let advance = if values.writing_mode().is_horizontal() {
             (w, 0.0)
+        } else {
+            (0.0, w)
         };
 
         MeasuredSpan {
