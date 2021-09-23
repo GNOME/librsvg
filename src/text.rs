@@ -147,10 +147,20 @@ impl PositionedChunk {
             let dx = mspan.dx;
             let dy = mspan.dy;
 
+            let start_pos = match values.direction() {
+                Direction::Ltr => (x, y),
+                Direction::Rtl => (x - mspan.advance.0, y),
+            };
+
+            let span_advance = match values.direction() {
+                Direction::Ltr => (mspan.advance.0, mspan.advance.1),
+                Direction::Rtl => (-mspan.advance.0, mspan.advance.1),
+            };
+
             let rendered_position = if values.writing_mode().is_horizontal() {
-                (x + dx, y - baseline_offset + dy)
+                (start_pos.0 + dx, start_pos.1 - baseline_offset + dy)
             } else {
-                (x + baseline_offset + dx, y + dy)
+                (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
             };
 
             let positioned_span = PositionedSpan {
@@ -161,8 +171,8 @@ impl PositionedChunk {
 
             positioned.push(positioned_span);
 
-            x = x + mspan.advance.0 + dx;
-            y = y + mspan.advance.1 + dy;
+            x = x + span_advance.0 + dx;
+            y = y + span_advance.1 + dy;
         }
 
         PositionedChunk {
