@@ -124,6 +124,7 @@ impl PositionedChunk {
 
         let adjusted_advance = text_anchor_offset(
             measured.values.text_anchor(),
+            measured.values.direction(),
             text_is_horizontal,
             measured.advance,
         );
@@ -173,20 +174,28 @@ impl PositionedChunk {
 }
 
 /// Computes the (x, y) offsets to be applied to spans after applying the text-anchor property (start, middle, end).
+#[rustfmt::skip]
 fn text_anchor_offset(
     anchor: TextAnchor,
+    direction: Direction,
     text_is_horizontal: bool,
     chunk_size: (f64, f64),
 ) -> (f64, f64) {
     let (w, h) = chunk_size;
 
     if text_is_horizontal {
-        match anchor {
-            TextAnchor::Start => (0.0, 0.0),
-            TextAnchor::Middle => (-w / 2.0, 0.0),
-            TextAnchor::End => (-w, 0.0),
+        match (anchor, direction) {
+            (TextAnchor::Start,  Direction::Ltr) => (0.0, 0.0),
+            (TextAnchor::Start,  Direction::Rtl) => (0.0, 0.0),
+
+            (TextAnchor::Middle, Direction::Ltr) => (-w / 2.0, 0.0),
+            (TextAnchor::Middle, Direction::Rtl) => (w / 2.0, 0.0),
+
+            (TextAnchor::End,    Direction::Ltr) => (-w, 0.0),
+            (TextAnchor::End,    Direction::Rtl) => (w, 0.0),
         }
     } else {
+        // FIXME: we don't deal with text direction for vertical text yet.
         match anchor {
             TextAnchor::Start => (0.0, 0.0),
             TextAnchor::Middle => (0.0, -h / 2.0),
@@ -907,20 +916,36 @@ mod tests {
     // This is called _horizontal because the property value in "CSS Writing Modes 3"
     // is `horizontal-tb`.  Eventually we will support that and this will make more sense.
     #[test]
-    fn adjusted_advance_horizontal() {
+    fn adjusted_advance_horizontal_ltr() {
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Start, Direction::Ltr, true, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, true, (2.0, 4.0)),
             (-1.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::End, Direction::Ltr, true, (2.0, 4.0)),
             (-2.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn adjusted_advance_horizontal_rtl() {
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Start, Direction::Rtl, true, (2.0, 4.0)),
+            (0.0, 0.0)
+        );
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Middle, Direction::Rtl, true, (2.0, 4.0)),
+            (1.0, 0.0)
+        );
+        assert_eq!(
+            text_anchor_offset(TextAnchor::End, Direction::Rtl, true, (2.0, 4.0)),
+            (2.0, 0.0)
         );
     }
 
@@ -931,17 +956,17 @@ mod tests {
     #[test]
     fn adjusted_advance_vertical() {
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, false, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Start, Direction::Ltr, false, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, false, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, false, (2.0, 4.0)),
             (0.0, -2.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, false, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::End, Direction::Ltr, false, (2.0, 4.0)),
             (0.0, -4.0)
         );
     }
