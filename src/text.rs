@@ -891,7 +891,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 
 #[cfg(test)]
 mod tests {
-    use super::Chars;
+    use super::*;
 
     #[test]
     fn chars_default() {
@@ -906,5 +906,47 @@ mod tests {
         let c = Chars::new(example);
         assert_eq!(c.get_string(), example);
         assert!(c.space_normalized.borrow().is_none());
+    }
+
+    // This is called _horizontal because the property value in "CSS Writing Modes 3"
+    // is `horizontal-tb`.  Eventually we will support that and this will make more sense.
+    #[test]
+    fn adjusted_advance_horizontal() {
+        assert_eq!(
+            text_anchor_advance(TextAnchor::Start, WritingMode::LrTb, (2.0, 4.0)),
+            (0.0, 0.0)
+        );
+
+        assert_eq!(
+            text_anchor_advance(TextAnchor::Middle, WritingMode::LrTb, (2.0, 4.0)),
+            (-1.0, 0.0)
+        );
+
+        assert_eq!(
+            text_anchor_advance(TextAnchor::End, WritingMode::LrTb, (2.0, 4.0)),
+            (-2.0, 0.0)
+        );
+    }
+
+    // This is called _vertical because "CSS Writing Modes 3" has both `vertical-rl` (East
+    // Asia), and `vertical-lr` (Manchu, Mongolian), but librsvg does not support block
+    // flow direction properly yet.  Eventually we will support that and this will make
+    // more sense.
+    #[test]
+    fn adjusted_advance_vertical() {
+        assert_eq!(
+            text_anchor_advance(TextAnchor::Start, WritingMode::Tb, (2.0, 4.0)),
+            (0.0, 0.0)
+        );
+
+        assert_eq!(
+            text_anchor_advance(TextAnchor::Middle, WritingMode::Tb, (2.0, 4.0)),
+            (0.0, -2.0)
+        );
+
+        assert_eq!(
+            text_anchor_advance(TextAnchor::End, WritingMode::Tb, (2.0, 4.0)),
+            (0.0, -4.0)
+        );
     }
 }
