@@ -148,22 +148,25 @@ impl PositionedChunk {
             let dx = mspan.dx;
             let dy = mspan.dy;
 
-            let (render_x, render_y) = if values.writing_mode().is_vertical() {
+            let rendered_position = if values.writing_mode().is_vertical() {
                 (x + offset + dx, y + dy)
             } else {
                 (x + dx, y - offset + dy)
             };
 
+            let next_span_x = x + mspan.advance.0 + dx;
+            let next_span_y = y + mspan.advance.1 + dy;
+
             let positioned_span = PositionedSpan {
                 layout,
                 values,
-                rendered_position: (render_x, render_y),
-                next_span_x: x + mspan.advance.0 + dx,
-                next_span_y: y + mspan.advance.1 + dy,
+                rendered_position,
+                next_span_x,
+                next_span_y,
             };
 
-            x = positioned_span.next_span_x;
-            y = positioned_span.next_span_y;
+            x = next_span_x;
+            y = next_span_y;
 
             positioned.push(positioned_span);
         }
