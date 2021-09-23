@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke};
@@ -74,10 +74,7 @@ struct MeasuredSpan {
 struct PositionedSpan {
     layout: pango::Layout,
     values: Rc<ComputedValues>,
-    _position: (f64, f64),
     rendered_position: (f64, f64),
-    next_span_x: f64,
-    next_span_y: f64,
 }
 
 impl Chunk {
@@ -116,32 +113,66 @@ impl MeasuredChunk {
 impl PositionedChunk {
     fn from_measured(
         measured: &MeasuredChunk,
-        draw_ctx: &DrawingCtx,
+        view_params: &ViewParams,
+        text_is_horizontal: bool,
         x: f64,
         y: f64,
     ) -> PositionedChunk {
         let mut positioned = Vec::new();
 
-        // Adjust the specified coordinates with the text_anchor
-
-        let adjusted_advance = text_anchor_advance(
+        // measured.advance is the size of the chunk.  Compute the offsets needed to align
+        // it per the text-anchor property (start, middle, end):
+        let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
-            measured.values.writing_mode(),
+            measured.values.direction(),
+            text_is_horizontal,
             measured.advance,
         );
 
-        let mut x = x + adjusted_advance.0;
-        let mut y = y + adjusted_advance.1;
+        let mut x = x + anchor_offset.0;
+        let mut y = y + anchor_offset.1;
 
         // Position each span
 
-        for measured_span in &measured.spans {
-            let positioned_span = PositionedSpan::from_measured(measured_span, draw_ctx, x, y);
+        for mspan in &measured.spans {
+            let params = NormalizeParams::new(&mspan.values, view_params);
 
-            x = positioned_span.next_span_x;
-            y = positioned_span.next_span_y;
+            let layout = mspan.layout.clone();
+            let values = mspan.values.clone();
+
+            let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+            let baseline_shift = values.baseline_shift().0.to_user(&params);
+            let baseline_offset = baseline + baseline_shift;
+
+            let dx = mspan.dx;
+            let dy = mspan.dy;
+
+            let start_pos = match values.direction() {
+                Direction::Ltr => (x, y),
+                Direction::Rtl => (x - mspan.advance.0, y),
+            };
+
+            let span_advance = match values.direction() {
+                Direction::Ltr => (mspan.advance.0, mspan.advance.1),
+                Direction::Rtl => (-mspan.advance.0, mspan.advance.1),
+            };
+
+            let rendered_position = if values.writing_mode().is_horizontal() {
+                (start_pos.0 + dx, start_pos.1 - baseline_offset + dy)
+            } else {
+                (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
+            };
+
+            let positioned_span = PositionedSpan {
+                layout,
+                values,
+                rendered_position,
+            };
 
             positioned.push(positioned_span);
+
+            x = x + span_advance.0 + dx;
+            y = y + span_advance.1 + dy;
         }
 
         PositionedChunk {
@@ -152,22 +183,33 @@ impl PositionedChunk {
     }
 }
 
-fn text_anchor_advance(
+/// Computes the (x, y) offsets to be applied to spans after applying the text-anchor property (start, middle, end).
+#[rustfmt::skip]
+fn text_anchor_offset(
     anchor: TextAnchor,
-    writing_mode: WritingMode,
-    advance: (f64, f64),
+    direction: Direction,
+    text_is_horizontal: bool,
+    chunk_size: (f64, f64),
 ) -> (f64, f64) {
-    if writing_mode.is_vertical() {
-        match anchor {
-            TextAnchor::Start => (0.0, 0.0),
-            TextAnchor::Middle => (0.0, -advance.1 / 2.0),
-            TextAnchor::End => (0.0, -advance.1),
+    let (w, h) = chunk_size;
+
+    if text_is_horizontal {
+        match (anchor, direction) {
+            (TextAnchor::Start,  Direction::Ltr) => (0.0, 0.0),
+            (TextAnchor::Start,  Direction::Rtl) => (0.0, 0.0),
+
+            (TextAnchor::Middle, Direction::Ltr) => (-w / 2.0, 0.0),
+            (TextAnchor::Middle, Direction::Rtl) => (w / 2.0, 0.0),
+
+            (TextAnchor::End,    Direction::Ltr) => (-w, 0.0),
+            (TextAnchor::End,    Direction::Rtl) => (w, 0.0),
         }
     } else {
+        // FIXME: we don't deal with text direction for vertical text yet.
         match anchor {
             TextAnchor::Start => (0.0, 0.0),
-            TextAnchor::Middle => (-advance.0 / 2.0, 0.0),
-            TextAnchor::End => (-advance.0, 0.0),
+            TextAnchor::Middle => (0.0, -h / 2.0),
+            TextAnchor::End => (0.0, -h),
         }
     }
 }
@@ -198,10 +240,14 @@ impl MeasuredSpan {
         let w = f64::from(w) / f64::from(pango::SCALE);
         let h = f64::from(h) / f64::from(pango::SCALE);
 
-        let advance = if values.writing_mode().is_vertical() {
-            (0.0, w)
-        } else {
+        // This is the logical size of the layout, regardless of text direction, so it's always positive.
+        assert!(w >= 0.0);
+        assert!(h >= 0.0);
+
+        let advance = if values.writing_mode().is_horizontal() {
             (w, 0.0)
+        } else {
+            (0.0, w)
         };
 
         MeasuredSpan {
@@ -216,41 +262,6 @@ impl MeasuredSpan {
 }
 
 impl PositionedSpan {
-    fn from_measured(
-        measured: &MeasuredSpan,
-        draw_ctx: &DrawingCtx,
-        x: f64,
-        y: f64,
-    ) -> PositionedSpan {
-        let layout = measured.layout.clone();
-        let values = measured.values.clone();
-
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(&values, &view_params);
-
-        let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
-        let baseline_shift = values.baseline_shift().0.to_user(&params);
-        let offset = baseline + baseline_shift;
-
-        let dx = measured.dx;
-        let dy = measured.dy;
-
-        let (render_x, render_y) = if values.writing_mode().is_vertical() {
-            (x + offset + dx, y + dy)
-        } else {
-            (x + dx, y - offset + dy)
-        };
-
-        PositionedSpan {
-            layout: measured.layout.clone(),
-            values,
-            _position: (x, y),
-            rendered_position: (render_x, render_y),
-            next_span_x: x + measured.advance.0 + dx,
-            next_span_y: y + measured.advance.1 + dy,
-        }
-    }
-
     fn draw(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -302,10 +313,6 @@ impl PositionedSpan {
 /// Walks the children of a `<text>`, `<tspan>`, or `<tref>` element
 /// and appends chunks/spans from them into the specified `chunks`
 /// array.
-///
-/// `x` and `y` are the absolute position for the first chunk.  If the
-/// first child is a `<tspan>` with a specified absolute position, it
-/// will be used instead of the given arguments.
 fn children_to_chunks(
     chunks: &mut Vec<Chunk>,
     node: &Node,
@@ -535,6 +542,8 @@ impl Draw for Text {
 
         let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
 
+        let text_is_horizontal = values.writing_mode().is_horizontal();
+
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
@@ -557,7 +566,13 @@ impl Draw for Text {
                     let chunk_x = chunk.x.unwrap_or(x);
                     let chunk_y = chunk.y.unwrap_or(y);
 
-                    let positioned = PositionedChunk::from_measured(chunk, dc, chunk_x, chunk_y);
+                    let positioned = PositionedChunk::from_measured(
+                        chunk,
+                        &view_params,
+                        text_is_horizontal,
+                        chunk_x,
+                        chunk_y,
+                    );
 
                     x = positioned.next_chunk_x;
                     y = positioned.next_chunk_y;
@@ -810,7 +825,7 @@ impl From<WritingMode> for pango::Gravity {
 }
 
 fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str) -> pango::Layout {
-    let pango_context = pango::Context::from(draw_ctx);
+    let pango_context = draw_ctx.create_pango_context();
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang));
@@ -891,7 +906,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 
 #[cfg(test)]
 mod tests {
-    use super::Chars;
+    use super::*;
 
     #[test]
     fn chars_default() {
@@ -906,5 +921,63 @@ mod tests {
         let c = Chars::new(example);
         assert_eq!(c.get_string(), example);
         assert!(c.space_normalized.borrow().is_none());
+    }
+
+    // This is called _horizontal because the property value in "CSS Writing Modes 3"
+    // is `horizontal-tb`.  Eventually we will support that and this will make more sense.
+    #[test]
+    fn adjusted_advance_horizontal_ltr() {
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Start, Direction::Ltr, true, (2.0, 4.0)),
+            (0.0, 0.0)
+        );
+
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, true, (2.0, 4.0)),
+            (-1.0, 0.0)
+        );
+
+        assert_eq!(
+            text_anchor_offset(TextAnchor::End, Direction::Ltr, true, (2.0, 4.0)),
+            (-2.0, 0.0)
+        );
+    }
+
+    #[test]
+    fn adjusted_advance_horizontal_rtl() {
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Start, Direction::Rtl, true, (2.0, 4.0)),
+            (0.0, 0.0)
+        );
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Middle, Direction::Rtl, true, (2.0, 4.0)),
+            (1.0, 0.0)
+        );
+        assert_eq!(
+            text_anchor_offset(TextAnchor::End, Direction::Rtl, true, (2.0, 4.0)),
+            (2.0, 0.0)
+        );
+    }
+
+    // This is called _vertical because "CSS Writing Modes 3" has both `vertical-rl` (East
+    // Asia), and `vertical-lr` (Manchu, Mongolian), but librsvg does not support block
+    // flow direction properly yet.  Eventually we will support that and this will make
+    // more sense.
+    #[test]
+    fn adjusted_advance_vertical() {
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Start, Direction::Ltr, false, (2.0, 4.0)),
+            (0.0, 0.0)
+        );
+
+        assert_eq!(
+            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, false, (2.0, 4.0)),
+            (0.0, -2.0)
+        );
+
+        assert_eq!(
+            text_anchor_offset(TextAnchor::End, Direction::Ltr, false, (2.0, 4.0)),
+            (0.0, -4.0)
+        );
     }
 }

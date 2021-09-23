@@ -529,10 +529,7 @@ impl<'a> CairoRenderer<'a> {
     }
 
     /// Turns on test mode.  Do not use this function; it is for librsvg's test suite only.
-    pub fn test_mode(self) -> Self {
-        CairoRenderer {
-            is_testing: true,
-            ..self
-        }
+    pub fn test_mode(self, is_testing: bool) -> Self {
+        CairoRenderer { is_testing, ..self }
     }
 }

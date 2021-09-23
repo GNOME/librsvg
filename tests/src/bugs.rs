@@ -331,7 +331,7 @@ fn test_text_bounds(name: &str) {
         .read_path(name)
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
-    let renderer = CairoRenderer::new(&handle).test_mode();
+    let renderer = CairoRenderer::new(&handle).test_mode(true);
 
     let (ink_r, _) = renderer
         .geometry_for_layer(

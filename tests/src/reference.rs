@@ -53,7 +53,7 @@ fn reference_test(path: &str) {
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
     let renderer = CairoRenderer::new(&handle)
-        .test_mode()
+        .test_mode(true)
         .with_dpi(TEST_SUITE_DPI, TEST_SUITE_DPI);
     let (width, height) = image_size(renderer.intrinsic_dimensions(), TEST_SUITE_DPI);
 

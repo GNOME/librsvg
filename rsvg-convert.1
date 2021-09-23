@@ -607,6 +607,9 @@ objects will be exported.
 The XML parser has some guards designed to mitigate large CPU or memory consumption in the face of
 malicious documents.  It may also refuse to resolve data: URIs used to embed image data.  If you are
 running into such issues when converting a SVG, this option allows to turn off these guards.
+.TP
+.I "\-\-testing"
+For developers only: render images for librsvg's test suite.
 
 .SH ENVIRONMENT VARIABLES
 .TP

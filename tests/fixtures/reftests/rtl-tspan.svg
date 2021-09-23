@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xml:lang="fa" direction="rtl" width="300" height="100">
+    <line x1="50%" y1="0" x2="50%" y2="100%" stroke-width="2" stroke="blue"/>
+    <g font-family="Dana-FaNum" font-size="16" fill="black">
+        <text x="50%" y="30" text-anchor="start"><tspan font-weight="bold">نام: </tspan><tspan>مهدی </tspan></text>
+        <text x="50%" y="60" text-anchor="middle"><tspan font-weight="bold">نام: </tspan><tspan>مهدی </tspan></text>
+        <text x="50%" y="90" text-anchor="end"><tspan font-weight="bold">نام: </tspan><tspan>مهدی </tspan></text>
+    </g>
+</svg>
