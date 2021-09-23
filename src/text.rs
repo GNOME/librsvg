@@ -135,10 +135,32 @@ impl PositionedChunk {
 
         // Position each span
 
-        for measured_span in &measured.spans {
-            let params = NormalizeParams::new(&measured_span.values, view_params);
+        for mspan in &measured.spans {
+            let params = NormalizeParams::new(&mspan.values, view_params);
 
-            let positioned_span = PositionedSpan::from_measured(measured_span, &params, x, y);
+            let layout = mspan.layout.clone();
+            let values = mspan.values.clone();
+
+            let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+            let baseline_shift = values.baseline_shift().0.to_user(&params);
+            let offset = baseline + baseline_shift;
+
+            let dx = mspan.dx;
+            let dy = mspan.dy;
+
+            let (render_x, render_y) = if values.writing_mode().is_vertical() {
+                (x + offset + dx, y + dy)
+            } else {
+                (x + dx, y - offset + dy)
+            };
+
+            let positioned_span = PositionedSpan {
+                layout,
+                values,
+                rendered_position: (render_x, render_y),
+                next_span_x: x + mspan.advance.0 + dx,
+                next_span_y: y + mspan.advance.1 + dy,
+            };
 
             x = positioned_span.next_span_x;
             y = positioned_span.next_span_y;
@@ -222,37 +244,6 @@ impl MeasuredSpan {
 }
 
 impl PositionedSpan {
-    fn from_measured(
-        measured: &MeasuredSpan,
-        params: &NormalizeParams,
-        x: f64,
-        y: f64,
-    ) -> PositionedSpan {
-        let layout = measured.layout.clone();
-        let values = measured.values.clone();
-
-        let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
-        let baseline_shift = values.baseline_shift().0.to_user(&params);
-        let offset = baseline + baseline_shift;
-
-        let dx = measured.dx;
-        let dy = measured.dy;
-
-        let (render_x, render_y) = if values.writing_mode().is_vertical() {
-            (x + offset + dx, y + dy)
-        } else {
-            (x + dx, y - offset + dy)
-        };
-
-        PositionedSpan {
-            layout,
-            values,
-            rendered_position: (render_x, render_y),
-            next_span_x: x + measured.advance.0 + dx,
-            next_span_y: y + measured.advance.1 + dy,
-        }
-    }
-
     fn draw(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
