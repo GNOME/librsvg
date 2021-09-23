@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke};
@@ -116,7 +116,7 @@ impl MeasuredChunk {
 impl PositionedChunk {
     fn from_measured(
         measured: &MeasuredChunk,
-        draw_ctx: &DrawingCtx,
+        view_params: &ViewParams,
         x: f64,
         y: f64,
     ) -> PositionedChunk {
@@ -135,10 +135,8 @@ impl PositionedChunk {
 
         // Position each span
 
-        let view_params = draw_ctx.get_view_params();
-
         for measured_span in &measured.spans {
-            let params = NormalizeParams::new(&measured_span.values, &view_params);
+            let params = NormalizeParams::new(&measured_span.values, view_params);
 
             let positioned_span = PositionedSpan::from_measured(measured_span, &params, x, y);
 
@@ -558,7 +556,7 @@ impl Draw for Text {
                     let chunk_x = chunk.x.unwrap_or(x);
                     let chunk_y = chunk.y.unwrap_or(y);
 
-                    let positioned = PositionedChunk::from_measured(chunk, dc, chunk_x, chunk_y);
+                    let positioned = PositionedChunk::from_measured(chunk, &view_params, chunk_x, chunk_y);
 
                     x = positioned.next_chunk_x;
                     y = positioned.next_chunk_y;
