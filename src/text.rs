@@ -556,7 +556,8 @@ impl Draw for Text {
                     let chunk_x = chunk.x.unwrap_or(x);
                     let chunk_y = chunk.y.unwrap_or(y);
 
-                    let positioned = PositionedChunk::from_measured(chunk, &view_params, chunk_x, chunk_y);
+                    let positioned =
+                        PositionedChunk::from_measured(chunk, &view_params, chunk_x, chunk_y);
 
                     x = positioned.next_chunk_x;
                     y = positioned.next_chunk_y;
@@ -809,7 +810,7 @@ impl From<WritingMode> for pango::Gravity {
 }
 
 fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str) -> pango::Layout {
-    let pango_context = pango::Context::from(draw_ctx);
+    let pango_context = draw_ctx.create_pango_context();
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang));
