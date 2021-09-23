@@ -114,7 +114,7 @@ impl PositionedChunk {
     fn from_measured(
         measured: &MeasuredChunk,
         view_params: &ViewParams,
-        _text_is_horizontal: bool,
+        text_is_horizontal: bool,
         x: f64,
         y: f64,
     ) -> PositionedChunk {
@@ -124,7 +124,7 @@ impl PositionedChunk {
 
         let adjusted_advance = text_anchor_advance(
             measured.values.text_anchor(),
-            measured.values.writing_mode(),
+            text_is_horizontal,
             measured.advance,
         );
 
@@ -174,10 +174,10 @@ impl PositionedChunk {
 
 fn text_anchor_advance(
     anchor: TextAnchor,
-    writing_mode: WritingMode,
+    text_is_horizontal: bool,
     advance: (f64, f64),
 ) -> (f64, f64) {
-    if writing_mode.is_horizontal() {
+    if text_is_horizontal {
         match anchor {
             TextAnchor::Start => (0.0, 0.0),
             TextAnchor::Middle => (-advance.0 / 2.0, 0.0),
@@ -906,17 +906,17 @@ mod tests {
     #[test]
     fn adjusted_advance_horizontal() {
         assert_eq!(
-            text_anchor_advance(TextAnchor::Start, WritingMode::LrTb, (2.0, 4.0)),
+            text_anchor_advance(TextAnchor::Start, true, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::Middle, WritingMode::LrTb, (2.0, 4.0)),
+            text_anchor_advance(TextAnchor::Middle, true, (2.0, 4.0)),
             (-1.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::End, WritingMode::LrTb, (2.0, 4.0)),
+            text_anchor_advance(TextAnchor::End, true, (2.0, 4.0)),
             (-2.0, 0.0)
         );
     }
@@ -928,17 +928,17 @@ mod tests {
     #[test]
     fn adjusted_advance_vertical() {
         assert_eq!(
-            text_anchor_advance(TextAnchor::Start, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_advance(TextAnchor::Start, false, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::Middle, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_advance(TextAnchor::Middle, false, (2.0, 4.0)),
             (0.0, -2.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::End, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_advance(TextAnchor::End, false, (2.0, 4.0)),
             (0.0, -4.0)
         );
     }
