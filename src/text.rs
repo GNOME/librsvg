@@ -142,15 +142,15 @@ impl PositionedChunk {
 
             let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
             let baseline_shift = values.baseline_shift().0.to_user(&params);
-            let offset = baseline + baseline_shift;
+            let baseline_offset = baseline + baseline_shift;
 
             let dx = mspan.dx;
             let dy = mspan.dy;
 
             let rendered_position = if values.writing_mode().is_horizontal() {
-                (x + dx, y - offset + dy)
+                (x + dx, y - baseline_offset + dy)
             } else {
-                (x + offset + dx, y + dy)
+                (x + baseline_offset + dx, y + dy)
             };
 
             let positioned_span = PositionedSpan {
