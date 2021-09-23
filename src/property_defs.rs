@@ -1052,6 +1052,10 @@ impl WritingMode {
     pub fn is_vertical(self) -> bool {
         matches!(self, WritingMode::Tb | WritingMode::TbRl)
     }
+
+    pub fn is_horizontal(self) -> bool {
+        !self.is_vertical()
+    }
 }
 
 make_property!(

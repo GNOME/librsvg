@@ -117,6 +117,7 @@ impl PositionedChunk {
     fn from_measured(
         measured: &MeasuredChunk,
         view_params: &ViewParams,
+        _text_is_horizontal: bool,
         x: f64,
         y: f64,
     ) -> PositionedChunk {
@@ -534,6 +535,8 @@ impl Draw for Text {
 
         let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
 
+        let text_is_horizontal = values.writing_mode().is_horizontal();
+
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
@@ -556,8 +559,13 @@ impl Draw for Text {
                     let chunk_x = chunk.x.unwrap_or(x);
                     let chunk_y = chunk.y.unwrap_or(y);
 
-                    let positioned =
-                        PositionedChunk::from_measured(chunk, &view_params, chunk_x, chunk_y);
+                    let positioned = PositionedChunk::from_measured(
+                        chunk,
+                        &view_params,
+                        text_is_horizontal,
+                        chunk_x,
+                        chunk_y,
+                    );
 
                     x = positioned.next_chunk_x;
                     y = positioned.next_chunk_y;
