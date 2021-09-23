@@ -75,8 +75,6 @@ struct PositionedSpan {
     layout: pango::Layout,
     values: Rc<ComputedValues>,
     rendered_position: (f64, f64),
-    next_span_x: f64,
-    next_span_y: f64,
 }
 
 impl Chunk {
@@ -154,21 +152,16 @@ impl PositionedChunk {
                 (x + dx, y - offset + dy)
             };
 
-            let next_span_x = x + mspan.advance.0 + dx;
-            let next_span_y = y + mspan.advance.1 + dy;
-
             let positioned_span = PositionedSpan {
                 layout,
                 values,
                 rendered_position,
-                next_span_x,
-                next_span_y,
             };
 
-            x = next_span_x;
-            y = next_span_y;
-
             positioned.push(positioned_span);
+
+            x = x + mspan.advance.0 + dx;
+            y = y + mspan.advance.1 + dy;
         }
 
         PositionedChunk {
