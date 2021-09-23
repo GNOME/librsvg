@@ -120,17 +120,17 @@ impl PositionedChunk {
     ) -> PositionedChunk {
         let mut positioned = Vec::new();
 
-        // Adjust the specified coordinates with the text_anchor
-
-        let adjusted_advance = text_anchor_offset(
+        // measured.advance is the size of the chunk.  Compute the offsets needed to align
+        // it per the text-anchor property (start, middle, end):
+        let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             measured.values.direction(),
             text_is_horizontal,
             measured.advance,
         );
 
-        let mut x = x + adjusted_advance.0;
-        let mut y = y + adjusted_advance.1;
+        let mut x = x + anchor_offset.0;
+        let mut y = y + anchor_offset.1;
 
         // Position each span
 
