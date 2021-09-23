@@ -122,7 +122,7 @@ impl PositionedChunk {
 
         // Adjust the specified coordinates with the text_anchor
 
-        let adjusted_advance = text_anchor_advance(
+        let adjusted_advance = text_anchor_offset(
             measured.values.text_anchor(),
             text_is_horizontal,
             measured.advance,
@@ -172,22 +172,25 @@ impl PositionedChunk {
     }
 }
 
-fn text_anchor_advance(
+/// Computes the (x, y) offsets to be applied to spans after applying the text-anchor property (start, middle, end).
+fn text_anchor_offset(
     anchor: TextAnchor,
     text_is_horizontal: bool,
-    advance: (f64, f64),
+    chunk_size: (f64, f64),
 ) -> (f64, f64) {
+    let (w, h) = chunk_size;
+
     if text_is_horizontal {
         match anchor {
             TextAnchor::Start => (0.0, 0.0),
-            TextAnchor::Middle => (-advance.0 / 2.0, 0.0),
-            TextAnchor::End => (-advance.0, 0.0),
+            TextAnchor::Middle => (-w / 2.0, 0.0),
+            TextAnchor::End => (-w, 0.0),
         }
     } else {
         match anchor {
             TextAnchor::Start => (0.0, 0.0),
-            TextAnchor::Middle => (0.0, -advance.1 / 2.0),
-            TextAnchor::End => (0.0, -advance.1),
+            TextAnchor::Middle => (0.0, -h / 2.0),
+            TextAnchor::End => (0.0, -h),
         }
     }
 }
@@ -906,17 +909,17 @@ mod tests {
     #[test]
     fn adjusted_advance_horizontal() {
         assert_eq!(
-            text_anchor_advance(TextAnchor::Start, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Start, true, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::Middle, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Middle, true, (2.0, 4.0)),
             (-1.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::End, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::End, true, (2.0, 4.0)),
             (-2.0, 0.0)
         );
     }
@@ -928,17 +931,17 @@ mod tests {
     #[test]
     fn adjusted_advance_vertical() {
         assert_eq!(
-            text_anchor_advance(TextAnchor::Start, false, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Start, false, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::Middle, false, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::Middle, false, (2.0, 4.0)),
             (0.0, -2.0)
         );
 
         assert_eq!(
-            text_anchor_advance(TextAnchor::End, false, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::End, false, (2.0, 4.0)),
             (0.0, -4.0)
         );
     }
