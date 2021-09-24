@@ -114,7 +114,7 @@ impl PositionedChunk {
     fn from_measured(
         measured: &MeasuredChunk,
         view_params: &ViewParams,
-        text_is_horizontal: bool,
+        text_writing_mode: WritingMode,
         x: f64,
         y: f64,
     ) -> PositionedChunk {
@@ -125,7 +125,7 @@ impl PositionedChunk {
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             measured.values.direction(),
-            text_is_horizontal,
+            text_writing_mode,
             measured.advance,
         );
 
@@ -188,12 +188,12 @@ impl PositionedChunk {
 fn text_anchor_offset(
     anchor: TextAnchor,
     direction: Direction,
-    text_is_horizontal: bool,
+    text_writing_mode: WritingMode,
     chunk_size: (f64, f64),
 ) -> (f64, f64) {
     let (w, h) = chunk_size;
 
-    if text_is_horizontal {
+    if text_writing_mode.is_horizontal() {
         match (anchor, direction) {
             (TextAnchor::Start,  Direction::Ltr) => (0.0, 0.0),
             (TextAnchor::Start,  Direction::Rtl) => (0.0, 0.0),
@@ -542,7 +542,7 @@ impl Draw for Text {
 
         let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
 
-        let text_is_horizontal = values.writing_mode().is_horizontal();
+        let text_writing_mode = values.writing_mode();
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -569,7 +569,7 @@ impl Draw for Text {
                     let positioned = PositionedChunk::from_measured(
                         chunk,
                         &view_params,
-                        text_is_horizontal,
+                        text_writing_mode,
                         chunk_x,
                         chunk_y,
                     );
@@ -927,34 +927,40 @@ mod tests {
     // is `horizontal-tb`.  Eventually we will support that and this will make more sense.
     #[test]
     fn adjusted_advance_horizontal_ltr() {
+        use Direction::*;
+        use TextAnchor::*;
+
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, Direction::Ltr, true, (2.0, 4.0)),
+            text_anchor_offset(Start, Ltr, WritingMode::Lr, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, true, (2.0, 4.0)),
+            text_anchor_offset(Middle, Ltr, WritingMode::Lr, (2.0, 4.0)),
             (-1.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Ltr, true, (2.0, 4.0)),
+            text_anchor_offset(End, Ltr, WritingMode::Lr, (2.0, 4.0)),
             (-2.0, 0.0)
         );
     }
 
     #[test]
     fn adjusted_advance_horizontal_rtl() {
+        use Direction::*;
+        use TextAnchor::*;
+
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, Direction::Rtl, true, (2.0, 4.0)),
+            text_anchor_offset(Start, Rtl, WritingMode::Rl, (2.0, 4.0)),
             (0.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, Direction::Rtl, true, (2.0, 4.0)),
+            text_anchor_offset(Middle, Rtl, WritingMode::Rl, (2.0, 4.0)),
             (1.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Rtl, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::End, Direction::Rtl, WritingMode::Rl, (2.0, 4.0)),
             (2.0, 0.0)
         );
     }
@@ -965,18 +971,21 @@ mod tests {
     // more sense.
     #[test]
     fn adjusted_advance_vertical() {
+        use Direction::*;
+        use TextAnchor::*;
+
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, Direction::Ltr, false, (2.0, 4.0)),
+            text_anchor_offset(Start, Ltr, WritingMode::Tb, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, false, (2.0, 4.0)),
+            text_anchor_offset(Middle, Ltr, WritingMode::Tb, (2.0, 4.0)),
             (0.0, -2.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Ltr, false, (2.0, 4.0)),
+            text_anchor_offset(End, Ltr, WritingMode::Tb, (2.0, 4.0)),
             (0.0, -4.0)
         );
     }
