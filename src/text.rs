@@ -89,11 +89,15 @@ impl Chunk {
 }
 
 impl MeasuredChunk {
-    fn from_chunk(chunk: &Chunk, draw_ctx: &DrawingCtx) -> MeasuredChunk {
+    fn from_chunk(
+        chunk: &Chunk,
+        text_writing_mode: WritingMode,
+        draw_ctx: &DrawingCtx,
+    ) -> MeasuredChunk {
         let measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
-            .map(|span| MeasuredSpan::from_span(span, draw_ctx))
+            .map(|span| MeasuredSpan::from_span(span, text_writing_mode, draw_ctx))
             .collect();
 
         let advance = measured_spans.iter().fold((0.0, 0.0), |acc, measured| {
@@ -157,7 +161,7 @@ impl PositionedChunk {
                 Direction::Rtl => (-mspan.advance.0, mspan.advance.1),
             };
 
-            let rendered_position = if values.writing_mode().is_horizontal() {
+            let rendered_position = if text_writing_mode.is_horizontal() {
                 (start_pos.0 + dx, start_pos.1 - baseline_offset + dy)
             } else {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
@@ -227,13 +231,17 @@ impl Span {
 }
 
 impl MeasuredSpan {
-    fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
+    fn from_span(
+        span: &Span,
+        text_writing_mode: WritingMode,
+        draw_ctx: &DrawingCtx,
+    ) -> MeasuredSpan {
         let values = span.values.clone();
 
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
-        let properties = FontProperties::new(&values, &params);
+        let properties = FontProperties::new(&values, text_writing_mode, &params);
         let layout = create_pango_layout(draw_ctx, &properties, &span.text);
         let (w, h) = layout.size();
 
@@ -244,7 +252,7 @@ impl MeasuredSpan {
         assert!(w >= 0.0);
         assert!(h >= 0.0);
 
-        let advance = if values.writing_mode().is_horizontal() {
+        let advance = if text_writing_mode.is_horizontal() {
             (w, 0.0)
         } else {
             (0.0, w)
@@ -558,7 +566,7 @@ impl Draw for Text {
 
                 let mut measured_chunks = Vec::new();
                 for chunk in &chunks {
-                    measured_chunks.push(MeasuredChunk::from_chunk(chunk, dc));
+                    measured_chunks.push(MeasuredChunk::from_chunk(chunk, text_writing_mode, dc));
                 }
 
                 let mut positioned_chunks = Vec::new();

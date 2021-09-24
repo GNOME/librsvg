@@ -238,10 +238,18 @@ impl Stroke {
 }
 
 impl FontProperties {
-    pub fn new(values: &ComputedValues, params: &NormalizeParams) -> FontProperties {
+    /// Collects font properties from a `ComputedValues`.
+    ///
+    /// The `writing-mode` property is passed separately, as it must come from the `<text>` element,
+    /// not the `<tspan>` whose computed values are being passed.
+    pub fn new(
+        values: &ComputedValues,
+        writing_mode: WritingMode,
+        params: &NormalizeParams,
+    ) -> FontProperties {
         FontProperties {
             xml_lang: values.xml_lang(),
-            writing_mode: values.writing_mode(),
+            writing_mode,
             unicode_bidi: values.unicode_bidi(),
             direction: values.direction(),
             font_family: values.font_family(),
