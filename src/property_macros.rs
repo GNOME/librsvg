@@ -136,6 +136,32 @@ macro_rules! make_property {
 
     ($(#[$attr:meta])*
      $name: ident,
+     default: $default: ident,
+     identifiers: { $($str_prop: expr => $variant: ident,)+ },
+     property_impl: { $prop: item }
+    ) => {
+        $(#[$attr])*
+        #[derive(Debug, Copy, Clone, PartialEq)]
+        #[repr(C)]
+        pub enum $name {
+            $($variant),+
+        }
+
+        impl_default!($name, $name::$default);
+        $prop
+
+        impl crate::parsers::Parse for $name {
+            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
+                Ok(parse_identifiers!(
+                    parser,
+                    $($str_prop => $name::$variant,)+
+                )?)
+            }
+        }
+    };
+
+    ($(#[$attr:meta])*
+     $name: ident,
      default: $default: expr,
      inherits_automatically: $inherits_automatically: expr,
      newtype_parse: $type: ty,
@@ -183,7 +209,6 @@ macro_rules! make_property {
         $parse
     };
 
-    // pending - only BaselineShift
     ($(#[$attr:meta])*
      $name: ident,
      default: $default: expr,

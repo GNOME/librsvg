@@ -812,22 +812,21 @@ impl From<Direction> for pango::Alignment {
 
 impl From<WritingMode> for pango::Direction {
     fn from(m: WritingMode) -> pango::Direction {
+        use WritingMode::*;
         match m {
-            WritingMode::LrTb | WritingMode::Lr | WritingMode::Tb | WritingMode::TbRl => {
-                pango::Direction::Ltr
-            }
-            WritingMode::RlTb | WritingMode::Rl => pango::Direction::Rtl,
+            HorizontalTb | VerticalRl | VerticalLr | LrTb | Lr | Tb | TbRl => pango::Direction::Ltr,
+            RlTb | Rl => pango::Direction::Rtl,
         }
     }
 }
 
 impl From<WritingMode> for pango::Gravity {
     fn from(m: WritingMode) -> pango::Gravity {
+        use WritingMode::*;
         match m {
-            WritingMode::Tb | WritingMode::TbRl => pango::Gravity::East,
-            WritingMode::LrTb | WritingMode::Lr | WritingMode::RlTb | WritingMode::Rl => {
-                pango::Gravity::South
-            }
+            HorizontalTb | LrTb | Lr | RlTb | Rl => pango::Gravity::South,
+            VerticalRl | Tb | TbRl => pango::Gravity::East,
+            VerticalLr => pango::Gravity::West,
         }
     }
 }
