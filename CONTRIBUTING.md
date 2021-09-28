@@ -19,7 +19,7 @@ the web interface here:
 
 https://gitlab.gnome.org/GNOME/librsvg
 
-Development happens in the master branch.  There are also branches for
+Development happens in the `main` branch.  There are also branches for
 stable releases.
 
 Alternatively, you can use the mirror at Github:

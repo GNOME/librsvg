@@ -137,15 +137,15 @@ cargo_bench:
     sudo -E git checkout ${CI_DEFAULT_BRANCH}
     for BENCH in "${BENCHES[@]}"
     do
-      sudo -E cargo bench --bench $BENCH -- --noplot --save-baseline master
+      sudo -E cargo bench --bench $BENCH -- --noplot --save-baseline main
     done
     sudo -E git checkout ${CI_COMMIT_SHA}
     for BENCH in "${BENCHES[@]}"
     do
-      sudo -E cargo bench --bench $BENCH -- --noplot --baseline master
+      sudo -E cargo bench --bench $BENCH -- --noplot --baseline main
     done
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "master"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
       when: manual
       allow_failure: true
   artifacts:
@@ -241,4 +241,4 @@ pages:
     paths:
       - public
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
