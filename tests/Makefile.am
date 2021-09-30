@@ -7,6 +7,7 @@ test_sources =				\
 	src/errors.rs			\
 	src/filters.rs			\
 	src/intrinsic_dimensions.rs	\
+	src/legacy_sizing.rs		\
 	src/loading_crash.rs		\
 	src/main.rs			\
 	src/primitives.rs		\
