@@ -10,6 +10,8 @@
 //! viewport, which indicates how big the result should be.  This matches the expectations
 //! of the web platform, which assumes that all embedded content goes into a viewport.
 
+use float_cmp::approx_eq;
+
 use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
 use crate::dpi::Dpi;
 use crate::handle::Handle;
@@ -102,6 +104,12 @@ fn size_in_pixels_from_percentage_width_and_height(
     // missing width/height default to "auto", which compute to "100%"
     let width = width.unwrap_or_else(|| Length::new(1.0, Percent));
     let height = height.unwrap_or_else(|| Length::new(1.0, Percent));
+
+    // Avoid division by zero below.  If the viewBox is zero-sized, there's
+    // not much we can do.
+    if approx_eq!(f64, vbox.width, 0.0) || approx_eq!(f64, vbox.height, 0.0) {
+        return Some((0.0, 0.0));
+    }
 
     match (width.unit, height.unit) {
         (Percent, Percent) => Some((vbox.width, vbox.height)),

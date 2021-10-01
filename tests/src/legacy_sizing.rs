@@ -203,3 +203,67 @@ fn height_and_viewbox_preserves_aspect_ratio() {
         )
     );
 }
+
+#[test]
+fn zero_width_vbox() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" viewBox="0 0 0 40">
+  <rect x="10" y="20" width="30" height="40" fill="black"/>
+</svg>
+"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        CairoRenderer::new(&svg)
+            .legacy_layer_geometry(None)
+            .unwrap(),
+        (
+            cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            },
+            cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            }
+        )
+    );
+}
+
+#[test]
+fn zero_height_vbox() {
+    let svg = load_svg(
+        br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" viewBox="0 0 30 0">
+  <rect x="10" y="20" width="30" height="40" fill="black"/>
+</svg>
+"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        CairoRenderer::new(&svg)
+            .legacy_layer_geometry(None)
+            .unwrap(),
+        (
+            cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            },
+            cairo::Rectangle {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            }
+        )
+    );
+}
