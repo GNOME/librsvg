@@ -141,6 +141,32 @@ impl Handle {
         Some((w.to_user(&params), h.to_user(&params)))
     }
 
+    /// Normalizes the svg's width/height properties with a 0-sized viewport
+    ///
+    /// This assumes that if one of the properties is in percentage units, then
+    /// its corresponding value will not be used.  E.g. if width=100%, the caller
+    /// will ignore the resulting width value.
+    pub fn width_height_to_user(&self, dpi: Dpi) -> (f64, f64) {
+        let dimensions = self.get_intrinsic_dimensions();
+
+        // missing width/height default to "auto", which compute to "100%"
+        let width = dimensions
+            .width
+            .unwrap_or_else(|| ULength::new(1.0, LengthUnit::Percent));
+        let height = dimensions
+            .height
+            .unwrap_or_else(|| ULength::new(1.0, LengthUnit::Percent));
+
+        let view_params = ViewParams::new(dpi, 0.0, 0.0);
+        let root = self.document.root();
+        let cascaded = CascadedValues::new_from_node(&root);
+        let values = cascaded.get();
+
+        let params = NormalizeParams::new(values, &view_params);
+
+        (width.to_user(&params), height.to_user(&params))
+    }
+
     fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, RenderingError> {
         if let Some(id) = id {
             Ok(self.lookup_node(id)?)

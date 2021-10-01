@@ -11,7 +11,9 @@
 //! of the web platform, which assumes that all embedded content goes into a viewport.
 
 use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
-use float_cmp::approx_eq;
+use crate::dpi::Dpi;
+use crate::handle::Handle;
+use crate::length::*;
 
 use super::handle::CairoRectangleExt;
 
@@ -47,7 +49,9 @@ impl<'a> LegacySize for CairoRenderer<'a> {
                 let size_from_intrinsic_dimensions =
                     self.intrinsic_size_in_pixels().or_else(|| {
                         size_in_pixels_from_percentage_width_and_height(
+                            &self.handle.0,
                             &self.intrinsic_dimensions(),
+                            self.dpi,
                         )
                     });
 
@@ -78,7 +82,9 @@ fn unit_rectangle() -> cairo::Rectangle {
 /// units cannot be resolved against anything in particular.  The idea is to return
 /// some dimensions with the correct aspect ratio.
 fn size_in_pixels_from_percentage_width_and_height(
+    handle: &Handle,
     dim: &IntrinsicDimensions,
+    dpi: Dpi,
 ) -> Option<(f64, f64)> {
     let IntrinsicDimensions {
         width,
@@ -86,26 +92,21 @@ fn size_in_pixels_from_percentage_width_and_height(
         vbox,
     } = *dim;
 
-    use crate::api::LengthUnit::*;
+    use LengthUnit::*;
 
-    // If both width and height are 100%, just use the vbox size as a pixel size.
-    // This gives a size with the correct aspect ratio.
+    // Unwrap or return None if we don't know the aspect ratio -> Let the caller handle it.
+    let vbox = vbox?;
 
-    match (width, height, vbox) {
-        (None, None, Some(vbox)) => Some((vbox.width, vbox.height)),
+    let (w, h) = handle.width_height_to_user(dpi);
 
-        (
-            Some(Length {
-                length: w,
-                unit: Percent,
-            }),
-            Some(Length {
-                length: h,
-                unit: Percent,
-            }),
-            Some(vbox),
-        ) if approx_eq!(f64, w, 1.0) && approx_eq!(f64, h, 1.0) => Some((vbox.width, vbox.height)),
+    // missing width/height default to "auto", which compute to "100%"
+    let width = width.unwrap_or_else(|| Length::new(1.0, Percent));
+    let height = height.unwrap_or_else(|| Length::new(1.0, Percent));
 
-        _ => None,
+    match (width.unit, height.unit) {
+        (Percent, Percent) => Some((vbox.width, vbox.height)),
+        (_, Percent) => Some((w, w * vbox.height / vbox.width)),
+        (Percent, _) => Some((h * vbox.width / vbox.height, h)),
+        (_, _) => unreachable!("should have been called with percentage units"),
     }
 }

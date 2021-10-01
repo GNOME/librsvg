@@ -214,7 +214,7 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 ///
 /// You can create this from one of the `read` methods in
 /// [`Loader`].
-pub struct SvgHandle(Handle);
+pub struct SvgHandle(pub(crate) Handle);
 
 impl SvgHandle {
     /// Checks if the SVG has an element with the specified `id`.
@@ -243,8 +243,8 @@ impl SvgHandle {
 
 /// Can render an `SvgHandle` to a Cairo context.
 pub struct CairoRenderer<'a> {
-    handle: &'a SvgHandle,
-    dpi: Dpi,
+    pub(crate) handle: &'a SvgHandle,
+    pub(crate) dpi: Dpi,
     user_language: UserLanguage,
     is_testing: bool,
 }
