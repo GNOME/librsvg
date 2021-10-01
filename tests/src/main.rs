@@ -24,6 +24,9 @@ mod filters;
 mod intrinsic_dimensions;
 
 #[cfg(test)]
+mod legacy_sizing;
+
+#[cfg(test)]
 mod loading_crash;
 
 #[cfg(test)]

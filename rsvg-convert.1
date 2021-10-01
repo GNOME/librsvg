@@ -342,7 +342,8 @@ and
 .B --dpi-y
 options).  For PDF/PS/EPS output, the width/height in physical units define the size of the PDF
 unless you specify options for the page size; see
-.B "PAGE SIZE" below.
+.B "SPECIFYING A PAGE SIZE"
+above.
 .IP \(bu 2
 .B SVG with viewBox only:
 .B <svg viewBox="0 0 20 30">
@@ -351,20 +352,16 @@ The size of the
 attribute gets used for the pixel size of the image as in the first case above.
 .IP \(bu 2
 .B SVG with width and height in percentages:
-If the
-.B width
+.B <svg width="100%" height="100%" viewBox="0 0 20 30">
+Percentages are meaningless unless you specify a viewport size with the
+.B --width
 and
-.B height
-attributes of the toplevel
-.B <svg>
-element are in percentage units, for example
-.BR width="100%" ,
-then they will be multiplied by the size of the
+.B --height
+options.  In their absence,
+.B rsvg-convert
+will just use the size of the
 .B viewBox
-attribute.  For example,
-.B <svg width="50%" height="100" viewBox="0 0 20 30">
-will be rendered as a 10*30\ pixel PNG.
-.B Note that this behavior may change in the future.
+for the pixel size, as described above.
 .IP \(bu 2
 .B SVG with no width, height, or viewBox:
 .B rsvg-convert
