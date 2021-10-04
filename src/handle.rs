@@ -108,39 +108,6 @@ impl Handle {
         }
     }
 
-    /// If the intrinsic dimensions are in physical units, computes their pixel size, or
-    /// returns `None`.
-    ///
-    /// If any of the width/height are percentages, we cannot compute the size here.  Here
-    /// just normalize lengths with physical units, or units based on the font size.
-    pub fn get_intrinsic_size_in_pixels(&self, dpi: Dpi) -> Option<(f64, f64)> {
-        let dimensions = self.get_intrinsic_dimensions();
-
-        if dimensions.width.is_none() || dimensions.height.is_none() {
-            // If either of width/height don't exist, the spec says they should default to 100%,
-            // which is a percentage-based unit - which we can't resolve here.
-            return None;
-        }
-
-        let w = dimensions.width.unwrap();
-        let h = dimensions.height.unwrap();
-
-        use crate::length::LengthUnit::*;
-
-        if w.unit == Percent || h.unit == Percent {
-            return None;
-        }
-
-        let view_params = ViewParams::new(dpi, 0.0, 0.0);
-        let root = self.document.root();
-        let cascaded = CascadedValues::new_from_node(&root);
-        let values = cascaded.get();
-
-        let params = NormalizeParams::new(values, &view_params);
-
-        Some((w.to_user(&params), h.to_user(&params)))
-    }
-
     /// Normalizes the svg's width/height properties with a 0-sized viewport
     ///
     /// This assumes that if one of the properties is in percentage units, then

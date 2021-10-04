@@ -365,7 +365,21 @@ impl<'a> CairoRenderer<'a> {
     /// kind require more information to be resolved to pixels; for example, the calling
     /// application can use a viewport size to scale percentage-based dimensions.
     pub fn intrinsic_size_in_pixels(&self) -> Option<(f64, f64)> {
-        self.handle.0.get_intrinsic_size_in_pixels(self.dpi)
+        let dim = self.intrinsic_dimensions();
+
+        // missing width/height default to "auto", which compute to "100%"
+        let width = dim
+            .width
+            .unwrap_or_else(|| Length::new(1.0, LengthUnit::Percent));
+        let height = dim
+            .height
+            .unwrap_or_else(|| Length::new(1.0, LengthUnit::Percent));
+
+        if width.unit == LengthUnit::Percent || height.unit == LengthUnit::Percent {
+            return None;
+        }
+
+        Some(self.handle.0.width_height_to_user(self.dpi))
     }
 
     /// Renders the whole SVG document fitted to a viewport
