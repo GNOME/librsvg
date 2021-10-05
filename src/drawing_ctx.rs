@@ -1401,38 +1401,40 @@ impl DrawingCtx {
                 for &target in &paint_order.targets {
                     match target {
                         PaintTarget::Fill => {
-                            self.cr.move_to(span.x, span.y);
-
-                            let matrix = self.cr.matrix();
-                            if let Some(rot) = rotation {
-                                self.cr.rotate(rot);
-                            }
-
                             let fill_paint =
                                 span.fill_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
                                 self.set_paint_source(&fill_paint, acquired_nodes)?;
+
                             if had_paint_server {
+                                self.cr.move_to(span.x, span.y);
+
+                                let matrix = self.cr.matrix();
+                                if let Some(rot) = rotation {
+                                    self.cr.rotate(rot);
+                                }
+
                                 pangocairo::functions::update_layout(&self.cr, &span.layout);
                                 pangocairo::functions::show_layout(&self.cr, &span.layout);
-                            }
 
-                            self.cr.set_matrix(matrix);
+                                self.cr.set_matrix(matrix);
+                            }
                         }
 
                         PaintTarget::Stroke => {
-                            self.cr.move_to(span.x, span.y);
-
-                            let matrix = self.cr.matrix();
-                            if let Some(rot) = rotation {
-                                self.cr.rotate(rot);
-                            }
-
                             let stroke_paint =
                                 span.stroke_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
                                 self.set_paint_source(&stroke_paint, acquired_nodes)?;
+
                             if had_paint_server {
+                                self.cr.move_to(span.x, span.y);
+
+                                let matrix = self.cr.matrix();
+                                if let Some(rot) = rotation {
+                                    self.cr.rotate(rot);
+                                }
+
                                 pangocairo::functions::update_layout(&self.cr, &span.layout);
                                 pangocairo::functions::layout_path(&self.cr, &span.layout);
 
@@ -1443,9 +1445,9 @@ impl DrawingCtx {
                                     .with_ink_rect(r);
                                 bbox.insert(&ib);
                                 self.cr.stroke()?;
-                            }
 
-                            self.cr.set_matrix(matrix);
+                                self.cr.set_matrix(matrix);
+                            }
                         }
 
                         PaintTarget::Markers => {}
