@@ -219,3 +219,34 @@ fn set_stylesheet() {
         .compare(&output_surf)
         .evaluate(&output_surf, "set_stylesheet");
 }
+
+// https://gitlab.gnome.org/GNOME/librsvg/-/issues/799
+#[test]
+fn text_doesnt_leave_points_in_current_path() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <text>Hello world!</text>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    let renderer = CairoRenderer::new(&svg);
+
+    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+    let cr = cairo::Context::new(&output).unwrap();
+
+    assert!(!cr.has_current_point().unwrap());
+
+    let viewport = cairo::Rectangle {
+        x: 0.0,
+        y: 0.0,
+        width: 100.0,
+        height: 100.0,
+    };
+
+    renderer.render_document(&cr, &viewport).unwrap();
+
+    assert!(!cr.has_current_point().unwrap());
+}

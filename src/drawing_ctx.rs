@@ -1418,6 +1418,8 @@ impl DrawingCtx {
                                 pangocairo::functions::show_layout(&self.cr, &span.layout);
 
                                 self.cr.set_matrix(matrix);
+
+                                self.cr.new_path();
                             }
                         }
 
@@ -1447,6 +1449,8 @@ impl DrawingCtx {
                                 self.cr.stroke()?;
 
                                 self.cr.set_matrix(matrix);
+
+                                self.cr.new_path();
                             }
                         }
 
