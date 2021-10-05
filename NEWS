@@ -1,4 +1,30 @@
 ==============
+Version 2.52.1
+==============
+
+This is a bugfix release; there are no new features this time.
+
+## Changes:
+
+- #791 - Fix ordering of tspan inside text elements for right-to-left
+  languages.
+
+- #789 - Fix text-anchor positioning for right-to-left languages.
+
+- #797 - Fix regression in computing sizes when an SVG has only one of
+  width/height and a viewBox.  Thanks to Joshua Fogg for compiling a
+  list of test cases for this.
+
+- #565 - Spec compliance - the writing-mode property applies only to
+  text elements, no to individual tspan elements.
+
+- #794 - Fix build on big-endian platforms.
+
+- Clarify documentation for the rsvg_handle_write() /
+  rsvg_handle_close() deprecated APIs.
+
+
+==============
 Version 2.52.0
 ==============
 
