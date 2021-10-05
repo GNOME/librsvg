@@ -1029,28 +1029,50 @@ make_property!(
 make_property!(
     /// `writing-mode` property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#WritingModeProperty
-    ///
     /// https://www.w3.org/TR/css-writing-modes-3/#block-flow
+    /// https://svgwg.org/svg2-draft/text.html#WritingModeProperty
+    /// https://www.w3.org/TR/SVG/text.html#WritingModeProperty
     ///
     /// See the comments in the SVG2 spec for how the SVG1.1 values must be translated
     /// into CSS Writing Modes 3 values.
     WritingMode,
-    default: LrTb,
-    inherits_automatically: true,
+    default: HorizontalTb,
+    identifiers: {
+        "horizontal-tb" => HorizontalTb,
+        "vertical-rl" => VerticalRl,
+        "vertical-lr" => VerticalLr,
+        "lr" => Lr,
+        "lr-tb" => LrTb,
+        "rl" => Rl,
+        "rl-tb" => RlTb,
+        "tb" => Tb,
+        "tb-rl" => TbRl,
+    },
+    property_impl: {
+        impl Property for WritingMode {
+            fn inherits_automatically() -> bool {
+                true
+            }
 
-    identifiers:
-    "lr" => Lr,
-    "lr-tb" => LrTb,
-    "rl" => Rl,
-    "rl-tb" => RlTb,
-    "tb" => Tb,
-    "tb-rl" => TbRl,
+            fn compute(&self, _v: &ComputedValues) -> Self {
+                use WritingMode::*;
+
+                // Translate SVG1.1 compatibility values to SVG2 / CSS Writing Modes 3.
+                match *self {
+                    Lr | LrTb | Rl | RlTb => HorizontalTb,
+                    Tb | TbRl => VerticalRl,
+                    _ => *self,
+                }
+            }
+        }
+    }
 );
 
 impl WritingMode {
     pub fn is_horizontal(self) -> bool {
-        !matches!(self, WritingMode::Tb | WritingMode::TbRl)
+        use WritingMode::*;
+
+        matches!(self, HorizontalTb | Lr | LrTb | Rl | RlTb)
     }
 }
 

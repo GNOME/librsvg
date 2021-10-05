@@ -89,11 +89,15 @@ impl Chunk {
 }
 
 impl MeasuredChunk {
-    fn from_chunk(chunk: &Chunk, draw_ctx: &DrawingCtx) -> MeasuredChunk {
+    fn from_chunk(
+        chunk: &Chunk,
+        text_writing_mode: WritingMode,
+        draw_ctx: &DrawingCtx,
+    ) -> MeasuredChunk {
         let measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
-            .map(|span| MeasuredSpan::from_span(span, draw_ctx))
+            .map(|span| MeasuredSpan::from_span(span, text_writing_mode, draw_ctx))
             .collect();
 
         let advance = measured_spans.iter().fold((0.0, 0.0), |acc, measured| {
@@ -114,7 +118,7 @@ impl PositionedChunk {
     fn from_measured(
         measured: &MeasuredChunk,
         view_params: &ViewParams,
-        text_is_horizontal: bool,
+        text_writing_mode: WritingMode,
         x: f64,
         y: f64,
     ) -> PositionedChunk {
@@ -125,7 +129,7 @@ impl PositionedChunk {
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             measured.values.direction(),
-            text_is_horizontal,
+            text_writing_mode,
             measured.advance,
         );
 
@@ -157,7 +161,7 @@ impl PositionedChunk {
                 Direction::Rtl => (-mspan.advance.0, mspan.advance.1),
             };
 
-            let rendered_position = if values.writing_mode().is_horizontal() {
+            let rendered_position = if text_writing_mode.is_horizontal() {
                 (start_pos.0 + dx, start_pos.1 - baseline_offset + dy)
             } else {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
@@ -188,12 +192,12 @@ impl PositionedChunk {
 fn text_anchor_offset(
     anchor: TextAnchor,
     direction: Direction,
-    text_is_horizontal: bool,
+    text_writing_mode: WritingMode,
     chunk_size: (f64, f64),
 ) -> (f64, f64) {
     let (w, h) = chunk_size;
 
-    if text_is_horizontal {
+    if text_writing_mode.is_horizontal() {
         match (anchor, direction) {
             (TextAnchor::Start,  Direction::Ltr) => (0.0, 0.0),
             (TextAnchor::Start,  Direction::Rtl) => (0.0, 0.0),
@@ -227,13 +231,17 @@ impl Span {
 }
 
 impl MeasuredSpan {
-    fn from_span(span: &Span, draw_ctx: &DrawingCtx) -> MeasuredSpan {
+    fn from_span(
+        span: &Span,
+        text_writing_mode: WritingMode,
+        draw_ctx: &DrawingCtx,
+    ) -> MeasuredSpan {
         let values = span.values.clone();
 
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
-        let properties = FontProperties::new(&values, &params);
+        let properties = FontProperties::new(&values, text_writing_mode, &params);
         let layout = create_pango_layout(draw_ctx, &properties, &span.text);
         let (w, h) = layout.size();
 
@@ -244,7 +252,7 @@ impl MeasuredSpan {
         assert!(w >= 0.0);
         assert!(h >= 0.0);
 
-        let advance = if values.writing_mode().is_horizontal() {
+        let advance = if text_writing_mode.is_horizontal() {
             (w, 0.0)
         } else {
             (0.0, w)
@@ -542,7 +550,7 @@ impl Draw for Text {
 
         let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
 
-        let text_is_horizontal = values.writing_mode().is_horizontal();
+        let text_writing_mode = values.writing_mode();
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -558,7 +566,7 @@ impl Draw for Text {
 
                 let mut measured_chunks = Vec::new();
                 for chunk in &chunks {
-                    measured_chunks.push(MeasuredChunk::from_chunk(chunk, dc));
+                    measured_chunks.push(MeasuredChunk::from_chunk(chunk, text_writing_mode, dc));
                 }
 
                 let mut positioned_chunks = Vec::new();
@@ -569,7 +577,7 @@ impl Draw for Text {
                     let positioned = PositionedChunk::from_measured(
                         chunk,
                         &view_params,
-                        text_is_horizontal,
+                        text_writing_mode,
                         chunk_x,
                         chunk_y,
                     );
@@ -804,22 +812,21 @@ impl From<Direction> for pango::Alignment {
 
 impl From<WritingMode> for pango::Direction {
     fn from(m: WritingMode) -> pango::Direction {
+        use WritingMode::*;
         match m {
-            WritingMode::LrTb | WritingMode::Lr | WritingMode::Tb | WritingMode::TbRl => {
-                pango::Direction::Ltr
-            }
-            WritingMode::RlTb | WritingMode::Rl => pango::Direction::Rtl,
+            HorizontalTb | VerticalRl | VerticalLr | LrTb | Lr | Tb | TbRl => pango::Direction::Ltr,
+            RlTb | Rl => pango::Direction::Rtl,
         }
     }
 }
 
 impl From<WritingMode> for pango::Gravity {
     fn from(m: WritingMode) -> pango::Gravity {
+        use WritingMode::*;
         match m {
-            WritingMode::Tb | WritingMode::TbRl => pango::Gravity::East,
-            WritingMode::LrTb | WritingMode::Lr | WritingMode::RlTb | WritingMode::Rl => {
-                pango::Gravity::South
-            }
+            HorizontalTb | LrTb | Lr | RlTb | Rl => pango::Gravity::South,
+            VerticalRl | Tb | TbRl => pango::Gravity::East,
+            VerticalLr => pango::Gravity::West,
         }
     }
 }
@@ -927,34 +934,40 @@ mod tests {
     // is `horizontal-tb`.  Eventually we will support that and this will make more sense.
     #[test]
     fn adjusted_advance_horizontal_ltr() {
+        use Direction::*;
+        use TextAnchor::*;
+
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, Direction::Ltr, true, (2.0, 4.0)),
+            text_anchor_offset(Start, Ltr, WritingMode::Lr, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, true, (2.0, 4.0)),
+            text_anchor_offset(Middle, Ltr, WritingMode::Lr, (2.0, 4.0)),
             (-1.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Ltr, true, (2.0, 4.0)),
+            text_anchor_offset(End, Ltr, WritingMode::Lr, (2.0, 4.0)),
             (-2.0, 0.0)
         );
     }
 
     #[test]
     fn adjusted_advance_horizontal_rtl() {
+        use Direction::*;
+        use TextAnchor::*;
+
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, Direction::Rtl, true, (2.0, 4.0)),
+            text_anchor_offset(Start, Rtl, WritingMode::Rl, (2.0, 4.0)),
             (0.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, Direction::Rtl, true, (2.0, 4.0)),
+            text_anchor_offset(Middle, Rtl, WritingMode::Rl, (2.0, 4.0)),
             (1.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Rtl, true, (2.0, 4.0)),
+            text_anchor_offset(TextAnchor::End, Direction::Rtl, WritingMode::Rl, (2.0, 4.0)),
             (2.0, 0.0)
         );
     }
@@ -965,18 +978,21 @@ mod tests {
     // more sense.
     #[test]
     fn adjusted_advance_vertical() {
+        use Direction::*;
+        use TextAnchor::*;
+
         assert_eq!(
-            text_anchor_offset(TextAnchor::Start, Direction::Ltr, false, (2.0, 4.0)),
+            text_anchor_offset(Start, Ltr, WritingMode::Tb, (2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::Middle, Direction::Ltr, false, (2.0, 4.0)),
+            text_anchor_offset(Middle, Ltr, WritingMode::Tb, (2.0, 4.0)),
             (0.0, -2.0)
         );
 
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Ltr, false, (2.0, 4.0)),
+            text_anchor_offset(End, Ltr, WritingMode::Tb, (2.0, 4.0)),
             (0.0, -4.0)
         );
     }
