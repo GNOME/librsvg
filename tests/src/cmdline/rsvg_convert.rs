@@ -286,7 +286,13 @@ fn multiple_input_files_create_multi_page_pdf_output() {
         .arg(three)
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_count(3));
+        .stdout(
+            file::is_pdf()
+                .with_page_count(3)
+                .and(file::is_pdf().with_page_size(0, 150.0, 75.0))
+                .and(file::is_pdf().with_page_size(1, 123.0, 123.0))
+                .and(file::is_pdf().with_page_size(2, 75.0, 300.0)),
+        );
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -610,7 +616,7 @@ fn unscaled_pdf_size() {
         .arg("--format=pdf")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(72.0, 72.0));
+        .stdout(file::is_pdf().with_page_size(0, 72.0, 72.0));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -622,7 +628,7 @@ fn pdf_size_width_height() {
         .arg("--height=3in")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(144.0, 216.0));
+        .stdout(file::is_pdf().with_page_size(0, 144.0, 216.0));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -635,7 +641,7 @@ fn pdf_size_width_height_proportional() {
         .arg("--keep-aspect-ratio")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(144.0, 144.0));
+        .stdout(file::is_pdf().with_page_size(0, 144.0, 144.0));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -647,7 +653,7 @@ fn pdf_page_size() {
         .arg("--page-height=297mm")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(210.0 / 25.4 * 72.0, 297.0 / 25.4 * 72.0));
+        .stdout(file::is_pdf().with_page_size(0, 210.0 / 25.4 * 72.0, 297.0 / 25.4 * 72.0));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]

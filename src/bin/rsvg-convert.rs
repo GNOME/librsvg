@@ -27,7 +27,6 @@ use librsvg::rsvg_convert_only::{
 use librsvg::{
     AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
 };
-use once_cell::unsync::OnceCell;
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -450,9 +449,9 @@ impl Converter {
             None => None,
         };
 
-        let mut surface: OnceCell<Surface> = OnceCell::new();
+        let mut surface: Option<Surface> = None;
 
-        for input in &self.input {
+        for (page_idx, input) in self.input.iter().enumerate() {
             let (stream, basefile) = match input {
                 Input::Stdin => (Stdin::stream(), None),
                 Input::Named(p) => {
@@ -553,9 +552,35 @@ impl Converter {
 
             let final_size = self.final_size(&strategy, &natural_size, input)?;
 
-            // Create the surface once on the first input
+            // Create the surface once on the first input,
+            // except for PDF, PS, and EPS, which allow differently-sized pages.
             let page_size = page_size.unwrap_or(final_size);
-            let s = surface.get_or_try_init(|| self.create_surface(page_size))?;
+            let s = match &mut surface {
+                Some(s) => {
+                    match s {
+                        #[cfg(system_deps_have_cairo_pdf)]
+                        Surface::Pdf(pdf, size) => {
+                            pdf.set_size(final_size.w, final_size.h).map_err(|e| {
+                                error!(
+                                    "Error setting PDF page #{} size {}: {}",
+                                    page_idx + 1,
+                                    input,
+                                    e
+                                )
+                            })?;
+                            *size = final_size;
+                        }
+                        #[cfg(system_deps_have_cairo_ps)]
+                        Surface::Ps(ps, size) => {
+                            ps.set_size(final_size.w, final_size.h);
+                            *size = final_size;
+                        }
+                        _ => {}
+                    }
+                    s
+                }
+                surface @ None => surface.insert(self.create_surface(page_size)?),
+            };
 
             let left = self.left.map(|l| l.to_user(&params)).unwrap_or(0.0);
             let top = self.top.map(|l| l.to_user(&params)).unwrap_or(0.0);

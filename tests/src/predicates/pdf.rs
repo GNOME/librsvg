@@ -19,16 +19,20 @@ impl PdfPredicate {
 
     pub fn with_page_size(
         self: Self,
+        idx: usize,
         width_in_points: f64,
         height_in_points: f64,
     ) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
-            d: Detail::PageSize(Dimensions {
-                w: width_in_points,
-                h: height_in_points,
-                unit: 1.0,
-            }),
+            d: Detail::PageSize(
+                Dimensions {
+                    w: width_in_points,
+                    h: height_in_points,
+                    unit: 1.0,
+                },
+                idx,
+            ),
         }
     }
 
@@ -78,7 +82,7 @@ pub struct DetailPredicate<PdfPredicate> {
 #[derive(Debug)]
 enum Detail {
     PageCount(usize),
-    PageSize(Dimensions),
+    PageSize(Dimensions, usize),
     CreationDate(DateTime<Utc>),
     Link(String),
 }
@@ -138,17 +142,21 @@ impl cmp::Eq for Dimensions {}
 
 trait Details {
     fn get_page_count(&self) -> usize;
-    fn get_page_size(&self) -> Option<Dimensions>;
+    fn get_page_size(&self, idx: usize) -> Option<Dimensions>;
     fn get_creation_date(&self) -> Option<DateTime<Utc>>;
     fn get_from_trailer<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object>;
-    fn get_from_first_page<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object>;
+    fn get_from_page<'a>(
+        self: &'a Self,
+        idx: usize,
+        key: &[u8],
+    ) -> lopdf::Result<&'a lopdf::Object>;
 }
 
 impl DetailPredicate<PdfPredicate> {
     fn eval_doc(&self, doc: &lopdf::Document) -> bool {
         match &self.d {
             Detail::PageCount(n) => doc.get_page_count() == *n,
-            Detail::PageSize(d) => doc.get_page_size().map_or(false, |dim| dim == *d),
+            Detail::PageSize(d, idx) => doc.get_page_size(*idx).map_or(false, |dim| dim == *d),
             Detail::CreationDate(d) => doc.get_creation_date().map_or(false, |date| date == *d),
             Detail::Link(link) => document_has_link(doc, &link),
         }
@@ -169,9 +177,9 @@ impl DetailPredicate<PdfPredicate> {
                 "actual page count",
                 format!("{} page(s)", doc.get_page_count()),
             ),
-            Detail::PageSize(_) => Product::new(
+            Detail::PageSize(_, idx) => Product::new(
                 "actual page size",
-                match doc.get_page_size() {
+                match doc.get_page_size(*idx) {
                     Some(dim) => format!("{}", dim),
                     None => "None".to_string(),
                 },
@@ -210,11 +218,11 @@ impl Details for lopdf::Document {
         self.get_pages().len()
     }
 
-    fn get_page_size(self: &Self) -> Option<Dimensions> {
-        match self.get_from_first_page(b"MediaBox") {
+    fn get_page_size(self: &Self, idx: usize) -> Option<Dimensions> {
+        match self.get_from_page(idx, b"MediaBox") {
             Ok(obj) => {
                 let unit = self
-                    .get_from_first_page(b"UserUnit")
+                    .get_from_page(idx, b"UserUnit")
                     .and_then(ObjExt::as_float)
                     .ok();
                 Dimensions::from_media_box(obj, unit).ok()
@@ -235,8 +243,16 @@ impl Details for lopdf::Document {
         self.get_object(id)?.as_dict()?.get(key)
     }
 
-    fn get_from_first_page<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object> {
-        match self.page_iter().next() {
+    fn get_from_page<'a>(
+        self: &'a Self,
+        idx: usize,
+        key: &[u8],
+    ) -> lopdf::Result<&'a lopdf::Object> {
+        let mut iter = self.page_iter();
+        for _ in 0..idx {
+            let _ = iter.next();
+        }
+        match iter.next() {
             Some(id) => self.get_object(id)?.as_dict()?.get(key),
             None => Err(lopdf::Error::ObjectNotFound),
         }
@@ -270,7 +286,7 @@ impl fmt::Display for DetailPredicate<PdfPredicate> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.d {
             Detail::PageCount(n) => write!(f, "is a PDF with {} page(s)", n),
-            Detail::PageSize(d) => write!(f, "is a PDF sized {}", d),
+            Detail::PageSize(d, _) => write!(f, "is a PDF sized {}", d),
             Detail::CreationDate(d) => write!(f, "is a PDF created {:?}", d),
             Detail::Link(l) => write!(f, "is a PDF with a link to {}", l),
         }
