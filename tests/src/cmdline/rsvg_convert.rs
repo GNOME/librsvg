@@ -658,6 +658,30 @@ fn pdf_page_size() {
 
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
+fn multiple_input_files_create_multi_page_pdf_size_override() {
+    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
+    let three = Path::new("tests/fixtures/api/example.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .arg("--width=300pt")
+        .arg("--height=200pt")
+        .arg(one)
+        .arg(two)
+        .arg(three)
+        .assert()
+        .success()
+        .stdout(
+            file::is_pdf()
+                .with_page_count(3)
+                .and(file::is_pdf().with_page_size(0, 300.0, 200.0))
+                .and(file::is_pdf().with_page_size(1, 300.0, 200.0))
+                .and(file::is_pdf().with_page_size(2, 300.0, 200.0)),
+        );
+}
+
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
 fn missing_page_size_yields_error() {
     RsvgConvert::new_with_input("tests/fixtures/cmdline/dimensions-in.svg")
         .arg("--format=pdf")
