@@ -73,6 +73,9 @@ mod pango_ft2 {
         ];
 
         let config = fontconfig::FcConfigCreate();
+        if fontconfig::FcConfigSetCurrent(config) == 0 {
+            panic!("Could not set a fontconfig configuration");
+        }
 
         for path in &font_paths {
             let path_cstring = CString::new(*path).unwrap();
