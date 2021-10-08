@@ -560,7 +560,7 @@ impl Converter {
                     match s {
                         #[cfg(system_deps_have_cairo_pdf)]
                         Surface::Pdf(pdf, size) => {
-                            pdf.set_size(final_size.w, final_size.h).map_err(|e| {
+                            pdf.set_size(page_size.w, page_size.h).map_err(|e| {
                                 error!(
                                     "Error setting PDF page #{} size {}: {}",
                                     page_idx + 1,
@@ -568,12 +568,12 @@ impl Converter {
                                     e
                                 )
                             })?;
-                            *size = final_size;
+                            *size = page_size;
                         }
                         #[cfg(system_deps_have_cairo_ps)]
                         Surface::Ps(ps, size) => {
-                            ps.set_size(final_size.w, final_size.h);
-                            *size = final_size;
+                            ps.set_size(page_size.w, page_size.h);
+                            *size = page_size;
                         }
                         _ => {}
                     }

@@ -297,6 +297,36 @@ fn multiple_input_files_create_multi_page_pdf_output() {
 
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
+fn multiple_input_files_create_multi_page_pdf_output_fixed_size() {
+    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
+    let three = Path::new("tests/fixtures/api/example.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .arg("--page-width=8.5in")
+        .arg("--page-height=11in")
+        .arg("--width=7.5in")
+        .arg("--height=10in")
+        .arg("--left=0.5in")
+        .arg("--top=0.5in")
+        .arg("--keep-aspect-ratio")
+        .arg(one)
+        .arg(two)
+        .arg(three)
+        .assert()
+        .success()
+        .stdout(
+            file::is_pdf()
+                .with_page_count(3)
+                // https://www.wolframalpha.com/input/?i=convert+11+inches+to+desktop+publishing+points
+                .and(file::is_pdf().with_page_size(0, 612.0, 792.0))
+                .and(file::is_pdf().with_page_size(1, 612.0, 792.0))
+                .and(file::is_pdf().with_page_size(2, 612.0, 792.0)),
+        );
+}
+
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
 fn pdf_has_link() {
     let input = Path::new("tests/fixtures/cmdline/a-link.svg");
     RsvgConvert::new()
