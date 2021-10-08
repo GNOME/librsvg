@@ -38,6 +38,7 @@ struct Chunk {
     x: Option<f64>,
     y: Option<f64>,
     spans: Vec<Span>,
+    link: Option<String>,
 }
 
 struct MeasuredChunk {
@@ -46,12 +47,14 @@ struct MeasuredChunk {
     y: Option<f64>,
     advance: (f64, f64),
     spans: Vec<MeasuredSpan>,
+    link: Option<String>,
 }
 
 struct PositionedChunk {
     next_chunk_x: f64,
     next_chunk_y: f64,
     spans: Vec<PositionedSpan>,
+    link: Option<String>,
 }
 
 struct Span {
@@ -78,11 +81,12 @@ struct PositionedSpan {
 }
 
 impl Chunk {
-    fn new(values: &ComputedValues, x: Option<f64>, y: Option<f64>) -> Chunk {
+    fn new(values: &ComputedValues, x: Option<f64>, y: Option<f64>, link: Option<String>) -> Chunk {
         Chunk {
             values: Rc::new(values.clone()),
             x,
             y,
+            link,
             spans: Vec::new(),
         }
     }
@@ -110,6 +114,7 @@ impl MeasuredChunk {
             y: chunk.y,
             advance,
             spans: measured_spans,
+            link: chunk.link.clone(),
         }
     }
 }
@@ -183,6 +188,7 @@ impl PositionedChunk {
             next_chunk_x: x,
             next_chunk_y: y,
             spans: positioned,
+            link: measured.link.clone(),
         }
     }
 }
@@ -330,6 +336,7 @@ fn children_to_chunks(
     dx: f64,
     dy: f64,
     depth: usize,
+    link: Option<String>,
 ) {
     for child in node.children() {
         if child.is_chars() {
@@ -352,6 +359,23 @@ fn children_to_chunks(
                         dx,
                         dy,
                         depth + 1,
+                        link.clone(),
+                    );
+                }
+
+                Element::Link(ref link) => {
+                    let tspan = &link.tspan;
+                    let cascaded = CascadedValues::new(cascaded, &child);
+                    tspan.to_chunks(
+                        &child,
+                        acquired_nodes,
+                        &cascaded,
+                        draw_ctx,
+                        chunks,
+                        dx,
+                        dy,
+                        depth + 1,
+                        link.link.clone(),
                     );
                 }
 
@@ -498,7 +522,7 @@ impl Text {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(values, &view_params);
 
-        chunks.push(Chunk::new(values, Some(x), Some(y)));
+        chunks.push(Chunk::new(values, Some(x), Some(y), None));
 
         let dx = self.dx.to_user(&params);
         let dy = self.dy.to_user(&params);
@@ -512,6 +536,7 @@ impl Text {
             dx,
             dy,
             0,
+            None,
         );
         chunks
     }
@@ -592,7 +617,12 @@ impl Draw for Text {
 
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        let span_bbox = span.draw(an, dc, clipping)?;
+                        let span_bbox = match chunk.link.as_ref() {
+                            Some(l) if !l.is_empty() => {
+                                dc.with_link_tag(l.as_str(), &mut |dc| span.draw(an, dc, clipping))?
+                            }
+                            _ => span.draw(an, dc, clipping)?,
+                        };
                         bbox.insert(&span_bbox);
                     }
                 }
@@ -695,6 +725,7 @@ impl TSpan {
         dx: f64,
         dy: f64,
         depth: usize,
+        link: Option<String>,
     ) {
         let values = cascaded.get();
         if !values.is_displayed() {
@@ -711,7 +742,7 @@ impl TSpan {
         let span_dy = dy + self.dy.to_user(&params);
 
         if x.is_some() || y.is_some() {
-            chunks.push(Chunk::new(values, x, y));
+            chunks.push(Chunk::new(values, x, y, link.clone()));
         }
 
         children_to_chunks(
@@ -723,6 +754,7 @@ impl TSpan {
             span_dx,
             span_dy,
             depth,
+            link,
         );
     }
 }

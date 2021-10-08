@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::{Draw, ElementResult, SetAttributes};
+use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::StackingContext;
@@ -15,6 +15,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::Rect;
+use crate::text::TSpan;
 use crate::viewbox::*;
 use crate::xml::Attributes;
 
@@ -511,7 +512,9 @@ impl Draw for Mask {}
 
 #[derive(Default)]
 pub struct Link {
-    link: Option<String>,
+    pub link: Option<String>,
+    // These attributes are only applicable in <text><a></a></text>.
+    pub tspan: TSpan,
 }
 
 impl SetAttributes for Link {
@@ -522,6 +525,8 @@ impl SetAttributes for Link {
                 _ => (),
             }
         }
+
+        self.tspan.set_attributes(attrs)?;
 
         Ok(())
     }
@@ -536,6 +541,15 @@ impl Draw for Link {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
+
+        // If this element is inside of <text>, do not draw it.
+        // The <text> takes care of it.
+        for an in node.ancestors() {
+            if matches!(&*an.borrow_element(), Element::Text(_)) {
+                return Ok(draw_ctx.empty_bbox());
+            }
+        }
+
         let cascaded = CascadedValues::new(cascaded, node);
         let values = cascaded.get();
 
