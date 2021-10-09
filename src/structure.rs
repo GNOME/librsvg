@@ -15,7 +15,6 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::Rect;
-use crate::text::TSpan;
 use crate::viewbox::*;
 use crate::xml::Attributes;
 
@@ -513,8 +512,6 @@ impl Draw for Mask {}
 #[derive(Default)]
 pub struct Link {
     pub link: Option<String>,
-    // These attributes are only applicable in <text><a></a></text>.
-    pub tspan: TSpan,
 }
 
 impl SetAttributes for Link {
@@ -525,8 +522,6 @@ impl SetAttributes for Link {
                 _ => (),
             }
         }
-
-        self.tspan.set_attributes(attrs)?;
 
         Ok(())
     }

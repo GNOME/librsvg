@@ -364,7 +364,9 @@ fn children_to_chunks(
                 }
 
                 Element::Link(ref link) => {
-                    let tspan = &link.tspan;
+                    // TSpan::default tes all offsets to 0,
+                    // which is what we want in links.
+                    let tspan = TSpan::default();
                     let cascaded = CascadedValues::new(cascaded, &child);
                     tspan.to_chunks(
                         &child,
