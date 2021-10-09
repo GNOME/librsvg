@@ -202,6 +202,19 @@ impl<'i> selectors::Parser<'i> for RuleParser {
         // Or are CSS namespaces completely different, declared elsewhere?
         None
     }
+    fn parse_non_ts_pseudo_class(
+        &self,
+        location: SourceLocation,
+        name: CowRcStr<'i>,
+    ) -> Result<NonTSPseudoClass, cssparser::ParseError<'i, Self::Error>> {
+        match &*name {
+            "link" => Ok(NonTSPseudoClass::Link),
+            "visited" => Ok(NonTSPseudoClass::Visited),
+            _ => Err(location.new_custom_error(
+                selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
+            )),
+        }
+    }
 }
 
 // `cssparser::RuleListParser` is a struct which requires that we
@@ -300,14 +313,20 @@ impl<'i> AtRuleParser<'i> for RuleParser {
 /// Dummy type required by the SelectorImpl trait.
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct NonTSPseudoClass;
+pub enum NonTSPseudoClass {
+    Link,
+    Visited,
+}
 
 impl ToCss for NonTSPseudoClass {
-    fn to_css<W>(&self, _dest: &mut W) -> fmt::Result
+    fn to_css<W>(&self, dest: &mut W) -> fmt::Result
     where
         W: fmt::Write,
     {
-        Ok(())
+        match self {
+            NonTSPseudoClass::Link => write!(dest, "link"),
+            NonTSPseudoClass::Visited => write!(dest, "visited"),
+        }
     }
 }
 
@@ -491,15 +510,17 @@ impl selectors::Element for RsvgElement {
 
     fn match_non_ts_pseudo_class<F>(
         &self,
-        _pc: &<Self::Impl as SelectorImpl>::NonTSPseudoClass,
+        pc: &<Self::Impl as SelectorImpl>::NonTSPseudoClass,
         _context: &mut MatchingContext<'_, Self::Impl>,
         _flags_setter: &mut F,
     ) -> bool
     where
         F: FnMut(&Self, ElementSelectorFlags),
     {
-        // unsupported
-        false
+        match *pc {
+            NonTSPseudoClass::Link => self.is_link(),
+            NonTSPseudoClass::Visited => false,
+        }
     }
 
     fn match_pseudo_element(
@@ -513,8 +534,19 @@ impl selectors::Element for RsvgElement {
 
     /// Whether this element is a `link`.
     fn is_link(&self) -> bool {
-        // FIXME: is this correct for SVG <a>, not HTML <a>?
-        self.0.is_element() && is_element_of_type!(self.0, Link)
+        // Style as link only if href is specified at all.
+        //
+        // The SVG and CSS specifications do not seem to clearly
+        // say what happens when you have an `<svg:a>` tag with no
+        // `(xlink:|svg:)href` attribute. However, both Firefox and Chromium
+        // consider a bare `<svg:a>` element with no href to be NOT
+        // a link, so to avoid nasty surprises, we do the same.
+        // Empty href's, however, ARE considered links.
+        self.0.is_element()
+            && match &*self.0.borrow_element() {
+                crate::element::Element::Link(link) => link.link.is_some(),
+                _ => false,
+            }
     }
 
     /// Returns whether the element is an HTML <slot> element.

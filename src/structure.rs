@@ -541,7 +541,6 @@ impl Draw for Link {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-
         // If this element is inside of <text>, do not draw it.
         // The <text> takes care of it.
         for an in node.ancestors() {
