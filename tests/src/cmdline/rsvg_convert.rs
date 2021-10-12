@@ -286,7 +286,43 @@ fn multiple_input_files_create_multi_page_pdf_output() {
         .arg(three)
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_count(3));
+        .stdout(
+            file::is_pdf()
+                .with_page_count(3)
+                .and(file::is_pdf().with_page_size(0, 150.0, 75.0))
+                .and(file::is_pdf().with_page_size(1, 123.0, 123.0))
+                .and(file::is_pdf().with_page_size(2, 75.0, 300.0)),
+        );
+}
+
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
+fn multiple_input_files_create_multi_page_pdf_output_fixed_size() {
+    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
+    let three = Path::new("tests/fixtures/api/example.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .arg("--page-width=8.5in")
+        .arg("--page-height=11in")
+        .arg("--width=7.5in")
+        .arg("--height=10in")
+        .arg("--left=0.5in")
+        .arg("--top=0.5in")
+        .arg("--keep-aspect-ratio")
+        .arg(one)
+        .arg(two)
+        .arg(three)
+        .assert()
+        .success()
+        .stdout(
+            file::is_pdf()
+                .with_page_count(3)
+                // https://www.wolframalpha.com/input/?i=convert+11+inches+to+desktop+publishing+points
+                .and(file::is_pdf().with_page_size(0, 612.0, 792.0))
+                .and(file::is_pdf().with_page_size(1, 612.0, 792.0))
+                .and(file::is_pdf().with_page_size(2, 612.0, 792.0)),
+        );
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -610,7 +646,7 @@ fn unscaled_pdf_size() {
         .arg("--format=pdf")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(72.0, 72.0));
+        .stdout(file::is_pdf().with_page_size(0, 72.0, 72.0));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -622,7 +658,7 @@ fn pdf_size_width_height() {
         .arg("--height=3in")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(144.0, 216.0));
+        .stdout(file::is_pdf().with_page_size(0, 144.0, 216.0));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -635,7 +671,7 @@ fn pdf_size_width_height_proportional() {
         .arg("--keep-aspect-ratio")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(144.0, 144.0));
+        .stdout(file::is_pdf().with_page_size(0, 144.0, 144.0));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
@@ -647,7 +683,31 @@ fn pdf_page_size() {
         .arg("--page-height=297mm")
         .assert()
         .success()
-        .stdout(file::is_pdf().with_page_size(210.0 / 25.4 * 72.0, 297.0 / 25.4 * 72.0));
+        .stdout(file::is_pdf().with_page_size(0, 210.0 / 25.4 * 72.0, 297.0 / 25.4 * 72.0));
+}
+
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
+fn multiple_input_files_create_multi_page_pdf_size_override() {
+    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
+    let three = Path::new("tests/fixtures/api/example.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .arg("--width=300pt")
+        .arg("--height=200pt")
+        .arg(one)
+        .arg(two)
+        .arg(three)
+        .assert()
+        .success()
+        .stdout(
+            file::is_pdf()
+                .with_page_count(3)
+                .and(file::is_pdf().with_page_size(0, 300.0, 200.0))
+                .and(file::is_pdf().with_page_size(1, 300.0, 200.0))
+                .and(file::is_pdf().with_page_size(2, 300.0, 200.0)),
+        );
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
