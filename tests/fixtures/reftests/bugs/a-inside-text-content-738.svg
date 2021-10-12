@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   version="1.1"
+   viewBox="0 0 500 600"
+   font-family="sans-serif"
+   font-size="18">
+  <defs>
+    <style>
+      a {fill: black; font-family: Helvetica; font-size:10; }
+      text { font-family: Helvetica; font-size:10; }
+    </style>
+  </defs>
+
+  <text x="250" y="25" class="head" text-anchor="middle">SVG CSS Tests</text>
+  <g transform="translate(0,50)">
+    <text x="50">a:link</text>
+    <text x="250" class="test"><a xlink:href="#foo">xlink:href</a></text>
+  </g>
+
+</svg>
