@@ -1,5 +1,34 @@
 # SVG and CSS features that librsvg supports
 
+Librsvg tries to be a mostly complete renderer for SVG1.1 and SVG2.
+
+In terms of processing external references, librsvg is a bit more
+strict than SVG's "static mode" and a bit more lenient than "secure
+static mode".  See "Security and locations of referenced files" in the
+reference documentation for details.
+
+Animation, interactivity, and scripting are not supported.
+
+The SVG1.2 specification never made it past draft status in the W3C's
+process, and librsvg does not support it.  Note that SVG2 removed some
+of the features proposed for SVG1.2.
+
+Generally, librsvg tries to keep up with features in the SVG2
+Candidate Recommendation spec.  It ignores features in the SVG2
+drafts that are not finalized yet.
+
+Alternative versions of SVG (SVG Tiny, SVG Basic, [SVG
+Native](https://gitlab.gnome.org/GNOME/librsvg/-/issues/689)) are not
+explicitly supported.  Their features which are a subset of SVG1.1 or
+SVG2 are supported if they are equivalent to the ones listed below.
+
+SVG2 offloads many of its features to the family of CSS3
+specifications.  Librsvg does not try to support them exhaustively
+(there are too many features in CSS!).  Instead, we try to prioritize
+new features based on the needs which people express in librsvg's bug
+tracker.  Do you want a feature?  [File an
+issue](https://gitlab.gnome.org/GNOME/librsvg/issues)!
+
 ## Attributes supported by all elements
 
 | Attribute          | Notes                                                                               |
@@ -362,6 +391,10 @@ attributes:
 | amplitude   |       |
 | exponent    |       |
 | offset      |       |
+
+# CSS features
+
+FIXME: which selectors, combinators, at-rules.
 
 # XML features
 
