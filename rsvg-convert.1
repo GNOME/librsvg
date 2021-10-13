@@ -160,7 +160,7 @@ This will scale an SVG document to fit in an A4 page and convert it to PDF:
 .P
 
 .SS SPECIFYING A PAGE SIZE
-By default the size of the output comes from the rendered size specified with the
+By default the size of the output comes from the rendered size, which can be specified with the
 .B --width
 and
 .B --height
@@ -232,6 +232,30 @@ and
 .B --y-zoom
 options instead of
 .BR --zoom.
+
+.SS CREATING A MULTI-PAGE DOCUMENT
+The "pdf", "ps", and "eps" output formats support multiple pages. These can be created by
+combining multiple input SVG files. For example, this PDF file will have three pages:
+.P
+.RS
+.B rsvg-convert
+.BI --format= pdf
+.I pg1.svg
+.I pg2.svg
+.I pg3.svg
+.B >
+.I out.pdf
+.RE
+.P
+The size of each page will be computed, separately, as described in the
+.B "DEFAULT OUTPUT SIZE"
+section. This may result in a PDF being produced with differently-sized pages.
+If you need to produce a PDF with all pages set to exactly the same size,
+use the
+.B --page-width
+and
+.B --page-height
+options.
 
 .SS CONVERSION OF PIXELS BASED ON THE DOTS-PER-INCH
 .B rsvg-convert
