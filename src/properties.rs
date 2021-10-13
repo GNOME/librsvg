@@ -542,6 +542,12 @@ impl SpecifiedValues {
             ParsedProperty::Marker(SpecifiedValue::Specified(ref m)) => {
                 self.expand_marker_shorthand(m, replace)
             }
+            ParsedProperty::Font(SpecifiedValue::Inherit) => {
+                self.expand_font_shorthand_inherit(replace)
+            }
+            ParsedProperty::Marker(SpecifiedValue::Inherit) => {
+                self.expand_marker_shorthand_inherit(replace)
+            }
 
             _ => self.set_property(prop, replace),
         }
@@ -603,6 +609,40 @@ impl SpecifiedValues {
             &ParsedProperty::MarkerEnd(SpecifiedValue::Specified(MarkerEnd(v.clone()))),
             replace,
         );
+    }
+
+    fn expand_font_shorthand_inherit(&mut self, replace: bool) {
+        self.set_property(&ParsedProperty::FontStyle(SpecifiedValue::Inherit), replace);
+        self.set_property(
+            &ParsedProperty::FontVariant(SpecifiedValue::Inherit),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontWeight(SpecifiedValue::Inherit),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontStretch(SpecifiedValue::Inherit),
+            replace,
+        );
+        self.set_property(&ParsedProperty::FontSize(SpecifiedValue::Inherit), replace);
+        self.set_property(
+            &ParsedProperty::LineHeight(SpecifiedValue::Inherit),
+            replace,
+        );
+        self.set_property(
+            &ParsedProperty::FontFamily(SpecifiedValue::Inherit),
+            replace,
+        );
+    }
+
+    fn expand_marker_shorthand_inherit(&mut self, replace: bool) {
+        self.set_property(
+            &ParsedProperty::MarkerStart(SpecifiedValue::Inherit),
+            replace,
+        );
+        self.set_property(&ParsedProperty::MarkerMid(SpecifiedValue::Inherit), replace);
+        self.set_property(&ParsedProperty::MarkerEnd(SpecifiedValue::Inherit), replace);
     }
 
     pub fn set_parsed_property(&mut self, prop: &ParsedProperty) {
