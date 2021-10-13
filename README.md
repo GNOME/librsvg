@@ -60,7 +60,7 @@ in general, please see the file [`CONTRIBUTING.md`][contributing].
 Goals of librsvg
 ----------------
 
-Librsvg aims to be a low-footprint library for rendering SVG images.
+Librsvg aims to be a low-footprint library for rendering SVG1.1 and SVG2 images.
 It is used primarily in the [GNOME project](https://www.gnome.org) to
 render SVG icons and vector images that appear on the desktop.  It is
 also used in Wikimedia to render the SVG images that appear in
@@ -71,6 +71,9 @@ We aim to be a "render this SVG for me, quickly, and with a minimal
 API" kind of library.
 
 Feature additions will be considered on a case-by-case basis.
+
+You can read about librsvg's supported SVG and CSS features in the
+[FEATURES.md](FEATURES.md) file.
 
 Non-goals of librsvg
 --------------------
