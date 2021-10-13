@@ -204,20 +204,17 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     fn set_language_attribute(&mut self) -> Result<(), ElementError> {
         for (attr, value) in self.attributes.iter() {
-            match attr.expanded() {
-                expanded_name!(xml "lang") => {
-                    self.language = Some(
-                        LanguageTag::from_str(value)
-                            .map_err(|e| {
-                                ValueErrorKind::parse_error(&format!(
-                                    "invalid language tag: \"{}\"",
-                                    e
-                                ))
-                            })
-                            .attribute(attr)?,
-                    );
-                }
-                _ => {}
+            if attr.expanded() == expanded_name!(xml "lang") {
+                self.language = Some(
+                    LanguageTag::from_str(value)
+                        .map_err(|e| {
+                            ValueErrorKind::parse_error(&format!(
+                                "invalid language tag: \"{}\"",
+                                e
+                            ))
+                        })
+                        .attribute(attr)?,
+                );
             }
         }
         Ok(())
