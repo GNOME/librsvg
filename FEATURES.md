@@ -2,17 +2,19 @@
 
 ## Attributes supported by all elements
 
-| Attribute | Notes                                                                               |
-| ---       | ---                                                                                 |
-| transform | The `transform` attribute has a different syntax than the CSS `transform` property. |
-| xml:lang  |                                                                                     |
-| xml:space |                                                                                     |
+| Attribute          | Notes                                                                               |
+| ---                | ---                                                                                 |
+| class              |                                                                                     |
+| id                 |                                                                                     |
+| requiredExtensions | Used in children of the `switch` element.                                           |
+| requiredFeatures   | Used in children of the `switch` element.                                           |
+| systemLanguage     | Used in children of the `switch` element.                                           |
+| style              |                                                                                     |
+| transform          | The `transform` attribute has a different syntax than the CSS `transform` property. |
+| xml:lang           |                                                                                     |
+| xml:space          |                                                                                     |
 
 ## Elements and their specific attributes
-
-FIXME: add global attributes parsed in element.rs, not by specific element implementations
-
-cond
 
 | Element             | Attributes          | Notes                                                              |
 | ---                 | ---                 | ---                                                                |
