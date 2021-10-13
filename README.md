@@ -72,6 +72,9 @@ API" kind of library.
 
 Feature additions will be considered on a case-by-case basis.
 
+You can read about librsvg's supported SVG and CSS features in the
+[FEATURES.md](FEATURES.md) file.
+
 Non-goals of librsvg
 --------------------
 
