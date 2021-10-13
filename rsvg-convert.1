@@ -256,7 +256,28 @@ use the
 and
 .B --page-height
 options.
-
+.P
+For example, the following command creates a three-page PDF out of three SVG documents.  All the
+pages are portrait US Letter, and each SVG is scaled to fit so that there is a 1in margin around
+each page:
+.P
+.RS
+.B rsvg-convert
+.BI --format= pdf
+.BI --page-width= 8.5in
+.BI --page-height= 11in
+.BI --width= 6.5in
+.BI --height= 9in
+.B --keep-aspect-ratio
+.BI --top= 1in
+.BI --left= 1in
+.I pg1.svg
+.I pg2.svg
+.I pg3.svg
+.B >
+.I out.pdf
+.RE
+.P
 .SS CONVERSION OF PIXELS BASED ON THE DOTS-PER-INCH
 .B rsvg-convert
 uses the
