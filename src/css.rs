@@ -224,14 +224,16 @@ impl<'i> selectors::Parser<'i> for RuleParser {
     ) -> Result<NonTSPseudoClass, cssparser::ParseError<'i, Self::Error>> {
         match &*name {
             "lang" => {
-                let language_tag = {
-                    let language_tag = arguments.expect_ident_or_string()?.clone();
+                // Comma-separated lists of languages are a Selectors 4 feature,
+                // but a pretty stable one that hasn't changed in a long time.
+                let tags = arguments.parse_comma_separated(|arg| {
+                    let language_tag = arg.expect_ident_or_string()?.clone();
                     LanguageTag::from_str(&language_tag).map_err(|_| {
-                        arguments.new_custom_error(selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(language_tag))
-                    })?
-                };
+                        arg.new_custom_error(selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(language_tag))
+                    })
+                })?;
                 arguments.expect_exhausted()?;
-                Ok(NonTSPseudoClass::Lang(language_tag))
+                Ok(NonTSPseudoClass::Lang(tags))
             }
             _ => Err(arguments.new_custom_error(
                 selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
@@ -339,7 +341,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
 pub enum NonTSPseudoClass {
     Link,
     Visited,
-    Lang(LanguageTag),
+    Lang(Vec<LanguageTag>),
 }
 
 impl ToCss for NonTSPseudoClass {
@@ -350,7 +352,14 @@ impl ToCss for NonTSPseudoClass {
         match self {
             NonTSPseudoClass::Link => write!(dest, "link"),
             NonTSPseudoClass::Visited => write!(dest, "visited"),
-            NonTSPseudoClass::Lang(lang) => write!(dest, "lang(\"{}\")", lang),
+            NonTSPseudoClass::Lang(lang) => write!(
+                dest,
+                "lang(\"{}\")",
+                lang.iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join("\",\"")
+            ),
         }
     }
 }
@@ -549,7 +558,7 @@ impl selectors::Element for RsvgElement {
                 .0
                 .borrow_element()
                 .get_language()
-                .map_or(false, |e_lang| css_lang.matches(e_lang)),
+                .map_or(false, |e_lang| css_lang.iter().any(|l| l.matches(e_lang))),
         }
     }
 

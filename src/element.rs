@@ -208,10 +208,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 self.language = Some(
                     LanguageTag::from_str(value)
                         .map_err(|e| {
-                            ValueErrorKind::parse_error(&format!(
-                                "invalid language tag: \"{}\"",
-                                e
-                            ))
+                            ValueErrorKind::parse_error(&format!("invalid language tag: \"{}\"", e))
                         })
                         .attribute(attr)?,
                 );

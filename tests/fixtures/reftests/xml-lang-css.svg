@@ -3,7 +3,7 @@
     /* Elements should appear in red-green-blue-yellow order.
        The :lang(en) should match en-US. It will also match en-GB,
        but that gets overridden later. */
-    :lang(en) { fill: red }
+    :lang(en, cn) { fill: red }
     /* Languages should be inherited from their parent elements. */
     :lang(es) { fill: green }
     /* Child languages should override the parent ones. */
