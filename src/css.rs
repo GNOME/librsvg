@@ -79,6 +79,7 @@ use cssparser::{
     RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
 };
 use data_url::mime::Mime;
+use language_tags::LanguageTag;
 use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
@@ -86,6 +87,7 @@ use selectors::{OpaqueElement, SelectorImpl, SelectorList};
 use std::cmp::Ordering;
 use std::fmt;
 use std::str;
+use std::str::FromStr;
 
 use crate::error::*;
 use crate::io::{self, BinaryData};
@@ -215,6 +217,27 @@ impl<'i> selectors::Parser<'i> for RuleParser {
             )),
         }
     }
+    fn parse_non_ts_functional_pseudo_class(
+        &self,
+        name: CowRcStr<'i>,
+        arguments: &mut Parser<'i, '_>,
+    ) -> Result<NonTSPseudoClass, cssparser::ParseError<'i, Self::Error>> {
+        match &*name {
+            "lang" => {
+                let language_tag = {
+                    let language_tag = arguments.expect_ident_or_string()?.clone();
+                    LanguageTag::from_str(&language_tag).map_err(|_| {
+                        arguments.new_custom_error(selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(language_tag))
+                    })?
+                };
+                arguments.expect_exhausted()?;
+                Ok(NonTSPseudoClass::Lang(language_tag))
+            }
+            _ => Err(arguments.new_custom_error(
+                selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
+            )),
+        }
+    }
 }
 
 // `cssparser::RuleListParser` is a struct which requires that we
@@ -316,6 +339,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
 pub enum NonTSPseudoClass {
     Link,
     Visited,
+    Lang(LanguageTag),
 }
 
 impl ToCss for NonTSPseudoClass {
@@ -326,6 +350,7 @@ impl ToCss for NonTSPseudoClass {
         match self {
             NonTSPseudoClass::Link => write!(dest, "link"),
             NonTSPseudoClass::Visited => write!(dest, "visited"),
+            NonTSPseudoClass::Lang(lang) => write!(dest, "lang(\"{}\")", lang),
         }
     }
 }
@@ -517,9 +542,14 @@ impl selectors::Element for RsvgElement {
     where
         F: FnMut(&Self, ElementSelectorFlags),
     {
-        match *pc {
+        match pc {
             NonTSPseudoClass::Link => self.is_link(),
             NonTSPseudoClass::Visited => false,
+            NonTSPseudoClass::Lang(css_lang) => self
+                .0
+                .borrow_element()
+                .get_language()
+                .map_or(false, |e_lang| css_lang.matches(e_lang)),
         }
     }
 
