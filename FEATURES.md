@@ -244,14 +244,19 @@ cond
 
 ## CSS properties
 
-Shorthands:
+The following are shorthand properties.  They are not available as
+presentation attributes, only as style properties, so for example you have to use
+`<path style="marker: url(#foo);"/>`, since there is no `marker` attribute.
 
 | Property | Notes |
 | ---      | ---   |
 | font     |       |
 | marker   |       |
 
-Longhands:
+The following are longhand properties.  Most of them are available as
+presentation attributes, e.g. you can use `<rect fill="blue"/>` as
+well as `<rect style="fill: blue;"/>`.  The Notes column indicates
+which properties are not available as presentation attributes.
 
 | Property                    | Notes                                                  |
 | ---                         | ---                                                    |
