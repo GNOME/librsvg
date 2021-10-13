@@ -5,9 +5,7 @@
 | Attribute | Notes                                                                               |
 | ---       | ---                                                                                 |
 | transform | The `transform` attribute has a different syntax than the CSS `transform` property. |
-|           |                                                                                     |
 | xml:lang  |                                                                                     |
-|           |                                                                                     |
 | xml:space |                                                                                     |
 
 ## Elements and their specific attributes
@@ -21,36 +19,28 @@ cond
 | a                   |                     |                                                                    |
 |                     | xlink:href          | Needs xlink namespace                                              |
 |                     | href                | SVG2                                                               |
-|                     |                     |                                                                    |
 | circle              |                     |                                                                    |
 |                     | cx                  |                                                                    |
 |                     | cy                  |                                                                    |
 |                     | r                   |                                                                    |
-|                     |                     |                                                                    |
 | clipPath            |                     |                                                                    |
 |                     | clipPathUnits       |                                                                    |
-|                     |                     |                                                                    |
 | defs                |                     |                                                                    |
-|                     |                     |                                                                    |
 | ellipse             |                     |                                                                    |
 |                     | cx                  |                                                                    |
 |                     | cy                  |                                                                    |
 |                     | rx                  |                                                                    |
 |                     | ry                  |                                                                    |
-|                     |                     |                                                                    |
 | feBlend             |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | in2                 |                                                                    |
 |                     | mode                |                                                                    |
-|                     |                     |                                                                    |
 | feColorMatrix       |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | type                |                                                                    |
 |                     | values              |                                                                    |
-|                     |                     |                                                                    |
 | feComponentTransfer |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
-|                     |                     |                                                                    |
 | feComposite         |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | in2                 |                                                                    |
@@ -59,7 +49,6 @@ cond
 |                     | k2                  |                                                                    |
 |                     | k3                  |                                                                    |
 |                     | k4                  |                                                                    |
-|                     |                     |                                                                    |
 | feConvolveMatrix    |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | order               |                                                                    |
@@ -71,72 +60,55 @@ cond
 |                     | kernelMatrix        |                                                                    |
 |                     | kernelUnitLength    |                                                                    |
 |                     | preserveAlpha       |                                                                    |
-|                     |                     |                                                                    |
 | feDiffuseLighting   |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | surfaceScale        |                                                                    |
 |                     | kernelUnitLength    |                                                                    |
 |                     | diffuseConstant     |                                                                    |
-|                     |                     |                                                                    |
 | feDisplacementMap   |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | in2                 |                                                                    |
 |                     | scale               |                                                                    |
 |                     | xChannelSelector    |                                                                    |
 |                     | yChannelSelector    |                                                                    |
-|                     |                     |                                                                    |
 | feDistantLight      |                     |                                                                    |
 |                     | azimuth             |                                                                    |
 |                     | elevation           |                                                                    |
-|                     |                     |                                                                    |
 | feFuncA             |                     | See "Filter effect feComponentTransfer"                            |
-|                     |                     |                                                                    |
 | feFuncB             |                     | See "Filter effect feComponentTransfer"                            |
-|                     |                     |                                                                    |
 | feFuncG             |                     | See "Filter effect feComponentTransfer"                            |
-|                     |                     |                                                                    |
 | feFuncR             |                     | See "Filter effect feComponentTransfer"                            |
-|                     |                     |                                                                    |
 | feFlood             |                     | See "Filter effects"                                               |
 |                     |                     | Parameters come from the flood-color and flood-opacity properties. |
-|                     |                     |                                                                    |
 | feGaussianBlur      |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | stdDeviation        |                                                                    |
-|                     |                     |                                                                    |
 | feImage             |                     | See "Filter effects"                                               |
 |                     | xlink:href          | Needs xlink namespace                                              |
 |                     | href                | SVG2                                                               |
 |                     | path                | Non-standard; used by old Adobe Illustrator versions.              |
 |                     | preserveAspectRatio |                                                                    |
-|                     |                     |                                                                    |
 | feMerge             |                     | See "Filter effects"                                               |
-|                     |                     |                                                                    |
 | feMergeNode         |                     |                                                                    |
 |                     | in                  |                                                                    |
-|                     |                     |                                                                    |
 | feMorphology        |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | operator            |                                                                    |
 |                     | radius              |                                                                    |
-|                     |                     |                                                                    |
 | feOffset            |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | dx                  |                                                                    |
 |                     | dy                  |                                                                    |
-|                     |                     |                                                                    |
 | fePointLight        |                     |                                                                    |
 |                     | x                   |                                                                    |
 |                     | y                   |                                                                    |
 |                     | z                   |                                                                    |
-|                     |                     |                                                                    |
 | feSpecularLighting  |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
 |                     | surfaceScale        |                                                                    |
 |                     | kernelUnitLength    |                                                                    |
 |                     | specularConstant    |                                                                    |
 |                     | specularExponent    |                                                                    |
-|                     |                     |                                                                    |
 | feSpotLight         |                     |                                                                    |
 |                     | x                   |                                                                    |
 |                     | y                   |                                                                    |
@@ -146,17 +118,14 @@ cond
 |                     | pointsAtZ           |                                                                    |
 |                     | specularExponent    |                                                                    |
 |                     | limitingConeAngle   |                                                                    |
-|                     |                     |                                                                    |
 | feTile              |                     | See "Filter effects"                                               |
 |                     | in                  |                                                                    |
-|                     |                     |                                                                    |
 | feTurbulence        |                     | See "Filter effects"                                               |
 |                     | baseFrequency       |                                                                    |
 |                     | numOctaves          |                                                                    |
 |                     | seed                |                                                                    |
 |                     | stitchTiles         |                                                                    |
 |                     | type                |                                                                    |
-|                     |                     |                                                                    |
 | filter              |                     |                                                                    |
 |                     | filterUnits         |                                                                    |
 |                     | primitiveUnits      |                                                                    |
@@ -164,9 +133,7 @@ cond
 |                     | y                   |                                                                    |
 |                     | width               |                                                                    |
 |                     | height              |                                                                    |
-|                     |                     |                                                                    |
 | g                   |                     |                                                                    |
-|                     |                     |                                                                    |
 | image               |                     |                                                                    |
 |                     | xlink:href          | Needs xlink namespace                                              |
 |                     | href                | SVG2                                                               |
@@ -176,14 +143,11 @@ cond
 |                     | width               |                                                                    |
 |                     | height              |                                                                    |
 |                     | preserveAspectRatio |                                                                    |
-|                     |                     |                                                                    |
-|                     |                     |                                                                    |
 | line                |                     |                                                                    |
 |                     | x1                  |                                                                    |
 |                     | y1                  |                                                                    |
 |                     | x2                  |                                                                    |
 |                     | y2                  |                                                                    |
-|                     |                     |                                                                    |
 | linearGradient      |                     |                                                                    |
 |                     | gradientUnits       |                                                                    |
 |                     | gradientTransform   |                                                                    |
@@ -192,7 +156,6 @@ cond
 |                     | y1                  |                                                                    |
 |                     | x2                  |                                                                    |
 |                     | y2                  |                                                                    |
-|                     |                     |                                                                    |
 | marker              |                     |                                                                    |
 |                     | markerUnits         |                                                                    |
 |                     | refX                |                                                                    |
@@ -202,7 +165,6 @@ cond
 |                     | orient              |                                                                    |
 |                     | preserveAspectRatio |                                                                    |
 |                     | viewBox             |                                                                    |
-|                     |                     |                                                                    |
 | mask                |                     |                                                                    |
 |                     | x                   |                                                                    |
 |                     | y                   |                                                                    |
@@ -210,10 +172,8 @@ cond
 |                     | height              |                                                                    |
 |                     | maskUnits           |                                                                    |
 |                     | maskContentUnits    |                                                                    |
-|                     |                     |                                                                    |
 | path                |                     |                                                                    |
 |                     | d                   |                                                                    |
-|                     |                     |                                                                    |
 | pattern             |                     |                                                                    |
 |                     | xlink:href          | Needs xlink namespace                                              |
 |                     | href                | SVG2                                                               |
@@ -226,13 +186,10 @@ cond
 |                     | y                   |                                                                    |
 |                     | width               |                                                                    |
 |                     | height              |                                                                    |
-|                     |                     |                                                                    |
 | polygon             |                     |                                                                    |
 |                     | points              |                                                                    |
-|                     |                     |                                                                    |
 | polyline            |                     |                                                                    |
 |                     | points              |                                                                    |
-|                     |                     |                                                                    |
 | radialGradient      |                     |                                                                    |
 |                     | gradientUnits       |                                                                    |
 |                     | gradientTransform   |                                                                    |
@@ -243,7 +200,6 @@ cond
 |                     | fx                  |                                                                    |
 |                     | fx                  |                                                                    |
 |                     | fr                  |                                                                    |
-|                     |                     |                                                                    |
 | rect                |                     |                                                                    |
 |                     | x                   |                                                                    |
 |                     | y                   |                                                                    |
@@ -251,13 +207,10 @@ cond
 |                     | height              |                                                                    |
 |                     | rx                  |                                                                    |
 |                     | ry                  |                                                                    |
-|                     |                     |                                                                    |
 | stop                |                     |                                                                    |
 |                     | offset              |                                                                    |
-|                     |                     |                                                                    |
 | style               |                     |                                                                    |
 |                     | type                |                                                                    |
-|                     |                     |                                                                    |
 | svg                 |                     |                                                                    |
 |                     | x                   |                                                                    |
 |                     | y                   |                                                                    |
@@ -265,28 +218,22 @@ cond
 |                     | height              |                                                                    |
 |                     | viewBox             |                                                                    |
 |                     | preserveAspectRatio |                                                                    |
-|                     |                     |                                                                    |
 | switch              |                     |                                                                    |
-|                     |                     |                                                                    |
 | symbol              |                     |                                                                    |
 |                     | preserveAspectRatio |                                                                    |
 |                     | viewBox             |                                                                    |
-|                     |                     |                                                                    |
 | text                |                     |                                                                    |
 |                     | x                   |                                                                    |
 |                     | y                   |                                                                    |
 |                     | dx                  |                                                                    |
 |                     | dy                  |                                                                    |
-|                     |                     |                                                                    |
 | tref                |                     |                                                                    |
 |                     | xlink:href          | Needs xlink namespace                                              |
-|                     |                     |                                                                    |
 | tspan               |                     |                                                                    |
 |                     | x                   |                                                                    |
 |                     | y                   |                                                                    |
 |                     | dx                  |                                                                    |
 |                     | dy                  |                                                                    |
-|                     |                     |                                                                    |
 | use                 |                     |                                                                    |
 |                     | xlink:href          | Needs xlink namespace                                              |
 |                     | href                | SVG2                                                               |
