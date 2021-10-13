@@ -3,6 +3,7 @@
 ## Attributes supported by all elements
 
 | Attribute | Notes                                                                               |
+| ---       | ---                                                                                 |
 | transform | The `transform` attribute has a different syntax than the CSS `transform` property. |
 |           |                                                                                     |
 | xml:lang  |                                                                                     |
@@ -16,6 +17,7 @@ FIXME: add global attributes parsed in element.rs, not by specific element imple
 cond
 
 | Element             | Attributes          | Notes                                                              |
+| ---                 | ---                 | ---                                                                |
 | a                   |                     |                                                                    |
 |                     | xlink:href          | Needs xlink namespace                                              |
 |                     | href                | SVG2                                                               |
@@ -298,12 +300,14 @@ cond
 Shorthands:
 
 | Property | Notes |
+| ---      | ---   |
 | font     |       |
 | marker   |       |
 
 Longhands:
 
 | Property                    | Notes                                                  |
+| ---                         | ---                                                    |
 | baseline-shift              |                                                        |
 | clip-path                   |                                                        |
 | clip-rule                   |                                                        |
@@ -375,9 +379,10 @@ The following elements are filter effects:
 * feTile
 * feTurbulence
 
-All of them support these attributes:
+All of those elements for filter effects support these attributes:
 
 | Attribute | Notes |
+| ---       | ---   |
 | x         |       |
 | y         |       |
 | width     |       |
@@ -395,6 +400,7 @@ The `feComponentTransfer` element can contain children `feFuncA`,
 attributes:
 
 | Attribute   | Notes |
+| ---         | ---   |
 | type        |       |
 | tableValues |       |
 | slope       |       |
