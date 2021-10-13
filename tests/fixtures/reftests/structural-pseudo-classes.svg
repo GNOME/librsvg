@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="50" height="50">
+  <style type="text/css">
+    g {
+      display: none;
+    }
+    svg:root g {
+      display: block;
+    }
+    rect {
+      display: none;
+      fill: red;
+    }
+    svg rect {
+     fill: red;
+    }
+    svg rect:not(:last-child) {
+      fill: red;
+    }
+    svg rect:last-child {
+     fill: black;
+    }
+    g path {
+      stroke: red;
+    }
+    g:only-of-type path:nth-child(2n+1) {
+      stroke: black;
+    }
+    svg:not(.missing-class) g > rect {
+      display: block;
+    }
+    circle:first-of-type:not(.evil-class) {
+      fill: yellow;
+      stroke: black;
+      stroke-width: 1px;
+    }
+    line {
+      stroke: red;
+    }
+    line:not(:root) {
+      stroke: black;
+    }
+    line:last-of-type {
+      stroke: blue;
+      stroke-width: 1px;
+    }
+    svg > path:empty {
+      stroke: blue;
+      stroke-width: 1px;
+    }
+  </style>
+  <circle class="present-class" cx="25" cy="25" r="25"/>
+  <g>
+    <path d="M 9,30 L 18,35"/>
+    <rect x="18" y="35" width="15" height="1"/>
+  </g>
+  <line x1="33" x2="42" y1="35" y2="30"/>
+  <line x1="18" x2="18" y1="9" y2="20"/>
+  <path d="M 32,9 L 32,20"/>
+</svg>

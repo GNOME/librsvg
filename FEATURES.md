@@ -394,6 +394,29 @@ attributes:
 
 # CSS features
 
+## Pseudo-classes
+
+| Pseudo-class        | Notes                                                                                |
+| ---                 | ---                                                                                  |
+| :link               |                                                                                      |
+| :visited            | Because librsvg does not maintain browser history, this is parsed, but never matches |
+| :lang()             |                                                                                      |
+| :not()              | [^1]                                                                                 |
+| :first-child        | [^1]                                                                                 |
+| :last-child         | [^1]                                                                                 |
+| :only-child         | [^1]                                                                                 |
+| :root               | [^1]                                                                                 |
+| :empty              | [^1]                                                                                 |
+| :nth-child()        | [^1]                                                                                 |
+| :nth-last-child()   | [^1]                                                                                 |
+| :nth-of-type()      | [^1]                                                                                 |
+| :nth-last-of-type() | [^1]                                                                                 |
+| :first-of-type      | [^1]                                                                                 |
+| :last-of-type       | [^1]                                                                                 |
+| :only-of-type       | [^1]                                                                                 |
+
+[^1]: These structural pseudo-classes are implemented in rust-selectors, which librsvg uses.
+
 FIXME: which selectors, combinators, at-rules.
 
 # XML features
@@ -411,3 +434,5 @@ FIXME: `xml:space` attribute
 * `flowRoot` element and its children - Inkscape, SVG 1.2 only., #13
 
 * `glyph-orientation-horizontal` property - SVG1.1 only, removed in SVG2
+
+* The pseudo-classes `:is()` and `:where()` are part of Selectors Level 4, which is still a working draft.
