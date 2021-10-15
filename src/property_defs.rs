@@ -35,8 +35,10 @@
 //!
 //! * An implementation of the [`Parse`] trait for the underlying type.
 use std::convert::TryInto;
+use std::str::FromStr;
 
 use cssparser::{Parser, Token};
+use language_tags::LanguageTag;
 
 use crate::dasharray::Dasharray;
 use crate::error::*;
@@ -1088,13 +1090,17 @@ make_property!(
     XmlLang,
     default: None,
     inherits_automatically: true,
-    newtype: Option<String>,
+    newtype: Option<Box<LanguageTag>>,
     parse_impl: {
         impl Parse for XmlLang {
             fn parse<'i>(
                 parser: &mut Parser<'i, '_>,
             ) -> Result<XmlLang, ParseError<'i>> {
-                Ok(XmlLang(Some(parser.expect_ident()?.to_string())))
+                let language_tag = parser.expect_ident()?;
+                let language_tag = LanguageTag::from_str(language_tag).map_err(|_| {
+                    parser.new_custom_error(ValueErrorKind::parse_error("invalid syntax for 'xml:lang' parameter"))
+                })?;
+                Ok(XmlLang(Some(Box::new(language_tag))))
             }
         }
     },
@@ -1105,7 +1111,7 @@ make_property!(
 fn parses_xml_lang() {
     assert_eq!(
         XmlLang::parse_str("es-MX").unwrap(),
-        XmlLang(Some("es-MX".to_string()))
+        XmlLang(Some(Box::new(LanguageTag::from_str("es-MX").unwrap())))
     );
 
     assert!(XmlLang::parse_str("").is_err());

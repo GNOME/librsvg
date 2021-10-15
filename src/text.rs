@@ -869,7 +869,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     let pango_context = draw_ctx.create_pango_context();
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
-        pango_context.set_language(&pango::Language::from_string(lang));
+        pango_context.set_language(&pango::Language::from_string(lang.as_str()));
     }
 
     pango_context.set_base_gravity(pango::Gravity::from(props.writing_mode));

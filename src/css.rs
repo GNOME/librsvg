@@ -79,6 +79,7 @@ use cssparser::{
     RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
 };
 use data_url::mime::Mime;
+use language_tags::LanguageTag;
 use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
@@ -86,6 +87,7 @@ use selectors::{OpaqueElement, SelectorImpl, SelectorList};
 use std::cmp::Ordering;
 use std::fmt;
 use std::str;
+use std::str::FromStr;
 
 use crate::error::*;
 use crate::io::{self, BinaryData};
@@ -215,6 +217,29 @@ impl<'i> selectors::Parser<'i> for RuleParser {
             )),
         }
     }
+    fn parse_non_ts_functional_pseudo_class(
+        &self,
+        name: CowRcStr<'i>,
+        arguments: &mut Parser<'i, '_>,
+    ) -> Result<NonTSPseudoClass, cssparser::ParseError<'i, Self::Error>> {
+        match &*name {
+            "lang" => {
+                // Comma-separated lists of languages are a Selectors 4 feature,
+                // but a pretty stable one that hasn't changed in a long time.
+                let tags = arguments.parse_comma_separated(|arg| {
+                    let language_tag = arg.expect_ident_or_string()?.clone();
+                    LanguageTag::from_str(&language_tag).map_err(|_| {
+                        arg.new_custom_error(selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(language_tag))
+                    })
+                })?;
+                arguments.expect_exhausted()?;
+                Ok(NonTSPseudoClass::Lang(tags))
+            }
+            _ => Err(arguments.new_custom_error(
+                selectors::parser::SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
+            )),
+        }
+    }
 }
 
 // `cssparser::RuleListParser` is a struct which requires that we
@@ -316,6 +341,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
 pub enum NonTSPseudoClass {
     Link,
     Visited,
+    Lang(Vec<LanguageTag>),
 }
 
 impl ToCss for NonTSPseudoClass {
@@ -326,6 +352,14 @@ impl ToCss for NonTSPseudoClass {
         match self {
             NonTSPseudoClass::Link => write!(dest, "link"),
             NonTSPseudoClass::Visited => write!(dest, "visited"),
+            NonTSPseudoClass::Lang(lang) => write!(
+                dest,
+                "lang(\"{}\")",
+                lang.iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join("\",\"")
+            ),
         }
     }
 }
@@ -517,9 +551,17 @@ impl selectors::Element for RsvgElement {
     where
         F: FnMut(&Self, ElementSelectorFlags),
     {
-        match *pc {
+        match pc {
             NonTSPseudoClass::Link => self.is_link(),
             NonTSPseudoClass::Visited => false,
+            NonTSPseudoClass::Lang(css_lang) => self
+                .0
+                .borrow_element()
+                .get_computed_values()
+                .xml_lang()
+                .0
+                .as_ref()
+                .map_or(false, |e_lang| css_lang.iter().any(|l| l.matches(e_lang))),
         }
     }
 
@@ -799,6 +841,11 @@ pub fn cascade(
     for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
 
+        // xml:lang needs to be inherited before selector matching, so it
+        // can't be done in the usual SpecifiedValues::to_computed_values,
+        // which is called by cascade() and runs after matching.
+        node.borrow_element_mut().inherit_xml_lang();
+
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,
             // FIXME: how the fuck does one set up a bloom filter here?
@@ -836,6 +883,38 @@ mod tests {
     use selectors::Element;
 
     use crate::document::Document;
+
+    #[test]
+    fn xml_lang() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="zh">
+  <text id="a" x="10" y="10" width="30" height="30"></text>
+  <text id="b" x="10" y="20" width="30" height="30" xml:lang="en"></text>
+</svg>
+"#,
+        );
+        let a = document.lookup_internal_node("a").unwrap();
+        assert_eq!(
+            a.borrow_element()
+                .get_computed_values()
+                .xml_lang()
+                .0
+                .unwrap()
+                .as_str(),
+            "zh"
+        );
+        let b = document.lookup_internal_node("b").unwrap();
+        assert_eq!(
+            b.borrow_element()
+                .get_computed_values()
+                .xml_lang()
+                .0
+                .unwrap()
+                .as_str(),
+            "en"
+        );
+    }
 
     #[test]
     fn impl_element() {

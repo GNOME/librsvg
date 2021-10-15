@@ -728,8 +728,8 @@ impl SpecifiedValues {
         compute!(UnicodeBidi, unicode_bidi);
         compute!(Visibility, visibility);
         compute!(WritingMode, writing_mode);
-        compute!(XmlLang, xml_lang);
         compute!(XmlSpace, xml_space);
+        compute!(XmlLang, xml_lang);
 
         computed.transform = self.transform.unwrap_or_else(|| {
             match self.get_property(PropertyId::TransformProperty) {
@@ -739,6 +739,21 @@ impl SpecifiedValues {
                 _ => Transform::identity(),
             }
         });
+    }
+
+    /// This is a somewhat egregious hack to allow xml:lang to be stored as a presentational
+    /// attribute. Presentational attributes can often be influenced by stylesheets,
+    /// so they're cascaded after selector matching is done, but xml:lang can be queried by
+    /// CSS selectors, so they need to be cascaded *first*.
+    pub fn inherit_xml_lang(&self, computed: &mut ComputedValues) {
+        let prop_val = self.get_property(PropertyId::XmlLang);
+        if let ParsedProperty::XmlLang(s) = prop_val {
+            computed.set_value(ComputedValue::XmlLang(
+                s.compute(&computed.xml_lang(), computed),
+            ));
+        } else {
+            unreachable!();
+        }
     }
 
     pub fn is_overflow(&self) -> bool {

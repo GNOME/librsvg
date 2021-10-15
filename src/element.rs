@@ -160,6 +160,10 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         self.class.as_deref()
     }
 
+    fn inherit_xml_lang(&mut self) {
+        self.specified_values.inherit_xml_lang(&mut self.values);
+    }
+
     fn get_specified_values(&self) -> &SpecifiedValues {
         &self.specified_values
     }
@@ -495,6 +499,10 @@ impl Element {
 
     pub fn get_class(&self) -> Option<&str> {
         call_inner!(self, get_class)
+    }
+
+    pub fn inherit_xml_lang(&mut self) {
+        call_inner!(self, inherit_xml_lang)
     }
 
     pub fn get_specified_values(&self) -> &SpecifiedValues {
