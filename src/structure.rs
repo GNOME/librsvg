@@ -208,7 +208,7 @@ impl Svg {
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
-        let (viewport, vbox) = if is_measuring_toplevel_svg || has_parent {
+        let (viewport, vbox) = if is_measuring_toplevel_svg {
             // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
             // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
             // it wants to extend.
@@ -216,7 +216,11 @@ impl Svg {
         } else {
             (
                 // The client's viewport overrides the toplevel's x/y/w/h viewport
-                draw_ctx.toplevel_viewport(),
+                if has_parent {
+                    svg_viewport
+                } else {
+                    draw_ctx.toplevel_viewport()
+                },
                 // Use our viewBox if available, or try to derive one from
                 // the intrinsic dimensions.
                 self.vbox.or_else(|| {
