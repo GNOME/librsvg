@@ -3,9 +3,6 @@
 use crate::properties::ComputedValues;
 
 /// Trait which all CSS property types should implement.
-///
-/// This is generic on `T` for testing purposes; in the actual code `T` needs to
-/// be [`ComputedValues`][crate::properties::ComputedValues].
 pub trait Property {
     /// Whether the property's computed value inherits from parent to child elements.
     ///
