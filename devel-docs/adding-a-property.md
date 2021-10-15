@@ -462,3 +462,105 @@ But wait!  We don't have a test for this yet!  Aaaaaargh, we are doing test-driv
 
 No biggie.  Let's write the tests.
 
+## Adding tests
+
+Testing graphical output is really annoying if you compare PNG files, because any time
+Cairo changes something and antialiasing changes juuuuuust a bit, the tests break.  So,
+librsvg tries to do "reftests", or reference tests, by comparing the rendered results of
+two things:
+
+* The SVG you actually want to test.
+* An equivalent SVG that works only with known-good features.
+
+For `mask-type`, we need an SVG document that actually uses that property with both of its
+values, and another document that produces the same results but with simpler primitives.
+
+Librsvg already has tests for luminance masks, as they were the only available kind in
+SVG1.1.  So we can be confident that they already work - we just need to test that the
+presence of `mask-type="luminance"` actually does the same thing.
+
+First, let's dissect the SVG that we want to test:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <mask id="luminance" mask-type="luminance" maskContentUnits="objectBoundingBox">
+    <rect x="0.1" y="0.1" width="0.8" height="0.8" fill="white"/>
+  </mask>
+  <mask id="alpha" mask-type="alpha" maskContentUnits="objectBoundingBox">
+    <rect x="0.1" y="0.1" width="0.8" height="0.8" fill="black"/>
+  </mask>
+
+  <rect x="0" y="0" width="100" height="100" fill="green" mask="url(#luminance)"/>
+
+  <rect x="100" y="0" width="100" height="100" fill="green" mask="url(#alpha)"/>
+</svg>
+```
+
+The image has two 100x100 `green` squares side by side.  The one on the left gets masked
+with the `luminance` mask, which reduces it to an 80x80 rectangle.  That mask is a
+**white** square, so its has full luminance at every pixel.
+
+The square on the right gets masked with the `alpha` mask.  That mask is a **black**
+square, but with alpha=1.0, so it should produce the same result as the first one.
+
+Note that to make things easy, we use **white** for the luminance mask.  White pixels have
+full luminance (1.0), which gets used as the mask.  Conversely, we use **black** for the
+alpha mask.  Those black pixels are fully opaque, and since `mask-type="alpha"` only
+considers the alpha channel, it will be using the full opacity of each pixel (1.0), which
+also gets used as the mask.  So, the masks should be equivalent.
+
+Okay!  Now let's write the reference SVG, the one built out of simpler elements but that
+should produce the same rendering:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <rect x="10" y="10" width="80" height="80" fill="green"/>
+
+  <rect x="110" y="10" width="80" height="80" fill="green"/>
+</svg>
+```
+
+This is just the two original squares, but already clipped or masked to the final result.
+
+Now, where do we put those SVG documents for the tests?
+
+Near the end of `tests/src/filters.rs` we can include this:
+
+```rust
+test_compare_render_output!(
+    mask_type,
+    200,
+    100,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <mask id="luminance" mask-type="luminance" maskContentUnits="objectBoundingBox">
+    <rect x="0.1" y="0.1" width="0.8" height="0.8" fill="white"/>
+  </mask>
+  <mask id="alpha" mask-type="alpha" maskContentUnits="objectBoundingBox">
+    <rect x="0.1" y="0.1" width="0.8" height="0.8" fill="black"/>
+  </mask>
+
+  <rect x="0" y="0" width="100" height="100" fill="green" mask="url(#luminance)"/>
+
+  <rect x="100" y="0" width="100" height="100" fill="green" mask="url(#alpha)"/>
+</svg>
+"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <rect x="10" y="10" width="80" height="80" fill="green"/>
+
+  <rect x="110" y="10" width="80" height="80" fill="green"/>
+</svg>
+"##,
+);
+```
+
+Here, `test_compare_render_output!` is a macro that takes two SVG documents, the test and
+the reference, and compares their rendered results.  It also takes a test name
+(`mask_type` in this case), and the pixel size of the image to generate for testing
+(200x100).
+
+## Final steps: documentation
+
