@@ -42,7 +42,7 @@
 //!
 //! [diag]: https://www.w3.org/TR/SVG/coords.html#Units
 
-use cssparser::{Parser, Token};
+use cssparser::{match_ignore_ascii_case, Parser, Token, _cssparser_internal_to_lowercase};
 use std::f64::consts::*;
 use std::marker::PhantomData;
 
@@ -276,7 +276,7 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
             } => {
                 l_value = value;
 
-                l_unit = match unit.as_ref() {
+                l_unit = match_ignore_ascii_case! {unit.as_ref(),
                     "px" => LengthUnit::Px,
                     "em" => LengthUnit::Em,
                     "ex" => LengthUnit::Ex,
