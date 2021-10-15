@@ -557,7 +557,10 @@ impl selectors::Element for RsvgElement {
             NonTSPseudoClass::Lang(css_lang) => self
                 .0
                 .borrow_element()
-                .get_language()
+                .get_computed_values()
+                .xml_lang()
+                .0
+                .as_ref()
                 .map_or(false, |e_lang| css_lang.iter().any(|l| l.matches(e_lang))),
         }
     }
@@ -837,6 +840,11 @@ pub fn cascade(
 ) {
     for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
+
+        // xml:lang needs to be inherited before selector matching, so it
+        // can't be done in the usual SpecifiedValues::to_computed_values,
+        // which is called by cascade() and runs after matching.
+        node.borrow_element_mut().inherit_xml_lang();
 
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,

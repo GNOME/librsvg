@@ -487,7 +487,7 @@ impl DocumentBuilder {
         attrs: Attributes,
         parent: Option<Node>,
     ) -> Node {
-        let mut node = Node::new(NodeData::new_element(name, attrs));
+        let node = Node::new(NodeData::new_element(name, attrs));
 
         if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id
@@ -498,20 +498,6 @@ impl DocumentBuilder {
 
         if let Some(mut parent) = parent {
             parent.append(node.clone());
-
-            // If no language is specified on an element,
-            // it implicitly gets one from the parent,
-            // https://www.w3.org/International/questions/qa-when-xmllang#bytheway
-            //
-            // "It's important to remember that xml:lang has scope: lower-level elements inherit
-            // the language attribute. This can be used to identify the language for a lot of
-            // content (without having redundant language tags on every element)."
-            if let Some(parent_language) = parent.borrow_element().get_language() {
-                let mut child = node.borrow_element_mut();
-                if child.get_language().is_none() {
-                    child.set_language(parent_language.clone());
-                }
-            }
         } else if self.tree.is_none() {
             self.tree = Some(node.clone());
         } else {

@@ -1,12 +1,10 @@
 //! SVG Elements.
 
-use language_tags::LanguageTag;
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops::Deref;
-use std::str::FromStr;
 
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
@@ -106,7 +104,6 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     required_extensions: Option<RequiredExtensions>,
     required_features: Option<RequiredFeatures>,
     system_language: Option<SystemLanguage>,
-    language: Option<LanguageTag>,
     pub element_impl: T,
 }
 
@@ -131,13 +128,11 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             required_extensions: Default::default(),
             required_features: Default::default(),
             system_language: Default::default(),
-            language: Default::default(),
             element_impl,
         };
 
         let mut set_attributes = || -> Result<(), ElementError> {
             e.set_conditional_processing_attributes()?;
-            e.set_language_attribute()?;
             e.set_presentation_attributes()?;
             Ok(())
         };
@@ -165,12 +160,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         self.class.as_deref()
     }
 
-    fn get_language(&self) -> Option<&LanguageTag> {
-        self.language.as_ref()
-    }
-
-    fn set_language(&mut self, language_tag: LanguageTag) {
-        self.language = Some(language_tag);
+    fn inherit_xml_lang(&mut self) {
+        self.specified_values.inherit_xml_lang(&mut self.values);
     }
 
     fn get_specified_values(&self) -> &SpecifiedValues {
@@ -200,21 +191,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .as_ref()
                 .map(|v| v.eval(user_language))
                 .unwrap_or(true)
-    }
-
-    fn set_language_attribute(&mut self) -> Result<(), ElementError> {
-        for (attr, value) in self.attributes.iter() {
-            if attr.expanded() == expanded_name!(xml "lang") {
-                self.language = Some(
-                    LanguageTag::from_str(value)
-                        .map_err(|e| {
-                            ValueErrorKind::parse_error(&format!("invalid language tag: \"{}\"", e))
-                        })
-                        .attribute(attr)?,
-                );
-            }
-        }
-        Ok(())
     }
 
     fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {
@@ -525,12 +501,8 @@ impl Element {
         call_inner!(self, get_class)
     }
 
-    pub fn get_language(&self) -> Option<&LanguageTag> {
-        call_inner!(self, get_language)
-    }
-
-    pub fn set_language(&mut self, language: LanguageTag) {
-        call_inner!(self, set_language, language)
+    pub fn inherit_xml_lang(&mut self) {
+        call_inner!(self, inherit_xml_lang)
     }
 
     pub fn get_specified_values(&self) -> &SpecifiedValues {
