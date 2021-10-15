@@ -27,7 +27,7 @@ Let's start by figuring out how to read the spec.
 
 ## What the specification says
 
-The specification for `mask-type` is in https://www.w3.org/TR/css-masking-1/#the-mask-type 
+The specification for `mask-type` is in https://www.w3.org/TR/css-masking-1/#the-mask-type
 
 In the specs, most of the descriptions for properties start with a table that summarizes
 the property.  For example, if you visit that link, you will find a table that starts with
@@ -131,7 +131,7 @@ impl Property for MaskType {
     fn inherits_automatically() -> bool {
         false
     }
-    
+
     fn compute(&self, _: &ComputedValues) -> Self {
         self.clone()
     }
@@ -176,7 +176,7 @@ make_property!(
 * (5) Finally, `identifiers:` is what makes the `make_property!` macro know that it should
   generate a parser for the symbolic names `luminance` and `alpha`, and that they should
   correspond to the values `MaskType::Luminance` and `MaskType::Alpha`, respectively.
-  
+
 This saves a lot of typing!  Also, it makes it easier to gradually change the way
 properties are represented, as librsvg evolves.
 
@@ -276,12 +276,130 @@ impl Parse for f64 {
 
 My advice: implement new parsers by doing cut&paste from existing ones, and you'll be okay.
 
+## Registering the property
 
+Okay!  We defined `MaskType` and its symbolic identifiers with the `make_property!` macro,
+and the macro took care of writing a parser for it and implementing the traits that the
+property needs.
 
+Now we need to modify the code in a few places to process the property.
 
+## Register the property
 
-* Are you adding support for a CSS property?  Look in the [`property_defs`] and
-  [`properties`] modules.  `property_defs` defines most of the CSS properties that librsvg
-  supports, and `properties` actually puts all those properties in the `SpecifiedValues`
-  and `ComputedValues` structs.
+* First, look for `longhands:` in `properties.rs`.  You will find that it is part of a long macro invocation:
+
+```rust
+make_properties! {
+    // ... stuff omitted here
+
+    longhands: {
+       // ... stuff omitted here
+
+        "marker-end"                  => (PresentationAttr::Yes, marker_end                  : MarkerEnd),
+        "marker-mid"                  => (PresentationAttr::Yes, marker_mid                  : MarkerMid),
+        "marker-start"                => (PresentationAttr::Yes, marker_start                : MarkerStart),
+        "mask"                        => (PresentationAttr::Yes, mask                        : Mask),
+        // "mask-type"                => (PresentationAttr::Yes, unimplemented),
+        "opacity"                     => (PresentationAttr::Yes, opacity                     : Opacity),
+        "overflow"                    => (PresentationAttr::Yes, overflow                    : Overflow),
+
+        // ... stuff omitted here
+    }
+}
+```
+
+In there, there is an entry for `mask-type` commented out.  Let's uncomment it and turn it into this:
+
+```rust
+        "mask-type"                   => (PresentationAttr::Yes, mask_type                   : MaskType),
+```
+
+`PresentationAttr::Yes` indicates whether the property has a corresponding presentation attribute.  This means that you can do `<mask style="mask-type: alpha;">` which is property, as well as `<mask mask-type="alpha">`, which is a presentation attribute.
+
+How did we find out that `mask-type` also exists as a presentation attribute?  Well, [the spec](https://www.w3.org/TR/css-masking-1/#the-mask-type) says:
+
+> The mask-type property is a presentation attribute for SVG elements.
+
+But wait!  If we compile, we get this:
+
+```
+error: no rules expected the token `"mask-type"`
+   --> src/properties.rs:450:9
+    |
+450 |         "mask-type"                   => (PresentationAttr::Yes, mask_type                   : MaskType),
+    |         ^^^^^^^^^^^ no rules expected this token in macro call
+```
+
+When you see that error in exactly that macro invocation, it means this: librsvg uses a
+crate called `markup5ever` to have a compact representation of the names of
+properties/attributes/elements.  It uses string interning so that, for example, there is a
+single definition of `rect` in the program's heap instead of there being a thousands of
+duplicated `rect` strings when you load a big document.  The thing is, `markup5ever` only
+has ready-made definitions of the most common HTML/SVG/CSS names, but unfortunately
+`mask-type` is not one of them.
+
+So, we scroll down in `properties.rs` and move the `mask-type` registration there:
+
+```rust
+    longhands_not_supported_by_markup5ever: {
+        "line-height"                 => (PresentationAttr::No,  line_height                 : LineHeight),
+        "mask-type"                   => (PresentationAttr::Yes, mask_type                   : MaskType),     // <- right here
+        "mix-blend-mode"              => (PresentationAttr::No,  mix_blend_mode              : MixBlendMode),
+        "paint-order"                 => (PresentationAttr::Yes, paint_order                 : PaintOrder),
+    }
+```
+
+That block named `longhands_not_supported_by_markup5ever` is, well, exactly what it says —
+a separate section with property names that are not built into `markup5ever`, so they must
+be dealt with specially.  Just put the property there and that's it.
+
+Next, we have to calculate the computed value for the property.
+
+## Calculate the computed value
+
+In `properties.rs`, look for `compute!`.  You will find many invocations of this macro:
+
+```rust
+        compute!(MarkerEnd, marker_end);
+        compute!(MarkerMid, marker_mid);
+        compute!(MarkerStart, marker_start);
+        compute!(Mask, mask);
+        compute!(MixBlendMode, mix_blend_mode);
+        compute!(Opacity, opacity);
+        compute!(Overflow, overflow);
+```
+
+Add a call for `MaskType`:
+
+```rust
+        compute!(MarkerEnd, marker_end);
+        compute!(MarkerMid, marker_mid);
+        compute!(MarkerStart, marker_start);
+        compute!(Mask, mask);
+        compute!(MaskType, mask_type);          // this is new
+        compute!(MixBlendMode, mix_blend_mode);
+        compute!(Opacity, opacity);
+        compute!(Overflow, overflow);
+```
+
+You will see that all those calls to `compute!` are inside a method
+called `SpecifiedValues::to_computed_values()`.  This method is run as
+part of the CSS cascade: it takes the `SpecifiedValues` from an
+element and composes them onto the `ComputedValues` from its parent
+element.  For example, if you have a document with this bit:
+
+```xml
+<g stroke="red" fill="blue">     // ComputedValues with stroke:red, fill:blue
+  <rect fill="green"/>           // SpecifiedValues with fill:green
+</g>
+```
+
+The `ComputedValues` that results from the `<g>` will have properties
+`stroke:red` and `fill:blue` in it.  The `SpecifiedValues` from the
+`<rect>` just has `fill:green`.  Composing them together for the
+`<rect>` gives us `ComputedValues` with `stroke:red` and `fill:green`.
+
+Now that the property is registered, we can actually handle it in the drawing code!
+
+## Handling the property
 
