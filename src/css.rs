@@ -885,6 +885,38 @@ mod tests {
     use crate::document::Document;
 
     #[test]
+    fn xml_lang() {
+        let document = Document::load_from_bytes(
+            br#"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="zh">
+  <text id="a" x="10" y="10" width="30" height="30"></text>
+  <text id="b" x="10" y="20" width="30" height="30" xml:lang="en"></text>
+</svg>
+"#,
+        );
+        let a = document.lookup_internal_node("a").unwrap();
+        assert_eq!(
+            a.borrow_element()
+                .get_computed_values()
+                .xml_lang()
+                .0
+                .unwrap()
+                .as_str(),
+            "zh"
+        );
+        let b = document.lookup_internal_node("b").unwrap();
+        assert_eq!(
+            b.borrow_element()
+                .get_computed_values()
+                .xml_lang()
+                .0
+                .unwrap()
+                .as_str(),
+            "en"
+        );
+    }
+
+    #[test]
     fn impl_element() {
         let document = Document::load_from_bytes(
             br#"<?xml version="1.0" encoding="UTF-8"?>

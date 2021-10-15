@@ -729,6 +729,7 @@ impl SpecifiedValues {
         compute!(Visibility, visibility);
         compute!(WritingMode, writing_mode);
         compute!(XmlSpace, xml_space);
+        compute!(XmlLang, xml_lang);
 
         computed.transform = self.transform.unwrap_or_else(|| {
             match self.get_property(PropertyId::TransformProperty) {
