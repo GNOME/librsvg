@@ -10,7 +10,6 @@ use rgb::FromSlice;
 
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
-use crate::unit_interval::UnitInterval;
 use crate::util::clamp;
 
 use super::{
@@ -493,7 +492,7 @@ impl ImageSurface<Shared> {
     /// useful luminance data.
     ///
     /// This is to get a mask suitable for use with cairo_mask_surface().
-    pub fn to_mask(&self, opacity: UnitInterval) -> Result<SharedImageSurface, cairo::Error> {
+    pub fn to_luminance_mask(&self) -> Result<SharedImageSurface, cairo::Error> {
         let bounds = IRect::from_size(self.width, self.height);
 
         let mut output_surface =
@@ -502,10 +501,9 @@ impl ImageSurface<Shared> {
         let stride = output_surface.stride() as usize;
         {
             let mut data = output_surface.data().unwrap();
-            let opacity = u8::from(opacity);
 
             for (x, y, pixel) in Pixels::within(self, bounds) {
-                data.set_pixel(stride, pixel.to_mask(opacity), x, y);
+                data.set_pixel(stride, pixel.to_luminance_mask(), x, y);
             }
         }
 

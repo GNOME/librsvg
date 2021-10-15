@@ -645,10 +645,8 @@ impl DrawingCtx {
             res?;
         }
 
-        let Opacity(opacity) = values.opacity();
-
         let mask = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?
-            .to_mask(opacity)?
+            .to_luminance_mask()?
             .into_image_surface()?;
 
         Ok(Some(mask))

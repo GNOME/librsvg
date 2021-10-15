@@ -36,10 +36,9 @@ fn bench_pixel_ops(c: &mut Criterion) {
         b.iter(|| bench_op(&pixels, |pixel| pixel.diff(&other)))
     });
 
-    c.bench_function("pixel_to_mask", |b| {
+    c.bench_function("pixel_to_luminance_mask", |b| {
         let pixels = black_box(make_pixels(N));
-        let opacity = black_box(0x70);
-        b.iter(|| bench_op(&pixels, |pixel| pixel.to_mask(opacity)))
+        b.iter(|| bench_op(&pixels, |pixel| pixel.to_luminance_mask()))
     });
 
     c.bench_function("pixel_premultiply", |b| {
