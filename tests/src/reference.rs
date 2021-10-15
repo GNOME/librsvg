@@ -89,7 +89,7 @@ fn reference_test(path: &str) {
         .evaluate(&output_surf, &path_base_name);
 }
 
-/// Turns `/foo/bar/baz.svg` into `/foo/bar/baz-ref.svg`.
+/// Turns `/foo/bar/baz.svg` into `/foo/bar/baz-ref.png`.
 fn reference_path(path: &PathBuf) -> PathBuf {
     let basename = path.file_stem().unwrap();
 
