@@ -591,6 +591,19 @@ make_property!(
 );
 
 make_property!(
+    /// `mask-type` property.
+    ///
+    /// https://www.w3.org/TR/css-masking-1/#the-mask-type
+    MaskType,
+    default: Luminance,
+    inherits_automatically: false,
+
+    identifiers:
+    "luminance" => Luminance,
+    "alpha" => Alpha,
+);
+
+make_property!(
     /// `mix-blend-mode` property.
     ///
     /// https://www.w3.org/TR/compositing/#mix-blend-mode
