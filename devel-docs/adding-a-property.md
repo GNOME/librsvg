@@ -403,3 +403,62 @@ Now that the property is registered, we can actually handle it in the drawing co
 
 ## Handling the property
 
+First, a digression: let's change the name of a few methods to better reflect what the new
+structure of the code will be like.
+
+There are a few methods called `to_mask` in the code, that take an RGBA surface and turn
+it into an Alpha-only surface with the luminance of the original surface; and also the
+corresponding method to do this for a single pixel.  Let's do this kind of renaming:
+
+```
+-    pub fn to_mask(&self, opacity: UnitInterval) -> Result<SharedImageSurface, cairo::Error> {
++    pub fn to_luminance_mask(&self, opacity: UnitInterval) -> Result<SharedImageSurface, cairo::Error> {
+```
+
+Librsvg only effectively supported `mask-type: luminance` since that is what was in
+SVG1.1, but now for SVG2 we want to add behavior for `mask-type: alpha` as well.  So, it
+makes sense to rename `to_mask` as `to_luminance_mask`.
+
+`SharedImageSurface` is the type that librsvg uses to represent images in memory.  They
+can be RGBA or Alpha-only.  There is already a method called `extract_alpha` that we can
+use to create an Alpha-only mask:
+
+```rust
+// there's a type alias SharedImageSurface for this
+impl ImageSurface<Shared> {
+    pub fn extract_alpha(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Error> { ... }
+}
+```
+
+Now let's look at where `drawing_ctx.rs` has this:
+
+```rust
+        let mask = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?    // (1)
+            .to_luminance_mask()?                                                        // (2)
+            .into_image_surface()?;                                                      // (3)
+```
+
+* (1) Wraps a `SharedImageSurface` around the Cairo surface that was just rendered with the mask contents.
+
+* (2) Converts it to a luminance mask.  We will need to change this!
+
+* (3) Extracts the Cairo image surface from the `SharedImageSurface`, for further processing.
+
+Remember the `ComputedValues` where we had the `mask_type`?  We can extract it with
+`values.mask_type()`.  Now let's change the lines above to this:
+
+```rust
+        let tmp = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?;
+
+        let mask_result = match values.mask_type() {
+            MaskType::Luminance => tmp.to_luminance_mask()?,
+            MaskType::Alpha => tmp.extract_alpha(IRect::from_size(tmp.width(), tmp.height()))?,
+        };
+
+        let mask = mask_result.into_image_surface()?;
+```
+
+But wait!  We don't have a test for this yet!  Aaaaaargh, we are doing test-driven development backwards!
+
+No biggie.  Let's write the tests.
+

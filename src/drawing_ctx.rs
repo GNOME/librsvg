@@ -31,10 +31,10 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, Filter, MixBlendMode, Opacity, Overflow, PaintTarget,
-    ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, ComputedValues, FillRule, Filter, MaskType, MixBlendMode, Opacity, Overflow,
+    PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
-use crate::rect::Rect;
+use crate::rect::{IRect, Rect};
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -645,9 +645,14 @@ impl DrawingCtx {
             res?;
         }
 
-        let mask = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?
-            .to_luminance_mask()?
-            .into_image_surface()?;
+        let tmp = SharedImageSurface::wrap(mask_content_surface, SurfaceType::SRgb)?;
+
+        let mask_result = match values.mask_type() {
+            MaskType::Luminance => tmp.to_luminance_mask()?,
+            MaskType::Alpha => tmp.extract_alpha(IRect::from_size(tmp.width(), tmp.height()))?,
+        };
+
+        let mask = mask_result.into_image_surface()?;
 
         Ok(Some(mask))
     }
