@@ -1090,7 +1090,7 @@ make_property!(
     XmlLang,
     default: None,
     inherits_automatically: true,
-    newtype: Option<LanguageTag>,
+    newtype: Option<Box<LanguageTag>>,
     parse_impl: {
         impl Parse for XmlLang {
             fn parse<'i>(
@@ -1100,7 +1100,7 @@ make_property!(
                 let language_tag = LanguageTag::from_str(language_tag).map_err(|_| {
                     parser.new_custom_error(ValueErrorKind::parse_error("invalid syntax for 'xml:lang' parameter"))
                 })?;
-                Ok(XmlLang(Some(language_tag)))
+                Ok(XmlLang(Some(Box::new(language_tag))))
             }
         }
     },
@@ -1111,7 +1111,7 @@ make_property!(
 fn parses_xml_lang() {
     assert_eq!(
         XmlLang::parse_str("es-MX").unwrap(),
-        XmlLang(Some(LanguageTag::from_str("es-MX").unwrap()))
+        XmlLang(Some(Box::new(LanguageTag::from_str("es-MX").unwrap())))
     );
 
     assert!(XmlLang::parse_str("").is_err());
