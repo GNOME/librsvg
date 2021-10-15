@@ -564,3 +564,24 @@ the reference, and compares their rendered results.  It also takes a test name
 
 ## Final steps: documentation
 
+To help people who are wondering what SVG features are supported in librsvg, there is a
+`FEATURES.md` file.  It has a section called "CSS properties" with a big list of property
+names and notes about them.
+
+We'll patch it like this:
+
+```
+ | marker-mid                  |                                                        |
+ | marker-start                |                                                        |
+ | mask                        |                                                        |
++| mask-type                   |                                                        |
+ | mix-blend-mode              | Not available as a presentation attribute.             |
+ | opacity                     |                                                        |
+ | overflow                    |                                                        |
+```
+
+There is nothing remarkable about `mask-type`, it is a plain old property that also has a
+presentation attribute (remember the `PresentationAttr::Yes` from above?), so we don't
+need to list any extra information.
+
+And with that, we are done implementing `mask-type`.  Have fun!

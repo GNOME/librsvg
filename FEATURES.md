@@ -318,6 +318,7 @@ which properties are not available as presentation attributes.
 | marker-mid                  |                                                        |
 | marker-start                |                                                        |
 | mask                        |                                                        |
+| mask-type                   |                                                        |
 | mix-blend-mode              | Not available as a presentation attribute.             |
 | opacity                     |                                                        |
 | overflow                    |                                                        |
