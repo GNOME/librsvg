@@ -447,7 +447,6 @@ make_properties! {
         "marker-mid"                  => (PresentationAttr::Yes, marker_mid                  : MarkerMid),
         "marker-start"                => (PresentationAttr::Yes, marker_start                : MarkerStart),
         "mask"                        => (PresentationAttr::Yes, mask                        : Mask),
-        // "mask-type"                => (PresentationAttr::Yes, unimplemented),
         "opacity"                     => (PresentationAttr::Yes, opacity                     : Opacity),
         "overflow"                    => (PresentationAttr::Yes, overflow                    : Overflow),
         // "pointer-events"           => (PresentationAttr::Yes, unimplemented),
@@ -485,6 +484,7 @@ make_properties! {
 
     longhands_not_supported_by_markup5ever: {
         "line-height"                 => (PresentationAttr::No,  line_height                 : LineHeight),
+        "mask-type"                   => (PresentationAttr::Yes, mask_type                   : MaskType),
         "mix-blend-mode"              => (PresentationAttr::No,  mix_blend_mode              : MixBlendMode),
         "paint-order"                 => (PresentationAttr::Yes, paint_order                 : PaintOrder),
     }
@@ -706,6 +706,7 @@ impl SpecifiedValues {
         compute!(MarkerMid, marker_mid);
         compute!(MarkerStart, marker_start);
         compute!(Mask, mask);
+        compute!(MaskType, mask_type);
         compute!(MixBlendMode, mix_blend_mode);
         compute!(Opacity, opacity);
         compute!(Overflow, overflow);

@@ -346,3 +346,30 @@ test_compare_render_output!(
 </svg>
 "##,
 );
+
+test_compare_render_output!(
+    mask_type,
+    200,
+    100,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <mask id="luminance" mask-type="luminance" maskContentUnits="objectBoundingBox">
+    <rect x="0.1" y="0.1" width="0.8" height="0.8" fill="white"/>
+  </mask>
+  <mask id="alpha" mask-type="alpha" maskContentUnits="objectBoundingBox">
+    <rect x="0.1" y="0.1" width="0.8" height="0.8" fill="black"/>
+  </mask>
+
+  <rect x="0" y="0" width="100" height="100" fill="green" mask="url(#luminance)"/>
+
+  <rect x="100" y="0" width="100" height="100" fill="green" mask="url(#alpha)"/>
+</svg>
+"##,
+    br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100">
+  <rect x="10" y="10" width="80" height="80" fill="green"/>
+
+  <rect x="110" y="10" width="80" height="80" fill="green"/>
+</svg>
+"##,
+);

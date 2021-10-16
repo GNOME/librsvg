@@ -163,7 +163,7 @@ pub trait PixelOps {
     fn premultiply(self) -> Self;
     fn unpremultiply(self) -> Self;
     fn diff(&self, other: &Self) -> Self;
-    fn to_mask(&self, opacity: u8) -> Self;
+    fn to_luminance_mask(&self) -> Self;
     fn to_u32(&self) -> u32;
     fn from_u32(x: u32) -> Self;
 }
@@ -223,17 +223,16 @@ impl PixelOps for Pixel {
 
     /// if pixel = 0x00000000, pixel' = 0x00......
     #[inline]
-    fn to_mask(&self, opacity: u8) -> Self {
+    fn to_luminance_mask(&self) -> Self {
         let r = u32::from(self.r);
         let g = u32::from(self.g);
         let b = u32::from(self.b);
-        let o = u32::from(opacity);
 
         Self {
             r: 0,
             g: 0,
             b: 0,
-            a: (((r * 14042 + g * 47240 + b * 4769) * o) >> 24) as u8,
+            a: (((r * 14042 + g * 47240 + b * 4769) * 255) >> 24) as u8,
         }
     }
 
