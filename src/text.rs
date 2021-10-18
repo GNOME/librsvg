@@ -309,8 +309,11 @@ impl PositionedSpan {
 
         let text_rendering = self.values.text_rendering();
 
+        let gravity = layout.context().unwrap().gravity();
+
         let span = layout::TextSpan {
             layout,
+            gravity,
             is_visible,
             x,
             y,

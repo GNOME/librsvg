@@ -96,6 +96,7 @@ pub struct Image {
 /// A single text span in user-space coordinates.
 pub struct TextSpan {
     pub layout: pango::Layout,
+    pub gravity: pango::Gravity,
     pub is_visible: bool,
     pub x: f64,
     pub y: f64,

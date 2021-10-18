@@ -1362,9 +1362,7 @@ impl DrawingCtx {
 
         let paint_order = values.paint_order();
 
-        let gravity = span.layout.context().unwrap().gravity();
-
-        let bbox = compute_text_box(&span.layout, span.x, span.y, transform, gravity);
+        let bbox = compute_text_box(&span.layout, span.x, span.y, transform, span.gravity);
         if bbox.is_none() {
             return Ok(self.empty_bbox());
         }
@@ -1377,7 +1375,7 @@ impl DrawingCtx {
 
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
-            let rotation_from_gravity = gravity.to_rotation();
+            let rotation_from_gravity = span.gravity.to_rotation();
             let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
                 Some(-rotation_from_gravity)
             } else {
