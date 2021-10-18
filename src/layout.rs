@@ -113,6 +113,11 @@ pub struct TextSpan {
     pub link_target: Option<String>,
 }
 
+/// Fully laid-out text in user-space coordinates.
+pub struct Text {
+    pub spans: Vec<TextSpan>,
+}
+
 /// Font-related properties extracted from `ComputedValues`.
 pub struct FontProperties {
     pub xml_lang: XmlLang,

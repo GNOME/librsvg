@@ -9,13 +9,14 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::layout::{FontProperties, StackingContext, Stroke, TextSpan};
+use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
+use crate::paint_server::PaintSource;
 use crate::parsers::ParseValue;
 use crate::properties::{
-    ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, TextAnchor,
-    UnicodeBidi, WritingMode, XmlLang, XmlSpace,
+    ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, PaintOrder,
+    TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
 use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
@@ -80,6 +81,27 @@ struct PositionedSpan {
     layout: pango::Layout,
     values: Rc<ComputedValues>,
     rendered_position: (f64, f64),
+}
+
+/// A laid-out and resolved text span.
+///
+/// The only thing not in user-space units are the `stroke_paint` and `fill_paint`.
+///
+/// This is the non-user-space version of `layout::TextSpan`.
+struct LayoutSpan {
+    layout: pango::Layout,
+    gravity: pango::Gravity,
+    bbox: Option<BoundingBox>,
+    is_visible: bool,
+    x: f64,
+    y: f64,
+    paint_order: PaintOrder,
+    stroke: Stroke,
+    stroke_paint: PaintSource,
+    fill_paint: PaintSource,
+    text_rendering: TextRendering,
+    link_target: Option<String>,
+    values: Rc<ComputedValues>,
 }
 
 impl Chunk {
@@ -334,7 +356,7 @@ impl PositionedSpan {
         draw_ctx: &mut DrawingCtx,
         view_params: &ViewParams,
         link_target: Option<String>,
-    ) -> TextSpan {
+    ) -> LayoutSpan {
         let params = NormalizeParams::new(&self.values, &view_params);
 
         let layout = self.layout.clone();
@@ -347,38 +369,26 @@ impl PositionedSpan {
 
         let bbox = compute_text_box(&layout, x, y, draw_ctx.get_transform(), gravity);
 
-        let bbox_for_paint = bbox.unwrap_or_else(|| draw_ctx.empty_bbox());
+        let stroke_paint = self.values.stroke().0.resolve(
+            acquired_nodes,
+            self.values.stroke_opacity().0,
+            self.values.color().0,
+            None,
+            None,
+        );
 
-        let stroke_paint = self
-            .values
-            .stroke()
-            .0
-            .resolve(
-                acquired_nodes,
-                self.values.stroke_opacity().0,
-                self.values.color().0,
-                None,
-                None,
-            )
-            .to_user_space(&bbox_for_paint, view_params, &self.values);
-
-        let fill_paint = self
-            .values
-            .fill()
-            .0
-            .resolve(
-                acquired_nodes,
-                self.values.fill_opacity().0,
-                self.values.color().0,
-                None,
-                None,
-            )
-            .to_user_space(&bbox_for_paint, view_params, &self.values);
+        let fill_paint = self.values.fill().0.resolve(
+            acquired_nodes,
+            self.values.fill_opacity().0,
+            self.values.color().0,
+            None,
+            None,
+        );
 
         let paint_order = self.values.paint_order();
         let text_rendering = self.values.text_rendering();
 
-        TextSpan {
+        LayoutSpan {
             layout,
             gravity,
             bbox,
@@ -391,6 +401,7 @@ impl PositionedSpan {
             fill_paint,
             text_rendering,
             link_target,
+            values: self.values.clone(),
         }
     }
 }
@@ -695,14 +706,44 @@ impl Draw for Text {
                     }
                 }
 
-                let mut bbox = dc.empty_bbox();
+                let text_bbox = layout_spans.iter().fold(dc.empty_bbox(), |mut bbox, span| {
+                    if let Some(ref span_bbox) = span.bbox {
+                        bbox.insert(span_bbox);
+                    }
 
-                for layout_span in layout_spans {
-                    let span_bbox = dc.draw_text_span(&layout_span, an, clipping)?;
-                    bbox.insert(&span_bbox);
+                    bbox
+                });
+
+                let mut text_spans = Vec::new();
+                for span in layout_spans {
+                    let stroke_paint =
+                        span.stroke_paint
+                            .to_user_space(&text_bbox, &view_params, &span.values);
+                    let fill_paint =
+                        span.fill_paint
+                            .to_user_space(&text_bbox, &view_params, &span.values);
+
+                    let text_span = TextSpan {
+                        layout: span.layout,
+                        gravity: span.gravity,
+                        bbox: span.bbox,
+                        is_visible: span.is_visible,
+                        x: span.x,
+                        y: span.y,
+                        paint_order: span.paint_order,
+                        stroke: span.stroke,
+                        stroke_paint,
+                        fill_paint,
+                        text_rendering: span.text_rendering,
+                        link_target: span.link_target,
+                    };
+
+                    text_spans.push(text_span);
                 }
 
-                Ok(bbox)
+                let text_layout = layout::Text { spans: text_spans };
+
+                dc.draw_text(&text_layout, an, clipping)
             },
         )
     }

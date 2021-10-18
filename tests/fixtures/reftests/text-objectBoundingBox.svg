@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="210">
+  <linearGradient id="gradient">
+    <stop offset="0.00" style="stop-color: black;"/>
+    <stop offset="0.25" style="stop-color: black;"/>
+    <stop offset="0.25" style="stop-color: white;"/>
+    <stop offset="0.75" style="stop-color: white;"/>
+    <stop offset="0.75" style="stop-color: black;"/>
+    <stop offset="1.00" style="stop-color: black;"/>
+  </linearGradient>
+  <line x1="300" y1="0" x2="300" y2="210" stroke-width="2" stroke="blue"/>
+  <text style="font: 50px Ahem;" fill="url(#gradient)"><tspan text-anchor="start" x="300" y="50">abcd</tspan><tspan text-anchor="end" x="300" y="100">abcd</tspan></text>
+  <rect x="100" y="150" width="400" height="50" fill="url(#gradient)"/>
+</svg>

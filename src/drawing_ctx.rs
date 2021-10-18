@@ -23,7 +23,7 @@ use crate::filter::FilterValueList;
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{Image, Shape, StackingContext, Stroke, TextSpan};
+use crate::layout::{Image, Shape, StackingContext, Stroke, Text, TextSpan};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -1357,7 +1357,7 @@ impl DrawingCtx {
         }
     }
 
-    pub fn draw_text_span(
+    fn draw_text_span(
         &mut self,
         span: &TextSpan,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -1468,6 +1468,22 @@ impl DrawingCtx {
 
             Ok(bbox)
         })
+    }
+
+    pub fn draw_text(
+        &mut self,
+        text: &Text,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let mut bbox = self.empty_bbox();
+
+        for span in &text.spans {
+            let span_bbox = self.draw_text_span(span, acquired_nodes, clipping)?;
+            bbox.insert(&span_bbox);
+        }
+
+        Ok(bbox)
     }
 
     pub fn get_snapshot(
