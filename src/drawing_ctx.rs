@@ -268,6 +268,8 @@ impl Drop for DrawingCtx {
     }
 }
 
+const CAIRO_TAG_LINK: &str = "Link";
+
 impl DrawingCtx {
     fn new(
         cr: &cairo::Context,
@@ -909,22 +911,30 @@ impl DrawingCtx {
         res
     }
 
+    /// Start a Cairo tag for PDF links
+    fn link_tag_begin(&mut self, link_target: &str) {
+        let attributes = format!("uri='{}'", escape_link_target(link_target));
+
+        let cr = self.cr.clone();
+        cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+    }
+
+    /// End a Cairo tag for PDF links
+    fn link_tag_end(&mut self) {
+        self.cr.tag_end(CAIRO_TAG_LINK);
+    }
+
     /// Wraps the draw_fn in a link to the given target
     pub fn with_link_tag(
         &mut self,
         link_target: &str,
         draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
-        const CAIRO_TAG_LINK: &str = "Link";
-
-        let attributes = format!("uri='{}'", escape_link_target(link_target));
-
-        let cr = self.cr.clone();
-        cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+        self.link_tag_begin(link_target);
 
         let res = draw_fn(self);
 
-        cr.tag_end(CAIRO_TAG_LINK);
+        self.link_tag_end();
 
         res
     }
