@@ -23,7 +23,7 @@ use crate::filter::FilterValueList;
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{Image, Shape, StackingContext, Stroke, TextSpan};
+use crate::layout::{Image, Shape, StackingContext, Stroke, Text, TextSpan};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -268,6 +268,8 @@ impl Drop for DrawingCtx {
     }
 }
 
+const CAIRO_TAG_LINK: &str = "Link";
+
 impl DrawingCtx {
     fn new(
         cr: &cairo::Context,
@@ -333,7 +335,9 @@ impl DrawingCtx {
         self.measuring
     }
 
-    fn get_transform(&self) -> Transform {
+    // FIXME: this is public just so that text.rs can access it.  Maybe the draw_fn passed to with_discrete_layer should
+    // obtain the current transform as an argument?
+    pub fn get_transform(&self) -> Transform {
         Transform::from(self.cr.matrix())
     }
 
@@ -686,6 +690,10 @@ impl DrawingCtx {
             draw_fn(acquired_nodes, self)
         } else {
             with_saved_cr(&self.cr.clone(), || {
+                if let Some(ref link_target) = stacking_ctx.link_target {
+                    self.link_tag_begin(link_target);
+                }
+
                 let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
                 let affine_at_start = self.get_transform();
@@ -708,7 +716,7 @@ impl DrawingCtx {
                     && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
                     && stacking_ctx.clip_in_object_space.is_none());
 
-                if needs_temporary_surface {
+                let res = if needs_temporary_surface {
                     // Compute our assortment of affines
 
                     let affines = CompositingAffines::new(
@@ -864,7 +872,13 @@ impl DrawingCtx {
                     res
                 } else {
                     draw_fn(acquired_nodes, self)
+                };
+
+                if stacking_ctx.link_target.is_some() {
+                    self.link_tag_end();
                 }
+
+                res
             })
         };
 
@@ -907,24 +921,17 @@ impl DrawingCtx {
         res
     }
 
-    /// Wraps the draw_fn in a link to the given target
-    pub fn with_link_tag(
-        &mut self,
-        link_target: &str,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
-    ) -> Result<BoundingBox, RenderingError> {
-        const CAIRO_TAG_LINK: &str = "Link";
-
+    /// Start a Cairo tag for PDF links
+    fn link_tag_begin(&mut self, link_target: &str) {
         let attributes = format!("uri='{}'", escape_link_target(link_target));
 
         let cr = self.cr.clone();
         cr.tag_begin(CAIRO_TAG_LINK, &attributes);
+    }
 
-        let res = draw_fn(self);
-
-        cr.tag_end(CAIRO_TAG_LINK);
-
-        res
+    /// End a Cairo tag for PDF links
+    fn link_tag_end(&mut self) {
+        self.cr.tag_end(CAIRO_TAG_LINK);
     }
 
     fn run_filters(
@@ -1350,26 +1357,19 @@ impl DrawingCtx {
         }
     }
 
-    pub fn draw_text_span(
+    fn draw_text_span(
         &mut self,
-        view_params: &ViewParams,
         span: &TextSpan,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let transform = self.get_transform();
 
-        let paint_order = values.paint_order();
-
-        let gravity = span.layout.context().unwrap().gravity();
-
-        let bbox = compute_text_box(&span.layout, span.x, span.y, transform, gravity);
-        if bbox.is_none() {
+        if span.bbox.is_none() {
             return Ok(self.empty_bbox());
         }
 
-        let mut bbox = bbox.unwrap();
+        let mut bbox = span.bbox.unwrap();
 
         with_saved_cr(&self.cr.clone(), || {
             self.cr
@@ -1377,7 +1377,7 @@ impl DrawingCtx {
 
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
-            let rotation_from_gravity = gravity.to_rotation();
+            let rotation_from_gravity = span.gravity.to_rotation();
             let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
                 Some(-rotation_from_gravity)
             } else {
@@ -1401,13 +1401,15 @@ impl DrawingCtx {
             }
 
             if span.is_visible {
-                for &target in &paint_order.targets {
+                if let Some(ref link_target) = span.link_target {
+                    self.link_tag_begin(link_target);
+                }
+
+                for &target in &span.paint_order.targets {
                     match target {
                         PaintTarget::Fill => {
-                            let fill_paint =
-                                span.fill_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
-                                self.set_paint_source(&fill_paint, acquired_nodes)?;
+                                self.set_paint_source(&span.fill_paint, acquired_nodes)?;
 
                             if had_paint_server {
                                 self.cr.move_to(span.x, span.y);
@@ -1427,10 +1429,8 @@ impl DrawingCtx {
                         }
 
                         PaintTarget::Stroke => {
-                            let stroke_paint =
-                                span.stroke_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
-                                self.set_paint_source(&stroke_paint, acquired_nodes)?;
+                                self.set_paint_source(&span.stroke_paint, acquired_nodes)?;
 
                             if had_paint_server {
                                 self.cr.move_to(span.x, span.y);
@@ -1460,10 +1460,30 @@ impl DrawingCtx {
                         PaintTarget::Markers => {}
                     }
                 }
+
+                if span.link_target.is_some() {
+                    self.link_tag_end();
+                }
             }
 
             Ok(bbox)
         })
+    }
+
+    pub fn draw_text(
+        &mut self,
+        text: &Text,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        let mut bbox = self.empty_bbox();
+
+        for span in &text.spans {
+            let span_bbox = self.draw_text_span(span, acquired_nodes, clipping)?;
+            bbox.insert(&span_bbox);
+        }
+
+        Ok(bbox)
     }
 
     pub fn get_snapshot(
@@ -1916,51 +1936,6 @@ fn compute_stroke_and_fill_box(
     Ok(bbox)
 }
 
-fn compute_text_box(
-    layout: &pango::Layout,
-    x: f64,
-    y: f64,
-    transform: Transform,
-    gravity: pango::Gravity,
-) -> Option<BoundingBox> {
-    #![allow(clippy::many_single_char_names)]
-
-    let (ink, _) = layout.extents();
-    if ink.width == 0 || ink.height == 0 {
-        return None;
-    }
-
-    let ink_x = f64::from(ink.x);
-    let ink_y = f64::from(ink.y);
-    let ink_width = f64::from(ink.width);
-    let ink_height = f64::from(ink.height);
-    let pango_scale = f64::from(pango::SCALE);
-
-    let (x, y, w, h) = if gravity_is_vertical(gravity) {
-        (
-            x + (ink_x - ink_height) / pango_scale,
-            y + ink_y / pango_scale,
-            ink_height / pango_scale,
-            ink_width / pango_scale,
-        )
-    } else {
-        (
-            x + ink_x / pango_scale,
-            y + ink_y / pango_scale,
-            ink_width / pango_scale,
-            ink_height / pango_scale,
-        )
-    };
-
-    let r = Rect::new(x, y, x + w, y + h);
-    let bbox = BoundingBox::new()
-        .with_transform(transform)
-        .with_rect(r)
-        .with_ink_rect(r);
-
-    Some(bbox)
-}
-
 fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {
     cr.set_line_width(stroke.width);
     cr.set_miter_limit(stroke.miter_limit.0);
@@ -1974,11 +1949,6 @@ fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {
     } else {
         cr.set_dash(&[], 0.0);
     }
-}
-
-// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
-fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
-    matches!(gravity, pango::Gravity::East | pango::Gravity::West)
 }
 
 /// escape quotes and backslashes with backslash

@@ -65,6 +65,7 @@ mod pango_ft2 {
 
     pub unsafe fn load_test_fonts() {
         let font_paths = [
+            "tests/resources/Ahem.ttf",
             "tests/resources/Roboto-Regular.ttf",
             "tests/resources/Roboto-Italic.ttf",
             "tests/resources/Roboto-Bold.ttf",
@@ -72,6 +73,9 @@ mod pango_ft2 {
         ];
 
         let config = fontconfig::FcConfigCreate();
+        if fontconfig::FcConfigSetCurrent(config) == 0 {
+            panic!("Could not set a fontconfig configuration");
+        }
 
         for path in &font_paths {
             let path_cstring = CString::new(*path).unwrap();

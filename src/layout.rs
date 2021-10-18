@@ -5,13 +5,14 @@
 use std::rc::Rc;
 
 use crate::aspect_ratio::AspectRatio;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::Element;
 use crate::length::*;
 use crate::node::*;
-use crate::paint_server::PaintSource;
+use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::Path;
 use crate::properties::{
     ClipRule, ComputedValues, Direction, FillRule, Filter, FontFamily, FontStretch, FontStyle,
@@ -46,6 +47,9 @@ pub struct StackingContext {
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
     pub mix_blend_mode: MixBlendMode,
+
+    /// Target from an <a> element
+    pub link_target: Option<String>,
 }
 
 /// Stroke parameters in user-space coordinates.
@@ -96,13 +100,22 @@ pub struct Image {
 /// A single text span in user-space coordinates.
 pub struct TextSpan {
     pub layout: pango::Layout,
+    pub gravity: pango::Gravity,
+    pub bbox: Option<BoundingBox>,
     pub is_visible: bool,
     pub x: f64,
     pub y: f64,
+    pub paint_order: PaintOrder,
     pub stroke: Stroke,
-    pub stroke_paint: PaintSource,
-    pub fill_paint: PaintSource,
+    pub stroke_paint: UserSpacePaintSource,
+    pub fill_paint: UserSpacePaintSource,
     pub text_rendering: TextRendering,
+    pub link_target: Option<String>,
+}
+
+/// Fully laid-out text in user-space coordinates.
+pub struct Text {
+    pub spans: Vec<TextSpan>,
 }
 
 /// Font-related properties extracted from `ComputedValues`.
@@ -206,7 +219,20 @@ impl StackingContext {
             clip_in_object_space,
             mask,
             mix_blend_mode,
+            link_target: None,
         }
+    }
+
+    pub fn new_with_link(
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        element: &Element,
+        transform: Transform,
+        values: &ComputedValues,
+        link_target: Option<String>,
+    ) -> StackingContext {
+        let mut ctx = Self::new(acquired_nodes, element, transform, values);
+        ctx.link_target = link_target;
+        ctx
     }
 }
 
