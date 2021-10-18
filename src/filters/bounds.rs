@@ -114,9 +114,7 @@ impl BoundsBuilder {
         // Convert into the surface coordinate system.
         let unclipped = self.transform.transform_rect(&rect);
 
-        let clipped = unclipped
-            .intersection(&effects_region)
-            .unwrap_or_else(Rect::default);
+        let clipped = unclipped.intersection(&effects_region).unwrap_or_default();
 
         Bounds { clipped, unclipped }
     }
