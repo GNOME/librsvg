@@ -272,7 +272,7 @@ macro_rules! func_or_default {
                 _ => unreachable!(),
             },
             _ => $func_type::default(),
-        };
+        }
     };
 }
 
