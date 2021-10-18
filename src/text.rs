@@ -333,6 +333,7 @@ impl PositionedSpan {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
+        link_target: Option<String>,
     ) -> Result<BoundingBox, RenderingError> {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&self.values, &view_params);
@@ -376,6 +377,7 @@ impl PositionedSpan {
             stroke_paint,
             fill_paint,
             text_rendering,
+            link_target,
         };
 
         draw_ctx.draw_text_span(&view_params, &span, acquired_nodes, &self.values, clipping)
@@ -677,12 +679,7 @@ impl Draw for Text {
 
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        let span_bbox = match chunk.link.as_ref() {
-                            Some(l) if !l.is_empty() => {
-                                dc.with_link_tag(l.as_str(), &mut |dc| span.draw(an, dc, clipping))?
-                            }
-                            _ => span.draw(an, dc, clipping)?,
-                        };
+                        let span_bbox = span.draw(an, dc, clipping, chunk.link.clone())?;
                         bbox.insert(&span_bbox);
                     }
                 }

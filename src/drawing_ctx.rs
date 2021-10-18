@@ -1410,6 +1410,10 @@ impl DrawingCtx {
             }
 
             if span.is_visible {
+                if let Some(ref link_target) = span.link_target {
+                    self.link_tag_begin(&link_target);
+                }
+
                 for &target in &paint_order.targets {
                     match target {
                         PaintTarget::Fill => {
@@ -1468,6 +1472,10 @@ impl DrawingCtx {
 
                         PaintTarget::Markers => {}
                     }
+                }
+
+                if span.link_target.is_some() {
+                    self.link_tag_end();
                 }
             }
 

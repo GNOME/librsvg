@@ -106,6 +106,7 @@ pub struct TextSpan {
     pub stroke_paint: PaintSource,
     pub fill_paint: PaintSource,
     pub text_rendering: TextRendering,
+    pub link_target: Option<String>,
 }
 
 /// Font-related properties extracted from `ComputedValues`.
