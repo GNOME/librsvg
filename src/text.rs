@@ -9,7 +9,7 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
-use crate::layout::{self, FontProperties, StackingContext, Stroke};
+use crate::layout::{FontProperties, StackingContext, Stroke, TextSpan};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -328,14 +328,13 @@ fn compute_text_box(
 }
 
 impl PositionedSpan {
-    fn draw(
+    fn layout(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         view_params: &ViewParams,
-        clipping: bool,
         link_target: Option<String>,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> TextSpan {
         let params = NormalizeParams::new(&self.values, &view_params);
 
         let layout = self.layout.clone();
@@ -366,7 +365,7 @@ impl PositionedSpan {
 
         let bbox = compute_text_box(&layout, x, y, draw_ctx.get_transform(), gravity);
 
-        let span = layout::TextSpan {
+        TextSpan {
             layout,
             gravity,
             bbox,
@@ -378,9 +377,7 @@ impl PositionedSpan {
             fill_paint,
             text_rendering,
             link_target,
-        };
-
-        draw_ctx.draw_text_span(&view_params, &span, acquired_nodes, &self.values, clipping)
+        }
     }
 }
 
@@ -681,7 +678,15 @@ impl Draw for Text {
 
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        let span_bbox = span.draw(an, dc, &view_params, clipping, chunk.link.clone())?;
+                        let layout_span = span.layout(an, dc, &view_params, chunk.link.clone());
+                        let span_bbox = dc.draw_text_span(
+                            &view_params,
+                            &layout_span,
+                            an,
+                            &span.values,
+                            clipping,
+                        )?;
+
                         bbox.insert(&span_bbox);
                     }
                 }
