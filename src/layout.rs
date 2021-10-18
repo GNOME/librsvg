@@ -47,6 +47,9 @@ pub struct StackingContext {
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
     pub mix_blend_mode: MixBlendMode,
+
+    /// Target from an <a> element
+    pub link_target: Option<String>,
 }
 
 /// Stroke parameters in user-space coordinates.
@@ -210,7 +213,20 @@ impl StackingContext {
             clip_in_object_space,
             mask,
             mix_blend_mode,
+            link_target: None,
         }
+    }
+
+    pub fn new_with_link(
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        element: &Element,
+        transform: Transform,
+        values: &ComputedValues,
+        link_target: Option<String>,
+    ) -> StackingContext {
+        let mut ctx = Self::new(acquired_nodes, element, transform, values);
+        ctx.link_target = link_target;
+        ctx
     }
 }
 

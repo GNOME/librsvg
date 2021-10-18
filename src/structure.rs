@@ -552,7 +552,22 @@ impl Draw for Link {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
+
+        let link_is_empty = self.link.as_ref().map(|l| l.is_empty()).unwrap_or(true);
+
+        let link_target = if link_is_empty {
+            None
+        } else {
+            self.link.clone()
+        };
+
+        let stacking_ctx = StackingContext::new_with_link(
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            values,
+            link_target,
+        );
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -560,12 +575,7 @@ impl Draw for Link {
             values,
             clipping,
             None,
-            &mut |an, dc| match self.link.as_ref() {
-                Some(l) if !l.is_empty() => {
-                    dc.with_link_tag(l, &mut |dc| node.draw_children(an, &cascaded, dc, clipping))
-                }
-                _ => node.draw_children(an, &cascaded, dc, clipping),
-            },
+            &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
         )
     }
 }

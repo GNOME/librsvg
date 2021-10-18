@@ -690,6 +690,10 @@ impl DrawingCtx {
             draw_fn(acquired_nodes, self)
         } else {
             with_saved_cr(&self.cr.clone(), || {
+                if let Some(ref link_target) = stacking_ctx.link_target {
+                    self.link_tag_begin(&link_target);
+                }
+
                 let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
 
                 let affine_at_start = self.get_transform();
@@ -712,7 +716,7 @@ impl DrawingCtx {
                     && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
                     && stacking_ctx.clip_in_object_space.is_none());
 
-                if needs_temporary_surface {
+                let res = if needs_temporary_surface {
                     // Compute our assortment of affines
 
                     let affines = CompositingAffines::new(
@@ -868,7 +872,13 @@ impl DrawingCtx {
                     res
                 } else {
                     draw_fn(acquired_nodes, self)
+                };
+
+                if stacking_ctx.link_target.is_some() {
+                    self.link_tag_end();
                 }
+
+                res
             })
         };
 
@@ -922,21 +932,6 @@ impl DrawingCtx {
     /// End a Cairo tag for PDF links
     fn link_tag_end(&mut self) {
         self.cr.tag_end(CAIRO_TAG_LINK);
-    }
-
-    /// Wraps the draw_fn in a link to the given target
-    pub fn with_link_tag(
-        &mut self,
-        link_target: &str,
-        draw_fn: &mut dyn FnMut(&mut DrawingCtx) -> Result<BoundingBox, RenderingError>,
-    ) -> Result<BoundingBox, RenderingError> {
-        self.link_tag_begin(link_target);
-
-        let res = draw_fn(self);
-
-        self.link_tag_end();
-
-        res
     }
 
     fn run_filters(
