@@ -333,7 +333,9 @@ impl DrawingCtx {
         self.measuring
     }
 
-    fn get_transform(&self) -> Transform {
+    // FIXME: this is public just so that text.rs can access it.  Maybe the draw_fn passed to with_discrete_layer should
+    // obtain the current transform as an argument?
+    pub fn get_transform(&self) -> Transform {
         Transform::from(self.cr.matrix())
     }
 
@@ -1362,12 +1364,11 @@ impl DrawingCtx {
 
         let paint_order = values.paint_order();
 
-        let bbox = compute_text_box(&span.layout, span.x, span.y, transform, span.gravity);
-        if bbox.is_none() {
+        if span.bbox.is_none() {
             return Ok(self.empty_bbox());
         }
 
-        let mut bbox = bbox.unwrap();
+        let mut bbox = span.bbox.unwrap();
 
         with_saved_cr(&self.cr.clone(), || {
             self.cr
@@ -1914,51 +1915,6 @@ fn compute_stroke_and_fill_box(
     Ok(bbox)
 }
 
-fn compute_text_box(
-    layout: &pango::Layout,
-    x: f64,
-    y: f64,
-    transform: Transform,
-    gravity: pango::Gravity,
-) -> Option<BoundingBox> {
-    #![allow(clippy::many_single_char_names)]
-
-    let (ink, _) = layout.extents();
-    if ink.width == 0 || ink.height == 0 {
-        return None;
-    }
-
-    let ink_x = f64::from(ink.x);
-    let ink_y = f64::from(ink.y);
-    let ink_width = f64::from(ink.width);
-    let ink_height = f64::from(ink.height);
-    let pango_scale = f64::from(pango::SCALE);
-
-    let (x, y, w, h) = if gravity_is_vertical(gravity) {
-        (
-            x + (ink_x - ink_height) / pango_scale,
-            y + ink_y / pango_scale,
-            ink_height / pango_scale,
-            ink_width / pango_scale,
-        )
-    } else {
-        (
-            x + ink_x / pango_scale,
-            y + ink_y / pango_scale,
-            ink_width / pango_scale,
-            ink_height / pango_scale,
-        )
-    };
-
-    let r = Rect::new(x, y, x + w, y + h);
-    let bbox = BoundingBox::new()
-        .with_transform(transform)
-        .with_rect(r)
-        .with_ink_rect(r);
-
-    Some(bbox)
-}
-
 fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {
     cr.set_line_width(stroke.width);
     cr.set_miter_limit(stroke.miter_limit.0);
@@ -1972,11 +1928,6 @@ fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {
     } else {
         cr.set_dash(&[], 0.0);
     }
-}
-
-// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
-fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
-    matches!(gravity, pango::Gravity::East | pango::Gravity::West)
 }
 
 /// escape quotes and backslashes with backslash

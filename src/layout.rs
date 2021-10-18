@@ -5,6 +5,7 @@
 use std::rc::Rc;
 
 use crate::aspect_ratio::AspectRatio;
+use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
@@ -97,6 +98,7 @@ pub struct Image {
 pub struct TextSpan {
     pub layout: pango::Layout,
     pub gravity: pango::Gravity,
+    pub bbox: Option<BoundingBox>,
     pub is_visible: bool,
     pub x: f64,
     pub y: f64,

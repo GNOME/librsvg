@@ -17,7 +17,9 @@ use crate::properties::{
     ComputedValues, Direction, FontStretch, FontStyle, FontVariant, FontWeight, TextAnchor,
     UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
+use crate::rect::Rect;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
+use crate::transform::Transform;
 use crate::xml::Attributes;
 
 /// An absolutely-positioned array of `Span`s
@@ -275,6 +277,56 @@ impl MeasuredSpan {
     }
 }
 
+// FIXME: should the pango crate provide this like PANGO_GRAVITY_IS_VERTICAL() ?
+fn gravity_is_vertical(gravity: pango::Gravity) -> bool {
+    matches!(gravity, pango::Gravity::East | pango::Gravity::West)
+}
+
+fn compute_text_box(
+    layout: &pango::Layout,
+    x: f64,
+    y: f64,
+    transform: Transform,
+    gravity: pango::Gravity,
+) -> Option<BoundingBox> {
+    #![allow(clippy::many_single_char_names)]
+
+    let (ink, _) = layout.extents();
+    if ink.width == 0 || ink.height == 0 {
+        return None;
+    }
+
+    let ink_x = f64::from(ink.x);
+    let ink_y = f64::from(ink.y);
+    let ink_width = f64::from(ink.width);
+    let ink_height = f64::from(ink.height);
+    let pango_scale = f64::from(pango::SCALE);
+
+    let (x, y, w, h) = if gravity_is_vertical(gravity) {
+        (
+            x + (ink_x - ink_height) / pango_scale,
+            y + ink_y / pango_scale,
+            ink_height / pango_scale,
+            ink_width / pango_scale,
+        )
+    } else {
+        (
+            x + ink_x / pango_scale,
+            y + ink_y / pango_scale,
+            ink_width / pango_scale,
+            ink_height / pango_scale,
+        )
+    };
+
+    let r = Rect::new(x, y, x + w, y + h);
+    let bbox = BoundingBox::new()
+        .with_transform(transform)
+        .with_rect(r)
+        .with_ink_rect(r);
+
+    Some(bbox)
+}
+
 impl PositionedSpan {
     fn draw(
         &self,
@@ -311,9 +363,12 @@ impl PositionedSpan {
 
         let gravity = layout.context().unwrap().gravity();
 
+        let bbox = compute_text_box(&layout, x, y, draw_ctx.get_transform(), gravity);
+
         let span = layout::TextSpan {
             layout,
             gravity,
+            bbox,
             is_visible,
             x,
             y,
