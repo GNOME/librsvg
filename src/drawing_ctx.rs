@@ -691,7 +691,7 @@ impl DrawingCtx {
         } else {
             with_saved_cr(&self.cr.clone(), || {
                 if let Some(ref link_target) = stacking_ctx.link_target {
-                    self.link_tag_begin(&link_target);
+                    self.link_tag_begin(link_target);
                 }
 
                 let Opacity(UnitInterval(opacity)) = stacking_ctx.opacity;
@@ -1402,7 +1402,7 @@ impl DrawingCtx {
 
             if span.is_visible {
                 if let Some(ref link_target) = span.link_target {
-                    self.link_tag_begin(&link_target);
+                    self.link_tag_begin(link_target);
                 }
 
                 for &target in &span.paint_order.targets {

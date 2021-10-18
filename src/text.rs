@@ -357,7 +357,7 @@ impl PositionedSpan {
         view_params: &ViewParams,
         link_target: Option<String>,
     ) -> LayoutSpan {
-        let params = NormalizeParams::new(&self.values, &view_params);
+        let params = NormalizeParams::new(&self.values, view_params);
 
         let layout = self.layout.clone();
         let is_visible = self.values.is_visible();
