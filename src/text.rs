@@ -343,27 +343,40 @@ impl PositionedSpan {
 
         let stroke = Stroke::new(&self.values, &params);
 
-        let stroke_paint = self.values.stroke().0.resolve(
-            acquired_nodes,
-            self.values.stroke_opacity().0,
-            self.values.color().0,
-            None,
-            None,
-        );
-
-        let fill_paint = self.values.fill().0.resolve(
-            acquired_nodes,
-            self.values.fill_opacity().0,
-            self.values.color().0,
-            None,
-            None,
-        );
-
-        let text_rendering = self.values.text_rendering();
-
         let gravity = layout.context().unwrap().gravity();
 
         let bbox = compute_text_box(&layout, x, y, draw_ctx.get_transform(), gravity);
+
+        let bbox_for_paint = bbox.unwrap_or_else(|| draw_ctx.empty_bbox());
+
+        let stroke_paint = self
+            .values
+            .stroke()
+            .0
+            .resolve(
+                acquired_nodes,
+                self.values.stroke_opacity().0,
+                self.values.color().0,
+                None,
+                None,
+            )
+            .to_user_space(&bbox_for_paint, view_params, &self.values);
+
+        let fill_paint = self
+            .values
+            .fill()
+            .0
+            .resolve(
+                acquired_nodes,
+                self.values.fill_opacity().0,
+                self.values.color().0,
+                None,
+                None,
+            )
+            .to_user_space(&bbox_for_paint, view_params, &self.values);
+
+        let paint_order = self.values.paint_order();
+        let text_rendering = self.values.text_rendering();
 
         TextSpan {
             layout,
@@ -372,6 +385,7 @@ impl PositionedSpan {
             is_visible,
             x,
             y,
+            paint_order,
             stroke,
             stroke_paint,
             fill_paint,
@@ -679,13 +693,7 @@ impl Draw for Text {
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
                         let layout_span = span.layout(an, dc, &view_params, chunk.link.clone());
-                        let span_bbox = dc.draw_text_span(
-                            &view_params,
-                            &layout_span,
-                            an,
-                            &span.values,
-                            clipping,
-                        )?;
+                        let span_bbox = dc.draw_text_span(&layout_span, an, clipping)?;
 
                         bbox.insert(&span_bbox);
                     }

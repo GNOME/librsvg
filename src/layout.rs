@@ -12,7 +12,7 @@ use crate::document::AcquiredNodes;
 use crate::element::Element;
 use crate::length::*;
 use crate::node::*;
-use crate::paint_server::PaintSource;
+use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::Path;
 use crate::properties::{
     ClipRule, ComputedValues, Direction, FillRule, Filter, FontFamily, FontStretch, FontStyle,
@@ -105,9 +105,10 @@ pub struct TextSpan {
     pub is_visible: bool,
     pub x: f64,
     pub y: f64,
+    pub paint_order: PaintOrder,
     pub stroke: Stroke,
-    pub stroke_paint: PaintSource,
-    pub fill_paint: PaintSource,
+    pub stroke_paint: UserSpacePaintSource,
+    pub fill_paint: UserSpacePaintSource,
     pub text_rendering: TextRendering,
     pub link_target: Option<String>,
 }

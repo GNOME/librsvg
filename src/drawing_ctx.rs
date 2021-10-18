@@ -1359,15 +1359,11 @@ impl DrawingCtx {
 
     pub fn draw_text_span(
         &mut self,
-        view_params: &ViewParams,
         span: &TextSpan,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let transform = self.get_transform();
-
-        let paint_order = values.paint_order();
 
         if span.bbox.is_none() {
             return Ok(self.empty_bbox());
@@ -1409,13 +1405,11 @@ impl DrawingCtx {
                     self.link_tag_begin(&link_target);
                 }
 
-                for &target in &paint_order.targets {
+                for &target in &span.paint_order.targets {
                     match target {
                         PaintTarget::Fill => {
-                            let fill_paint =
-                                span.fill_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
-                                self.set_paint_source(&fill_paint, acquired_nodes)?;
+                                self.set_paint_source(&span.fill_paint, acquired_nodes)?;
 
                             if had_paint_server {
                                 self.cr.move_to(span.x, span.y);
@@ -1435,10 +1429,8 @@ impl DrawingCtx {
                         }
 
                         PaintTarget::Stroke => {
-                            let stroke_paint =
-                                span.stroke_paint.to_user_space(&bbox, view_params, values);
                             let had_paint_server =
-                                self.set_paint_source(&stroke_paint, acquired_nodes)?;
+                                self.set_paint_source(&span.stroke_paint, acquired_nodes)?;
 
                             if had_paint_server {
                                 self.cr.move_to(span.x, span.y);
