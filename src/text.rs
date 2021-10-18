@@ -686,17 +686,20 @@ impl Draw for Text {
                     positioned_chunks.push(positioned);
                 }
 
-                let mut bbox = dc.empty_bbox();
-
                 let view_params = dc.get_view_params();
 
+                let mut layout_spans = Vec::new();
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        let layout_span = span.layout(an, dc, &view_params, chunk.link.clone());
-                        let span_bbox = dc.draw_text_span(&layout_span, an, clipping)?;
-
-                        bbox.insert(&span_bbox);
+                        layout_spans.push(span.layout(an, dc, &view_params, chunk.link.clone()));
                     }
+                }
+
+                let mut bbox = dc.empty_bbox();
+
+                for layout_span in layout_spans {
+                    let span_bbox = dc.draw_text_span(&layout_span, an, clipping)?;
+                    bbox.insert(&span_bbox);
                 }
 
                 Ok(bbox)
