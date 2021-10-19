@@ -844,7 +844,8 @@ pub fn cascade(
         // xml:lang needs to be inherited before selector matching, so it
         // can't be done in the usual SpecifiedValues::to_computed_values,
         // which is called by cascade() and runs after matching.
-        node.borrow_element_mut().inherit_xml_lang();
+        let parent = node.parent().clone();
+        node.borrow_element_mut().inherit_xml_lang(parent);
 
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,

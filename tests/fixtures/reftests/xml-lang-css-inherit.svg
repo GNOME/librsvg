@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">
+  <style type="text/css">
+    .test { fill: red }
+    :lang(de) { fill: black }
+  </style>
+  <g class="test" xml:lang="de"><rect x="0" y="0" width="10" height="10"/></g>
+</svg>
