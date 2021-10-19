@@ -171,9 +171,7 @@ impl PositionedChunk {
             let layout = mspan.layout.clone();
             let values = mspan.values.clone();
 
-            let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
-            let baseline_shift = values.baseline_shift().0.to_user(&params);
-            let baseline_offset = baseline + baseline_shift;
+            let baseline_offset = compute_baseline_offset(&layout, &values, &params);
 
             let dx = mspan.dx;
             let dy = mspan.dy;
@@ -213,6 +211,16 @@ impl PositionedChunk {
             link: measured.link.clone(),
         }
     }
+}
+
+fn compute_baseline_offset(
+    layout: &pango::Layout,
+    values: &ComputedValues,
+    params: &NormalizeParams,
+) -> f64 {
+    let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+    let baseline_shift = values.baseline_shift().0.to_user(&params);
+    baseline + baseline_shift
 }
 
 /// Computes the (x, y) offsets to be applied to spans after applying the text-anchor property (start, middle, end).
