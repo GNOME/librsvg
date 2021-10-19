@@ -145,8 +145,6 @@ impl PositionedChunk {
         x: f64,
         y: f64,
     ) -> PositionedChunk {
-        let mut positioned = Vec::new();
-
         let chunk_direction = measured.values.direction();
 
         let advance = measured.spans.iter().fold((0.0, 0.0), |acc, measured| {
@@ -166,6 +164,8 @@ impl PositionedChunk {
         let mut y = y + anchor_offset.1;
 
         // Position each span
+
+        let mut positioned = Vec::new();
 
         for mspan in &measured.spans {
             let params = NormalizeParams::new(&mspan.values, view_params);
