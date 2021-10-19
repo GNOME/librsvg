@@ -170,20 +170,20 @@ impl PositionedChunk {
 
             let layout = mspan.layout.clone();
             let values = mspan.values.clone();
+            let dx = mspan.dx;
+            let dy = mspan.dy;
+            let advance = mspan.advance;
 
             let baseline_offset = compute_baseline_offset(&layout, &values, &params);
 
-            let dx = mspan.dx;
-            let dy = mspan.dy;
-
             let start_pos = match measured.values.direction() {
                 Direction::Ltr => (x, y),
-                Direction::Rtl => (x - mspan.advance.0, y),
+                Direction::Rtl => (x - advance.0, y),
             };
 
             let span_advance = match measured.values.direction() {
-                Direction::Ltr => (mspan.advance.0, mspan.advance.1),
-                Direction::Rtl => (-mspan.advance.0, mspan.advance.1),
+                Direction::Ltr => (advance.0, advance.1),
+                Direction::Rtl => (-advance.0, advance.1),
             };
 
             let rendered_position = if text_writing_mode.is_horizontal() {
