@@ -147,6 +147,8 @@ impl PositionedChunk {
     ) -> PositionedChunk {
         let mut positioned = Vec::new();
 
+        let chunk_direction = measured.values.direction();
+
         let advance = measured.spans.iter().fold((0.0, 0.0), |acc, measured| {
             (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
         });
@@ -155,7 +157,7 @@ impl PositionedChunk {
         // it per the text-anchor property (start, middle, end):
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
-            measured.values.direction(),
+            chunk_direction,
             text_writing_mode,
             advance,
         );
@@ -176,12 +178,12 @@ impl PositionedChunk {
 
             let baseline_offset = compute_baseline_offset(&layout, &values, &params);
 
-            let start_pos = match measured.values.direction() {
+            let start_pos = match chunk_direction {
                 Direction::Ltr => (x, y),
                 Direction::Rtl => (x - advance.0, y),
             };
 
-            let span_advance = match measured.values.direction() {
+            let span_advance = match chunk_direction {
                 Direction::Ltr => (advance.0, advance.1),
                 Direction::Rtl => (-advance.0, advance.1),
             };
