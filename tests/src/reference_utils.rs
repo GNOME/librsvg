@@ -191,6 +191,8 @@ macro_rules! test_compare_render_output {
     ($test_name:ident, $width:expr, $height:expr, $test:expr, $reference:expr $(,)?) => {
         #[test]
         fn $test_name() {
+            crate::utils::setup_font_map();
+
             let sx: i32 = $width;
             let sy: i32 = $height;
             let svg = load_svg($test).unwrap();
