@@ -48,7 +48,6 @@ struct MeasuredChunk {
     values: Rc<ComputedValues>,
     x: Option<f64>,
     y: Option<f64>,
-    advance: (f64, f64),
     spans: Vec<MeasuredSpan>,
     link: Option<String>,
 }
@@ -128,15 +127,10 @@ impl MeasuredChunk {
             .map(|span| MeasuredSpan::from_span(span, text_writing_mode, draw_ctx))
             .collect();
 
-        let advance = measured_spans.iter().fold((0.0, 0.0), |acc, measured| {
-            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
-        });
-
         MeasuredChunk {
             values: chunk.values.clone(),
             x: chunk.x,
             y: chunk.y,
-            advance,
             spans: measured_spans,
             link: chunk.link.clone(),
         }
@@ -153,13 +147,17 @@ impl PositionedChunk {
     ) -> PositionedChunk {
         let mut positioned = Vec::new();
 
+        let advance = measured.spans.iter().fold((0.0, 0.0), |acc, measured| {
+            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
+        });
+
         // measured.advance is the size of the chunk.  Compute the offsets needed to align
         // it per the text-anchor property (start, middle, end):
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             measured.values.direction(),
             text_writing_mode,
-            measured.advance,
+            advance,
         );
 
         let mut x = x + anchor_offset.0;
