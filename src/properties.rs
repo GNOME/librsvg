@@ -746,9 +746,19 @@ impl SpecifiedValues {
     /// attribute. Presentational attributes can often be influenced by stylesheets,
     /// so they're cascaded after selector matching is done, but xml:lang can be queried by
     /// CSS selectors, so they need to be cascaded *first*.
-    pub fn inherit_xml_lang(&self, computed: &mut ComputedValues) {
+    pub fn inherit_xml_lang(
+        &self,
+        computed: &mut ComputedValues,
+        parent: Option<crate::node::Node>,
+    ) {
+        use crate::node::NodeBorrow;
         let prop_val = self.get_property(PropertyId::XmlLang);
         if let ParsedProperty::XmlLang(s) = prop_val {
+            if let Some(parent) = parent {
+                computed.set_value(ComputedValue::XmlLang(
+                    parent.borrow_element().get_computed_values().xml_lang(),
+                ));
+            }
             computed.set_value(ComputedValue::XmlLang(
                 s.compute(&computed.xml_lang(), computed),
             ));
