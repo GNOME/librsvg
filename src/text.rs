@@ -180,12 +180,12 @@ impl PositionedChunk {
             let dx = mspan.dx;
             let dy = mspan.dy;
 
-            let start_pos = match values.direction() {
+            let start_pos = match measured.values.direction() {
                 Direction::Ltr => (x, y),
                 Direction::Rtl => (x - mspan.advance.0, y),
             };
 
-            let span_advance = match values.direction() {
+            let span_advance = match measured.values.direction() {
                 Direction::Ltr => (mspan.advance.0, mspan.advance.1),
                 Direction::Rtl => (-mspan.advance.0, mspan.advance.1),
             };
