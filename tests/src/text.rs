@@ -1,8 +1,8 @@
 use cairo;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::test_compare_render_output;
 use crate::utils::{load_svg, render_document, SurfaceSize};
+use crate::{test_compare_render_output, test_svg_reference};
 
 // From https://www.w3.org/Style/CSS/Test/Fonts/Ahem/
 //
@@ -26,4 +26,10 @@ test_compare_render_output!(
 <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500">
   <rect x="50" y="10" width="250" height="50" fill="black"/>
 </svg>"##,
+);
+
+test_svg_reference!(
+    text_anchor_chunk_806,
+    "tests/fixtures/text/806-text-anchor-chunk.svg",
+    "tests/fixtures/text/806-text-anchor-chunk-ref.svg"
 );
