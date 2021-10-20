@@ -33,3 +33,9 @@ test_svg_reference!(
     "tests/fixtures/text/806-text-anchor-chunk.svg",
     "tests/fixtures/text/806-text-anchor-chunk-ref.svg"
 );
+
+test_svg_reference!(
+    span_bounds_when_offset_by_dx,
+    "tests/fixtures/text/span-bounds-when-offset-by-dx.svg",
+    "tests/fixtures/text/span-bounds-when-offset-by-dx-ref.svg"
+);
