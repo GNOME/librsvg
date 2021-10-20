@@ -70,7 +70,7 @@ struct Span {
 struct MeasuredSpan {
     values: Rc<ComputedValues>,
     layout: pango::Layout,
-    _layout_size: (f64, f64),
+    layout_size: (f64, f64),
     advance: (f64, f64),
     dx: f64,
     dy: f64,
@@ -78,6 +78,7 @@ struct MeasuredSpan {
 
 struct PositionedSpan {
     layout: pango::Layout,
+    layout_size: (f64, f64),
     values: Rc<ComputedValues>,
     rendered_position: (f64, f64),
     next_span_position: (f64, f64),
@@ -159,6 +160,7 @@ impl PositionedChunk {
             let params = NormalizeParams::new(&mspan.values, view_params);
 
             let layout = mspan.layout.clone();
+            let layout_size = mspan.layout_size;
             let values = mspan.values.clone();
             let dx = mspan.dx;
             let dy = mspan.dy;
@@ -187,10 +189,14 @@ impl PositionedChunk {
 
             let positioned_span = PositionedSpan {
                 layout,
+                layout_size,
                 values,
                 rendered_position,
                 next_span_position: (x, y),
             };
+
+            dbg!(positioned_span.rendered_position);
+            dbg!(positioned_span.next_span_position);
 
             positioned.push(positioned_span);
 
@@ -317,7 +323,7 @@ impl MeasuredSpan {
         MeasuredSpan {
             values,
             layout,
-            _layout_size: (w, h),
+            layout_size: (w, h),
             advance,
             dx: span.dx,
             dy: span.dy,
