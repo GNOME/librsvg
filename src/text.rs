@@ -78,7 +78,6 @@ struct MeasuredSpan {
 
 struct PositionedSpan {
     layout: pango::Layout,
-    layout_size: (f64, f64),
     values: Rc<ComputedValues>,
     rendered_position: (f64, f64),
     next_span_position: (f64, f64),
@@ -202,7 +201,6 @@ impl PositionedChunk {
 
             let positioned_span = PositionedSpan {
                 layout,
-                layout_size,
                 values,
                 rendered_position,
                 next_span_position: (x, y),
