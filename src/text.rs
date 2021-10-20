@@ -157,11 +157,7 @@ impl PositionedChunk {
         let mut x = 0.0;
         let mut y = 0.0;
 
-        // Minimum and maximum extents of the spans, to be used for text-anchor later.
-        let mut min_x = f64::INFINITY;
-        let mut max_x = f64::NEG_INFINITY;
-        let mut min_y = f64::INFINITY;
-        let mut max_y = f64::NEG_INFINITY;
+        let mut chunk_bounds: Option<Rect> = None;
 
         for mspan in &measured.spans {
             let params = NormalizeParams::new(&mspan.values, view_params);
@@ -191,10 +187,14 @@ impl PositionedChunk {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
             };
 
-            min_x = min_x.min(rendered_position.0);
-            min_y = min_y.min(rendered_position.1);
-            max_x = max_x.max(rendered_position.0 + layout_size.0);
-            max_y = max_y.max(rendered_position.1 + layout_size.1);
+            let span_bounds =
+                Rect::from_size(layout_size.0, layout_size.1).translate(rendered_position);
+
+            if let Some(bounds) = chunk_bounds {
+                chunk_bounds = Some(bounds.union(&span_bounds));
+            } else {
+                chunk_bounds = Some(span_bounds);
+            }
 
             x = x + span_advance.0 + dx;
             y = y + span_advance.1 + dy;
@@ -212,7 +212,11 @@ impl PositionedChunk {
 
         // Compute the offsets needed to align the chunk per the text-anchor property (start, middle, end):
 
-        let chunk_size = (max_x - min_x, max_y - min_y);
+        let chunk_size = if let Some(bounds) = chunk_bounds {
+            (bounds.width(), bounds.height())
+        } else {
+            (0.0, 0.0)
+        };
 
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
