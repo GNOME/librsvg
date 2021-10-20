@@ -153,8 +153,16 @@ impl PositionedChunk {
 
         let mut positioned = Vec::new();
 
+        // Start position of each span; gets advanced as each span is laid out.
+        // This is the text's start position, not the bounding box.
         let mut x = 0.0;
         let mut y = 0.0;
+
+        // Minimum and maximum extents of the spans, to be used for text-anchor later.
+        let mut min_x = f64::INFINITY;
+        let mut max_x = f64::NEG_INFINITY;
+        let mut min_y = f64::INFINITY;
+        let mut max_y = f64::NEG_INFINITY;
 
         for mspan in &measured.spans {
             let params = NormalizeParams::new(&mspan.values, view_params);
@@ -184,6 +192,11 @@ impl PositionedChunk {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
             };
 
+            min_x = min_x.min(rendered_position.0);
+            min_y = min_y.min(rendered_position.1);
+            max_x = max_x.max(rendered_position.0 + layout_size.0);
+            max_y = max_y.max(rendered_position.1 + layout_size.1);
+
             x = x + span_advance.0 + dx;
             y = y + span_advance.1 + dy;
 
@@ -195,25 +208,19 @@ impl PositionedChunk {
                 next_span_position: (x, y),
             };
 
-            dbg!(positioned_span.rendered_position);
-            dbg!(positioned_span.next_span_position);
-
             positioned.push(positioned_span);
 
         }
 
-        // measured.advance is the size of the chunk.  Compute the offsets needed to align
-        // it per the text-anchor property (start, middle, end):
+        // Compute the offsets needed to align the chunk per the text-anchor property (start, middle, end):
 
-        let chunk_advance = measured.spans.iter().fold((0.0, 0.0), |acc, measured| {
-            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
-        });
+        let chunk_size = (max_x - min_x, max_y - min_y);
 
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             chunk_direction,
             text_writing_mode,
-            chunk_advance,
+            chunk_size,
         );
 
         // Apply the text-anchor offset to each individually-positioned span, and compute the
@@ -452,6 +459,9 @@ fn children_to_chunks(
     depth: usize,
     link: Option<String>,
 ) {
+    let mut dx = dx;
+    let mut dy = dy;
+
     for child in node.children() {
         if child.is_chars() {
             let values = cascaded.get();
@@ -503,6 +513,10 @@ fn children_to_chunks(
                 _ => (),
             }
         }
+
+        // After the first span, we don't need to carry over the parent's dx/dy.
+        dx = 0.0;
+        dy = 0.0;
     }
 }
 
@@ -576,20 +590,16 @@ impl Chars {
         dx: f64,
         dy: f64,
         depth: usize,
-    ) -> Option<Span> {
+    ) -> Span {
         self.ensure_normalized_string(node, &*values);
 
-        if self.space_normalized.borrow().as_ref().unwrap() == "" {
-            None
-        } else {
-            Some(Span::new(
-                self.space_normalized.borrow().as_ref().unwrap(),
-                values,
-                dx,
-                dy,
-                depth,
-            ))
-        }
+        Span::new(
+            self.space_normalized.borrow().as_ref().unwrap(),
+            values,
+            dx,
+            dy,
+            depth,
+        )
     }
 
     fn to_chunks(
@@ -601,12 +611,11 @@ impl Chars {
         dy: f64,
         depth: usize,
     ) {
-        if let Some(span) = self.make_span(node, values, dx, dy, depth) {
-            let num_chunks = chunks.len();
-            assert!(num_chunks > 0);
+        let span = self.make_span(node, values, dx, dy, depth);
+        let num_chunks = chunks.len();
+        assert!(num_chunks > 0);
 
-            chunks[num_chunks - 1].spans.push(span);
-        }
+        chunks[num_chunks - 1].spans.push(span);
     }
 
     pub fn get_string(&self) -> String {
