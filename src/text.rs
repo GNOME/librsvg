@@ -48,6 +48,8 @@ struct MeasuredChunk {
     values: Rc<ComputedValues>,
     x: Option<f64>,
     y: Option<f64>,
+    dx: f64,
+    dy: f64,
     spans: Vec<MeasuredSpan>,
     link: Option<String>,
 }
@@ -122,16 +124,32 @@ impl MeasuredChunk {
         text_writing_mode: WritingMode,
         draw_ctx: &DrawingCtx,
     ) -> MeasuredChunk {
-        let measured_spans: Vec<MeasuredSpan> = chunk
+        let mut measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
             .map(|span| MeasuredSpan::from_span(span, text_writing_mode, draw_ctx))
             .collect();
 
+        // The first span contains the (dx, dy) that will be applied to the whole chunk.
+        // Make them 0 in the span, and extract the values to set them on the chunk.
+        // This is a hack until librsvg adds support for multiple dx/dy values per text/tspan.
+
+        let (chunk_dx, chunk_dy) = if let Some(first) = measured_spans.first_mut() {
+            let dx = first.dx;
+            let dy = first.dy;
+            first.dx = 0.0;
+            first.dy = 0.0;
+            (dx, dy)
+        } else {
+            (0.0, 0.0)
+        };
+
         MeasuredChunk {
             values: chunk.values.clone(),
             x: chunk.x,
             y: chunk.y,
+            dx: chunk_dx,
+            dy: chunk_dy,
             spans: measured_spans,
             link: chunk.link.clone(),
         }
@@ -219,17 +237,20 @@ impl PositionedChunk {
         );
 
         // Apply the text-anchor offset to each individually-positioned span, and compute the
-        // start position of the next chunk.
+        // start position of the next chunk.  Also add in the chunk's dx/dy.
 
         let mut next_chunk_x = chunk_x;
         let mut next_chunk_y = chunk_y;
 
         for pspan in &mut positioned {
-            pspan.rendered_position.0 += chunk_x + anchor_offset.0;
-            pspan.rendered_position.1 += chunk_y + anchor_offset.1;
+            // Add the chunk's position, plus the text-anchor offset, plus the chunk's dx/dy.
+            // This last term is a hack until librsvg adds support for multiple dx/dy values per text/tspan;
+            // see the corresponding part in MeasuredChunk::from_chunk().
+            pspan.rendered_position.0 += chunk_x + anchor_offset.0 + measured.dx;
+            pspan.rendered_position.1 += chunk_y + anchor_offset.1 + measured.dy;
 
-            next_chunk_x = chunk_x + pspan.next_span_position.0 + anchor_offset.0;
-            next_chunk_y = chunk_y + pspan.next_span_position.1 + anchor_offset.1;
+            next_chunk_x = chunk_x + pspan.next_span_position.0 + anchor_offset.0 + measured.dx;
+            next_chunk_y = chunk_y + pspan.next_span_position.1 + anchor_offset.1 + measured.dy;
         }
 
         PositionedChunk {
@@ -1124,17 +1145,32 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Ltr, WritingMode::Lr, Rect::from_size(1.0, 2.0).translate((5.0, 6.0))),
+            text_anchor_offset(
+                Start,
+                Ltr,
+                WritingMode::Lr,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
             (-5.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(Middle, Ltr, WritingMode::Lr, Rect::from_size(1.0, 2.0).translate((5.0, 6.0))),
+            text_anchor_offset(
+                Middle,
+                Ltr,
+                WritingMode::Lr,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
             (-5.5, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(End, Ltr, WritingMode::Lr, Rect::from_size(1.0, 2.0).translate((5.0, 6.0))),
+            text_anchor_offset(
+                End,
+                Ltr,
+                WritingMode::Lr,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
             (-6.0, 0.0)
         );
     }
@@ -1145,11 +1181,21 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Rtl, WritingMode::Rl, Rect::from_size(1.0, 2.0).translate((5.0, 6.0))),
+            text_anchor_offset(
+                Start,
+                Rtl,
+                WritingMode::Rl,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
             (-6.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(Middle, Rtl, WritingMode::Rl, Rect::from_size(1.0, 2.0).translate((5.0, 6.0))),
+            text_anchor_offset(
+                Middle,
+                Rtl,
+                WritingMode::Rl,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
             (-5.5, 0.0)
         );
         assert_eq!(
