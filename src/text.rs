@@ -207,22 +207,15 @@ impl PositionedChunk {
             };
 
             positioned.push(positioned_span);
-
         }
 
         // Compute the offsets needed to align the chunk per the text-anchor property (start, middle, end):
-
-        let chunk_size = if let Some(bounds) = chunk_bounds {
-            (bounds.width(), bounds.height())
-        } else {
-            (0.0, 0.0)
-        };
 
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             chunk_direction,
             text_writing_mode,
-            chunk_size,
+            chunk_bounds.unwrap_or_default(),
         );
 
         // Apply the text-anchor offset to each individually-positioned span, and compute the
@@ -264,9 +257,9 @@ fn text_anchor_offset(
     anchor: TextAnchor,
     direction: Direction,
     text_writing_mode: WritingMode,
-    chunk_size: (f64, f64),
+    chunk_bounds: Rect,
 ) -> (f64, f64) {
-    let (w, h) = chunk_size;
+    let (w, h) = (chunk_bounds.width(), chunk_bounds.height());
 
     if text_writing_mode.is_horizontal() {
         match (anchor, direction) {
@@ -1129,17 +1122,17 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Ltr, WritingMode::Lr, (2.0, 4.0)),
+            text_anchor_offset(Start, Ltr, WritingMode::Lr, Rect::from_size(2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(Middle, Ltr, WritingMode::Lr, (2.0, 4.0)),
+            text_anchor_offset(Middle, Ltr, WritingMode::Lr, Rect::from_size(2.0, 4.0)),
             (-1.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(End, Ltr, WritingMode::Lr, (2.0, 4.0)),
+            text_anchor_offset(End, Ltr, WritingMode::Lr, Rect::from_size(2.0, 4.0)),
             (-2.0, 0.0)
         );
     }
@@ -1150,15 +1143,20 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Rtl, WritingMode::Rl, (2.0, 4.0)),
+            text_anchor_offset(Start, Rtl, WritingMode::Rl, Rect::from_size(2.0, 4.0)),
             (0.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(Middle, Rtl, WritingMode::Rl, (2.0, 4.0)),
+            text_anchor_offset(Middle, Rtl, WritingMode::Rl, Rect::from_size(2.0, 4.0)),
             (1.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Rtl, WritingMode::Rl, (2.0, 4.0)),
+            text_anchor_offset(
+                TextAnchor::End,
+                Direction::Rtl,
+                WritingMode::Rl,
+                Rect::from_size(2.0, 4.0)
+            ),
             (2.0, 0.0)
         );
     }
@@ -1173,17 +1171,17 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Ltr, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_offset(Start, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(Middle, Ltr, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_offset(Middle, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, -2.0)
         );
 
         assert_eq!(
-            text_anchor_offset(End, Ltr, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_offset(End, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, -4.0)
         );
     }
