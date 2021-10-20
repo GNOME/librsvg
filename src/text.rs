@@ -80,6 +80,7 @@ struct PositionedSpan {
     layout: pango::Layout,
     values: Rc<ComputedValues>,
     rendered_position: (f64, f64),
+    next_span_position: (f64, f64),
 }
 
 /// A laid-out and resolved text span.
@@ -142,30 +143,17 @@ impl PositionedChunk {
         measured: &MeasuredChunk,
         view_params: &ViewParams,
         text_writing_mode: WritingMode,
-        x: f64,
-        y: f64,
+        chunk_x: f64,
+        chunk_y: f64,
     ) -> PositionedChunk {
         let chunk_direction = measured.values.direction();
 
-        let advance = measured.spans.iter().fold((0.0, 0.0), |acc, measured| {
-            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
-        });
-
-        // measured.advance is the size of the chunk.  Compute the offsets needed to align
-        // it per the text-anchor property (start, middle, end):
-        let anchor_offset = text_anchor_offset(
-            measured.values.text_anchor(),
-            chunk_direction,
-            text_writing_mode,
-            advance,
-        );
-
-        let mut x = x + anchor_offset.0;
-        let mut y = y + anchor_offset.1;
-
-        // Position each span
+        // Position the spans relatively to each other, starting at (0, 0)
 
         let mut positioned = Vec::new();
+
+        let mut x = 0.0;
+        let mut y = 0.0;
 
         for mspan in &measured.spans {
             let params = NormalizeParams::new(&mspan.values, view_params);
@@ -194,21 +182,51 @@ impl PositionedChunk {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
             };
 
+            x = x + span_advance.0 + dx;
+            y = y + span_advance.1 + dy;
+
             let positioned_span = PositionedSpan {
                 layout,
                 values,
                 rendered_position,
+                next_span_position: (x, y),
             };
 
             positioned.push(positioned_span);
 
-            x = x + span_advance.0 + dx;
-            y = y + span_advance.1 + dy;
+        }
+
+        // measured.advance is the size of the chunk.  Compute the offsets needed to align
+        // it per the text-anchor property (start, middle, end):
+
+        let chunk_advance = measured.spans.iter().fold((0.0, 0.0), |acc, measured| {
+            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
+        });
+
+        let anchor_offset = text_anchor_offset(
+            measured.values.text_anchor(),
+            chunk_direction,
+            text_writing_mode,
+            chunk_advance,
+        );
+
+        // Apply the text-anchor offset to each individually-positioned span, and compute the
+        // start position of the next chunk.
+
+        let mut next_chunk_x = chunk_x;
+        let mut next_chunk_y = chunk_y;
+
+        for pspan in &mut positioned {
+            pspan.rendered_position.0 += chunk_x + anchor_offset.0;
+            pspan.rendered_position.1 += chunk_y + anchor_offset.1;
+
+            next_chunk_x = chunk_x + pspan.next_span_position.0 + anchor_offset.0;
+            next_chunk_y = chunk_y + pspan.next_span_position.1 + anchor_offset.1;
         }
 
         PositionedChunk {
-            next_chunk_x: x,
-            next_chunk_y: y,
+            next_chunk_x,
+            next_chunk_y,
             spans: positioned,
             link: measured.link.clone(),
         }
