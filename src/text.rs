@@ -41,7 +41,6 @@ struct Chunk {
     x: Option<f64>,
     y: Option<f64>,
     spans: Vec<Span>,
-    link: Option<String>,
 }
 
 struct MeasuredChunk {
@@ -51,14 +50,12 @@ struct MeasuredChunk {
     dx: f64,
     dy: f64,
     spans: Vec<MeasuredSpan>,
-    link: Option<String>,
 }
 
 struct PositionedChunk {
     next_chunk_x: f64,
     next_chunk_y: f64,
     spans: Vec<PositionedSpan>,
-    link: Option<String>,
 }
 
 struct Span {
@@ -67,6 +64,7 @@ struct Span {
     dx: f64,
     dy: f64,
     _depth: usize,
+    link_target: Option<String>,
 }
 
 struct MeasuredSpan {
@@ -76,6 +74,7 @@ struct MeasuredSpan {
     advance: (f64, f64),
     dx: f64,
     dy: f64,
+    link_target: Option<String>,
 }
 
 struct PositionedSpan {
@@ -83,6 +82,7 @@ struct PositionedSpan {
     values: Rc<ComputedValues>,
     rendered_position: (f64, f64),
     next_span_position: (f64, f64),
+    link_target: Option<String>,
 }
 
 /// A laid-out and resolved text span.
@@ -107,12 +107,11 @@ struct LayoutSpan {
 }
 
 impl Chunk {
-    fn new(values: &ComputedValues, x: Option<f64>, y: Option<f64>, link: Option<String>) -> Chunk {
+    fn new(values: &ComputedValues, x: Option<f64>, y: Option<f64>) -> Chunk {
         Chunk {
             values: Rc::new(values.clone()),
             x,
             y,
-            link,
             spans: Vec::new(),
         }
     }
@@ -151,7 +150,6 @@ impl MeasuredChunk {
             dx: chunk_dx,
             dy: chunk_dy,
             spans: measured_spans,
-            link: chunk.link.clone(),
         }
     }
 }
@@ -222,6 +220,7 @@ impl PositionedChunk {
                 values,
                 rendered_position,
                 next_span_position: (x, y),
+                link_target: mspan.link_target.clone(),
             };
 
             positioned.push(positioned_span);
@@ -257,7 +256,6 @@ impl PositionedChunk {
             next_chunk_x,
             next_chunk_y,
             spans: positioned,
-            link: measured.link.clone(),
         }
     }
 }
@@ -306,13 +304,21 @@ fn text_anchor_offset(
 }
 
 impl Span {
-    fn new(text: &str, values: Rc<ComputedValues>, dx: f64, dy: f64, depth: usize) -> Span {
+    fn new(
+        text: &str,
+        values: Rc<ComputedValues>,
+        dx: f64,
+        dy: f64,
+        depth: usize,
+        link_target: Option<String>,
+    ) -> Span {
         Span {
             values,
             text: text.to_string(),
             dx,
             dy,
             _depth: depth,
+            link_target,
         }
     }
 }
@@ -352,6 +358,7 @@ impl MeasuredSpan {
             advance,
             dx: span.dx,
             dy: span.dy,
+            link_target: span.link_target.clone(),
         }
     }
 }
@@ -412,7 +419,6 @@ impl PositionedSpan {
         acquired_nodes: &mut AcquiredNodes<'_>,
         draw_ctx: &mut DrawingCtx,
         view_params: &ViewParams,
-        link_target: Option<String>,
     ) -> LayoutSpan {
         let params = NormalizeParams::new(&self.values, view_params);
 
@@ -457,8 +463,8 @@ impl PositionedSpan {
             stroke_paint,
             fill_paint,
             text_rendering,
-            link_target,
             values: self.values.clone(),
+            link_target: self.link_target.clone(),
         }
     }
 }
@@ -483,9 +489,15 @@ fn children_to_chunks(
     for child in node.children() {
         if child.is_chars() {
             let values = cascaded.get();
-            child
-                .borrow_chars()
-                .to_chunks(&child, Rc::new(values.clone()), chunks, dx, dy, depth);
+            child.borrow_chars().to_chunks(
+                &child,
+                Rc::new(values.clone()),
+                chunks,
+                dx,
+                dy,
+                depth,
+                link.clone(),
+            );
         } else {
             assert!(child.is_element());
 
@@ -608,6 +620,7 @@ impl Chars {
         dx: f64,
         dy: f64,
         depth: usize,
+        link_target: Option<String>,
     ) -> Span {
         self.ensure_normalized_string(node, &*values);
 
@@ -617,6 +630,7 @@ impl Chars {
             dx,
             dy,
             depth,
+            link_target,
         )
     }
 
@@ -628,8 +642,9 @@ impl Chars {
         dx: f64,
         dy: f64,
         depth: usize,
+        link_target: Option<String>,
     ) {
-        let span = self.make_span(node, values, dx, dy, depth);
+        let span = self.make_span(node, values, dx, dy, depth, link_target);
         let num_chunks = chunks.len();
         assert!(num_chunks > 0);
 
@@ -665,7 +680,7 @@ impl Text {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(values, &view_params);
 
-        chunks.push(Chunk::new(values, Some(x), Some(y), None));
+        chunks.push(Chunk::new(values, Some(x), Some(y)));
 
         let dx = self.dx.to_user(&params);
         let dy = self.dy.to_user(&params);
@@ -761,7 +776,7 @@ impl Draw for Text {
                 let mut layout_spans = Vec::new();
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        layout_spans.push(span.layout(an, dc, &view_params, chunk.link.clone()));
+                        layout_spans.push(span.layout(an, dc, &view_params));
                     }
                 }
 
@@ -858,7 +873,7 @@ fn extract_chars_children_to_chunks_recursively(
         if child.is_chars() {
             child
                 .borrow_chars()
-                .to_chunks(&child, values, chunks, 0.0, 0.0, depth)
+                .to_chunks(&child, values, chunks, 0.0, 0.0, depth, None)
         } else {
             extract_chars_children_to_chunks_recursively(chunks, &child, values, depth + 1)
         }
@@ -917,7 +932,7 @@ impl TSpan {
         let span_dy = dy + self.dy.to_user(&params);
 
         if x.is_some() || y.is_some() {
-            chunks.push(Chunk::new(values, x, y, link.clone()));
+            chunks.push(Chunk::new(values, x, y));
         }
 
         children_to_chunks(
