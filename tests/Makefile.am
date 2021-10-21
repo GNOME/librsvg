@@ -14,6 +14,7 @@ test_sources =				\
 	src/reference.rs		\
 	src/reference_utils.rs		\
 	src/render_crash.rs		\
+	src/text.rs			\
 	src/utils.rs			\
 	src/cmdline/mod.rs		\
 	src/cmdline/rsvg_convert.rs	\

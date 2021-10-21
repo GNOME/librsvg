@@ -48,7 +48,8 @@ struct MeasuredChunk {
     values: Rc<ComputedValues>,
     x: Option<f64>,
     y: Option<f64>,
-    advance: (f64, f64),
+    dx: f64,
+    dy: f64,
     spans: Vec<MeasuredSpan>,
     link: Option<String>,
 }
@@ -71,7 +72,7 @@ struct Span {
 struct MeasuredSpan {
     values: Rc<ComputedValues>,
     layout: pango::Layout,
-    _layout_size: (f64, f64),
+    layout_size: (f64, f64),
     advance: (f64, f64),
     dx: f64,
     dy: f64,
@@ -81,6 +82,7 @@ struct PositionedSpan {
     layout: pango::Layout,
     values: Rc<ComputedValues>,
     rendered_position: (f64, f64),
+    next_span_position: (f64, f64),
 }
 
 /// A laid-out and resolved text span.
@@ -122,21 +124,32 @@ impl MeasuredChunk {
         text_writing_mode: WritingMode,
         draw_ctx: &DrawingCtx,
     ) -> MeasuredChunk {
-        let measured_spans: Vec<MeasuredSpan> = chunk
+        let mut measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
             .map(|span| MeasuredSpan::from_span(span, text_writing_mode, draw_ctx))
             .collect();
 
-        let advance = measured_spans.iter().fold((0.0, 0.0), |acc, measured| {
-            (acc.0 + measured.advance.0, acc.1 + measured.advance.1)
-        });
+        // The first span contains the (dx, dy) that will be applied to the whole chunk.
+        // Make them 0 in the span, and extract the values to set them on the chunk.
+        // This is a hack until librsvg adds support for multiple dx/dy values per text/tspan.
+
+        let (chunk_dx, chunk_dy) = if let Some(first) = measured_spans.first_mut() {
+            let dx = first.dx;
+            let dy = first.dy;
+            first.dx = 0.0;
+            first.dy = 0.0;
+            (dx, dy)
+        } else {
+            (0.0, 0.0)
+        };
 
         MeasuredChunk {
             values: chunk.values.clone(),
             x: chunk.x,
             y: chunk.y,
-            advance,
+            dx: chunk_dx,
+            dy: chunk_dy,
             spans: measured_spans,
             link: chunk.link.clone(),
         }
@@ -148,46 +161,42 @@ impl PositionedChunk {
         measured: &MeasuredChunk,
         view_params: &ViewParams,
         text_writing_mode: WritingMode,
-        x: f64,
-        y: f64,
+        chunk_x: f64,
+        chunk_y: f64,
     ) -> PositionedChunk {
+        let chunk_direction = measured.values.direction();
+
+        // Position the spans relatively to each other, starting at (0, 0)
+
         let mut positioned = Vec::new();
 
-        // measured.advance is the size of the chunk.  Compute the offsets needed to align
-        // it per the text-anchor property (start, middle, end):
-        let anchor_offset = text_anchor_offset(
-            measured.values.text_anchor(),
-            measured.values.direction(),
-            text_writing_mode,
-            measured.advance,
-        );
+        // Start position of each span; gets advanced as each span is laid out.
+        // This is the text's start position, not the bounding box.
+        let mut x = 0.0;
+        let mut y = 0.0;
 
-        let mut x = x + anchor_offset.0;
-        let mut y = y + anchor_offset.1;
-
-        // Position each span
+        let mut chunk_bounds: Option<Rect> = None;
 
         for mspan in &measured.spans {
             let params = NormalizeParams::new(&mspan.values, view_params);
 
             let layout = mspan.layout.clone();
+            let layout_size = mspan.layout_size;
             let values = mspan.values.clone();
-
-            let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
-            let baseline_shift = values.baseline_shift().0.to_user(&params);
-            let baseline_offset = baseline + baseline_shift;
-
             let dx = mspan.dx;
             let dy = mspan.dy;
+            let advance = mspan.advance;
 
-            let start_pos = match measured.values.direction() {
+            let baseline_offset = compute_baseline_offset(&layout, &values, &params);
+
+            let start_pos = match chunk_direction {
                 Direction::Ltr => (x, y),
-                Direction::Rtl => (x - mspan.advance.0, y),
+                Direction::Rtl => (x - advance.0, y),
             };
 
-            let span_advance = match measured.values.direction() {
-                Direction::Ltr => (mspan.advance.0, mspan.advance.1),
-                Direction::Rtl => (-mspan.advance.0, mspan.advance.1),
+            let span_advance = match chunk_direction {
+                Direction::Ltr => (advance.0, advance.1),
+                Direction::Rtl => (-advance.0, advance.1),
             };
 
             let rendered_position = if text_writing_mode.is_horizontal() {
@@ -196,25 +205,71 @@ impl PositionedChunk {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
             };
 
+            let span_bounds =
+                Rect::from_size(layout_size.0, layout_size.1).translate(rendered_position);
+
+            if let Some(bounds) = chunk_bounds {
+                chunk_bounds = Some(bounds.union(&span_bounds));
+            } else {
+                chunk_bounds = Some(span_bounds);
+            }
+
+            x = x + span_advance.0 + dx;
+            y = y + span_advance.1 + dy;
+
             let positioned_span = PositionedSpan {
                 layout,
                 values,
                 rendered_position,
+                next_span_position: (x, y),
             };
 
             positioned.push(positioned_span);
+        }
 
-            x = x + span_advance.0 + dx;
-            y = y + span_advance.1 + dy;
+        // Compute the offsets needed to align the chunk per the text-anchor property (start, middle, end):
+
+        let anchor_offset = text_anchor_offset(
+            measured.values.text_anchor(),
+            chunk_direction,
+            text_writing_mode,
+            chunk_bounds.unwrap_or_default(),
+        );
+
+        // Apply the text-anchor offset to each individually-positioned span, and compute the
+        // start position of the next chunk.  Also add in the chunk's dx/dy.
+
+        let mut next_chunk_x = chunk_x;
+        let mut next_chunk_y = chunk_y;
+
+        for pspan in &mut positioned {
+            // Add the chunk's position, plus the text-anchor offset, plus the chunk's dx/dy.
+            // This last term is a hack until librsvg adds support for multiple dx/dy values per text/tspan;
+            // see the corresponding part in MeasuredChunk::from_chunk().
+            pspan.rendered_position.0 += chunk_x + anchor_offset.0 + measured.dx;
+            pspan.rendered_position.1 += chunk_y + anchor_offset.1 + measured.dy;
+
+            next_chunk_x = chunk_x + pspan.next_span_position.0 + anchor_offset.0 + measured.dx;
+            next_chunk_y = chunk_y + pspan.next_span_position.1 + anchor_offset.1 + measured.dy;
         }
 
         PositionedChunk {
-            next_chunk_x: x,
-            next_chunk_y: y,
+            next_chunk_x,
+            next_chunk_y,
             spans: positioned,
             link: measured.link.clone(),
         }
     }
+}
+
+fn compute_baseline_offset(
+    layout: &pango::Layout,
+    values: &ComputedValues,
+    params: &NormalizeParams,
+) -> f64 {
+    let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
+    let baseline_shift = values.baseline_shift().0.to_user(params);
+    baseline + baseline_shift
 }
 
 /// Computes the (x, y) offsets to be applied to spans after applying the text-anchor property (start, middle, end).
@@ -223,20 +278,22 @@ fn text_anchor_offset(
     anchor: TextAnchor,
     direction: Direction,
     text_writing_mode: WritingMode,
-    chunk_size: (f64, f64),
+    chunk_bounds: Rect,
 ) -> (f64, f64) {
-    let (w, h) = chunk_size;
+    let (w, h) = (chunk_bounds.width(), chunk_bounds.height());
+
+    let x0 = chunk_bounds.x0;
 
     if text_writing_mode.is_horizontal() {
         match (anchor, direction) {
-            (TextAnchor::Start,  Direction::Ltr) => (0.0, 0.0),
-            (TextAnchor::Start,  Direction::Rtl) => (0.0, 0.0),
+            (TextAnchor::Start,  Direction::Ltr) => (-x0, 0.0),
+            (TextAnchor::Start,  Direction::Rtl) => (-x0 - w, 0.0),
 
-            (TextAnchor::Middle, Direction::Ltr) => (-w / 2.0, 0.0),
-            (TextAnchor::Middle, Direction::Rtl) => (w / 2.0, 0.0),
+            (TextAnchor::Middle, Direction::Ltr) => (-x0 - w / 2.0, 0.0),
+            (TextAnchor::Middle, Direction::Rtl) => (-x0 - w / 2.0, 0.0),
 
-            (TextAnchor::End,    Direction::Ltr) => (-w, 0.0),
-            (TextAnchor::End,    Direction::Rtl) => (w, 0.0),
+            (TextAnchor::End,    Direction::Ltr) => (-x0 - w, 0.0),
+            (TextAnchor::End,    Direction::Rtl) => (-x0, 0.0),
         }
     } else {
         // FIXME: we don't deal with text direction for vertical text yet.
@@ -291,7 +348,7 @@ impl MeasuredSpan {
         MeasuredSpan {
             values,
             layout,
-            _layout_size: (w, h),
+            layout_size: (w, h),
             advance,
             dx: span.dx,
             dy: span.dy,
@@ -420,6 +477,9 @@ fn children_to_chunks(
     depth: usize,
     link: Option<String>,
 ) {
+    let mut dx = dx;
+    let mut dy = dy;
+
     for child in node.children() {
         if child.is_chars() {
             let values = cascaded.get();
@@ -471,6 +531,10 @@ fn children_to_chunks(
                 _ => (),
             }
         }
+
+        // After the first span, we don't need to carry over the parent's dx/dy.
+        dx = 0.0;
+        dy = 0.0;
     }
 }
 
@@ -544,20 +608,16 @@ impl Chars {
         dx: f64,
         dy: f64,
         depth: usize,
-    ) -> Option<Span> {
+    ) -> Span {
         self.ensure_normalized_string(node, &*values);
 
-        if self.space_normalized.borrow().as_ref().unwrap() == "" {
-            None
-        } else {
-            Some(Span::new(
-                self.space_normalized.borrow().as_ref().unwrap(),
-                values,
-                dx,
-                dy,
-                depth,
-            ))
-        }
+        Span::new(
+            self.space_normalized.borrow().as_ref().unwrap(),
+            values,
+            dx,
+            dy,
+            depth,
+        )
     }
 
     fn to_chunks(
@@ -569,12 +629,11 @@ impl Chars {
         dy: f64,
         depth: usize,
     ) {
-        if let Some(span) = self.make_span(node, values, dx, dy, depth) {
-            let num_chunks = chunks.len();
-            assert!(num_chunks > 0);
+        let span = self.make_span(node, values, dx, dy, depth);
+        let num_chunks = chunks.len();
+        assert!(num_chunks > 0);
 
-            chunks[num_chunks - 1].spans.push(span);
-        }
+        chunks[num_chunks - 1].spans.push(span);
     }
 
     pub fn get_string(&self) -> String {
@@ -1086,18 +1145,33 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Ltr, WritingMode::Lr, (2.0, 4.0)),
-            (0.0, 0.0)
+            text_anchor_offset(
+                Start,
+                Ltr,
+                WritingMode::Lr,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
+            (-5.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(Middle, Ltr, WritingMode::Lr, (2.0, 4.0)),
-            (-1.0, 0.0)
+            text_anchor_offset(
+                Middle,
+                Ltr,
+                WritingMode::Lr,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
+            (-5.5, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(End, Ltr, WritingMode::Lr, (2.0, 4.0)),
-            (-2.0, 0.0)
+            text_anchor_offset(
+                End,
+                Ltr,
+                WritingMode::Lr,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
+            (-6.0, 0.0)
         );
     }
 
@@ -1107,16 +1181,31 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Rtl, WritingMode::Rl, (2.0, 4.0)),
-            (0.0, 0.0)
+            text_anchor_offset(
+                Start,
+                Rtl,
+                WritingMode::Rl,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
+            (-6.0, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(Middle, Rtl, WritingMode::Rl, (2.0, 4.0)),
-            (1.0, 0.0)
+            text_anchor_offset(
+                Middle,
+                Rtl,
+                WritingMode::Rl,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
+            (-5.5, 0.0)
         );
         assert_eq!(
-            text_anchor_offset(TextAnchor::End, Direction::Rtl, WritingMode::Rl, (2.0, 4.0)),
-            (2.0, 0.0)
+            text_anchor_offset(
+                TextAnchor::End,
+                Direction::Rtl,
+                WritingMode::Rl,
+                Rect::from_size(1.0, 2.0).translate((5.0, 6.0))
+            ),
+            (-5.0, 0.0)
         );
     }
 
@@ -1130,17 +1219,17 @@ mod tests {
         use TextAnchor::*;
 
         assert_eq!(
-            text_anchor_offset(Start, Ltr, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_offset(Start, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, 0.0)
         );
 
         assert_eq!(
-            text_anchor_offset(Middle, Ltr, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_offset(Middle, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, -2.0)
         );
 
         assert_eq!(
-            text_anchor_offset(End, Ltr, WritingMode::Tb, (2.0, 4.0)),
+            text_anchor_offset(End, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, -4.0)
         );
     }

@@ -191,6 +191,8 @@ macro_rules! test_compare_render_output {
     ($test_name:ident, $width:expr, $height:expr, $test:expr, $reference:expr $(,)?) => {
         #[test]
         fn $test_name() {
+            crate::utils::setup_font_map();
+
             let sx: i32 = $width;
             let sy: i32 = $height;
             let svg = load_svg($test).unwrap();
@@ -217,6 +219,81 @@ macro_rules! test_compare_render_output {
                     y: 0.0,
                     width: sx as f64,
                     height: sy as f64,
+                },
+            )
+            .unwrap();
+
+            Reference::from_surface(reference_surf.into_image_surface().unwrap())
+                .compare(&output_surf)
+                .evaluate(&output_surf, stringify!($test_name));
+        }
+    };
+}
+
+/// Render two SVG files and compare them.
+///
+/// This is used to implement reference tests, or reftests.  Use it like this:
+///
+/// ```ignore
+/// test_svg_reference!(test_name, "tests/fixtures/blah/foo.svg", "tests/fixtures/blah/foo-ref.svg");
+/// ```
+///
+/// This will ensure that `foo.svg` and `foo-ref.svg` have exactly the same intrinsic dimensions,
+/// and that they produce the same rendered output.
+#[macro_export]
+macro_rules! test_svg_reference {
+    ($test_name:ident, $test_filename:expr, $reference_filename:expr) => {
+        #[test]
+        fn $test_name() {
+            use crate::utils::setup_font_map;
+            use librsvg::{CairoRenderer, Loader};
+
+            setup_font_map();
+
+            let svg = Loader::new()
+                .read_path($test_filename)
+                .expect("reading SVG test file");
+            let reference = Loader::new()
+                .read_path($reference_filename)
+                .expect("reading reference file");
+
+            let svg_renderer = CairoRenderer::new(&svg);
+            let ref_renderer = CairoRenderer::new(&reference);
+
+            let svg_dim = svg_renderer.intrinsic_dimensions();
+            let ref_dim = ref_renderer.intrinsic_dimensions();
+
+            assert_eq!(
+                svg_dim, ref_dim,
+                "sizes of SVG document and reference file are different"
+            );
+
+            let pixels = svg_renderer
+                .intrinsic_size_in_pixels()
+                .unwrap_or((100.0, 100.0));
+
+            let output_surf = render_document(
+                &svg,
+                SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
+                |_| (),
+                cairo::Rectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: pixels.0,
+                    height: pixels.1,
+                },
+            )
+            .unwrap();
+
+            let reference_surf = render_document(
+                &reference,
+                SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
+                |_| (),
+                cairo::Rectangle {
+                    x: 0.0,
+                    y: 0.0,
+                    width: pixels.0,
+                    height: pixels.1,
                 },
             )
             .unwrap();

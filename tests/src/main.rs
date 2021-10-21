@@ -45,6 +45,9 @@ mod reference_utils;
 mod render_crash;
 
 #[cfg(test)]
+mod text;
+
+#[cfg(test)]
 mod utils;
 
 fn main() {

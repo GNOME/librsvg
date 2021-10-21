@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300">
+  <rect x="0" y="0" width="100%" height="100%" fill="white"/>
+  <line x1="50%" y1="0" x2="50%" y2="100%" stroke-width="2" stroke="blue"/>
+  <line x1="0" y1="100" x2="100%" y2="100" stroke-width="2" stroke="blue"/>
+
+  <!-- If the dx on the second span is larger than the width of the first span... -->
+  <text x="50%" y="100" font-family="Ahem" font-size="20" text-anchor="end"><tspan dy="-1em">A</tspan><tspan dx="-40" dy="1em">BC</tspan></text>
+</svg>
