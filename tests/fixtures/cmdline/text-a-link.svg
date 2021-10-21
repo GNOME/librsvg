@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <text x="100" y="100">
+    <a href="https://example.com">
+      This is a link to example.com
+    </a>
+
+    <tspan x="100" dy="2em">
+      <a href="https://another.example.com">
+        This is a link to another.example.com
+      </a>
+    </tspan>
+  </text>
+</svg>
