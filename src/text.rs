@@ -268,7 +268,7 @@ fn compute_baseline_offset(
     params: &NormalizeParams,
 ) -> f64 {
     let baseline = f64::from(layout.baseline()) / f64::from(pango::SCALE);
-    let baseline_shift = values.baseline_shift().0.to_user(&params);
+    let baseline_shift = values.baseline_shift().0.to_user(params);
     baseline + baseline_shift
 }
 
