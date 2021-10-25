@@ -1186,7 +1186,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     let layout = pango::Layout::new(&pango_context);
 
     let attr_list = pango::AttrList::new();
-    add_pango_attributes(&attr_list, &pango_context, props);
+    add_pango_attributes(&attr_list, props);
 
     layout.set_attributes(Some(&attr_list));
     layout.set_text(text);
@@ -1196,12 +1196,8 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 }
 
 /// Adds Pango attributes, suitable for a span of text, to an `AttrList`.
-fn add_pango_attributes(
-    attr_list: &pango::AttrList,
-    context: &pango::Context,
-    props: &FontProperties,
-) {
-    let mut font_desc = context.font_description().unwrap();
+fn add_pango_attributes(attr_list: &pango::AttrList, props: &FontProperties) {
+    let mut font_desc = pango::FontDescription::new();
     font_desc.set_family(props.font_family.as_str());
     font_desc.set_style(pango::Style::from(props.font_style));
 
