@@ -88,10 +88,13 @@ languages with Latin text are reliable right now:
 
 * Add tests for the different combinations of `text-anchor` and `direction`; right now
   there are only a few tested combinations.
-  
+
+* Test and implement multiply-nested changes of direction.  I think
+  only a single level works right now.
+
 * Even if white-space handling remains semi-broken, I think it's more important to have
   "mostly working" bidi than completely accurate white-space handling and layout.
-  
+
 Second, actually overhaul librsvg's text engine by implementing the SVG2 text layout algorithm:
 
 * Implement the `text-orientation` property, and implement fallbacks from the deprecated
@@ -100,7 +103,7 @@ Second, actually overhaul librsvg's text engine by implementing the SVG2 text la
 
 * Implement the SVG2 text layout algorithm and `white-space` handling at the same time.
   See the detailed roadmap below.
-  
+
 Third, implement all the properties that are not critical for the text layout algorithm,
 and things like `@font-face`.  Those can be done gradually, but I feel the text layout
 algorithm has to be done all in a single step.
@@ -205,9 +208,7 @@ to text."  We need better tests for the objectBoundingBox of the whole `<text>`;
 they are wrong for vertical text, and this shows up when filling its spans with gradients
 or patterns.  Clip/mask/filter do not work on individual spans yet.
 
-
-
-
+Multiply-nested changes of text direction / bidi overrides.
 
 ## Glossary so I don't have to check the Pango docs every time
 
