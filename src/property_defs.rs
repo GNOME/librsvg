@@ -1022,7 +1022,7 @@ make_property!(
     identifiers:
     "normal" => Normal,
     "embed" => Embed,
-    "bidi-override" => Override,
+    "bidi-override" => BidiOverride,
 );
 
 make_property!(

@@ -1063,7 +1063,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     pango_context.set_base_gravity(pango::Gravity::from(props.writing_mode));
 
     match (props.unicode_bidi, props.direction) {
-        (UnicodeBidi::Override, _) | (UnicodeBidi::Embed, _) => {
+        (UnicodeBidi::BidiOverride, _) | (UnicodeBidi::Embed, _) => {
             pango_context.set_base_dir(pango::Direction::from(props.direction));
         }
 
