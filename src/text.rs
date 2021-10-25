@@ -335,7 +335,14 @@ impl MeasuredSpan {
         let params = NormalizeParams::new(&values, &view_params);
 
         let properties = FontProperties::new(&values, text_writing_mode, &params);
-        let layout = create_pango_layout(draw_ctx, &properties, &span.text);
+
+        let bidi_control = BidiControl::from_unicode_bidi_and_direction(
+            properties.unicode_bidi,
+            properties.direction,
+        );
+
+        let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
+        let layout = create_pango_layout(draw_ctx, &properties, &with_control_chars);
         let (w, h) = layout.size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -1142,6 +1149,24 @@ impl BidiControl {
 
         BidiControl { start, end }
     }
+}
+
+/// Prepends and appends Unicode directional formatting characters.
+fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> String {
+    let mut res =
+        String::with_capacity(s.len() + bidi_control.start.len() + bidi_control.end.len());
+
+    for &ch in bidi_control.start {
+        res.push(ch);
+    }
+
+    res.push_str(s);
+
+    for &ch in bidi_control.end {
+        res.push(ch);
+    }
+
+    res
 }
 
 fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str) -> pango::Layout {
