@@ -1053,6 +1053,97 @@ impl From<WritingMode> for pango::Gravity {
     }
 }
 
+/// Constants with Unicode's directional formatting characters
+///
+/// https://unicode.org/reports/tr9/#Directional_Formatting_Characters
+mod directional_formatting_characters {
+    /// Left-to-Right Embedding
+    ///
+    /// Treat the following text as embedded left-to-right.
+    pub const LRE: char = '\u{202a}';
+
+    /// Right-to-Left Embedding
+    ///
+    /// Treat the following text as embedded right-to-left.
+    pub const RLE: char = '\u{202b}';
+
+    /// Left-to-Right Override
+    ///
+    /// Force following characters to be treated as strong left-to-right characters.
+    pub const LRO: char = '\u{202d}';
+
+    /// Right-to-Left Override
+    ///
+    /// Force following characters to be treated as strong right-to-left characters.
+    pub const RLO: char = '\u{202e}';
+
+    /// Pop Directional Formatting
+    ///
+    /// End the scope of the last LRE, RLE, RLO, or LRO.
+    pub const PDF: char = '\u{202c}';
+
+    /// Left-to-Right Isolate
+    ///
+    /// Treat the following text as isolated and left-to-right.
+    pub const LRI: char = '\u{2066}';
+
+    /// Right-to-Left Isolate
+    ///
+    /// Treat the following text as isolated and right-to-left.
+    pub const RLI: char = '\u{2067}';
+
+    /// First Strong Isolate
+    ///
+    /// Treat the following text as isolated and in the direction of its first strong
+    /// directional character that is not inside a nested isolate.
+    pub const FSI: char = '\u{2068}';
+
+    /// Pop Directional Isolate
+    ///
+    /// End the scope of the last LRI, RLI, or FSI.
+    pub const PDI: char = '\u{2069}';
+}
+
+/// Unicode control characters to be inserted when `unicode-bidi` is specified.
+///
+/// The `unicode-bidi` property is used to change the embedding of a text span within
+/// another.  This struct contains slices with the control characters that must be
+/// inserted into the text stream at the span's limits so that the bidi/shaping engine
+/// will know what to do.
+struct BidiControl {
+    start: &'static [char],
+    end: &'static [char],
+}
+
+impl BidiControl {
+    /// Creates a `BidiControl` from the properties that determine it.
+    ///
+    /// See the table titled "Bidi control codes injected..." in
+    /// https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi
+    #[rustfmt::skip]
+    fn from_unicode_bidi_and_direction(unicode_bidi: UnicodeBidi, direction: Direction) -> BidiControl {
+        use UnicodeBidi::*;
+        use Direction::*;
+        use directional_formatting_characters::*;
+
+        let (start, end) = match (unicode_bidi, direction) {
+            (Normal,          _)   => (&[][..],         &[][..]),
+            (Embed,           Ltr) => (&[LRE][..],      &[PDF][..]),
+            (Embed,           Rtl) => (&[RLE][..],      &[PDF][..]),
+            (Isolate,         Ltr) => (&[LRI][..],      &[PDI][..]),
+            (Isolate,         Rtl) => (&[RLI][..],      &[PDI][..]),
+            (BidiOverride,    Ltr) => (&[LRO][..],      &[PDF][..]),
+            (BidiOverride,    Rtl) => (&[RLO][..],      &[PDF][..]),
+            (IsolateOverride, Ltr) => (&[FSI, LRO][..], &[PDF, PDI][..]),
+            (IsolateOverride, Rtl) => (&[FSI, RLO][..], &[PDF, PDI][..]),
+            (Plaintext,       Ltr) => (&[FSI][..],      &[PDI][..]),
+            (Plaintext,       Rtl) => (&[FSI][..],      &[PDI][..]),
+        };
+
+        BidiControl { start, end }
+    }
+}
+
 fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str) -> pango::Layout {
     let pango_context = draw_ctx.create_pango_context();
 
