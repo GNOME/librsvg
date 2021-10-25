@@ -1198,8 +1198,22 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     // Maybe we need to implement layout of individual lines by hand.
 
     let attr_list = pango::AttrList::new();
+    add_pango_attributes(&attr_list, &pango_context, props);
 
-    let mut font_desc = pango_context.font_description().unwrap();
+    layout.set_attributes(Some(&attr_list));
+    layout.set_text(text);
+    layout.set_auto_dir(false);
+
+    layout
+}
+
+/// Adds Pango attributes, suitable for a span of text, to an `AttrList`.
+fn add_pango_attributes(
+    attr_list: &pango::AttrList,
+    context: &pango::Context,
+    props: &FontProperties,
+) {
+    let mut font_desc = context.font_description().unwrap();
     font_desc.set_family(props.font_family.as_str());
     font_desc.set_style(pango::Style::from(props.font_style));
 
@@ -1231,12 +1245,6 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
         // smcp - small capitals - https://docs.microsoft.com/en-ca/typography/opentype/spec/features_pt#smcp
         attr_list.insert(pango::Attribute::new_font_features("'smcp' 1"));
     }
-
-    layout.set_attributes(Some(&attr_list));
-    layout.set_text(text);
-    layout.set_auto_dir(false);
-
-    layout
 }
 
 #[cfg(test)]
