@@ -1184,7 +1184,6 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     }
 
     let layout = pango::Layout::new(&pango_context);
-    layout.set_auto_dir(false);
 
     // FIXME: For now we ignore the `line-height` property, even though we parse it.
     // We would need to do something like this:
@@ -1235,6 +1234,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 
     layout.set_attributes(Some(&attr_list));
     layout.set_text(text);
+    layout.set_auto_dir(false);
 
     layout
 }
