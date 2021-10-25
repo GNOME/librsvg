@@ -1022,7 +1022,10 @@ make_property!(
     identifiers:
     "normal" => Normal,
     "embed" => Embed,
+    "isolate" => Isolate,
     "bidi-override" => BidiOverride,
+    "isolate-override" => IsolateOverride,
+    "plaintext" => Plaintext,
 );
 
 make_property!(
