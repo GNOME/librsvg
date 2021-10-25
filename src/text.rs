@@ -1192,22 +1192,8 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
         }
     }
 
-    let mut font_desc = pango_context.font_description().unwrap();
-    font_desc.set_family(props.font_family.as_str());
-    font_desc.set_style(pango::Style::from(props.font_style));
-
-    // PANGO_VARIANT_SMALL_CAPS does nothing: https://gitlab.gnome.org/GNOME/pango/-/issues/566
-    // see below for using the "smcp" OpenType feature for fonts that support it.
-    // font_desc.set_variant(pango::Variant::from(props.font_variant));
-
-    font_desc.set_weight(pango::Weight::from(props.font_weight));
-    font_desc.set_stretch(pango::Stretch::from(props.font_stretch));
-
-    font_desc.set_size(to_pango_units(props.font_size));
-
     let layout = pango::Layout::new(&pango_context);
     layout.set_auto_dir(false);
-    layout.set_font_description(Some(&font_desc));
 
     // FIXME: For now we ignore the `line-height` property, even though we parse it.
     // We would need to do something like this:
@@ -1222,6 +1208,20 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     // Maybe we need to implement layout of individual lines by hand.
 
     let attr_list = pango::AttrList::new();
+
+    let mut font_desc = pango_context.font_description().unwrap();
+    font_desc.set_family(props.font_family.as_str());
+    font_desc.set_style(pango::Style::from(props.font_style));
+
+    // PANGO_VARIANT_SMALL_CAPS does nothing: https://gitlab.gnome.org/GNOME/pango/-/issues/566
+    // see below for using the "smcp" OpenType feature for fonts that support it.
+    // font_desc.set_variant(pango::Variant::from(props.font_variant));
+
+    font_desc.set_weight(pango::Weight::from(props.font_weight));
+    font_desc.set_stretch(pango::Stretch::from(props.font_stretch));
+
+    font_desc.set_size(to_pango_units(props.font_size));
+    attr_list.insert(pango::Attribute::new_font_desc(&font_desc));
 
     attr_list.insert(pango::Attribute::new_letter_spacing(to_pango_units(
         props.letter_spacing,
