@@ -1030,15 +1030,6 @@ impl From<Direction> for pango::Direction {
     }
 }
 
-impl From<Direction> for pango::Alignment {
-    fn from(d: Direction) -> pango::Alignment {
-        match d {
-            Direction::Ltr => pango::Alignment::Left,
-            Direction::Rtl => pango::Alignment::Right,
-        }
-    }
-}
-
 impl From<WritingMode> for pango::Direction {
     fn from(m: WritingMode) -> pango::Direction {
         use WritingMode::*;
@@ -1243,7 +1234,6 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     }
 
     layout.set_attributes(Some(&attr_list));
-    layout.set_alignment(pango::Alignment::from(props.direction));
     layout.set_text(text);
 
     layout
