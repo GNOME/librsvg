@@ -1,4 +1,25 @@
 ==============
+Version 2.52.3
+==============
+
+Bugfixes, mostly for text layout.  Also, text links in PDF!
+
+- #17 - Support text-decoration=overline.
+
+- #249 - Basic support for the unicode-bidi property.  Librsvg still
+  considers each tspan independently of others, which is incorrect, but
+  at least bidi-override works now for a single embedding level.
+
+- #804 - Fix placement of tspan that changes the text direction.
+
+- #805 - :lang() selector should now match lang attribute from an
+  element's parent. (Michael Howell)
+
+- #806 - Fix the text-anchor property for right-to-left text.
+
+- #807 - PDF now includes links inside text elements. (Michael Howell)
+
+==============
 Version 2.52.2
 ==============
 
