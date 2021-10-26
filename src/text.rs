@@ -424,7 +424,7 @@ impl PositionedSpan {
     fn layout(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &DrawingCtx,
         view_params: &ViewParams,
     ) -> LayoutSpan {
         let params = NormalizeParams::new(&self.values, view_params);
@@ -484,7 +484,7 @@ fn children_to_chunks(
     node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &DrawingCtx,
     dx: f64,
     dy: f64,
     depth: usize,
@@ -683,7 +683,7 @@ impl Text {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &DrawingCtx,
         x: f64,
         y: f64,
     ) -> Vec<Chunk> {
@@ -923,7 +923,7 @@ impl TSpan {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &DrawingCtx,
         chunks: &mut Vec<Chunk>,
         dx: f64,
         dy: f64,
