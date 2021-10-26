@@ -182,6 +182,32 @@ Although currently Pango deals with underlining, it may be necessary to do that 
 instead - I am not sure yet how `textPath` or individually-positioned `x/y/dx/dy/rotate`
 interact with underlining.
 
+### Pango internals
+
+```
+/**
+ * pango_renderer_draw_glyph_item:
+ * @renderer: a `PangoRenderer`
+ * @text: (nullable): the UTF-8 text that @glyph_item refers to
+ * @glyph_item: a `PangoGlyphItem`
+ * @x: X position of left edge of baseline, in user space coordinates
+ *   in Pango units
+ * @y: Y position of left edge of baseline, in user space coordinates
+ *   in Pango units
+ *
+ * Draws the glyphs in @glyph_item with the specified `PangoRenderer`,
+ * embedding the text associated with the glyphs in the output if the
+ * output format supports it.
+ *
+ * This is useful for rendering text in PDF.
+ * ...
+ */
+```
+
+Note that embedding text in PDF to make it selectable involves passing
+a non-null `text` to pango_renderer_draw_glyph_item().  We'll have to
+implement this by hand, probably.
+
 ### Wrapped text in a content area
 
 This roadmap does not consider the implementation fo wrapped text yet.
