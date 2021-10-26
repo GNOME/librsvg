@@ -525,8 +525,14 @@ fn children_to_chunks(
                 }
 
                 Element::Link(ref link) => {
-                    // TSpan::default tes all offsets to 0,
+                    // TSpan::default sets all offsets to 0,
                     // which is what we want in links.
+                    //
+                    // FIXME: This is the only place in the code where an element's method (TSpan::to_chunks)
+                    // is called with a node that is not the element itself: here, `child` is a Link, not a TSpan.
+                    //
+                    // The code works because the `tspan` is dropped immediately after calling to_chunks and no
+                    // references are retained for it.
                     let tspan = TSpan::default();
                     let cascaded = CascadedValues::new(cascaded, &child);
                     tspan.to_chunks(
