@@ -501,6 +501,17 @@ make_property!(
 
 make_property!(
     // docs are in font_props.rs
+    //
+    // Although https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical specifies
+    // "n/a" for both the initial value (default) and inheritance, we'll use Auto here for the default,
+    // since it translates to TextOrientation::Mixed - which is text-orientation's initial value.
+    GlyphOrientationVertical,
+    default: GlyphOrientationVertical::Auto,
+    inherits_automatically: false,
+);
+
+make_property!(
+    // docs are in font_props.rs
     LetterSpacing,
     default: LetterSpacing::Normal,
     property_impl: {
