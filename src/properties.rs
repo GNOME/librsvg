@@ -438,8 +438,19 @@ make_properties! {
         "font-style"                  => (PresentationAttr::Yes, font_style                  : FontStyle),
         "font-variant"                => (PresentationAttr::Yes, font_variant                : FontVariant),
         "font-weight"                 => (PresentationAttr::Yes, font_weight                 : FontWeight),
+
         // "glyph-orientation-horizontal" - obsolete, removed from SVG2
-        // "glyph-orientation-vertical" - obsolete, now shorthand - https://svgwg.org/svg2-draft/text.html#GlyphOrientationVerticalProperty
+
+        // "glyph-orientation-vertical" - obsolete, now shorthand -
+        // https://svgwg.org/svg2-draft/text.html#GlyphOrientationVerticalProperty
+        // https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical
+        //
+        // Note that even though CSS Writing Modes 3 turned glyph-orientation-vertical
+        // into a shorthand, SVG1.1 still makes it available as a presentation attribute.
+        // So, we put the property here, not in the shorthands, and deal with it as a
+        // special case in the text handling code.
+        "glyph-orientation-vertical"  => (PresentationAttr::Yes, glyph_orientation_vertical  : GlyphOrientationVertical),
+
         // "image-rendering"          => (PresentationAttr::Yes, unimplemented),
         "letter-spacing"              => (PresentationAttr::Yes, letter_spacing              : LetterSpacing),
         "lighting-color"              => (PresentationAttr::Yes, lighting_color              : LightingColor),
@@ -487,6 +498,7 @@ make_properties! {
         "mask-type"                   => (PresentationAttr::Yes, mask_type                   : MaskType),
         "mix-blend-mode"              => (PresentationAttr::No,  mix_blend_mode              : MixBlendMode),
         "paint-order"                 => (PresentationAttr::Yes, paint_order                 : PaintOrder),
+        "text-orientation"            => (PresentationAttr::No,  text_orientation            : TextOrientation),
     }
 
     // These are not properties, but presentation attributes.  However,
@@ -700,6 +712,7 @@ impl SpecifiedValues {
         compute!(FontStyle, font_style);
         compute!(FontVariant, font_variant);
         compute!(FontWeight, font_weight);
+        compute!(GlyphOrientationVertical, glyph_orientation_vertical);
         compute!(LetterSpacing, letter_spacing);
         compute!(LightingColor, lighting_color);
         compute!(MarkerEnd, marker_end);
@@ -724,6 +737,7 @@ impl SpecifiedValues {
         compute!(StrokeWidth, stroke_width);
         compute!(TextAnchor, text_anchor);
         compute!(TextDecoration, text_decoration);
+        compute!(TextOrientation, text_orientation);
         compute!(TextRendering, text_rendering);
         compute!(TransformProperty, transform_property);
         compute!(UnicodeBidi, unicode_bidi);

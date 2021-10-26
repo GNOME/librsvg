@@ -532,6 +532,66 @@ impl FontFamily {
     }
 }
 
+/// `glyph-orientation-vertical` property.
+///
+/// Note that in SVG1.1 this could be `auto` or `<angle>`, but in SVG2/CSS3 it is
+/// deprecated, and turned into a shorthand for the `text-orientation` property.  Also,
+/// now it only takes values `auto`, `0deg`, `90deg`, `0`, `90`.  At parsing time, this
+/// gets translated to fixed enum values.
+///
+/// https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical
+///
+/// Obsolete: https://www.w3.org/TR/SVG11/text.html#GlyphOrientationVerticalProperty
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum GlyphOrientationVertical {
+    Auto,
+    Angle0,
+    Angle90,
+}
+
+impl Parse for GlyphOrientationVertical {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<GlyphOrientationVertical, ParseError<'i>> {
+        let loc = parser.current_source_location();
+
+        if parser
+            .try_parse(|p| p.expect_ident_matching("auto"))
+            .is_ok()
+        {
+            return Ok(GlyphOrientationVertical::Auto);
+        }
+
+        let token = parser.next()?.clone();
+
+        // Apart from "auto" (handled above),
+        // https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical
+        // only allows the values "0", "90", "0deg", "90deg".  So, we will look at
+        // individual tokens.  We'll reject non-integer numbers or non-integer dimensions.
+        match token {
+            Token::Number {
+                int_value: Some(0), ..
+            } => Ok(GlyphOrientationVertical::Angle0),
+
+            Token::Number {
+                int_value: Some(90),
+                ..
+            } => Ok(GlyphOrientationVertical::Angle90),
+
+            Token::Dimension {
+                int_value: Some(0),
+                unit,
+                ..
+            } if unit.eq_ignore_ascii_case("deg") => Ok(GlyphOrientationVertical::Angle0),
+
+            Token::Dimension {
+                int_value: Some(90),
+                unit,
+                ..
+            } if unit.eq_ignore_ascii_case("deg") => Ok(GlyphOrientationVertical::Angle90),
+            _ => Err(loc.new_unexpected_token_error(token.clone())),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -781,5 +841,40 @@ mod tests {
             LineHeight::parse_str("150%").unwrap().compute(&values),
             LineHeight::Length(Length::new(15.0, LengthUnit::Px)),
         );
+    }
+
+    #[test]
+    fn parses_glyph_orientation_vertical() {
+        assert_eq!(
+            <GlyphOrientationVertical as Parse>::parse_str("auto").unwrap(),
+            GlyphOrientationVertical::Auto
+        );
+        assert_eq!(
+            <GlyphOrientationVertical as Parse>::parse_str("0").unwrap(),
+            GlyphOrientationVertical::Angle0
+        );
+        assert_eq!(
+            <GlyphOrientationVertical as Parse>::parse_str("0deg").unwrap(),
+            GlyphOrientationVertical::Angle0
+        );
+        assert_eq!(
+            <GlyphOrientationVertical as Parse>::parse_str("90").unwrap(),
+            GlyphOrientationVertical::Angle90
+        );
+        assert_eq!(
+            <GlyphOrientationVertical as Parse>::parse_str("90deg").unwrap(),
+            GlyphOrientationVertical::Angle90
+        );
+    }
+
+    #[test]
+    fn detects_invalid_glyph_orientation_vertical() {
+        assert!(<GlyphOrientationVertical as Parse>::parse_str("").is_err());
+        assert!(<GlyphOrientationVertical as Parse>::parse_str("0.0").is_err());
+        assert!(<GlyphOrientationVertical as Parse>::parse_str("90.0").is_err());
+        assert!(<GlyphOrientationVertical as Parse>::parse_str("0.0deg").is_err());
+        assert!(<GlyphOrientationVertical as Parse>::parse_str("90.0deg").is_err());
+        assert!(<GlyphOrientationVertical as Parse>::parse_str("0rad").is_err());
+        assert!(<GlyphOrientationVertical as Parse>::parse_str("0.0rad").is_err());
     }
 }
