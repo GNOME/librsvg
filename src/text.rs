@@ -2,6 +2,7 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::cell::RefCell;
+use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
@@ -1226,8 +1227,9 @@ fn add_pango_attributes(
     start_index: usize,
     end_index: usize,
 ) {
-    let start_index: u32 = cast::u32(start_index).expect("Pango attribute index must fit in u32");
-    let end_index: u32 = cast::u32(end_index).expect("Pango attribute index must fit in u32");
+    let start_index = u32::try_from(start_index).expect("Pango attribute index must fit in u32");
+    let end_index = u32::try_from(end_index).expect("Pango attribute index must fit in u32");
+    assert!(start_index <= end_index);
 
     let mut attributes = Vec::new();
 
