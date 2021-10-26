@@ -23,6 +23,12 @@ use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use crate::transform::Transform;
 use crate::xml::Attributes;
 
+/// The state of a text layout operation.
+struct LayoutContext {
+    /// `writing-mode` property from the `<text>` element.
+    writing_mode: WritingMode,
+}
+
 /// An absolutely-positioned array of `Span`s
 ///
 /// SVG defines a "[text chunk]" to occur when a text-related element
@@ -119,14 +125,14 @@ impl Chunk {
 
 impl MeasuredChunk {
     fn from_chunk(
+        layout_context: &LayoutContext,
         chunk: &Chunk,
-        text_writing_mode: WritingMode,
         draw_ctx: &DrawingCtx,
     ) -> MeasuredChunk {
         let mut measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
-            .map(|span| MeasuredSpan::from_span(span, text_writing_mode, draw_ctx))
+            .map(|span| MeasuredSpan::from_span(layout_context, span, draw_ctx))
             .collect();
 
         // The first span contains the (dx, dy) that will be applied to the whole chunk.
@@ -156,9 +162,9 @@ impl MeasuredChunk {
 
 impl PositionedChunk {
     fn from_measured(
+        layout_context: &LayoutContext,
         measured: &MeasuredChunk,
         view_params: &ViewParams,
-        text_writing_mode: WritingMode,
         chunk_x: f64,
         chunk_y: f64,
     ) -> PositionedChunk {
@@ -197,7 +203,7 @@ impl PositionedChunk {
                 Direction::Rtl => (-advance.0, advance.1),
             };
 
-            let rendered_position = if text_writing_mode.is_horizontal() {
+            let rendered_position = if layout_context.writing_mode.is_horizontal() {
                 (start_pos.0 + dx, start_pos.1 - baseline_offset + dy)
             } else {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
@@ -231,7 +237,7 @@ impl PositionedChunk {
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             chunk_direction,
-            text_writing_mode,
+            layout_context.writing_mode,
             chunk_bounds.unwrap_or_default(),
         );
 
@@ -275,14 +281,14 @@ fn compute_baseline_offset(
 fn text_anchor_offset(
     anchor: TextAnchor,
     direction: Direction,
-    text_writing_mode: WritingMode,
+    writing_mode: WritingMode,
     chunk_bounds: Rect,
 ) -> (f64, f64) {
     let (w, h) = (chunk_bounds.width(), chunk_bounds.height());
 
     let x0 = chunk_bounds.x0;
 
-    if text_writing_mode.is_horizontal() {
+    if writing_mode.is_horizontal() {
         match (anchor, direction) {
             (TextAnchor::Start,  Direction::Ltr) => (-x0, 0.0),
             (TextAnchor::Start,  Direction::Rtl) => (-x0 - w, 0.0),
@@ -325,8 +331,8 @@ impl Span {
 
 impl MeasuredSpan {
     fn from_span(
+        layout_context: &LayoutContext,
         span: &Span,
-        text_writing_mode: WritingMode,
         draw_ctx: &DrawingCtx,
     ) -> MeasuredSpan {
         let values = span.values.clone();
@@ -344,7 +350,7 @@ impl MeasuredSpan {
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
         let layout = create_pango_layout(
             draw_ctx,
-            text_writing_mode,
+            layout_context.writing_mode,
             &properties,
             &with_control_chars,
         );
@@ -357,7 +363,7 @@ impl MeasuredSpan {
         assert!(w >= 0.0);
         assert!(h >= 0.0);
 
-        let advance = if text_writing_mode.is_horizontal() {
+        let advance = if layout_context.writing_mode.is_horizontal() {
             (w, 0.0)
         } else {
             (0.0, w)
@@ -751,8 +757,6 @@ impl Draw for Text {
 
         let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
 
-        let text_writing_mode = values.writing_mode();
-
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
@@ -760,6 +764,10 @@ impl Draw for Text {
             clipping,
             None,
             &mut |an, dc| {
+                let layout_context = LayoutContext {
+                    writing_mode: values.writing_mode(),
+                };
+
                 let mut x = self.x.to_user(&params);
                 let mut y = self.y.to_user(&params);
 
@@ -767,7 +775,7 @@ impl Draw for Text {
 
                 let mut measured_chunks = Vec::new();
                 for chunk in &chunks {
-                    measured_chunks.push(MeasuredChunk::from_chunk(chunk, text_writing_mode, dc));
+                    measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk, dc));
                 }
 
                 let mut positioned_chunks = Vec::new();
@@ -776,9 +784,9 @@ impl Draw for Text {
                     let chunk_y = chunk.y.unwrap_or(y);
 
                     let positioned = PositionedChunk::from_measured(
+                        &layout_context,
                         chunk,
                         &view_params,
-                        text_writing_mode,
                         chunk_x,
                         chunk_y,
                     );
