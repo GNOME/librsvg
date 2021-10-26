@@ -39,3 +39,9 @@ test_svg_reference!(
     "tests/fixtures/text/span-bounds-when-offset-by-dx.svg",
     "tests/fixtures/text/span-bounds-when-offset-by-dx-ref.svg"
 );
+
+test_svg_reference!(
+    unicode_bidi_override,
+    "tests/fixtures/text/unicode-bidi-override.svg",
+    "tests/fixtures/text/unicode-bidi-override-ref.svg"
+);

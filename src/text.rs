@@ -23,6 +23,12 @@ use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use crate::transform::Transform;
 use crate::xml::Attributes;
 
+/// The state of a text layout operation.
+struct LayoutContext {
+    /// `writing-mode` property from the `<text>` element.
+    writing_mode: WritingMode,
+}
+
 /// An absolutely-positioned array of `Span`s
 ///
 /// SVG defines a "[text chunk]" to occur when a text-related element
@@ -119,14 +125,14 @@ impl Chunk {
 
 impl MeasuredChunk {
     fn from_chunk(
+        layout_context: &LayoutContext,
         chunk: &Chunk,
-        text_writing_mode: WritingMode,
         draw_ctx: &DrawingCtx,
     ) -> MeasuredChunk {
         let mut measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
-            .map(|span| MeasuredSpan::from_span(span, text_writing_mode, draw_ctx))
+            .map(|span| MeasuredSpan::from_span(layout_context, span, draw_ctx))
             .collect();
 
         // The first span contains the (dx, dy) that will be applied to the whole chunk.
@@ -156,9 +162,9 @@ impl MeasuredChunk {
 
 impl PositionedChunk {
     fn from_measured(
+        layout_context: &LayoutContext,
         measured: &MeasuredChunk,
         view_params: &ViewParams,
-        text_writing_mode: WritingMode,
         chunk_x: f64,
         chunk_y: f64,
     ) -> PositionedChunk {
@@ -197,7 +203,7 @@ impl PositionedChunk {
                 Direction::Rtl => (-advance.0, advance.1),
             };
 
-            let rendered_position = if text_writing_mode.is_horizontal() {
+            let rendered_position = if layout_context.writing_mode.is_horizontal() {
                 (start_pos.0 + dx, start_pos.1 - baseline_offset + dy)
             } else {
                 (start_pos.0 + baseline_offset + dx, start_pos.1 + dy)
@@ -231,7 +237,7 @@ impl PositionedChunk {
         let anchor_offset = text_anchor_offset(
             measured.values.text_anchor(),
             chunk_direction,
-            text_writing_mode,
+            layout_context.writing_mode,
             chunk_bounds.unwrap_or_default(),
         );
 
@@ -275,14 +281,14 @@ fn compute_baseline_offset(
 fn text_anchor_offset(
     anchor: TextAnchor,
     direction: Direction,
-    text_writing_mode: WritingMode,
+    writing_mode: WritingMode,
     chunk_bounds: Rect,
 ) -> (f64, f64) {
     let (w, h) = (chunk_bounds.width(), chunk_bounds.height());
 
     let x0 = chunk_bounds.x0;
 
-    if text_writing_mode.is_horizontal() {
+    if writing_mode.is_horizontal() {
         match (anchor, direction) {
             (TextAnchor::Start,  Direction::Ltr) => (-x0, 0.0),
             (TextAnchor::Start,  Direction::Rtl) => (-x0 - w, 0.0),
@@ -325,8 +331,8 @@ impl Span {
 
 impl MeasuredSpan {
     fn from_span(
+        layout_context: &LayoutContext,
         span: &Span,
-        text_writing_mode: WritingMode,
         draw_ctx: &DrawingCtx,
     ) -> MeasuredSpan {
         let values = span.values.clone();
@@ -334,8 +340,20 @@ impl MeasuredSpan {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
-        let properties = FontProperties::new(&values, text_writing_mode, &params);
-        let layout = create_pango_layout(draw_ctx, &properties, &span.text);
+        let properties = FontProperties::new(&values, &params);
+
+        let bidi_control = BidiControl::from_unicode_bidi_and_direction(
+            properties.unicode_bidi,
+            properties.direction,
+        );
+
+        let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
+        let layout = create_pango_layout(
+            draw_ctx,
+            layout_context.writing_mode,
+            &properties,
+            &with_control_chars,
+        );
         let (w, h) = layout.size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -345,7 +363,7 @@ impl MeasuredSpan {
         assert!(w >= 0.0);
         assert!(h >= 0.0);
 
-        let advance = if text_writing_mode.is_horizontal() {
+        let advance = if layout_context.writing_mode.is_horizontal() {
             (w, 0.0)
         } else {
             (0.0, w)
@@ -417,7 +435,7 @@ impl PositionedSpan {
     fn layout(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &DrawingCtx,
         view_params: &ViewParams,
     ) -> LayoutSpan {
         let params = NormalizeParams::new(&self.values, view_params);
@@ -477,7 +495,7 @@ fn children_to_chunks(
     node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &mut DrawingCtx,
+    draw_ctx: &DrawingCtx,
     dx: f64,
     dy: f64,
     depth: usize,
@@ -518,8 +536,14 @@ fn children_to_chunks(
                 }
 
                 Element::Link(ref link) => {
-                    // TSpan::default tes all offsets to 0,
+                    // TSpan::default sets all offsets to 0,
                     // which is what we want in links.
+                    //
+                    // FIXME: This is the only place in the code where an element's method (TSpan::to_chunks)
+                    // is called with a node that is not the element itself: here, `child` is a Link, not a TSpan.
+                    //
+                    // The code works because the `tspan` is dropped immediately after calling to_chunks and no
+                    // references are retained for it.
                     let tspan = TSpan::default();
                     let cascaded = CascadedValues::new(cascaded, &child);
                     tspan.to_chunks(
@@ -670,7 +694,7 @@ impl Text {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &DrawingCtx,
         x: f64,
         y: f64,
     ) -> Vec<Chunk> {
@@ -733,8 +757,6 @@ impl Draw for Text {
 
         let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
 
-        let text_writing_mode = values.writing_mode();
-
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
@@ -742,6 +764,10 @@ impl Draw for Text {
             clipping,
             None,
             &mut |an, dc| {
+                let layout_context = LayoutContext {
+                    writing_mode: values.writing_mode(),
+                };
+
                 let mut x = self.x.to_user(&params);
                 let mut y = self.y.to_user(&params);
 
@@ -749,7 +775,7 @@ impl Draw for Text {
 
                 let mut measured_chunks = Vec::new();
                 for chunk in &chunks {
-                    measured_chunks.push(MeasuredChunk::from_chunk(chunk, text_writing_mode, dc));
+                    measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk, dc));
                 }
 
                 let mut positioned_chunks = Vec::new();
@@ -758,9 +784,9 @@ impl Draw for Text {
                     let chunk_y = chunk.y.unwrap_or(y);
 
                     let positioned = PositionedChunk::from_measured(
+                        &layout_context,
                         chunk,
                         &view_params,
-                        text_writing_mode,
                         chunk_x,
                         chunk_y,
                     );
@@ -910,7 +936,7 @@ impl TSpan {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
+        draw_ctx: &DrawingCtx,
         chunks: &mut Vec<Chunk>,
         dx: f64,
         dy: f64,
@@ -1023,15 +1049,6 @@ impl From<Direction> for pango::Direction {
     }
 }
 
-impl From<Direction> for pango::Alignment {
-    fn from(d: Direction) -> pango::Alignment {
-        match d {
-            Direction::Ltr => pango::Alignment::Left,
-            Direction::Rtl => pango::Alignment::Right,
-        }
-    }
-}
-
 impl From<WritingMode> for pango::Direction {
     fn from(m: WritingMode) -> pango::Direction {
         use WritingMode::*;
@@ -1053,17 +1070,131 @@ impl From<WritingMode> for pango::Gravity {
     }
 }
 
-fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str) -> pango::Layout {
+/// Constants with Unicode's directional formatting characters
+///
+/// https://unicode.org/reports/tr9/#Directional_Formatting_Characters
+mod directional_formatting_characters {
+    /// Left-to-Right Embedding
+    ///
+    /// Treat the following text as embedded left-to-right.
+    pub const LRE: char = '\u{202a}';
+
+    /// Right-to-Left Embedding
+    ///
+    /// Treat the following text as embedded right-to-left.
+    pub const RLE: char = '\u{202b}';
+
+    /// Left-to-Right Override
+    ///
+    /// Force following characters to be treated as strong left-to-right characters.
+    pub const LRO: char = '\u{202d}';
+
+    /// Right-to-Left Override
+    ///
+    /// Force following characters to be treated as strong right-to-left characters.
+    pub const RLO: char = '\u{202e}';
+
+    /// Pop Directional Formatting
+    ///
+    /// End the scope of the last LRE, RLE, RLO, or LRO.
+    pub const PDF: char = '\u{202c}';
+
+    /// Left-to-Right Isolate
+    ///
+    /// Treat the following text as isolated and left-to-right.
+    pub const LRI: char = '\u{2066}';
+
+    /// Right-to-Left Isolate
+    ///
+    /// Treat the following text as isolated and right-to-left.
+    pub const RLI: char = '\u{2067}';
+
+    /// First Strong Isolate
+    ///
+    /// Treat the following text as isolated and in the direction of its first strong
+    /// directional character that is not inside a nested isolate.
+    pub const FSI: char = '\u{2068}';
+
+    /// Pop Directional Isolate
+    ///
+    /// End the scope of the last LRI, RLI, or FSI.
+    pub const PDI: char = '\u{2069}';
+}
+
+/// Unicode control characters to be inserted when `unicode-bidi` is specified.
+///
+/// The `unicode-bidi` property is used to change the embedding of a text span within
+/// another.  This struct contains slices with the control characters that must be
+/// inserted into the text stream at the span's limits so that the bidi/shaping engine
+/// will know what to do.
+struct BidiControl {
+    start: &'static [char],
+    end: &'static [char],
+}
+
+impl BidiControl {
+    /// Creates a `BidiControl` from the properties that determine it.
+    ///
+    /// See the table titled "Bidi control codes injected..." in
+    /// https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi
+    #[rustfmt::skip]
+    fn from_unicode_bidi_and_direction(unicode_bidi: UnicodeBidi, direction: Direction) -> BidiControl {
+        use UnicodeBidi::*;
+        use Direction::*;
+        use directional_formatting_characters::*;
+
+        let (start, end) = match (unicode_bidi, direction) {
+            (Normal,          _)   => (&[][..],         &[][..]),
+            (Embed,           Ltr) => (&[LRE][..],      &[PDF][..]),
+            (Embed,           Rtl) => (&[RLE][..],      &[PDF][..]),
+            (Isolate,         Ltr) => (&[LRI][..],      &[PDI][..]),
+            (Isolate,         Rtl) => (&[RLI][..],      &[PDI][..]),
+            (BidiOverride,    Ltr) => (&[LRO][..],      &[PDF][..]),
+            (BidiOverride,    Rtl) => (&[RLO][..],      &[PDF][..]),
+            (IsolateOverride, Ltr) => (&[FSI, LRO][..], &[PDF, PDI][..]),
+            (IsolateOverride, Rtl) => (&[FSI, RLO][..], &[PDF, PDI][..]),
+            (Plaintext,       Ltr) => (&[FSI][..],      &[PDI][..]),
+            (Plaintext,       Rtl) => (&[FSI][..],      &[PDI][..]),
+        };
+
+        BidiControl { start, end }
+    }
+}
+
+/// Prepends and appends Unicode directional formatting characters.
+fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> String {
+    let mut res =
+        String::with_capacity(s.len() + bidi_control.start.len() + bidi_control.end.len());
+
+    for &ch in bidi_control.start {
+        res.push(ch);
+    }
+
+    res.push_str(s);
+
+    for &ch in bidi_control.end {
+        res.push(ch);
+    }
+
+    res
+}
+
+fn create_pango_layout(
+    draw_ctx: &DrawingCtx,
+    writing_mode: WritingMode,
+    props: &FontProperties,
+    text: &str,
+) -> pango::Layout {
     let pango_context = draw_ctx.create_pango_context();
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang.as_str()));
     }
 
-    pango_context.set_base_gravity(pango::Gravity::from(props.writing_mode));
+    pango_context.set_base_gravity(pango::Gravity::from(writing_mode));
 
     match (props.unicode_bidi, props.direction) {
-        (UnicodeBidi::Override, _) | (UnicodeBidi::Embed, _) => {
+        (UnicodeBidi::BidiOverride, _) | (UnicodeBidi::Embed, _) => {
             pango_context.set_base_dir(pango::Direction::from(props.direction));
         }
 
@@ -1072,11 +1203,35 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
         }
 
         (_, _) => {
-            pango_context.set_base_dir(pango::Direction::from(props.writing_mode));
+            pango_context.set_base_dir(pango::Direction::from(writing_mode));
         }
     }
 
-    let mut font_desc = pango_context.font_description().unwrap();
+    let layout = pango::Layout::new(&pango_context);
+
+    let attr_list = pango::AttrList::new();
+    add_pango_attributes(&attr_list, props, 0, text.len());
+
+    layout.set_attributes(Some(&attr_list));
+    layout.set_text(text);
+    layout.set_auto_dir(false);
+
+    layout
+}
+
+/// Adds Pango attributes, suitable for a span of text, to an `AttrList`.
+fn add_pango_attributes(
+    attr_list: &pango::AttrList,
+    props: &FontProperties,
+    start_index: usize,
+    end_index: usize,
+) {
+    let start_index: u32 = cast::u32(start_index).expect("Pango attribute index must fit in u32");
+    let end_index: u32 = cast::u32(end_index).expect("Pango attribute index must fit in u32");
+
+    let mut attributes = Vec::new();
+
+    let mut font_desc = pango::FontDescription::new();
     font_desc.set_family(props.font_family.as_str());
     font_desc.set_style(pango::Style::from(props.font_style));
 
@@ -1089,48 +1244,43 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 
     font_desc.set_size(to_pango_units(props.font_size));
 
-    let layout = pango::Layout::new(&pango_context);
-    layout.set_auto_dir(false);
-    layout.set_font_description(Some(&font_desc));
+    attributes.push(pango::Attribute::new_font_desc(&font_desc));
 
-    // FIXME: For now we ignore the `line-height` property, even though we parse it.
-    // We would need to do something like this:
-    //
-    // layout.set_line_spacing(0.0); // "actually use the spacing I'll give you"
-    // layout.set_spacing(to_pango_units(???));
-    //
-    // However, Layout::set_spacing() takes an inter-line spacing (from the baseline of
-    // one line to the top of the next line), not the line height (from baseline to
-    // baseline).
-    //
-    // Maybe we need to implement layout of individual lines by hand.
-
-    let attr_list = pango::AttrList::new();
-
-    attr_list.insert(pango::Attribute::new_letter_spacing(to_pango_units(
+    attributes.push(pango::Attribute::new_letter_spacing(to_pango_units(
         props.letter_spacing,
     )));
 
+    if props.text_decoration.overline {
+        attributes.push(pango::Attribute::new_overline(pango::Overline::Single));
+    }
+
     if props.text_decoration.underline {
-        attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single));
+        attributes.push(pango::Attribute::new_underline(pango::Underline::Single));
     }
 
     if props.text_decoration.strike {
-        attr_list.insert(pango::Attribute::new_strikethrough(true));
+        attributes.push(pango::Attribute::new_strikethrough(true));
     }
 
     // FIXME: Using the "smcp" OpenType feature only works for fonts that support it.  We
     // should query if the font supports small caps, and synthesize them if it doesn't.
     if props.font_variant == FontVariant::SmallCaps {
         // smcp - small capitals - https://docs.microsoft.com/en-ca/typography/opentype/spec/features_pt#smcp
-        attr_list.insert(pango::Attribute::new_font_features("'smcp' 1"));
+        attributes.push(pango::Attribute::new_font_features("'smcp' 1"));
     }
 
-    layout.set_attributes(Some(&attr_list));
-    layout.set_alignment(pango::Alignment::from(props.direction));
-    layout.set_text(text);
+    // Set the range in each attribute
 
-    layout
+    for attr in &mut attributes {
+        attr.set_start_index(start_index);
+        attr.set_end_index(end_index);
+    }
+
+    // Add the attributes to the attr_list
+
+    for attr in attributes {
+        attr_list.insert(attr);
+    }
 }
 
 #[cfg(test)]
