@@ -43,7 +43,9 @@ use language_tags::LanguageTag;
 use crate::dasharray::Dasharray;
 use crate::error::*;
 use crate::filter::FilterValueList;
-use crate::font_props::{Font, FontFamily, FontSize, FontWeight, LetterSpacing, LineHeight};
+use crate::font_props::{
+    Font, FontFamily, FontSize, FontWeight, GlyphOrientationVertical, LetterSpacing, LineHeight,
+};
 use crate::iri::Iri;
 use crate::length::*;
 use crate::paint_server::PaintServer;
@@ -984,6 +986,33 @@ fn parses_text_decoration() {
     );
 
     assert!(TextDecoration::parse_str("airline").is_err())
+}
+
+make_property!(
+    /// `text-orientation` property.
+    ///
+    /// https://www.w3.org/TR/css-writing-modes-3/#propdef-text-orientation
+    TextOrientation,
+    default: Mixed,
+    inherits_automatically: true,
+
+    identifiers:
+    "mixed" => Mixed,
+    "upright" => Upright,
+    "sideways" => Sideways,
+);
+
+impl From<GlyphOrientationVertical> for TextOrientation {
+    /// Converts the `glyph-orientation-vertical` shorthand to a `text-orientation` longhand.
+    ///
+    /// See https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical for the conversion table.
+    fn from(o: GlyphOrientationVertical) -> TextOrientation {
+        match o {
+            GlyphOrientationVertical::Auto => TextOrientation::Mixed,
+            GlyphOrientationVertical::Angle0 => TextOrientation::Upright,
+            GlyphOrientationVertical::Angle90 => TextOrientation::Sideways,
+        }
+    }
 }
 
 make_property!(
