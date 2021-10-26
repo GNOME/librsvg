@@ -1186,7 +1186,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
     let layout = pango::Layout::new(&pango_context);
 
     let attr_list = pango::AttrList::new();
-    add_pango_attributes(&attr_list, props);
+    add_pango_attributes(&attr_list, props, 0, text.len());
 
     layout.set_attributes(Some(&attr_list));
     layout.set_text(text);
@@ -1196,7 +1196,17 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
 }
 
 /// Adds Pango attributes, suitable for a span of text, to an `AttrList`.
-fn add_pango_attributes(attr_list: &pango::AttrList, props: &FontProperties) {
+fn add_pango_attributes(
+    attr_list: &pango::AttrList,
+    props: &FontProperties,
+    start_index: usize,
+    end_index: usize,
+) {
+    let start_index: u32 = cast::u32(start_index).expect("Pango attribute index must fit in u32");
+    let end_index: u32 = cast::u32(end_index).expect("Pango attribute index must fit in u32");
+
+    let mut attributes = Vec::new();
+
     let mut font_desc = pango::FontDescription::new();
     font_desc.set_family(props.font_family.as_str());
     font_desc.set_style(pango::Style::from(props.font_style));
@@ -1209,25 +1219,39 @@ fn add_pango_attributes(attr_list: &pango::AttrList, props: &FontProperties) {
     font_desc.set_stretch(pango::Stretch::from(props.font_stretch));
 
     font_desc.set_size(to_pango_units(props.font_size));
-    attr_list.insert(pango::Attribute::new_font_desc(&font_desc));
 
-    attr_list.insert(pango::Attribute::new_letter_spacing(to_pango_units(
+    attributes.push(pango::Attribute::new_font_desc(&font_desc));
+
+    attributes.push(pango::Attribute::new_letter_spacing(to_pango_units(
         props.letter_spacing,
     )));
 
     if props.text_decoration.underline {
-        attr_list.insert(pango::Attribute::new_underline(pango::Underline::Single));
+        attributes.push(pango::Attribute::new_underline(pango::Underline::Single));
     }
 
     if props.text_decoration.strike {
-        attr_list.insert(pango::Attribute::new_strikethrough(true));
+        attributes.push(pango::Attribute::new_strikethrough(true));
     }
 
     // FIXME: Using the "smcp" OpenType feature only works for fonts that support it.  We
     // should query if the font supports small caps, and synthesize them if it doesn't.
     if props.font_variant == FontVariant::SmallCaps {
         // smcp - small capitals - https://docs.microsoft.com/en-ca/typography/opentype/spec/features_pt#smcp
-        attr_list.insert(pango::Attribute::new_font_features("'smcp' 1"));
+        attributes.push(pango::Attribute::new_font_features("'smcp' 1"));
+    }
+
+    // Set the range in each attribute
+
+    for attr in &mut attributes {
+        attr.set_start_index(start_index);
+        attr.set_end_index(end_index);
+    }
+
+    // Add the attributes to the attr_list
+
+    for attr in attributes {
+        attr_list.insert(attr);
     }
 }
 
