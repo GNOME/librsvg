@@ -219,3 +219,5 @@ PangoLayoutRun - same as PangoGlyphItem - a pair of PangoItem and the PangoGlyph
 generated during shaping. (Visual order).
 
 PangoGlyphString - The glyphs generated for a single PangoItem.
+
+PangoGravityHint - Defines how horizontal scripts should behave in a vertical context.
