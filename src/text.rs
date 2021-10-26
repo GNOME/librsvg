@@ -1232,6 +1232,10 @@ fn add_pango_attributes(
         props.letter_spacing,
     )));
 
+    if props.text_decoration.overline {
+        attributes.push(pango::Attribute::new_overline(pango::Overline::Single));
+    }
+
     if props.text_decoration.underline {
         attributes.push(pango::Attribute::new_underline(pango::Underline::Single));
     }
