@@ -279,10 +279,11 @@ The following are shorthand properties.  They are not available as
 presentation attributes, only as style properties, so for example you have to use
 `<path style="marker: url(#foo);"/>`, since there is no `marker` attribute.
 
-| Property | Notes |
-| ---      | ---   |
-| font     |       |
-| marker   |       |
+| Property                   | Notes                                                              |
+|----------------------------|--------------------------------------------------------------------|
+| font                       |                                                                    |
+| glyph-orientation-vertical | Supports only CSS Writing Modes 3 values: auto, 0, 90, 0deg, 90deg |
+| marker                     |                                                                    |
 
 The following are longhand properties.  Most of them are available as
 presentation attributes, e.g. you can use `<rect fill="blue"/>` as
@@ -290,7 +291,7 @@ well as `<rect style="fill: blue;"/>`.  The Notes column indicates
 which properties are not available as presentation attributes.
 
 | Property                    | Notes                                                  |
-| ---                         | ---                                                    |
+|-----------------------------|--------------------------------------------------------|
 | baseline-shift              |                                                        |
 | clip-path                   |                                                        |
 | clip-rule                   |                                                        |
@@ -336,6 +337,7 @@ which properties are not available as presentation attributes.
 | stroke-width                |                                                        |
 | text-anchor                 |                                                        |
 | text-decoration             |                                                        |
+| text-orientation            | Not available as a presentation attribute.             |
 | text-rendering              |                                                        |
 | transform                   | SVG2; different syntax from the `transform` attribute. |
 | unicode-bidi                |                                                        |
