@@ -334,7 +334,7 @@ impl MeasuredSpan {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(&values, &view_params);
 
-        let properties = FontProperties::new(&values, text_writing_mode, &params);
+        let properties = FontProperties::new(&values, &params);
 
         let bidi_control = BidiControl::from_unicode_bidi_and_direction(
             properties.unicode_bidi,
@@ -342,7 +342,12 @@ impl MeasuredSpan {
         );
 
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
-        let layout = create_pango_layout(draw_ctx, &properties, &with_control_chars);
+        let layout = create_pango_layout(
+            draw_ctx,
+            text_writing_mode,
+            &properties,
+            &with_control_chars,
+        );
         let (w, h) = layout.size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -1166,14 +1171,19 @@ fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> Str
     res
 }
 
-fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str) -> pango::Layout {
+fn create_pango_layout(
+    draw_ctx: &DrawingCtx,
+    writing_mode: WritingMode,
+    props: &FontProperties,
+    text: &str,
+) -> pango::Layout {
     let pango_context = draw_ctx.create_pango_context();
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang.as_str()));
     }
 
-    pango_context.set_base_gravity(pango::Gravity::from(props.writing_mode));
+    pango_context.set_base_gravity(pango::Gravity::from(writing_mode));
 
     match (props.unicode_bidi, props.direction) {
         (UnicodeBidi::BidiOverride, _) | (UnicodeBidi::Embed, _) => {
@@ -1185,7 +1195,7 @@ fn create_pango_layout(draw_ctx: &DrawingCtx, props: &FontProperties, text: &str
         }
 
         (_, _) => {
-            pango_context.set_base_dir(pango::Direction::from(props.writing_mode));
+            pango_context.set_base_dir(pango::Direction::from(writing_mode));
         }
     }
 
