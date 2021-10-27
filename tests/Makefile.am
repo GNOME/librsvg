@@ -71,6 +71,7 @@ test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/reftests/svg2/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg2/*.png)		\
 	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
+	$(wildcard $(srcdir)/fixtures/text/*.svg)		        \
 	$(wildcard $(srcdir)/fixtures/dimensions/*.svg)
 
 EXTRA_DIST +=			\
