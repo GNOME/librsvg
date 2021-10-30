@@ -1073,7 +1073,7 @@ impl From<WritingMode> for pango::Gravity {
 
 /// Constants with Unicode's directional formatting characters
 ///
-/// https://unicode.org/reports/tr9/#Directional_Formatting_Characters
+/// <https://unicode.org/reports/tr9/#Directional_Formatting_Characters>
 mod directional_formatting_characters {
     /// Left-to-Right Embedding
     ///

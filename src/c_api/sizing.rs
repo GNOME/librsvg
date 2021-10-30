@@ -26,7 +26,7 @@ use super::handle::CairoRectangleExt;
 /// element.  If these are not available, then the size must be computed
 /// by actually measuring the geometries of elements in the document.
 ///
-/// See https://www.w3.org/TR/css-images-3/#sizing-terms for terminology and logic.
+/// See <https://www.w3.org/TR/css-images-3/#sizing-terms> for terminology and logic.
 pub trait LegacySize {
     fn legacy_document_size(&self) -> Result<(f64, f64), RenderingError> {
         let (ink_r, _) = self.legacy_layer_geometry(None)?;

@@ -2,7 +2,7 @@
 //!
 //! In SVG1.1, links to elements are done with the `xlink:href` attribute.  However, SVG2
 //! reduced this to just plain `href` with no namespace:
-//! https://svgwg.org/svg2-draft/linking.html#XLinkRefAttrs
+//! <https://svgwg.org/svg2-draft/linking.html#XLinkRefAttrs>
 //!
 //! If an element has both `xlink:href` and `href` attributes, the `href` overrides the
 //! other.  We implement that logic in this module.

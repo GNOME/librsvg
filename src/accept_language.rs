@@ -48,7 +48,7 @@ struct Item {
 
 /// Stores a parsed version of an HTTP Accept-Language header.
 ///
-/// https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.5
+/// <https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.5>
 #[derive(Clone, Debug, PartialEq)]
 pub struct AcceptLanguage(Box<[Item]>);
 

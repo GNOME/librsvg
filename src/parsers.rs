@@ -138,7 +138,7 @@ impl Parse for NumberOrPercentage {
 impl Parse for i32 {
     /// CSS integer
     ///
-    /// https://www.w3.org/TR/SVG11/types.html#DataTypeInteger
+    /// <https://www.w3.org/TR/SVG11/types.html#DataTypeInteger>
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parser.expect_integer()?)
     }
