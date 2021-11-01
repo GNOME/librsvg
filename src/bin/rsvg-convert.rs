@@ -482,11 +482,9 @@ impl Converter {
 
             let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
 
-            // natural_size is in pixels
             let natural_size = Size::new(geometry.width, geometry.height);
 
             let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
-
             // Convert natural size and requested size to pixels or points, depending on the target format,
             let (natural_size, requested_width, requested_height, page_size) = match self.format {
                 Format::Png => {
@@ -522,6 +520,39 @@ impl Converter {
 
                 Format::Svg => {
                     // TODO: SVG surface can be created with any unit type; let's use pixels for now
+
+                    // Determine original unit type
+                    let w_unit = self.width.map(|l| l.unit);
+                    let h_unit = self.height.map(|l| l.unit);
+                    let page_size_w_unit = self.page_size.map(|(w, _)| w.unit);
+                    let page_size_h_unit = self.page_size.map(|(_, h)| h.unit);
+
+                    println!("Width unit is {:?} ({:?})", w_unit, print_type_of(&w_unit));
+                    println!("Height unit is {:?}", h_unit);
+                    println!("Page width unit is {:?}", page_size_w_unit);
+                    println!("Page height unit is {:?}", page_size_h_unit);
+                    
+                    let mut specified_units = vec![w_unit, h_unit, page_size_w_unit, page_size_h_unit];
+                    
+                    println!("Specified units before {:?}", specified_units);
+                    specified_units.retain(|u| u.is_some());
+                    println!("Specified units after {:?}", specified_units);
+                    println!("Length of specified units {:?}", specified_units.len());
+
+                    println!("Units are {:?}", &specified_units);
+                    println!("All equal: {:?}", all_equal_units(&specified_units));
+                    
+                    let svg_unit = if !specified_units.is_empty() && all_equal_units(&specified_units) {
+                        match specified_units.pop().unwrap() {
+                            Some(u) => u,
+                            _ => LengthUnit::Px,
+                        }
+                        
+                    } else {
+                            LengthUnit::Px
+                    };
+
+                    println!("SVG unit is {:?}", svg_unit);
                     (
                         natural_size,
                         self.width.map(|l| l.to_user(&params)),
@@ -632,6 +663,20 @@ impl Converter {
         };
 
         Surface::new(self.format, size, output_stream)
+    }
+}
+
+fn print_type_of<T>(_: &T) {
+    println!("{}", std::any::type_name::<T>())
+}
+
+// https://weirder.earth/@Eden/102226720432099086
+fn all_equal_units(vec: &[Option<LengthUnit>]) -> bool {
+    match vec {
+        [] => true,
+        [_] => true,
+        [x, y, ..] if x != y => false,
+        [_, zs @ ..] => all_equal_units(zs),
     }
 }
 
