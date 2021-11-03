@@ -33,6 +33,19 @@ use glib::translate::*;
   g_log_structured_array (log_level, fields, n_fields);
  */
 
+/// Helper function for converting string literals to C char pointers.
+#[macro_export]
+macro_rules! rsvg_c_str {
+    ($txt:expr) => {
+        // SAFETY: it's important that the type we pass to `from_bytes_with_nul` is 'static,
+        // so that the storage behind the returned pointer doesn't get freed while it's still
+        // being used. We get that by only allowing string literals.
+        std::ffi::CStr::from_bytes_with_nul(concat!($txt, "\0").as_bytes())
+            .unwrap()
+            .as_ptr()
+    };
+}
+
 /// Helper for `rsvg_g_warning` and `rsvg_g_critical`
 ///
 /// This simulates what in C would be a call to the g_warning() or g_critical()
@@ -43,7 +56,7 @@ use glib::translate::*;
 fn rsvg_g_log(level: glib::ffi::GLogLevelFlags, msg: &str) {
     // stolen from gmessages.c:log_level_to_priority()
     let priority = match level {
-        G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL => b"4\0",
+        G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL => rsvg_c_str!("4"),
         _ => unreachable!("please add another log level priority to rsvg_g_log()"),
     };
 
@@ -55,19 +68,19 @@ fn rsvg_g_log(level: glib::ffi::GLogLevelFlags, msg: &str) {
     // trace.  So, we'll omit them.
     let fields = [
         GLogField {
-            key: b"PRIORITY\0" as *const u8 as *const _,
-            value: priority as *const u8 as *const _,
+            key: rsvg_c_str!("PRIORITY"),
+            value: priority as *const _,
             length: -1,
         },
         GLogField {
-            key: b"MESSAGE\0" as *const u8 as *const _,
+            key: rsvg_c_str!("MESSAGE"),
             value: c_char_msg as *const _,
             length: msg.len() as _,
         },
         // This is the G_LOG_DOMAIN set from the Makefile
         GLogField {
-            key: b"GLIB_DOMAIN\0" as *const u8 as *const _,
-            value: b"librsvg\0" as *const u8 as *const _,
+            key: rsvg_c_str!("GLIB_DOMAIN"),
+            value: rsvg_c_str!("librsvg") as *const _,
             length: -1,
         },
     ];
@@ -114,9 +127,9 @@ macro_rules! rsvg_return_if_fail {
         $(
             if !$condition {
                 glib::ffi::g_return_if_fail_warning(
-                    b"librsvg\0" as *const u8 as *const _,
-                    concat!(stringify!($func_name), "\0").as_ptr() as *const _,
-                    concat!(stringify!($condition), "\0").as_ptr() as *const _,
+                    rsvg_c_str!("librsvg"),
+                    rsvg_c_str!(stringify!($func_name)),
+                    rsvg_c_str!(stringify!($condition)),
                 );
                 return;
             }
@@ -134,9 +147,9 @@ macro_rules! rsvg_return_val_if_fail {
         $(
             if !$condition {
                 glib::ffi::g_return_if_fail_warning(
-                    b"librsvg\0" as *const u8 as *const _,
-                    concat!(stringify!($func_name), "\0").as_ptr() as *const _,
-                    concat!(stringify!($condition), "\0").as_ptr() as *const _,
+                    rsvg_c_str!("librsvg"),
+                    rsvg_c_str!(stringify!($func_name)),
+                    rsvg_c_str!(stringify!($condition)),
                 );
                 return $retval;
             }
