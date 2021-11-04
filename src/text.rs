@@ -352,12 +352,8 @@ impl MeasuredSpan {
         );
 
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
-        let layout = create_pango_layout(
-            draw_ctx,
-            layout_context.writing_mode,
-            &properties,
-            &with_control_chars,
-        );
+        let layout =
+            create_pango_layout(layout_context, draw_ctx, &properties, &with_control_chars);
         let (w, h) = layout.size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -1185,8 +1181,8 @@ fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> Str
 }
 
 fn create_pango_layout(
+    layout_context: &LayoutContext,
     draw_ctx: &DrawingCtx,
-    writing_mode: WritingMode,
     props: &FontProperties,
     text: &str,
 ) -> pango::Layout {
@@ -1196,7 +1192,7 @@ fn create_pango_layout(
         pango_context.set_language(&pango::Language::from_string(lang.as_str()));
     }
 
-    pango_context.set_base_gravity(pango::Gravity::from(writing_mode));
+    pango_context.set_base_gravity(pango::Gravity::from(layout_context.writing_mode));
 
     match (props.unicode_bidi, props.direction) {
         (UnicodeBidi::BidiOverride, _) | (UnicodeBidi::Embed, _) => {
@@ -1208,7 +1204,7 @@ fn create_pango_layout(
         }
 
         (_, _) => {
-            pango_context.set_base_dir(pango::Direction::from(writing_mode));
+            pango_context.set_base_dir(pango::Direction::from(layout_context.writing_mode));
         }
     }
 
