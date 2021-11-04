@@ -1774,14 +1774,12 @@ impl DrawingCtx {
         FontOptions { options }
     }
 
-    /// Create a Pango context based on the cr and `testing` flag from the DrawingCtx.
-    pub fn create_pango_context(&self, font_options: &FontOptions) -> pango::Context {
+    /// Create a Pango context with a particular configuration.
+    pub fn create_pango_context(&self, font_options: &FontOptions, transform: &Transform) -> pango::Context {
         let font_map = pangocairo::FontMap::default().unwrap();
         let context = font_map.create_context().unwrap();
 
         context.set_round_glyph_positions(false);
-
-        let transform = self.get_transform();
 
         let pango_matrix = PangoMatrix {
             xx: transform.xx,

@@ -1190,7 +1190,7 @@ fn create_pango_layout(
     props: &FontProperties,
     text: &str,
 ) -> pango::Layout {
-    let pango_context = draw_ctx.create_pango_context(&layout_context.font_options);
+    let pango_context = draw_ctx.create_pango_context(&layout_context.font_options, &layout_context.transform);
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang.as_str()));
