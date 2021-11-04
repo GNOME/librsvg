@@ -28,6 +28,9 @@ use crate::xml::Attributes;
 struct LayoutContext {
     /// `writing-mode` property from the `<text>` element.
     writing_mode: WritingMode,
+
+    /// Current transform in the DrawingCtx.
+    transform: Transform,
 }
 
 /// An absolutely-positioned array of `Span`s
@@ -435,8 +438,8 @@ fn compute_text_box(
 impl PositionedSpan {
     fn layout(
         &self,
+        layout_context: &LayoutContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &DrawingCtx,
         view_params: &ViewParams,
     ) -> LayoutSpan {
         let params = NormalizeParams::new(&self.values, view_params);
@@ -449,7 +452,7 @@ impl PositionedSpan {
 
         let gravity = layout.context().unwrap().gravity();
 
-        let bbox = compute_text_box(&layout, x, y, draw_ctx.get_transform(), gravity);
+        let bbox = compute_text_box(&layout, x, y, layout_context.transform, gravity);
 
         let stroke_paint = self.values.stroke().0.resolve(
             acquired_nodes,
@@ -767,6 +770,7 @@ impl Draw for Text {
             &mut |an, dc| {
                 let layout_context = LayoutContext {
                     writing_mode: values.writing_mode(),
+                    transform: dc.get_transform(),
                 };
 
                 let mut x = self.x.to_user(&params);
@@ -803,7 +807,7 @@ impl Draw for Text {
                 let mut layout_spans = Vec::new();
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        layout_spans.push(span.layout(an, dc, &view_params));
+                        layout_spans.push(span.layout(&layout_context, an, &view_params));
                     }
                 }
 
