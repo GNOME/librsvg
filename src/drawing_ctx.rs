@@ -1773,50 +1773,50 @@ impl DrawingCtx {
 
         FontOptions { options }
     }
+}
 
-    /// Create a Pango context with a particular configuration.
-    pub fn create_pango_context(&self, font_options: &FontOptions, transform: &Transform) -> pango::Context {
-        let font_map = pangocairo::FontMap::default().unwrap();
-        let context = font_map.create_context().unwrap();
+/// Create a Pango context with a particular configuration.
+pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -> pango::Context {
+    let font_map = pangocairo::FontMap::default().unwrap();
+    let context = font_map.create_context().unwrap();
 
-        context.set_round_glyph_positions(false);
+    context.set_round_glyph_positions(false);
 
-        let pango_matrix = PangoMatrix {
-            xx: transform.xx,
-            xy: transform.xy,
-            yx: transform.yx,
-            yy: transform.yy,
-            x0: transform.x0,
-            y0: transform.y0,
-        };
+    let pango_matrix = PangoMatrix {
+        xx: transform.xx,
+        xy: transform.xy,
+        yx: transform.yx,
+        yy: transform.yy,
+        x0: transform.x0,
+        y0: transform.y0,
+    };
 
-        let pango_matrix_ptr: *const PangoMatrix = &pango_matrix;
+    let pango_matrix_ptr: *const PangoMatrix = &pango_matrix;
 
-        let matrix = unsafe { pango::Matrix::from_glib_none(pango_matrix_ptr) };
-        context.set_matrix(Some(&matrix));
+    let matrix = unsafe { pango::Matrix::from_glib_none(pango_matrix_ptr) };
+    context.set_matrix(Some(&matrix));
 
-        pangocairo::functions::context_set_font_options(&context, Some(&font_options.options));
+    pangocairo::functions::context_set_font_options(&context, Some(&font_options.options));
 
-        // Pango says this about pango_cairo_context_set_resolution():
-        //
-        //     Sets the resolution for the context. This is a scale factor between
-        //     points specified in a #PangoFontDescription and Cairo units. The
-        //     default value is 96, meaning that a 10 point font will be 13
-        //     units high. (10 * 96. / 72. = 13.3).
-        //
-        // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
-        // However, we are normalizing everything to userspace units, which amount to
-        // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
-        // to the size values we give it.
-        //
-        // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
-        // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
-        // right here, instead of spreading them out through our Length normalization
-        // code.
-        pangocairo::functions::context_set_resolution(&context, 72.0);
+    // Pango says this about pango_cairo_context_set_resolution():
+    //
+    //     Sets the resolution for the context. This is a scale factor between
+    //     points specified in a #PangoFontDescription and Cairo units. The
+    //     default value is 96, meaning that a 10 point font will be 13
+    //     units high. (10 * 96. / 72. = 13.3).
+    //
+    // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
+    // However, we are normalizing everything to userspace units, which amount to
+    // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
+    // to the size values we give it.
+    //
+    // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
+    // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
+    // right here, instead of spreading them out through our Length normalization
+    // code.
+    pangocairo::functions::context_set_resolution(&context, 72.0);
 
-        context
-    }
+    context
 }
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement

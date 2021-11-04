@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{DrawingCtx, FontOptions, ViewParams};
+use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
@@ -355,8 +355,7 @@ impl MeasuredSpan {
         );
 
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
-        let layout =
-            create_pango_layout(layout_context, draw_ctx, &properties, &with_control_chars);
+        let layout = create_pango_layout(layout_context, &properties, &with_control_chars);
         let (w, h) = layout.size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -1186,11 +1185,11 @@ fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> Str
 
 fn create_pango_layout(
     layout_context: &LayoutContext,
-    draw_ctx: &DrawingCtx,
     props: &FontProperties,
     text: &str,
 ) -> pango::Layout {
-    let pango_context = draw_ctx.create_pango_context(&layout_context.font_options, &layout_context.transform);
+    let pango_context =
+        create_pango_context(&layout_context.font_options, &layout_context.transform);
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang.as_str()));
