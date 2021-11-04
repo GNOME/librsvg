@@ -2,7 +2,9 @@
 
 use cssparser::RGBA;
 use float_cmp::approx_eq;
+use glib::translate::*;
 use once_cell::sync::Lazy;
+use pango::ffi::PangoMatrix;
 use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
@@ -93,6 +95,13 @@ impl Drop for ViewParams {
             stack.borrow_mut().pop();
         }
     }
+}
+
+/// Opaque font options for a DrawingCtx.
+///
+/// This is used for DrawingCtx::create_pango_context.
+pub struct FontOptions {
+    options: cairo::FontOptions,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -1750,10 +1759,10 @@ impl DrawingCtx {
         }
     }
 
-    /// Create a Pango context based on the cr and `testing` flag from the DrawingCtx.
-    pub fn create_pango_context(&self) -> pango::Context {
-        let cr = self.cr.clone();
-
+    /// Extracts the font options for the current state of the DrawingCtx.
+    ///
+    /// You can use the font options later with create_pango_context().
+    pub fn get_font_options(&self) -> FontOptions {
         let mut options = cairo::FontOptions::new().unwrap();
         if self.testing {
             options.set_antialias(cairo::Antialias::Gray);
@@ -1762,14 +1771,33 @@ impl DrawingCtx {
         options.set_hint_style(cairo::HintStyle::None);
         options.set_hint_metrics(cairo::HintMetrics::Off);
 
-        cr.set_font_options(&options);
+        FontOptions { options }
+    }
 
+    /// Create a Pango context based on the cr and `testing` flag from the DrawingCtx.
+    pub fn create_pango_context(&self, font_options: &FontOptions) -> pango::Context {
         let font_map = pangocairo::FontMap::default().unwrap();
         let context = font_map.create_context().unwrap();
 
         context.set_round_glyph_positions(false);
 
-        pangocairo::functions::update_context(&cr, &context);
+        let transform = self.get_transform();
+
+        let pango_matrix = PangoMatrix {
+            xx: transform.xx,
+            xy: transform.xy,
+            yx: transform.yx,
+            yy: transform.yy,
+            x0: transform.x0,
+            y0: transform.y0,
+        };
+
+        let pango_matrix_ptr: *const PangoMatrix = &pango_matrix;
+
+        let matrix = unsafe { pango::Matrix::from_glib_none(pango_matrix_ptr) };
+        context.set_matrix(Some(&matrix));
+
+        pangocairo::functions::context_set_font_options(&context, Some(&font_options.options));
 
         // Pango says this about pango_cairo_context_set_resolution():
         //

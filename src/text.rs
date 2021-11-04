@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::{DrawingCtx, FontOptions, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
@@ -31,6 +31,9 @@ struct LayoutContext {
 
     /// Current transform in the DrawingCtx.
     transform: Transform,
+
+    /// Font options from the DrawingCtx.
+    font_options: FontOptions,
 }
 
 /// An absolutely-positioned array of `Span`s
@@ -767,6 +770,7 @@ impl Draw for Text {
                 let layout_context = LayoutContext {
                     writing_mode: values.writing_mode(),
                     transform: dc.get_transform(),
+                    font_options: dc.get_font_options(),
                 };
 
                 let mut x = self.x.to_user(&params);
@@ -1186,7 +1190,7 @@ fn create_pango_layout(
     props: &FontProperties,
     text: &str,
 ) -> pango::Layout {
-    let pango_context = draw_ctx.create_pango_context();
+    let pango_context = draw_ctx.create_pango_context(&layout_context.font_options);
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang.as_str()));
