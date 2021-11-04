@@ -41,6 +41,12 @@ test_svg_reference!(
 );
 
 test_svg_reference!(
+    tspan_direction_change_804,
+    "tests/fixtures/text/804-tspan-direction-change.svg",
+    "tests/fixtures/text/804-tspan-direction-change-ref.svg"
+);
+
+test_svg_reference!(
     unicode_bidi_override,
     "tests/fixtures/text/unicode-bidi-override.svg",
     "tests/fixtures/text/unicode-bidi-override-ref.svg"
