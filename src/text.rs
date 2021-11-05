@@ -810,7 +810,9 @@ impl Draw for Text {
                     }
                 }
 
-                let text_bbox = layout_spans.iter().fold(dc.empty_bbox(), |mut bbox, span| {
+                let empty_bbox = BoundingBox::new().with_transform(*transform);
+
+                let text_bbox = layout_spans.iter().fold(empty_bbox, |mut bbox, span| {
                     if let Some(ref span_bbox) = span.bbox {
                         bbox.insert(span_bbox);
                     }
