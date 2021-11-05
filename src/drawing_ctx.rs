@@ -344,9 +344,7 @@ impl DrawingCtx {
         self.measuring
     }
 
-    // FIXME: this is public just so that text.rs can access it.  Maybe the draw_fn passed to with_discrete_layer should
-    // obtain the current transform as an argument?
-    pub fn get_transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         Transform::from(self.cr.matrix())
     }
 
@@ -1239,11 +1237,10 @@ impl DrawingCtx {
             values,
             clipping,
             None,
-            &mut |an, dc, _transform| {
+            &mut |an, dc, transform| {
                 let cr = dc.cr.clone();
-                let transform = dc.get_transform();
                 let mut path_helper =
-                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
+                    PathHelper::new(&cr, *transform, &shape.path, shape.stroke.line_cap);
 
                 if clipping {
                     if shape.is_visible {

@@ -765,10 +765,10 @@ impl Draw for Text {
             values,
             clipping,
             None,
-            &mut |an, dc, _transform| {
+            &mut |an, dc, transform| {
                 let layout_context = LayoutContext {
                     writing_mode: values.writing_mode(),
-                    transform: dc.get_transform(),
+                    transform: *transform,
                     font_options: dc.get_font_options(),
                 };
 
