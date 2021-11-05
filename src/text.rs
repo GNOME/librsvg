@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
@@ -28,6 +28,15 @@ use crate::xml::Attributes;
 struct LayoutContext {
     /// `writing-mode` property from the `<text>` element.
     writing_mode: WritingMode,
+
+    /// Current transform in the DrawingCtx.
+    transform: Transform,
+
+    /// Font options from the DrawingCtx.
+    font_options: FontOptions,
+
+    /// For normalizing lengths.
+    view_params: ViewParams,
 }
 
 /// An absolutely-positioned array of `Span`s
@@ -125,15 +134,11 @@ impl Chunk {
 }
 
 impl MeasuredChunk {
-    fn from_chunk(
-        layout_context: &LayoutContext,
-        chunk: &Chunk,
-        draw_ctx: &DrawingCtx,
-    ) -> MeasuredChunk {
+    fn from_chunk(layout_context: &LayoutContext, chunk: &Chunk) -> MeasuredChunk {
         let mut measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
-            .map(|span| MeasuredSpan::from_span(layout_context, span, draw_ctx))
+            .map(|span| MeasuredSpan::from_span(layout_context, span))
             .collect();
 
         // The first span contains the (dx, dy) that will be applied to the whole chunk.
@@ -165,7 +170,6 @@ impl PositionedChunk {
     fn from_measured(
         layout_context: &LayoutContext,
         measured: &MeasuredChunk,
-        view_params: &ViewParams,
         chunk_x: f64,
         chunk_y: f64,
     ) -> PositionedChunk {
@@ -183,7 +187,7 @@ impl PositionedChunk {
         let mut chunk_bounds: Option<Rect> = None;
 
         for mspan in &measured.spans {
-            let params = NormalizeParams::new(&mspan.values, view_params);
+            let params = NormalizeParams::new(&mspan.values, &layout_context.view_params);
 
             let layout = mspan.layout.clone();
             let layout_size = mspan.layout_size;
@@ -331,15 +335,10 @@ impl Span {
 }
 
 impl MeasuredSpan {
-    fn from_span(
-        layout_context: &LayoutContext,
-        span: &Span,
-        draw_ctx: &DrawingCtx,
-    ) -> MeasuredSpan {
+    fn from_span(layout_context: &LayoutContext, span: &Span) -> MeasuredSpan {
         let values = span.values.clone();
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(&values, &layout_context.view_params);
 
         let properties = FontProperties::new(&values, &params);
 
@@ -349,12 +348,7 @@ impl MeasuredSpan {
         );
 
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
-        let layout = create_pango_layout(
-            draw_ctx,
-            layout_context.writing_mode,
-            &properties,
-            &with_control_chars,
-        );
+        let layout = create_pango_layout(layout_context, &properties, &with_control_chars);
         let (w, h) = layout.size();
 
         let w = f64::from(w) / f64::from(pango::SCALE);
@@ -435,11 +429,10 @@ fn compute_text_box(
 impl PositionedSpan {
     fn layout(
         &self,
+        layout_context: &LayoutContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        draw_ctx: &DrawingCtx,
-        view_params: &ViewParams,
     ) -> LayoutSpan {
-        let params = NormalizeParams::new(&self.values, view_params);
+        let params = NormalizeParams::new(&self.values, &layout_context.view_params);
 
         let layout = self.layout.clone();
         let is_visible = self.values.is_visible();
@@ -449,7 +442,7 @@ impl PositionedSpan {
 
         let gravity = layout.context().unwrap().gravity();
 
-        let bbox = compute_text_box(&layout, x, y, draw_ctx.get_transform(), gravity);
+        let bbox = compute_text_box(&layout, x, y, layout_context.transform, gravity);
 
         let stroke_paint = self.values.stroke().0.resolve(
             acquired_nodes,
@@ -496,7 +489,7 @@ fn children_to_chunks(
     node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &DrawingCtx,
+    layout_context: &LayoutContext,
     dx: f64,
     dy: f64,
     depth: usize,
@@ -527,7 +520,7 @@ fn children_to_chunks(
                         &child,
                         acquired_nodes,
                         &cascaded,
-                        draw_ctx,
+                        layout_context,
                         chunks,
                         dx,
                         dy,
@@ -551,7 +544,7 @@ fn children_to_chunks(
                         &child,
                         acquired_nodes,
                         &cascaded,
-                        draw_ctx,
+                        layout_context,
                         chunks,
                         dx,
                         dy,
@@ -695,15 +688,14 @@ impl Text {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &DrawingCtx,
+        layout_context: &LayoutContext,
         x: f64,
         y: f64,
     ) -> Vec<Chunk> {
         let mut chunks = Vec::new();
 
         let values = cascaded.get();
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, &layout_context.view_params);
 
         chunks.push(Chunk::new(values, Some(x), Some(y)));
 
@@ -715,7 +707,7 @@ impl Text {
             node,
             acquired_nodes,
             cascaded,
-            draw_ctx,
+            layout_context,
             dx,
             dy,
             0,
@@ -764,19 +756,22 @@ impl Draw for Text {
             values,
             clipping,
             None,
-            &mut |an, dc| {
+            &mut |an, dc, transform| {
                 let layout_context = LayoutContext {
                     writing_mode: values.writing_mode(),
+                    transform: *transform,
+                    font_options: dc.get_font_options(),
+                    view_params: dc.get_view_params(),
                 };
 
                 let mut x = self.x.to_user(&params);
                 let mut y = self.y.to_user(&params);
 
-                let chunks = self.make_chunks(node, an, cascaded, dc, x, y);
+                let chunks = self.make_chunks(node, an, cascaded, &layout_context, x, y);
 
                 let mut measured_chunks = Vec::new();
                 for chunk in &chunks {
-                    measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk, dc));
+                    measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
                 }
 
                 let mut positioned_chunks = Vec::new();
@@ -784,13 +779,8 @@ impl Draw for Text {
                     let chunk_x = chunk.x.unwrap_or(x);
                     let chunk_y = chunk.y.unwrap_or(y);
 
-                    let positioned = PositionedChunk::from_measured(
-                        &layout_context,
-                        chunk,
-                        &view_params,
-                        chunk_x,
-                        chunk_y,
-                    );
+                    let positioned =
+                        PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
 
                     x = positioned.next_chunk_x;
                     y = positioned.next_chunk_y;
@@ -798,16 +788,16 @@ impl Draw for Text {
                     positioned_chunks.push(positioned);
                 }
 
-                let view_params = dc.get_view_params();
-
                 let mut layout_spans = Vec::new();
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        layout_spans.push(span.layout(an, dc, &view_params));
+                        layout_spans.push(span.layout(&layout_context, an));
                     }
                 }
 
-                let text_bbox = layout_spans.iter().fold(dc.empty_bbox(), |mut bbox, span| {
+                let empty_bbox = BoundingBox::new().with_transform(*transform);
+
+                let text_bbox = layout_spans.iter().fold(empty_bbox, |mut bbox, span| {
                     if let Some(ref span_bbox) = span.bbox {
                         bbox.insert(span_bbox);
                     }
@@ -817,12 +807,16 @@ impl Draw for Text {
 
                 let mut text_spans = Vec::new();
                 for span in layout_spans {
-                    let stroke_paint =
-                        span.stroke_paint
-                            .to_user_space(&text_bbox, &view_params, &span.values);
-                    let fill_paint =
-                        span.fill_paint
-                            .to_user_space(&text_bbox, &view_params, &span.values);
+                    let stroke_paint = span.stroke_paint.to_user_space(
+                        &text_bbox,
+                        &layout_context.view_params,
+                        &span.values,
+                    );
+                    let fill_paint = span.fill_paint.to_user_space(
+                        &text_bbox,
+                        &layout_context.view_params,
+                        &span.values,
+                    );
 
                     let text_span = TextSpan {
                         layout: span.layout,
@@ -937,7 +931,7 @@ impl TSpan {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &DrawingCtx,
+        layout_context: &LayoutContext,
         chunks: &mut Vec<Chunk>,
         dx: f64,
         dy: f64,
@@ -949,8 +943,7 @@ impl TSpan {
             return;
         }
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, &layout_context.view_params);
 
         let x = self.x.map(|l| l.to_user(&params));
         let y = self.y.map(|l| l.to_user(&params));
@@ -967,7 +960,7 @@ impl TSpan {
             node,
             acquired_nodes,
             cascaded,
-            draw_ctx,
+            layout_context,
             span_dx,
             span_dy,
             depth,
@@ -1181,18 +1174,18 @@ fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> Str
 }
 
 fn create_pango_layout(
-    draw_ctx: &DrawingCtx,
-    writing_mode: WritingMode,
+    layout_context: &LayoutContext,
     props: &FontProperties,
     text: &str,
 ) -> pango::Layout {
-    let pango_context = draw_ctx.create_pango_context();
+    let pango_context =
+        create_pango_context(&layout_context.font_options, &layout_context.transform);
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
         pango_context.set_language(&pango::Language::from_string(lang.as_str()));
     }
 
-    pango_context.set_base_gravity(pango::Gravity::from(writing_mode));
+    pango_context.set_base_gravity(pango::Gravity::from(layout_context.writing_mode));
 
     match (props.unicode_bidi, props.direction) {
         (UnicodeBidi::BidiOverride, _) | (UnicodeBidi::Embed, _) => {
@@ -1204,7 +1197,7 @@ fn create_pango_layout(
         }
 
         (_, _) => {
-            pango_context.set_base_dir(pango::Direction::from(writing_mode));
+            pango_context.set_base_dir(pango::Direction::from(layout_context.writing_mode));
         }
     }
 

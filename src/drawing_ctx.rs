@@ -2,7 +2,9 @@
 
 use cssparser::RGBA;
 use float_cmp::approx_eq;
+use glib::translate::*;
 use once_cell::sync::Lazy;
+use pango::ffi::PangoMatrix;
 use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
@@ -93,6 +95,13 @@ impl Drop for ViewParams {
             stack.borrow_mut().pop();
         }
     }
+}
+
+/// Opaque font options for a DrawingCtx.
+///
+/// This is used for DrawingCtx::create_pango_context.
+pub struct FontOptions {
+    options: cairo::FontOptions,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -335,9 +344,7 @@ impl DrawingCtx {
         self.measuring
     }
 
-    // FIXME: this is public just so that text.rs can access it.  Maybe the draw_fn passed to with_discrete_layer should
-    // obtain the current transform as an argument?
-    pub fn get_transform(&self) -> Transform {
+    fn get_transform(&self) -> Transform {
         Transform::from(self.cr.matrix())
     }
 
@@ -643,7 +650,7 @@ impl DrawingCtx {
                 values,
                 false,
                 None,
-                &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
+                &mut |an, dc, _transform| mask_node.draw_children(an, &cascaded, dc, false),
             );
 
             res?;
@@ -671,6 +678,7 @@ impl DrawingCtx {
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
+            &Transform,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         if !stacking_ctx.transform.is_invertible() {
@@ -687,7 +695,8 @@ impl DrawingCtx {
         self.cr.transform(stacking_ctx.transform.into());
 
         let res = if clipping {
-            draw_fn(acquired_nodes, self)
+            let current_transform = self.get_transform();
+            draw_fn(acquired_nodes, self, &current_transform)
         } else {
             with_saved_cr(&self.cr.clone(), || {
                 if let Some(ref link_target) = stacking_ctx.link_target {
@@ -744,7 +753,12 @@ impl DrawingCtx {
 
                         // Draw!
 
-                        let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
+                        let temporary_transform = temporary_draw_ctx.get_transform();
+                        let res = draw_fn(
+                            acquired_nodes,
+                            &mut temporary_draw_ctx,
+                            &temporary_transform,
+                        );
 
                         let bbox = if let Ok(ref bbox) = res {
                             *bbox
@@ -871,7 +885,8 @@ impl DrawingCtx {
 
                     res
                 } else {
-                    draw_fn(acquired_nodes, self)
+                    let current_transform = self.get_transform();
+                    draw_fn(acquired_nodes, self, &current_transform)
                 };
 
                 if stacking_ctx.link_target.is_some() {
@@ -1085,7 +1100,7 @@ impl DrawingCtx {
                         pattern_values,
                         false,
                         None,
-                        &mut |an, dc| {
+                        &mut |an, dc, _transform| {
                             pattern.node_with_children.draw_children(
                                 an,
                                 &pattern_cascaded,
@@ -1222,11 +1237,10 @@ impl DrawingCtx {
             values,
             clipping,
             None,
-            &mut |an, dc| {
+            &mut |an, dc, transform| {
                 let cr = dc.cr.clone();
-                let transform = dc.get_transform();
                 let mut path_helper =
-                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
+                    PathHelper::new(&cr, *transform, &shape.path, shape.stroke.line_cap);
 
                 if clipping {
                     if shape.is_visible {
@@ -1340,7 +1354,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
-                &mut |_an, dc| {
+                &mut |_an, dc, _transform| {
                     with_saved_cr(&dc.cr.clone(), || {
                         if let Some(_params) =
                             dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
@@ -1686,7 +1700,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
-                &mut |an, dc| {
+                &mut |an, dc, _transform| {
                     let _params = dc.push_new_viewport(
                         symbol.get_viewbox(),
                         use_rect,
@@ -1723,7 +1737,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
-                &mut |an, dc| {
+                &mut |an, dc, _transform| {
                     child.draw(
                         an,
                         &CascadedValues::new_from_values(
@@ -1750,10 +1764,10 @@ impl DrawingCtx {
         }
     }
 
-    /// Create a Pango context based on the cr and `testing` flag from the DrawingCtx.
-    pub fn create_pango_context(&self) -> pango::Context {
-        let cr = self.cr.clone();
-
+    /// Extracts the font options for the current state of the DrawingCtx.
+    ///
+    /// You can use the font options later with create_pango_context().
+    pub fn get_font_options(&self) -> FontOptions {
         let mut options = cairo::FontOptions::new().unwrap();
         if self.testing {
             options.set_antialias(cairo::Antialias::Gray);
@@ -1762,35 +1776,52 @@ impl DrawingCtx {
         options.set_hint_style(cairo::HintStyle::None);
         options.set_hint_metrics(cairo::HintMetrics::Off);
 
-        cr.set_font_options(&options);
-
-        let font_map = pangocairo::FontMap::default().unwrap();
-        let context = font_map.create_context().unwrap();
-
-        context.set_round_glyph_positions(false);
-
-        pangocairo::functions::update_context(&cr, &context);
-
-        // Pango says this about pango_cairo_context_set_resolution():
-        //
-        //     Sets the resolution for the context. This is a scale factor between
-        //     points specified in a #PangoFontDescription and Cairo units. The
-        //     default value is 96, meaning that a 10 point font will be 13
-        //     units high. (10 * 96. / 72. = 13.3).
-        //
-        // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
-        // However, we are normalizing everything to userspace units, which amount to
-        // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
-        // to the size values we give it.
-        //
-        // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
-        // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
-        // right here, instead of spreading them out through our Length normalization
-        // code.
-        pangocairo::functions::context_set_resolution(&context, 72.0);
-
-        context
+        FontOptions { options }
     }
+}
+
+/// Create a Pango context with a particular configuration.
+pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -> pango::Context {
+    let font_map = pangocairo::FontMap::default().unwrap();
+    let context = font_map.create_context().unwrap();
+
+    context.set_round_glyph_positions(false);
+
+    let pango_matrix = PangoMatrix {
+        xx: transform.xx,
+        xy: transform.xy,
+        yx: transform.yx,
+        yy: transform.yy,
+        x0: transform.x0,
+        y0: transform.y0,
+    };
+
+    let pango_matrix_ptr: *const PangoMatrix = &pango_matrix;
+
+    let matrix = unsafe { pango::Matrix::from_glib_none(pango_matrix_ptr) };
+    context.set_matrix(Some(&matrix));
+
+    pangocairo::functions::context_set_font_options(&context, Some(&font_options.options));
+
+    // Pango says this about pango_cairo_context_set_resolution():
+    //
+    //     Sets the resolution for the context. This is a scale factor between
+    //     points specified in a #PangoFontDescription and Cairo units. The
+    //     default value is 96, meaning that a 10 point font will be 13
+    //     units high. (10 * 96. / 72. = 13.3).
+    //
+    // I.e. Pango font sizes in a PangoFontDescription are in *points*, not pixels.
+    // However, we are normalizing everything to userspace units, which amount to
+    // pixels.  So, we will use 72.0 here to make Pango not apply any further scaling
+    // to the size values we give it.
+    //
+    // An alternative would be to divide our font sizes by (dpi_y / 72) to effectively
+    // cancel out Pango's scaling, but it's probably better to deal with Pango-isms
+    // right here, instead of spreading them out through our Length normalization
+    // code.
+    pangocairo::functions::context_set_resolution(&context, 72.0);
+
+    context
 }
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
