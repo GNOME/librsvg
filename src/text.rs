@@ -765,7 +765,7 @@ impl Draw for Text {
             values,
             clipping,
             None,
-            &mut |an, dc| {
+            &mut |an, dc, _transform| {
                 let layout_context = LayoutContext {
                     writing_mode: values.writing_mode(),
                     transform: dc.get_transform(),

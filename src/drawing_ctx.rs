@@ -652,7 +652,7 @@ impl DrawingCtx {
                 values,
                 false,
                 None,
-                &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
+                &mut |an, dc, _transform| mask_node.draw_children(an, &cascaded, dc, false),
             );
 
             res?;
@@ -680,6 +680,7 @@ impl DrawingCtx {
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
+            &Transform,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         if !stacking_ctx.transform.is_invertible() {
@@ -696,7 +697,8 @@ impl DrawingCtx {
         self.cr.transform(stacking_ctx.transform.into());
 
         let res = if clipping {
-            draw_fn(acquired_nodes, self)
+            let current_transform = self.get_transform();
+            draw_fn(acquired_nodes, self, &current_transform)
         } else {
             with_saved_cr(&self.cr.clone(), || {
                 if let Some(ref link_target) = stacking_ctx.link_target {
@@ -753,7 +755,12 @@ impl DrawingCtx {
 
                         // Draw!
 
-                        let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
+                        let temporary_transform = temporary_draw_ctx.get_transform();
+                        let res = draw_fn(
+                            acquired_nodes,
+                            &mut temporary_draw_ctx,
+                            &temporary_transform,
+                        );
 
                         let bbox = if let Ok(ref bbox) = res {
                             *bbox
@@ -880,7 +887,8 @@ impl DrawingCtx {
 
                     res
                 } else {
-                    draw_fn(acquired_nodes, self)
+                    let current_transform = self.get_transform();
+                    draw_fn(acquired_nodes, self, &current_transform)
                 };
 
                 if stacking_ctx.link_target.is_some() {
@@ -1094,7 +1102,7 @@ impl DrawingCtx {
                         pattern_values,
                         false,
                         None,
-                        &mut |an, dc| {
+                        &mut |an, dc, _transform| {
                             pattern.node_with_children.draw_children(
                                 an,
                                 &pattern_cascaded,
@@ -1231,7 +1239,7 @@ impl DrawingCtx {
             values,
             clipping,
             None,
-            &mut |an, dc| {
+            &mut |an, dc, _transform| {
                 let cr = dc.cr.clone();
                 let transform = dc.get_transform();
                 let mut path_helper =
@@ -1349,7 +1357,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
-                &mut |_an, dc| {
+                &mut |_an, dc, _transform| {
                     with_saved_cr(&dc.cr.clone(), || {
                         if let Some(_params) =
                             dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
@@ -1695,7 +1703,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
-                &mut |an, dc| {
+                &mut |an, dc, _transform| {
                     let _params = dc.push_new_viewport(
                         symbol.get_viewbox(),
                         use_rect,
@@ -1732,7 +1740,7 @@ impl DrawingCtx {
                 values,
                 clipping,
                 None,
-                &mut |an, dc| {
+                &mut |an, dc, _transform| {
                     child.draw(
                         an,
                         &CascadedValues::new_from_values(

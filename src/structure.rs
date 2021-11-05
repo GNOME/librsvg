@@ -43,7 +43,7 @@ impl Draw for Group {
             values,
             clipping,
             None,
-            &mut |an, dc| node.draw_children(an, cascaded, dc, clipping),
+            &mut |an, dc, _transform| node.draw_children(an, cascaded, dc, clipping),
         )
     }
 }
@@ -84,7 +84,7 @@ impl Draw for Switch {
             values,
             clipping,
             None,
-            &mut |an, dc| {
+            &mut |an, dc, _transform| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
                     elt.get_cond(dc.user_language()) && !elt.is_in_error()
@@ -276,7 +276,7 @@ impl Draw for Svg {
             values,
             clipping,
             None,
-            &mut |an, dc| {
+            &mut |an, dc, _transform| {
                 let _params = self.push_viewport(node, cascaded, dc);
                 node.draw_children(an, cascaded, dc, clipping)
             },
@@ -575,7 +575,7 @@ impl Draw for Link {
             values,
             clipping,
             None,
-            &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
+            &mut |an, dc, _transform| node.draw_children(an, &cascaded, dc, clipping),
         )
     }
 }
