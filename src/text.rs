@@ -801,8 +801,6 @@ impl Draw for Text {
                     positioned_chunks.push(positioned);
                 }
 
-                let view_params = dc.get_view_params();
-
                 let mut layout_spans = Vec::new();
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
