@@ -489,7 +489,7 @@ fn children_to_chunks(
     node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
-    draw_ctx: &DrawingCtx,
+    layout_context: &LayoutContext,
     dx: f64,
     dy: f64,
     depth: usize,
@@ -520,7 +520,7 @@ fn children_to_chunks(
                         &child,
                         acquired_nodes,
                         &cascaded,
-                        draw_ctx,
+                        layout_context,
                         chunks,
                         dx,
                         dy,
@@ -544,7 +544,7 @@ fn children_to_chunks(
                         &child,
                         acquired_nodes,
                         &cascaded,
-                        draw_ctx,
+                        layout_context,
                         chunks,
                         dx,
                         dy,
@@ -688,15 +688,14 @@ impl Text {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &DrawingCtx,
+        layout_context: &LayoutContext,
         x: f64,
         y: f64,
     ) -> Vec<Chunk> {
         let mut chunks = Vec::new();
 
         let values = cascaded.get();
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, &layout_context.view_params);
 
         chunks.push(Chunk::new(values, Some(x), Some(y)));
 
@@ -708,7 +707,7 @@ impl Text {
             node,
             acquired_nodes,
             cascaded,
-            draw_ctx,
+            layout_context,
             dx,
             dy,
             0,
@@ -768,7 +767,7 @@ impl Draw for Text {
                 let mut x = self.x.to_user(&params);
                 let mut y = self.y.to_user(&params);
 
-                let chunks = self.make_chunks(node, an, cascaded, dc, x, y);
+                let chunks = self.make_chunks(node, an, cascaded, &layout_context, x, y);
 
                 let mut measured_chunks = Vec::new();
                 for chunk in &chunks {
@@ -932,7 +931,7 @@ impl TSpan {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
-        draw_ctx: &DrawingCtx,
+        layout_context: &LayoutContext,
         chunks: &mut Vec<Chunk>,
         dx: f64,
         dy: f64,
@@ -944,8 +943,7 @@ impl TSpan {
             return;
         }
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, &layout_context.view_params);
 
         let x = self.x.map(|l| l.to_user(&params));
         let y = self.y.map(|l| l.to_user(&params));
@@ -962,7 +960,7 @@ impl TSpan {
             node,
             acquired_nodes,
             cascaded,
-            draw_ctx,
+            layout_context,
             span_dx,
             span_dy,
             depth,
