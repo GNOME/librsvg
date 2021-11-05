@@ -34,6 +34,9 @@ struct LayoutContext {
 
     /// Font options from the DrawingCtx.
     font_options: FontOptions,
+
+    /// For normalizing lengths.
+    view_params: ViewParams,
 }
 
 /// An absolutely-positioned array of `Span`s
@@ -131,15 +134,11 @@ impl Chunk {
 }
 
 impl MeasuredChunk {
-    fn from_chunk(
-        layout_context: &LayoutContext,
-        chunk: &Chunk,
-        draw_ctx: &DrawingCtx,
-    ) -> MeasuredChunk {
+    fn from_chunk(layout_context: &LayoutContext, chunk: &Chunk) -> MeasuredChunk {
         let mut measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
-            .map(|span| MeasuredSpan::from_span(layout_context, span, draw_ctx))
+            .map(|span| MeasuredSpan::from_span(layout_context, span))
             .collect();
 
         // The first span contains the (dx, dy) that will be applied to the whole chunk.
@@ -171,7 +170,6 @@ impl PositionedChunk {
     fn from_measured(
         layout_context: &LayoutContext,
         measured: &MeasuredChunk,
-        view_params: &ViewParams,
         chunk_x: f64,
         chunk_y: f64,
     ) -> PositionedChunk {
@@ -189,7 +187,7 @@ impl PositionedChunk {
         let mut chunk_bounds: Option<Rect> = None;
 
         for mspan in &measured.spans {
-            let params = NormalizeParams::new(&mspan.values, view_params);
+            let params = NormalizeParams::new(&mspan.values, &layout_context.view_params);
 
             let layout = mspan.layout.clone();
             let layout_size = mspan.layout_size;
@@ -337,15 +335,10 @@ impl Span {
 }
 
 impl MeasuredSpan {
-    fn from_span(
-        layout_context: &LayoutContext,
-        span: &Span,
-        draw_ctx: &DrawingCtx,
-    ) -> MeasuredSpan {
+    fn from_span(layout_context: &LayoutContext, span: &Span) -> MeasuredSpan {
         let values = span.values.clone();
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(&values, &layout_context.view_params);
 
         let properties = FontProperties::new(&values, &params);
 
@@ -438,9 +431,8 @@ impl PositionedSpan {
         &self,
         layout_context: &LayoutContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        view_params: &ViewParams,
     ) -> LayoutSpan {
-        let params = NormalizeParams::new(&self.values, view_params);
+        let params = NormalizeParams::new(&self.values, &layout_context.view_params);
 
         let layout = self.layout.clone();
         let is_visible = self.values.is_visible();
@@ -770,6 +762,7 @@ impl Draw for Text {
                     writing_mode: values.writing_mode(),
                     transform: *transform,
                     font_options: dc.get_font_options(),
+                    view_params: dc.get_view_params(),
                 };
 
                 let mut x = self.x.to_user(&params);
@@ -779,7 +772,7 @@ impl Draw for Text {
 
                 let mut measured_chunks = Vec::new();
                 for chunk in &chunks {
-                    measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk, dc));
+                    measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
                 }
 
                 let mut positioned_chunks = Vec::new();
@@ -787,13 +780,8 @@ impl Draw for Text {
                     let chunk_x = chunk.x.unwrap_or(x);
                     let chunk_y = chunk.y.unwrap_or(y);
 
-                    let positioned = PositionedChunk::from_measured(
-                        &layout_context,
-                        chunk,
-                        &view_params,
-                        chunk_x,
-                        chunk_y,
-                    );
+                    let positioned =
+                        PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
 
                     x = positioned.next_chunk_x;
                     y = positioned.next_chunk_y;
@@ -804,7 +792,7 @@ impl Draw for Text {
                 let mut layout_spans = Vec::new();
                 for chunk in &positioned_chunks {
                     for span in &chunk.spans {
-                        layout_spans.push(span.layout(&layout_context, an, &view_params));
+                        layout_spans.push(span.layout(&layout_context, an));
                     }
                 }
 
@@ -820,12 +808,16 @@ impl Draw for Text {
 
                 let mut text_spans = Vec::new();
                 for span in layout_spans {
-                    let stroke_paint =
-                        span.stroke_paint
-                            .to_user_space(&text_bbox, &view_params, &span.values);
-                    let fill_paint =
-                        span.fill_paint
-                            .to_user_space(&text_bbox, &view_params, &span.values);
+                    let stroke_paint = span.stroke_paint.to_user_space(
+                        &text_bbox,
+                        &layout_context.view_params,
+                        &span.values,
+                    );
+                    let fill_paint = span.fill_paint.to_user_space(
+                        &text_bbox,
+                        &layout_context.view_params,
+                        &span.values,
+                    );
 
                     let text_span = TextSpan {
                         layout: span.layout,
