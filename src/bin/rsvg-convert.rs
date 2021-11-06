@@ -460,7 +460,20 @@ impl Converter {
         };
 
         let mut surface: Option<Surface> = None;
+
+        // Use user units per default
         let mut unit = LengthUnit::Px;
+
+        fn set_unit<N: Normalize, V: Validate>(l: CssLength<N, V>, p: &NormalizeParams, u: LengthUnit) -> f64 {
+            match u {
+                  LengthUnit::Pt => l.to_points(p),
+                  LengthUnit::In => l.to_inches(p),
+                  LengthUnit::Cm => l.to_cm(p),
+                  LengthUnit::Mm => l.to_mm(p),
+                  LengthUnit::Pc => l.to_picas(p),
+                  _ => l.to_user(p),
+            }
+        }
 
         for (page_idx, input) in self.input.iter().enumerate() {
             let (stream, basefile) = match input {
@@ -531,51 +544,21 @@ impl Converter {
                 }
 
                 Format::Svg => {
-                    // TODO: SVG surface can be created with any unit type; let's use pixels for now
+                    let (w_unit, h_unit) = (self.width.map(|l| l.unit), self.height.map(|l| l.unit));
 
-                    // Determine original unit type
-                    // --left and --top units ignored for now
-
-                    let w_unit = self.width.map(|l| l.unit);
-                    let h_unit = self.height.map(|l| l.unit);
-                    let page_size_w_unit = self.page_size.map(|(w, _)| w.unit);
-                    let page_size_h_unit = self.page_size.map(|(_, h)| h.unit);
-
-                    println!("Width unit is {:?} ({:?})", w_unit, print_type_of(&w_unit));
+                    println!("Width unit is {:?}", w_unit);
                     println!("Height unit is {:?}", h_unit);
-                    println!("Page width unit is {:?}", page_size_w_unit);
-                    println!("Page height unit is {:?}", page_size_h_unit);
                     
-                    let mut specified_units = vec![w_unit, h_unit, page_size_w_unit, page_size_h_unit];
-                    specified_units.retain(|u| u.is_some());
-
-                    println!("Units are {:?}", &specified_units);
-                    println!("All equal: {:?}", all_equal_units(&specified_units));
-                    
-                    unit = if !specified_units.is_empty() && all_equal_units(&specified_units) {
-                        match specified_units.pop().unwrap() {
-                            Some(u) => u,
-                            _ => LengthUnit::Px,
-                        }
-                        
-                    } else {
-                            LengthUnit::Px
+                    unit = match (w_unit, h_unit) {
+                        (None, None) => LengthUnit::Px,
+                        (None, u) => u.unwrap(),
+                        (u, None) => u.unwrap(),
+                        (u1, u2) => if u1 == u2 { u1.unwrap() } else { LengthUnit::Px },
                     };
 
                     println!("SVG unit is {:?}", unit);
 
                     // Supported SVG units are px, in, cm, mm, pt, pc
-
-                    fn set_unit<T: librsvg::rsvg_convert_only::Normalize>(l: ULength<T>, p: &NormalizeParams, u: LengthUnit) -> f64 {
-                        match u {
-                              LengthUnit::Pt => l.to_points(p),
-                              LengthUnit::In => l.to_inches(p),
-                              LengthUnit::Cm => l.to_cm(p),
-                              LengthUnit::Mm => l.to_mm(p),
-                              LengthUnit::Pc => l.to_picas(p),
-                              _ => l.to_user(p),
-                        }
-                    }
                     
                     (Size {
                         w: set_unit(ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px), &params, unit),
@@ -637,8 +620,8 @@ impl Converter {
 
             };
 
-            let left = self.left.map(|l| l.to_user(&params)).unwrap_or(0.0);
-            let top = self.top.map(|l| l.to_user(&params)).unwrap_or(0.0);
+            let left = self.left.map(|l| set_unit(l, &params, unit)).unwrap_or(0.0);
+            let top = self.top.map(|l| set_unit(l, &params, unit)).unwrap_or(0.0);
 
             s.render(
                 &renderer,
@@ -690,19 +673,9 @@ impl Converter {
     }
 }
 
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
-}
-
-// https://weirder.earth/@Eden/102226720432099086
-fn all_equal_units(vec: &[Option<LengthUnit>]) -> bool {
-    match vec {
-        [] => true,
-        [_] => true,
-        [x, y, ..] if x != y => false,
-        [_, zs @ ..] => all_equal_units(zs),
-    }
-}
+// fn print_type_of<T>(_: &T) {
+//     println!("{}", std::any::type_name::<T>())
+// }
 
 fn natural_geometry(
     renderer: &CairoRenderer,
