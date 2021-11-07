@@ -194,7 +194,12 @@ impl Deref for Surface {
 }
 
 impl Surface {
-    pub fn new(format: Format, size: Size, stream: OutputStream, unit: LengthUnit) -> Result<Self, Error> {
+    pub fn new(
+        format: Format,
+        size: Size,
+        stream: OutputStream,
+        unit: LengthUnit,
+    ) -> Result<Self, Error> {
         match format {
             Format::Png => Self::new_for_png(size, stream),
             Format::Pdf => Self::new_for_pdf(size, stream),
@@ -251,7 +256,6 @@ impl Surface {
             _ => cairo::SvgUnit::User,
         };
 
-        println!("Setting document unit to #{:?}", svg_unit);
         surface.set_document_unit(svg_unit);
         Ok(Self::Svg(surface, size))
     }
@@ -464,14 +468,18 @@ impl Converter {
         // Use user units per default
         let mut unit = LengthUnit::Px;
 
-        fn set_unit<N: Normalize, V: Validate>(l: CssLength<N, V>, p: &NormalizeParams, u: LengthUnit) -> f64 {
+        fn set_unit<N: Normalize, V: Validate>(
+            l: CssLength<N, V>,
+            p: &NormalizeParams,
+            u: LengthUnit,
+        ) -> f64 {
             match u {
-                  LengthUnit::Pt => l.to_points(p),
-                  LengthUnit::In => l.to_inches(p),
-                  LengthUnit::Cm => l.to_cm(p),
-                  LengthUnit::Mm => l.to_mm(p),
-                  LengthUnit::Pc => l.to_picas(p),
-                  _ => l.to_user(p),
+                LengthUnit::Pt => l.to_points(p),
+                LengthUnit::In => l.to_inches(p),
+                LengthUnit::Cm => l.to_cm(p),
+                LengthUnit::Mm => l.to_mm(p),
+                LengthUnit::Pc => l.to_picas(p),
+                _ => l.to_user(p),
             }
         }
 
@@ -544,29 +552,42 @@ impl Converter {
                 }
 
                 Format::Svg => {
-                    let (w_unit, h_unit) = (self.width.map(|l| l.unit), self.height.map(|l| l.unit));
+                    let (w_unit, h_unit) =
+                        (self.width.map(|l| l.unit), self.height.map(|l| l.unit));
 
-                    println!("Width unit is {:?}", w_unit);
-                    println!("Height unit is {:?}", h_unit);
-                    
                     unit = match (w_unit, h_unit) {
                         (None, None) => LengthUnit::Px,
                         (None, u) => u.unwrap(),
                         (u, None) => u.unwrap(),
-                        (u1, u2) => if u1 == u2 { u1.unwrap() } else { LengthUnit::Px },
+                        (u1, u2) => {
+                            if u1 == u2 {
+                                u1.unwrap()
+                            } else {
+                                LengthUnit::Px
+                            }
+                        }
                     };
 
-                    println!("SVG unit is {:?}", unit);
-
                     // Supported SVG units are px, in, cm, mm, pt, pc
-                    
-                    (Size {
-                        w: set_unit(ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px), &params, unit),
-                        h: set_unit(ULength::<Vertical>::new(natural_size.h, LengthUnit::Px), &params, unit), 
-                    },
-                    self.width.map(|l| set_unit(l, &params, unit)),
-                    self.height.map(|l| set_unit(l, &params, unit)),
-                    self.page_size.map(|(w, h)| Size { w: set_unit(w, &params, unit), h: set_unit(h, &params, unit), }),
+                    (
+                        Size {
+                            w: set_unit(
+                                ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px),
+                                &params,
+                                unit,
+                            ),
+                            h: set_unit(
+                                ULength::<Vertical>::new(natural_size.h, LengthUnit::Px),
+                                &params,
+                                unit,
+                            ),
+                        },
+                        self.width.map(|l| set_unit(l, &params, unit)),
+                        self.height.map(|l| set_unit(l, &params, unit)),
+                        self.page_size.map(|(w, h)| Size {
+                            w: set_unit(w, &params, unit),
+                            h: set_unit(h, &params, unit),
+                        }),
                     )
                 }
             };
@@ -617,7 +638,6 @@ impl Converter {
                     s
                 }
                 surface @ None => surface.insert(self.create_surface(page_size, unit)?),
-
             };
 
             let left = self.left.map(|l| set_unit(l, &params, unit)).unwrap_or(0.0);
@@ -672,10 +692,6 @@ impl Converter {
         Surface::new(self.format, size, output_stream, unit)
     }
 }
-
-// fn print_type_of<T>(_: &T) {
-//     println!("{}", std::any::type_name::<T>())
-// }
 
 fn natural_geometry(
     renderer: &CairoRenderer,
