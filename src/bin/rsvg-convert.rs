@@ -559,8 +559,7 @@ impl Converter {
 
                     unit = match (w_unit, h_unit) {
                         (None, None) => LengthUnit::Px,
-                        (None, u) => u.unwrap(),
-                        (u, None) => u.unwrap(),
+                        (None, u) | (u, None) => u.unwrap(),
                         (u1, u2) => {
                             if u1 == u2 {
                                 u1.unwrap()
