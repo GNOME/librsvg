@@ -535,6 +535,8 @@ impl Converter {
 
                 Format::Pdf | Format::Ps | Format::Eps => {
                     // These surfaces require units in points
+                    unit = LengthUnit::Pt;
+
                     (
                         Size {
                             w: ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px)
