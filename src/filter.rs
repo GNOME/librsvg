@@ -53,10 +53,6 @@ impl Filter {
         self.filter_units
     }
 
-    pub fn get_primitive_units(&self) -> CoordUnits {
-        self.primitive_units
-    }
-
     pub fn to_user_space(&self, params: &NormalizeParams) -> UserSpaceFilter {
         let x = self.x.to_user(params);
         let y = self.y.to_user(params);

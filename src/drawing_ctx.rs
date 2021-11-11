@@ -730,7 +730,7 @@ impl DrawingCtx {
 
                     let affines = CompositingAffines::new(
                         affine_at_start,
-                        self.initial_transform_with_offset(),
+                        self.initial_viewport.transform,
                         self.cr_stack.borrow().len(),
                     );
 
@@ -906,14 +906,6 @@ impl DrawingCtx {
         } else {
             res
         }
-    }
-
-    fn initial_transform_with_offset(&self) -> Transform {
-        let rect = self.toplevel_viewport();
-
-        self.initial_viewport
-            .transform
-            .pre_translate(rect.x0, rect.y0)
     }
 
     /// Run the drawing function with the specified opacity
@@ -1530,7 +1522,7 @@ impl DrawingCtx {
             for (depth, draw) in self.cr_stack.borrow().iter().enumerate() {
                 let affines = CompositingAffines::new(
                     Transform::from(draw.matrix()),
-                    self.initial_transform_with_offset(),
+                    self.initial_viewport.transform,
                     depth,
                 );
 
