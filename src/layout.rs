@@ -16,9 +16,9 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::Path;
 use crate::properties::{
     ClipRule, ComputedValues, Direction, FillRule, Filter, FontFamily, FontStretch, FontStyle,
-    FontVariant, FontWeight, MixBlendMode, Opacity, Overflow, PaintOrder, ShapeRendering,
-    StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit, TextDecoration,
-    TextRendering, UnicodeBidi, XmlLang,
+    FontVariant, FontWeight, Isolation, MixBlendMode, Opacity, Overflow, PaintOrder,
+    ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+    TextDecoration, TextRendering, UnicodeBidi, XmlLang,
 };
 use crate::rect::Rect;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -47,6 +47,7 @@ pub struct StackingContext {
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
     pub mix_blend_mode: MixBlendMode,
+    pub isolation: Isolation,
 
     /// Target from an <a> element
     pub link_target: Option<String>,
@@ -208,6 +209,7 @@ impl StackingContext {
         });
 
         let mix_blend_mode = values.mix_blend_mode();
+        let isolation = values.isolation();
 
         StackingContext {
             element_name,
@@ -218,6 +220,7 @@ impl StackingContext {
             clip_in_object_space,
             mask,
             mix_blend_mode,
+            isolation,
             link_target: None,
         }
     }

@@ -33,8 +33,8 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, Filter, MaskType, MixBlendMode, Opacity, Overflow,
-    PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, ComputedValues, FillRule, Filter, Isolation, MaskType, MixBlendMode, Opacity,
+    Overflow, PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::{
@@ -718,14 +718,19 @@ impl DrawingCtx {
                     &self.empty_bbox(),
                 )?;
 
-                let is_opaque = approx_eq!(f64, opacity, 1.0);
-                let needs_temporary_surface = !(is_opaque
-                    && stacking_ctx.filter == Filter::None
-                    && stacking_ctx.mask.is_none()
-                    && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
-                    && stacking_ctx.clip_in_object_space.is_none());
+                let should_isolate = match stacking_ctx.isolation {
+                    Isolation::Auto => {
+                        let is_opaque = approx_eq!(f64, opacity, 1.0);
+                        !(is_opaque
+                            && stacking_ctx.filter == Filter::None
+                            && stacking_ctx.mask.is_none()
+                            && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
+                            && stacking_ctx.clip_in_object_space.is_none())
+                    }
+                    Isolation::Isolate => true,
+                };
 
-                let res = if needs_temporary_surface {
+                let res = if should_isolate {
                     // Compute our assortment of affines
 
                     let affines = CompositingAffines::new(

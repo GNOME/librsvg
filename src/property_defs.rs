@@ -511,6 +511,19 @@ make_property!(
 );
 
 make_property!(
+    /// `isolation` property.
+    ///
+    /// https://www.w3.org/TR/compositing-1/#isolation
+    Isolation,
+    default: Auto,
+    inherits_automatically: false,
+
+    identifiers:
+    "auto" => Auto,
+    "isolate" => Isolate,
+);
+
+make_property!(
     // docs are in font_props.rs
     LetterSpacing,
     default: LetterSpacing::Normal,

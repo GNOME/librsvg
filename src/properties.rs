@@ -494,6 +494,7 @@ make_properties! {
     }
 
     longhands_not_supported_by_markup5ever: {
+        "isolation"                   => (PresentationAttr::No,  isolation                   : Isolation),
         "line-height"                 => (PresentationAttr::No,  line_height                 : LineHeight),
         "mask-type"                   => (PresentationAttr::Yes, mask_type                   : MaskType),
         "mix-blend-mode"              => (PresentationAttr::No,  mix_blend_mode              : MixBlendMode),
@@ -713,6 +714,7 @@ impl SpecifiedValues {
         compute!(FontVariant, font_variant);
         compute!(FontWeight, font_weight);
         compute!(GlyphOrientationVertical, glyph_orientation_vertical);
+        compute!(Isolation, isolation);
         compute!(LetterSpacing, letter_spacing);
         compute!(LightingColor, lighting_color);
         compute!(MarkerEnd, marker_end);
