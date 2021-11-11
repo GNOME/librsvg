@@ -1,0 +1,14 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1">
+    </linearGradient>
+    <radialGradient id="grad2">
+    </radialGradient>
+  </defs>
+
+  <!-- Use an empty group with a filter, so it will try to resolve the stroke/fill paint servers.
+       Since the group has no children, the paint servers will get an empty bbox.
+  -->
+  <g fill="url(#grad1)" filter="opacity(0.5)"/>
+  <g fill="url(#grad2)" filter="opacity(0.5)"/>
+</svg>

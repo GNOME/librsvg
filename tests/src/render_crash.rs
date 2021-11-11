@@ -10,7 +10,7 @@ use cairo;
 use librsvg::{CairoRenderer, Loader};
 
 #[test_resources("tests/fixtures/render-crash/*.svg")]
-fn loading_crash(path: &str) {
+fn render_crash(path: &str) {
     let handle = Loader::new()
         .read_path(path)
         .unwrap_or_else(|e| panic!("could not load: {}", e));

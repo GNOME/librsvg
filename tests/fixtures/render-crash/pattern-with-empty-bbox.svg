@@ -1,0 +1,16 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="pat1" patternUnits="objectBoundingBox">
+      <circle cx="5" cy="5" r="5" fill="lime"/>
+    </pattern>
+    <pattern id="pat2" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="5" r="5" fill="lime"/>
+    </pattern>
+  </defs>
+
+  <!-- Use an empty group with a filter, so it will try to resolve the stroke/fill paint servers.
+       Since the group has no children, the paint servers will get an empty bbox.
+  -->
+  <g fill="url(#pat1)" filter="opacity(0.5)"/>
+  <g fill="url(#pat2)" filter="opacity(0.5)"/>
+</svg>
