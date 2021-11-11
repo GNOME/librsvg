@@ -71,18 +71,9 @@ impl Filter {
 
 impl SetAttributes for Filter {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        // Parse filterUnits first as it affects x, y, width, height checks.
-        let result = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "filterUnits"))
-            .and_then(|(attr, value)| attr.parse(value).ok());
-        if let Some(filter_units) = result {
-            self.filter_units = filter_units
-        }
-
-        // Parse the rest of the attributes.
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
+                expanded_name!("", "filterUnits") => self.filter_units = attr.parse(value)?,
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
                 expanded_name!("", "y") => self.y = attr.parse(value)?,
                 expanded_name!("", "width") => self.width = attr.parse(value)?,
