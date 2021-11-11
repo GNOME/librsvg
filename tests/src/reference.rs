@@ -18,6 +18,7 @@ use librsvg::{
 use std::path::PathBuf;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
+use crate::test_svg_reference;
 use crate::utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
 
 // The original reference images from the SVG1.1 test suite are at 72 DPI.
@@ -392,4 +393,10 @@ test_compare_render_output!(
     -->
   </svg>
     "##,
+);
+
+test_svg_reference!(
+    isolation,
+    "tests/fixtures/reftests/svg2-reftests/isolation.svg",
+    "tests/fixtures/reftests/svg2-reftests/isolation-ref.svg"
 );
