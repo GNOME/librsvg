@@ -865,16 +865,22 @@ impl DrawingCtx {
                             )
                             .and_then(|mask_surf| {
                                 if let Some(surf) = mask_surf {
+                                    self.cr.push_group();
+
                                     self.cr.set_matrix(affines.compositing.into());
-                                    Ok(self.cr.mask_surface(&surf, 0.0, 0.0)?)
+                                    self.cr.mask_surface(&surf, 0.0, 0.0)?;
+
+                                    Ok(self.cr.pop_group_to_source()?)
                                 } else {
                                     Ok(())
                                 }
                             })
                             .map(|_: ()| bbox)
                         });
-                    } else {
-                        // No mask, so composite the temporary surface
+                    }
+
+                    {
+                        // Composite the temporary surface
 
                         self.cr.set_matrix(affines.compositing.into());
                         self.cr.set_operator(stacking_ctx.mix_blend_mode.into());

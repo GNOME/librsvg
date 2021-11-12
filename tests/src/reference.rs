@@ -400,3 +400,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/svg2-reftests/isolation.svg",
     "tests/fixtures/reftests/svg2-reftests/isolation-ref.svg"
 );
+
+test_svg_reference!(
+    mask_and_opacity,
+    "tests/fixtures/reftests/svg2-reftests/mask-and-opacity.svg",
+    "tests/fixtures/reftests/svg2-reftests/mask-and-opacity-ref.svg"
+);
