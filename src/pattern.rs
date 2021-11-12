@@ -337,7 +337,12 @@ impl ResolvedPattern {
         let params = NormalizeParams::new(values, &view_params);
 
         let rect = self.get_rect(&params);
-        let bbrect = bbox.rect.unwrap();
+
+        let bbrect = match bbox.rect {
+            None => return None,
+            Some(r) if r.is_empty() => return None,
+            Some(r) => r,
+        };
 
         // Create the pattern coordinate system
         let (width, height, coord_transform) = match self.units {
