@@ -70,6 +70,7 @@ test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/reftests/svg1.1/resources/*)	\
 	$(wildcard $(srcdir)/fixtures/reftests/svg2/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/reftests/svg2/*.png)		\
+	$(wildcard $(srcdir)/fixtures/reftests/svg2-reftests/*.svg)	\
 	$(wildcard $(srcdir)/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/fixtures/text/*.svg)		        \
 	$(wildcard $(srcdir)/fixtures/dimensions/*.svg)

@@ -312,6 +312,7 @@ which properties are not available as presentation attributes.
 | font-style                  |                                                        |
 | font-variant                |                                                        |
 | font-weight                 |                                                        |
+| isolation                   | Not available as a presentation attribute.             |
 | letter-spacing              |                                                        |
 | lighting-color              |                                                        |
 | line-height                 | Not available as a presentation attribute.             |
