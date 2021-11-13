@@ -1,4 +1,29 @@
 ==============
+Version 2.52.4
+==============
+
+New features:
+
+- #816 - Support the isolation property from the Compositing and
+  Blending Level 1 specification.
+
+- Support Visual Studio 2022 (Chun-wei Fan).
+
+Fixes:
+
+- #818 - The opacity and mix-blend-mode properties were not being
+  applied when an element has a mask.
+
+- Fix panic when an empty group has a pattern fill and filters.
+
+- Fix the tests on Windows; the still only work when Fontconfig is
+  present (Chun-wei Fan).
+
+- Work around a bug in the cairo-rs bindings in the test suite, that
+  only manifests itself in s/390x due to its calling convention.  See
+  https://github.com/gtk-rs/gtk-rs-core/issues/335
+
+==============
 Version 2.52.3
 ==============
 
