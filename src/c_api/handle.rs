@@ -301,7 +301,6 @@ mod imp {
     impl ObjectSubclass for CHandle {
         const NAME: &'static str = "RsvgHandle";
 
-        type ParentType = glib::Object;
         type Type = super::CHandle;
 
         type Instance = RsvgHandle;
