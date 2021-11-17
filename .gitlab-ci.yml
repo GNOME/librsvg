@@ -25,9 +25,6 @@ stages:
 
 default:
   interruptible: true
-  before_script:
-    - rustc --version
-    - cargo --version
 
 .cache:
   variables:
