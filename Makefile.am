@@ -226,7 +226,7 @@ $(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC)
 	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --bin rsvg-convert
 
 rsvg-convert$(EXEEXT): $(RSVG_CONVERT_BIN)
-	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert
+	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
 
 dist_man_MANS = rsvg-convert.1
 
