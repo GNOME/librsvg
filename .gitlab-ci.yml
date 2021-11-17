@@ -204,6 +204,20 @@ debian:testing:
     - make check
   allow_failure: true
 
+msys2-mingw64:
+  stage: cross distro
+  tags:
+    - win32-ps
+  variables:
+    MSYSTEM: "MINGW64"
+    CHERE_INVOKING: "yes"
+  script:
+    - C:\msys64\usr\bin\pacman --noconfirm -Syyuu
+    - C:\msys64\usr\bin\bash -lc "bash -x ./.gitlab-ci/test-msys2.sh"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
 distcheck:
   stage: release
   extends: .distro
