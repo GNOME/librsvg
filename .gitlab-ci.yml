@@ -205,7 +205,7 @@ debian:testing:
   allow_failure: true
 
 msys2-mingw64:
-  stage: cross distro
+  stage: acceptance test
   tags:
     - win32-ps
   variables:
