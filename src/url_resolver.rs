@@ -153,9 +153,17 @@ mod tests {
         ));
     }
 
+    fn make_file_uri(p: &str) -> String {
+        if cfg!(windows) {
+            format!("file:///c:{}", p)
+        } else {
+            format!("file://{}", p)
+        }
+    }
+
     #[test]
     fn disallows_base_is_root() {
-        let url_resolver = UrlResolver::new(Some(Url::parse("file:///").unwrap()));
+        let url_resolver = UrlResolver::new(Some(Url::parse(&make_file_uri("/")).unwrap()));
         assert!(matches!(
             url_resolver.resolve_href("foo.svg"),
             Err(AllowedUrlError::BaseIsRoot)
@@ -185,42 +193,45 @@ mod tests {
 
     #[test]
     fn allows_relative() {
-        let url_resolver = UrlResolver::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
-        assert_eq!(
-            url_resolver.resolve_href("foo.svg").unwrap().as_ref(),
-            "file:///example/foo.svg",
-        );
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
+        ));
+        let resolved = url_resolver.resolve_href("foo.svg").unwrap();
+        let expected = make_file_uri("/example/foo.svg");
+        assert_eq!(resolved.as_ref(), expected);
     }
 
     #[test]
     fn allows_sibling() {
-        let url_resolver = UrlResolver::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
-        assert_eq!(
-            url_resolver
-                .resolve_href("file:///example/foo.svg")
-                .unwrap()
-                .as_ref(),
-            "file:///example/foo.svg",
-        );
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
+        ));
+        let resolved = url_resolver
+            .resolve_href(&make_file_uri("/example/foo.svg"))
+            .unwrap();
+        let expected = make_file_uri("/example/foo.svg");
+        assert_eq!(resolved.as_ref(), expected);
     }
 
     #[test]
     fn allows_child_of_sibling() {
-        let url_resolver = UrlResolver::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
-        assert_eq!(
-            url_resolver
-                .resolve_href("file:///example/subdir/foo.svg")
-                .unwrap()
-                .as_ref(),
-            "file:///example/subdir/foo.svg",
-        );
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
+        ));
+        let resolved = url_resolver
+            .resolve_href(&make_file_uri("/example/subdir/foo.svg"))
+            .unwrap();
+        let expected = make_file_uri("/example/subdir/foo.svg");
+        assert_eq!(resolved.as_ref(), expected);
     }
 
     #[test]
     fn disallows_non_sibling() {
-        let url_resolver = UrlResolver::new(Some(Url::parse("file:///example/bar.svg").unwrap()));
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
+        ));
         assert!(matches!(
-            url_resolver.resolve_href("file:///etc/passwd"),
+            url_resolver.resolve_href(&make_file_uri("/etc/passwd")),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         ));
     }
