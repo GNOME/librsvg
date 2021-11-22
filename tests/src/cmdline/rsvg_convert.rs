@@ -10,13 +10,13 @@ use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
 #[cfg(system_deps_have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
+use librsvg::{Length, LengthUnit};
 use predicates::boolean::*;
 use predicates::prelude::*;
 use predicates::str::*;
 use std::path::Path;
 use tempfile::Builder;
 use url::Url;
-use librsvg::{Length, LengthUnit};
 
 // What should be tested here?
 // The goal is to test the code in rsvg-convert, not the entire library.
@@ -169,10 +169,9 @@ fn user_specified_width_and_height() {
         .assert()
         .success()
         .stdout(file::is_svg().with_size(
-            Length::new(42.0, LengthUnit::Cm), 
-            Length::new(43.0, LengthUnit::Cm)
-        )
-     );
+            Length::new(42.0, LengthUnit::Cm),
+            Length::new(43.0, LengthUnit::Cm),
+        ));
 }
 
 #[cfg(system_deps_have_cairo_svg)]
@@ -188,10 +187,9 @@ fn user_specified_width_and_height_px_output() {
         .assert()
         .success()
         .stdout(file::is_svg().with_size(
-            Length::new(1920.0, LengthUnit::Px), 
-            Length::new(1920.0, LengthUnit::Px)
-        )
-     );
+            Length::new(1920.0, LengthUnit::Px),
+            Length::new(1920.0, LengthUnit::Px),
+        ));
 }
 
 #[cfg(system_deps_have_cairo_svg)]
@@ -215,10 +213,9 @@ fn user_specified_width_and_height_a4() {
         .assert()
         .success()
         .stdout(file::is_svg().with_size(
-            Length::new(210.0, LengthUnit::Mm), 
-            Length::new(297.0, LengthUnit::Mm)
-        )
-     );
+            Length::new(210.0, LengthUnit::Mm),
+            Length::new(297.0, LengthUnit::Mm),
+        ));
 }
 
 #[test]

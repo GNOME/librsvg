@@ -1,5 +1,5 @@
 use predicates::prelude::*;
-use predicates::str::{StartsWithPredicate};
+use predicates::str::StartsWithPredicate;
 
 use crate::predicates::pdf::PdfPredicate;
 use crate::predicates::png::PngPredicate;

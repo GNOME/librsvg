@@ -878,6 +878,7 @@ dependencies = [
  "itertools 0.9.0",
  "language-tags",
  "libc",
+ "libxml",
  "locale_config",
  "lopdf",
  "markup5ever",
@@ -903,6 +904,17 @@ dependencies = [
  "url",
  "xml5ever",
  "yeslogic-fontconfig-sys",
+]
+
+[[package]]
+name = "libxml"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02c07ecb409949e5c5c0818e189e6bc766bcb8b08b3401772ca8c61a58c682b8"
+dependencies = [
+ "libc",
+ "pkg-config",
+ "vcpkg",
 ]
 
 [[package]]
@@ -2311,6 +2323,12 @@ name = "utf-8"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
+
+[[package]]
+name = "vcpkg"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "vec_map"

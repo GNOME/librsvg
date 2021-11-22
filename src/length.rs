@@ -44,8 +44,8 @@
 
 use cssparser::{match_ignore_ascii_case, Parser, Token, _cssparser_internal_to_lowercase};
 use std::f64::consts::*;
-use std::marker::PhantomData;
 use std::fmt;
+use std::marker::PhantomData;
 
 use crate::dpi::Dpi;
 use crate::drawing_ctx::ViewParams;
@@ -515,7 +515,7 @@ impl<N: Normalize> Parse for LengthOrAuto<N> {
 impl fmt::Display for LengthUnit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let unit = match &self {
-            LengthUnit::Percent => "%", 
+            LengthUnit::Percent => "%",
             LengthUnit::Px => "px",
             LengthUnit::Em => "em",
             LengthUnit::Ex => "ex",
