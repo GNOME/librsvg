@@ -3,6 +3,7 @@ extern crate predicates;
 pub mod file;
 mod pdf;
 mod png;
+mod svg;
 
 use predicates::str;
 
