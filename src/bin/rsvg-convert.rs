@@ -9,7 +9,7 @@ use gio::{UnixInputStream, UnixOutputStream};
 
 #[cfg(windows)]
 mod windows_imports {
-    pub use gio::{Win32InputStream, Win32OutputStream};
+    pub use gio::{Win32InputStream, WriteOutputStream};
     pub use glib::ffi::gboolean;
     pub use glib::translate::*;
     pub use libc::c_void;
@@ -372,7 +372,10 @@ impl Stdout {
 
     #[cfg(windows)]
     pub fn stream() -> OutputStream {
-        let stream = unsafe { Win32OutputStream::with_handle(io::stdout()) };
+        // Ideally, we could use a Win32OutputStream, but when it's used with a file redirect,
+        // it gets buggy.
+        // https://gitlab.gnome.org/GNOME/librsvg/-/issues/812
+        let stream = WriteOutputStream::new(io::stdout());
         stream.upcast::<OutputStream>()
     }
 }
