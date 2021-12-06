@@ -1861,6 +1861,7 @@ fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
 #[derive(Debug)]
 struct CompositingAffines {
     pub outside_temporary_surface: Transform,
+    #[allow(unused)]
     pub initial: Transform,
     pub for_temporary_surface: Transform,
     pub compositing: Transform,
