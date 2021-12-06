@@ -88,8 +88,6 @@ pub enum Operator {
 /// it is in the `Exclusive` state, while in the `Shared` state it only allows read-only access.
 #[derive(Debug, Clone)]
 pub struct ImageSurface<T> {
-    state: T,
-
     surface: cairo::ImageSurface,
 
     data_ptr: NonNull<u8>, // *const.
@@ -98,6 +96,8 @@ pub struct ImageSurface<T> {
     stride: isize,
 
     surface_type: SurfaceType,
+
+    _state: PhantomData<T>,
 }
 
 #[derive(Debug, Clone)]
@@ -225,13 +225,13 @@ impl ImageSurface<Shared> {
         let stride = surface.stride() as isize;
 
         Ok(SharedImageSurface {
-            state: Shared,
             surface,
             data_ptr,
             width,
             height,
             stride,
             surface_type,
+            _state: PhantomData,
         })
     }
 
@@ -1317,13 +1317,13 @@ impl ImageSurface<Exclusive> {
         let stride = surface.stride() as isize;
 
         Ok(ExclusiveImageSurface {
-            state: Exclusive,
             surface,
             data_ptr,
             width,
             height,
             stride,
             surface_type,
+            _state: PhantomData,
         })
     }
 
