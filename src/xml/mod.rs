@@ -67,12 +67,6 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-/// Accumulates data inside a `<style>` element
-#[derive(Clone)]
-struct StyleContext {
-    text: String,
-}
-
 // This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
 // that is freed in impl Drop for XmlState
 type XmlEntityPtr = *mut libc::c_void;
