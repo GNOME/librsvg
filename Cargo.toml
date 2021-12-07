@@ -90,7 +90,6 @@ proptest = "0.10.1"
 tempfile = "3"
 test-generator = "0.3"
 yeslogic-fontconfig-sys = "2.11.1"
-libxml = "0.3.0"
 
 [build-dependencies]
 regex = "1.3.9"
