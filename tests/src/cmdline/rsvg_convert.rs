@@ -153,7 +153,7 @@ fn output_format_svg_short_option() {
         .arg("svg")
         .assert()
         .success()
-        .stdout(file::is_svg().with_svg_format());
+        .stdout(file::is_svg());
 }
 
 #[cfg(system_deps_have_cairo_svg)]

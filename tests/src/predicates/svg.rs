@@ -1,9 +1,7 @@
-use librsvg::Length;
-use predicates::boolean::AndPredicate;
+use gio::MemoryInputStream;
+use glib::Bytes;
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
-use predicates::str::StartsWithPredicate;
-use predicates::str::*;
 use std::cmp;
 use std::fmt;
 use std::str;
@@ -13,7 +11,7 @@ use libxml::xpath::Context;
 
 use librsvg::doctest_only::Both;
 use librsvg::rsvg_convert_only::ULength;
-use librsvg::Parse;
+use librsvg::{Length, Loader, LoadingError, Parse, SvgHandle};
 
 /// Checks that the variable of type [u8] can be parsed as a SVG file.
 #[derive(Debug)]
@@ -29,21 +27,21 @@ impl SvgPredicate {
             }),
         }
     }
+}
 
-    pub fn with_svg_format(
-        self: Self,
-    ) -> AndPredicate<StartsWithPredicate, ContainsPredicate, str> {
-        predicate::str::starts_with("<?xml ").and(predicate::str::contains("<svg "))
-    }
+fn svg_from_bytes(data: &[u8]) -> Result<SvgHandle, LoadingError> {
+    let bytes = Bytes::from(data);
+    let stream = MemoryInputStream::from_bytes(&bytes);
+    Loader::new().read_stream(&stream, None::<&gio::File>, None::<&gio::Cancellable>)
 }
 
 impl Predicate<[u8]> for SvgPredicate {
     fn eval(&self, data: &[u8]) -> bool {
-        str::from_utf8(data).is_ok()
+        svg_from_bytes(data).is_ok()
     }
 
     fn find_case<'a>(&'a self, _expected: bool, data: &[u8]) -> Option<Case<'a>> {
-        match str::from_utf8(data) {
+        match svg_from_bytes(data) {
             Ok(_) => None,
             Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
         }
