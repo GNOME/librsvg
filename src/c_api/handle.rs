@@ -35,9 +35,7 @@ use url::Url;
 use glib::subclass::prelude::*;
 use glib::translate::*;
 use glib::{ffi::gpointer, gobject_ffi};
-use glib::{Bytes, Cast, ParamFlags, ParamSpec, StaticType, ToValue};
-use once_cell::sync::Lazy;
-
+use glib::{Bytes, Cast, StaticType, ToValue};
 use glib::types::instance_of;
 
 use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
@@ -282,6 +280,11 @@ impl From<RsvgRectangle> for cairo::Rectangle {
 
 mod imp {
     use super::*;
+    use glib::{
+        ParamFlags, ParamSpec, ParamSpecDouble, ParamSpecFlags, ParamSpecInt, ParamSpecString,
+    };
+    use once_cell::sync::Lazy;
+    
     /// Contains all the interior mutability for a RsvgHandle to be called
     /// from the C API.
     pub struct CHandle {
@@ -324,7 +327,7 @@ mod imp {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
                 vec![
-                    ParamSpec::new_flags(
+                    ParamSpecFlags::new(
                         "flags",
                         "Flags",
                         "Loading flags",
@@ -332,7 +335,7 @@ mod imp {
                         0,
                         ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    ParamSpec::new_double(
+                    ParamSpecDouble::new(
                         "dpi-x",
                         "Horizontal DPI",
                         "Horizontal resolution in dots per inch",
@@ -341,7 +344,7 @@ mod imp {
                         0.0,
                         ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
                     ),
-                    ParamSpec::new_double(
+                    ParamSpecDouble::new(
                         "dpi-y",
                         "Vertical DPI",
                         "Vertical resolution in dots per inch",
@@ -350,14 +353,14 @@ mod imp {
                         0.0,
                         ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
                     ),
-                    ParamSpec::new_string(
+                    ParamSpecString::new(
                         "base-uri",
                         "Base URI",
                         "Base URI for resolving relative references",
                         None,
                         ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
                     ),
-                    ParamSpec::new_int(
+                    ParamSpecInt::new(
                         "width",
                         "Image width",
                         "Image width",
@@ -366,7 +369,7 @@ mod imp {
                         0,
                         ParamFlags::READABLE,
                     ),
-                    ParamSpec::new_int(
+                    ParamSpecInt::new(
                         "height",
                         "Image height",
                         "Image height",
@@ -375,7 +378,7 @@ mod imp {
                         0,
                         ParamFlags::READABLE,
                     ),
-                    ParamSpec::new_double(
+                    ParamSpecDouble::new(
                         "em",
                         "em",
                         "em",
@@ -384,7 +387,7 @@ mod imp {
                         0.0,
                         ParamFlags::READABLE,
                     ),
-                    ParamSpec::new_double(
+                    ParamSpecDouble::new(
                         "ex",
                         "ex",
                         "ex",
@@ -393,21 +396,21 @@ mod imp {
                         0.0,
                         ParamFlags::READABLE,
                     ),
-                    ParamSpec::new_string(
+                    ParamSpecString::new(
                         "title",
                         "deprecated",
                         "deprecated",
                         None,
                         ParamFlags::READABLE,
                     ),
-                    ParamSpec::new_string(
+                    ParamSpecString::new(
                         "desc",
                         "deprecated",
                         "deprecated",
                         None,
                         ParamFlags::READABLE,
                     ),
-                    ParamSpec::new_string(
+                    ParamSpecString::new(
                         "metadata",
                         "deprecated",
                         "deprecated",
