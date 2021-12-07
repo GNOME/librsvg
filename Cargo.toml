@@ -3,7 +3,7 @@ name = "librsvg"
 version = "2.53.0"
 authors = ["Federico Mena Quintero <federico@gnome.org>"]
 build = "build.rs"
-edition = "2018"
+edition = "2021"
 
 [package.metadata.system-deps]
 cairo-pdf = { version = "1.16", optional = true }
