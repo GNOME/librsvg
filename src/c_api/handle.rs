@@ -34,9 +34,9 @@ use url::Url;
 
 use glib::subclass::prelude::*;
 use glib::translate::*;
+use glib::types::instance_of;
 use glib::{ffi::gpointer, gobject_ffi};
 use glib::{Bytes, Cast, StaticType, ToValue};
-use glib::types::instance_of;
 
 use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
 
@@ -80,7 +80,7 @@ impl fmt::Display for RenderingError {
 }
 
 /// Rust version of the `RsvgHandleFlags` enum in C.
-#[glib::gflags("RsvgHandleFlags")]
+#[glib::flags(name = "RsvgHandleFlags")]
 pub enum HandleFlags {
     #[gflags(name = "RSVG_HANDLE_FLAGS_NONE", nick = "flags-none")]
     NONE = 0,
@@ -284,7 +284,7 @@ mod imp {
         ParamFlags, ParamSpec, ParamSpecDouble, ParamSpecFlags, ParamSpecInt, ParamSpecString,
     };
     use once_cell::sync::Lazy;
-    
+
     /// Contains all the interior mutability for a RsvgHandle to be called
     /// from the C API.
     pub struct CHandle {
@@ -2094,11 +2094,11 @@ pub(crate) fn set_gerror(err: *mut *mut glib::ffi::GError, code: u32, msg: &str)
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "RsvgError")]
+#[enum_type(name = "RsvgError")]
 enum Error {
-    #[genum(name = "RSVG_ERROR_FAILED", nick = "failed")]
+    #[enum_value(name = "RSVG_ERROR_FAILED", nick = "failed")]
     // Keep in sync with rsvg.h:RsvgError
     Failed = 0,
 }
