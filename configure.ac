@@ -159,6 +159,18 @@ PKG_CHECK_MODULES([RSVG_CONVERT],[gio-2.0 "gio-${gio_backend}-2.0" gdk-pixbuf-2.
 
 GLIB_TESTS
 
+AS_IF([test x"$platform" = xWindows], [
+  ## Cannot use AC_CHECK_LIB to check for function with __stdcall
+  ## calling convention.  Instead just check for the header and add the
+  ## corresponding library to the linker flags.
+  AC_CHECK_HEADER([winsock2.h], [WS2_32_LIBS=-lws2_32], [], [#include <windows.h>])
+  LIBS="$LIBS $WS2_32_LIBS"
+  AC_CHECK_HEADER([userenv.h], [USERENV_LIBS=-luserenv], [], [#include <windows.h>])
+  LIBS="$LIBS $USERENV_LIBS"
+  AC_CHECK_HEADER([bcrypt.h], [BCRYPT_LIBS=-lbcrypt], [], [#include <windows.h>])
+  LIBS="$LIBS $BCRYPT_LIBS"
+])
+
 dnl ===========================================================================
 dnl GDK-Pixbuf SVG loader
 dnl ===========================================================================
