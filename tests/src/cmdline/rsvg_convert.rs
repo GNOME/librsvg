@@ -10,6 +10,7 @@ use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
 #[cfg(system_deps_have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
+use librsvg::{Length, LengthUnit};
 use predicates::boolean::*;
 use predicates::prelude::*;
 use predicates::str::*;
@@ -152,7 +153,69 @@ fn output_format_svg_short_option() {
         .arg("svg")
         .assert()
         .success()
-        .stdout(file::is_svg());
+        .stdout(file::is_svg().with_svg_format());
+}
+
+#[cfg(system_deps_have_cairo_svg)]
+#[test]
+fn user_specified_width_and_height() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--format")
+        .arg("svg")
+        .arg("--width")
+        .arg("42cm")
+        .arg("--height")
+        .arg("43cm")
+        .assert()
+        .success()
+        .stdout(file::is_svg().with_size(
+            Length::new(42.0, LengthUnit::Cm),
+            Length::new(43.0, LengthUnit::Cm),
+        ));
+}
+
+#[cfg(system_deps_have_cairo_svg)]
+#[test]
+fn user_specified_width_and_height_px_output() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--format")
+        .arg("svg")
+        .arg("--width")
+        .arg("1920")
+        .arg("--height")
+        .arg("508mm")
+        .assert()
+        .success()
+        .stdout(file::is_svg().with_size(
+            Length::new(1920.0, LengthUnit::Px),
+            Length::new(1920.0, LengthUnit::Px),
+        ));
+}
+
+#[cfg(system_deps_have_cairo_svg)]
+#[test]
+fn user_specified_width_and_height_a4() {
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        .arg("--format")
+        .arg("svg")
+        .arg("--page-width")
+        .arg("210mm")
+        .arg("--page-height")
+        .arg("297mm")
+        .arg("--left")
+        .arg("1cm")
+        .arg("--top")
+        .arg("1cm")
+        .arg("--width")
+        .arg("190mm")
+        .arg("--height")
+        .arg("277mm")
+        .assert()
+        .success()
+        .stdout(file::is_svg().with_size(
+            Length::new(210.0, LengthUnit::Mm),
+            Length::new(297.0, LengthUnit::Mm),
+        ));
 }
 
 #[test]

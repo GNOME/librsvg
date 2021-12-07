@@ -1,9 +1,9 @@
-use predicates::boolean::AndPredicate;
 use predicates::prelude::*;
-use predicates::str::{ContainsPredicate, StartsWithPredicate};
+use predicates::str::StartsWithPredicate;
 
 use crate::predicates::pdf::PdfPredicate;
 use crate::predicates::png::PngPredicate;
+use crate::predicates::svg::SvgPredicate;
 
 /// Predicates to check that some output ([u8]) is of a certain file type
 
@@ -23,6 +23,6 @@ pub fn is_pdf() -> PdfPredicate {
     PdfPredicate {}
 }
 
-pub fn is_svg() -> AndPredicate<StartsWithPredicate, ContainsPredicate, str> {
-    predicate::str::starts_with("<?xml ").and(predicate::str::contains("<svg "))
+pub fn is_svg() -> SvgPredicate {
+    SvgPredicate {}
 }

@@ -44,6 +44,7 @@
 
 use cssparser::{match_ignore_ascii_case, Parser, Token, _cssparser_internal_to_lowercase};
 use std::f64::consts::*;
+use std::fmt;
 use std::marker::PhantomData;
 
 use crate::dpi::Dpi;
@@ -410,15 +411,15 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
             }
 
             LengthUnit::Percent => {
-                panic!("Cannot convert a percentage length into points");
+                panic!("Cannot convert a percentage length into an absolute length");
             }
 
             LengthUnit::Em => {
-                panic!("Cannot convert an Em length into points");
+                panic!("Cannot convert an Em length into an absolute length");
             }
 
             LengthUnit::Ex => {
-                panic!("Cannot convert an Ex length into points");
+                panic!("Cannot convert an Ex length into an absolute length");
             }
 
             LengthUnit::In => self.length * POINTS_PER_INCH,
@@ -431,6 +432,22 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
 
             LengthUnit::Pc => self.length / PICA_PER_INCH * POINTS_PER_INCH,
         }
+    }
+
+    pub fn to_inches(&self, params: &NormalizeParams) -> f64 {
+        self.to_points(params) / POINTS_PER_INCH
+    }
+
+    pub fn to_cm(&self, params: &NormalizeParams) -> f64 {
+        self.to_inches(params) * CM_PER_INCH
+    }
+
+    pub fn to_mm(&self, params: &NormalizeParams) -> f64 {
+        self.to_inches(params) * MM_PER_INCH
+    }
+
+    pub fn to_picas(&self, params: &NormalizeParams) -> f64 {
+        self.to_inches(params) * PICA_PER_INCH
     }
 }
 
@@ -492,6 +509,24 @@ impl<N: Normalize> Parse for LengthOrAuto<N> {
         } else {
             Ok(LengthOrAuto::Length(CssLength::parse(parser)?))
         }
+    }
+}
+
+impl fmt::Display for LengthUnit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let unit = match &self {
+            LengthUnit::Percent => "%",
+            LengthUnit::Px => "px",
+            LengthUnit::Em => "em",
+            LengthUnit::Ex => "ex",
+            LengthUnit::In => "in",
+            LengthUnit::Cm => "cm",
+            LengthUnit::Mm => "mm",
+            LengthUnit::Pt => "pt",
+            LengthUnit::Pc => "pc",
+        };
+
+        write!(f, "{}", unit)
     }
 }
 

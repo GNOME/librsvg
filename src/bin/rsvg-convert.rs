@@ -16,7 +16,6 @@ mod windows_imports {
     pub use std::io;
     pub use std::os::windows::io::AsRawHandle;
 }
-
 #[cfg(windows)]
 use self::windows_imports::*;
 
@@ -195,13 +194,18 @@ impl Deref for Surface {
 }
 
 impl Surface {
-    pub fn new(format: Format, size: Size, stream: OutputStream) -> Result<Self, Error> {
+    pub fn new(
+        format: Format,
+        size: Size,
+        stream: OutputStream,
+        unit: LengthUnit,
+    ) -> Result<Self, Error> {
         match format {
             Format::Png => Self::new_for_png(size, stream),
             Format::Pdf => Self::new_for_pdf(size, stream),
             Format::Ps => Self::new_for_ps(size, stream, false),
             Format::Eps => Self::new_for_ps(size, stream, true),
-            Format::Svg => Self::new_for_svg(size, stream),
+            Format::Svg => Self::new_for_svg(size, stream, unit),
         }
     }
 
@@ -240,14 +244,24 @@ impl Surface {
     }
 
     #[cfg(system_deps_have_cairo_svg)]
-    fn new_for_svg(size: Size, stream: OutputStream) -> Result<Self, Error> {
+    fn new_for_svg(size: Size, stream: OutputStream, unit: LengthUnit) -> Result<Self, Error> {
         let mut surface = cairo::SvgSurface::for_stream(size.w, size.h, stream.into_write())?;
-        surface.set_document_unit(cairo::SvgUnit::User);
+
+        let svg_unit = match unit {
+            LengthUnit::Cm => cairo::SvgUnit::Cm,
+            LengthUnit::In => cairo::SvgUnit::In,
+            LengthUnit::Mm => cairo::SvgUnit::Mm,
+            LengthUnit::Pc => cairo::SvgUnit::Pc,
+            LengthUnit::Pt => cairo::SvgUnit::Pt,
+            _ => cairo::SvgUnit::User,
+        };
+
+        surface.set_document_unit(svg_unit);
         Ok(Self::Svg(surface, size))
     }
 
     #[cfg(not(system_deps_have_cairo_svg))]
-    fn new_for_svg(_size: Size, _stream: OutputStream) -> Result<Self, Error> {
+    fn new_for_svg(_size: Size, _stream: OutputStream, u: LengthUnit) -> Result<Self, Error> {
         Err(Error("unsupported format".to_string()))
     }
 
@@ -454,6 +468,24 @@ impl Converter {
 
         let mut surface: Option<Surface> = None;
 
+        // Use user units per default
+        let mut unit = LengthUnit::Px;
+
+        fn set_unit<N: Normalize, V: Validate>(
+            l: CssLength<N, V>,
+            p: &NormalizeParams,
+            u: LengthUnit,
+        ) -> f64 {
+            match u {
+                LengthUnit::Pt => l.to_points(p),
+                LengthUnit::In => l.to_inches(p),
+                LengthUnit::Cm => l.to_cm(p),
+                LengthUnit::Mm => l.to_mm(p),
+                LengthUnit::Pc => l.to_picas(p),
+                _ => l.to_user(p),
+            }
+        }
+
         for (page_idx, input) in self.input.iter().enumerate() {
             let (stream, basefile) = match input {
                 Input::Stdin => (Stdin::stream(), None),
@@ -485,7 +517,6 @@ impl Converter {
 
             let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
 
-            // natural_size is in pixels
             let natural_size = Size::new(geometry.width, geometry.height);
 
             let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
@@ -507,6 +538,8 @@ impl Converter {
 
                 Format::Pdf | Format::Ps | Format::Eps => {
                     // These surfaces require units in points
+                    unit = LengthUnit::Pt;
+
                     (
                         Size {
                             w: ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px)
@@ -524,14 +557,40 @@ impl Converter {
                 }
 
                 Format::Svg => {
-                    // TODO: SVG surface can be created with any unit type; let's use pixels for now
+                    let (w_unit, h_unit) =
+                        (self.width.map(|l| l.unit), self.height.map(|l| l.unit));
+
+                    unit = match (w_unit, h_unit) {
+                        (None, None) => LengthUnit::Px,
+                        (None, u) | (u, None) => u.unwrap(),
+                        (u1, u2) => {
+                            if u1 == u2 {
+                                u1.unwrap()
+                            } else {
+                                LengthUnit::Px
+                            }
+                        }
+                    };
+
+                    // Supported SVG units are px, in, cm, mm, pt, pc
                     (
-                        natural_size,
-                        self.width.map(|l| l.to_user(&params)),
-                        self.height.map(|l| l.to_user(&params)),
+                        Size {
+                            w: set_unit(
+                                ULength::<Horizontal>::new(natural_size.w, LengthUnit::Px),
+                                &params,
+                                unit,
+                            ),
+                            h: set_unit(
+                                ULength::<Vertical>::new(natural_size.h, LengthUnit::Px),
+                                &params,
+                                unit,
+                            ),
+                        },
+                        self.width.map(|l| set_unit(l, &params, unit)),
+                        self.height.map(|l| set_unit(l, &params, unit)),
                         self.page_size.map(|(w, h)| Size {
-                            w: w.to_user(&params),
-                            h: h.to_user(&params),
+                            w: set_unit(w, &params, unit),
+                            h: set_unit(h, &params, unit),
                         }),
                     )
                 }
@@ -582,11 +641,11 @@ impl Converter {
                     }
                     s
                 }
-                surface @ None => surface.insert(self.create_surface(page_size)?),
+                surface @ None => surface.insert(self.create_surface(page_size, unit)?),
             };
 
-            let left = self.left.map(|l| l.to_user(&params)).unwrap_or(0.0);
-            let top = self.top.map(|l| l.to_user(&params)).unwrap_or(0.0);
+            let left = self.left.map(|l| set_unit(l, &params, unit)).unwrap_or(0.0);
+            let top = self.top.map(|l| set_unit(l, &params, unit)).unwrap_or(0.0);
 
             s.render(
                 &renderer,
@@ -622,7 +681,7 @@ impl Converter {
             .ok_or_else(|| error!("The SVG {} has no dimensions", input))
     }
 
-    fn create_surface(&self, size: Size) -> Result<Surface, Error> {
+    fn create_surface(&self, size: Size, unit: LengthUnit) -> Result<Surface, Error> {
         let output_stream = match self.output {
             Output::Stdout => Stdout::stream(),
             Output::Path(ref p) => {
@@ -634,7 +693,7 @@ impl Converter {
             }
         };
 
-        Surface::new(self.format, size, output_stream)
+        Surface::new(self.format, size, output_stream, unit)
     }
 }
 
