@@ -45,7 +45,7 @@ cairo-rs = { version="0.14.0", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 chrono = "0.4.0" # rsvg-convert
 clap = "~2.33.0" # rsvg-convert
-cssparser = "0.27.1"
+cssparser = "0.28.0"
 data-url = "0.1"
 encoding = "0.2.33"
 float-cmp = "0.8.0"
@@ -66,7 +66,7 @@ rayon = "1"
 rctree = "0.3.3"
 regex = "1"
 rgb = { version="0.8", features=["argb"] }
-selectors = "0.22.0"
+selectors = "0.23.0"
 string_cache = "0.8.0"
 tinyvec = { version = "1.2.0", features = ["alloc"] }
 url = "2"
