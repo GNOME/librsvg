@@ -44,7 +44,7 @@ crate-type = [ "staticlib", "rlib" ]
 cairo-rs = { version="0.14.0", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 chrono = "0.4.0" # rsvg-convert
-clap = "~2.33.0" # rsvg-convert
+clap = "2.34.0" # rsvg-convert
 cssparser = "0.28.0"
 data-url = "0.1"
 encoding = "0.2.33"
