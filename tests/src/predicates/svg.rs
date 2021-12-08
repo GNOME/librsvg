@@ -1,19 +1,11 @@
-use librsvg::Length;
-use predicates::boolean::AndPredicate;
+use gio::MemoryInputStream;
+use glib::Bytes;
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
-use predicates::str::StartsWithPredicate;
-use predicates::str::*;
 use std::cmp;
 use std::fmt;
-use std::str;
 
-use libxml::parser::Parser;
-use libxml::xpath::Context;
-
-use librsvg::doctest_only::Both;
-use librsvg::rsvg_convert_only::ULength;
-use librsvg::Parse;
+use librsvg::{CairoRenderer, Length, Loader, LoadingError, SvgHandle};
 
 /// Checks that the variable of type [u8] can be parsed as a SVG file.
 #[derive(Debug)]
@@ -29,21 +21,21 @@ impl SvgPredicate {
             }),
         }
     }
+}
 
-    pub fn with_svg_format(
-        self: Self,
-    ) -> AndPredicate<StartsWithPredicate, ContainsPredicate, str> {
-        predicate::str::starts_with("<?xml ").and(predicate::str::contains("<svg "))
-    }
+fn svg_from_bytes(data: &[u8]) -> Result<SvgHandle, LoadingError> {
+    let bytes = Bytes::from(data);
+    let stream = MemoryInputStream::from_bytes(&bytes);
+    Loader::new().read_stream(&stream, None::<&gio::File>, None::<&gio::Cancellable>)
 }
 
 impl Predicate<[u8]> for SvgPredicate {
     fn eval(&self, data: &[u8]) -> bool {
-        str::from_utf8(data).is_ok()
+        svg_from_bytes(data).is_ok()
     }
 
     fn find_case<'a>(&'a self, _expected: bool, data: &[u8]) -> Option<Case<'a>> {
-        match str::from_utf8(data) {
+        match svg_from_bytes(data) {
             Ok(_) => None,
             Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
         }
@@ -117,66 +109,54 @@ trait Details {
 }
 
 impl DetailPredicate<SvgPredicate> {
-    fn eval_doc(&self, doc: &str) -> bool {
+    fn eval_doc(&self, handle: &SvgHandle) -> bool {
         match &self.d {
-            Detail::Size(d) => doc.get_size() == Some(Dimensions { w: d.w, h: d.h }),
+            Detail::Size(d) => {
+                let renderer = CairoRenderer::new(handle);
+                let dimensions = renderer.intrinsic_dimensions();
+                (dimensions.width, dimensions.height) == (Some(d.w), Some(d.h))
+            }
         }
     }
 
-    fn find_case_for_doc<'a>(&'a self, expected: bool, doc: &str) -> Option<Case<'a>> {
-        if self.eval_doc(doc) == expected {
-            let product = self.product_for_doc(doc);
+    fn find_case_for_doc<'a>(&'a self, expected: bool, handle: &SvgHandle) -> Option<Case<'a>> {
+        if self.eval_doc(handle) == expected {
+            let product = self.product_for_doc(handle);
             Some(Case::new(Some(self), false).add_product(product))
         } else {
             None
         }
     }
 
-    fn product_for_doc(&self, doc: &str) -> Product {
+    fn product_for_doc(&self, handle: &SvgHandle) -> Product {
         match &self.d {
-            Detail::Size(_) => Product::new(
-                "actual size",
-                match doc.get_size() {
-                    Some(dim) => format!("{}", dim),
-                    None => "None".to_string(),
-                },
-            ),
+            Detail::Size(_) => {
+                let renderer = CairoRenderer::new(handle);
+                let dimensions = renderer.intrinsic_dimensions();
+
+                Product::new(
+                    "actual size",
+                    format!(
+                        "width={:?}, height={:?}",
+                        dimensions.width, dimensions.height
+                    ),
+                )
+            }
         }
-    }
-}
-
-impl Details for &str {
-    fn get_size(self: &Self) -> Option<Dimensions> {
-        let parser = Parser::default();
-        let doc = parser.parse_string(self).unwrap();
-        let context = Context::new(&doc).unwrap();
-
-        let width = context.evaluate("//@width").unwrap().get_nodes_as_vec()[0].get_content();
-        let height = context.evaluate("//@height").unwrap().get_nodes_as_vec()[0].get_content();
-
-        let parsed_w = ULength::<Both>::parse_str(&width).unwrap();
-        let parsed_h = ULength::<Both>::parse_str(&height).unwrap();
-
-        let dim = Dimensions {
-            w: Length::new(parsed_w.length, parsed_w.unit),
-            h: Length::new(parsed_h.length, parsed_h.unit),
-        };
-
-        return Some(dim);
     }
 }
 
 impl Predicate<[u8]> for DetailPredicate<SvgPredicate> {
     fn eval(&self, data: &[u8]) -> bool {
-        match str::from_utf8(data) {
-            Ok(doc) => self.eval_doc(&doc),
+        match svg_from_bytes(data) {
+            Ok(handle) => self.eval_doc(&handle),
             _ => false,
         }
     }
 
     fn find_case<'a>(&'a self, expected: bool, data: &[u8]) -> Option<Case<'a>> {
-        match str::from_utf8(data) {
-            Ok(doc) => self.find_case_for_doc(expected, &doc),
+        match svg_from_bytes(data) {
+            Ok(handle) => self.find_case_for_doc(expected, &handle),
             Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
         }
     }
