@@ -75,12 +75,12 @@
 
 use cssparser::{
     self, match_ignore_ascii_case, parse_important, AtRuleParser, AtRuleType, BasicParseErrorKind,
-    CowRcStr, DeclarationListParser, DeclarationParser, Parser, ParserInput, QualifiedRuleParser,
-    RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
+    CowRcStr, DeclarationListParser, DeclarationParser, Parser, ParserInput, ParserState,
+    QualifiedRuleParser, RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
 };
 use data_url::mime::Mime;
 use language_tags::LanguageTag;
-use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
+use markup5ever::{self, namespace_url, ns, Namespace, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
 use selectors::{OpaqueElement, SelectorImpl, SelectorList};
@@ -123,7 +123,7 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
     ) -> Result<Declaration, ParseError<'i>> {
-        let prop_name = QualName::new(None, ns!(), LocalName::from(name.as_ref()));
+        let prop_name = QualName::new(None, ns!(), markup5ever::LocalName::from(name.as_ref()));
         let property = parse_value(&prop_name, input, ParseAs::Property)?;
 
         let important = input.try_parse(parse_important).is_ok();
@@ -276,7 +276,7 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
     fn parse_block<'t>(
         &mut self,
         prelude: Self::Prelude,
-        _location: SourceLocation,
+        _start: &ParserState,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::QualifiedRule, cssparser::ParseError<'i, Self::Error>> {
         let declarations = DeclarationListParser::new(input, DeclParser)
@@ -328,7 +328,7 @@ impl<'i> AtRuleParser<'i> for RuleParser {
     fn rule_without_block(
         &mut self,
         prelude: Self::PreludeNoBlock,
-        _location: SourceLocation,
+        _start: &ParserState,
     ) -> Self::AtRule {
         let AtRulePrelude::Import(url) = prelude;
         Rule::AtRule(AtRule::Import(url))
@@ -374,10 +374,6 @@ impl selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
     fn is_user_action_state(&self) -> bool {
         false
     }
-
-    fn has_zero_specificity(&self) -> bool {
-        false
-    }
 }
 
 /// Dummy type required by the SelectorImpl trait
@@ -401,15 +397,108 @@ impl selectors::parser::PseudoElement for PseudoElement {
 #[derive(Debug, Clone)]
 pub struct Selector;
 
+/// Wrapper for attribute values.
+///
+/// We use a newtype because the associated type Selector::AttrValue
+/// must implement `From<&str>` and `ToCss`, which are foreign traits.
+///
+/// The `derive` requirements come from the `selectors` crate.
+#[derive(Clone, PartialEq, Eq)]
+pub struct AttributeValue(String);
+
+impl From<&str> for AttributeValue {
+    fn from(s: &str) -> AttributeValue {
+        AttributeValue(s.to_owned())
+    }
+}
+
+impl ToCss for AttributeValue {
+    fn to_css<W>(&self, dest: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        use std::fmt::Write;
+
+        write!(cssparser::CssStringWriter::new(dest), "{}", &self.0)
+    }
+}
+
+impl AsRef<str> for AttributeValue {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+/// Wrapper for identifier values.
+///
+/// Used to implement `ToCss` on the `LocalName` foreign type.
+#[derive(Clone, PartialEq, Eq)]
+pub struct Identifier(markup5ever::LocalName);
+
+impl From<&str> for Identifier {
+    fn from(s: &str) -> Identifier {
+        Identifier(markup5ever::LocalName::from(s))
+    }
+}
+
+impl ToCss for Identifier {
+    fn to_css<W>(&self, dest: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        cssparser::serialize_identifier(&self.0, dest)
+    }
+}
+
+/// Wrapper for local names.
+///
+/// Used to implement `ToCss` on the `LocalName` foreign type.
+#[derive(Clone, PartialEq, Eq)]
+pub struct LocalName(markup5ever::LocalName);
+
+impl From<&str> for LocalName {
+    fn from(s: &str) -> LocalName {
+        LocalName(markup5ever::LocalName::from(s))
+    }
+}
+
+impl ToCss for LocalName {
+    fn to_css<W>(&self, dest: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        cssparser::serialize_identifier(&self.0, dest)
+    }
+}
+
+/// Wrapper for namespace prefixes.
+///
+/// Used to implement `ToCss` on the `markup5ever::Prefix` foreign type.
+#[derive(Clone, Default, PartialEq, Eq)]
+pub struct NamespacePrefix(markup5ever::Prefix);
+
+impl From<&str> for NamespacePrefix {
+    fn from(s: &str) -> NamespacePrefix {
+        NamespacePrefix(markup5ever::Prefix::from(s))
+    }
+}
+
+impl ToCss for NamespacePrefix {
+    fn to_css<W>(&self, dest: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        cssparser::serialize_identifier(&self.0, dest)
+    }
+}
+
 impl SelectorImpl for Selector {
     type ExtraMatchingData = ();
-    type AttrValue = String;
-    type Identifier = LocalName;
-    type ClassName = LocalName;
-    type PartName = LocalName;
+    type AttrValue = AttributeValue;
+    type Identifier = Identifier;
     type LocalName = LocalName;
     type NamespaceUrl = Namespace;
-    type NamespacePrefix = Prefix;
+    type NamespacePrefix = NamespacePrefix;
     type BorrowedNamespaceUrl = Namespace;
     type BorrowedLocalName = LocalName;
     type NonTSPseudoClass = NonTSPseudoClass;
@@ -503,7 +592,7 @@ impl selectors::Element for RsvgElement {
     }
 
     fn has_local_name(&self, local_name: &LocalName) -> bool {
-        self.0.borrow_element().element_name().local == *local_name
+        self.0.borrow_element().element_name().local == local_name.0
     }
 
     /// Empty string for no namespace
@@ -520,7 +609,7 @@ impl selectors::Element for RsvgElement {
         &self,
         ns: &NamespaceConstraint<&Namespace>,
         local_name: &LocalName,
-        operation: &AttrSelectorOperation<&String>,
+        operation: &AttrSelectorOperation<&AttributeValue>,
     ) -> bool {
         self.0
             .borrow_element()
@@ -529,9 +618,9 @@ impl selectors::Element for RsvgElement {
             .find(|(attr, _)| {
                 // do we have an attribute that matches the namespace and local_name?
                 match *ns {
-                    NamespaceConstraint::Any => *local_name == attr.local,
+                    NamespaceConstraint::Any => local_name.0 == attr.local,
                     NamespaceConstraint::Specific(ns) => {
-                        QualName::new(None, ns.clone(), local_name.clone()) == *attr
+                        QualName::new(None, ns.clone(), local_name.0.clone()) == *attr
                     }
                 }
             })
@@ -596,37 +685,32 @@ impl selectors::Element for RsvgElement {
         false
     }
 
-    fn has_id(&self, id: &LocalName, case_sensitivity: CaseSensitivity) -> bool {
+    fn has_id(&self, id: &Identifier, case_sensitivity: CaseSensitivity) -> bool {
         self.0
             .borrow_element()
             .get_id()
-            .map(|self_id| case_sensitivity.eq(self_id.as_bytes(), id.as_ref().as_bytes()))
+            .map(|self_id| case_sensitivity.eq(self_id.as_bytes(), id.0.as_bytes()))
             .unwrap_or(false)
     }
 
-    fn has_class(&self, name: &LocalName, case_sensitivity: CaseSensitivity) -> bool {
+    fn has_class(&self, name: &Identifier, case_sensitivity: CaseSensitivity) -> bool {
         self.0
             .borrow_element()
             .get_class()
             .map(|classes| {
                 classes
                     .split_whitespace()
-                    .any(|class| case_sensitivity.eq(class.as_bytes(), name.as_bytes()))
+                    .any(|class| case_sensitivity.eq(class.as_bytes(), name.0.as_bytes()))
             })
             .unwrap_or(false)
     }
 
-    fn exported_part(&self, _name: &LocalName) -> Option<LocalName> {
+    fn imported_part(&self, _name: &Identifier) -> Option<Identifier> {
         // unsupported
         None
     }
 
-    fn imported_part(&self, _name: &LocalName) -> Option<LocalName> {
-        // unsupported
-        None
-    }
-
-    fn is_part(&self, _name: &LocalName) -> bool {
+    fn is_part(&self, _name: &Identifier) -> bool {
         // unsupported
         false
     }
@@ -969,23 +1053,26 @@ mod tests {
         assert!(!a.is_same_type(&b));
         assert!(b.is_same_type(&d));
 
-        assert!(a.has_id(&LocalName::from("a"), CaseSensitivity::AsciiCaseInsensitive));
+        assert!(a.has_id(
+            &Identifier::from("a"),
+            CaseSensitivity::AsciiCaseInsensitive
+        ));
         assert!(!b.has_id(
-            &LocalName::from("foo"),
+            &Identifier::from("foo"),
             CaseSensitivity::AsciiCaseInsensitive
         ));
 
         assert!(d.has_class(
-            &LocalName::from("foo"),
+            &Identifier::from("foo"),
             CaseSensitivity::AsciiCaseInsensitive
         ));
         assert!(d.has_class(
-            &LocalName::from("bar"),
+            &Identifier::from("bar"),
             CaseSensitivity::AsciiCaseInsensitive
         ));
 
         assert!(!a.has_class(
-            &LocalName::from("foo"),
+            &Identifier::from("foo"),
             CaseSensitivity::AsciiCaseInsensitive
         ));
 

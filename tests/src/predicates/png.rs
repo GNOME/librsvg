@@ -59,15 +59,11 @@ pub struct SizePredicate<PngPredicate> {
 }
 
 impl SizePredicate<PngPredicate> {
-    fn eval_info(&self, info: &png::OutputInfo) -> bool {
+    fn eval_info(&self, info: &png::Info) -> bool {
         info.width == self.w && info.height == self.h
     }
 
-    fn find_case_for_info<'a>(
-        &'a self,
-        expected: bool,
-        info: &png::OutputInfo,
-    ) -> Option<Case<'a>> {
+    fn find_case_for_info<'a>(&'a self, expected: bool, info: &png::Info) -> Option<Case<'a>> {
         if self.eval_info(info) == expected {
             let product = self.product_for_info(info);
             Some(Case::new(Some(self), false).add_product(product))
@@ -76,7 +72,7 @@ impl SizePredicate<PngPredicate> {
         }
     }
 
-    fn product_for_info(&self, info: &png::OutputInfo) -> Product {
+    fn product_for_info(&self, info: &png::Info) -> Product {
         let actual_size = format!("{} x {}", info.width, info.height);
         Product::new("actual size", actual_size)
     }
@@ -86,7 +82,7 @@ impl Predicate<[u8]> for SizePredicate<PngPredicate> {
     fn eval(&self, data: &[u8]) -> bool {
         let decoder = png::Decoder::new(data);
         match decoder.read_info() {
-            Ok((info, _)) => self.eval_info(&info),
+            Ok(reader) => self.eval_info(&reader.info()),
             _ => false,
         }
     }
@@ -94,7 +90,7 @@ impl Predicate<[u8]> for SizePredicate<PngPredicate> {
     fn find_case<'a>(&'a self, expected: bool, data: &[u8]) -> Option<Case<'a>> {
         let decoder = png::Decoder::new(data);
         match decoder.read_info() {
-            Ok((info, _)) => self.find_case_for_info(expected, &info),
+            Ok(reader) => self.find_case_for_info(expected, reader.info()),
             Err(e) => Some(Case::new(Some(self), false).add_product(Product::new("Error", e))),
         }
     }

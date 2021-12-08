@@ -271,12 +271,7 @@ pub fn resolve_color(
 
     let alpha = (f64::from(rgba.alpha) * o).round();
     let alpha = util::clamp(alpha, 0.0, 255.0);
-
-    // For the following I'd prefer to use `cast::u8(alpha).unwrap()`
-    // but the cast crate is erroneously returning Overflow for `u8(255.0)`:
-    // https://github.com/japaric/cast.rs/issues/23
-
-    let alpha = alpha as u8;
+    let alpha = cast::u8(alpha).unwrap();
 
     cssparser::RGBA { alpha, ..rgba }
 }
