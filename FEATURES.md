@@ -1,5 +1,9 @@
 # SVG and CSS features that librsvg supports
 
+Table of contents:
+
+[[_TOC_]]
+
 Librsvg tries to be a mostly complete renderer for SVG1.1 and SVG2.
 
 In terms of processing external references, librsvg is a bit more
@@ -29,7 +33,7 @@ new features based on the needs which people express in librsvg's bug
 tracker.  Do you want a feature?  [File an
 issue](https://gitlab.gnome.org/GNOME/librsvg/issues)!
 
-## Attributes supported by all elements
+# Attributes supported by all elements
 
 | Attribute          | Notes                                                                               |
 | ---                | ---                                                                                 |
@@ -43,7 +47,7 @@ issue](https://gitlab.gnome.org/GNOME/librsvg/issues)!
 | xml:lang           |                                                                                     |
 | xml:space          |                                                                                     |
 
-## Elements and their specific attributes
+# Elements and their specific attributes
 
 | Element             | Attributes          | Notes                                                              |
 | ---                 | ---                 | ---                                                                |
@@ -273,7 +277,7 @@ issue](https://gitlab.gnome.org/GNOME/librsvg/issues)!
 |                     | width               |                                                                    |
 |                     | height              |                                                                    |
 
-## CSS properties
+# CSS properties
 
 The following are shorthand properties.  They are not available as
 presentation attributes, only as style properties, so for example you have to use
@@ -345,7 +349,7 @@ which properties are not available as presentation attributes.
 | visibility                  |                                                        |
 | writing-mode                |                                                        |
 
-### Filter effects
+## Filter effects
 
 The following elements are filter effects:
 
@@ -380,7 +384,7 @@ Some filter effect elements take one input in the `in` attribute, and
 some others take two inputs in the `in`, `in2` attributes.  See the
 table of elements above for details.
 
-### Filter effect feComponentTransfer
+## Filter effect feComponentTransfer
 
 The `feComponentTransfer` element can contain children `feFuncA`,
 `feFuncR`, `feFuncG`, `feFuncB`, and those all support these
@@ -440,3 +444,5 @@ FIXME: `xml:space` attribute
 * `glyph-orientation-horizontal` property - SVG1.1 only, removed in SVG2
 
 * The pseudo-classes `:is()` and `:where()` are part of Selectors Level 4, which is still a working draft.
+
+# Footnotes
