@@ -10,7 +10,9 @@ generate output for printing.
 Do you want to render non-animated SVGs to a Cairo surface with a
 minimal API?  Librsvg may be adequate for you.
 
-***GITHUB WILL DELETE YOUR PULL REQUESTS!***  We use
+**Supported SVG/CSS features:** Please see the [FEATURES.md](FEATURES.md) file.
+
+***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.***  We use
 [`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
 Please see [`CONTRIBUTING.md`][contributing] for details.
 
