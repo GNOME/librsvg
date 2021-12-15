@@ -1,5 +1,4 @@
-Librsvg
-=======
+# Librsvg
 
 This is librsvg - A small library to render Scalable Vector Graphics
 ([SVG][svg]), associated with the [GNOME Project][gnome].  It renders
@@ -16,8 +15,11 @@ minimal API?  Librsvg may be adequate for you.
 [`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
 Please see [`CONTRIBUTING.md`][contributing] for details.
 
-Using librsvg
--------------
+Table of contents:
+
+[[_TOC_]]
+
+# Using librsvg
 
 * [C API documentation][c-docs]
 * [Rust API documentation][rust-docs]
@@ -50,8 +52,7 @@ documentation for information on how to load the `Rsvg` namespace.
 [c-docs]: https://developer-old.gnome.org/rsvg/unstable/
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
 
-Contributing to librsvg's development
--------------------------------------
+# Contributing to librsvg's development
 
 There is a code of conduct for contributors to librsvg; please see the
 file [`code-of-conduct.md`][coc].
@@ -59,8 +60,7 @@ file [`code-of-conduct.md`][coc].
 For information on how to report bugs, or how to contribute to librsvg
 in general, please see the file [`CONTRIBUTING.md`][contributing].
 
-Goals of librsvg
-----------------
+# Goals of librsvg
 
 Librsvg aims to be a low-footprint library for rendering SVG1.1 and SVG2 images.
 It is used primarily in the [GNOME project](https://www.gnome.org) to
@@ -77,8 +77,7 @@ Feature additions will be considered on a case-by-case basis.
 You can read about librsvg's supported SVG and CSS features in the
 [FEATURES.md](FEATURES.md) file.
 
-Non-goals of librsvg
---------------------
+# Non-goals of librsvg
 
 We don't aim to:
 
@@ -96,8 +95,7 @@ Of course, [contributions are welcome][contributing].  In particular,
 if you find nice ways of doing the above while still maintaining the
 existing API of librsvg, we would love to know about it!
 
-Who uses librsvg?
------------------
+# Who uses librsvg?
 
 Librsvg is part of the [GNOME platform][platform].  Inside GNOME,
 librsvg takes multiple roles:
@@ -136,8 +134,7 @@ Outside of GNOME's core:
   *Special thanks to Wikimedia for providing excellent bug reports.*
 
 
-Presentations on librsvg
-------------------------
+# Presentations on librsvg
 
 "[Replacing C library code with Rust: What I learned with
 librsvg][guadec-presentation-1]" was presented at GUADEC 2017.  It gives
@@ -150,8 +147,7 @@ describes ways in which librsvg's C code was refactored to allow
 porting it to Rust.
 
 
-Maintainers
------------
+# Maintainers
 
 The maintainer of librsvg is [Federico Mena Quintero][federico].  Feel
 free to contact me for any questions you may have about librsvg, both
