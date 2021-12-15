@@ -440,3 +440,5 @@ FIXME: `xml:space` attribute
 * `glyph-orientation-horizontal` property - SVG1.1 only, removed in SVG2
 
 * The pseudo-classes `:is()` and `:where()` are part of Selectors Level 4, which is still a working draft.
+
+# Footnotes
