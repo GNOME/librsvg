@@ -22,6 +22,7 @@ test_sources =				\
 	src/predicates/mod.rs		\
 	src/predicates/pdf.rs		\
 	src/predicates/png.rs		\
+	src/predicates/svg.rs		\
 	$(NULL)
 
 test_programs = api
