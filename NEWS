@@ -1,4 +1,33 @@
 ==============
+Version 2.52.5
+==============
+
+Just bugfixes this time:
+
+- #812 - Fix mangled output in rsvg-convert when redirecting output to
+  a pipe on Windows (Michael Howell).
+
+- #766 - When outputting to SVG, rsvg-convert now uses the
+  width/height units specified in the command line; it always used
+  pixels before (Daniel Petri Rocha).
+
+- #814 - Fix incorrect top/left margins for SVG/PS/EPS/PDF output
+  (Daniel Petri Rocha).
+
+- #599 - Fix incorrect placement of glyphs when text has non-uniform
+  scaling in the X/Y axes.  This is not a librsvg bug, but is fixed by
+  Pango 1.49.3 and later.  Hopefully Pango 1.48.11 will be released
+  soon with this fix as well.  Note that this release of librsvg
+  cannot increase the minimum Pango version to 1.48.11 because it is
+  not released yet.
+
+Miscellaneous:
+
+- Updated crate dependencies: assert_cmd, cast, clap cssparser,
+  float-cmp, itertools, nalgebra, png, proptest, rctree, selectors,
+  system-deps.
+
+==============
 Version 2.52.4
 ==============
 
