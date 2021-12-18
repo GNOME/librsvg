@@ -88,6 +88,11 @@ https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html
 Please see that documentation for common tasks like adding support for
 a new CSS property.
 
+What can you hack on?
+
+* [Bugs for newcomers](https://gitlab.gnome.org/GNOME/librsvg/-/issues?label_name%5B%5D=4.+Newcomers)
+* Pick something from the [development roadmap](devel-docs/README.md)!
+
 ### Working on the source
 
 Librsvg uses an autotools setup, which is described in detail [in this
