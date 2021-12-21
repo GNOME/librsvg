@@ -118,6 +118,7 @@ LIBRSVG_DEP_LIBS =			\
 	libxml2.lib			\
 	advapi32.lib			\
 	userenv.lib			\
+	bcrypt.lib			\
 	ws2_32.lib
 
 RSVG_PIXBUF_LOADER_CFLAGS =			\
