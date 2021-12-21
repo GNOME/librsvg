@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50">
+	<text style="font: 5px Ahem;" x="5" y="10">X<a style="display:none">X</a><tspan style="display:none">X</tspan></text>
+	<text style="font: 5px Ahem;" x="5" y="25">X<tspan><a style="display:none">X</a><tspan style="display:none">X<tspan style="display:inline" x="40">X</tspan><tspan style="display:block" x="45">X</tspan></tspan>X</tspan></text>
+	<text style="font: 5px Ahem; display: none" x="5" y="40">XXXXXX</text>
+</svg>
