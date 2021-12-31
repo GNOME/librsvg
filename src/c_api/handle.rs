@@ -620,7 +620,7 @@ impl CairoRectangleExt for cairo::Rectangle {
 
 impl CHandle {
     fn set_base_url(&self, url: &str) {
-        let imp = imp::CHandle::from_instance(self);
+        let imp = self.imp();
         let state = imp.load_state.borrow();
 
         match *state {
@@ -655,60 +655,44 @@ impl CHandle {
     }
 
     fn get_base_url(&self) -> Option<String> {
-        let imp = imp::CHandle::from_instance(self);
-
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
         inner.base_url.get().map(|url| url.as_str().to_string())
     }
 
     fn get_base_url_as_ptr(&self) -> *const libc::c_char {
-        let imp = imp::CHandle::from_instance(self);
-
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
         inner.base_url.get_ptr()
     }
 
     fn set_dpi_x(&self, dpi_x: f64) {
-        let imp = imp::CHandle::from_instance(self);
-
-        let mut inner = imp.inner.borrow_mut();
+        let mut inner = self.imp().inner.borrow_mut();
         let dpi = inner.dpi;
         inner.dpi = Dpi::new(dpi_x, dpi.y());
     }
 
     fn set_dpi_y(&self, dpi_y: f64) {
-        let imp = imp::CHandle::from_instance(self);
-
-        let mut inner = imp.inner.borrow_mut();
+        let mut inner = self.imp().inner.borrow_mut();
         let dpi = inner.dpi;
         inner.dpi = Dpi::new(dpi.x(), dpi_y);
     }
 
     fn get_dpi_x(&self) -> f64 {
-        let imp = imp::CHandle::from_instance(self);
-
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
         inner.dpi.x()
     }
 
     fn get_dpi_y(&self) -> f64 {
-        let imp = imp::CHandle::from_instance(self);
-
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
         inner.dpi.y()
     }
 
     fn set_flags(&self, flags: HandleFlags) {
-        let imp = imp::CHandle::from_instance(self);
-
-        let mut inner = imp.inner.borrow_mut();
+        let mut inner = self.imp().inner.borrow_mut();
         inner.load_flags = LoadFlags::from(flags);
     }
 
     fn get_flags(&self) -> HandleFlags {
-        let imp = imp::CHandle::from_instance(self);
-
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
         HandleFlags::from(inner.load_flags)
     }
 
@@ -718,15 +702,12 @@ impl CHandle {
         user_data: gpointer,
         destroy_notify: glib::ffi::GDestroyNotify,
     ) {
-        let imp = imp::CHandle::from_instance(self);
-
-        let mut inner = imp.inner.borrow_mut();
+        let mut inner = self.imp().inner.borrow_mut();
         inner.size_callback = SizeCallback::new(size_func, user_data, destroy_notify);
     }
 
     fn write(&self, buf: &[u8]) {
-        let imp = imp::CHandle::from_instance(self);
-        let mut state = imp.load_state.borrow_mut();
+        let mut state = self.imp().load_state.borrow_mut();
 
         match *state {
             LoadState::Start => {
@@ -746,7 +727,7 @@ impl CHandle {
     }
 
     fn close(&self) -> Result<(), LoadingError> {
-        let imp = imp::CHandle::from_instance(self);
+        let imp = self.imp();
 
         let inner = imp.inner.borrow();
         let mut state = imp.load_state.borrow_mut();
@@ -778,7 +759,7 @@ impl CHandle {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        let imp = imp::CHandle::from_instance(self);
+        let imp = self.imp();
 
         let state = imp.load_state.borrow_mut();
         let inner = imp.inner.borrow();
@@ -812,8 +793,7 @@ impl CHandle {
     }
 
     fn get_handle_ref(&self) -> Result<Ref<'_, SvgHandle>, RenderingError> {
-        let imp = imp::CHandle::from_instance(self);
-        let state = imp.load_state.borrow();
+        let state = self.imp().load_state.borrow();
 
         match *state {
             LoadState::Start => {
@@ -842,8 +822,7 @@ impl CHandle {
     }
 
     fn make_loader(&self) -> Loader {
-        let imp = imp::CHandle::from_instance(self);
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
 
         Loader::new()
             .with_unlimited_size(inner.load_flags.unlimited_size)
@@ -861,8 +840,7 @@ impl CHandle {
     }
 
     fn get_dimensions_sub(&self, id: Option<&str>) -> Result<RsvgDimensionData, RenderingError> {
-        let imp = imp::CHandle::from_instance(self);
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
 
         // This function is probably called from the cairo_render functions,
         // or is being erroneously called within the size_func.
@@ -905,8 +883,7 @@ impl CHandle {
     }
 
     fn get_position_sub(&self, id: Option<&str>) -> Result<RsvgPositionData, RenderingError> {
-        let imp = imp::CHandle::from_instance(self);
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
 
         if id.is_none() {
             return Ok(RsvgPositionData { x: 0, y: 0 });
@@ -930,8 +907,7 @@ impl CHandle {
     }
 
     fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
-        let imp = imp::CHandle::from_instance(self);
-        let inner = imp.inner.borrow();
+        let inner = self.imp().inner.borrow();
 
         CairoRenderer::new(&*handle_ref)
             .with_dpi(inner.dpi.x(), inner.dpi.y())
@@ -949,8 +925,7 @@ impl CHandle {
     }
 
     fn set_stylesheet(&self, css: &str) -> Result<(), LoadingError> {
-        let imp = imp::CHandle::from_instance(self);
-        match *imp.load_state.borrow_mut() {
+        match *self.imp().load_state.borrow_mut() {
             LoadState::ClosedOk { ref mut handle } => handle.set_stylesheet(css),
 
             _ => {
@@ -1090,8 +1065,7 @@ impl CHandle {
     }
 
     fn set_testing(&self, is_testing: bool) {
-        let imp = imp::CHandle::from_instance(self);
-        let mut inner = imp.inner.borrow_mut();
+        let mut inner = self.imp().inner.borrow_mut();
         inner.is_testing = is_testing;
     }
 }
@@ -1114,7 +1088,7 @@ fn is_cancellable(obj: *mut gio::ffi::GCancellable) -> bool {
 
 fn get_rust_handle(handle: *const RsvgHandle) -> CHandle {
     let handle = unsafe { &*handle };
-    handle.impl_().instance()
+    handle.imp().instance()
 }
 
 #[no_mangle]
