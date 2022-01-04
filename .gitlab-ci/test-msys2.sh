@@ -21,6 +21,7 @@ pacman --noconfirm -S --needed \
     mingw-w64-$MSYS2_ARCH-libthai \
     mingw-w64-$MSYS2_ARCH-cairo \
     mingw-w64-$MSYS2_ARCH-pango \
+    mingw-w64-$MSYS2_ARCH-python3-docutils \
     mingw-w64-$MSYS2_ARCH-libxml2 \
     mingw-w64-$MSYS2_ARCH-toolchain \
     mingw-w64-$MSYS2_ARCH-rust \
