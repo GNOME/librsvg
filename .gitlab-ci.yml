@@ -178,6 +178,8 @@ opensuse:tumbleweed:
     - .make
     # make check runs extra tests that require extra crates, hence cache is pushed
     - .cache_push
+  before_script:
+    - sudo zypper install -y python38-docutils
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'

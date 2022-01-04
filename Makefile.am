@@ -228,7 +228,12 @@ $(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC)
 rsvg-convert$(EXEEXT): $(RSVG_CONVERT_BIN)
 	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
 
-dist_man_MANS = rsvg-convert.1
+rsvg-convert.1: rsvg-convert.rst
+	$(RST2MAN) $(top_srcdir)/rsvg-convert.rst rsvg-convert.1
+
+man1_MANS = rsvg-convert.1
+
+CLEANFILES += rsvg-convert.1
 
 dist_doc_DATA =				\
 	COMPILING.md			\
@@ -248,6 +253,7 @@ EXTRA_DIST =				\
 	gtk-doc.make			\
 	Rsvg-2.0-custom.vala		\
 	Rsvg-2.0.metadata		\
+	rsvg-convert.rst		\
 	glib-tap.mk			\
 	tap-driver.sh			\
 	tap-test
