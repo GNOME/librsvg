@@ -114,7 +114,7 @@ AX_COMPARE_VERSION([$rust_version],[lt],[$MINIMUM_RUST_VER], [
 
 dnl Man page generator
 
-AC_CHECK_TOOL(RST2MAN, [rst2man], [no])
+AC_CHECK_PROGS(RST2MAN, [rst2man rst2man.py], [no])
 AS_IF(test x$RST2MAN = xno,
     AC_MSG_ERROR([rst2man is required.  Please install python3-docutils.])
 )
