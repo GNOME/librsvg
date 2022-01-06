@@ -167,6 +167,9 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const ch
  * The @cr must be in a `CAIRO_STATUS_SUCCESS` state, or this function will not
  * render anything, and instead will return an error.
  *
+ * Returns: `TRUE` on success, `FALSE` on error.  Errors are returned
+ * in the @error argument.
+ *
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section "API ordering" for details.
  *
@@ -215,6 +218,9 @@ gboolean rsvg_handle_render_document (RsvgHandle           *handle,
  * This operation is not constant-time, as it involves going through all
  * the child elements.
  *
+ * Returns: `TRUE` if the geometry could be obtained, or `FALSE` on error.  Errors
+ * are returned in the @error argument.
+ *
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section "API ordering" for details.
  *
@@ -260,6 +266,9 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * You can pass `NULL` for the @id if you want to render all
  * the elements in the SVG, i.e. to render everything from the
  * root element.
+ *
+ * Returns: `TRUE` on success, `FALSE` on error.  Errors are returned
+ * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section "API ordering" for details.
@@ -315,6 +324,9 @@ gboolean rsvg_handle_render_layer (RsvgHandle           *handle,
  * This operation is not constant-time, as it involves going through all
  * the child elements.
  *
+ * Returns: `TRUE` if the geometry could be obtained, or `FALSE` on error.  Errors
+ * are returned in the @error argument.
+ *
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section "API ordering" for details.
  *
@@ -356,6 +368,9 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  *
  * The `element_viewport` gives the position and size at which the named element will
  * be rendered.  FIXME: mention proportional scaling.
+ *
+ * Returns: `TRUE` on success, `FALSE` on error.  Errors are returned
+ * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section "API ordering" for details.

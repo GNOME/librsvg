@@ -721,6 +721,8 @@ void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimensio
  * `#foo` (hash `foo`) to get the geometry of the element that
  * has an `id="foo"` attribute.
  *
+ * Returns: `TRUE` if the dimensions could be obtained, `FALSE` if there was an error.
+ *
  * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
  *
  * Since: 2.22
@@ -747,6 +749,8 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
  * Element IDs should look like an URL fragment identifier; for example, pass
  * `#foo` (hash `foo`) to get the geometry of the element that
  * has an `id="foo"` attribute.
+ *
+ * Returns: `TRUE` if the position could be obtained, `FALSE` if there was an error.
  *
  * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.  This function is
  * deprecated since it is not able to return exact floating-point positions, only integer
@@ -1153,6 +1157,9 @@ RsvgHandle *rsvg_handle_new_from_file (const gchar *filename, GError **error);
  * [origin](https://drafts.csswg.org/css-cascade-3/#cascading-origins).
  *
  * Note that `@import` rules will not be resolved, except for `data:` URLs.
+ *
+ * Returns: `TRUE` on success, `FALSE` on error.  Errors are returned
+ * in the @error argument.
  *
  * Since: 2.48
  */
