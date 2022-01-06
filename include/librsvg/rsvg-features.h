@@ -6,13 +6,14 @@
 #define RSVG_FEATURES_H
 
 /**
- * SECTION: rsvg-features
- * @short_description: Check for the version of librsvg being used.
+ * rsvg-features:
+ *
+ * Check for the version of librsvg being used.
  *
  * Librsvg provides a few C macros that C and C++ programs can use to
  * check the version being used at compile-time, that is, the API that
  * the program expects to have.  This is useful for programs that need
- * to conditionally compile code with <literal>#ifdef</literal> blocks
+ * to conditionally compile code with `#ifdef` blocks
  * depending on the version of librsvg that may be available during
  * compilation.
  *
@@ -32,14 +33,13 @@
  *
  * C programs can use this as a compile-time check for the required
  * version, but note that generally it is a better idea to do
- * compile-time checks by calling <ulink
- * url="https://www.freedesktop.org/wiki/Software/pkg-config/">pkg-config</ulink>
+ * compile-time checks by calling [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
  * in your build scripts.
  *
  * Note: for a run-time check on the version of librsvg that your
  * program is running with (e.g. the version which the linker used for
  * your program), or for programs not written in C, use
- * @rsvg_major_version instead.
+ * `rsvg_major_version` instead.
  */
 
 /**
@@ -52,14 +52,13 @@
  *
  * C programs can use this as a compile-time check for the required
  * version, but note that generally it is a better idea to do
- * compile-time checks by calling <ulink
- * url="https://www.freedesktop.org/wiki/Software/pkg-config/">pkg-config</ulink>
+ * compile-time checks by calling [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
  * in your build scripts.
  *
  * Note: for a run-time check on the version of librsvg that your
  * program is running with (e.g. the version which the linker used for
  * your program), or for programs not written in C, use
- * @rsvg_minor_version instead.
+ * `rsvg_minor_version` instead.
  */
 
 /**
@@ -72,14 +71,13 @@
  *
  * C programs can use this as a compile-time check for the required
  * version, but note that generally it is a better idea to do
- * compile-time checks by calling <ulink
- * url="https://www.freedesktop.org/wiki/Software/pkg-config/">pkg-config</ulink>
+ * compile-time checks by calling [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
  * in your build scripts.
  *
  * Note: for a run-time check on the version of librsvg that your
  * program is running with (e.g. the version which the linker used for
  * your program), or for programs not written in C, use
- * @rsvg_micro_version instead.
+ * `rsvg_micro_version` instead.
  */
 
 /**
@@ -89,18 +87,17 @@
  * librsvg against which your program is compiled.
  *
  * For example, for librsvg-2.3.4, this macro expands to
- * <literal>"2.3.4"</literal>.
+ * `"2.3.4"`.
  *
  * C programs can use this as a compile-time check for the required
  * version, but note that generally it is a better idea to do
- * compile-time checks by calling <ulink
- * url="https://www.freedesktop.org/wiki/Software/pkg-config/">pkg-config</ulink>
+ * compile-time checks by calling [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
  * in your build scripts.
  *
  * Note: for a run-time check on the version of librsvg that your
  * program is running with (e.g. the version which the linker used for
  * your program), or for programs not written in C, use
- * @rsvg_version instead.
+ * `rsvg_version` instead.
  */
 
 /**
@@ -109,13 +106,13 @@
  * @minor: component for the minor version to check
  * @micro: component for the micro version to check
  *
- * This C macro returns #TRUE if the the version of librsvg being
+ * This C macro returns `TRUE` if the the version of librsvg being
  * compiled against is the same or newer than the specified version.
  *
  * Note that this a compile-time check for C programs.  If you want a
  * run-time check for the version of librsvg being used, or if you are
  * using another programming language, see the variables
- * @rsvg_major_version, @rsvg_minor_version, @rsvg_micro_version
+ * `rsvg_major_version`, `rsvg_minor_version`, `rsvg_micro_version`
  * instead.
  */
 #define LIBRSVG_CHECK_VERSION(major,minor,micro) \
