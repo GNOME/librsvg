@@ -1,3 +1,5 @@
+Title: Recommendations for Applications
+
 # Recommendations for Applications
 
 ## How sizing works in SVG {#sizing}

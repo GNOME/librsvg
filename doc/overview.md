@@ -1,4 +1,6 @@
-# Overview of Librsvg's API
+Title: Overview of Librsvg
+
+# Overview of Librsvg
 
 Librsvg is a library for rendering Scalable Vector Graphics files (SVG).
 Specifically, it can take non-animated, non-scripted SVG documents and

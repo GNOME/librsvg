@@ -1,3 +1,5 @@
+Title: Migrating from old APIs
+
 # Migrating from old APIs
 
 ## Migrating from the deprecated API that does not use viewports {#migrating-from-non-viewport}
