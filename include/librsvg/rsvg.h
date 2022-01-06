@@ -966,6 +966,10 @@ gboolean rsvg_handle_get_intrinsic_size_in_pixels (RsvgHandle *handle,
  * documentation](https://www.cairographics.org/manual/cairo-cairo-surface-t.html#cairo-surface-set-mime-data)
  * for details.
  *
+ * Configuration flags for an `RsvgHandle`.  Note that not all of `RsvgHandle`'s
+ * constructors let you specify flags.  For this reason, rsvg_handle_new_from_gfile_sync()
+ * and rsvg_handle_new_from_stream_sync() are the preferred ways to create a handle.
+ *
  * Since: 2.40.3
  */
 typedef enum /*< flags >*/
