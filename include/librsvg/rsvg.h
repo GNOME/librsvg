@@ -440,6 +440,8 @@ struct _RsvgRectangle {
 /**
  * rsvg_cleanup:
  *
+ * This function does nothing.
+ *
  * Since: 2.36
  * Deprecated: 2.46: No-op. This function should not be called from normal programs.
  */
