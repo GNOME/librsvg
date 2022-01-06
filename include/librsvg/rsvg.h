@@ -250,19 +250,19 @@ GType rsvg_error_get_type (void);
  */
 
 /**
- * RsvgHandle::dpi-x:
+ * RsvgHandle:dpi-x:
  *
  * Horizontal resolution in dots per inch.
  */
 
 /**
- * RsvgHandle::dpi-y:
+ * RsvgHandle:dpi-y:
  *
  * Horizontal resolution in dots per inch.
  */
 
 /**
- * RsvgHandle::base-uri:
+ * RsvgHandle:base-uri: (attributes org.gtk.Property.get=rsvg_handle_get_base_uri org.gtk.Property.set=rsvg_handle_set_base_uri)
  *
  * Base URI, to be used to resolve relative references for resources.  See the section
  * "Security and locations of referenced files" for details.
@@ -657,7 +657,7 @@ RSVG_API
 GdkPixbuf *rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id);
 
 /**
- * rsvg_handle_get_base_uri:
+ * rsvg_handle_get_base_uri: (attributes org.gtk.Method.get_property=base-uri)
  * @handle: A #RsvgHandle
  *
  * Gets the base uri for this #RsvgHandle.
@@ -669,7 +669,7 @@ RSVG_API
 const char *rsvg_handle_get_base_uri (RsvgHandle *handle);
 
 /**
- * rsvg_handle_set_base_uri:
+ * rsvg_handle_set_base_uri: (attributes org.gtk.Method.set_property=base-uri)
  * @handle: A `RsvgHandle`
  * @base_uri: The base uri
  *
