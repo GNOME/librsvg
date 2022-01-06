@@ -375,11 +375,6 @@ struct _RsvgHandleClass {
     gpointer _abi_padding[15];
 };
 
-/**
- * RsvgHandle:
- *
- * Lets you load SVG data and render it.
- */
 struct _RsvgHandle {
     GObject parent;
 
