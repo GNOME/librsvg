@@ -7,6 +7,7 @@ off items while making a release.
 - [ ] Increase the package version number in `configure.ac` (it may
       already be increased but not released; double-check it).
 - [ ] Copy version number to `Cargo.toml`.
+- [ ] Copy version number to `doc/librsvg.toml`.
 - [ ] `cargo update` - needed because you tweaked `Cargo.toml`, and
       also to get new dependencies.
 - [ ] Tweak the library version number in `configure.ac` if the API changed; follow the steps there.
