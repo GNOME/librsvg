@@ -1,4 +1,25 @@
 ==============
+Version 2.53.0
+==============
+
+This is the first release in the new development series.  There are no
+new features, just changes to how the documentation is built.
+
+The man page for rsvg-convert is now generated from a reStructuredText
+document, and the C API reference is generated using gi-docgen.
+
+Please make sure you install python3-docutils (for rst2man) and
+gi-docgen before compiling librsvg from a tarball.
+
+- #755 - rsvg-convert's man page is now generated from reStructuredText.
+
+- #827 - Move C API reference to gi-docgen.
+
+- Test suite updates (Michael Howell).
+
+- Link against bcrypt for Visual Studio builds (Martin Hertz).
+
+==============
 Version 2.52.5
 ==============
 
