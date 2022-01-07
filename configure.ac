@@ -70,6 +70,7 @@ PANGO_REQUIRED=1.46.0
 
 dnl ===========================================================================
 
+AC_PROG_MKDIR_P
 AC_PROG_LN_S
 AC_PROG_CC
 AC_PROG_CPP
