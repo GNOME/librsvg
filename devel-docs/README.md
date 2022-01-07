@@ -31,6 +31,4 @@ Design documents:
 
 * Switch to meson, for real now.
 
-* Convert C API docs to gi-docgen.
-
 * After that, #552 - Build the C library with cargo-c.
