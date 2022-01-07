@@ -49,7 +49,7 @@ Introspection][gi].  This way, it is available in many programming
 languages other than C.  Please see your language binding's
 documentation for information on how to load the `Rsvg` namespace.
 
-[c-docs]: https://developer-old.gnome.org/rsvg/unstable/
+[c-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
 
 # Contributing to librsvg's development
