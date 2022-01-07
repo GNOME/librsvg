@@ -157,7 +157,7 @@ cargo_bench:
   script:
     - mkdir -p _build
     - cd _build
-    - sudo ../autogen.sh --enable-gtk-doc --enable-vala
+    - sudo ../autogen.sh --enable-vala
     - sudo -E make
     - sudo -E make check
   artifacts:
@@ -201,7 +201,7 @@ debian:testing:
     # TODO: delete after sudo is no longer needed on the other builds
     - mkdir -p _build
     - cd _build
-    - ../autogen.sh --enable-gtk-doc --enable-vala
+    - ../autogen.sh --enable-vala
     - make
     - make check
   allow_failure: true
@@ -226,7 +226,7 @@ distcheck:
   variables:
     DESTDIR: "/tmp/distcheck"
   script:
-    - sudo ./autogen.sh --enable-gtk-doc --enable-vala
+    - sudo ./autogen.sh --enable-vala
     - sudo -E make
     - sudo -E make distcheck
   artifacts:
