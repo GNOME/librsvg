@@ -13,7 +13,7 @@ off items while making a release.
 - [ ] Tweak the library version number in `configure.ac` if the API changed; follow the steps there.
 - [ ] Update `NEWS`, see below for the preferred format.
 - [ ] Commit the changes above.
-- [ ] Make a tarball with `./autogen.sh --enable-vala --enable-gtk-doc && make distcheck DESTDIR=/tmp/foo` - fix things until it passes.
+- [ ] Make a tarball with `./autogen.sh --enable-vala && make distcheck DESTDIR=/tmp/foo` - fix things until it passes.
 - [ ] Create a signed tag - `git tag -s x.y.z` with the version number.
 - [ ] `git push` to the appropriate branch to gitlab.gnome.org/GNOME/librsvg
 - [ ] `git push` the signed tag to gitlab.gnome.org/GNOME/librsvg
