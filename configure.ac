@@ -119,6 +119,13 @@ AS_IF(test x$RST2MAN = xno,
     AC_MSG_ERROR([rst2man is required.  Please install python3-docutils.])
 )
 
+dnl Gi-docgen
+
+AC_CHECK_TOOL(GI_DOCGEN, [gi-docgen], [no])
+AS_IF(test x$GI_DOCGEN = xno,
+    AC_MSG_ERROR([gi-docgen is required.  Please install it.])
+)
+
 dnl ===========================================================================
 
 #AC_CANONICAL_HOST
