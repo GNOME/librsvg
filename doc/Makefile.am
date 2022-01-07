@@ -6,7 +6,7 @@ DOCS_SRC =					\
 	recommendations.md			\
 	$(NULL)
 
-EXTRA_DIST = $(DOCS_SOURCES)
+EXTRA_DIST = $(DOCS_SRC)
 
 HEADERS_WITH_DOCS = $(top_srcdir)/include/librsvg/*.h
 GIR_FILE = $(top_builddir)/Rsvg-2.0.gir
