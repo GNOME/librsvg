@@ -240,9 +240,30 @@ distcheck:
       allow_failure: true
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
+reference:
+  extends: '.cache'
+  stage: docs
+  needs:
+    - job: opensuse:tumbleweed
+  before_script:
+    - sudo zypper install -y python38-docutils python3-gi-docgen
+  script:
+    - mkdir -p _build
+    - cd _build
+    - sudo ../autogen.sh --enable-vala
+    - sudo -E make
+    - cd ..
+    - mkdir -p public/
+    - sudo mv _build/doc/Rsvg-2.0 public/
+  artifacts:
+    paths:
+      - public
+
 pages:
   stage: docs
   extends: '.cache'
+  needs:
+    - job: reference
   script:
     - mkdir -p public/internals
     - sudo -E cargo doc --document-private-items --no-deps
