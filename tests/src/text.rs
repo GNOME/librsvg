@@ -51,3 +51,21 @@ test_svg_reference!(
     "tests/fixtures/text/unicode-bidi-override.svg",
     "tests/fixtures/text/unicode-bidi-override-ref.svg"
 );
+
+test_svg_reference!(
+    display_none,
+    "tests/fixtures/text/display-none.svg",
+    "tests/fixtures/text/display-none-ref.svg"
+);
+
+test_svg_reference!(
+    visibility_hidden,
+    "tests/fixtures/text/visibility-hidden.svg",
+    "tests/fixtures/text/visibility-hidden-ref.svg"
+);
+
+test_svg_reference!(
+    visibility_hidden_x_attr,
+    "tests/fixtures/text/visibility-hidden-x-attr.svg",
+    "tests/fixtures/text/visibility-hidden-ref.svg"
+);
