@@ -243,12 +243,6 @@ AS_IF([test "x$enable_Bsymbolic" != "xno"], [
 
 AC_SUBST([BSYMBOLIC_LDFLAG])
 
-##################################################
-# Checks for gtk-doc and docbook-tools
-##################################################
-
-GTK_DOC_CHECK([1.13],[--flavour no-tmpl])
-
 AC_SUBST([GLIB_PREFIX],[$($PKG_CONFIG --variable=prefix glib-2.0)])
 AC_SUBST([GDK_PIXBUF_PREFIX],[$($PKG_CONFIG --variable=prefix gdk-pixbuf-2.0)])
 AC_SUBST([GTK_PREFIX],[$($PKG_CONFIG --variable=prefix gdk-pixbuf-2.0)])
@@ -335,7 +329,6 @@ librsvg-zip
 gdk-pixbuf-loader/Makefile
 tests/Makefile
 doc/Makefile
-doc/version.xml
 win32/Makefile
 win32/config.h.win32
 win32/config-msvc.mak
@@ -363,5 +356,4 @@ librsvg-$VERSION
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
-	Build HTML documentation:       ${enable_gtk_doc}
 "
