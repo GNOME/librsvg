@@ -1,122 +1,26 @@
-# We require automake 1.10 for $(abs_builddir)
-AUTOMAKE_OPTIONS = 1.10
+DOCS_SRC =					\
+	librsvg.toml				\
+	load-and-render.c			\
+	migrating.md				\
+	overview.md				\
+	recommendations.md			\
+	$(NULL)
 
-# This is a blank Makefile.am for using gtk-doc.
-# Copy this to your project's API docs directory and modify the variables to
-# suit your project. See the GTK+ Makefiles in gtk+/docs/reference for examples
-# of using the various options.
+EXTRA_DIST = $(DOCS_SOURCES)
 
-# The name of the module, e.g. 'glib'.
-DOC_MODULE = rsvg
+HEADERS_WITH_DOCS = $(top_srcdir)/include/librsvg/*.h
+GIR_FILE = $(top_builddir)/Rsvg-2.0.gir
 
-# Uncomment for versioned docs and specify the version of the module, e.g. '2'.
-DOC_MODULE_VERSION = $(RSVG_API_VERSION)
+CLEANFILES = build.stamp
 
-# The top-level SGML file. You can change this if you want to.
-DOC_MAIN_SGML_FILE = $(DOC_MODULE)-docs.xml
+build.stamp: $(DOCS_SRC) $(HEADERS_WITH_DOCS) $(GIR_FILE)
+	$(GI_DOCGEN) generate -C $(srcdir)/librsvg.toml --content-dir=$(top_srcdir)/doc $(GIR_FILE)
+	touch build.stamp
 
-# The directory containing the source code. Relative to $(srcdir).
-# gtk-doc will search all .c & .h files beneath here for inline comments
-# documenting the functions and macros.
-# e.g. DOC_SOURCE_DIR=../../../gtk
-DOC_SOURCE_DIR = $(abs_top_srcdir)/include/librsvg
+clean-local:
+	rm -rf Rsvg-2.0
 
-# Extra options to pass to gtkdoc-scangobj. Not normally needed.
-SCANGOBJ_OPTIONS = --type-init-func="g_type_init ()"
+install-data-local: build.stamp
+	cp -fpR Rsvg-2.0 $(docdir)
 
-# Extra options to supply to gtkdoc-scan.
-# e.g. SCAN_OPTIONS=--deprecated-guards="GTK_DISABLE_DEPRECATED"
-SCAN_OPTIONS = --deprecated-guards="RSVG_DISABLE_DEPRECATED"
-
-# Extra options to supply to gtkdoc-mkdb.
-# e.g. MKDB_OPTIONS=--sgml-mode --output-format=xml
-MKDB_OPTIONS = --xml-mode --output-format=xml --name-space=rsvg
-
-# Extra options to supply to gtkdoc-mktmpl
-# e.g. MKTMPL_OPTIONS=--only-section-tmpl
-MKTMPL_OPTIONS =
-
-# Extra options to supply to gtkdoc-mkhtml
-# Add the builddir to the HTML path so that version.xml is found
-MKHTML_OPTIONS = --path="$(abs_builddir)"
-
-# Extra options to supply to gtkdoc-fixref. Not normally needed.
-# e.g. FIXXREF_OPTIONS=--extra-dir=../gdk-pixbuf/html --extra-dir=../gdk/html
-FIXXREF_OPTIONS = \
-	--extra-dir=$(GLIB_PREFIX)/share/gtk-doc/html/glib \
-	--extra-dir=$(GLIB_PREFIX)/share/gtk-doc/html/gio \
-	--extra-dir=$(GDK_PIXBUF_PREFIX)/share/gtk-doc/html/gdk-pixbuf \
-	--extra-dir=$(GTK_PREFIX)/share/gtk-doc/html/gdk \
-	--extra-dir=$(CAIRO_PREFIX)/share/gtk-doc/html/cairo
-
-# Used for dependencies. The docs will be rebuilt if any of these change.
-# e.g. HFILE_GLOB=$(top_srcdir)/gtk/*.h
-# e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
-HFILE_GLOB = $(top_srcdir)/include/librsvg/*.h
-CFILE_GLOB =
-
-# Extra header to include when scanning, which are not under DOC_SOURCE_DIR
-# e.g. EXTRA_HFILES=$(top_srcdir}/contrib/extra.h
-# EXTRA_HFILES = $(top_builddir)/evdocument/ev-version.h
-EXTRA_HFILES = $(top_builddir)/include/librsvg/rsvg-version.h
-
-# Header files to ignore when scanning. Use base file name, no paths
-# e.g. IGNORE_HFILES=gtkdebug.h gtkintl.h
-IGNORE_HFILES = config.h
-
-# Images to copy into HTML directory.
-# e.g. HTML_IMAGES=$(top_srcdir)/gtk/stock-icons/stock_about_24.png
-HTML_IMAGES =
-
-# Extra SGML files that are included by $(DOC_MAIN_SGML_FILE).
-# e.g. content_files=running.sgml building.sgml changes-2.0.sgml
-content_files =			\
-	load-and-render.c	\
-	migrating.xml		\
-	overview.xml		\
-	recommendations.xml	\
-	version.xml
-
-# SGML files where gtk-doc abbreviations (#GtkWidget) are expanded
-# These files must be listed here *and* in content_files
-# e.g. expand_content_files=running.sgml
-expand_content_files =
-
-# CFLAGS and LDFLAGS for compiling gtkdoc-scangobj with your library.
-# Only needed if you are using gtkdoc-scangobj to dynamically query widget
-# signals and properties.
-# e.g. GTKDOC_CFLAGS=-I$(top_srcdir) -I$(top_builddir) $(GTK_DEBUG_FLAGS)
-# e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
-GTKDOC_CFLAGS =					\
-	-I$(top_srcdir)/include			\
-	-I$(top_builddir)/include		\
-	$(LIBRSVG_CFLAGS)			\
-	$(WARN_CFLAGS)				\
-	$(DISABLE_DEPRECATED)			\
-	$(AM_CFLAGS)
-
-GTKDOC_LIBS = \
-	$(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la \
-	$(LIBRSVG_LIBS) \
-	$(GTHREAD_LIBS)
-
-# This includes the standard gtk-doc make rules, copied by gtkdocize.
-include $(top_srcdir)/gtk-doc.make
-
-# Other files to distribute
-# e.g. EXTRA_DIST += version.xml.in
-EXTRA_DIST += \
-	version.xml.in
-
-# Files not to distribute
-# for --rebuild-types in $(SCAN_OPTIONS), e.g. $(DOC_MODULE).types
-# for --rebuild-sections in $(SCAN_OPTIONS) e.g. $(DOC_MODULE)-sections.txt
-DISTCLEANFILES = $(DOC_MODULE).actions
-
-# Comment this out if you want your docs-status tested during 'make check'
-if ENABLE_GTK_DOC
-#TESTS_ENVIRONMENT = cd $(srcsrc) &&
-#TESTS = $(GTKDOC_CHECK)
-endif
-
--include $(top_srcdir)/git.mk
+all-local: build.stamp

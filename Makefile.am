@@ -250,7 +250,6 @@ EXTRA_DIST =				\
 	NEWS				\
 	COPYING.LIB 			\
 	librsvg-zip.in 			\
-	gtk-doc.make			\
 	Rsvg-2.0-custom.vala		\
 	Rsvg-2.0.metadata		\
 	rsvg-convert.rst		\
@@ -260,8 +259,6 @@ EXTRA_DIST =				\
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librsvg-$(RSVG_API_VERSION).pc
-
-DISTCHECK_CONFIGURE_FLAGS = --enable-gtk-doc
 
 if HAVE_INTROSPECTION
 -include $(INTROSPECTION_MAKEFILE)

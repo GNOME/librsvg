@@ -3,7 +3,7 @@ AC_PREREQ([2.69])
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[53])
-m4_define([rsvg_micro_version],[0]) # Keep this in sync with Cargo.toml
+m4_define([rsvg_micro_version],[0]) # Keep this in sync with Cargo.toml and doc/librsvg.toml
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version])
 
 # Library version information.  To make a release:
@@ -117,6 +117,13 @@ dnl Man page generator
 AC_CHECK_PROGS(RST2MAN, [rst2man rst2man.py], [no])
 AS_IF(test x$RST2MAN = xno,
     AC_MSG_ERROR([rst2man is required.  Please install python3-docutils.])
+)
+
+dnl Gi-docgen
+
+AC_CHECK_TOOL(GI_DOCGEN, [gi-docgen], [no])
+AS_IF(test x$GI_DOCGEN = xno,
+    AC_MSG_ERROR([gi-docgen is required.  Please install it.])
 )
 
 dnl ===========================================================================
@@ -236,12 +243,6 @@ AS_IF([test "x$enable_Bsymbolic" != "xno"], [
 
 AC_SUBST([BSYMBOLIC_LDFLAG])
 
-##################################################
-# Checks for gtk-doc and docbook-tools
-##################################################
-
-GTK_DOC_CHECK([1.13],[--flavour no-tmpl])
-
 AC_SUBST([GLIB_PREFIX],[$($PKG_CONFIG --variable=prefix glib-2.0)])
 AC_SUBST([GDK_PIXBUF_PREFIX],[$($PKG_CONFIG --variable=prefix gdk-pixbuf-2.0)])
 AC_SUBST([GTK_PREFIX],[$($PKG_CONFIG --variable=prefix gdk-pixbuf-2.0)])
@@ -328,7 +329,6 @@ librsvg-zip
 gdk-pixbuf-loader/Makefile
 tests/Makefile
 doc/Makefile
-doc/version.xml
 win32/Makefile
 win32/config.h.win32
 win32/config-msvc.mak
@@ -356,5 +356,4 @@ librsvg-$VERSION
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
-	Build HTML documentation:       ${enable_gtk_doc}
 "

@@ -41,7 +41,8 @@ minimum version is listed here; you may use a newer version instead.
 * Gdk-pixbuf 2.20.0
 * GIO 2.24.0
 * GObject-Introspection 0.10.8
-* Gtk-doc 1.13
+* gi-docgen
+* python3-docutils
 * Libxml2 2.9.0
 * Pango 1.46.0
 
@@ -57,7 +58,7 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
 
 ```sh
 apt-get install -y gcc make rustc cargo \
-automake autoconf libtool gtk-doc-tools git \
+automake autoconf libtool gi-docgen python3-docutils git \
 libgdk-pixbuf2.0-dev libgirepository1.0-dev \
 libxml2-dev libcairo2-dev libpango1.0-dev
 ```
@@ -72,7 +73,7 @@ PATH="$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0"
 
 ```sh
 dnf install -y gcc rust rust-std-static cargo make \
-automake autoconf libtool gtk-doc git redhat-rpm-config \
+automake autoconf libtool gi-docgen python3-docutils git redhat-rpm-config \
 gdk-pixbuf2-devel gobject-introspection-devel \
 libxml2-devel cairo-devel cairo-gobject-devel pango-devel
 ```
@@ -81,7 +82,7 @@ libxml2-devel cairo-devel cairo-gobject-devel pango-devel
 
 ```sh
 zypper install -y gcc rust rust-std cargo make \
-automake autoconf libtool gtk-doc git \
+automake autoconf libtool python3-gi-docgen python38-docutils git \
 gdk-pixbuf-devel gobject-introspection-devel \
 libxml2-devel cairo-devel pango-devel
 ```
@@ -92,7 +93,7 @@ Dependencies may be installed using [Homebrew](https://brew.sh) or another
 package manager.
 
 ```sh
-brew install automake gtk-doc pkgconfig libtool gobject-introspection gdk-pixbuf pango
+brew install automake gi-docgen pkgconfig libtool gobject-introspection gdk-pixbuf pango
 ```
 
 # Detailed compilation instructions
@@ -102,7 +103,7 @@ A full build of librsvg requires [autotools].  A full build will produce these:
 * `rsvg-convert` binary.
 * librsvg shared library with the GObject-based API.
 * Gdk-pixbuf loader for SVG files.
-* HTML documentation for the GObject-based API, with `gtk-doc`.
+* HTML documentation for the GObject-based API, with `gi-docgen`.
 * GObject-introspection information for language bindings.
 * Vala language bindings.
 
@@ -132,7 +133,7 @@ explains librsvg's peculiarities.
 If you are compiling a tarball:
 
 ```sh
-./configure --enable-gtk-doc --enable-vala
+./configure --enable-vala
 make
 make install
 ```
@@ -144,14 +145,13 @@ library.
 If you are compiling from a git checkout:
 
 ```sh
-./autogen.sh --enable-gtk-doc --enable-vala
+./autogen.sh --enable-vala
 make
 make install
 ```
 
-The `--enable-gtk-doc` and `--enable-vala` arguments are optional.
-They will check that you have `gtk-doc` and the Vala compiler
-installed, respectively.  You can omit them if you wish.
+The `--enable-vala` argument is optional.  It will check that you have
+the Vala compiler installed.
 
 # Verbosity
 

@@ -3,6 +3,47 @@
   <title>Overview of Librsvg's API</title>
 
   <para>
+    Librsvg is a library for rendering Scalable Vector Graphics files (SVG).
+    Specifically, it can take non-animated, non-scripted SVG documents and render them
+    into a <ulink url="https://www.cairographics.org/">Cairo</ulink> surface.
+    Normally this means an in-memory raster surface, but it could also be any of the
+    other surface types that Cairo supports.
+  </para>
+
+  <para>
+    Librsvg supports many of the graphic features in the <ulink
+    url="https://www.w3.org/TR/SVG/">SVG 1.1</ulink> and <ulink
+    url="https://www.w3.org/TR/SVG2/">SVG2</ulink> specifications.  The main features
+    of SVG that librsvg does not support are the following:
+  </para>
+
+  <itemizedlist>
+    <listitem>
+      <para>
+	Scripting or animation - Librsvg reads SVG data and
+	renders it to a static image.  There is no provision to
+	execute scripts that may control animation parameters.
+      </para>
+    </listitem>
+
+    <listitem>
+      <para>
+	Access to the DOM - Librsvg creates an internal
+	representation of the SVG data, but it does not provide
+	outside access to the resulting Document Object Model
+	(DOM).
+      </para>
+    </listitem>
+
+    <listitem>
+      <para>
+	SVG fonts - Instead, librsvg relies on the system's fonts,
+	particularly those that are available through Cairo/Pango.
+      </para>
+    </listitem>
+  </itemizedlist>
+
+  <para>
     Librsvg's API is divided into two main parts:  one for loading SVG
     data and one for rendering it.  In the <emphasis>loading
     stage</emphasis>, you create an RsvgHandle object from SVG data,
