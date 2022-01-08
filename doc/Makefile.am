@@ -21,6 +21,10 @@ clean-local:
 	rm -rf Rsvg-2.0
 
 install-data-local: build.stamp
-	cp -fpR Rsvg-2.0 $(docdir)
+	$(MKDIR_P) $(DESTDIR)/$(docdir)/Rsvg-2.0
+	for f in Rsvg-2.0/*; do $(INSTALL_DATA) $$f $(DESTDIR)/$(docdir)/Rsvg-2.0; done
+
+uninstall-local:
+	rm -rf $(DESTDIR)/$(docdir)/Rsvg-2.0
 
 all-local: build.stamp
