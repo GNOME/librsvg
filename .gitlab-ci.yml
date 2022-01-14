@@ -123,7 +123,10 @@ coverage:
   script:
     - cargo +nightly test --no-fail-fast || true
   after_script:
-    - ./grcov . --binary-path ./target/debug/ -s . -t cobertura --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
+    - ./grcov . --binary-path ./target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
+    - ./grcov . --binary-path ./target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "*cargo*" --output-path ./target/debug/coverage/
+    - mkdir -p public/coverage
+    - cp -r target/debug/coverage/* public/coverage
     - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
   coverage: '/Coverage: \d+\.\d+/'
   artifacts:
@@ -131,6 +134,8 @@ coverage:
     expire_in: 2 days
     reports:
       cobertura: coverage.xml
+    paths:
+      - public
 
 cargo_bench:
   stage: unit test
@@ -271,6 +276,7 @@ pages:
   extends: '.cache'
   needs:
     - job: reference
+    - job: coverage
   script:
     - mkdir -p public/internals
     - sudo -E cargo doc --document-private-items --no-deps
