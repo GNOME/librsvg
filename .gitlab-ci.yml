@@ -222,6 +222,8 @@ msys2-mingw64:
   stage: acceptance test
   tags:
     - win32-ps
+  needs:
+    - job: check
   variables:
     MSYSTEM: "MINGW64"
     CHERE_INVOKING: "yes"
