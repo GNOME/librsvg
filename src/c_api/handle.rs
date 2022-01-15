@@ -2088,7 +2088,7 @@ struct RsvgError;
 
 impl ErrorDomain for RsvgError {
     fn domain() -> glib::Quark {
-        glib::Quark::from_string("rsvg-error-quark")
+        glib::Quark::from_str("rsvg-error-quark")
     }
 
     fn code(self) -> i32 {
