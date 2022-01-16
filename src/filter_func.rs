@@ -192,13 +192,13 @@ fn parse_dropshadow<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, P
         std_deviation: None,
     };
 
-    result.color = parser.try_parse(|p| Color::parse(p)).ok();
+    result.color = parser.try_parse(Color::parse).ok();
 
     // if dx is provided, dy must follow and an optional std_dev must follow that.
-    if let Ok(dx) = parser.try_parse(|p| Length::parse(p)) {
+    if let Ok(dx) = parser.try_parse(Length::parse) {
         result.dx = Some(dx);
-        result.dy = Some(parser.try_parse(|p| Length::parse(p))?);
-        result.std_deviation = parser.try_parse(|p| ULength::parse(p)).ok();
+        result.dy = Some(parser.try_parse(Length::parse)?);
+        result.std_deviation = parser.try_parse(ULength::parse).ok();
     }
 
     let loc = parser.current_source_location();
@@ -206,7 +206,7 @@ fn parse_dropshadow<'i>(parser: &mut Parser<'i, '_>) -> Result<FilterFunction, P
     // because the color and length arguments can be provided in either order,
     // check again after potentially parsing lengths if the color is now provided.
     // if a color is provided both before and after, that is an error.
-    if let Ok(c) = parser.try_parse(|p| Color::parse(p)) {
+    if let Ok(c) = parser.try_parse(Color::parse) {
         if result.color.is_some() {
             return Err(
                 loc.new_custom_error(ValueErrorKind::Value("color already specified".to_string()))

@@ -166,14 +166,8 @@ fn filter_spec_from_filter_node(
         })
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct FilterValueList(Vec<FilterValue>);
-
-impl Default for FilterValueList {
-    fn default() -> FilterValueList {
-        FilterValueList(vec![])
-    }
-}
 
 impl FilterValueList {
     pub fn is_empty(&self) -> bool {
