@@ -16,7 +16,7 @@ use glib::translate::*;
 use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 
 use crate::error::LoadingError;
-use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
+use crate::util::{cstr, opt_utf8_cstr, utf8_cstr, utf8_cstr_len};
 
 use super::xml2::*;
 use super::Attributes;
@@ -265,11 +265,7 @@ unsafe extern "C" fn sax_characters_cb(
     assert!(!unterminated_text.is_null());
     assert!(len >= 0);
 
-    // libxml2 already validated the incoming string as UTF-8.  Note that
-    // it is *not* nul-terminated; this is why we create a byte slice first.
-    let bytes = std::slice::from_raw_parts(unterminated_text.cast::<u8>(), len as usize);
-    let utf8 = str::from_utf8_unchecked(bytes);
-
+    let utf8 = utf8_cstr_len(unterminated_text, len as usize);
     xml2_parser.state.characters(utf8);
 }
 
@@ -347,7 +343,13 @@ unsafe extern "C" fn stream_ctx_read(
         return -1;
     }
 
-    let buf: &mut [u8] = slice::from_raw_parts_mut(buffer.cast::<u8>(), len as usize);
+    // Convert from libc::c_char to u8.  Why transmute?  Because libc::c_char
+    // is of different signedness depending on the architecture (u8 on aarch64,
+    // i8 on x86_64).  If one just uses "start as *const u8", it triggers a
+    // trivial_casts warning.
+    #[allow(trivial_casts)]
+    let u8_buffer = buffer as *mut u8;
+    let buf = slice::from_raw_parts_mut(u8_buffer, len as usize);
 
     match ctx.stream.read(buf, ctx.cancellable.as_ref()) {
         Ok(size) => size as libc::c_int,

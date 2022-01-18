@@ -10,7 +10,7 @@ use string_cache::DefaultAtom;
 
 use crate::error::{ImplementationLimit, LoadingError};
 use crate::limits;
-use crate::util::{opt_utf8_cstr, utf8_cstr};
+use crate::util::{opt_utf8_cstr, utf8_cstr, utf8_cstr_bounds};
 
 /// Type used to store attribute values.
 ///
@@ -104,14 +104,7 @@ impl Attributes {
                 if !value_start.is_null() && !value_end.is_null() {
                     assert!(value_end >= value_start);
 
-                    // FIXME: ptr::offset_from() is nightly-only.
-                    // We'll do the computation of the length by hand.
-                    let start = value_start as usize;
-                    let end = value_end as usize;
-                    let len = end - start;
-
-                    let value_slice = slice::from_raw_parts(value_start.cast::<u8>(), len);
-                    let value_str = str::from_utf8_unchecked(value_slice);
+                    let value_str = utf8_cstr_bounds(value_start, value_end);
                     let value_atom = DefaultAtom::from(value_str);
 
                     let idx = array.len() as u16;
