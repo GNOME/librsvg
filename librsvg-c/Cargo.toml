@@ -17,15 +17,25 @@ gdk-pixbuf = "0.19"
 gio = "0.19"
 glib = "0.19"
 libc = "0.2"
-librsvg = { path = "../rsvg", features = ["c-api"] }
+librsvg = { path = "../rsvg", features = ["capi"] }
 rgb = { version="0.8", features=["argb"] }
 url = "2"
 
 [build-dependencies]
 regex = "1.7.1"
 
-[dev-dependencies]
-librsvg = { path = "../rsvg", features = ["c-api"] }
-
+# Remove this section once the win32 NMAKE toolchain is gone
 [lib]
 crate-type = [ "staticlib", "rlib" ]
+
+[features]
+capi = [ "librsvg/capi" ]
+
+[package.metadata.capi]
+min_version = "0.9.19"
+
+[package.metadata.capi.library]
+name = "rsvg_2"
+
+[package.metadata.capi.header]
+enabled = false
