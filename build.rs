@@ -16,6 +16,7 @@ fn main() {
 
     let version = read_version_from_file("configure.ac").expect("Could not find version in configure.ac");
     write_version_rs(&version);
+    write_rsvg_version_h(&version);
 }
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
@@ -139,4 +140,31 @@ pub static rsvg_micro_version: c_uint = {};
         .as_bytes(),
     )
     .expect("write version.rs");
+}
+
+fn write_rsvg_version_h(version: &Version) {
+    let output = Path::new(&env::var("OUT_DIR").unwrap()).join("rsvg-version.h");
+    let mut file = File::create(output).expect("open rsvg-version.h for writing");
+    file.write_all(
+        format!(
+r##"#if !defined (__RSVG_RSVG_H_INSIDE__) && !defined (RSVG_COMPILATION)
+#warning "Including <librsvg/rsvg-version.h> directly is deprecated."
+#endif
+
+#ifndef RSVG_VERSION_H
+#define RSVG_VERSION_H
+
+#define LIBRSVG_MAJOR_VERSION ({major})
+#define LIBRSVG_MINOR_VERSION ({minor})
+#define LIBRSVG_MICRO_VERSION ({micro})
+#define LIBRSVG_VERSION "{major}.{minor}.{micro}"
+
+#endif
+"##,
+            major = version.major,
+            minor = version.minor,
+            micro = version.micro,
+        ).as_bytes()
+    )
+    .expect("write rsvg-version.h");
 }
