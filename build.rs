@@ -14,7 +14,7 @@ fn main() {
 
     generate_srgb_tables();
 
-    let version = read_version_from_file("configure.ac").expect("Could not find version in configure.ac");
+    let version = read_version_from_meson_build("meson.build").expect("Could not find version in meson.build");
     write_version_rs(&version);
     write_rsvg_version_h(&version);
 }
@@ -73,34 +73,36 @@ struct Version {
     micro: String,
 }
 
-fn read_version_from_file(filename: &str) -> Option<Version> {
-    let mut major = None;
-    let mut minor = None;
-    let mut micro = None;
-
+fn read_version_from_meson_build(filename: &str) -> Option<Version> {
     {
         let file = File::open(filename)
             .expect("builds must take place within the librsvg source tree");
 
-        let major_regex = Regex::new(r#"^m4_define\(\[rsvg_major_version\],\[(\d+)\]\)"#).unwrap();
-        let minor_regex = Regex::new(r#"^m4_define\(\[rsvg_minor_version\],\[(\d+)\]\)"#).unwrap();
-        let micro_regex = Regex::new(r#"^m4_define\(\[rsvg_micro_version\],\[(\d+)\]\)"#).unwrap();
+        // This function reads one of the build configuration files (meson.build) and scans
+        // it for the package's version number.
+        //
+        // The start of meson.build should contain this:
+        //
+        //   project('librsvg', 'rust', 'c', version: '2.55.90', meson_version: '>= 0.63')
+        //
+        // This regex looks for the "version" line.
+
+        let regex = Regex::new(r#"^project\(.*version: '(\d+\.\d+\.\d+)'"#).unwrap();
 
         for line in BufReader::new(file).lines() {
             match line {
                 Ok(line) => {
-                    if let Some(nums) = major_regex.captures(&line) {
-                        major = Some(String::from(
-                            nums.get(1).expect("major_regex matched once").as_str(),
-                        ));
-                    } else if let Some(nums) = minor_regex.captures(&line) {
-                        minor = Some(String::from(
-                            nums.get(1).expect("minor_regex matched once").as_str(),
-                        ));
-                    } else if let Some(nums) = micro_regex.captures(&line) {
-                        micro = Some(String::from(
-                            nums.get(1).expect("micro_regex matched once").as_str(),
-                        ));
+                    if let Some(caps) = regex.captures(&line) {
+                        let version_str = &caps[1];
+                        let mut components = version_str.split(".");
+                        let major = components.next().unwrap().to_string();
+                        let minor = components.next().unwrap().to_string();
+                        let micro = components.next().unwrap().to_string();
+                        return Some(Version {
+                            major,
+                            minor,
+                            micro,
+                        });
                     }
                 }
 
@@ -109,11 +111,7 @@ fn read_version_from_file(filename: &str) -> Option<Version> {
         }
     }
 
-    if let (Some(major), Some(minor), Some(micro)) = (major, minor, micro) {
-        Some(Version { major, minor, micro })
-    } else {
-        None
-    }
+    None
 }
 
 fn write_version_rs(version: &Version) {
