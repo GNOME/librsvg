@@ -15,7 +15,7 @@ fn main() {
     generate_srgb_tables();
 
     let version = read_version_from_file("configure.ac").expect("Could not find version in configure.ac");
-    write_version(&version);
+    write_version_rs(&version);
 }
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
@@ -115,7 +115,7 @@ fn read_version_from_file(filename: &str) -> Option<Version> {
     }
 }
 
-fn write_version(version: &Version) {
+fn write_version_rs(version: &Version) {
     let output = Path::new(&env::var("OUT_DIR").unwrap()).join("version.rs");
     let mut file = File::create(output).expect("open version.rs for writing");
     file.write_all(
