@@ -13,7 +13,9 @@ fn main() {
     }
 
     generate_srgb_tables();
-    write_version();
+
+    let version = read_version_from_file("configure.ac").expect("Could not find version in configure.ac");
+    write_version(&version);
 }
 
 /// Converts an sRGB color value to a linear sRGB color value (undoes the gamma correction).
@@ -70,13 +72,13 @@ struct Version {
     micro: String,
 }
 
-fn write_version() {
+fn read_version_from_file(filename: &str) -> Option<Version> {
     let mut major = None;
     let mut minor = None;
     let mut micro = None;
 
     {
-        let file = File::open("configure.ac")
+        let file = File::open(filename)
             .expect("builds must take place within the librsvg source tree");
 
         let major_regex = Regex::new(r#"^m4_define\(\[rsvg_major_version\],\[(\d+)\]\)"#).unwrap();
@@ -101,17 +103,19 @@ fn write_version() {
                     }
                 }
 
-                Err(e) => panic!("could not parse version from configure.ac: {}", e),
+                Err(e) => panic!("could not read line from {}: {}", filename, e),
             }
         }
     }
 
-    let version = if let (Some(major), Some(minor), Some(micro)) = (major, minor, micro) {
-        Version { major, minor, micro }
+    if let (Some(major), Some(minor), Some(micro)) = (major, minor, micro) {
+        Some(Version { major, minor, micro })
     } else {
-        panic!("Could not find version in configure.ac");
-    };
+        None
+    }
+}
 
+fn write_version(version: &Version) {
     let output = Path::new(&env::var("OUT_DIR").unwrap()).join("version.rs");
     let mut file = File::create(output).expect("open version.rs for writing");
     file.write_all(
