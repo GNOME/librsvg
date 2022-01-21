@@ -102,7 +102,7 @@ build-rsvg-opensuse@x86_64.nightly:
     - job: check
       artifacts: false
 
-build-rsvg-opensuse@aarch64:
+.build-rsvg-opensuse@aarch64:
   extends:
     - .container.opensuse@aarch64
     - .fdo.distribution-image@opensuse

@@ -77,7 +77,7 @@ opensuse-container@x86_64.nightly:
     - .container.opensuse@x86_64.nightly
   stage: "container-build"
 
-opensuse-container@aarch64:
+.opensuse-container@aarch64:
   extends:
     - .fdo.container-build@opensuse@aarch64
     - .container.opensuse@aarch64
