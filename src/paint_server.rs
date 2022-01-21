@@ -92,7 +92,7 @@ impl Parse for PaintServer {
                 {
                     None
                 } else {
-                    Some(parser.try_parse(|i| cssparser::Color::parse(i))?)
+                    Some(parser.try_parse(cssparser::Color::parse)?)
                 }
             } else {
                 None

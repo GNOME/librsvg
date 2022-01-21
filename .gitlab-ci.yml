@@ -1,19 +1,15 @@
 # -*- indent-tabs-mode: nil -*-
 
+include:
+  - local: '.gitlab-ci/container_builds.yml'
+
 variables:
-  # Container(OCI) images for various distros
-
-  AMD64_FEDORA_LATEST:       "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/fedora:latest"
-  AMD64_OPENSUSE_TUMBLEWEED: "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/opensuse:tumbleweed"
-  AMD64_DEBIAN_TESTING:      "registry.gitlab.gnome.org/gnome/librsvg-oci-images/amd64/debian:testing"
-
   LIBRSVG_DEBUG: "yes"
   # Turn compiler warnings into errors
   RUSTFLAGS: '-D warnings'
 
-image: $AMD64_OPENSUSE_TUMBLEWEED
-
 stages:
+  - container-build
   - check
   - build
   - lint
@@ -26,12 +22,178 @@ stages:
 default:
   interruptible: true
 
+check:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache_push'
+  stage: check
+  needs: ['opensuse-container@x86_64.stable']
+  script:
+    - cargo check --all-targets
+
+cargo_test:
+  stage: check
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    # Tests require extra crates, hence cache is pushed
+    - '.cache_push'
+  needs:
+    - job: check
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/output
+    expire_in: 1 day
+  variables:
+    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+  script:
+    - cargo test -- --skip loading_crash --skip reference --skip render_crash
+
+.build-rsvg:
+  extends: '.cache'
+  stage: build
+  script:
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh --enable-gtk-doc --enable-vala
+    - make
+    - make check
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/*.log
+      - _build/tests/output
+    expire_in: 1 day
+
+build-rsvg-opensuse@x86_64.stable:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - .fdo.distribution-image@opensuse
+    - .build-rsvg
+    # make check runs extra tests that require extra crates, hence cache is pushed
+    - .cache_push
+  needs:
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+    - job: check
+      artifacts: false
+
+build-rsvg-opensuse@x86_64.minimum:
+  extends:
+    - '.container.opensuse@x86_64.minimum'
+    - .fdo.distribution-image@opensuse
+    - .build-rsvg
+  needs:
+    - job: opensuse-container@x86_64.minimum
+      artifacts: false
+    - job: check
+      artifacts: false
+
+build-rsvg-opensuse@x86_64.nightly:
+  extends:
+    - '.container.opensuse@x86_64.nightly'
+    - .fdo.distribution-image@opensuse
+    - .build-rsvg
+  needs:
+    - job: opensuse-container@x86_64.nightly
+      artifacts: false
+    - job: check
+      artifacts: false
+
+.build-rsvg-opensuse@aarch64:
+  extends:
+    - .container.opensuse@aarch64
+    - .fdo.distribution-image@opensuse
+    - .build-rsvg
+  needs:
+    - job: opensuse-container@aarch64
+      artifacts: false
+    - job: check
+      artifacts: false
+
+.build-rsvg-fedora@x86_64:
+  extends:
+    - .container.fedora@x86_64
+    - .fdo.distribution-image@fedora
+    - .build-rsvg
+  needs:
+    - job: fedora-container@x86_64
+      artifacts: false
+    - job: check
+      artifacts: false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+.build-rsvg-fedora@aarch64:
+  extends:
+    - .container.fedora@aarch64
+    - .fdo.distribution-image@fedora
+    - .build-rsvg
+  needs:
+    - job: fedora-container@aarch64
+      artifacts: false
+    - job: check
+      artifacts: false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+.build-rsvg-debian@x86_64:
+  extends:
+    - '.container.debian@x86_64'
+    - '.fdo.distribution-image@debian'
+    - '.build-rsvg'
+  variables:
+    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
+    # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
+    GDK_PIXBUF_QUERYLOADERS: '/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders'
+    LIBRSVG_DEBUG: "no"
+  needs:
+    - job: debian-container@x86_64
+      artifacts: false
+    - job: check
+      artifacts: false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+.build-rsvg-debian@aarch64:
+  extends:
+    - '.container.debian@aarch64'
+    - '.fdo.distribution-image@debian'
+    - '.build-rsvg'
+  variables:
+    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
+    # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
+    GDK_PIXBUF_QUERYLOADERS: '/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders'
+    LIBRSVG_DEBUG: "no"
+  needs:
+    - job: debian-container@aarch64
+      artifacts: false
+    - job: check
+      artifacts: false
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: manual
+      allow_failure: true
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
 .cache:
   variables:
     # Only stuff inside the repo directory can be cached
     # Override the CARGO_HOME variable to force its location
     CARGO_HOME: "${CI_PROJECT_DIR}/cargo_cache"
   before_script:
+    - source ./.gitlab-ci/env.sh
     - mkdir -p cargo_cache
   cache:
     key:
@@ -48,38 +210,34 @@ default:
 
 .cache_push:
   extends: .cache
-  after_script:
-    # Fix up ownership of the cache, not all builds use sudo
-    - sudo chown -R "$(id -u):$(id -g)" ${CI_PROJECT_DIR}/cargo_cache
   cache:
     policy: pull-push
 
-check:
-  stage: check
-  extends: '.cache_push'
-  needs: []
-  script:
-    - sudo -E cargo check --all-targets
-
 fmt:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
   stage: lint
-  extends: '.cache'
   needs:
     - job: check
   script:
-    - sudo -E cargo fmt --all -- --check
+    - cargo fmt --all -- --check
 
 clippy:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
   stage: lint
-  extends: '.cache'
   needs:
     - job: check
   script:
     - cargo clippy --version
     - gitlab-clippy --version
-    - sudo -E cargo clippy
+    - cargo clippy
   after_script:
-    - sudo -E cargo clippy --message-format=json | /opt/cargo/bin/gitlab-clippy -o gl-code-quality-report.json
+    - cargo clippy --message-format=json | gitlab-clippy -o gl-code-quality-report.json
   artifacts:
     reports:
       codequality: gl-code-quality-report.json
@@ -89,42 +247,24 @@ clippy:
       when: never
     - if: '$CI_PIPELINE_SOURCE == "push"'
 
-cargo_test:
-  stage: unit test
-  extends:
-    # Tests require extra crates, hence cache is pushed
-    - .cache_push
-  needs:
-    - job: check
-  artifacts:
-    when: 'on_failure'
-    paths:
-      - _build/tests/output
-    expire_in: 1 day
-  variables:
-    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
-  script:
-    - sudo -E cargo test -- --skip loading_crash --skip reference --skip render_crash
-
 coverage:
-  image: "rustlang/rust:nightly-bullseye"
+  extends:
+    - '.container.opensuse@x86_64.nightly'
+    - .fdo.distribution-image@opensuse
   stage: unit test
   needs:
+    - job: opensuse-container@x86_64.nightly
     - job: check
       artifacts: false
   variables:
     RUSTFLAGS: "-Zinstrument-coverage"
     RUSTDOCFLAGS: "-Zinstrument-coverage"
     LLVM_PROFILE_FILE: "coverage-%p-%m.profraw"
-  before_script:
-    - apt update && apt install -y --no-install-recommends libgdk-pixbuf2.0-dev libpango1.0-dev libcairo2-dev
-    - rustup component add llvm-tools-preview
-    - curl -L https://github.com/mozilla/grcov/releases/latest/download/grcov-linux-x86_64.tar.bz2 | tar jxf -
   script:
     - cargo +nightly test --no-fail-fast || true
   after_script:
-    - ./grcov . --binary-path ./target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
-    - ./grcov . --binary-path ./target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "build.rs" --output-path ./target/debug/coverage/
+    - grcov . --binary-path ./target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
+    - grcov . --binary-path ./target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "build.rs" --output-path ./target/debug/coverage/
     - mkdir -p public/coverage
     - cp -r target/debug/coverage/* public/coverage
     - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
@@ -138,20 +278,24 @@ coverage:
       - public
 
 cargo_bench:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
   stage: unit test
   needs:
     - job: check
   script: |
     BENCHES=("box_blur" "composite" "lighting" "path_parser" "pixbuf_from_surface" "pixel_iterators" "pixel_ops" "srgb" "surface_from_pixbuf")
-    sudo -E git checkout ${CI_DEFAULT_BRANCH}
+    git checkout ${CI_DEFAULT_BRANCH}
     for BENCH in "${BENCHES[@]}"
     do
-      sudo -E cargo bench --bench $BENCH -- --noplot --save-baseline main
+      cargo bench --bench $BENCH -- --noplot --save-baseline main
     done
-    sudo -E git checkout ${CI_COMMIT_SHA}
+    git checkout ${CI_COMMIT_SHA}
     for BENCH in "${BENCHES[@]}"
     do
-      sudo -E cargo bench --bench $BENCH -- --noplot --baseline main
+      cargo bench --bench $BENCH -- --noplot --baseline main
     done
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
@@ -162,61 +306,6 @@ cargo_bench:
       - target/criterion
     expire_in: 1 week
 
-.make:
-  extends: '.cache'
-  needs:
-    - job: cargo_test
-  script:
-    - mkdir -p _build
-    - cd _build
-    - sudo ../autogen.sh --enable-vala
-    - sudo -E make
-    - sudo -E make check
-  artifacts:
-    when: 'on_failure'
-    paths:
-      - _build/tests/*.log
-      - _build/tests/output
-    expire_in: 1 day
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-
-opensuse:tumbleweed:
-  stage: acceptance test
-  extends:
-    - .make
-    # make check runs extra tests that require extra crates, hence cache is pushed
-    - .cache_push
-  before_script:
-    - sudo zypper install -y python38-docutils python3-gi-docgen
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-
-.distro:
-  stage: cross distro
-  extends: .make
-  variables:
-    LIBRSVG_DEBUG: "no"
-
-fedora:latest:
-  image: $AMD64_FEDORA_LATEST
-  extends: .distro
-
-debian:testing:
-  image: $AMD64_DEBIAN_TESTING
-  extends: .distro
-  script:
-    # TODO: delete after sudo is no longer needed on the other builds
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --enable-vala
-    - make
-    - make check
-  allow_failure: true
 
 msys2-mingw64:
   stage: acceptance test
@@ -236,13 +325,19 @@ msys2-mingw64:
 
 distcheck:
   stage: release
-  extends: .distro
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
+  needs:
+    - job: check
   variables:
     DESTDIR: "/tmp/distcheck"
+    LIBRSVG_DEBUG: "no"
   script:
-    - sudo ./autogen.sh --enable-vala
-    - sudo -E make
-    - sudo -E make distcheck
+    - ./autogen.sh --enable-vala
+    - make
+    - make distcheck
   artifacts:
     when: 'on_success'
     paths:
@@ -255,36 +350,43 @@ distcheck:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 reference:
-  extends: '.cache'
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
   stage: docs
   needs:
-    - job: opensuse:tumbleweed
-  before_script:
-    - sudo zypper install -y python38-docutils python3-gi-docgen
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+    - job: check
+      artifacts: false
   script:
     - mkdir -p _build
     - cd _build
-    - sudo ../autogen.sh --enable-vala
-    - sudo -E make
+    - ../autogen.sh --enable-vala
+    - make
     - cd ..
     - mkdir -p public/
-    - sudo mv _build/doc/Rsvg-2.0 public/
+    - mv _build/doc/Rsvg-2.0 public/
   artifacts:
     paths:
       - public
 
 pages:
   stage: docs
-  extends: '.cache'
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
   needs:
     - job: reference
     - job: coverage
   script:
     - mkdir -p public/internals
-    - sudo -E cargo doc --document-private-items --no-deps
+    - cargo doc --document-private-items --no-deps
     - cp -r target/doc/* public/internals
     - mkdir -p public/doc
-    - sudo -E cargo doc --no-deps --lib
+    - cargo doc --no-deps --lib
     - cp -r target/doc/* public/doc
   artifacts:
     paths:
