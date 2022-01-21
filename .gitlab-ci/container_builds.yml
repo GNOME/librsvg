@@ -115,13 +115,13 @@ opensuse-container@aarch64:
   tags:
     - aarch64
 
-fedora-container@x86_64:
+.fedora-container@x86_64:
   extends:
     - .fdo.container-build@fedora@x86_64
     - .container.fedora@x86_64
   stage: "container-build"
 
-fedora-container@aarch64:
+.fedora-container@aarch64:
   extends:
     - .fdo.container-build@fedora@aarch64
     - .container.fedora@aarch64
@@ -162,13 +162,13 @@ fedora-container@aarch64:
   tags:
     - aarch64
 
-debian-container@x86_64:
+.debian-container@x86_64:
   extends:
     - .fdo.container-build@debian@x86_64
     - .container.debian@x86_64
   stage: "container-build"
 
-debian-container@aarch64:
+.debian-container@aarch64:
   extends:
     - .fdo.container-build@debian@aarch64
     - .container.debian@aarch64

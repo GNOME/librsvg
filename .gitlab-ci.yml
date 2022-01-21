@@ -113,7 +113,7 @@ build-rsvg-opensuse@aarch64:
     - job: check
       artifacts: false
 
-build-rsvg-fedora@x86_64:
+.build-rsvg-fedora@x86_64:
   extends:
     - .container.fedora@x86_64
     - .fdo.distribution-image@fedora
@@ -129,7 +129,7 @@ build-rsvg-fedora@x86_64:
       allow_failure: true
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
-build-rsvg-fedora@aarch64:
+.build-rsvg-fedora@aarch64:
   extends:
     - .container.fedora@aarch64
     - .fdo.distribution-image@fedora
@@ -145,7 +145,7 @@ build-rsvg-fedora@aarch64:
       allow_failure: true
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
-build-rsvg-debian@x86_64:
+.build-rsvg-debian@x86_64:
   extends:
     - '.container.debian@x86_64'
     - '.fdo.distribution-image@debian'
@@ -166,7 +166,7 @@ build-rsvg-debian@x86_64:
       allow_failure: true
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
-build-rsvg-debian@aarch64:
+.build-rsvg-debian@aarch64:
   extends:
     - '.container.debian@aarch64'
     - '.fdo.distribution-image@debian'
