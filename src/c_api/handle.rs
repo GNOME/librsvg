@@ -82,13 +82,13 @@ impl fmt::Display for RenderingError {
 /// Rust version of the `RsvgHandleFlags` enum in C.
 #[glib::flags(name = "RsvgHandleFlags")]
 pub enum HandleFlags {
-    #[gflags(name = "RSVG_HANDLE_FLAGS_NONE", nick = "flags-none")]
+    #[flags_value(name = "RSVG_HANDLE_FLAGS_NONE", nick = "flags-none")]
     NONE = 0,
 
-    #[gflags(name = "RSVG_HANDLE_FLAG_UNLIMITED", nick = "flag-unlimited")]
+    #[flags_value(name = "RSVG_HANDLE_FLAG_UNLIMITED", nick = "flag-unlimited")]
     UNLIMITED = 1 << 0,
 
-    #[gflags(
+    #[flags_value(
         name = "RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA",
         nick = "flag-keep-image-data"
     )]
