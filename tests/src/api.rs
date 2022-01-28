@@ -1,5 +1,4 @@
 use cairo;
-use libc;
 use librsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use librsvg::{CairoRenderer, RenderingError};
 
@@ -221,20 +220,6 @@ fn set_stylesheet() {
         .evaluate(&output_surf, "set_stylesheet");
 }
 
-fn has_current_point(cr: &cairo::Context) -> bool {
-    // https://github.com/gtk-rs/gtk-rs-core/issues/335
-    //
-    // cairo-rs-sys incorrectly declares cairo_bool_t as a repr(C)
-    // struct; it needs to be repr(transparent).  So, we'll call
-    // has_current_point by hand.
-
-    extern "C" {
-        fn cairo_has_current_point(cr: *mut cairo::ffi::cairo_t) -> libc::c_int;
-    }
-
-    unsafe { cairo_has_current_point(cr.to_raw_none()) != 0 }
-}
-
 // https://gitlab.gnome.org/GNOME/librsvg/-/issues/799
 #[test]
 fn text_doesnt_leave_points_in_current_path() {
@@ -252,7 +237,7 @@ fn text_doesnt_leave_points_in_current_path() {
     let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
     let cr = cairo::Context::new(&output).unwrap();
 
-    assert!(!has_current_point(&cr));
+    assert!(!cr.has_current_point().unwrap());
 
     let viewport = cairo::Rectangle {
         x: 0.0,
@@ -263,5 +248,5 @@ fn text_doesnt_leave_points_in_current_path() {
 
     renderer.render_document(&cr, &viewport).unwrap();
 
-    assert!(!has_current_point(&cr));
+    assert!(!cr.has_current_point().unwrap());
 }

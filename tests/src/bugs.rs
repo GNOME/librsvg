@@ -498,7 +498,8 @@ fn can_draw_to_non_image_surface() {
         height: 200.0,
     };
 
-    let output = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, viewport).unwrap();
+    let output =
+        cairo::RecordingSurface::create(cairo::Content::ColorAlpha, Some(viewport)).unwrap();
 
     let cr = cairo::Context::new(&output).expect("Failed to create a cairo context");
     renderer

@@ -1,6 +1,7 @@
 //! Text elements: `text`, `tspan`, `tref`.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use pango::IsAttribute;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
@@ -391,14 +392,14 @@ fn compute_text_box(
     #![allow(clippy::many_single_char_names)]
 
     let (ink, _) = layout.extents();
-    if ink.width == 0 || ink.height == 0 {
+    if ink.width() == 0 || ink.height() == 0 {
         return None;
     }
 
-    let ink_x = f64::from(ink.x);
-    let ink_y = f64::from(ink.y);
-    let ink_width = f64::from(ink.width);
-    let ink_height = f64::from(ink.height);
+    let ink_x = f64::from(ink.x());
+    let ink_y = f64::from(ink.y());
+    let ink_width = f64::from(ink.width());
+    let ink_height = f64::from(ink.height());
     let pango_scale = f64::from(pango::SCALE);
 
     let (x, y, w, h) = if gravity_is_vertical(gravity) {
@@ -1239,29 +1240,28 @@ fn add_pango_attributes(
 
     font_desc.set_size(to_pango_units(props.font_size));
 
-    attributes.push(pango::Attribute::new_font_desc(&font_desc));
+    attributes.push(pango::AttrFontDesc::new(&font_desc).upcast());
 
-    attributes.push(pango::Attribute::new_letter_spacing(to_pango_units(
-        props.letter_spacing,
-    )));
+    attributes
+        .push(pango::AttrInt::new_letter_spacing(to_pango_units(props.letter_spacing)).upcast());
 
     if props.text_decoration.overline {
-        attributes.push(pango::Attribute::new_overline(pango::Overline::Single));
+        attributes.push(pango::AttrInt::new_overline(pango::Overline::Single).upcast());
     }
 
     if props.text_decoration.underline {
-        attributes.push(pango::Attribute::new_underline(pango::Underline::Single));
+        attributes.push(pango::AttrInt::new_underline(pango::Underline::Single).upcast());
     }
 
     if props.text_decoration.strike {
-        attributes.push(pango::Attribute::new_strikethrough(true));
+        attributes.push(pango::AttrInt::new_strikethrough(true).upcast());
     }
 
     // FIXME: Using the "smcp" OpenType feature only works for fonts that support it.  We
     // should query if the font supports small caps, and synthesize them if it doesn't.
     if props.font_variant == FontVariant::SmallCaps {
         // smcp - small capitals - https://docs.microsoft.com/en-ca/typography/opentype/spec/features_pt#smcp
-        attributes.push(pango::Attribute::new_font_features("'smcp' 1"));
+        attributes.push(pango::AttrFontFeatures::new("'smcp' 1").upcast());
     }
 
     // Set the range in each attribute
