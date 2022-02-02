@@ -69,3 +69,9 @@ test_svg_reference!(
     "tests/fixtures/text/visibility-hidden-x-attr.svg",
     "tests/fixtures/text/visibility-hidden-ref.svg"
 );
+
+test_svg_reference!(
+    bounds,
+    "tests/fixtures/text/bounds.svg",
+    "tests/fixtures/text/bounds-ref.svg"
+);
