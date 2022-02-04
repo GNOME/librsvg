@@ -1908,15 +1908,11 @@ impl CompositingAffines {
     }
 }
 
-fn compute_stroke_and_fill_box(
+fn compute_stroke_and_fill_extents(
     cr: &cairo::Context,
     stroke: &Stroke,
     stroke_paint_source: &PaintSource,
-) -> Result<BoundingBox, RenderingError> {
-    let affine = Transform::from(cr.matrix());
-
-    let mut bbox = BoundingBox::new().with_transform(affine);
-
+) -> Result<PathExtents, RenderingError> {
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
     // really needed here? */
@@ -1932,10 +1928,7 @@ fn compute_stroke_and_fill_box(
     // rectangle's extents, even when it has no fill nor stroke.
 
     let (x0, y0, x1, y1) = cr.fill_extents()?;
-    let fb = BoundingBox::new()
-        .with_transform(affine)
-        .with_ink_rect(Rect::new(x0, y0, x1, y1));
-    bbox.insert(&fb);
+    let fill_extents = Some(Rect::new(x0, y0, x1, y1));
 
     // Bounding box for stroke
     //
@@ -1948,25 +1941,54 @@ fn compute_stroke_and_fill_box(
     // So, see if the stroke width is 0 and just not include the stroke in the
     // bounding box if so.
 
-    if !stroke.width.approx_eq_cairo(0.0) && !matches!(stroke_paint_source, PaintSource::None) {
+    let stroke_extents = if !stroke.width.approx_eq_cairo(0.0)
+        && !matches!(stroke_paint_source, PaintSource::None)
+    {
         let (x0, y0, x1, y1) = cr.stroke_extents()?;
-        let sb = BoundingBox::new()
-            .with_transform(affine)
-            .with_ink_rect(Rect::new(x0, y0, x1, y1));
-        bbox.insert(&sb);
-    }
+        Some(Rect::new(x0, y0, x1, y1))
+    } else {
+        None
+    };
 
     // objectBoundingBox
 
     let (x0, y0, x1, y1) = cr.path_extents()?;
-    let ob = BoundingBox::new()
-        .with_transform(affine)
-        .with_rect(Rect::new(x0, y0, x1, y1));
-    bbox.insert(&ob);
+    let path_extents = Some(Rect::new(x0, y0, x1, y1));
 
     // restore tolerance
 
     cr.set_tolerance(backup_tolerance);
+
+    Ok(PathExtents {
+        path_only: path_extents,
+        fill: fill_extents,
+        stroke: stroke_extents,
+    })
+}
+
+fn compute_stroke_and_fill_box(
+    cr: &cairo::Context,
+    stroke: &Stroke,
+    stroke_paint_source: &PaintSource,
+) -> Result<BoundingBox, RenderingError> {
+    let extents = compute_stroke_and_fill_extents(cr, stroke, stroke_paint_source)?;
+
+    let ink_rect = match (extents.fill, extents.stroke) {
+        (None, None) => None,
+        (Some(f), None) => Some(f),
+        (None, Some(s)) => Some(s),
+        (Some(f), Some(s)) => Some(f.union(&s)),
+    };
+
+    let mut bbox = BoundingBox::new().with_transform(Transform::from(cr.matrix()));
+
+    if let Some(rect) = extents.path_only {
+        bbox = bbox.with_rect(rect);
+    }
+
+    if let Some(ink_rect) = ink_rect {
+        bbox = bbox.with_ink_rect(ink_rect);
+    }
 
     Ok(bbox)
 }
@@ -2109,6 +2131,21 @@ impl From<Transform> for cairo::Matrix {
     fn from(t: Transform) -> Self {
         Self::new(t.xx, t.yx, t.xy, t.yy, t.x0, t.y0)
     }
+}
+
+/// Extents for a path in its current coordinate system.
+///
+/// Normally you'll want to convert this to a BoundingBox, which has knowledge about just
+/// what that coordinate system is.
+pub struct PathExtents {
+    /// Extents of the "plain", unstroked path, or `None` if the path is empty.
+    pub path_only: Option<Rect>,
+
+    /// Extents of just the fill, or `None` if the path is empty.
+    pub fill: Option<Rect>,
+
+    /// Extents for the stroked path, or `None` if the path is empty or zero-width.
+    pub stroke: Option<Rect>,
 }
 
 impl Path {
