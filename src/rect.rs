@@ -4,6 +4,7 @@
 mod rect {
     use crate::float_eq_cairo::ApproxEqCairo;
     use core::ops::{Add, Range, Sub};
+    use float_cmp::approx_eq;
     use num_traits::Zero;
 
     // Use our own min() and max() that are acceptable for floating point
@@ -153,6 +154,15 @@ mod rect {
                 x1: self.x1 * x,
                 y1: self.y1 * y,
             }
+        }
+
+        pub fn approx_eq(&self, other: &Self) -> bool {
+            // FIXME: this is super fishy; shouldn't we be using 2x the epsilon against the width/height
+            // instead of the raw coordinates?
+            approx_eq!(f64, self.x0, other.x0)
+                && approx_eq!(f64, self.y0, other.y0)
+                && approx_eq!(f64, self.x1, other.x1)
+                && approx_eq!(f64, self.y1, other.y1)
         }
     }
 }
