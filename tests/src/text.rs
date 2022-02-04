@@ -1,7 +1,9 @@
 use cairo;
+use librsvg::{CairoRenderer, Loader};
+use test_generator::test_resources;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{load_svg, render_document, SurfaceSize};
+use crate::utils::{load_svg, render_document, setup_font_map, SurfaceSize};
 use crate::{test_compare_render_output, test_svg_reference};
 
 // From https://www.w3.org/Style/CSS/Test/Fonts/Ahem/
@@ -75,3 +77,48 @@ test_svg_reference!(
     "tests/fixtures/text/bounds.svg",
     "tests/fixtures/text/bounds-ref.svg"
 );
+
+fn rect(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle {
+    cairo::Rectangle {
+        x,
+        y,
+        width,
+        height,
+    }
+}
+
+fn rectangle_approx_eq(a: &cairo::Rectangle, b: &cairo::Rectangle) -> bool {
+    // FIXME: this is super fishy; shouldn't we be using 2x the epsilon against the width/height
+    // instead of the raw coordinates?
+    approx_eq!(f64, a.x, b.x)
+        && approx_eq!(f64, a.y, b.y)
+        && approx_eq!(f64, a.width, b.width)
+        && approx_eq!(f64, a.height, b.height)
+}
+
+// Test that the computed geometry of text layers is as expected.
+#[test_resources("tests/fixtures/text/bounds.svg")]
+fn text_layer_geometry(name: &str) {
+    setup_font_map();
+
+    let handle = Loader::new()
+        .read_path(name)
+        .unwrap_or_else(|e| panic!("could not load: {}", e));
+
+    let renderer = CairoRenderer::new(&handle).test_mode(true);
+
+    let viewport = rect(0.0, 0.0, 600.0, 600.0);
+
+    // tuples of (element_id, ink_rect)
+    let cases = vec![
+        ("#a", rect(50.0, 60.0, 100.0, 50.0)),
+        ("#b", rect(200.0, 60.0, 50.0, 100.0)),
+        ("#c", rect(300.0, 60.0, 50.0, 100.0)),
+        ("#d", rect(400.0, 60.0, 100.0, 50.0)),
+    ];
+
+    for (id, expected_ink_rect) in cases {
+        let (ink_rect, _) = renderer.geometry_for_layer(Some(id), &viewport).unwrap();
+        assert!(rectangle_approx_eq(&ink_rect, &expected_ink_rect));
+    }
+}

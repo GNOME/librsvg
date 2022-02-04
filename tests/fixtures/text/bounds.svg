@@ -33,15 +33,15 @@
        The second test is vertical, to test the vertical bounds.
   -->
 
-  <text x="50" y="100" fill="url(#horizontal)" stroke-width="2">XX</text>
-  <text x="0" y="-10" fill="url(#horizontal)" transform="translate(200, 60) rotate(90)">XX</text>
+  <text id="a" x="50" y="100" fill="url(#horizontal)" stroke-width="2">XX</text>
+  <text id="b" x="0" y="-10" fill="url(#horizontal)" transform="translate(200, 60) rotate(90)">XX</text>
 
-  <text fill="url(#vertical)">
+  <text id="c" fill="url(#vertical)">
     <tspan x="300" y="100">X</tspan>
     <tspan x="300" y="150">X</tspan>
   </text>
 
-  <text fill="url(#vertical)" transform="translate(490, 110) rotate(-90)">
+  <text id="d" fill="url(#vertical)" transform="translate(490, 110) rotate(-90)">
     <tspan x="0" y="-50">X</tspan>
     <tspan x="0" y="0">X</tspan>
   </text>
