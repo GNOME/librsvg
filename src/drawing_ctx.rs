@@ -2184,6 +2184,36 @@ impl Path {
 
         cr.status().map_err(|e| e.into())
     }
+
+    /// Converts a `cairo::Path` to a librsvg `Path`.
+    fn from_cairo(cairo_path: cairo::Path) -> Path {
+        let mut builder = PathBuilder::default();
+
+        // First, see if the path is a single MoveTo(0, 0).  Cairo does this when the code that
+        // generated the path didn't include any commands, due to the way it appends a MoveTo to
+        // some paths.
+        //
+        // Only do the conversion if the path is not empty; otherwise
+        // really return a librsvg path with no commands.
+
+        if !cairo_path
+            .iter()
+            .eq([cairo::PathSegment::MoveTo((0.0, 0.0))])
+        {
+            for segment in cairo_path.iter() {
+                match segment {
+                    cairo::PathSegment::MoveTo((x, y)) => builder.move_to(x, y),
+                    cairo::PathSegment::LineTo((x, y)) => builder.line_to(x, y),
+                    cairo::PathSegment::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
+                        builder.curve_to(x2, y2, x3, y3, x4, y4)
+                    }
+                    cairo::PathSegment::ClosePath => builder.close_path(),
+                }
+            }
+        }
+
+        builder.into_path()
+    }
 }
 
 impl PathCommand {
@@ -2230,5 +2260,39 @@ impl CubicBezierCurve {
     fn to_cairo(&self, cr: &cairo::Context) {
         let Self { pt1, pt2, to } = *self;
         cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rsvg_path_from_cairo_path() {
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 10, 10).unwrap();
+        let cr = cairo::Context::new(&surface).unwrap();
+
+        cr.move_to(1.0, 2.0);
+        cr.line_to(3.0, 4.0);
+        cr.curve_to(5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
+        cr.close_path();
+
+        let cairo_path = cr.copy_path().unwrap();
+        let path = Path::from_cairo(cairo_path);
+
+        assert_eq!(
+            path.iter().collect::<Vec<PathCommand>>(),
+            vec![
+                PathCommand::MoveTo(1.0, 2.0),
+                PathCommand::LineTo(3.0, 4.0),
+                PathCommand::CurveTo(CubicBezierCurve {
+                    pt1: (5.0, 6.0),
+                    pt2: (7.0, 8.0),
+                    to: (9.0, 10.0),
+                }),
+                PathCommand::ClosePath,
+                PathCommand::MoveTo(1.0, 2.0), // cairo inserts a MoveTo after ClosePath
+            ],
+        );
     }
 }
