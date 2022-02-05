@@ -109,6 +109,7 @@ pub struct TextSpan {
     pub paint_order: PaintOrder,
     pub stroke: Stroke,
     pub stroke_paint: UserSpacePaintSource,
+    pub stroke_paint_source: PaintSource,
     pub fill_paint: UserSpacePaintSource,
     pub text_rendering: TextRendering,
     pub link_target: Option<String>,

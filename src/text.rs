@@ -828,6 +828,7 @@ impl Draw for Text {
                         paint_order: span.paint_order,
                         stroke: span.stroke,
                         stroke_paint,
+                        stroke_paint_source: span.stroke_paint,
                         fill_paint,
                         text_rendering: span.text_rendering,
                         link_target: span.link_target,
