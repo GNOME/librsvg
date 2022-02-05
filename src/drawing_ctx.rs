@@ -2233,17 +2233,11 @@ impl Path {
     fn from_cairo(cairo_path: cairo::Path) -> Path {
         let mut builder = PathBuilder::default();
 
-        // First, see if the path is a single MoveTo(0, 0).  Cairo does this when the code that
-        // generated the path didn't include any commands, due to the way it appends a MoveTo to
-        // some paths.
-        //
-        // Only do the conversion if the path is not empty; otherwise
-        // really return a librsvg path with no commands.
+        // Cairo has the habit of appending a MoveTo to some paths, but we don't want a
+        // path for empty text to generate that lone point.  So, strip out paths composed
+        // only of MoveTo.
 
-        if !cairo_path
-            .iter()
-            .eq([cairo::PathSegment::MoveTo((0.0, 0.0))])
-        {
+        if !cairo_path_is_only_move_tos(&cairo_path) {
             for segment in cairo_path.iter() {
                 match segment {
                     cairo::PathSegment::MoveTo((x, y)) => builder.move_to(x, y),
@@ -2258,6 +2252,10 @@ impl Path {
 
         builder.into_path()
     }
+}
+
+fn cairo_path_is_only_move_tos(path: &cairo::Path) -> bool {
+    path.iter().all(|seg| matches!(seg, cairo::PathSegment::MoveTo((_, _))))
 }
 
 impl PathCommand {
@@ -2354,14 +2352,14 @@ mod tests {
         let layout = pango::Layout::new(&context);
         layout.set_text("");
 
-        let path = pango_layout_to_path(0.0, 0.0, &layout, pango::Gravity::Auto).unwrap();
+        let path = pango_layout_to_path(10.0, 20.0, &layout, pango::Gravity::Auto).unwrap();
         assert!(path.is_empty());
 
         // only whitespace
 
         layout.set_text(" ");
 
-        let path = pango_layout_to_path(0.0, 0.0, &layout, pango::Gravity::Auto).unwrap();
+        let path = pango_layout_to_path(10.0, 20.0, &layout, pango::Gravity::Auto).unwrap();
         assert!(path.is_empty());
     }
 }
