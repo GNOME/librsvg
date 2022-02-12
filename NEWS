@@ -1,4 +1,28 @@
 ==============
+Version 2.53.1
+==============
+
+While it is not a user-visible change, Jordan Petridis has ported
+librsvg's Continuous Integration (CI) infrastructure to use
+Freedesktop CI Templates.  This lets us test librsvg easily on
+different environments.  If you want your environment tested, now is
+the time to add it!
+
+- #599 - Fix incorrect text rendering when text has different scales
+  in the X/Y axes.  This regressed after librsvg 2.52.5, when Pango
+  had to revert its fix for the same bug.  Now librsvg renders all
+  text as paths, and does the scaling itself.  Please file a bug if
+  you have evidence that this presents a performance problem for you.
+
+- Update to the latest gtk-rs release (Bilal Elmoussaoui).
+
+- Port to Freedesktop CI Templates (Jordan Petridis).
+
+- Visual Studio builds can work from a git checkout now (Chun-wei Fan)
+
+- Windows build fixes (Martin Hertz, Chun-wei Fan)
+
+==============
 Version 2.53.0
 ==============
 
