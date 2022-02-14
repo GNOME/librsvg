@@ -27,7 +27,9 @@ _HASH=^#
     && ![cl -nologo -TC -P vercl.x $(ERRNUL)]
 !include vercl.i
 !if ![echo VCVER= ^\> vercl.vc] \
-    && ![set /a $(VCVERSION) / 100 - 6 >> vercl.vc]
+    && ![set /a $(VCVERSION) / 100 - 6 >> vercl.vc]	\
+	&& ![echo.>>vercl.vc]	\
+	&& ![if not exist ..\.git echo IS_NOT_GIT=1 >>vercl.vc]
 !include vercl.vc
 !endif
 !endif
