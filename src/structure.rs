@@ -89,7 +89,12 @@ impl Draw for Switch {
                     let elt = c.borrow_element();
                     elt.get_cond(dc.user_language()) && !elt.is_in_error()
                 }) {
-                    child.draw(an, &CascadedValues::new(cascaded, &child), dc, clipping)
+                    child.draw(
+                        an,
+                        &CascadedValues::clone_with_node(cascaded, &child),
+                        dc,
+                        clipping,
+                    )
                 } else {
                     Ok(dc.empty_bbox())
                 }
@@ -548,7 +553,7 @@ impl Draw for Link {
             }
         }
 
-        let cascaded = CascadedValues::new(cascaded, node);
+        let cascaded = CascadedValues::clone_with_node(cascaded, node);
         let values = cascaded.get();
 
         let elt = node.borrow_element();

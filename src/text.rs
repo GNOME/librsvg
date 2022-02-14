@@ -516,7 +516,7 @@ fn children_to_chunks(
 
             match *child.borrow_element() {
                 Element::TSpan(ref tspan) => {
-                    let cascaded = CascadedValues::new(cascaded, &child);
+                    let cascaded = CascadedValues::clone_with_node(cascaded, &child);
                     tspan.to_chunks(
                         &child,
                         acquired_nodes,
@@ -540,7 +540,7 @@ fn children_to_chunks(
                     // The code works because the `tspan` is dropped immediately after calling to_chunks and no
                     // references are retained for it.
                     let tspan = TSpan::default();
-                    let cascaded = CascadedValues::new(cascaded, &child);
+                    let cascaded = CascadedValues::clone_with_node(cascaded, &child);
                     tspan.to_chunks(
                         &child,
                         acquired_nodes,
@@ -555,7 +555,7 @@ fn children_to_chunks(
                 }
 
                 Element::TRef(ref tref) => {
-                    let cascaded = CascadedValues::new(cascaded, &child);
+                    let cascaded = CascadedValues::clone_with_node(cascaded, &child);
                     tref.to_chunks(&child, acquired_nodes, &cascaded, chunks, depth + 1);
                 }
 

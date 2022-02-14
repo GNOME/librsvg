@@ -544,7 +544,7 @@ impl DrawingCtx {
             }) {
                 child.draw(
                     acquired_nodes,
-                    &CascadedValues::new(&cascaded, &child),
+                    &CascadedValues::clone_with_node(&cascaded, &child),
                     self,
                     true,
                 )?;
