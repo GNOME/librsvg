@@ -352,20 +352,14 @@ impl From<&Path> for Segments {
     fn from(path: &Path) -> Segments {
         let mut last_x: f64;
         let mut last_y: f64;
-        let mut cur_x: f64;
-        let mut cur_y: f64;
-        let mut subpath_start_x: f64;
-        let mut subpath_start_y: f64;
-        let mut segments: Vec<Segment>;
-        let mut state: SegmentState;
 
-        cur_x = 0.0;
-        cur_y = 0.0;
-        subpath_start_x = 0.0;
-        subpath_start_y = 0.0;
+        let mut cur_x: f64 = 0.0;
+        let mut cur_y: f64 = 0.0;
+        let mut subpath_start_x: f64 = 0.0;
+        let mut subpath_start_y: f64 = 0.0;
 
-        segments = Vec::new();
-        state = SegmentState::Initial;
+        let mut segments = Vec::new();
+        let mut state = SegmentState::Initial;
 
         for path_command in path.iter() {
             last_x = cur_x;

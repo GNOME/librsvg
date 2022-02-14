@@ -123,9 +123,7 @@ impl Item {
         let tag = LanguageTag::parse(before_semicolon)
             .map_err(AcceptLanguageError::InvalidLanguageTag)?;
 
-        let weight;
-
-        if let Some(quality) = after_semicolon {
+        let weight = if let Some(quality) = after_semicolon {
             let quality = quality.trim_start_matches(&OWS[..]);
 
             let number = if let Some(qvalue) = quality.strip_prefix("q=") {
@@ -154,12 +152,12 @@ impl Item {
                 return Err(AcceptLanguageError::InvalidWeight);
             };
 
-            weight = Weight(Some(
+            Weight(Some(
                 f32::from_str(number).map_err(|_| AcceptLanguageError::InvalidWeight)?,
-            ));
+            ))
         } else {
-            weight = Weight(None);
-        }
+            Weight(None)
+        };
 
         Ok(Item { tag, weight })
     }
