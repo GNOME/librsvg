@@ -863,6 +863,7 @@ name = "librsvg"
 version = "2.53.1"
 dependencies = [
  "assert_cmd",
+ "byteorder",
  "cairo-rs",
  "cast 0.3.0",
  "chrono",

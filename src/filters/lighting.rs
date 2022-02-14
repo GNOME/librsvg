@@ -497,7 +497,7 @@ macro_rules! impl_lighting_filter {
                     let output_slice = &mut *output_data;
 
                     let compute_output_pixel =
-                        |mut output_slice: &mut [u8], base_y, x, y, normal: Normal| {
+                        |output_slice: &mut [u8], base_y, x, y, normal: Normal| {
                             let pixel = input_surface.get_pixel(x, y);
 
                             let scaled_x = f64::from(x) * ox;

@@ -1,7 +1,6 @@
 //! Various utilities for working with Cairo image surfaces.
 
 use std::mem;
-use std::ops::DerefMut;
 use std::slice;
 
 pub mod iterators;
@@ -142,18 +141,9 @@ impl ToCairoARGB for Pixel {
 }
 
 /// Extension methods for `cairo::ImageSurfaceData`.
-pub trait ImageSurfaceDataExt: DerefMut<Target = [u8]> {
+pub trait ImageSurfaceDataExt {
     /// Sets the pixel at the given coordinates. Assumes the `ARgb32` format.
-    #[inline]
-    fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: u32, y: u32) {
-        let value = pixel.to_u32();
-
-        #[allow(clippy::cast_ptr_alignment)]
-        unsafe {
-            let p: *mut u8 = &mut self[y as usize * stride + x as usize * 4];
-            *(p as *mut u32) = value;
-        }
-    }
+    fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: u32, y: u32);
 }
 
 /// A pixel consisting of R, G, B and A values.
@@ -257,8 +247,39 @@ impl PixelOps for Pixel {
     }
 }
 
-impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {}
-impl<'a> ImageSurfaceDataExt for &'a mut [u8] {}
+impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {
+    #[inline]
+    fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: u32, y: u32) {
+        let this: &mut [u8] = &mut *self;
+        // SAFETY: this code assumes that cairo image surface data is correctly
+        // aligned for u32. This assumption is justified by the Cairo docs,
+        // which say this:
+        //
+        // https://cairographics.org/manual/cairo-Image-Surfaces.html#cairo-image-surface-create-for-data
+        //
+        // > This pointer must be suitably aligned for any kind of variable,
+        // > (for example, a pointer returned by malloc).
+        #[allow(clippy::cast_ptr_alignment)]
+        let this: &mut [u32] =
+            unsafe { slice::from_raw_parts_mut(this.as_mut_ptr() as *mut u32, this.len() / 4) };
+        this.set_pixel(stride, pixel, x, y);
+    }
+}
+impl<'a> ImageSurfaceDataExt for [u8] {
+    #[inline]
+    fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: u32, y: u32) {
+        use byteorder::{NativeEndian, WriteBytesExt};
+        let mut this = &mut self[y as usize * stride + x as usize * 4..];
+        this.write_u32::<NativeEndian>(pixel.to_u32())
+            .expect("out of bounds pixel access on [u8]");
+    }
+}
+impl<'a> ImageSurfaceDataExt for [u32] {
+    #[inline]
+    fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: u32, y: u32) {
+        self[(y as usize * stride + x as usize * 4) / 4] = pixel.to_u32();
+    }
+}
 
 #[cfg(test)]
 mod tests {
