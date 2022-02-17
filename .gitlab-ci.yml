@@ -259,15 +259,13 @@ coverage:
   variables:
     RUSTFLAGS: "-Zinstrument-coverage"
     RUSTDOCFLAGS: "-Zinstrument-coverage"
-    LLVM_PROFILE_FILE: "coverage-%p-%m.profraw"
+    LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
   script:
     - cargo +nightly test --no-fail-fast || true
   after_script:
     - source ./.gitlab-ci/env.sh
-    - grcov . --binary-path ./target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
-    - grcov . --binary-path ./target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "build.rs" --output-path ./target/debug/coverage/
-    - mkdir -p public/coverage
-    - cp -r target/debug/coverage/* public/coverage
+    - grcov coverage-profiles --binary-path ./target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
+    - grcov coverage-profiles --binary-path ./target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "build.rs" --output-path public/coverage
     - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
   coverage: '/Coverage: \d+\.\d+/'
   artifacts:
