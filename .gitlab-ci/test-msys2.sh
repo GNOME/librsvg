@@ -13,6 +13,7 @@ pacman --noconfirm -Suy
 pacman --noconfirm -S --needed \
     base-devel \
     mingw-w64-$MSYS2_ARCH-gtk-doc \
+    mingw-w64-$MSYS2_ARCH-gi-docgen \
     mingw-w64-$MSYS2_ARCH-gobject-introspection \
     mingw-w64-$MSYS2_ARCH-gdk-pixbuf2 \
     mingw-w64-$MSYS2_ARCH-harfbuzz \
@@ -21,6 +22,7 @@ pacman --noconfirm -S --needed \
     mingw-w64-$MSYS2_ARCH-libthai \
     mingw-w64-$MSYS2_ARCH-cairo \
     mingw-w64-$MSYS2_ARCH-pango \
+    mingw-w64-$MSYS2_ARCH-python-docutils \
     mingw-w64-$MSYS2_ARCH-libxml2 \
     mingw-w64-$MSYS2_ARCH-toolchain \
     mingw-w64-$MSYS2_ARCH-rust \
