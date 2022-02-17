@@ -368,8 +368,8 @@ test_compare_render_output!(
 
 test_compare_render_output!(
     use_context_stroke,
-    400,
-    400,
+    100,
+    20,
     br##"<?xml version="1.0" encoding="UTF-8"?>
     <svg width="100" height="20" viewBox="0 0 40 10" xmlns="http://www.w3.org/2000/svg">
   <g id="group">

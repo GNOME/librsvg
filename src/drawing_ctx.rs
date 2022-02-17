@@ -1380,13 +1380,13 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let transform = self.get_transform();
-
-        if span.bbox.is_none() {
+        let path = pango_layout_to_path(span.x, span.y, &span.layout, span.gravity)?;
+        if path.is_empty() {
+            // Empty strings, or only-whitespace text, get turned into empty paths.
+            // In that case, we really want to return "no bounds" rather than an
+            // empty rectangle.
             return Ok(self.empty_bbox());
         }
-
-        let mut bbox = span.bbox.unwrap();
 
         with_saved_cr(&self.cr.clone(), || {
             self.cr
@@ -1394,28 +1394,15 @@ impl DrawingCtx {
 
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
-            let rotation_from_gravity = span.gravity.to_rotation();
-            let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
-                Some(-rotation_from_gravity)
-            } else {
-                None
-            };
-
             if clipping {
-                self.cr.move_to(span.x, span.y);
-
-                let matrix = self.cr.matrix();
-                if let Some(rot) = rotation {
-                    self.cr.rotate(rot);
-                }
-
-                pangocairo::functions::update_layout(&self.cr, &span.layout);
-                pangocairo::functions::layout_path(&self.cr, &span.layout);
-
-                self.cr.set_matrix(matrix);
-
+                path.to_cairo(&self.cr, false)?;
                 return Ok(self.empty_bbox());
             }
+
+            path.to_cairo(&self.cr, false)?;
+            let bbox =
+                compute_stroke_and_fill_box(&self.cr, &span.stroke, &span.stroke_paint_source)?;
+            self.cr.new_path();
 
             if span.is_visible {
                 if let Some(ref link_target) = span.link_target {
@@ -1429,18 +1416,8 @@ impl DrawingCtx {
                                 self.set_paint_source(&span.fill_paint, acquired_nodes)?;
 
                             if had_paint_server {
-                                self.cr.move_to(span.x, span.y);
-
-                                let matrix = self.cr.matrix();
-                                if let Some(rot) = rotation {
-                                    self.cr.rotate(rot);
-                                }
-
-                                pangocairo::functions::update_layout(&self.cr, &span.layout);
-                                pangocairo::functions::show_layout(&self.cr, &span.layout);
-
-                                self.cr.set_matrix(matrix);
-
+                                path.to_cairo(&self.cr, false)?;
+                                self.cr.fill()?;
                                 self.cr.new_path();
                             }
                         }
@@ -1450,26 +1427,8 @@ impl DrawingCtx {
                                 self.set_paint_source(&span.stroke_paint, acquired_nodes)?;
 
                             if had_paint_server {
-                                self.cr.move_to(span.x, span.y);
-
-                                let matrix = self.cr.matrix();
-                                if let Some(rot) = rotation {
-                                    self.cr.rotate(rot);
-                                }
-
-                                pangocairo::functions::update_layout(&self.cr, &span.layout);
-                                pangocairo::functions::layout_path(&self.cr, &span.layout);
-
-                                let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
-                                let r = Rect::new(x0, y0, x1, y1);
-                                let ib = BoundingBox::new()
-                                    .with_transform(transform)
-                                    .with_ink_rect(r);
-                                bbox.insert(&ib);
+                                path.to_cairo(&self.cr, false)?;
                                 self.cr.stroke()?;
-
-                                self.cr.set_matrix(matrix);
-
                                 self.cr.new_path();
                             }
                         }
@@ -1827,6 +1786,50 @@ pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -
     context
 }
 
+/// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).
+/// Does not clear the current path first.
+fn pango_layout_to_cairo(
+    x: f64,
+    y: f64,
+    layout: &pango::Layout,
+    gravity: pango::Gravity,
+    cr: &cairo::Context,
+) {
+    let rotation_from_gravity = gravity.to_rotation();
+    let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
+        Some(-rotation_from_gravity)
+    } else {
+        None
+    };
+
+    cr.move_to(x, y);
+
+    let matrix = cr.matrix();
+    if let Some(rot) = rotation {
+        cr.rotate(rot);
+    }
+
+    pangocairo::functions::update_layout(cr, layout);
+    pangocairo::functions::layout_path(cr, layout);
+    cr.set_matrix(matrix);
+}
+
+/// Converts a Pango layout to a Path starting at (x, y).
+pub fn pango_layout_to_path(
+    x: f64,
+    y: f64,
+    layout: &pango::Layout,
+    gravity: pango::Gravity,
+) -> Result<Path, RenderingError> {
+    let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
+    let cr = cairo::Context::new(&surface)?;
+
+    pango_layout_to_cairo(x, y, layout, gravity, &cr);
+
+    let cairo_path = cr.copy_path()?;
+    Ok(Path::from_cairo(cairo_path))
+}
+
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
 fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
     matches!(
@@ -1908,15 +1911,11 @@ impl CompositingAffines {
     }
 }
 
-fn compute_stroke_and_fill_box(
+fn compute_stroke_and_fill_extents(
     cr: &cairo::Context,
     stroke: &Stroke,
     stroke_paint_source: &PaintSource,
-) -> Result<BoundingBox, RenderingError> {
-    let affine = Transform::from(cr.matrix());
-
-    let mut bbox = BoundingBox::new().with_transform(affine);
-
+) -> Result<PathExtents, RenderingError> {
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
     // really needed here? */
@@ -1932,10 +1931,7 @@ fn compute_stroke_and_fill_box(
     // rectangle's extents, even when it has no fill nor stroke.
 
     let (x0, y0, x1, y1) = cr.fill_extents()?;
-    let fb = BoundingBox::new()
-        .with_transform(affine)
-        .with_ink_rect(Rect::new(x0, y0, x1, y1));
-    bbox.insert(&fb);
+    let fill_extents = Some(Rect::new(x0, y0, x1, y1));
 
     // Bounding box for stroke
     //
@@ -1948,25 +1944,54 @@ fn compute_stroke_and_fill_box(
     // So, see if the stroke width is 0 and just not include the stroke in the
     // bounding box if so.
 
-    if !stroke.width.approx_eq_cairo(0.0) && !matches!(stroke_paint_source, PaintSource::None) {
+    let stroke_extents = if !stroke.width.approx_eq_cairo(0.0)
+        && !matches!(stroke_paint_source, PaintSource::None)
+    {
         let (x0, y0, x1, y1) = cr.stroke_extents()?;
-        let sb = BoundingBox::new()
-            .with_transform(affine)
-            .with_ink_rect(Rect::new(x0, y0, x1, y1));
-        bbox.insert(&sb);
-    }
+        Some(Rect::new(x0, y0, x1, y1))
+    } else {
+        None
+    };
 
     // objectBoundingBox
 
     let (x0, y0, x1, y1) = cr.path_extents()?;
-    let ob = BoundingBox::new()
-        .with_transform(affine)
-        .with_rect(Rect::new(x0, y0, x1, y1));
-    bbox.insert(&ob);
+    let path_extents = Some(Rect::new(x0, y0, x1, y1));
 
     // restore tolerance
 
     cr.set_tolerance(backup_tolerance);
+
+    Ok(PathExtents {
+        path_only: path_extents,
+        fill: fill_extents,
+        stroke: stroke_extents,
+    })
+}
+
+fn compute_stroke_and_fill_box(
+    cr: &cairo::Context,
+    stroke: &Stroke,
+    stroke_paint_source: &PaintSource,
+) -> Result<BoundingBox, RenderingError> {
+    let extents = compute_stroke_and_fill_extents(cr, stroke, stroke_paint_source)?;
+
+    let ink_rect = match (extents.fill, extents.stroke) {
+        (None, None) => None,
+        (Some(f), None) => Some(f),
+        (None, Some(s)) => Some(s),
+        (Some(f), Some(s)) => Some(f.union(&s)),
+    };
+
+    let mut bbox = BoundingBox::new().with_transform(Transform::from(cr.matrix()));
+
+    if let Some(rect) = extents.path_only {
+        bbox = bbox.with_rect(rect);
+    }
+
+    if let Some(ink_rect) = ink_rect {
+        bbox = bbox.with_ink_rect(ink_rect);
+    }
 
     Ok(bbox)
 }
@@ -2111,6 +2136,21 @@ impl From<Transform> for cairo::Matrix {
     }
 }
 
+/// Extents for a path in its current coordinate system.
+///
+/// Normally you'll want to convert this to a BoundingBox, which has knowledge about just
+/// what that coordinate system is.
+pub struct PathExtents {
+    /// Extents of the "plain", unstroked path, or `None` if the path is empty.
+    pub path_only: Option<Rect>,
+
+    /// Extents of just the fill, or `None` if the path is empty.
+    pub fill: Option<Rect>,
+
+    /// Extents for the stroked path, or `None` if the path is empty or zero-width.
+    pub stroke: Option<Rect>,
+}
+
 impl Path {
     pub fn to_cairo(
         &self,
@@ -2147,6 +2187,35 @@ impl Path {
 
         cr.status().map_err(|e| e.into())
     }
+
+    /// Converts a `cairo::Path` to a librsvg `Path`.
+    fn from_cairo(cairo_path: cairo::Path) -> Path {
+        let mut builder = PathBuilder::default();
+
+        // Cairo has the habit of appending a MoveTo to some paths, but we don't want a
+        // path for empty text to generate that lone point.  So, strip out paths composed
+        // only of MoveTo.
+
+        if !cairo_path_is_only_move_tos(&cairo_path) {
+            for segment in cairo_path.iter() {
+                match segment {
+                    cairo::PathSegment::MoveTo((x, y)) => builder.move_to(x, y),
+                    cairo::PathSegment::LineTo((x, y)) => builder.line_to(x, y),
+                    cairo::PathSegment::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
+                        builder.curve_to(x2, y2, x3, y3, x4, y4)
+                    }
+                    cairo::PathSegment::ClosePath => builder.close_path(),
+                }
+            }
+        }
+
+        builder.into_path()
+    }
+}
+
+fn cairo_path_is_only_move_tos(path: &cairo::Path) -> bool {
+    path.iter()
+        .all(|seg| matches!(seg, cairo::PathSegment::MoveTo((_, _))))
 }
 
 impl PathCommand {
@@ -2193,5 +2262,39 @@ impl CubicBezierCurve {
     fn to_cairo(&self, cr: &cairo::Context) {
         let Self { pt1, pt2, to } = *self;
         cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rsvg_path_from_cairo_path() {
+        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 10, 10).unwrap();
+        let cr = cairo::Context::new(&surface).unwrap();
+
+        cr.move_to(1.0, 2.0);
+        cr.line_to(3.0, 4.0);
+        cr.curve_to(5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
+        cr.close_path();
+
+        let cairo_path = cr.copy_path().unwrap();
+        let path = Path::from_cairo(cairo_path);
+
+        assert_eq!(
+            path.iter().collect::<Vec<PathCommand>>(),
+            vec![
+                PathCommand::MoveTo(1.0, 2.0),
+                PathCommand::LineTo(3.0, 4.0),
+                PathCommand::CurveTo(CubicBezierCurve {
+                    pt1: (5.0, 6.0),
+                    pt2: (7.0, 8.0),
+                    to: (9.0, 10.0),
+                }),
+                PathCommand::ClosePath,
+                PathCommand::MoveTo(1.0, 2.0), // cairo inserts a MoveTo after ClosePath
+            ],
+        );
     }
 }
