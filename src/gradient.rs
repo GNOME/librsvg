@@ -689,12 +689,7 @@ impl ResolvedGradient {
         values: &ComputedValues,
     ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
-        let transform = if let Ok(t) = bbox.rect_to_transform(units) {
-            t
-        } else {
-            return None;
-        };
-
+        let transform = bbox.rect_to_transform(units).ok()?;
         let view_params = current_params.with_units(units);
         let params = NormalizeParams::new(values, &view_params);
 

@@ -231,8 +231,8 @@ impl Parse for AspectRatio {
             .try_parse(|p| p.expect_ident_matching("defer"))
             .is_ok();
 
-        let align_xy = parser.try_parse(|p| parse_align_xy(p))?;
-        let fit = parser.try_parse(|p| parse_fit_mode(p)).unwrap_or_default();
+        let align_xy = parser.try_parse(parse_align_xy)?;
+        let fit = parser.try_parse(parse_fit_mode).unwrap_or_default();
         let align = align_xy.map(|(x, y)| Align { x, y, fit });
 
         Ok(AspectRatio { defer, align })
