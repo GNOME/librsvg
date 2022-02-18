@@ -264,6 +264,7 @@ coverage:
     - cargo +nightly test --no-fail-fast || true
   after_script:
     - source ./ci/env.sh
+    - mkdir -p public
     - grcov coverage-profiles --binary-path ./target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
     - grcov coverage-profiles --binary-path ./target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "build.rs" --output-path public/coverage
     - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
