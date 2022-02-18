@@ -31,8 +31,8 @@ help:
 	@echo ============================
 	@echo nmake /f Makefile.vc CFG=[release^|debug] ^<PREFIX=PATH^> ... OPTION=1 ...
 	@echo.
-	@echo Where:
-	@echo ------
+	@echo Where (please note that paths with spaces should be enclosed with quotes):
+	@echo --------------------------------------------------------------------------
 	@echo CFG: Required, use CFG=release for an optimized build and CFG=debug
 	@echo for a debug build.  PDB files are generated for all builds.
 	@echo.
@@ -56,9 +56,13 @@ help:
 	@echo will be searched for in ^$(INCLUDEDIR)\glib-2.0 and
 	@echo ^$(LIBDIR)\glib-2.0\include.
 	@echo.
-	@echo PKG_CONFIG_PATH: Full path to pkg-config.exe.  Required if building
-	@echo introspection files and if pkg-config.exe is not in your PATH or it
-	@echo is called something other than pkg-config.
+	@echo PKG_CONFIG: Full path to pkg-config.exe or a compatible tool.  Required
+	@echo if building introspection files and if pkg-config.exe is not in your PATH
+	@echo or it is called something other than pkg-config.
+	@echo.
+	@echo PKG_CONFIG_PATH: Used by the pkg-config tool.  Needed if pkg-config/.pc files
+	@echo for GLib and Pango (and so forth) are not in the default search paths of the
+	@echo pkg-config (or compatible) tool, so that the needed .pc files can be found.
 	@echo.
 	@echo PYTHON: Full path to your Python interpreter executable.  Required
 	@echo if building introspection files and if python.exe is not in your PATH.
