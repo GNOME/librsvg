@@ -6,14 +6,14 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2022-01-24.0-main"
-  RUST_STABLE: "1.58.0"
+  BASE_TAG: "2022-02-17.0-main"
+  RUST_STABLE: "1.58.1"
   RUST_MINIMUM: "1.56.1"
 
 .container.opensuse@common:
   stage: "container-build"
   before_script:
-    - source ./.gitlab-ci/env.sh
+    - source ./ci/env.sh
   variables:
     FDO_DISTRIBUTION_VERSION: "tumbleweed"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
@@ -30,7 +30,7 @@ variables:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
+      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       pip3 install gi-docgen
 
 .container.opensuse@x86_64.minimum:
@@ -38,7 +38,7 @@ variables:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_MINIMUM}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh ${RUST_MINIMUM} x86_64-unknown-linux-gnu &&
+      bash ci/install-rust.sh ${RUST_MINIMUM} x86_64-unknown-linux-gnu &&
       pip3 install gi-docgen
 
 .container.opensuse@x86_64.nightly:
@@ -46,7 +46,7 @@ variables:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-nightly-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh nightly x86_64-unknown-linux-gnu &&
+      bash ci/install-rust.sh nightly x86_64-unknown-linux-gnu &&
       pip3 install gi-docgen
 
 .container.opensuse@aarch64:
@@ -54,7 +54,7 @@ variables:
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
+      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
       pip3 install gi-docgen
   tags:
     - aarch64
@@ -85,7 +85,7 @@ opensuse-container@x86_64.nightly:
 
 .container.fedora@common:
   before_script:
-    - source ./.gitlab-ci/env.sh
+    - source ./ci/env.sh
   variables:
     FDO_DISTRIBUTION_VERSION: "34"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
@@ -102,7 +102,7 @@ opensuse-container@x86_64.nightly:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
+      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       pip3 install gi-docgen
 
 .container.fedora@aarch64:
@@ -110,7 +110,7 @@ opensuse-container@x86_64.nightly:
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
+      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
       pip3 install gi-docgen
   tags:
     - aarch64
@@ -131,7 +131,7 @@ opensuse-container@x86_64.nightly:
   extends:
     - .fdo.container-build@debian@x86_64
   before_script:
-    - source ./.gitlab-ci/env.sh
+    - source ./ci/env.sh
   variables:
     FDO_DISTRIBUTION_VERSION: "testing"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
@@ -149,7 +149,7 @@ opensuse-container@x86_64.nightly:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
+      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       pip3 install gi-docgen
 
 .container.debian@aarch64:
@@ -157,7 +157,7 @@ opensuse-container@x86_64.nightly:
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash .gitlab-ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
+      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
       pip3 install gi-docgen
   tags:
     - aarch64
