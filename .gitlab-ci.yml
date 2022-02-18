@@ -266,7 +266,7 @@ coverage:
     - cd _build
     - ../autogen.sh --enable-gtk-doc --enable-vala --enable-debug
     - make
-    - make check
+    - make -k check
   after_script:
     - source ./ci/env.sh
     - mkdir -p public
