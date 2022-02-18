@@ -1,4 +1,4 @@
-source ./.gitlab-ci/env.sh
+source ./ci/env.sh
 
 set -eu
 export CARGO_HOME='/usr/local/cargo'
