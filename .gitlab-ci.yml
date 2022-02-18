@@ -251,6 +251,7 @@ coverage:
   extends:
     - '.container.opensuse@x86_64.nightly'
     - .fdo.distribution-image@opensuse
+    - .cache
   stage: unit test
   needs:
     - job: opensuse-container@x86_64.nightly
@@ -261,12 +262,16 @@ coverage:
     RUSTDOCFLAGS: "-Zinstrument-coverage"
     LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
   script:
-    - cargo +nightly test --no-fail-fast || true
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh --enable-gtk-doc --enable-vala --enable-debug
+    - make
+    - make check
   after_script:
     - source ./ci/env.sh
     - mkdir -p public
-    - grcov coverage-profiles --binary-path ./target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
-    - grcov coverage-profiles --binary-path ./target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "build.rs" --output-path public/coverage
+    - grcov coverage-profiles --binary-path ./_build/target/debug/ --source-dir . --output-type cobertura --llvm --branch --ignore-not-existing --ignore "*cargo*" -o coverage.xml
+    - grcov coverage-profiles --binary-path ./_build/target/debug/ --source-dir . --output-type html --llvm --branch --ignore-not-existing --ignore "build.rs" --output-path public/coverage
     - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
   coverage: '/Coverage: \d+\.\d+/'
   artifacts:
