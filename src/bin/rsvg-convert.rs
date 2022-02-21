@@ -1206,4 +1206,24 @@ mod sizing_tests {
             Size::new(25.0, 50.0),
         );
     }
+
+    #[test]
+    fn fit_width() {
+        let strategy = ResizeStrategy::FitWidth(100.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0), false).unwrap(),
+            Size::new(100.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn fit_height() {
+        let strategy = ResizeStrategy::FitHeight(100.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0), false).unwrap(),
+            Size::new(50.0, 100.0),
+        );
+    }
 }
