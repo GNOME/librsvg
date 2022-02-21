@@ -76,6 +76,10 @@ struct Scale {
 }
 
 impl Scale {
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
     #[allow(clippy::float_cmp)]
     pub fn is_identity(&self) -> bool {
         self.x == 1.0 && self.y == 1.0
@@ -1224,6 +1228,20 @@ mod sizing_tests {
         assert_eq!(
             strategy.apply(&Size::new(1.0, 2.0), false).unwrap(),
             Size::new(50.0, 100.0),
+        );
+    }
+
+    #[test]
+    fn fit_largest_scale_no_max_size() {
+        let strategy = ResizeStrategy::FitLargestScale(
+            Scale::new(2.0, 3.0),
+            None,
+            None,
+        );
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0), false).unwrap(),
+            Size::new(2.0, 6.0),
         );
     }
 }
