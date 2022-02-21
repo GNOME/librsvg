@@ -82,7 +82,7 @@ impl Scale {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Size {
     pub w: f64,
     pub h: f64,
@@ -1154,6 +1154,56 @@ mod color_tests {
         assert_eq!(
             parse_color_string("foo").map_err(|e| e.kind),
             Err(clap::ErrorKind::InvalidValue)
+        );
+    }
+}
+
+#[cfg(test)]
+mod sizing_tests {
+    use super::*;
+
+    #[test]
+    fn detects_empty_size() {
+        let strategy = ResizeStrategy::Scale(Scale { x: 42.0, y: 42.0 });
+        assert!(strategy.apply(&Size::new(0.0, 0.0), true).is_none());
+    }
+
+    #[test]
+    fn scale() {
+        let strategy = ResizeStrategy::Scale(Scale { x: 2.0, y: 3.0 });
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0), false).unwrap(),
+            Size::new(2.0, 6.0),
+        );
+    }
+
+    #[test]
+    fn fit_wider_than_tall() {
+        let strategy = ResizeStrategy::Fit(40.0, 10.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(2.0, 1.0), false).unwrap(), // don't keep_aspect_ratio
+            Size::new(40.0, 10.0),
+        );
+
+        assert_eq!(
+            strategy.apply(&Size::new(2.0, 1.0), true).unwrap(), // keep_aspect_ratio
+            Size::new(20.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn fit_taller_than_wide() {
+        let strategy = ResizeStrategy::Fit(100.0, 50.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0), false).unwrap(), // don't keep_aspect_ratio
+            Size::new(100.0, 50.0),
+        );
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0), true).unwrap(), // keep_aspect_ratio
+            Size::new(25.0, 50.0),
         );
     }
 }
