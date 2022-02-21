@@ -116,7 +116,7 @@ impl<'a> CascadedValues<'a> {
     /// This is what nodes should normally use to draw their children from their `draw()` method.
     /// Nodes that need to override the cascade for their children can use `new_from_values()`
     /// instead.
-    pub fn new(&self, node: &'a Node) -> CascadedValues<'a> {
+    pub fn clone_with_node(&self, node: &'a Node) -> CascadedValues<'a> {
         match self.inner {
             CascadedInner::FromNode(_) => CascadedValues {
                 inner: CascadedInner::FromNode(node.borrow_element()),
@@ -331,7 +331,7 @@ impl NodeDraw for Node {
             let child_bbox = draw_ctx.draw_node_from_stack(
                 &child,
                 acquired_nodes,
-                &CascadedValues::new(cascaded, &child),
+                &CascadedValues::clone_with_node(cascaded, &child),
                 clipping,
             )?;
             bbox.insert(&child_bbox);
