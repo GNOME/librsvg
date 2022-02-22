@@ -104,7 +104,7 @@ enum ResizeStrategy {
     Fit(f64, f64),
     FitWidth(f64),
     FitHeight(f64),
-    FitLargestScale(Scale, Option<f64>, Option<f64>),
+    ScaleWithMaxSize(Scale, Option<f64>, Option<f64>),
 }
 
 impl ResizeStrategy {
@@ -127,7 +127,7 @@ impl ResizeStrategy {
                 w: input.w * h / input.h,
                 h,
             },
-            ResizeStrategy::FitLargestScale(s, w, h) => {
+            ResizeStrategy::ScaleWithMaxSize(s, w, h) => {
                 let scaled_input_w = input.w * s.x;
                 let scaled_input_h = input.h * s.y;
 
@@ -613,7 +613,7 @@ impl Converter {
                 (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
 
                 // otherwise scale the image, but cap the zoom to match the requested size
-                _ => ResizeStrategy::FitLargestScale(self.zoom, requested_width, requested_height),
+                _ => ResizeStrategy::ScaleWithMaxSize(self.zoom, requested_width, requested_height),
             };
 
             let final_size = self.final_size(&strategy, &natural_size, input)?;
@@ -1232,8 +1232,8 @@ mod sizing_tests {
     }
 
     #[test]
-    fn fit_largest_scale_no_max_size() {
-        let strategy = ResizeStrategy::FitLargestScale(
+    fn scale_no_max_size() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize(
             Scale::new(2.0, 3.0),
             None,
             None,
@@ -1246,8 +1246,8 @@ mod sizing_tests {
     }
 
     #[test]
-    fn fit_largest_scale_max_size() {
-        let strategy = ResizeStrategy::FitLargestScale(
+    fn scale_with_max_size() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize(
             Scale::new(2.0, 3.0),
             Some(10.0),
             Some(20.0),
