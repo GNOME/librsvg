@@ -20,12 +20,10 @@ mod windows_imports {
 use self::windows_imports::*;
 
 use librsvg::rsvg_convert_only::{
-    CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, PathOrUrl, ULength,
-    Validate, Vertical,
+    AspectRatio, CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, Parse,
+    PathOrUrl, Rect, ULength, Validate, Vertical, ViewBox,
 };
-use librsvg::{
-    AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
-};
+use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, RenderingError};
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -77,10 +75,6 @@ struct Scale {
 }
 
 impl Scale {
-    pub fn new(x: f64, y: f64) -> Self {
-        Self { x, y }
-    }
-
     #[allow(clippy::float_cmp)]
     pub fn is_identity(&self) -> bool {
         self.x == 1.0 && self.y == 1.0
@@ -122,29 +116,28 @@ impl ResizeStrategy {
             return None;
         }
 
-        let (output, keep_aspect) = match self {
-            ResizeStrategy::Scale(s) => (
-                Size {
-                    w: input.w * s.x,
-                    h: input.h * s.y,
-                },
-                false, // implied since we are given an explicit scale factor
-            ),
+        let output_size = match self {
+            ResizeStrategy::Scale(s) => Size::new(input.w * s.x, input.h * s.y),
 
             ResizeStrategy::Fit {
                 size,
                 keep_aspect_ratio,
-            } => (size, keep_aspect_ratio),
+            } => {
+                if keep_aspect_ratio {
+                    let aspect = AspectRatio::parse_str("xMinYMin meet").unwrap();
+                    let rect = aspect.compute(
+                        &ViewBox::from(Rect::from_size(input.w, input.h)),
+                        &Rect::from_size(size.w, size.h),
+                    );
+                    Size::new(rect.width(), rect.height())
+                } else {
+                    size
+                }
+            }
 
-            ResizeStrategy::FitWidth(w) => (
-                Size::new(w, input.h * w / input.w),
-                false, // implied since we always scaled proportionally
-            ),
+            ResizeStrategy::FitWidth(w) => Size::new(w, input.h * w / input.w),
 
-            ResizeStrategy::FitHeight(h) => (
-                Size::new(input.w * h / input.h, h),
-                false, // implied since we always scaled proportionally
-            ),
+            ResizeStrategy::FitHeight(h) => Size::new(input.w * h / input.h, h),
 
             ResizeStrategy::ScaleWithMaxSize {
                 scale,
@@ -173,26 +166,25 @@ impl ResizeStrategy {
                     _ => 1.0,
                 };
 
-                (
-                    Size::new(input.w * f * scale.x, input.h * f * scale.y),
-                    keep_aspect_ratio,
-                )
+                let output = Size::new(input.w * f * scale.x, input.h * f * scale.y);
+
+                if !keep_aspect_ratio {
+                    output
+                } else if output.w < output.h {
+                    Size {
+                        w: output.w,
+                        h: input.h * (output.w / input.w),
+                    }
+                } else {
+                    Size {
+                        w: input.w * (output.h / input.h),
+                        h: output.h,
+                    }
+                }
             }
         };
 
-        if !keep_aspect {
-            Some(output)
-        } else if output.w < output.h {
-            Some(Size {
-                w: output.w,
-                h: input.h * (output.w / input.w),
-            })
-        } else {
-            Some(Size {
-                w: input.w * (output.h / input.h),
-                h: output.h,
-            })
-        }
+        Some(output_size)
     }
 }
 
@@ -1276,7 +1268,7 @@ mod sizing_tests {
     #[test]
     fn scale_no_max_size_non_proportional() {
         let strategy = ResizeStrategy::ScaleWithMaxSize {
-            scale: Scale::new(2.0, 3.0),
+            scale: Scale { x: 2.0, y: 3.0 },
             max_width: None,
             max_height: None,
             keep_aspect_ratio: false,
@@ -1291,7 +1283,7 @@ mod sizing_tests {
     #[test]
     fn scale_with_max_size() {
         let strategy = ResizeStrategy::ScaleWithMaxSize {
-            scale: Scale::new(2.0, 3.0),
+            scale: Scale { x: 2.0, y: 3.0 },
             max_width: Some(10.0),
             max_height: Some(20.0),
             keep_aspect_ratio: false,

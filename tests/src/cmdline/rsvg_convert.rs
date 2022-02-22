@@ -961,7 +961,7 @@ fn keep_aspect_ratio_option() {
         .arg("--keep-aspect-ratio")
         .assert()
         .success()
-        .stdout(file::is_png().with_size(500, 2000));
+        .stdout(file::is_png().with_size(250, 1000));
 }
 
 #[test]
