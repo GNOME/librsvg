@@ -127,23 +127,23 @@ impl ResizeStrategy {
                 w: input.w * h / input.h,
                 h,
             },
-            ResizeStrategy::ScaleWithMaxSize(s, w, h) => {
+            ResizeStrategy::ScaleWithMaxSize(s, max_w, max_h) => {
                 let scaled_input_w = input.w * s.x;
                 let scaled_input_h = input.h * s.y;
 
-                let f = match (w, h) {
-                    (Some(w), Some(h)) if w < scaled_input_w || h < scaled_input_h => {
-                        let sx = w / scaled_input_w;
+                let f = match (max_w, max_h) {
+                    (Some(max_w), Some(max_h)) if max_w < scaled_input_w || max_h < scaled_input_h => {
+                        let sx = max_w / scaled_input_w;
 
-                        let sy = h / scaled_input_h;
+                        let sy = max_h / scaled_input_h;
                         if sx > sy {
                             sy
                         } else {
                             sx
                         }
                     }
-                    (Some(w), None) if w < scaled_input_w => w / scaled_input_w,
-                    (None, Some(h)) if h < scaled_input_h => h / scaled_input_h,
+                    (Some(max_w), None) if max_w < scaled_input_w => max_w / scaled_input_w,
+                    (None, Some(max_h)) if max_h < scaled_input_h => max_h / scaled_input_h,
                     _ => 1.0,
                 };
 
