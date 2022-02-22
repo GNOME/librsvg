@@ -1244,4 +1244,19 @@ mod sizing_tests {
             Size::new(2.0, 6.0),
         );
     }
+
+    #[test]
+    fn fit_largest_scale_max_size() {
+        let strategy = ResizeStrategy::FitLargestScale(
+            Scale::new(2.0, 3.0),
+            Some(10.0),
+            Some(20.0),
+        );
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 2.0), false).unwrap(),
+            Size::new(8.0, 6.0)
+        );
+    }
+
 }
