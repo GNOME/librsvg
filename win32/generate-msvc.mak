@@ -17,10 +17,11 @@ $(OUTDIR)\librsvg\librsvg.def: .\librsvg.symbols
 # Generate listing file for introspection
 $(OUTDIR)\librsvg\Rsvg_2_0_gir_list: $(librsvg_real_pub_HDRS)
 	@if exist $@ del $@
-	@for %%s in ($**) do echo %%s >> $@
+	@for %%s in ($**) do @echo %%s >> $@
 
 # Generate NMake Makefiles (for git checkouts only)
 
+!ifndef IS_NOT_GIT
 config.h.win32: ..\.git ..\configure.ac prebuild.py config.h.win32.in
 config-msvc.mak: ..\.git ..\configure.ac prebuild.py config-msvc.mak.in
 ..\include\librsvg\rsvg-version.h: ..\.git ..\configure.ac prebuild.py ..\include\librsvg\rsvg-version.h.in
@@ -34,3 +35,4 @@ remove-generated-nmake-files: ..\.git
 	@-del /f/q config.h.win32
 	@-del /f/q ..\include\librsvg\rsvg-version.h
 	@-for /f %%d in ('dir /ad /b vs*') do @rmdir /s/q %%d
+!endif
