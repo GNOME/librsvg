@@ -103,8 +103,7 @@ impl Size {
 enum ResizeStrategy {
     Scale(Scale),
     Fit {
-        width: f64,
-        height: f64,
+        size: Size,
         keep_aspect_ratio: bool,
     },
     FitWidth(f64),
@@ -133,10 +132,9 @@ impl ResizeStrategy {
             ),
 
             ResizeStrategy::Fit {
-                width,
-                height,
+                size,
                 keep_aspect_ratio,
-            } => (Size::new(width, height), keep_aspect_ratio),
+            } => (size, keep_aspect_ratio),
 
             ResizeStrategy::FitWidth(w) => (
                 Size::new(w, input.h * w / input.w),
@@ -633,8 +631,7 @@ impl Converter {
 
                 // when w and h are specified, but zoom is not, scale to the requested size
                 (Some(width), Some(height)) if self.zoom.is_identity() => ResizeStrategy::Fit {
-                    width,
-                    height,
+                    size: Size::new(width, height),
                     keep_aspect_ratio: self.keep_aspect_ratio,
                 },
 
@@ -1220,8 +1217,7 @@ mod sizing_tests {
     #[test]
     fn fit_non_proportional() {
         let strategy = ResizeStrategy::Fit {
-            width: 40.0,
-            height: 10.0,
+            size: Size::new(40.0, 10.0),
             keep_aspect_ratio: false,
         };
 
@@ -1234,8 +1230,7 @@ mod sizing_tests {
     #[test]
     fn fit_proportional_wider_than_tall() {
         let strategy = ResizeStrategy::Fit {
-            width: 40.0,
-            height: 10.0,
+            size: Size::new(40.0, 10.0),
             keep_aspect_ratio: true,
         };
 
@@ -1248,8 +1243,7 @@ mod sizing_tests {
     #[test]
     fn fit_proportional_taller_than_wide() {
         let strategy = ResizeStrategy::Fit {
-            width: 100.0,
-            height: 50.0,
+            size: Size::new(100.0, 50.0),
             keep_aspect_ratio: true,
         };
 
