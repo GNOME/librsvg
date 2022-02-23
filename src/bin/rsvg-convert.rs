@@ -144,41 +144,34 @@ impl ResizeStrategy {
                 max_height,
                 keep_aspect_ratio,
             } => {
-                let scaled_input_w = input.w * scale.x;
-                let scaled_input_h = input.h * scale.y;
+                let scaled = Size::new(input.w * scale.x, input.h * scale.y);
 
-                let f = match (max_width, max_height) {
-                    (Some(max_w), Some(max_h))
-                        if max_w < scaled_input_w || max_h < scaled_input_h =>
-                    {
-                        let sx = max_w / scaled_input_w;
+                match (max_width, max_height, keep_aspect_ratio) {
+                    (None, None, _) => scaled,
 
-                        let sy = max_h / scaled_input_h;
-                        if sx > sy {
-                            sy
+                    (Some(max_width), Some(max_height), false) => {
+                        if scaled.w <= max_width && scaled.h <= max_height {
+                            scaled
                         } else {
-                            sx
+                            Size::new(max_width, max_height)
+                        }
+                    },
+
+                    (Some(max_width), Some(max_height), true) => {
+                        if scaled.w <= max_width && scaled.h <= max_height {
+                            scaled
+                        } else {
+                            let aspect = AspectRatio::parse_str("xMinYMin meet").unwrap();
+                            dbg!(scaled);
+                            let rect = aspect.compute(
+                                &ViewBox::from(Rect::from_size(scaled.w, scaled.h)),
+                                &Rect::from_size(max_width, max_height),
+                            );
+                            Size::new(rect.width(), rect.height())
                         }
                     }
-                    (Some(max_w), None) if max_w < scaled_input_w => max_w / scaled_input_w,
-                    (None, Some(max_h)) if max_h < scaled_input_h => max_h / scaled_input_h,
-                    _ => 1.0,
-                };
 
-                let output = Size::new(input.w * f * scale.x, input.h * f * scale.y);
-
-                if !keep_aspect_ratio {
-                    output
-                } else if output.w < output.h {
-                    Size {
-                        w: output.w,
-                        h: input.h * (output.w / input.w),
-                    }
-                } else {
-                    Size {
-                        w: input.w * (output.h / input.h),
-                        h: output.h,
-                    }
+                    _ => unimplemented!()
                 }
             }
         };
@@ -1281,7 +1274,7 @@ mod sizing_tests {
     }
 
     #[test]
-    fn scale_with_max_size() {
+    fn scale_with_max_size_fits() {
         let strategy = ResizeStrategy::ScaleWithMaxSize {
             scale: Scale { x: 2.0, y: 3.0 },
             max_width: Some(10.0),
@@ -1292,6 +1285,38 @@ mod sizing_tests {
         assert_eq!(
             strategy.apply(&Size::new(4.0, 2.0)).unwrap(),
             Size::new(8.0, 6.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 5.0)).unwrap(),
+            Size::new(10.0, 20.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: Some(15.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            // this will end up with a 40:120 aspect ratio
+            strategy.apply(&Size::new(4.0, 6.0)).unwrap(),
+            // which should be shrunk to 1:3 that fits in (10, 15) per the max_width/max_height above
+            Size::new(5.0, 15.0)
         );
     }
 }
