@@ -156,7 +156,7 @@ impl ResizeStrategy {
                         } else {
                             Size::new(max_width, max_height)
                         }
-                    },
+                    }
 
                     (Some(max_width), Some(max_height), true) => {
                         if scaled.w <= max_width && scaled.h <= max_height {
@@ -172,7 +172,24 @@ impl ResizeStrategy {
                         }
                     }
 
-                    _ => unimplemented!()
+                    (Some(max_width), None, false) => {
+                        if scaled.w <= max_width {
+                            scaled
+                        } else {
+                            Size::new(max_width, scaled.h)
+                        }
+                    }
+
+                    (Some(max_width), None, true) => {
+                        if scaled.w <= max_width {
+                            scaled
+                        } else {
+                            let factor = max_width / scaled.w;
+                            Size::new(max_width, scaled.h * factor)
+                        }
+                    }
+
+                    _ => unimplemented!(),
                 }
             }
         };
@@ -1317,6 +1334,36 @@ mod sizing_tests {
             strategy.apply(&Size::new(4.0, 6.0)).unwrap(),
             // which should be shrunk to 1:3 that fits in (10, 15) per the max_width/max_height above
             Size::new(5.0, 15.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(10.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(10.0, 40.0),
         );
     }
 }
