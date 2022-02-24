@@ -51,7 +51,7 @@ rsvg_loader_LDADD = \
 EXTRA_rsvg_loader_DEPENDENCIES = libpixbufloader-svg.la gdk-pixbuf-loaders
 
 gdk-pixbuf-loaders: Makefile
-	$(AM_V_GEN) ( $(GDK_PIXBUF_QUERYLOADERS) ./libpixbufloader-svg.la && $(GDK_PIXBUF_QUERYLOADERS)) > gdk-pixbuf.loaders 2>/dev/null
+	$(AM_V_GEN) ( $(GDK_PIXBUF_QUERYLOADERS) ./libpixbufloader-svg.la && GDK_PIXBUF_MODULEDIR=$(gdk_pixbuf_moduledir) $(GDK_PIXBUF_QUERYLOADERS)) > gdk-pixbuf.loaders 2>/dev/null
 
 if CROSS_COMPILING
 RUN_QUERY_LOADER_TEST=false
@@ -70,7 +70,7 @@ endif
 install-data-hook:
 	@if $(RUN_QUERY_LOADER_TEST) ; then \
 		$(mkinstalldirs) $(DESTDIR)$(gdk_pixbuf_binarydir) ; \
-		$(GDK_PIXBUF_QUERYLOADERS) > $(DESTDIR)$(gdk_pixbuf_cache_file) ; \
+		GDK_PIXBUF_MODULEDIR=$(gdk_pixbuf_moduledir) $(GDK_PIXBUF_QUERYLOADERS) > $(DESTDIR)$(gdk_pixbuf_cache_file) ; \
 	else \
 	  echo "***" ; \
 	  echo "*** Warning: loaders.cache not built" ; \
