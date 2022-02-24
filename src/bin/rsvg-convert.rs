@@ -1306,12 +1306,27 @@ mod sizing_tests {
     }
 
     #[test]
-    fn scale_with_max_size_fits() {
+    fn scale_with_max_width_and_height_fits_non_proportional() {
         let strategy = ResizeStrategy::ScaleWithMaxSize {
             scale: Scale { x: 2.0, y: 3.0 },
             max_width: Some(10.0),
             max_height: Some(20.0),
             keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 2.0)).unwrap(),
+            Size::new(8.0, 6.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 2.0, y: 3.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: true,
         };
 
         assert_eq!(
@@ -1349,6 +1364,66 @@ mod sizing_tests {
             strategy.apply(&Size::new(4.0, 6.0)).unwrap(),
             // which should be shrunk to 1:3 that fits in (10, 15) per the max_width/max_height above
             Size::new(5.0, 15.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 5.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 10.0)).unwrap(),
+            Size::new(5.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 5.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 10.0)).unwrap(),
+            Size::new(5.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 20.0, y: 5.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(10.0, 1.0)).unwrap(),
+            Size::new(200.0, 5.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 20.0, y: 5.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(10.0, 1.0)).unwrap(),
+            Size::new(200.0, 5.0),
         );
     }
 
