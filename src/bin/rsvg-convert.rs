@@ -20,12 +20,10 @@ mod windows_imports {
 use self::windows_imports::*;
 
 use librsvg::rsvg_convert_only::{
-    CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, PathOrUrl, ULength,
-    Validate, Vertical,
+    AspectRatio, CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, Parse,
+    PathOrUrl, Rect, ULength, Validate, Vertical, ViewBox,
 };
-use librsvg::{
-    AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, Parse, RenderingError,
-};
+use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, RenderingError};
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -83,7 +81,7 @@ impl Scale {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Size {
     pub w: f64,
     pub h: f64,
@@ -98,72 +96,119 @@ impl Size {
 #[derive(Clone, Copy, Debug)]
 enum ResizeStrategy {
     Scale(Scale),
-    Fit(f64, f64),
+    Fit {
+        size: Size,
+        keep_aspect_ratio: bool,
+    },
     FitWidth(f64),
     FitHeight(f64),
-    FitLargestScale(Scale, Option<f64>, Option<f64>),
+    ScaleWithMaxSize {
+        scale: Scale,
+        max_width: Option<f64>,
+        max_height: Option<f64>,
+        keep_aspect_ratio: bool,
+    },
 }
 
 impl ResizeStrategy {
-    pub fn apply(self, input: Size, keep_aspect_ratio: bool) -> Option<Size> {
+    pub fn apply(self, input: &Size) -> Option<Size> {
         if input.w == 0.0 || input.h == 0.0 {
             return None;
         }
 
-        let output = match self {
-            ResizeStrategy::Scale(s) => Size {
-                w: input.w * s.x,
-                h: input.h * s.y,
-            },
-            ResizeStrategy::Fit(w, h) => Size { w, h },
-            ResizeStrategy::FitWidth(w) => Size {
-                w,
-                h: input.h * w / input.w,
-            },
-            ResizeStrategy::FitHeight(h) => Size {
-                w: input.w * h / input.h,
-                h,
-            },
-            ResizeStrategy::FitLargestScale(s, w, h) => {
-                let scaled_input_w = input.w * s.x;
-                let scaled_input_h = input.h * s.y;
+        let output_size = match self {
+            ResizeStrategy::Scale(s) => Size::new(input.w * s.x, input.h * s.y),
 
-                let f = match (w, h) {
-                    (Some(w), Some(h)) if w < scaled_input_w || h < scaled_input_h => {
-                        let sx = w / scaled_input_w;
+            ResizeStrategy::Fit {
+                size,
+                keep_aspect_ratio,
+            } => {
+                if keep_aspect_ratio {
+                    let aspect = AspectRatio::parse_str("xMinYMin meet").unwrap();
+                    let rect = aspect.compute(
+                        &ViewBox::from(Rect::from_size(input.w, input.h)),
+                        &Rect::from_size(size.w, size.h),
+                    );
+                    Size::new(rect.width(), rect.height())
+                } else {
+                    size
+                }
+            }
 
-                        let sy = h / scaled_input_h;
-                        if sx > sy {
-                            sy
+            ResizeStrategy::FitWidth(w) => Size::new(w, input.h * w / input.w),
+
+            ResizeStrategy::FitHeight(h) => Size::new(input.w * h / input.h, h),
+
+            ResizeStrategy::ScaleWithMaxSize {
+                scale,
+                max_width,
+                max_height,
+                keep_aspect_ratio,
+            } => {
+                let scaled = Size::new(input.w * scale.x, input.h * scale.y);
+
+                match (max_width, max_height, keep_aspect_ratio) {
+                    (None, None, _) => scaled,
+
+                    (Some(max_width), Some(max_height), false) => {
+                        if scaled.w <= max_width && scaled.h <= max_height {
+                            scaled
                         } else {
-                            sx
+                            Size::new(max_width, max_height)
                         }
                     }
-                    (Some(w), None) if w < scaled_input_w => w / scaled_input_w,
-                    (None, Some(h)) if h < scaled_input_h => h / scaled_input_h,
-                    _ => 1.0,
-                };
 
-                Size {
-                    w: input.w * f * s.x,
-                    h: input.h * f * s.y,
+                    (Some(max_width), Some(max_height), true) => {
+                        if scaled.w <= max_width && scaled.h <= max_height {
+                            scaled
+                        } else {
+                            let aspect = AspectRatio::parse_str("xMinYMin meet").unwrap();
+                            let rect = aspect.compute(
+                                &ViewBox::from(Rect::from_size(scaled.w, scaled.h)),
+                                &Rect::from_size(max_width, max_height),
+                            );
+                            Size::new(rect.width(), rect.height())
+                        }
+                    }
+
+                    (Some(max_width), None, false) => {
+                        if scaled.w <= max_width {
+                            scaled
+                        } else {
+                            Size::new(max_width, scaled.h)
+                        }
+                    }
+
+                    (Some(max_width), None, true) => {
+                        if scaled.w <= max_width {
+                            scaled
+                        } else {
+                            let factor = max_width / scaled.w;
+                            Size::new(max_width, scaled.h * factor)
+                        }
+                    }
+
+                    (None, Some(max_height), false) => {
+                        if scaled.h <= max_height {
+                            scaled
+                        } else {
+                            Size::new(scaled.w, max_height)
+                        }
+                    }
+
+                    (None, Some(max_height), true) => {
+                        if scaled.h <= max_height {
+                            scaled
+                        } else {
+                            let factor = max_height / scaled.h;
+                            Size::new(scaled.w * factor, max_height)
+                        }
+                    }
                 }
             }
         };
 
-        if !keep_aspect_ratio {
-            Some(output)
-        } else if output.w < output.h {
-            Some(Size {
-                w: output.w,
-                h: input.h * (output.w / input.w),
-            })
-        } else {
-            Some(Size {
-                w: input.w * (output.h / input.h),
-                h: output.h,
-            })
-        }
+        Some(output_size)
     }
 }
 
@@ -601,7 +646,10 @@ impl Converter {
                 (None, None) => ResizeStrategy::Scale(self.zoom),
 
                 // when w and h are specified, but zoom is not, scale to the requested size
-                (Some(w), Some(h)) if self.zoom.is_identity() => ResizeStrategy::Fit(w, h),
+                (Some(width), Some(height)) if self.zoom.is_identity() => ResizeStrategy::Fit {
+                    size: Size::new(width, height),
+                    keep_aspect_ratio: self.keep_aspect_ratio,
+                },
 
                 // if only one between w and h is specified and there is no zoom, scale to the
                 // requested w or h and use the same scaling factor for the other
@@ -609,7 +657,12 @@ impl Converter {
                 (None, Some(h)) if self.zoom.is_identity() => ResizeStrategy::FitHeight(h),
 
                 // otherwise scale the image, but cap the zoom to match the requested size
-                _ => ResizeStrategy::FitLargestScale(self.zoom, requested_width, requested_height),
+                _ => ResizeStrategy::ScaleWithMaxSize {
+                    scale: self.zoom,
+                    max_width: requested_width,
+                    max_height: requested_height,
+                    keep_aspect_ratio: self.keep_aspect_ratio,
+                },
             };
 
             let final_size = self.final_size(&strategy, &natural_size, input)?;
@@ -674,10 +727,7 @@ impl Converter {
         input: &Input,
     ) -> Result<Size, Error> {
         strategy
-            .apply(
-                Size::new(natural_size.w, natural_size.h),
-                self.keep_aspect_ratio,
-            )
+            .apply(natural_size)
             .ok_or_else(|| error!("The SVG {} has no dimensions", input))
     }
 
@@ -1136,29 +1186,303 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests {
-    mod color {
-        use super::super::*;
+mod color_tests {
+    use super::*;
 
-        #[test]
-        fn valid_color_is_ok() {
-            assert!(parse_color_string("Red").is_ok());
-        }
+    #[test]
+    fn valid_color_is_ok() {
+        assert!(parse_color_string("Red").is_ok());
+    }
 
-        #[test]
-        fn none_is_handled_as_not_found() {
-            assert_eq!(
-                parse_color_string("None").map_err(|e| e.kind),
-                Err(clap::ErrorKind::ArgumentNotFound)
-            );
-        }
+    #[test]
+    fn none_is_handled_as_not_found() {
+        assert_eq!(
+            parse_color_string("None").map_err(|e| e.kind),
+            Err(clap::ErrorKind::ArgumentNotFound)
+        );
+    }
 
-        #[test]
-        fn invalid_is_handled_as_invalid_value() {
-            assert_eq!(
-                parse_color_string("foo").map_err(|e| e.kind),
-                Err(clap::ErrorKind::InvalidValue)
-            );
-        }
+    #[test]
+    fn invalid_is_handled_as_invalid_value() {
+        assert_eq!(
+            parse_color_string("foo").map_err(|e| e.kind),
+            Err(clap::ErrorKind::InvalidValue)
+        );
+    }
+}
+
+#[cfg(test)]
+mod sizing_tests {
+    use super::*;
+
+    #[test]
+    fn detects_empty_size() {
+        let strategy = ResizeStrategy::Scale(Scale { x: 42.0, y: 42.0 });
+        assert!(strategy.apply(&Size::new(0.0, 0.0)).is_none());
+    }
+
+    #[test]
+    fn scale() {
+        let strategy = ResizeStrategy::Scale(Scale { x: 2.0, y: 3.0 });
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(2.0, 6.0),
+        );
+    }
+
+    #[test]
+    fn fit_non_proportional() {
+        let strategy = ResizeStrategy::Fit {
+            size: Size::new(40.0, 10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(2.0, 1.0)).unwrap(),
+            Size::new(40.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn fit_proportional_wider_than_tall() {
+        let strategy = ResizeStrategy::Fit {
+            size: Size::new(40.0, 10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(2.0, 1.0)).unwrap(),
+            Size::new(20.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn fit_proportional_taller_than_wide() {
+        let strategy = ResizeStrategy::Fit {
+            size: Size::new(100.0, 50.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(25.0, 50.0),
+        );
+    }
+
+    #[test]
+    fn fit_width() {
+        let strategy = ResizeStrategy::FitWidth(100.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(100.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn fit_height() {
+        let strategy = ResizeStrategy::FitHeight(100.0);
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(50.0, 100.0),
+        );
+    }
+
+    #[test]
+    fn scale_no_max_size_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 2.0, y: 3.0 },
+            max_width: None,
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 2.0)).unwrap(),
+            Size::new(2.0, 6.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 2.0, y: 3.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 2.0)).unwrap(),
+            Size::new(8.0, 6.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 2.0, y: 3.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 2.0)).unwrap(),
+            Size::new(8.0, 6.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: Some(20.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(4.0, 5.0)).unwrap(),
+            Size::new(10.0, 20.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_and_height_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: Some(15.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            // this will end up with a 40:120 aspect ratio
+            strategy.apply(&Size::new(4.0, 6.0)).unwrap(),
+            // which should be shrunk to 1:3 that fits in (10, 15) per the max_width/max_height above
+            Size::new(5.0, 15.0)
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 5.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 10.0)).unwrap(),
+            Size::new(5.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 5.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(1.0, 10.0)).unwrap(),
+            Size::new(5.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_fits_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 20.0, y: 5.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(10.0, 1.0)).unwrap(),
+            Size::new(200.0, 5.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_fits_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 20.0, y: 5.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(10.0, 1.0)).unwrap(),
+            Size::new(200.0, 5.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(10.0, 200.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_width_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: Some(10.0),
+            max_height: None,
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(10.0, 40.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(50.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 8.0, y: 20.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(2.0, 10.0),
+        );
     }
 }
