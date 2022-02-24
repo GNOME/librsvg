@@ -188,7 +188,22 @@ impl ResizeStrategy {
                         }
                     }
 
-                    _ => unimplemented!(),
+                    (None, Some(max_height), false) => {
+                        if scaled.h <= max_height {
+                            scaled
+                        } else {
+                            Size::new(scaled.w, max_height)
+                        }
+                    }
+
+                    (None, Some(max_height), true) => {
+                        if scaled.h <= max_height {
+                            scaled
+                        } else {
+                            let factor = max_height / scaled.h;
+                            Size::new(scaled.w * factor, max_height)
+                        }
+                    }
                 }
             }
         };
@@ -1364,6 +1379,36 @@ mod sizing_tests {
         assert_eq!(
             strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
             Size::new(10.0, 40.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_doesnt_fit_non_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 10.0, y: 20.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: false,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(50.0, 10.0),
+        );
+    }
+
+    #[test]
+    fn scale_with_max_height_doesnt_fit_proportional() {
+        let strategy = ResizeStrategy::ScaleWithMaxSize {
+            scale: Scale { x: 8.0, y: 20.0 },
+            max_width: None,
+            max_height: Some(10.0),
+            keep_aspect_ratio: true,
+        };
+
+        assert_eq!(
+            strategy.apply(&Size::new(5.0, 10.0)).unwrap(),
+            Size::new(2.0, 10.0),
         );
     }
 }
