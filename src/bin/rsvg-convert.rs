@@ -163,7 +163,6 @@ impl ResizeStrategy {
                             scaled
                         } else {
                             let aspect = AspectRatio::parse_str("xMinYMin meet").unwrap();
-                            dbg!(scaled);
                             let rect = aspect.compute(
                                 &ViewBox::from(Rect::from_size(scaled.w, scaled.h)),
                                 &Rect::from_size(max_width, max_height),
