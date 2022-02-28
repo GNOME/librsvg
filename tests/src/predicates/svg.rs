@@ -114,7 +114,7 @@ impl DetailPredicate<SvgPredicate> {
             Detail::Size(d) => {
                 let renderer = CairoRenderer::new(handle);
                 let dimensions = renderer.intrinsic_dimensions();
-                (dimensions.width, dimensions.height) == (Some(d.w), Some(d.h))
+                (dimensions.width, dimensions.height) == (d.w, d.h)
             }
         }
     }

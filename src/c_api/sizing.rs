@@ -12,7 +12,7 @@
 
 use float_cmp::approx_eq;
 
-use crate::api::{CairoRenderer, IntrinsicDimensions, Length, RenderingError};
+use crate::api::{CairoRenderer, IntrinsicDimensions, RenderingError};
 use crate::dpi::Dpi;
 use crate::handle::Handle;
 use crate::length::*;
@@ -100,10 +100,6 @@ fn size_in_pixels_from_percentage_width_and_height(
     let vbox = vbox?;
 
     let (w, h) = handle.width_height_to_user(dpi);
-
-    // missing width/height default to "auto", which compute to "100%"
-    let width = width.unwrap_or_else(|| Length::new(1.0, Percent));
-    let height = height.unwrap_or_else(|| Length::new(1.0, Percent));
 
     // Avoid division by zero below.  If the viewBox is zero-sized, there's
     // not much we can do.

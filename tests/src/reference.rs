@@ -132,16 +132,14 @@ fn image_size(dim: IntrinsicDimensions, dpi: f64) -> (i32, i32) {
 
     use librsvg::LengthUnit::*;
 
-    if let (Some(width), Some(height)) = (width, height) {
-        if !(has_supported_unit(&width) && has_supported_unit(&height)) {
-            panic!("SVG has unsupported unit type in width or height");
-        }
+    if !(has_supported_unit(&width) && has_supported_unit(&height)) {
+        panic!("SVG has unsupported unit type in width or height");
     }
 
     #[rustfmt::skip]
     let (width, height) = match (width, height, vbox) {
-        (Some(Length { length: w, unit: Percent }),
-         Some(Length { length: h, unit: Percent }), vbox) if w == 1.0 && h == 1.0 => {
+        (Length { length: w, unit: Percent },
+         Length { length: h, unit: Percent }, vbox) if w == 1.0 && h == 1.0 => {
             if let Some(vbox) = vbox {
                 (vbox.width, vbox.height)
             } else {
@@ -149,18 +147,14 @@ fn image_size(dim: IntrinsicDimensions, dpi: f64) -> (i32, i32) {
             }
         }
 
-        (Some(Length { length: _, unit: Percent }),
-         Some(Length { length: _, unit: Percent }), _) => {
+        (Length { length: _, unit: Percent },
+         Length { length: _, unit: Percent }, _) => {
             panic!("Test suite only supports percentage width/height at 100%");
         }
 
-        (Some(w), Some(h), _) => {
+        (w, h, _) => {
             (normalize(&w, dpi), normalize(&h, dpi))
         }
-
-        (None, None, Some(vbox)) => (vbox.width, vbox.height),
-
-        (_, _, _) => panic!("Test suite does not support the dimensions of this file"),
     };
 
     // Keep in sync with c_api.rs

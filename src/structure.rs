@@ -14,6 +14,7 @@ use crate::layout::StackingContext;
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
+use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::viewbox::*;
 use crate::xml::Attributes;
@@ -111,10 +112,10 @@ impl Draw for Switch {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct IntrinsicDimensions {
     /// Contents of the `width` attribute.
-    pub width: Option<ULength<Horizontal>>,
+    pub width: ULength<Horizontal>,
 
     /// Contents of the `height` attribute.
-    pub height: Option<ULength<Vertical>>,
+    pub height: ULength<Vertical>,
 
     /// Contents of the `viewBox` attribute.
     pub vbox: Option<ViewBox>,
@@ -123,24 +124,20 @@ pub struct IntrinsicDimensions {
 #[derive(Default)]
 pub struct Svg {
     preserve_aspect_ratio: AspectRatio,
-    x: Option<Length<Horizontal>>,
-    y: Option<Length<Vertical>>,
-    width: Option<LengthOrAuto<Horizontal>>,
-    height: Option<LengthOrAuto<Vertical>>,
     vbox: Option<ViewBox>,
 }
 
 impl Svg {
-    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let w = self.width.map(|length_or_auto| match length_or_auto {
+    pub fn get_intrinsic_dimensions(&self, values: &ComputedValues) -> IntrinsicDimensions {
+        let w = match values.width().0 {
             LengthOrAuto::Auto => ULength::<Horizontal>::parse_str("100%").unwrap(),
             LengthOrAuto::Length(l) => l,
-        });
+        };
 
-        let h = self.height.map(|length_or_auto| match length_or_auto {
+        let h = match values.height().0 {
             LengthOrAuto::Auto => ULength::<Vertical>::parse_str("100%").unwrap(),
             LengthOrAuto::Length(l) => l,
-        });
+        };
 
         IntrinsicDimensions {
             width: w,
@@ -149,42 +146,49 @@ impl Svg {
         }
     }
 
-    fn get_unnormalized_offset(&self) -> (Length<Horizontal>, Length<Vertical>) {
+    fn get_unnormalized_offset(
+        &self,
+        values: &ComputedValues,
+    ) -> (Length<Horizontal>, Length<Vertical>) {
         // these defaults are per the spec
-        let x = self
-            .x
-            .unwrap_or_else(|| Length::<Horizontal>::parse_str("0").unwrap());
-        let y = self
-            .y
-            .unwrap_or_else(|| Length::<Vertical>::parse_str("0").unwrap());
+        let x = values.x().0;
+        let y = values.y().0;
 
         (x, y)
     }
 
-    fn get_unnormalized_size(&self) -> (ULength<Horizontal>, ULength<Vertical>) {
+    fn get_unnormalized_size(
+        &self,
+        values: &ComputedValues,
+    ) -> (ULength<Horizontal>, ULength<Vertical>) {
         // these defaults are per the spec
-        let w = match self.width {
-            None | Some(LengthOrAuto::Auto) => ULength::<Horizontal>::parse_str("100%").unwrap(),
-            Some(LengthOrAuto::Length(l)) => l,
+        let w = match values.width().0 {
+            LengthOrAuto::Auto => ULength::<Horizontal>::parse_str("100%").unwrap(),
+            LengthOrAuto::Length(l) => l,
         };
-        let h = match self.height {
-            None | Some(LengthOrAuto::Auto) => ULength::<Vertical>::parse_str("100%").unwrap(),
-            Some(LengthOrAuto::Length(l)) => l,
+        let h = match values.height().0 {
+            LengthOrAuto::Auto => ULength::<Vertical>::parse_str("100%").unwrap(),
+            LengthOrAuto::Length(l) => l,
         };
         (w, h)
     }
 
-    fn get_viewport(&self, params: &NormalizeParams, outermost: bool) -> Rect {
+    fn get_viewport(
+        &self,
+        params: &NormalizeParams,
+        values: &ComputedValues,
+        outermost: bool,
+    ) -> Rect {
         // x & y attributes have no effect on outermost svg
         // http://www.w3.org/TR/SVG/struct.html#SVGElement
         let (nx, ny) = if outermost {
             (0.0, 0.0)
         } else {
-            let (x, y) = self.get_unnormalized_offset();
+            let (x, y) = self.get_unnormalized_offset(values);
             (x.to_user(params), y.to_user(params))
         };
 
-        let (w, h) = self.get_unnormalized_size();
+        let (w, h) = self.get_unnormalized_size(values);
         let (nw, nh) = (w.to_user(params), h.to_user(params));
 
         Rect::new(nx, ny, nx + nw, ny + nh)
@@ -209,7 +213,7 @@ impl Svg {
             None
         };
 
-        let svg_viewport = self.get_viewport(&params, !has_parent);
+        let svg_viewport = self.get_viewport(&params, values, !has_parent);
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
@@ -248,10 +252,6 @@ impl SetAttributes for Svg {
                 expanded_name!("", "preserveAspectRatio") => {
                     self.preserve_aspect_ratio = attr.parse(value)?
                 }
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.height = attr.parse(value)?,
                 expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
                 _ => (),
             }

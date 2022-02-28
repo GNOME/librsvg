@@ -268,11 +268,11 @@ const DEFAULT_DPI_Y: f64 = 96.0;
 /// ```
 /// In this case, the length fields will be set to `Some()`, and `vbox` to `None`.
 pub struct IntrinsicDimensions {
-    /// `width` attribute of the `<svg>`, if present
-    pub width: Option<Length>,
+    /// `width` attribute of the `<svg>`
+    pub width: Length,
 
-    /// `height` attribute of the `<svg>`, if present
-    pub height: Option<Length>,
+    /// `height` attribute of the `<svg>`
+    pub height: Length,
 
     /// `viewBox` attribute of the `<svg>`, if present
     pub vbox: Option<cairo::Rectangle>,
@@ -343,8 +343,8 @@ impl<'a> CairoRenderer<'a> {
         let d = self.handle.0.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
-            width: d.width.map(Into::into),
-            height: d.height.map(Into::into),
+            width: Into::into(d.width),
+            height: Into::into(d.height),
             vbox: d.vbox.map(|v| cairo::Rectangle::from(*v)),
         }
     }
@@ -366,14 +366,8 @@ impl<'a> CairoRenderer<'a> {
     /// application can use a viewport size to scale percentage-based dimensions.
     pub fn intrinsic_size_in_pixels(&self) -> Option<(f64, f64)> {
         let dim = self.intrinsic_dimensions();
-
-        // missing width/height default to "auto", which compute to "100%"
-        let width = dim
-            .width
-            .unwrap_or_else(|| Length::new(1.0, LengthUnit::Percent));
-        let height = dim
-            .height
-            .unwrap_or_else(|| Length::new(1.0, LengthUnit::Percent));
+        let width = dim.width;
+        let height = dim.height;
 
         if width.unit == LengthUnit::Percent || height.unit == LengthUnit::Percent {
             return None;

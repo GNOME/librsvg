@@ -17,8 +17,8 @@ fn no_intrinsic_dimensions() {
     assert_eq!(
         CairoRenderer::new(&svg).intrinsic_dimensions(),
         IntrinsicDimensions {
-            width: None,
-            height: None,
+            width: Length::new(1.0, LengthUnit::Percent),
+            height: Length::new(1.0, LengthUnit::Percent),
             vbox: None,
         }
     );
@@ -36,8 +36,8 @@ fn has_intrinsic_dimensions() {
     assert_eq!(
         CairoRenderer::new(&svg).intrinsic_dimensions(),
         IntrinsicDimensions {
-            width: Some(Length::new(10.0, LengthUnit::Cm)),
-            height: Some(Length::new(20.0, LengthUnit::Px)),
+            width: Length::new(10.0, LengthUnit::Cm),
+            height: Length::new(20.0, LengthUnit::Px),
             vbox: Some(cairo::Rectangle {
                 x: 0.0,
                 y: 0.0,
