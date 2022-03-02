@@ -1,6 +1,6 @@
 //! Various utilities for working with Cairo image surfaces.
 
-use std::mem;
+use std::alloc;
 use std::slice;
 
 pub mod iterators;
@@ -29,7 +29,7 @@ pub type GdkPixbufRGB = rgb::RGB8;
 
 /// Analogous to `rgb::FromSlice`, to convert from `[T]` to `[CairoARGB]`
 #[allow(clippy::upper_case_acronyms)]
-pub trait AsCairoARGB<T: Copy> {
+pub trait AsCairoARGB {
     /// Reinterpret slice as `CairoARGB` pixels.
     fn as_cairo_argb(&self) -> &[CairoARGB];
 
@@ -37,15 +37,21 @@ pub trait AsCairoARGB<T: Copy> {
     fn as_cairo_argb_mut(&mut self) -> &mut [CairoARGB];
 }
 
-impl<T: Copy> AsCairoARGB<T> for [T] {
+// SAFETY: transmuting from u32 to CairoRGB is based on the following assumptions:
+//  * there are no invalid bit representations for ARGB
+//  * u32 and ARGB are the same size
+//  * u32 is sufficiently aligned
+impl AsCairoARGB for [u32] {
     fn as_cairo_argb(&self) -> &[CairoARGB] {
-        debug_assert_eq!(4, mem::size_of::<CairoARGB>() / mem::size_of::<T>());
-        unsafe { slice::from_raw_parts(self.as_ptr() as *const _, self.len() / 4) }
+        const LAYOUT_U32: alloc::Layout = alloc::Layout::new::<u32>();
+        const LAYOUT_ARGB: alloc::Layout = alloc::Layout::new::<CairoARGB>();
+        let _: [(); LAYOUT_U32.size()] = [(); LAYOUT_ARGB.size()];
+        let _: [(); 0] = [(); LAYOUT_U32.align() % LAYOUT_ARGB.align()];
+        unsafe { slice::from_raw_parts(self.as_ptr() as *const _, self.len()) }
     }
 
     fn as_cairo_argb_mut(&mut self) -> &mut [CairoARGB] {
-        debug_assert_eq!(4, mem::size_of::<CairoARGB>() / mem::size_of::<T>());
-        unsafe { slice::from_raw_parts_mut(self.as_ptr() as *mut _, self.len() / 4) }
+        unsafe { slice::from_raw_parts_mut(self.as_mut_ptr() as *mut _, self.len()) }
     }
 }
 
