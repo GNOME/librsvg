@@ -809,9 +809,9 @@ make_property!(
     ///
     /// https://www.w3.org/TR/SVG2/geometry.html#R
     R,
-    default: Length::<Both>::parse_str("0").unwrap(),
+    default: ULength::<Both>::parse_str("0").unwrap(),
     inherits_automatically: false,
-    newtype_parse: Length<Both>,
+    newtype_parse: ULength<Both>,
 );
 
 make_property!(
