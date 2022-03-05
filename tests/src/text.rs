@@ -42,14 +42,11 @@ test_svg_reference!(
     "tests/fixtures/text/span-bounds-when-offset-by-dx-ref.svg"
 );
 
-// FIXME: Ignored because with the change to render all text as paths, the rendering
-// of these is different.
-//
-// test_svg_reference!(
-//     tspan_direction_change_804,
-//     "tests/fixtures/text/804-tspan-direction-change.svg",
-//     "tests/fixtures/text/804-tspan-direction-change-ref.svg"
-// );
+test_svg_reference!(
+    tspan_direction_change_804,
+    "tests/fixtures/text/804-tspan-direction-change.svg",
+    "tests/fixtures/text/804-tspan-direction-change-ref.svg"
+);
 
 test_svg_reference!(
     unicode_bidi_override,
@@ -122,11 +119,6 @@ fn text_layer_geometry(name: &str) {
 
     for (id, expected_ink_rect) in cases {
         let (ink_rect, _) = renderer.geometry_for_layer(Some(id), &viewport).unwrap();
-        assert!(
-            rectangle_approx_eq(&ink_rect, &expected_ink_rect),
-            "ink_rect: {:?}, expected: {:?}",
-            ink_rect,
-            expected_ink_rect
-        );
+        assert!(rectangle_approx_eq(&ink_rect, &expected_ink_rect));
     }
 }
