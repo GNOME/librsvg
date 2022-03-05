@@ -397,15 +397,6 @@ make_properties! {
     }
 
     // longhands that are presentation attributes right now, but need to be turned into properties:
-    // "cx" - applies only to circle, ellipse
-    // "cy" - applies only to circle, ellipse
-    // "height" - applies only to foreignObject, image, rect, svg, symbol, use
-    // "width"  - applies only to foreignObject, image, rect, svg, symbol, use
-    // "x"      - applies only to foreignObject, image, rect, svg, symbol, use
-    // "y"      - applies only to foreignObject, image, rect, svg, symbol, use
-    // "r"      - applies only to circle
-    // "rx"     - applies only to ellipse, rect
-    // "ry"     - applies only to ellipse, rect
     // "d"      - applies only to path
 
     longhands: {
@@ -417,6 +408,8 @@ make_properties! {
         // "color-interpolation"      => (PresentationAttr::Yes, unimplemented),
         "color-interpolation-filters" => (PresentationAttr::Yes, color_interpolation_filters : ColorInterpolationFilters),
         // "cursor"                   => (PresentationAttr::Yes, unimplemented),
+        "cx"                          => (PresentationAttr::Yes, cx: CX),
+        "cy"                          => (PresentationAttr::Yes, cy: CY),
         "direction"                   => (PresentationAttr::Yes, direction                   : Direction),
         "display"                     => (PresentationAttr::Yes, display                     : Display),
         // "dominant-baseline"        => (PresentationAttr::Yes, unimplemented),
@@ -450,6 +443,7 @@ make_properties! {
         // So, we put the property here, not in the shorthands, and deal with it as a
         // special case in the text handling code.
         "glyph-orientation-vertical"  => (PresentationAttr::Yes, glyph_orientation_vertical  : GlyphOrientationVertical),
+        "height" => (PresentationAttr::Yes, height: Height),
 
         // "image-rendering"          => (PresentationAttr::Yes, unimplemented),
         "letter-spacing"              => (PresentationAttr::Yes, letter_spacing              : LetterSpacing),
@@ -461,6 +455,9 @@ make_properties! {
         "opacity"                     => (PresentationAttr::Yes, opacity                     : Opacity),
         "overflow"                    => (PresentationAttr::Yes, overflow                    : Overflow),
         // "pointer-events"           => (PresentationAttr::Yes, unimplemented),
+        "r"                           => (PresentationAttr::Yes, r: R),
+        "rx"                          => (PresentationAttr::Yes, rx: RX),
+        "ry"                          => (PresentationAttr::Yes, ry: RY),
         "shape-rendering"             => (PresentationAttr::Yes, shape_rendering             : ShapeRendering),
         "stop-color"                  => (PresentationAttr::Yes, stop_color                  : StopColor),
         "stop-opacity"                => (PresentationAttr::Yes, stop_opacity                : StopOpacity),
@@ -490,7 +487,10 @@ make_properties! {
         "visibility"                  => (PresentationAttr::Yes, visibility                  : Visibility),
         // "white-space"              => (PresentationAttr::Yes, unimplemented),
         // "word-spacing"             => (PresentationAttr::Yes, unimplemented),
+        "width"                       => (PresentationAttr::Yes, width: Width),
         "writing-mode"                => (PresentationAttr::Yes, writing_mode                : WritingMode),
+        "x"                           => (PresentationAttr::Yes, x: X),
+        "y"                           => (PresentationAttr::Yes, y: Y),
     }
 
     longhands_not_supported_by_markup5ever: {
@@ -699,6 +699,8 @@ impl SpecifiedValues {
         compute!(ClipRule, clip_rule);
         compute!(Color, color);
         compute!(ColorInterpolationFilters, color_interpolation_filters);
+        compute!(CX, cx);
+        compute!(CY, cy);
         compute!(Direction, direction);
         compute!(Display, display);
         compute!(EnableBackground, enable_background);
@@ -714,6 +716,7 @@ impl SpecifiedValues {
         compute!(FontVariant, font_variant);
         compute!(FontWeight, font_weight);
         compute!(GlyphOrientationVertical, glyph_orientation_vertical);
+        compute!(Height, height);
         compute!(Isolation, isolation);
         compute!(LetterSpacing, letter_spacing);
         compute!(LightingColor, lighting_color);
@@ -726,6 +729,9 @@ impl SpecifiedValues {
         compute!(Opacity, opacity);
         compute!(Overflow, overflow);
         compute!(PaintOrder, paint_order);
+        compute!(R, r);
+        compute!(RX, rx);
+        compute!(RY, ry);
         compute!(ShapeRendering, shape_rendering);
         compute!(StopColor, stop_color);
         compute!(StopOpacity, stop_opacity);
@@ -744,9 +750,12 @@ impl SpecifiedValues {
         compute!(TransformProperty, transform_property);
         compute!(UnicodeBidi, unicode_bidi);
         compute!(Visibility, visibility);
+        compute!(Width, width);
         compute!(WritingMode, writing_mode);
+        compute!(X, x);
         compute!(XmlSpace, xml_space);
         compute!(XmlLang, xml_lang);
+        compute!(Y, y);
 
         computed.transform = self.transform.unwrap_or_else(|| {
             match self.get_property(PropertyId::TransformProperty) {

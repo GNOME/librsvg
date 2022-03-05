@@ -245,7 +245,9 @@ macro_rules! test_svg_reference {
     ($test_name:ident, $test_filename:expr, $reference_filename:expr) => {
         #[test]
         fn $test_name() {
-            use crate::utils::setup_font_map;
+            use crate::reference_utils::{Compare, Evaluate, Reference};
+            use crate::utils::{render_document, setup_font_map, SurfaceSize};
+            use cairo;
             use librsvg::{CairoRenderer, Loader};
 
             setup_font_map();

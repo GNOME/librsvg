@@ -16,12 +16,12 @@ use crate::parsers::ParseValue;
 use crate::rect::Rect;
 use crate::xml::Attributes;
 
+/// The `<image>` element.
+///
+/// Note that its x/y/width/height are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
 pub struct Image {
-    x: Length<Horizontal>,
-    y: Length<Vertical>,
-    width: LengthOrAuto<Horizontal>,
-    height: LengthOrAuto<Vertical>,
     aspect: AspectRatio,
     href: Option<String>,
 }
@@ -30,10 +30,6 @@ impl SetAttributes for Image {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.height = attr.parse(value)?,
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
 
                 // "path" is used by some older Adobe Illustrator versions
@@ -74,14 +70,14 @@ impl Draw for Image {
         let view_params = draw_ctx.get_view_params();
         let params = NormalizeParams::new(values, &view_params);
 
-        let x = self.x.to_user(&params);
-        let y = self.y.to_user(&params);
+        let x = values.x().0.to_user(&params);
+        let y = values.y().0.to_user(&params);
 
-        let w = match self.width {
+        let w = match values.width().0 {
             LengthOrAuto::Length(l) => l.to_user(&params),
             LengthOrAuto::Auto => surface.width() as f64,
         };
-        let h = match self.height {
+        let h = match values.height().0 {
             LengthOrAuto::Length(l) => l.to_user(&params),
             LengthOrAuto::Auto => surface.height() as f64,
         };

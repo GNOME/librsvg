@@ -45,6 +45,9 @@ mod reference_utils;
 mod render_crash;
 
 #[cfg(test)]
+mod shapes;
+
+#[cfg(test)]
 mod text;
 
 #[cfg(test)]

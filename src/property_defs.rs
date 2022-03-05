@@ -182,6 +182,26 @@ make_property!(
 );
 
 make_property!(
+    /// `cx` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#CX
+    CX,
+    default: Length::<Horizontal>::parse_str("0").unwrap(),
+    inherits_automatically: false,
+    newtype_parse: Length<Horizontal>,
+);
+
+make_property!(
+    /// `cy` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#CY
+    CY,
+    default: Length::<Vertical>::parse_str("0").unwrap(),
+    inherits_automatically: false,
+    newtype_parse: Length<Vertical>,
+);
+
+make_property!(
     /// `direction` property.
     ///
     /// https://www.w3.org/TR/SVG/text.html#DirectionProperty
@@ -511,6 +531,16 @@ make_property!(
 );
 
 make_property!(
+    /// `height` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#Sizing
+    Height,
+    default: LengthOrAuto::<Vertical>::Auto,
+    inherits_automatically: false,
+    newtype_parse: LengthOrAuto<Vertical>,
+);
+
+make_property!(
     /// `isolation` property.
     ///
     /// https://www.w3.org/TR/compositing-1/#isolation
@@ -773,6 +803,36 @@ fn parses_paint_order() {
     assert!(PaintOrder::parse_str("stroke stroke").is_err());
     assert!(PaintOrder::parse_str("markers stroke fill hello").is_err());
 }
+
+make_property!(
+    /// `r` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#R
+    R,
+    default: ULength::<Both>::parse_str("0").unwrap(),
+    inherits_automatically: false,
+    newtype_parse: ULength<Both>,
+);
+
+make_property!(
+    /// `rx` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#RX
+    RX,
+    default: LengthOrAuto::<Horizontal>::Auto,
+    inherits_automatically: false,
+    newtype_parse: LengthOrAuto<Horizontal>,
+);
+
+make_property!(
+    /// `ry` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#RY
+    RY,
+    default: LengthOrAuto::<Vertical>::Auto,
+    inherits_automatically: false,
+    newtype_parse: LengthOrAuto<Vertical>,
+);
 
 make_property!(
     /// `shape-rendering` property.
@@ -1098,6 +1158,16 @@ make_property!(
 );
 
 make_property!(
+    /// `width` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#Sizing
+    Width,
+    default: LengthOrAuto::<Horizontal>::Auto,
+    inherits_automatically: false,
+    newtype_parse: LengthOrAuto<Horizontal>,
+);
+
+make_property!(
     /// `writing-mode` property.
     ///
     /// https://www.w3.org/TR/css-writing-modes-3/#block-flow
@@ -1146,6 +1216,16 @@ impl WritingMode {
         matches!(self, HorizontalTb | Lr | LrTb | Rl | RlTb)
     }
 }
+
+make_property!(
+    /// `x` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#X
+    X,
+    default: Length::<Horizontal>::parse_str("0").unwrap(),
+    inherits_automatically: false,
+    newtype_parse: Length<Horizontal>,
+);
 
 make_property!(
     /// `xml:lang` attribute.
@@ -1203,4 +1283,14 @@ make_property!(
     identifiers:
     "default" => Default,
     "preserve" => Preserve,
+);
+
+make_property!(
+    /// `y` attribute.
+    ///
+    /// https://www.w3.org/TR/SVG2/geometry.html#Y
+    Y,
+    default: Length::<Vertical>::parse_str("0").unwrap(),
+    inherits_automatically: false,
+    newtype_parse: Length<Vertical>,
 );

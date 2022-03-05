@@ -116,13 +116,8 @@ impl Handle {
     pub fn width_height_to_user(&self, dpi: Dpi) -> (f64, f64) {
         let dimensions = self.get_intrinsic_dimensions();
 
-        // missing width/height default to "auto", which compute to "100%"
-        let width = dimensions
-            .width
-            .unwrap_or_else(|| ULength::new(1.0, LengthUnit::Percent));
-        let height = dimensions
-            .height
-            .unwrap_or_else(|| ULength::new(1.0, LengthUnit::Percent));
+        let width = dimensions.width;
+        let height = dimensions.height;
 
         let view_params = ViewParams::new(dpi, 0.0, 0.0);
         let root = self.document.root();
@@ -360,7 +355,10 @@ impl Handle {
     }
 
     pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        borrow_element_as!(self.document.root(), Svg).get_intrinsic_dimensions()
+        let root = self.document.root();
+        let cascaded = CascadedValues::new_from_node(&root);
+        let values = cascaded.get();
+        borrow_element_as!(self.document.root(), Svg).get_intrinsic_dimensions(values)
     }
 
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {

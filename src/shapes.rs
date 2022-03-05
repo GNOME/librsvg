@@ -17,6 +17,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
+use crate::properties::ComputedValues;
 use crate::xml::Attributes;
 
 #[derive(PartialEq)]
@@ -37,7 +38,7 @@ impl ShapeDef {
 }
 
 trait BasicShape {
-    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef;
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef;
 }
 
 macro_rules! impl_draw {
@@ -54,7 +55,7 @@ macro_rules! impl_draw {
                 let values = cascaded.get();
                 let view_params = draw_ctx.get_view_params();
                 let params = NormalizeParams::new(values, &view_params);
-                let shape_def = self.make_shape(&params);
+                let shape_def = self.make_shape(&params, values);
 
                 let is_visible = values.is_visible();
                 let paint_order = values.paint_order();
@@ -249,7 +250,7 @@ impl SetAttributes for Path {
 }
 
 impl BasicShape for Path {
-    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+    fn make_shape(&self, _params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
         ShapeDef::new(self.path.clone(), Markers::Yes)
     }
 }
@@ -330,7 +331,7 @@ impl SetAttributes for Polygon {
 }
 
 impl BasicShape for Polygon {
-    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+    fn make_shape(&self, _params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
         ShapeDef::new(Rc::new(make_poly(&self.points, true)), Markers::Yes)
     }
 }
@@ -355,7 +356,7 @@ impl SetAttributes for Polyline {
 }
 
 impl BasicShape for Polyline {
-    fn make_shape(&self, _params: &NormalizeParams) -> ShapeDef {
+    fn make_shape(&self, _params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
         ShapeDef::new(Rc::new(make_poly(&self.points, false)), Markers::Yes)
     }
 }
@@ -387,7 +388,7 @@ impl SetAttributes for Line {
 }
 
 impl BasicShape for Line {
-    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
+    fn make_shape(&self, params: &NormalizeParams, _values: &ComputedValues) -> ShapeDef {
         let mut builder = PathBuilder::default();
 
         let x1 = self.x1.to_user(params);
@@ -402,66 +403,40 @@ impl BasicShape for Line {
     }
 }
 
+/// The `<rect>` element.
+///
+/// Note that its x/y/width/height/rx/ry are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
-pub struct Rect {
-    x: Length<Horizontal>,
-    y: Length<Vertical>,
-    width: LengthOrAuto<Horizontal>,
-    height: LengthOrAuto<Vertical>,
-
-    // Radiuses for rounded corners
-    rx: Option<Length<Horizontal>>,
-    ry: Option<Length<Vertical>>,
-}
+pub struct Rect {}
 
 impl_draw!(Rect);
 
-impl SetAttributes for Rect {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.height = attr.parse(value)?,
-                expanded_name!("", "rx") => self.rx = attr.parse(value)?,
-                expanded_name!("", "ry") => self.ry = attr.parse(value)?,
-                _ => (),
-            }
-        }
-
-        Ok(())
-    }
-}
+impl SetAttributes for Rect {}
 
 impl BasicShape for Rect {
     #[allow(clippy::many_single_char_names)]
-    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
-        let x = self.x.to_user(params);
-        let y = self.y.to_user(params);
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        let x = values.x().0.to_user(params);
+        let y = values.y().0.to_user(params);
 
-        let w = match self.width {
+        let w = match values.width().0 {
             LengthOrAuto::Length(l) => l.to_user(params),
             LengthOrAuto::Auto => 0.0,
         };
-        let h = match self.height {
+        let h = match values.height().0 {
             LengthOrAuto::Length(l) => l.to_user(params),
             LengthOrAuto::Auto => 0.0,
         };
 
-        let specified_rx = self.rx.map(|l| l.to_user(params));
-        let specified_ry = self.ry.map(|l| l.to_user(params));
-
-        fn nonnegative_or_none(l: f64) -> Option<f64> {
-            if l < 0.0 {
-                None
-            } else {
-                Some(l)
-            }
-        }
-
-        let norm_rx = specified_rx.and_then(nonnegative_or_none);
-        let norm_ry = specified_ry.and_then(nonnegative_or_none);
+        let norm_rx = match values.rx().0 {
+            LengthOrAuto::Length(l) => Some(l.to_user(params)),
+            LengthOrAuto::Auto => None,
+        };
+        let norm_ry = match values.ry().0 {
+            LengthOrAuto::Length(l) => Some(l.to_user(params)),
+            LengthOrAuto::Auto => None,
+        };
 
         let mut rx;
         let mut ry;
@@ -621,72 +596,75 @@ impl BasicShape for Rect {
     }
 }
 
+/// The `<circle>` element.
+///
+/// Note that its cx/cy/r are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
-pub struct Circle {
-    cx: Length<Horizontal>,
-    cy: Length<Vertical>,
-    r: ULength<Both>,
-}
+pub struct Circle {}
 
 impl_draw!(Circle);
 
-impl SetAttributes for Circle {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                expanded_name!("", "cx") => self.cx = attr.parse(value)?,
-                expanded_name!("", "cy") => self.cy = attr.parse(value)?,
-                expanded_name!("", "r") => self.r = attr.parse(value)?,
-                _ => (),
-            }
-        }
-
-        Ok(())
-    }
-}
+impl SetAttributes for Circle {}
 
 impl BasicShape for Circle {
-    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
-        let cx = self.cx.to_user(params);
-        let cy = self.cy.to_user(params);
-        let r = self.r.to_user(params);
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        let cx = values.cx().0.to_user(params);
+        let cy = values.cy().0.to_user(params);
+        let r = values.r().0.to_user(params);
 
         ShapeDef::new(Rc::new(make_ellipse(cx, cy, r, r)), Markers::No)
     }
 }
 
+/// The `<ellipse>` element.
+///
+/// Note that its cx/cy/rx/ry are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
-pub struct Ellipse {
-    cx: Length<Horizontal>,
-    cy: Length<Vertical>,
-    rx: ULength<Horizontal>,
-    ry: ULength<Vertical>,
-}
+pub struct Ellipse {}
 
 impl_draw!(Ellipse);
 
-impl SetAttributes for Ellipse {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                expanded_name!("", "cx") => self.cx = attr.parse(value)?,
-                expanded_name!("", "cy") => self.cy = attr.parse(value)?,
-                expanded_name!("", "rx") => self.rx = attr.parse(value)?,
-                expanded_name!("", "ry") => self.ry = attr.parse(value)?,
-                _ => (),
-            }
-        }
-
-        Ok(())
-    }
-}
+impl SetAttributes for Ellipse {}
 
 impl BasicShape for Ellipse {
-    fn make_shape(&self, params: &NormalizeParams) -> ShapeDef {
-        let cx = self.cx.to_user(params);
-        let cy = self.cy.to_user(params);
-        let rx = self.rx.to_user(params);
-        let ry = self.ry.to_user(params);
+    fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
+        let cx = values.cx().0.to_user(params);
+        let cy = values.cy().0.to_user(params);
+        let norm_rx = match values.rx().0 {
+            LengthOrAuto::Length(l) => Some(l.to_user(params)),
+            LengthOrAuto::Auto => None,
+        };
+        let norm_ry = match values.ry().0 {
+            LengthOrAuto::Length(l) => Some(l.to_user(params)),
+            LengthOrAuto::Auto => None,
+        };
+
+        let rx;
+        let ry;
+
+        match (norm_rx, norm_ry) {
+            (None, None) => {
+                rx = 0.0;
+                ry = 0.0;
+            }
+
+            (Some(_rx), None) => {
+                rx = _rx;
+                ry = _rx;
+            }
+
+            (None, Some(_ry)) => {
+                rx = _ry;
+                ry = _ry;
+            }
+
+            (Some(_rx), Some(_ry)) => {
+                rx = _rx;
+                ry = _ry;
+            }
+        }
 
         ShapeDef::new(Rc::new(make_ellipse(cx, cy, rx, ry)), Markers::No)
     }
