@@ -2297,4 +2297,29 @@ mod tests {
             ],
         );
     }
+
+    #[test]
+    fn empty_or_whitespace_text_yields_empty_path() {
+        let context = create_pango_context(
+            &FontOptions {
+                options: cairo::FontOptions::new().unwrap(),
+            },
+            &Transform::identity(),
+        );
+
+        // empty text
+
+        let layout = pango::Layout::new(&context);
+        layout.set_text("");
+
+        let path = pango_layout_to_path(10.0, 20.0, &layout, pango::Gravity::Auto).unwrap();
+        assert!(path.is_empty());
+
+        // only whitespace
+
+        layout.set_text(" ");
+
+        let path = pango_layout_to_path(10.0, 20.0, &layout, pango::Gravity::Auto).unwrap();
+        assert!(path.is_empty());
+    }
 }
