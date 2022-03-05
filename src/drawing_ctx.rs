@@ -1380,13 +1380,13 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let path = pango_layout_to_path(span.x, span.y, &span.layout, span.gravity)?;
-        if path.is_empty() {
-            // Empty strings, or only-whitespace text, get turned into empty paths.
-            // In that case, we really want to return "no bounds" rather than an
-            // empty rectangle.
+        let transform = self.get_transform();
+
+        if span.bbox.is_none() {
             return Ok(self.empty_bbox());
         }
+
+        let mut bbox = span.bbox.unwrap();
 
         with_saved_cr(&self.cr.clone(), || {
             self.cr
@@ -1394,15 +1394,28 @@ impl DrawingCtx {
 
             setup_cr_for_stroke(&self.cr, &span.stroke);
 
+            let rotation_from_gravity = span.gravity.to_rotation();
+            let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
+                Some(-rotation_from_gravity)
+            } else {
+                None
+            };
+
             if clipping {
-                path.to_cairo(&self.cr, false)?;
+                self.cr.move_to(span.x, span.y);
+
+                let matrix = self.cr.matrix();
+                if let Some(rot) = rotation {
+                    self.cr.rotate(rot);
+                }
+
+                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                pangocairo::functions::layout_path(&self.cr, &span.layout);
+
+                self.cr.set_matrix(matrix);
+
                 return Ok(self.empty_bbox());
             }
-
-            path.to_cairo(&self.cr, false)?;
-            let bbox =
-                compute_stroke_and_fill_box(&self.cr, &span.stroke, &span.stroke_paint_source)?;
-            self.cr.new_path();
 
             if span.is_visible {
                 if let Some(ref link_target) = span.link_target {
@@ -1416,8 +1429,18 @@ impl DrawingCtx {
                                 self.set_paint_source(&span.fill_paint, acquired_nodes)?;
 
                             if had_paint_server {
-                                path.to_cairo(&self.cr, false)?;
-                                self.cr.fill()?;
+                                self.cr.move_to(span.x, span.y);
+
+                                let matrix = self.cr.matrix();
+                                if let Some(rot) = rotation {
+                                    self.cr.rotate(rot);
+                                }
+
+                                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                                pangocairo::functions::show_layout(&self.cr, &span.layout);
+
+                                self.cr.set_matrix(matrix);
+
                                 self.cr.new_path();
                             }
                         }
@@ -1427,8 +1450,26 @@ impl DrawingCtx {
                                 self.set_paint_source(&span.stroke_paint, acquired_nodes)?;
 
                             if had_paint_server {
-                                path.to_cairo(&self.cr, false)?;
+                                self.cr.move_to(span.x, span.y);
+
+                                let matrix = self.cr.matrix();
+                                if let Some(rot) = rotation {
+                                    self.cr.rotate(rot);
+                                }
+
+                                pangocairo::functions::update_layout(&self.cr, &span.layout);
+                                pangocairo::functions::layout_path(&self.cr, &span.layout);
+
+                                let (x0, y0, x1, y1) = self.cr.stroke_extents()?;
+                                let r = Rect::new(x0, y0, x1, y1);
+                                let ib = BoundingBox::new()
+                                    .with_transform(transform)
+                                    .with_ink_rect(r);
+                                bbox.insert(&ib);
                                 self.cr.stroke()?;
+
+                                self.cr.set_matrix(matrix);
+
                                 self.cr.new_path();
                             }
                         }
@@ -1784,50 +1825,6 @@ pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -
     pangocairo::functions::context_set_resolution(&context, 72.0);
 
     context
-}
-
-/// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).
-/// Does not clear the current path first.
-fn pango_layout_to_cairo(
-    x: f64,
-    y: f64,
-    layout: &pango::Layout,
-    gravity: pango::Gravity,
-    cr: &cairo::Context,
-) {
-    let rotation_from_gravity = gravity.to_rotation();
-    let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
-        Some(-rotation_from_gravity)
-    } else {
-        None
-    };
-
-    cr.move_to(x, y);
-
-    let matrix = cr.matrix();
-    if let Some(rot) = rotation {
-        cr.rotate(rot);
-    }
-
-    pangocairo::functions::update_layout(cr, layout);
-    pangocairo::functions::layout_path(cr, layout);
-    cr.set_matrix(matrix);
-}
-
-/// Converts a Pango layout to a Path starting at (x, y).
-pub fn pango_layout_to_path(
-    x: f64,
-    y: f64,
-    layout: &pango::Layout,
-    gravity: pango::Gravity,
-) -> Result<Path, RenderingError> {
-    let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
-    let cr = cairo::Context::new(&surface)?;
-
-    pango_layout_to_cairo(x, y, layout, gravity, &cr);
-
-    let cairo_path = cr.copy_path()?;
-    Ok(Path::from_cairo(cairo_path))
 }
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
@@ -2187,35 +2184,6 @@ impl Path {
 
         cr.status().map_err(|e| e.into())
     }
-
-    /// Converts a `cairo::Path` to a librsvg `Path`.
-    fn from_cairo(cairo_path: cairo::Path) -> Path {
-        let mut builder = PathBuilder::default();
-
-        // Cairo has the habit of appending a MoveTo to some paths, but we don't want a
-        // path for empty text to generate that lone point.  So, strip out paths composed
-        // only of MoveTo.
-
-        if !cairo_path_is_only_move_tos(&cairo_path) {
-            for segment in cairo_path.iter() {
-                match segment {
-                    cairo::PathSegment::MoveTo((x, y)) => builder.move_to(x, y),
-                    cairo::PathSegment::LineTo((x, y)) => builder.line_to(x, y),
-                    cairo::PathSegment::CurveTo((x2, y2), (x3, y3), (x4, y4)) => {
-                        builder.curve_to(x2, y2, x3, y3, x4, y4)
-                    }
-                    cairo::PathSegment::ClosePath => builder.close_path(),
-                }
-            }
-        }
-
-        builder.into_path()
-    }
-}
-
-fn cairo_path_is_only_move_tos(path: &cairo::Path) -> bool {
-    path.iter()
-        .all(|seg| matches!(seg, cairo::PathSegment::MoveTo((_, _))))
 }
 
 impl PathCommand {
@@ -2262,39 +2230,5 @@ impl CubicBezierCurve {
     fn to_cairo(&self, cr: &cairo::Context) {
         let Self { pt1, pt2, to } = *self;
         cr.curve_to(pt1.0, pt1.1, pt2.0, pt2.1, to.0, to.1);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn rsvg_path_from_cairo_path() {
-        let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 10, 10).unwrap();
-        let cr = cairo::Context::new(&surface).unwrap();
-
-        cr.move_to(1.0, 2.0);
-        cr.line_to(3.0, 4.0);
-        cr.curve_to(5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
-        cr.close_path();
-
-        let cairo_path = cr.copy_path().unwrap();
-        let path = Path::from_cairo(cairo_path);
-
-        assert_eq!(
-            path.iter().collect::<Vec<PathCommand>>(),
-            vec![
-                PathCommand::MoveTo(1.0, 2.0),
-                PathCommand::LineTo(3.0, 4.0),
-                PathCommand::CurveTo(CubicBezierCurve {
-                    pt1: (5.0, 6.0),
-                    pt2: (7.0, 8.0),
-                    to: (9.0, 10.0),
-                }),
-                PathCommand::ClosePath,
-                PathCommand::MoveTo(1.0, 2.0), // cairo inserts a MoveTo after ClosePath
-            ],
-        );
     }
 }
