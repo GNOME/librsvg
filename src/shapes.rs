@@ -403,6 +403,10 @@ impl BasicShape for Line {
     }
 }
 
+/// The `<rect>` element.
+///
+/// Note that its x/y/width/height/rx/ry are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
 pub struct Rect {}
 
@@ -592,6 +596,10 @@ impl BasicShape for Rect {
     }
 }
 
+/// The `<circle>` element.
+///
+/// Note that its cx/cy/r are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
 pub struct Circle {}
 
@@ -609,6 +617,10 @@ impl BasicShape for Circle {
     }
 }
 
+/// The `<ellipse>` element.
+///
+/// Note that its cx/cy/rx/ry are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
 pub struct Ellipse {}
 

@@ -16,6 +16,10 @@ use crate::parsers::ParseValue;
 use crate::rect::Rect;
 use crate::xml::Attributes;
 
+/// The `<image>` element.
+///
+/// Note that its x/y/width/height are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
 pub struct Image {
     aspect: AspectRatio,

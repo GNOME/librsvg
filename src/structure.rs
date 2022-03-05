@@ -123,6 +123,10 @@ pub struct IntrinsicDimensions {
     pub vbox: Option<ViewBox>,
 }
 
+/// The `<svg>` element.
+///
+/// Note that its x/y/width/height are properties in SVG2, so they are
+/// defined as part of [the properties machinery](properties.rs).
 #[derive(Default)]
 pub struct Svg {
     preserve_aspect_ratio: AspectRatio,
