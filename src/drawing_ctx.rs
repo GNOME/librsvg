@@ -1827,50 +1827,6 @@ pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -
     context
 }
 
-/// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).
-/// Does not clear the current path first.
-fn pango_layout_to_cairo(
-    x: f64,
-    y: f64,
-    layout: &pango::Layout,
-    gravity: pango::Gravity,
-    cr: &cairo::Context,
-) {
-    let rotation_from_gravity = gravity.to_rotation();
-    let rotation = if !rotation_from_gravity.approx_eq_cairo(0.0) {
-        Some(-rotation_from_gravity)
-    } else {
-        None
-    };
-
-    cr.move_to(x, y);
-
-    let matrix = cr.matrix();
-    if let Some(rot) = rotation {
-        cr.rotate(rot);
-    }
-
-    pangocairo::functions::update_layout(cr, layout);
-    pangocairo::functions::layout_path(cr, layout);
-    cr.set_matrix(matrix);
-}
-
-/// Converts a Pango layout to a Path starting at (x, y).
-pub fn pango_layout_to_path(
-    x: f64,
-    y: f64,
-    layout: &pango::Layout,
-    gravity: pango::Gravity,
-) -> Result<Path, RenderingError> {
-    let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
-    let cr = cairo::Context::new(&surface)?;
-
-    pango_layout_to_cairo(x, y, layout, gravity, &cr);
-
-    let cairo_path = cr.copy_path()?;
-    Ok(Path::from_cairo(cairo_path))
-}
-
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
 fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
     matches!(
@@ -2338,30 +2294,5 @@ mod tests {
                 PathCommand::MoveTo(1.0, 2.0), // cairo inserts a MoveTo after ClosePath
             ],
         );
-    }
-
-    #[test]
-    fn empty_or_whitespace_text_yields_empty_path() {
-        let context = create_pango_context(
-            &FontOptions {
-                options: cairo::FontOptions::new().unwrap(),
-            },
-            &Transform::identity(),
-        );
-
-        // empty text
-
-        let layout = pango::Layout::new(&context);
-        layout.set_text("");
-
-        let path = pango_layout_to_path(0.0, 0.0, &layout, pango::Gravity::Auto).unwrap();
-        assert!(path.is_empty());
-
-        // only whitespace
-
-        layout.set_text(" ");
-
-        let path = pango_layout_to_path(0.0, 0.0, &layout, pango::Gravity::Auto).unwrap();
-        assert!(path.is_empty());
     }
 }
