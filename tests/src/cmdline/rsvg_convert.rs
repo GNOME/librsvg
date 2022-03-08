@@ -413,6 +413,22 @@ fn pdf_has_link_inside_text() {
 
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
+fn pdf_has_text() {
+    let input = Path::new("tests/fixtures/text/hello-world.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .arg(input)
+        .assert()
+        .success()
+        .stdout(
+            file::is_pdf()
+                .with_text("Hello world!")
+                .and(file::is_pdf().with_text("Hello again!")),
+        );
+}
+
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
 fn env_source_data_epoch_controls_pdf_creation_date() {
     let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
     let date = 1581411039; // seconds since epoch
