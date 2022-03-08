@@ -1,3 +1,4 @@
+use float_cmp::approx_eq;
 use gio::MemoryInputStream;
 use glib::Bytes;
 use predicates::prelude::*;

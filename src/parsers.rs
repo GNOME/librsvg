@@ -189,8 +189,8 @@ impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX
 /// # Example
 ///
 /// ```
-/// # #[macro_use] extern crate librsvg;
 /// # use cssparser::{ParserInput, Parser};
+/// # use librsvg::parse_identifiers;
 /// # fn main() -> Result<(), cssparser::BasicParseError<'static>> {
 /// # let mut input = ParserInput::new("true");
 /// # let mut parser = Parser::new(&mut input);

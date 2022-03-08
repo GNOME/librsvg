@@ -16,8 +16,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 /// Use with an `if` pattern inside a `match`:
 ///
 /// ```
-/// # #[macro_use] extern crate markup5ever;
-/// # use markup5ever::{QualName, Prefix, Namespace, LocalName, ExpandedName};
+/// # use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName, Prefix, Namespace, LocalName, ExpandedName};
 /// # use librsvg::doctest_only::{is_href,set_href};
 ///
 /// let qual_name = QualName::new(
