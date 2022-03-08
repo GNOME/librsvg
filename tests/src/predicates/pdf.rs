@@ -50,6 +50,13 @@ impl PdfPredicate {
             d: Detail::Link(link.to_string()),
         }
     }
+
+    pub fn with_text(self: Self, text: &str) -> DetailPredicate<Self> {
+        DetailPredicate::<Self> {
+            p: self,
+            d: Detail::Text(text.to_string()),
+        }
+    }
 }
 
 impl Predicate<[u8]> for PdfPredicate {
@@ -86,6 +93,7 @@ enum Detail {
     PageSize(Dimensions, usize),
     CreationDate(DateTime<Utc>),
     Link(String),
+    Text(String),
 }
 
 /// A PDF page's dimensions from its `MediaBox`.
@@ -160,6 +168,7 @@ impl DetailPredicate<PdfPredicate> {
             Detail::PageSize(d, idx) => doc.get_page_size(*idx).map_or(false, |dim| dim == *d),
             Detail::CreationDate(d) => doc.get_creation_date().map_or(false, |date| date == *d),
             Detail::Link(link) => document_has_link(doc, &link),
+            Detail::Text(text) => document_has_text(doc, &text),
         }
     }
 
@@ -193,6 +202,9 @@ impl DetailPredicate<PdfPredicate> {
                 "actual link contents",
                 "FIXME: who knows, but it's not what we expected".to_string(),
             ),
+            Detail::Text(_) => {
+                Product::new("actual text contents", doc.extract_text(&[1]).unwrap())
+            }
         }
     }
 }
@@ -290,7 +302,18 @@ impl fmt::Display for DetailPredicate<PdfPredicate> {
             Detail::PageSize(d, _) => write!(f, "is a PDF sized {}", d),
             Detail::CreationDate(d) => write!(f, "is a PDF created {:?}", d),
             Detail::Link(l) => write!(f, "is a PDF with a link to {}", l),
+            Detail::Text(t) => write!(f, "is a PDF with \"{}\" in its text content", t),
         }
+    }
+}
+
+// This is an extremely trivial test for a string being present in the document's
+// text objects.
+fn document_has_text(document: &lopdf::Document, needle: &str) -> bool {
+    if let Ok(haystack) = text_from_first_page(document) {
+        haystack.contains(needle)
+    } else {
+        false
     }
 }
 
@@ -326,4 +349,10 @@ fn dict_has_a_with_link(dict: &Dictionary, link_text: &str) -> bool {
         .and_then(|obj| obj.as_str())
         .map(|string| string == link_text.as_bytes())
         .unwrap_or(false)
+}
+
+fn text_from_first_page(doc: &lopdf::Document) -> lopdf::Result<String> {
+    // This is extremely simplistic; lopdf just concatenates all the text in the page
+    // into a single string.
+    doc.extract_text(&[1])
 }
