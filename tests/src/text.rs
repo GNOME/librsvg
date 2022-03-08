@@ -1,4 +1,5 @@
 use cairo;
+use float_cmp::approx_eq;
 use librsvg::{CairoRenderer, Loader};
 use test_generator::test_resources;
 

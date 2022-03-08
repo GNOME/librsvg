@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate clap;
+use clap::{arg_enum, crate_version, value_t};
 
 use gio::prelude::*;
 use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};

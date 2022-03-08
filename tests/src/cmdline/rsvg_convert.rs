@@ -1,8 +1,3 @@
-extern crate assert_cmd;
-extern crate chrono;
-extern crate predicates;
-extern crate tempfile;
-
 use crate::predicates::ends_with_pkg_version;
 use crate::predicates::file;
 
