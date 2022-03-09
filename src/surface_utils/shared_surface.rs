@@ -1219,9 +1219,9 @@ impl<'a> Iterator for Rows<'a> {
                 .data_ptr
                 .as_ptr()
                 .offset(row as isize * self.surface.stride);
-            let row_of_bytes: &[u32] =
+            let row_of_u32: &[u32] =
                 slice::from_raw_parts(row_ptr as *const u32, self.surface.width as usize);
-            let pixels = row_of_bytes.as_cairo_argb();
+            let pixels = row_of_u32.as_cairo_argb();
             assert!(pixels.len() == self.surface.width as usize);
             Some(pixels)
         }
@@ -1255,9 +1255,9 @@ impl<'a> Iterator for RowsMut<'a> {
 
             let data_ptr = self.data.as_mut_ptr();
             let row_ptr: *mut u8 = data_ptr.offset(row as isize * self.stride as isize);
-            let row_of_bytes: &mut [u32] =
+            let row_of_u32: &mut [u32] =
                 slice::from_raw_parts_mut(row_ptr as *mut u32, self.width as usize);
-            let pixels = row_of_bytes.as_cairo_argb_mut();
+            let pixels = row_of_u32.as_cairo_argb_mut();
             assert!(pixels.len() == self.width as usize);
             Some(pixels)
         }
