@@ -1388,6 +1388,11 @@ impl DrawingCtx {
             return Ok(self.empty_bbox());
         }
 
+        // #851 - We can't just render all text as paths for PDF; it
+        // needs the actual text content so text is selectable by PDF
+        // viewers.
+        let can_use_text_as_path = self.cr.target().type_() != cairo::SurfaceType::Pdf;
+
         with_saved_cr(&self.cr.clone(), || {
             self.cr
                 .set_antialias(cairo::Antialias::from(span.text_rendering));
@@ -1416,9 +1421,25 @@ impl DrawingCtx {
                                 self.set_paint_source(&span.fill_paint, acquired_nodes)?;
 
                             if had_paint_server {
-                                path.to_cairo(&self.cr, false)?;
-                                self.cr.fill()?;
-                                self.cr.new_path();
+                                if can_use_text_as_path {
+                                    path.to_cairo(&self.cr, false)?;
+                                    self.cr.fill()?;
+                                    self.cr.new_path();
+                                } else {
+                                    self.cr.move_to(span.x, span.y);
+
+                                    let matrix = self.cr.matrix();
+
+                                    let rotation_from_gravity = span.gravity.to_rotation();
+                                    if !rotation_from_gravity.approx_eq_cairo(0.0) {
+                                        self.cr.rotate(-rotation_from_gravity);
+                                    }
+
+                                    pangocairo::functions::update_layout(&self.cr, &span.layout);
+                                    pangocairo::functions::show_layout(&self.cr, &span.layout);
+
+                                    self.cr.set_matrix(matrix);
+                                }
                             }
                         }
 
