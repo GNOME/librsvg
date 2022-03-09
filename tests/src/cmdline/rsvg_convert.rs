@@ -1,8 +1,3 @@
-extern crate assert_cmd;
-extern crate chrono;
-extern crate predicates;
-extern crate tempfile;
-
 use crate::predicates::ends_with_pkg_version;
 use crate::predicates::file;
 
@@ -413,6 +408,22 @@ fn pdf_has_link_inside_text() {
             file::is_pdf()
                 .with_link("https://example.com")
                 .and(file::is_pdf().with_link("https://another.example.com")),
+        );
+}
+
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
+fn pdf_has_text() {
+    let input = Path::new("tests/fixtures/text/hello-world.svg");
+    RsvgConvert::new()
+        .arg("--format=pdf")
+        .arg(input)
+        .assert()
+        .success()
+        .stdout(
+            file::is_pdf()
+                .with_text("Hello world!")
+                .and(file::is_pdf().with_text("Hello again!")),
         );
 }
 

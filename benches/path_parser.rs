@@ -1,6 +1,4 @@
-#[macro_use]
-extern crate criterion;
-use criterion::{black_box, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use librsvg::bench_only::Lexer;
 use librsvg::bench_only::PathBuilder;

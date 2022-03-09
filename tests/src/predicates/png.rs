@@ -1,5 +1,4 @@
-extern crate png;
-
+use png;
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::fmt;
