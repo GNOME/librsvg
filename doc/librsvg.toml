@@ -6,6 +6,8 @@ license = "LGPL-2.1-or-later"
 browse_url = "https://gitlab.gnome.org/GNOME/librsvg/"
 repository_url = "https://gitlab.gnome.org/GNOME/librsvg.git"
 website_url = "https://wiki.gnome.org/Projects/LibRsvg"
+devhelp = true
+search_index = true
 
 [source-location]
 # The base URL for the web UI
