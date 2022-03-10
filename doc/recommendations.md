@@ -2,7 +2,7 @@ Title: Recommendations for Applications
 
 # Recommendations for Applications
 
-## How sizing works in SVG {#sizing}
+## How sizing works in SVG
 
 SVG documents are *scalable*. The conventional way to position SVG
 documents, which comes from the web platform, is to consider a
@@ -19,7 +19,7 @@ Ideally, the toplevel `<svg>` element of an SVG document will contain
 SVG renderer can unambiguously figure out the natural aspect ratio of
 the document, and can also suggest a natural size for the document. For
 example, `<svg width="100px" height="50px">` has a natural size of
-100x50 pixels, but it could also be rendered scaled at 200x100 pixels.
+100×50 pixels, but it could also be rendered scaled at 200×100 pixels.
 Since SVGs are scalable, it is not mandatory to actually use its natural
 size; it can be scaled arbitrarily. Of course, it is up to each
 application how an SVG document will be scaled: a web browser would want
@@ -62,7 +62,7 @@ Otherwise, if none of those attributes are present in the toplevel
 graphical elements in the SVG. This is a moderately expensive operation,
 and depends on the complexity of the document.
 
-## Recommendations for applications with SVG assets {#recommendations-assets}
+## Recommendations for applications with SVG assets
 
 Before librsvg 2.46, applications would normally load an SVG asset, then
 they would query librsvg for the SVG's size, and then they would
@@ -71,18 +71,18 @@ compute the dimensions of their user interface based on the SVG's size.
 With librsvg 2.46 and later, applications may have an easier time by
 letting the UI choose whatever size it wants, or by hardcoding a size
 for SVG assets, and then asking librsvg to render SVG assets at that
-particular size. Applications can use `rsvg_handle_render_document`,
+particular size. Applications can use [method@Rsvg.Handle.render_document],
 which takes a destination viewport, to do this in a single step.
 
 To extract individual elements from an SVG document and render them in
-arbitrary locations --- for example, to extract a single icon from a
-document full of icons ---, applications can use
-`rsvg_handle_render_element`.
+arbitrary locations — for example, to extract a single icon from a
+document full of icons —, applications can use
+[method@Rsvg.Handle.render_element].
 
 ### Injecting a user stylesheet
 
 It is sometimes convenient for applications to inject an extra
 stylesheet while rendering an SVG document. You can do this with
-`rsvg_handle_set_stylesheet`. During the CSS cascade, the specified
+[method@Rsvg.Handle.set_stylesheet]. During the CSS cascade, the specified
 stylesheet will be used with a ["User"
 origin](https://drafts.csswg.org/css-cascade-3/#cascading-origins).
