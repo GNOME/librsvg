@@ -1205,14 +1205,23 @@ impl<'a> Iterator for Rows<'a> {
 
         self.next_row += 1;
 
+        // SAFETY: this code assumes that cairo image surface data is correctly
+        // aligned for u32. This assumption is justified by the Cairo docs,
+        // which say this:
+        //
+        // https://cairographics.org/manual/cairo-Image-Surfaces.html#cairo-image-surface-create-for-data
+        //
+        // > This pointer must be suitably aligned for any kind of variable,
+        // > (for example, a pointer returned by malloc).
         unsafe {
-            let row_ptr = self
+            let row_ptr: *const u8 = self
                 .surface
                 .data_ptr
                 .as_ptr()
                 .offset(row as isize * self.surface.stride);
-            let row_of_bytes = slice::from_raw_parts(row_ptr, self.surface.width as usize * 4);
-            let pixels = row_of_bytes.as_cairo_argb();
+            let row_of_u32: &[u32] =
+                slice::from_raw_parts(row_ptr as *const u32, self.surface.width as usize);
+            let pixels = row_of_u32.as_cairo_argb();
             assert!(pixels.len() == self.surface.width as usize);
             Some(pixels)
         }
@@ -1231,15 +1240,24 @@ impl<'a> Iterator for RowsMut<'a> {
 
         self.next_row += 1;
 
+        // SAFETY: this code assumes that cairo image surface data is correctly
+        // aligned for u32. This assumption is justified by the Cairo docs,
+        // which say this:
+        //
+        // https://cairographics.org/manual/cairo-Image-Surfaces.html#cairo-image-surface-create-for-data
+        //
+        // > This pointer must be suitably aligned for any kind of variable,
+        // > (for example, a pointer returned by malloc).
         unsafe {
             // We do this with raw pointers, instead of re-slicing the &mut self.data[....],
             // because with the latter we can't synthesize an appropriate lifetime for
             // the return value.
 
             let data_ptr = self.data.as_mut_ptr();
-            let row_ptr = data_ptr.offset(row as isize * self.stride as isize);
-            let row_of_bytes = slice::from_raw_parts_mut(row_ptr, self.width as usize * 4);
-            let pixels = row_of_bytes.as_cairo_argb_mut();
+            let row_ptr: *mut u8 = data_ptr.offset(row as isize * self.stride as isize);
+            let row_of_u32: &mut [u32] =
+                slice::from_raw_parts_mut(row_ptr as *mut u32, self.width as usize);
+            let pixels = row_of_u32.as_cairo_argb_mut();
             assert!(pixels.len() == self.width as usize);
             Some(pixels)
         }
