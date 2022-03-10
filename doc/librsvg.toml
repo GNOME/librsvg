@@ -24,6 +24,7 @@ content_files = [
   "recommendations.md",
   "migrating.md"
 ]
+urlmap_file = "urlmap.js"
 
 [[object]]
 name = "Rsvg.DEPRECATED_FOR"
