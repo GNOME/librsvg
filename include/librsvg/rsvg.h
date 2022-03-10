@@ -552,7 +552,7 @@ RsvgHandle *rsvg_handle_new (void);
  * @handle: an `RsvgHandle`
  * @buf: (array length=count) (element-type guchar): pointer to svg data
  * @count: length of the @buf buffer in bytes
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Loads the next @count bytes of the image.  You can call this function multiple
  * times until the whole document is consumed; then you must call rsvg_handle_close()
@@ -582,7 +582,7 @@ gboolean rsvg_handle_write (RsvgHandle   *handle,
 /**
  * rsvg_handle_close:
  * @handle: a `RsvgHandle`
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * This is used after calling rsvg_handle_write() to indicate that there is no more data
  * to consume, and to start the actual parsing of the SVG document.  The only reason to
@@ -958,12 +958,10 @@ gboolean rsvg_handle_get_intrinsic_size_in_pixels (RsvgHandle *handle,
 /**
  * RsvgHandleFlags:
  * @RSVG_HANDLE_FLAGS_NONE: No flags are set.
- *
  * @RSVG_HANDLE_FLAG_UNLIMITED: Disable safety limits in the XML parser.  Libxml2 has
  * [several limits](https://gitlab.gnome.org/GNOME/libxml2/blob/master/include/libxml/parserInternals.h)
  * designed to keep malicious XML content from consuming too much memory while parsing.
  * For security reasons, this should only be used for trusted input!  Since: 2.40.3
- *
  * @RSVG_HANDLE_FLAG_KEEP_IMAGE_DATA: Use this if the Cairo surface to which you are
  * rendering is a PDF, PostScript, SVG, or Win32 Printing surface.  This will make librsvg
  * and Cairo use the original, compressed data for images in the final output, instead of
@@ -1025,7 +1023,7 @@ void rsvg_handle_set_base_gfile (RsvgHandle *handle,
  * @handle: a `RsvgHandle`
  * @stream: a `GInputStream`
  * @cancellable: (nullable): a `GCancellable`, or `NULL`
- * @error: (optional): a location to store a `GError` or `NULL`
+ * @error: return location for a `GError`
  *
  * Reads @stream and writes the data from it to @handle.
  *
@@ -1056,7 +1054,7 @@ gboolean rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  * @file: a `GFile`
  * @flags: flags from `RsvgHandleFlags`
  * @cancellable: (nullable): a `GCancellable`, or `NULL`
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Creates a new `RsvgHandle` for @file.
  *
@@ -1085,7 +1083,7 @@ RsvgHandle *rsvg_handle_new_from_gfile_sync (GFile          *file,
  * @base_file: (nullable): a `GFile`, or `NULL`
  * @flags: flags from `RsvgHandleFlags`
  * @cancellable: (nullable): a `GCancellable`, or `NULL`
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Creates a new `RsvgHandle` for @stream.
  *
@@ -1113,7 +1111,7 @@ RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
  * rsvg_handle_new_from_data:
  * @data: (array length=data_len): The SVG data
  * @data_len: The length of @data, in bytes
- * @error: (optional): return location for errors
+ * @error: return location for a `GError`
  *
  * Loads the SVG specified by @data.  Note that this function creates an
  * `RsvgHandle` without a base URL, and without any #RsvgHandleFlags.  If you
@@ -1129,7 +1127,7 @@ RsvgHandle *rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GErro
 /**
  * rsvg_handle_new_from_file:
  * @filename: The file name to load, or a URI.
- * @error: (optional): return location for errors
+ * @error: return location for a `GError`
  *
  * Loads the SVG specified by @file_name.  Note that this function, like
  * rsvg_handle_new(), does not specify any loading flags for the resulting
@@ -1147,7 +1145,7 @@ RsvgHandle *rsvg_handle_new_from_file (const gchar *filename, GError **error);
  * @handle: A `RsvgHandle`.
  * @css: (array length=css_len): String with CSS data; must be valid UTF-8.
  * @css_len: Length of the @css data in bytes.
- * @error: (optional): return location for errors.
+ * @error: return location for a `GError`
  *
  * Sets a CSS stylesheet to use for an SVG document.
  *
@@ -1286,7 +1284,7 @@ void rsvg_handle_set_size_callback (RsvgHandle    *handle,
 /**
  * rsvg_pixbuf_from_file:
  * @filename: A file name
- * @error: return location for errors
+ * @error: return location for a `GError`
  * 
  * Loads a new `GdkPixbuf` from @filename and returns it.  The caller must
  * assume the reference to the reurned pixbuf. If an error occurred, @error is
@@ -1304,7 +1302,7 @@ GdkPixbuf *rsvg_pixbuf_from_file (const gchar *filename,
  * @filename: A file name
  * @x_zoom: The horizontal zoom factor
  * @y_zoom: The vertical zoom factor
- * @error: return location for errors
+ * @error: return location for a `GError`
  * 
  * Loads a new `GdkPixbuf` from @filename and returns it.  This pixbuf is scaled
  * from the size indicated by the file by a factor of @x_zoom and @y_zoom.  The
@@ -1325,7 +1323,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
  * @filename: A file name
  * @width: The new width, or -1
  * @height: The new height, or -1
- * @error: return location for errors
+ * @error: return location for a `GError`
  * 
  * Loads a new `GdkPixbuf` from @filename and returns it.  This pixbuf is scaled
  * from the size indicated to the new size indicated by @width and @height.  If
@@ -1347,7 +1345,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_size (const gchar *filename,
  * @filename: A file name
  * @max_width: The requested max width
  * @max_height: The requested max height
- * @error: return location for errors
+ * @error: return location for a `GError`
  * 
  * Loads a new `GdkPixbuf` from @filename and returns it.  This pixbuf is uniformly
  * scaled so that the it fits into a rectangle of size `max_width * max_height`. The
@@ -1369,7 +1367,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
  * @y_zoom: The vertical zoom factor
  * @max_width: The requested max width
  * @max_height: The requested max height
- * @error: return location for errors
+ * @error: return location for a `GError`
  * 
  * Loads a new `GdkPixbuf` from @filename and returns it.  This pixbuf is scaled
  * from the size indicated by the file by a factor of @x_zoom and @y_zoom. If the

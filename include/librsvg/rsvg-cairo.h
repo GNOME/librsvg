@@ -157,7 +157,7 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const ch
  * @handle: An `RsvgHandle`
  * @cr: A Cairo context
  * @viewport: Viewport size at which the whole SVG would be fitted.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Renders the whole SVG document fitted to a viewport.
  *
@@ -193,7 +193,7 @@ gboolean rsvg_handle_render_document (RsvgHandle           *handle,
  * @viewport: Viewport size at which the whole SVG would be fitted.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Computes the ink rectangle and logical rectangle of an SVG element, or the
  * whole SVG, as if the whole SVG were rendered to a specific viewport.
@@ -244,7 +244,7 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * hash character), for example, `#layer1`.  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass `NULL` to render the whole SVG document tree.
  * @viewport: Viewport size at which the whole SVG would be fitted.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Renders a single SVG element in the same place as for a whole SVG document.
  *
@@ -293,7 +293,7 @@ gboolean rsvg_handle_render_layer (RsvgHandle           *handle,
  * whole SVG.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Computes the ink rectangle and logical rectangle of a single SVG element.
  *
@@ -349,7 +349,7 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  * hash character), for example, `#layer1`.  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass `NULL` to render the whole SVG document tree.
  * @element_viewport: Viewport size in which to fit the element
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Renders a single SVG element to a given viewport.
  *
