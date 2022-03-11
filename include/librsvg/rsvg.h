@@ -612,7 +612,7 @@ gboolean rsvg_handle_close (RsvgHandle *handle, GError **error);
  * the caller of this function must assume that ref.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * This function depends on the `RsvgHandle`'s dots-per-inch value (DPI) to compute the
  * "natural size" of the document in pixels, so you should call rsvg_handle_set_dpi()
@@ -648,7 +648,7 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
  * has an `id="foo"` attribute.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Returns: (transfer full) (nullable): a pixbuf, or `NULL` if an error occurs
  * during rendering.
@@ -871,7 +871,7 @@ typedef struct {
  * ```
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *

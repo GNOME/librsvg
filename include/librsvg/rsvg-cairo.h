@@ -171,7 +171,7 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const ch
  * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -222,7 +222,7 @@ gboolean rsvg_handle_render_document (RsvgHandle           *handle,
  * are returned in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -271,7 +271,7 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -328,7 +328,7 @@ gboolean rsvg_handle_render_layer (RsvgHandle           *handle,
  * are returned in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -373,7 +373,7 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
