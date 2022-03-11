@@ -1,4 +1,14 @@
 ==============
+Version 2.52.7
+==============
+
+Backport a fix for the regression that was introduced in the last
+release:
+
+- #851 - Output filled text as text for PDF; fixes regression due to
+  outputting all text as paths.
+
+==============
 Version 2.52.6
 ==============
 
