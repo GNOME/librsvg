@@ -6,8 +6,8 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2022-01-24.0-main"
-  RUST_STABLE: "1.58.0"
+  BASE_TAG: "2022-03-09.0-main"
+  RUST_STABLE: "1.58.1"
   RUST_MINIMUM: "1.56.1"
 
 .container.opensuse@common:
@@ -24,6 +24,7 @@ variables:
       cairo-devel libxml2-devel wget openssl-devel
       pango-devel gdk-pixbuf-devel ccache gettext-tools
       sudo shadow system-group-wheel xz python38-docutils python3-pip
+      google-roboto-fonts
 
 .container.opensuse@x86_64.stable:
   extends: .container.opensuse@common
@@ -96,6 +97,7 @@ opensuse-container@x86_64.nightly:
       gtk-doc git redhat-rpm-config gtk3-devel ccache
       libxml2-devel cairo-devel pango-devel wget openssl-devel
       gettext-devel python3-docutils python3-pip
+      google-roboto-fonts
 
 .container.fedora@x86_64:
   extends: .container.fedora@common
@@ -143,6 +145,7 @@ opensuse-container@x86_64.nightly:
       libxml2-dev libcairo2-dev python3-docutils
       ca-certificates openssl libssl-dev python3-pip
       autotools-dev libltdl-dev autopoint
+      fonts-roboto
 
 .container.debian@x86_64:
   extends: .container.debian@common
