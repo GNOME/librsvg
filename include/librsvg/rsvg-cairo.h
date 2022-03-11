@@ -35,11 +35,11 @@ G_BEGIN_DECLS
 
 /**
  * rsvg_handle_render_cairo:
- * @handle: A `RsvgHandle`
+ * @handle: A [class@Rsvg.Handle]
  * @cr: A Cairo context
  *
  * Draws a loaded SVG handle to a Cairo context.  Please try to use
- * rsvg_handle_render_document() instead, which allows you to pick the size
+ * [method@Rsvg.Handle.render_document] instead, which allows you to pick the size
  * at which the document will be rendered.
  *
  * Historically this function has picked a size by itself, based on the following rules:
@@ -47,8 +47,8 @@ G_BEGIN_DECLS
  * * If the SVG document has both `width` and `height`
  *   attributes with physical units (px, in, cm, mm, pt, pc) or font-based units (em,
  *   ex), the function computes the size directly based on the dots-per-inch (DPI) you
- *   have configured with rsvg_handle_set_dpi().  This is the same approach as
- *   rsvg_handle_get_intrinsic_size_in_pixels().
+ *   have configured with [method@Rsvg.Handle.set_dpi].  This is the same approach as
+ *   [method@Rsvg.Handle.get_intrinsic_size_in_pixels].
  *
  * * Otherwise, if there is a `viewBox` attribute and both
  *   `width` and `height` are set to
@@ -63,25 +63,25 @@ G_BEGIN_DECLS
  * * This function cannot deal with percentage-based units for `width`
  *   and `height` because there is no viewport against which they could
  *   be resolved; that is why it will compute the extents of objects in that case.  This
- *   is why we recommend that you use rsvg_handle_render_document() instead, which takes
+ *   is why we recommend that you use [method@Rsvg.Handle.render_document] instead, which takes
  *   in a viewport and follows the sizing policy from the web platform.
  *
  * Drawing will occur with respect to the @cr's current transformation: for example, if
  * the @cr has a rotated current transformation matrix, the whole SVG will be rotated in
  * the rendered version.
  *
- * This function depends on the `RsvgHandle`'s DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * This function depends on the [class@Rsvg.Handle]'s DPI to compute dimensions in
+ * pixels, so you should call [method@Rsvg.Handle.set_dpi] beforehand.
  *
  * Note that @cr must be a Cairo context that is not in an error state, that is,
- * cairo_status() must return `CAIRO_STATUS_SUCCESS` for it.  Cairo can set a
+ * `cairo_status()` must return `CAIRO_STATUS_SUCCESS` for it.  Cairo can set a
  * context to be in an error state in various situations, for example, if it was
  * passed an invalid matrix or if it was created for an invalid surface.
  *
  * Returns: `TRUE` if drawing succeeded; `FALSE` otherwise.
  * Since: 2.14
  *
- * Deprecated: 2.52.  Please use rsvg_handle_render_document() instead; that function lets
+ * Deprecated: 2.52.  Please use [method@Rsvg.Handle.render_document] instead; that function lets
  * you pass a viewport and obtain a good error message.
  */
 RSVG_DEPRECATED_FOR(rsvg_handle_render_document)
@@ -89,17 +89,17 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
 
 /**
  * rsvg_handle_render_cairo_sub:
- * @handle: A `RsvgHandle`
+ * @handle: A [class@Rsvg.Handle]
  * @cr: A Cairo context
  * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, `#layer1`.  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass `NULL` to render the whole SVG.
  *
  * Renders a single SVG element in the same place as for a whole SVG document (a "subset"
- * of the document).  Please try to use rsvg_handle_render_layer() instead, which allows
+ * of the document).  Please try to use [method@Rsvg.Handle.render_layer] instead, which allows
  * you to pick the size at which the document with the layer will be rendered.
  *
- * This is equivalent to rsvg_handle_render_cairo(), but it renders only a single
+ * This is equivalent to [method@Rsvg.Handle.render_cairo], but it renders only a single
  * element and its children, as if they composed an individual layer in the SVG.
  *
  * Historically this function has picked a size for the whole document by itself, based
@@ -108,8 +108,8 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
  * * If the SVG document has both `width` and `height`
  *   attributes with physical units (px, in, cm, mm, pt, pc) or font-based units (em,
  *   ex), the function computes the size directly based on the dots-per-inch (DPI) you
- *   have configured with rsvg_handle_set_dpi().  This is the same approach as
- *   rsvg_handle_get_intrinsic_size_in_pixels().
+ *   have configured with [method@Rsvg.Handle.set_dpi].  This is the same approach as
+ *   [method@Rsvg.Handle.get_intrinsic_size_in_pixels].
  *
  * * Otherwise, if there is a `viewBox` attribute and both
  *   `width` and `height` are set to
@@ -124,18 +124,18 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
  * * This function cannot deal with percentage-based units for `width`
  *   and `height` because there is no viewport against which they could
  *   be resolved; that is why it will compute the extents of objects in that case.  This
- *   is why we recommend that you use rsvg_handle_render_layer() instead, which takes
+ *   is why we recommend that you use [method@Rsvg.Handle.render_layer] instead, which takes
  *   in a viewport and follows the sizing policy from the web platform.
  *
  * Drawing will occur with respect to the @cr's current transformation: for example, if
  * the @cr has a rotated current transformation matrix, the whole SVG will be rotated in
  * the rendered version.
  *
- * This function depends on the `RsvgHandle`'s DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * This function depends on the [class@Rsvg.Handle]'s DPI to compute dimensions in
+ * pixels, so you should call [method@Rsvg.Handle.set_dpi] beforehand.
  *
  * Note that @cr must be a Cairo context that is not in an error state, that is,
- * cairo_status() must return `CAIRO_STATUS_SUCCESS` for it.  Cairo can set a
+ * `cairo_status()` must return `CAIRO_STATUS_SUCCESS` for it.  Cairo can set a
  * context to be in an error state in various situations, for example, if it was
  * passed an invalid matrix or if it was created for an invalid surface.
  *
@@ -146,7 +146,7 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
  * Returns: `TRUE` if drawing succeeded; `FALSE` otherwise.
  * Since: 2.14
  *
- * Deprecated: 2.52.  Please use rsvg_handle_render_layer() instead; that function lets
+ * Deprecated: 2.52.  Please use [method@Rsvg.Handle.render_layer] instead; that function lets
  * you pass a viewport and obtain a good error message.
  */
 RSVG_DEPRECATED_FOR(rsvg_handle_render_layer)
@@ -154,10 +154,10 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const ch
 
 /**
  * rsvg_handle_render_document:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @cr: A Cairo context
  * @viewport: Viewport size at which the whole SVG would be fitted.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Renders the whole SVG document fitted to a viewport.
  *
@@ -171,7 +171,7 @@ gboolean rsvg_handle_render_cairo_sub (RsvgHandle *handle, cairo_t *cr, const ch
  * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -185,7 +185,7 @@ gboolean rsvg_handle_render_document (RsvgHandle           *handle,
 
 /**
  * rsvg_handle_get_geometry_for_layer:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, `#layer1`.  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass `NULL` to compute the geometry for the
@@ -193,7 +193,7 @@ gboolean rsvg_handle_render_document (RsvgHandle           *handle,
  * @viewport: Viewport size at which the whole SVG would be fitted.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Computes the ink rectangle and logical rectangle of an SVG element, or the
  * whole SVG, as if the whole SVG were rendered to a specific viewport.
@@ -222,7 +222,7 @@ gboolean rsvg_handle_render_document (RsvgHandle           *handle,
  * are returned in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -238,13 +238,13 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
 
 /**
  * rsvg_handle_render_layer:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @cr: A Cairo context
  * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, `#layer1`.  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass `NULL` to render the whole SVG document tree.
  * @viewport: Viewport size at which the whole SVG would be fitted.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Renders a single SVG element in the same place as for a whole SVG document.
  *
@@ -252,7 +252,7 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * rendered.  The document is scaled proportionally to fit into this viewport; hence the
  * individual layer may be smaller than this.
  *
- * This is equivalent to rsvg_handle_render_document(), but it renders only a
+ * This is equivalent to [method@Rsvg.Handle.render_document], but it renders only a
  * single element and its children, as if they composed an individual layer in
  * the SVG.  The element is rendered with the same transformation matrix as it
  * has within the whole SVG document.  Applications can use this to re-render a
@@ -271,7 +271,7 @@ gboolean rsvg_handle_get_geometry_for_layer (RsvgHandle     *handle,
  * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -286,14 +286,14 @@ gboolean rsvg_handle_render_layer (RsvgHandle           *handle,
 
 /**
  * rsvg_handle_get_geometry_for_element:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, `#layer1`.  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass `NULL` to compute the geometry for the
  * whole SVG.
  * @out_ink_rect: (out)(optional): Place to store the ink rectangle of the element.
  * @out_logical_rect: (out)(optional): Place to store the logical rectangle of the element.
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Computes the ink rectangle and logical rectangle of a single SVG element.
  *
@@ -328,7 +328,7 @@ gboolean rsvg_handle_render_layer (RsvgHandle           *handle,
  * are returned in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *
@@ -343,13 +343,13 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
 
 /**
  * rsvg_handle_render_element:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @cr: A Cairo context
  * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, `#layer1`.  This notation corresponds to a
  * URL's fragment ID.  Alternatively, pass `NULL` to render the whole SVG document tree.
  * @element_viewport: Viewport size in which to fit the element
- * @error: (optional): a location to store a `GError`, or `NULL`
+ * @error: return location for a `GError`
  *
  * Renders a single SVG element to a given viewport.
  *
@@ -373,7 +373,7 @@ gboolean rsvg_handle_get_geometry_for_element (RsvgHandle     *handle,
  * in the @error argument.
  *
  * API ordering: This function must be called on a fully-loaded @handle.  See
- * the section "API ordering" for details.
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
  * Panics: this function will panic if the @handle is not fully-loaded.
  *

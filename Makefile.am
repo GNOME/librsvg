@@ -264,7 +264,7 @@ if HAVE_INTROSPECTION
 -include $(INTROSPECTION_MAKEFILE)
 
 INTROSPECTION_GIRS = Rsvg-@RSVG_API_VERSION@.gir
-INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --symbol-prefix=rsvg --symbol-prefix=librsvg
+INTROSPECTION_SCANNER_ARGS = --add-include-path=$(srcdir) --symbol-prefix=rsvg --symbol-prefix=librsvg --warn-all
 INTROSPECTION_COMPILER_ARGS = --includedir=$(srcdir)
 
 Rsvg-@RSVG_API_VERSION@.gir: librsvg-@RSVG_API_MAJOR_VERSION@.la
