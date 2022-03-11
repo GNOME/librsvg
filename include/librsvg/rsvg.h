@@ -134,7 +134,7 @@ GType rsvg_error_get_type (void);
  *
  * 2. All other URL schemes in references require a base URL.  For
  *    example, this means that if you load an SVG with
- *    [method@Rsvg.Handle.new_from_data] without calling [method@Rsvg.Handle.set_base_uri],
+ *    [ctor@Rsvg.Handle.new_from_data] without calling [method@Rsvg.Handle.set_base_uri],
  *    then any referenced files will not be allowed (e.g. raster images to be
  *    loaded from other files will not work).
  *
@@ -492,7 +492,7 @@ void rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y);
  * 75, 90, and 300 DPI.
  *
  * Passing a number <= 0 to @dpi will reset the DPI to whatever the default
- * value happens to be, but since [method@Rsvg.Set.default_dpi] is deprecated, please
+ * value happens to be, but since [id@rsvg_set_default_dpi] is deprecated, please
  * do not pass values <= 0 to this function.
  *
  * Since: 2.8
@@ -542,7 +542,7 @@ void rsvg_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y);
  * [ctor@Rsvg.Handle.new_with_flags], [ctor@Rsvg.Handle.new_from_stream_sync], or
  * [ctor@Rsvg.Handle.new_from_gfile_sync].
  *
- * Returns: A new [class@Rsvg.Handle] with no flags set.
+ * Returns: (transfer full): A new [class@Rsvg.Handle] with no flags set.
  **/
 RSVG_API
 RsvgHandle *rsvg_handle_new (void);
@@ -618,7 +618,7 @@ gboolean rsvg_handle_close (RsvgHandle *handle, GError **error);
  * "natural size" of the document in pixels, so you should call [method@Rsvg.Handle.set_dpi]
  * beforehand.
  *
- * Returns: (transfer full) (nullable): a pixbuf, or `NULL` if an error occurs
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error.
  * during rendering.
  **/
 RSVG_API
@@ -1067,7 +1067,7 @@ gboolean rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  * operation was cancelled, the error `G_IO_ERROR_CANCELLED` will be
  * returned in @error.
  *
- * Returns: a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
+ * Returns: (transfer full) (nullable): a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
  *
  * Since: 2.32
  */
@@ -1096,7 +1096,7 @@ RsvgHandle *rsvg_handle_new_from_gfile_sync (GFile          *file,
  * operation was cancelled, the error `G_IO_ERROR_CANCELLED` will be
  * returned in @error.
  *
- * Returns: a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
+ * Returns: (transfer full) (nullable): a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
  *
  * Since: 2.32
  */
@@ -1115,10 +1115,10 @@ RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
  *
  * Loads the SVG specified by @data.  Note that this function creates an
  * [class@Rsvg.Handle] without a base URL, and without any [flags@Rsvg.HandleFlags].  If you
- * need these, use [method@Rsvg.Handle.new_from_stream_sync] instead by creating
+ * need these, use [ctor@Rsvg.Handle.new_from_stream_sync] instead by creating
  * a [class@Gio.MemoryInputStream] from your data.
  *
- * Returns: A [class@Rsvg.Handle] or `NULL` if an error occurs.
+ * Returns: (transfer full) (nullable): A [class@Rsvg.Handle] or `NULL` if an error occurs.
  * Since: 2.14
  */
 RSVG_API
@@ -1134,7 +1134,7 @@ RsvgHandle *rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GErro
  * handle.  If you require the use of [flags@Rsvg.HandleFlags], use
  * [ctor@Rsvg.Handle.new_from_gfile_sync].
  *
- * Returns: A [class@Rsvg.Handle] or `NULL` if an error occurs.
+ * Returns: (transfer full) (nullable): A [class@Rsvg.Handle] or `NULL` if an error occurs.
  * Since: 2.14
  */
 RSVG_API
@@ -1288,7 +1288,7 @@ void rsvg_handle_set_size_callback (RsvgHandle    *handle,
  * assume the reference to the reurned pixbuf. If an error occurred, @error is
  * set and `NULL` is returned.
  * 
- * Return value: A newly allocated `GdkPixbuf`, or %NULL
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error.
  * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
@@ -1307,7 +1307,7 @@ GdkPixbuf *rsvg_pixbuf_from_file (const gchar *filename,
  * caller must assume the reference to the returned pixbuf. If an error
  * occurred, @error is set and `NULL` is returned.
  * 
- * Return value: A newly allocated `GdkPixbuf`, or %NULL
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error.
  * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
@@ -1329,7 +1329,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
  * used.  The caller must assume the reference to the returned pixbuf. If an
  * error occurred, @error is set and `NULL` is returned.
  * 
- * Return value: A newly allocated `GdkPixbuf`, or %NULL
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error.
  * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
@@ -1350,7 +1350,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_size (const gchar *filename,
  * caller must assume the reference to the returned pixbuf. If an error occurred,
  * @error is set and `NULL` is returned.
  * 
- * Return value: A newly allocated `GdkPixbuf`, or `NULL`
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error.
  * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
@@ -1373,7 +1373,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
  * down to fit in that rectangle. The caller must assume the reference to the
  * returned pixbuf. If an error occurred, @error is set and `NULL` is returned.
  * 
- * Return value: A newly allocated `GdkPixbuf`, or `NULL`
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error.
  * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
