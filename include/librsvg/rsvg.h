@@ -81,11 +81,11 @@ GType rsvg_error_get_type (void);
 /**
  * RsvgHandle:
  *
- * `RsvgHandle` loads an SVG document into memory.
+ * [class@Rsvg.Handle] loads an SVG document into memory.
  *
- * This is the main entry point into the librsvg library.  An `RsvgHandle` is an
+ * This is the main entry point into the librsvg library.  An [class@Rsvg.Handle] is an
  * object that represents SVG data in memory.  Your program creates an
- * `RsvgHandle` from an SVG file, or from a memory buffer that contains SVG data,
+ * [class@Rsvg.Handle] from an SVG file, or from a memory buffer that contains SVG data,
  * or in the most general form, from a `GInputStream` that will provide SVG data.
  *
  * Librsvg can load SVG images and render them to Cairo surfaces,
@@ -134,20 +134,20 @@ GType rsvg_error_get_type (void);
  *
  * 2. All other URL schemes in references require a base URL.  For
  *    example, this means that if you load an SVG with
- *    rsvg_handle_new_from_data() without calling rsvg_handle_set_base_uri(),
+ *    [method@Rsvg.Handle.new_from_data] without calling [method@Rsvg.Handle.set_base_uri],
  *    then any referenced files will not be allowed (e.g. raster images to be
  *    loaded from other files will not work).
  *
  * 3. If referenced URLs are absolute, rather than relative, then they must
  *    have the same scheme as the base URL.  For example, if the base URL has a
- *    "`file`" scheme, then all URL references inside the SVG must
- *    also have the "`file`" scheme, or be relative references which
+ *    `file` scheme, then all URL references inside the SVG must
+ *    also have the `file` scheme, or be relative references which
  *    will be resolved against the base URL.
  *
- * 4. If referenced URLs have a "`resource`" scheme, that is,
+ * 4. If referenced URLs have a `resource` scheme, that is,
  *    if they are included into your binary program with GLib's resource
  *    mechanism, they are allowed to be loaded (provided that the base URL is
- *    also a "`resource`", per the previous rule).
+ *    also a `resource`, per the previous rule).
  *
  * 5. Otherwise, non-`file` schemes are not allowed.  For
  *    example, librsvg will not load `http` resources, to keep
@@ -161,13 +161,13 @@ GType rsvg_error_get_type (void);
  * # Loading an SVG with GIO
  *
  * This is the easiest and most resource-efficient way of loading SVG data into
- * an `RsvgHandle`.
+ * an [class@Rsvg.Handle].
  *
  * If you have a `GFile` that stands for an SVG file, you can simply call
- * rsvg_handle_new_from_gfile_sync() to load an `RsvgHandle` from it.
+ * [ctor@Rsvg.Handle.new_from_gfile_sync] to load an [class@Rsvg.Handle] from it.
  *
  * Alternatively, if you have a `GInputStream`, you can use
- * rsvg_handle_new_from_stream_sync().
+ * [ctor@Rsvg.Handle.new_from_stream_sync].
  *
  * Both of those methods allow specifying a `GCancellable`, so the loading
  * process can be cancelled from another thread.
@@ -175,8 +175,8 @@ GType rsvg_error_get_type (void);
  * ## Loading an SVG from memory
  *
  * If you already have SVG data in a byte buffer in memory, you can create a
- * memory input stream with g_memory_input_stream_new_from_data() and feed that
- * to rsvg_handle_new_from_stream_sync().
+ * memory input stream with [ctor@Gio.MemoryInputStream.new_from_data] and feed that
+ * to [ctor@Rsvg.Handle.new_from_stream_sync].
  *
  * Note that in this case, it is important that you specify the base_file for
  * the in-memory SVG data.  Librsvg uses the base_file to resolve links to
@@ -184,16 +184,16 @@ GType rsvg_error_get_type (void);
  *
  * # Loading an SVG without GIO
  *
- * You can load an `RsvgHandle` from a simple filename or URI with
- * rsvg_handle_new_from_file().  Note that this is a blocking operation; there
+ * You can load an [class@Rsvg.Handle] from a simple filename or URI with
+ * [ctor@Rsvg.Handle.new_from_file].  Note that this is a blocking operation; there
  * is no way to cancel it if loading a remote URI takes a long time.  Also, note that
- * this method does not let you specify `RsvgHandleFlags`.
+ * this method does not let you specify [flags@Rsvg.HandleFlags].
  *
  * Otherwise, loading an SVG without GIO is not recommended, since librsvg will
  * need to buffer your entire data internally before actually being able to
  * parse it.  The deprecated way of doing this is by creating a handle with
- * rsvg_handle_new() or rsvg_handle_new_with_flags(), and then using
- * rsvg_handle_write() and rsvg_handle_close() to feed the handle with SVG data.
+ * [ctor@Rsvg.Handle.new] or [ctor@Rsvg.Handle.new_with_flags], and then using
+ * [method@Rsvg.Handle.write] and [method@Rsvg.Handle.close] to feed the handle with SVG data.
  * Still, please try to use the GIO stream functions instead.
  *
  * # Resolution of the rendered image (dots per inch, or DPI)
@@ -201,38 +201,38 @@ GType rsvg_error_get_type (void);
  * SVG images can contain dimensions like "`5cm`" or
  * "`2pt`" that must be converted from physical units into
  * device units.  To do this, librsvg needs to know the actual dots per inch
- * (DPI) of your target device.  You can call rsvg_handle_set_dpi() or
- * rsvg_handle_set_dpi_x_y() on an RsvgHandle to set the DPI before rendering
+ * (DPI) of your target device.  You can call [method@Rsvg.Handle.set_dpi] or
+ * [method@Rsvg.Handle.set_dpi_x_y] on an [class@Rsvg.Handle] to set the DPI before rendering
  * it.
  *
  * # Rendering
  *
  * The preferred way to render a whole SVG document is to use
- * rsvg_handle_render_document().  Please see its documentation for
+ * [method@Rsvg.Handle.render_document].  Please see its documentation for
  * details.
  *
  * # API ordering
  *
- * Due to the way the librsvg API evolved over time, an `RsvgHandle` object is available
+ * Due to the way the librsvg API evolved over time, an [class@Rsvg.Handle] object is available
  * for use as soon as it is constructed.  However, not all of its methods can be
- * called at any time.  For example, an `RsvgHandle` just constructed with rsvg_handle_new()
- * is not loaded yet, and it does not make sense to call rsvg_handle_render_document() on it
+ * called at any time.  For example, an [class@Rsvg.Handle] just constructed with [ctor@Rsvg.Handle.new]
+ * is not loaded yet, and it does not make sense to call [method@Rsvg.Handle.render_document] on it
  * just at that point.
  *
- * The documentation for the available methods in `RsvgHandle` may mention that a particular
+ * The documentation for the available methods in [class@Rsvg.Handle] may mention that a particular
  * method is only callable on a "fully loaded handle".  This means either:
  *
- * * The handle was loaded with rsvg_handle_write() and rsvg_handle_close(), and
+ * * The handle was loaded with [method@Rsvg.Handle.write] and [method@Rsvg.Handle.close], and
  *   those functions returned no errors.
  *
- * * The handle was loaded with rsvg_handle_read_stream_sync() and that function
+ * * The handle was loaded with [method@Rsvg.Handle.read_stream_sync] and that function
  *   returned no errors.
  *
  * Before librsvg 2.46, the library did not fully verify that a handle was in a
  * fully loaded state for the methods that require it.  To preserve
  * compatibility with old code which inadvertently called the API without
  * checking for errors, or which called some methods outside of the expected
- * order, librsvg will just emit a g_critical() message in those cases.
+ * order, librsvg will just emit a `g_critical()` message in those cases.
  *
  * New methods introduced in librsvg 2.46 and later will check for the correct
  * ordering, and panic if they are called out of order.  This will abort
@@ -244,7 +244,7 @@ GType rsvg_error_get_type (void);
 /**
  * RsvgHandle:flags:
  *
- * Flags from `RsvgHandleFlags`.
+ * Flags from [flags@Rsvg.HandleFlags].
  *
  * Since: 2.36
  */
@@ -272,52 +272,52 @@ GType rsvg_error_get_type (void);
  * RsvgHandle:width:
  *
  * Width, in pixels, of the rendered SVG after calling the size callback
- * as specified by rsvg_handle_set_size_callback().
+ * as specified by [method@Rsvg.Handle.set_size_callback].
  *
  * Deprecated: 2.46.  For historical reasons, this property is of integer type,
  * which cannot give the exact size of SVG images that are not pixel-aligned.
  * Moreover, reading each of the size properties causes the size of the SVG to
  * be recomputed, so reading both the `width` and
  * `height` properties will cause two such computations.
- * Please use rsvg_handle_get_intrinsic_dimensions() instead.
+ * Please use [method@Rsvg.Handle.get_intrinsic_dimensions] instead.
  */
 
 /**
  * RsvgHandle:height:
  *
  * Height, in pixels, of the rendered SVG after calling the size callback
- * as specified by rsvg_handle_set_size_callback().
+ * as specified by [method@Rsvg.Handle.set_size_callback].
  *
  * Deprecated: 2.46.  For historical reasons, this property is of integer type,
  * which cannot give the exact size of SVG images that are not pixel-aligned.
  * Moreover, reading each of the size properties causes the size of the SVG to
  * be recomputed, so reading both the `width` and
  * `height` properties will cause two such computations.
- * Please use rsvg_handle_get_intrinsic_dimensions() instead.
+ * Please use [method@Rsvg.Handle.get_intrinsic_dimensions] instead.
  */
 
 /**
  * RsvgHandle:em:
  *
  * Exact width, in pixels, of the rendered SVG before calling the size callback
- * as specified by rsvg_handle_set_size_callback().
+ * as specified by [method@Rsvg.Handle.set_size_callback].
  *
  * Deprecated: 2.46.  Reading each of the size properties causes the size of the
  * SVG to be recomputed, so reading both the `em` and
  * `ex` properties will cause two such computations.  Please
- * use rsvg_handle_get_intrinsic_dimensions() instead.
+ * use [method@Rsvg.Handle.get_intrinsic_dimensions] instead.
  */
 
 /**
  * RsvgHandle:ex:
  *
  * Exact height, in pixels, of the rendered SVG before calling the size callback
- * as specified by rsvg_handle_set_size_callback().
+ * as specified by [method@Rsvg.Handle.set_size_callback].
  *
  * Deprecated: 2.46.  Reading each of the size properties causes the size of the
  * SVG to be recomputed, so reading both the `em` and
  * `ex` properties will cause two such computations.  Please
- * use rsvg_handle_get_intrinsic_dimensions() instead.
+ * use [method@Rsvg.Handle.get_intrinsic_dimensions] instead.
  */
 
 /**
@@ -366,7 +366,7 @@ typedef struct _RsvgRectangle RsvgRectangle;
  * RsvgHandleClass:
  * @parent: parent class
  *
- * Class structure for `RsvgHandle`.
+ * Class structure for [class@Rsvg.Handle].
  */
 struct _RsvgHandleClass {
     GObjectClass parent;
@@ -390,12 +390,12 @@ struct _RsvgHandle {
  * @em: SVG's original width, unmodified by `RsvgSizeFunc`
  * @ex: SVG's original height, unmodified by `RsvgSizeFunc`
  *
- * Dimensions of an SVG image from rsvg_handle_get_dimensions(), or an
- * individual element from rsvg_handle_get_dimensions_sub().  Please see
+ * Dimensions of an SVG image from [method@Rsvg.Handle.get_dimensions], or an
+ * individual element from [method@Rsvg.Handle.get_dimensions_sub].  Please see
  * the deprecation documentation for those functions.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_intrinsic_size_in_pixels() or
- * rsvg_handle_get_geometry_for_layer() instead.
+ * Deprecated: 2.46.  Use [method@Rsvg.Handle.get_intrinsic_size_in_pixels] or
+ * [method@Rsvg.Handle.get_geometry_for_layer] instead.
  */
 struct _RsvgDimensionData {
     int width;
@@ -409,10 +409,10 @@ struct _RsvgDimensionData {
  * @x: position on the x axis
  * @y: position on the y axis
  *
- * Position of an SVG fragment from rsvg_handle_get_position_sub().  Please
+ * Position of an SVG fragment from [method@Rsvg.Handle.get_position_sub].  Please
  * the deprecation documentation for that function.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
+ * Deprecated: 2.46.  Use [method@Rsvg.Handle.get_geometry_for_layer] instead.
  */
 struct _RsvgPositionData {
     int x;
@@ -452,15 +452,15 @@ void rsvg_cleanup (void);
  * rsvg_set_default_dpi:
  * @dpi: Dots Per Inch (aka Pixels Per Inch)
  *
- * Do not use this function.  Create an `RsvgHandle` and call
- * rsvg_handle_set_dpi() on it instead.
+ * Do not use this function.  Create an [class@Rsvg.Handle] and call
+ * [method@Rsvg.Handle.set_dpi] on it instead.
  *
  * Since: 2.8
  *
  * Deprecated: 2.42.3: This function used to set a global default DPI.  However,
- * it only worked if it was called before any `RsvgHandle` objects had been
+ * it only worked if it was called before any [class@Rsvg.Handle] objects had been
  * created; it would not work after that.  To avoid global mutable state, please
- * use rsvg_handle_set_dpi() instead.
+ * use [method@Rsvg.Handle.set_dpi] instead.
  */
 RSVG_DEPRECATED
 void rsvg_set_default_dpi (double dpi);
@@ -470,29 +470,29 @@ void rsvg_set_default_dpi (double dpi);
  * @dpi_x: Dots Per Inch (aka Pixels Per Inch)
  * @dpi_y: Dots Per Inch (aka Pixels Per Inch)
  *
- * Do not use this function.  Create an `RsvgHandle` and call
- * rsvg_handle_set_dpi_x_y() on it instead.
+ * Do not use this function.  Create an [class@Rsvg.Handle] and call
+ * [method@Rsvg.Handle.set_dpi_x_y] on it instead.
  *
  * Since: 2.8
  *
  * Deprecated: 2.42.3: This function used to set a global default DPI.  However,
- * it only worked if it was called before any `RsvgHandle` objects had been
+ * it only worked if it was called before any [class@Rsvg.Handle] objects had been
  * created; it would not work after that.  To avoid global mutable state, please
- * use rsvg_handle_set_dpi() instead.
+ * use [method@Rsvg.Handle.set_dpi] instead.
  */
 RSVG_DEPRECATED
 void rsvg_set_default_dpi_x_y (double dpi_x, double dpi_y);
 
 /**
  * rsvg_handle_set_dpi:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @dpi: Dots Per Inch (i.e. as Pixels Per Inch)
  *
  * Sets the DPI at which the @handle will be rendered. Common values are
  * 75, 90, and 300 DPI.
  *
  * Passing a number <= 0 to @dpi will reset the DPI to whatever the default
- * value happens to be, but since rsvg_set_default_dpi() is deprecated, please
+ * value happens to be, but since [method@Rsvg.Set.default_dpi] is deprecated, please
  * do not pass values <= 0 to this function.
  *
  * Since: 2.8
@@ -502,7 +502,7 @@ void rsvg_handle_set_dpi (RsvgHandle *handle, double dpi);
 
 /**
  * rsvg_handle_set_dpi_x_y:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @dpi_x: Dots Per Inch (i.e. Pixels Per Inch)
  * @dpi_y: Dots Per Inch (i.e. Pixels Per Inch)
  *
@@ -510,7 +510,7 @@ void rsvg_handle_set_dpi (RsvgHandle *handle, double dpi);
  * 75, 90, and 300 DPI.
  *
  * Passing a number <= 0 to @dpi will reset the DPI to whatever the default
- * value happens to be, but since rsvg_set_default_dpi_x_y() is deprecated,
+ * value happens to be, but since [id@rsvg_set_default_dpi_x_y] is deprecated,
  * please do not pass values <= 0 to this function.
  *
  * Since: 2.8
@@ -521,55 +521,55 @@ void rsvg_handle_set_dpi_x_y (RsvgHandle *handle, double dpi_x, double dpi_y);
 /**
  * rsvg_handle_new:
  *
- * Returns a new rsvg handle.  Must be freed with @g_object_unref.  This
+ * Returns a new rsvg handle.  Must be freed with [method@GObject.Object.unref].  This
  * handle can be used to load an image.
  *
- * The preferred way of loading SVG data into the returned `RsvgHandle` is with
- * rsvg_handle_read_stream_sync().
+ * The preferred way of loading SVG data into the returned [class@Rsvg.Handle] is with
+ * [method@Rsvg.Handle.read_stream_sync].
  *
- * The deprecated way of loading SVG data is with rsvg_handle_write() and
- * rsvg_handle_close(); note that these require buffering the entire file
+ * The deprecated way of loading SVG data is with [method@Rsvg.Handle.write] and
+ * [method@Rsvg.Handle.close]; note that these require buffering the entire file
  * internally, and for this reason it is better to use the stream functions:
- * rsvg_handle_new_from_stream_sync(), rsvg_handle_read_stream_sync(), or
- * rsvg_handle_new_from_gfile_sync().
+ * [ctor@Rsvg.Handle.new_from_stream_sync], [method@Rsvg.Handle.read_stream_sync], or
+ * [ctor@Rsvg.Handle.new_from_gfile_sync].
  *
- * After loading the `RsvgHandle` with data, you can render it using Cairo or get
- * a GdkPixbuf from it. When finished, free the handle with g_object_unref(). No
+ * After loading the [class@Rsvg.Handle] with data, you can render it using Cairo or get
+ * a GdkPixbuf from it. When finished, free the handle with [method@GObject.Object.unref]. No
  * more than one image can be loaded with one handle.
  *
- * Note that this function creates an `RsvgHandle` with no flags set.  If you
- * require any of `RsvgHandleFlags` to be set, use any of
- * rsvg_handle_new_with_flags(), rsvg_handle_new_from_stream_sync(), or
- * rsvg_handle_new_from_gfile_sync().
+ * Note that this function creates an [class@Rsvg.Handle] with no flags set.  If you
+ * require any of [flags@Rsvg.HandleFlags] to be set, use any of
+ * [ctor@Rsvg.Handle.new_with_flags], [ctor@Rsvg.Handle.new_from_stream_sync], or
+ * [ctor@Rsvg.Handle.new_from_gfile_sync].
  *
- * Returns: A new `RsvgHandle` with no flags set.
+ * Returns: A new [class@Rsvg.Handle] with no flags set.
  **/
 RSVG_API
 RsvgHandle *rsvg_handle_new (void);
 
 /**
  * rsvg_handle_write:
- * @handle: an `RsvgHandle`
+ * @handle: an [class@Rsvg.Handle]
  * @buf: (array length=count) (element-type guchar): pointer to svg data
  * @count: length of the @buf buffer in bytes
  * @error: return location for a `GError`
  *
  * Loads the next @count bytes of the image.  You can call this function multiple
- * times until the whole document is consumed; then you must call rsvg_handle_close()
+ * times until the whole document is consumed; then you must call [method@Rsvg.Handle.close]
  * to actually parse the document.
  *
  * Before calling this function for the first time, you may need to call
- * rsvg_handle_set_base_uri() or rsvg_handle_set_base_gfile() to set the "base
+ * [method@Rsvg.Handle.set_base_uri] or [method@Rsvg.Handle.set_base_gfile] to set the "base
  * file" for resolving references to external resources.  SVG elements like
  * `<image>` which reference external resources will be
  * resolved relative to the location you specify with those functions.
  *
  * Returns: `TRUE` on success, or `FALSE` on error.
  *
- * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
- * functions rsvg_handle_new_from_gfile_sync() or
- * rsvg_handle_new_from_stream_sync().  This function is deprecated because it
- * will accumulate data from the @buf in memory until rsvg_handle_close() gets
+ * Deprecated: 2.46.  Use [method@Rsvg.Handle.read_stream_sync] or the constructor
+ * functions [ctor@Rsvg.Handle.new_from_gfile_sync] or
+ * [ctor@Rsvg.Handle.new_from_stream_sync].  This function is deprecated because it
+ * will accumulate data from the @buf in memory until [method@Rsvg.Handle.close] gets
  * called.  To avoid a big temporary buffer, use the suggested functions, which
  * take a `GFile` or a `GInputStream` and do not require a temporary buffer.
  **/
@@ -581,32 +581,32 @@ gboolean rsvg_handle_write (RsvgHandle   *handle,
 
 /**
  * rsvg_handle_close:
- * @handle: a `RsvgHandle`
+ * @handle: a [class@Rsvg.Handle]
  * @error: return location for a `GError`
  *
- * This is used after calling rsvg_handle_write() to indicate that there is no more data
+ * This is used after calling [method@Rsvg.Handle.write] to indicate that there is no more data
  * to consume, and to start the actual parsing of the SVG document.  The only reason to
- * call this function is if you use use rsvg_handle_write() to feed data into the @handle;
- * if you use the other methods like rsvg_handle_new_from_file() or
- * rsvg_handle_read_stream_sync(), then you do not need to call this function.
+ * call this function is if you use use [method@Rsvg.Handle.write] to feed data into the @handle;
+ * if you use the other methods like [ctor@Rsvg.Handle.new_from_file] or
+ * [method@Rsvg.Handle.read_stream_sync], then you do not need to call this function.
  *
  * This will return `TRUE` if the loader closed successfully and the
  * SVG data was parsed correctly.  Note that @handle isn't freed until
- * @g_object_unref is called.
+ * [method@GObject.Object.unref] is called.
  *
  * Returns: `TRUE` on success, or `FALSE` on error.
  *
- * Deprecated: 2.46.  Use rsvg_handle_read_stream_sync() or the constructor
- * functions rsvg_handle_new_from_gfile_sync() or
- * rsvg_handle_new_from_stream_sync().  See the deprecation notes for
- * rsvg_handle_write() for more information.
+ * Deprecated: 2.46.  Use [method@Rsvg.Handle.read_stream_sync] or the constructor
+ * functions [ctor@Rsvg.Handle.new_from_gfile_sync] or
+ * [ctor@Rsvg.Handle.new_from_stream_sync].  See the deprecation notes for
+ * [method@Rsvg.Handle.write] for more information.
  **/
 RSVG_DEPRECATED_FOR(rsvg_handle_read_stream_sync)
 gboolean rsvg_handle_close (RsvgHandle *handle, GError **error);
 
 /**
  * rsvg_handle_get_pixbuf:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  *
  * Returns the pixbuf loaded by @handle.  The pixbuf returned will be reffed, so
  * the caller of this function must assume that ref.
@@ -614,8 +614,8 @@ gboolean rsvg_handle_close (RsvgHandle *handle, GError **error);
  * API ordering: This function must be called on a fully-loaded @handle.  See
  * the section "[API ordering](class.Handle.html#api-ordering)" for details.
  *
- * This function depends on the `RsvgHandle`'s dots-per-inch value (DPI) to compute the
- * "natural size" of the document in pixels, so you should call rsvg_handle_set_dpi()
+ * This function depends on the [class@Rsvg.Handle]'s dots-per-inch value (DPI) to compute the
+ * "natural size" of the document in pixels, so you should call [method@Rsvg.Handle.set_dpi]
  * beforehand.
  *
  * Returns: (transfer full) (nullable): a pixbuf, or `NULL` if an error occurs
@@ -636,12 +636,12 @@ GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
  * sub-sub-elements recursively).  If @id is `NULL`, this function renders the
  * whole SVG.
  *
- * This function depends on the `RsvgHandle`'s dots-per-inch value (DPI) to compute the
- * "natural size" of the document in pixels, so you should call rsvg_handle_set_dpi()
+ * This function depends on the [class@Rsvg.Handle]'s dots-per-inch value (DPI) to compute the
+ * "natural size" of the document in pixels, so you should call [method@Rsvg.Handle.set_dpi]
  * beforehand.
  *
  * If you need to render an image which is only big enough to fit a particular
- * sub-element of the SVG, consider using rsvg_handle_render_element().
+ * sub-element of the SVG, consider using [method@Rsvg.Handle.render_element].
  *
  * Element IDs should look like an URL fragment identifier; for example, pass
  * `#foo` (hash `foo`) to get the geometry of the element that
@@ -660,9 +660,9 @@ GdkPixbuf *rsvg_handle_get_pixbuf_sub (RsvgHandle *handle, const char *id);
 
 /**
  * rsvg_handle_get_base_uri: (attributes org.gtk.Method.get_property=base-uri)
- * @handle: A #RsvgHandle
+ * @handle: A [class@Rsvg.Handle]
  *
- * Gets the base uri for this #RsvgHandle.
+ * Gets the base uri for this [class@Rsvg.Handle].
  *
  * Returns: the base uri, possibly null
  * Since: 2.8
@@ -672,13 +672,13 @@ const char *rsvg_handle_get_base_uri (RsvgHandle *handle);
 
 /**
  * rsvg_handle_set_base_uri: (attributes org.gtk.Method.set_property=base-uri)
- * @handle: A `RsvgHandle`
+ * @handle: A [class@Rsvg.Handle]
  * @base_uri: The base uri
  *
  * Set the base URI for this SVG.
  *
- * Note: This function may only be called before rsvg_handle_write() or
- * rsvg_handle_read_stream_sync() have been called.
+ * Note: This function may only be called before [method@Rsvg.Handle.write] or
+ * [method@Rsvg.Handle.read_stream_sync] have been called.
  *
  * Since: 2.9
  */
@@ -687,16 +687,16 @@ void rsvg_handle_set_base_uri (RsvgHandle *handle, const char *base_uri);
 
 /**
  * rsvg_handle_get_dimensions:
- * @handle: A `RsvgHandle`
+ * @handle: A [class@Rsvg.Handle]
  * @dimension_data: (out): A place to store the SVG's size
  *
  * Get the SVG's size. Do not call from within the size_func callback, because
  * an infinite loop will occur.
  *
- * This function depends on the `RsvgHandle`'s DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * This function depends on the [class@Rsvg.Handle]'s DPI to compute dimensions in
+ * pixels, so you should call [method@Rsvg.Handle.set_dpi] beforehand.
  *
- * Deprecated: 2.52.  Use rsvg_handle_get_intrinsic_size_in_pixels() instead.  This
+ * Deprecated: 2.52.  Use [method@Rsvg.Handle.get_intrinsic_size_in_pixels] instead.  This
  * function is deprecated because it is not able to return exact fractional dimensions,
  * only integer pixels.
  *
@@ -707,7 +707,7 @@ void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimensio
 
 /**
  * rsvg_handle_get_dimensions_sub:
- * @handle: A `RsvgHandle`
+ * @handle: A [class@Rsvg.Handle]
  * @dimension_data: (out): A place to store the SVG's size
  * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, `#layer1`.  This notation corresponds to a
@@ -716,8 +716,8 @@ void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimensio
  * Get the size of a subelement of the SVG file. Do not call from within the
  * size_func callback, because an infinite loop will occur.
  *
- * This function depends on the `RsvgHandle`'s DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * This function depends on the [class@Rsvg.Handle]'s DPI to compute dimensions in
+ * pixels, so you should call [method@Rsvg.Handle.set_dpi] beforehand.
  *
  * Element IDs should look like an URL fragment identifier; for example, pass
  * `#foo` (hash `foo`) to get the geometry of the element that
@@ -725,7 +725,7 @@ void rsvg_handle_get_dimensions (RsvgHandle *handle, RsvgDimensionData *dimensio
  *
  * Returns: `TRUE` if the dimensions could be obtained, `FALSE` if there was an error.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.
+ * Deprecated: 2.46.  Use [method@Rsvg.Handle.get_geometry_for_layer] instead.
  *
  * Since: 2.22
  */
@@ -736,7 +736,7 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
 
 /**
  * rsvg_handle_get_position_sub:
- * @handle: A `RsvgHandle`
+ * @handle: A [class@Rsvg.Handle]
  * @position_data: (out): A place to store the SVG fragment's position.
  * @id: (nullable): An element's id within the SVG, starting with "#" (a single
  * hash character), for example, `#layer1`.  This notation corresponds to a
@@ -745,8 +745,8 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
  * Get the position of a subelement of the SVG file. Do not call from within
  * the size_func callback, because an infinite loop will occur.
  *
- * This function depends on the `RsvgHandle`'s DPI to compute dimensions in
- * pixels, so you should call rsvg_handle_set_dpi() beforehand.
+ * This function depends on the [class@Rsvg.Handle]'s DPI to compute dimensions in
+ * pixels, so you should call [method@Rsvg.Handle.set_dpi] beforehand.
  *
  * Element IDs should look like an URL fragment identifier; for example, pass
  * `#foo` (hash `foo`) to get the geometry of the element that
@@ -754,7 +754,7 @@ gboolean rsvg_handle_get_dimensions_sub (RsvgHandle        *handle,
  *
  * Returns: `TRUE` if the position could be obtained, `FALSE` if there was an error.
  *
- * Deprecated: 2.46.  Use rsvg_handle_get_geometry_for_layer() instead.  This function is
+ * Deprecated: 2.46.  Use [method@Rsvg.Handle.get_geometry_for_layer] instead.  This function is
  * deprecated since it is not able to return exact floating-point positions, only integer
  * pixels.
  *
@@ -767,7 +767,7 @@ gboolean rsvg_handle_get_position_sub (RsvgHandle       *handle,
 
 /**
  * rsvg_handle_has_sub:
- * @handle: a `RsvgHandle`
+ * @handle: a [class@Rsvg.Handle]
  * @id: An element's id within the SVG, starting with "#" (a single hash
  * character), for example, `#layer1`.  This notation corresponds to a URL's
  * fragment ID.
@@ -817,7 +817,7 @@ typedef enum {
  * @length: numeric part of the length
  * @unit: unit part of the length
  *
- * `RsvgLength` values are used in rsvg_handle_get_intrinsic_dimensions(), for
+ * `RsvgLength` values are used in [method@Rsvg.Handle.get_intrinsic_dimensions], for
  * example, to return the CSS length values of the `width` and
  * `height` attributes of an `<svg>` element.
  *
@@ -836,7 +836,7 @@ typedef struct {
 
 /**
  * rsvg_handle_get_intrinsic_dimensions:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @out_has_width: (out)(optional): Will be set to `TRUE` if the toplevel SVG has a `width` attribute
  * @out_width: (out)(optional): Will be set to the value of the `width` attribute in the toplevel SVG
  * @out_has_height: (out)(optional): Will be set to `TRUE` if the toplevel SVG has a `height` attribute
@@ -847,7 +847,7 @@ typedef struct {
  * Queries the `width`, `height`, and `viewBox` attributes in an SVG document.
  *
  * If you are calling this function to compute a scaling factor to render the SVG,
- * consider simply using rsvg_handle_render_document() instead; it will do the
+ * consider simply using [method@Rsvg.Handle.render_document] instead; it will do the
  * scaling computations automatically.
  *
  * As an example, the following SVG element has a `width` of 100 pixels and a `height` of 400 pixels, but no `viewBox`:
@@ -888,7 +888,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
 
 /**
  * rsvg_handle_get_intrinsic_size_in_pixels:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @out_width: (out)(optional): Will be set to the computed width; you should round this up to get integer pixels.
  * @out_height: (out)(optional): Will be set to the computed height; you should round this up to get integer pixels.
  *
@@ -898,7 +898,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * document has both `width` and `height` attributes
  * with physical units (px, in, cm, mm, pt, pc) or font-based units (em, ex).  For
  * physical units, the dimensions are normalized to pixels using the dots-per-inch (DPI)
- * value set previously with rsvg_handle_set_dpi().  For font-based units, this function
+ * value set previously with [method@Rsvg.Handle.set_dpi].  For font-based units, this function
  * uses the computed value of the `font-size` property for the toplevel
  * `&lt;svg&gt;` element.  In those cases, this function returns `TRUE`.
  *
@@ -936,7 +936,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  *
  * Instead of querying an SVG document's size, applications are encouraged to render SVG
  * documents to a size chosen by the application, by passing a suitably-sized viewport to
- * rsvg_handle_render_document().
+ * [method@Rsvg.Handle.render_document].
  *
  * Returns: `TRUE` if the dimensions could be converted directly to pixels; in this case
  * @out_width and @out_height will be set accordingly.  Note that the dimensions are
@@ -970,9 +970,9 @@ gboolean rsvg_handle_get_intrinsic_size_in_pixels (RsvgHandle *handle,
  * documentation](https://www.cairographics.org/manual/cairo-cairo-surface-t.html#cairo-surface-set-mime-data)
  * for details.
  *
- * Configuration flags for an `RsvgHandle`.  Note that not all of `RsvgHandle`'s
- * constructors let you specify flags.  For this reason, rsvg_handle_new_from_gfile_sync()
- * and rsvg_handle_new_from_stream_sync() are the preferred ways to create a handle.
+ * Configuration flags for an [class@Rsvg.Handle].  Note that not all of [class@Rsvg.Handle]'s
+ * constructors let you specify flags.  For this reason, [ctor@Rsvg.Handle.new_from_gfile_sync]
+ * and [ctor@Rsvg.Handle.new_from_stream_sync] are the preferred ways to create a handle.
  *
  * Since: 2.40.3
  */
@@ -989,13 +989,13 @@ GType rsvg_handle_flags_get_type (void);
 
 /**
  * rsvg_handle_new_with_flags:
- * @flags: flags from `RsvgHandleFlags`
+ * @flags: flags from [flags@Rsvg.HandleFlags]
  *
- * Creates a new `RsvgHandle` with flags @flags.  After calling this function,
+ * Creates a new [class@Rsvg.Handle] with flags @flags.  After calling this function,
  * you can feed the resulting handle with SVG data by using
- * rsvg_handle_read_stream_sync().
+ * [method@Rsvg.Handle.read_stream_sync].
  *
- * Returns: (transfer full): a new `RsvgHandle`
+ * Returns: (transfer full): a new [class@Rsvg.Handle]
  *
  * Since: 2.36
  **/
@@ -1004,13 +1004,13 @@ RsvgHandle *rsvg_handle_new_with_flags (RsvgHandleFlags flags);
 
 /**
  * rsvg_handle_set_base_gfile:
- * @handle: a `RsvgHandle`
+ * @handle: a [class@Rsvg.Handle]
  * @base_file: a `GFile`
  *
  * Set the base URI for @handle from @file.
  *
- * Note: This function may only be called before rsvg_handle_write() or
- * rsvg_handle_read_stream_sync() have been called.
+ * Note: This function may only be called before [method@Rsvg.Handle.write] or
+ * [method@Rsvg.Handle.read_stream_sync] have been called.
  *
  * Since: 2.32
  */
@@ -1020,15 +1020,15 @@ void rsvg_handle_set_base_gfile (RsvgHandle *handle,
 
 /**
  * rsvg_handle_read_stream_sync:
- * @handle: a `RsvgHandle`
+ * @handle: a [class@Rsvg.Handle]
  * @stream: a `GInputStream`
  * @cancellable: (nullable): a `GCancellable`, or `NULL`
  * @error: return location for a `GError`
  *
  * Reads @stream and writes the data from it to @handle.
  *
- * Before calling this function, you may need to call rsvg_handle_set_base_uri()
- * or rsvg_handle_set_base_gfile() to set the "base file" for resolving
+ * Before calling this function, you may need to call [method@Rsvg.Handle.set_base_uri]
+ * or [method@Rsvg.Handle.set_base_gfile] to set the "base file" for resolving
  * references to external resources.  SVG elements like
  * `<image>` which reference external resources will be
  * resolved relative to the location you specify with those functions.
@@ -1052,11 +1052,11 @@ gboolean rsvg_handle_read_stream_sync (RsvgHandle   *handle,
 /**
  * rsvg_handle_new_from_gfile_sync:
  * @file: a `GFile`
- * @flags: flags from `RsvgHandleFlags`
+ * @flags: flags from [flags@Rsvg.HandleFlags]
  * @cancellable: (nullable): a `GCancellable`, or `NULL`
  * @error: return location for a `GError`
  *
- * Creates a new `RsvgHandle` for @file.
+ * Creates a new [class@Rsvg.Handle] for @file.
  *
  * This function sets the "base file" of the handle to be @file itself, so SVG
  * elements like `<image>` which reference external
@@ -1067,7 +1067,7 @@ gboolean rsvg_handle_read_stream_sync (RsvgHandle   *handle,
  * operation was cancelled, the error `G_IO_ERROR_CANCELLED` will be
  * returned in @error.
  *
- * Returns: a new `RsvgHandle` on success, or `NULL` with @error filled in
+ * Returns: a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
  *
  * Since: 2.32
  */
@@ -1081,11 +1081,11 @@ RsvgHandle *rsvg_handle_new_from_gfile_sync (GFile          *file,
  * rsvg_handle_new_from_stream_sync:
  * @input_stream: a `GInputStream`
  * @base_file: (nullable): a `GFile`, or `NULL`
- * @flags: flags from `RsvgHandleFlags`
+ * @flags: flags from [flags@Rsvg.HandleFlags]
  * @cancellable: (nullable): a `GCancellable`, or `NULL`
  * @error: return location for a `GError`
  *
- * Creates a new `RsvgHandle` for @stream.
+ * Creates a new [class@Rsvg.Handle] for @stream.
  *
  * This function sets the "base file" of the handle to be @base_file if
  * provided.  SVG elements like `<image>` which reference
@@ -1096,7 +1096,7 @@ RsvgHandle *rsvg_handle_new_from_gfile_sync (GFile          *file,
  * operation was cancelled, the error `G_IO_ERROR_CANCELLED` will be
  * returned in @error.
  *
- * Returns: a new `RsvgHandle` on success, or `NULL` with @error filled in
+ * Returns: a new [class@Rsvg.Handle] on success, or `NULL` with @error filled in
  *
  * Since: 2.32
  */
@@ -1114,11 +1114,11 @@ RsvgHandle *rsvg_handle_new_from_stream_sync (GInputStream   *input_stream,
  * @error: return location for a `GError`
  *
  * Loads the SVG specified by @data.  Note that this function creates an
- * `RsvgHandle` without a base URL, and without any #RsvgHandleFlags.  If you
- * need these, use rsvg_handle_new_from_stream_sync() instead by creating
- * a `GMemoryInputStream` from your data.
+ * [class@Rsvg.Handle] without a base URL, and without any [flags@Rsvg.HandleFlags].  If you
+ * need these, use [method@Rsvg.Handle.new_from_stream_sync] instead by creating
+ * a [class@Gio.MemoryInputStream] from your data.
  *
- * Returns: A `RsvgHandle` or `NULL` if an error occurs.
+ * Returns: A [class@Rsvg.Handle] or `NULL` if an error occurs.
  * Since: 2.14
  */
 RSVG_API
@@ -1130,11 +1130,11 @@ RsvgHandle *rsvg_handle_new_from_data (const guint8 *data, gsize data_len, GErro
  * @error: return location for a `GError`
  *
  * Loads the SVG specified by @file_name.  Note that this function, like
- * rsvg_handle_new(), does not specify any loading flags for the resulting
- * handle.  If you require the use of `RsvgHandleFlags`, use
- * rsvg_handle_new_from_gfile_sync().
+ * [ctor@Rsvg.Handle.new], does not specify any loading flags for the resulting
+ * handle.  If you require the use of [flags@Rsvg.HandleFlags], use
+ * [ctor@Rsvg.Handle.new_from_gfile_sync].
  *
- * Returns: A `RsvgHandle` or `NULL` if an error occurs.
+ * Returns: A [class@Rsvg.Handle] or `NULL` if an error occurs.
  * Since: 2.14
  */
 RSVG_API
@@ -1142,7 +1142,7 @@ RsvgHandle *rsvg_handle_new_from_file (const gchar *filename, GError **error);
 
 /**
  * rsvg_handle_set_stylesheet:
- * @handle: A `RsvgHandle`.
+ * @handle: A [class@Rsvg.Handle].
  * @css: (array length=css_len): String with CSS data; must be valid UTF-8.
  * @css_len: Length of the @css data in bytes.
  * @error: return location for a `GError`
@@ -1172,7 +1172,7 @@ gboolean rsvg_handle_set_stylesheet (RsvgHandle   *handle,
 #ifndef __GTK_DOC_IGNORE__
 /**
  * rsvg_handle_internal_set_testing:
- * @handle: a `RsvgHandle`
+ * @handle: a [class@Rsvg.Handle]
  * @testing: Whether to enable testing mode
  *
  * Do not call this function.  This is intended for librsvg's internal
@@ -1210,10 +1210,10 @@ void rsvg_term (void);
 
 /**
  * rsvg_handle_free:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  *
  * Frees @handle.
- * Deprecated: Use g_object_unref() instead.
+ * Deprecated: Use [method@GObject.Object.unref] instead.
  **/
 RSVG_DEPRECATED_FOR(g_object_unref)
 void rsvg_handle_free (RsvgHandle *handle);
@@ -1226,17 +1226,17 @@ void rsvg_handle_free (RsvgHandle *handle);
  *
  * Function to let a user of the library specify the SVG's dimensions
  *
- * See the documentation for rsvg_handle_set_size_callback() for an example, and
+ * See the documentation for [method@Rsvg.Handle.set_size_callback] for an example, and
  * for the reasons for deprecation.
  *
- * Deprecated: 2.14.  Use rsvg_handle_render_document() instead, which lets you specify
+ * Deprecated: 2.14.  Use [method@Rsvg.Handle.render_document] instead, which lets you specify
  * a viewport size in which to render the SVG document.
  */
 typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
 
 /**
  * rsvg_handle_set_size_callback:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  * @size_func: (nullable): A sizing function, or `NULL`
  * @user_data: User data to pass to @size_func, or `NULL`
  * @user_data_destroy: Function to be called to destroy the data passed in @user_data,
@@ -1246,17 +1246,17 @@ typedef void (*RsvgSizeFunc) (gint * width, gint * height, gpointer user_data);
  * size that librsvg computes for SVG images.  The @size_func is called from the
  * following functions:
  *
- * * rsvg_handle_get_dimensions()
- * * rsvg_handle_get_dimensions_sub()
- * * rsvg_handle_get_position_sub()
- * * rsvg_handle_render_cairo()
- * * rsvg_handle_render_cairo_sub()
+ * * [method@Rsvg.Handle.get_dimensions]
+ * * [method@Rsvg.Handle.get_dimensions_sub]
+ * * [method@Rsvg.Handle.get_position_sub]
+ * * [method@Rsvg.Handle.render_cairo]
+ * * [method@Rsvg.Handle.render_cairo_sub]
  *
  * Librsvg computes the size of the SVG being rendered, and passes it to the
  * @size_func, which may then modify these values to set the final size of the
  * generated image.
  *
- * Deprecated: 2.14.  Use rsvg_handle_render_document() instead.
+ * Deprecated: 2.14.  Use [method@Rsvg.Handle.render_document] instead.
  * This function was deprecated because when the @size_func is used, it makes it
  * unclear when the librsvg functions which call the @size_func will use the
  * size computed originally, or the callback-specified size, or whether it
@@ -1291,7 +1291,7 @@ void rsvg_handle_set_size_callback (RsvgHandle    *handle,
  * set and `NULL` is returned.
  * 
  * Return value: A newly allocated `GdkPixbuf`, or %NULL
- * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
+ * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file (const gchar *filename,
@@ -1310,7 +1310,7 @@ GdkPixbuf *rsvg_pixbuf_from_file (const gchar *filename,
  * occurred, @error is set and `NULL` is returned.
  * 
  * Return value: A newly allocated `GdkPixbuf`, or %NULL
- * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
+ * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
@@ -1332,7 +1332,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_zoom (const gchar *filename,
  * error occurred, @error is set and `NULL` is returned.
  * 
  * Return value: A newly allocated `GdkPixbuf`, or %NULL
- * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
+ * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_size (const gchar *filename,
@@ -1353,7 +1353,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_size (const gchar *filename,
  * @error is set and `NULL` is returned.
  * 
  * Return value: A newly allocated `GdkPixbuf`, or `NULL`
- * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
+ * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
@@ -1376,7 +1376,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_max_size (const gchar *filename,
  * returned pixbuf. If an error occurred, @error is set and `NULL` is returned.
  * 
  * Return value: A newly allocated `GdkPixbuf`, or `NULL`
- * Deprecated: Use rsvg_handle_new_from_file() and rsvg_handle_render_document() instead.
+ * Deprecated: Use [ctor@Rsvg.Handle.new_from_file] and [method@Rsvg.Handle.render_document] instead.
  **/
 RSVG_DEPRECATED
 GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
@@ -1388,7 +1388,7 @@ GdkPixbuf *rsvg_pixbuf_from_file_at_zoom_with_max (const gchar *filename,
 
 /**
  * rsvg_handle_get_title:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  *
  * Returns: (nullable): This function always returns `NULL`.
  *
@@ -1402,7 +1402,7 @@ const char *rsvg_handle_get_title (RsvgHandle *handle);
 
 /**
  * rsvg_handle_get_desc:
- * @handle: An `RsvgHandle`
+ * @handle: An [class@Rsvg.Handle]
  *
  * Returns: (nullable): This function always returns `NULL`.
  *
@@ -1416,7 +1416,7 @@ const char *rsvg_handle_get_desc (RsvgHandle *handle);
 
 /**
  * rsvg_handle_get_metadata:
- * @handle: An #RsvgHandle
+ * @handle: An [class@Rsvg.Handle]
  *
  * Returns: (nullable): This function always returns `NULL`.
  *
