@@ -1184,8 +1184,6 @@ void rsvg_handle_internal_set_testing (RsvgHandle *handle, gboolean testing);
 
 /* BEGIN deprecated APIs. Do not use! */
 
-#ifndef __GI_SCANNER__
-
 /**
  * rsvg_init:
  *
@@ -1427,8 +1425,6 @@ const char *rsvg_handle_get_desc (RsvgHandle *handle);
  */
 RSVG_DEPRECATED
 const char *rsvg_handle_get_metadata (RsvgHandle *handle);
-
-#endif /* !__GI_SCANNER__ */
 
 /* END deprecated APIs. */
 
