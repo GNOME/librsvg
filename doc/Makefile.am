@@ -4,6 +4,7 @@ DOCS_SRC =					\
 	migrating.md				\
 	overview.md				\
 	recommendations.md			\
+	urlmap.js				\
 	$(NULL)
 
 EXTRA_DIST = $(DOCS_SRC)
