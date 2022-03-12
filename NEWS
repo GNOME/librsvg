@@ -1,3 +1,26 @@
+Version 2.53.2
+==============
+
+- #851 - Output filled text as text for PDF; fixes regression due to
+  outputting all text as paths.
+
+- Fix taller-than-wide proportional scaling and size limiting in
+  rsvg-convert.
+
+- #772, #773, #774, #775, #776 - Implement SVG2 geometry properties
+  for these elements: rect, circle, ellipse, image, svg (Jeremias
+  Ortega).
+
+- #450 - Fix potential unaligned accesses in surface iterators
+  (Michael Howell).
+
+- Actually use GDK_PIXBUF_MODULEDIR when calling
+  gdk-pixbuf-query-loaders (Fabrice Fontaine).
+
+- Windows build fixes (Chun-wei Fan).
+
+- Add links to functions and types throughout the C API documentation.
+
 ==============
 Version 2.53.1
 ==============
