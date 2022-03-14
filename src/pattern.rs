@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNodes, NodeId, NodeStack};
+use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
@@ -112,7 +112,9 @@ pub struct UserSpacePattern {
     pub coord_transform: Transform,
     pub content_transform: Transform,
     pub opacity: UnitInterval,
-    pub node_with_children: Node,
+
+    // This one is private so the caller has to go through fn acquire_pattern_node()
+    node_with_children: Node,
 }
 
 #[derive(Default)]
@@ -396,6 +398,19 @@ impl ResolvedPattern {
             opacity: self.opacity,
             node_with_children,
         })
+    }
+}
+
+impl UserSpacePattern {
+    /// Gets the `<pattern>` node that contains the children to be drawn for the pattern's contents.
+    ///
+    /// This has to go through [AcquiredNodes] to catch circular references among
+    /// patterns and their children.
+    pub fn acquire_pattern_node(
+        &self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+    ) -> Result<AcquiredNode, AcquireError> {
+        acquired_nodes.acquire_ref(&self.node_with_children)
     }
 }
 
