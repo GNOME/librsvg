@@ -1035,9 +1035,24 @@ impl DrawingCtx {
         pattern: &UserSpacePattern,
         acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> Result<bool, RenderingError> {
+        // Bail out early if the pattern has zero size, per the spec
         if approx_eq!(f64, pattern.width, 0.0) || approx_eq!(f64, pattern.height, 0.0) {
             return Ok(false);
         }
+
+        // Bail out early if this pattern has a circular reference
+        let pattern_node_acquired = match pattern.acquire_pattern_node(acquired_nodes) {
+            Ok(n) => n,
+
+            Err(AcquireError::CircularReference(ref node)) => {
+                rsvg_log!("circular reference in element {}", node);
+                return Ok(false);
+            }
+
+            _ => unreachable!(),
+        };
+
+        let pattern_node = pattern_node_acquired.get();
 
         let taffine = self.get_transform().pre_transform(&pattern.transform);
 
@@ -1084,11 +1099,10 @@ impl DrawingCtx {
 
             pattern_draw_ctx
                 .with_alpha(pattern.opacity, &mut |dc| {
-                    let pattern_cascaded =
-                        CascadedValues::new_from_node(&pattern.node_with_children);
+                    let pattern_cascaded = CascadedValues::new_from_node(pattern_node);
                     let pattern_values = pattern_cascaded.get();
 
-                    let elt = pattern.node_with_children.borrow_element();
+                    let elt = pattern_node.borrow_element();
 
                     let stacking_ctx = StackingContext::new(
                         acquired_nodes,
@@ -1104,12 +1118,7 @@ impl DrawingCtx {
                         false,
                         None,
                         &mut |an, dc, _transform| {
-                            pattern.node_with_children.draw_children(
-                                an,
-                                &pattern_cascaded,
-                                dc,
-                                false,
-                            )
+                            pattern_node.draw_children(an, &pattern_cascaded, dc, false)
                         },
                     )
                 })
