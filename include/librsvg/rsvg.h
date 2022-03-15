@@ -915,7 +915,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * physical units, the dimensions are normalized to pixels using the dots-per-inch (DPI)
  * value set previously with [method@Rsvg.Handle.set_dpi].  For font-based units, this function
  * uses the computed value of the `font-size` property for the toplevel
- * `&lt;svg&gt;` element.  In those cases, this function returns `TRUE`.
+ * `<svg>` element.  In those cases, this function returns `TRUE`.
  *
  * This function is not able to extract the size in pixels directly from the intrinsic
  * dimensions of the SVG document if the `width` or
@@ -931,7 +931,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * <svg xmlns="http://www.w3.org/2000/svg" width="20" height="30"/>
  * ```
  *
- * Similarly, if the DPI is set to 96, this document will resolve to 192x288 pixels (i.e. 96*2 x 96*3).
+ * Similarly, if the DPI is set to 96, this document will resolve to 192×288 pixels (i.e. 96×2 × 96×3).
  *
  * ```
  * <svg xmlns="http://www.w3.org/2000/svg" width="2in" height="3in"/>
