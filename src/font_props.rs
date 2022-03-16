@@ -14,11 +14,11 @@ use crate::property_defs::{FontStretch, FontStyle, FontVariant};
 
 /// `font` shorthand property.
 ///
-/// https://www.w3.org/TR/CSS2/fonts.html#font-shorthand
+/// CSS2: <https://www.w3.org/TR/CSS2/fonts.html#font-shorthand>
 ///
-/// https://www.w3.org/TR/css-fonts-3/#propdef-font
+/// CSS Fonts 3: <https://www.w3.org/TR/css-fonts-3/#propdef-font>
 ///
-/// https://drafts.csswg.org/css-fonts-4/#font-prop
+/// CSS Fonts 4: <https://drafts.csswg.org/css-fonts-4/#font-prop>
 ///
 /// This is a shorthand, which expands to the longhands `font-family`, `font-size`, etc.
 // servo/components/style/properties/shorthands/font.mako.rs is a good reference for this
@@ -172,11 +172,11 @@ fn parse_font_spec_identifiers<'i>(parser: &mut Parser<'i, '_>) -> Result<Font, 
 
 /// `font-size` property.
 ///
-/// https://www.w3.org/TR/SVG/text.html#FontSizeProperty
+/// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#FontSizeProperty>
 ///
-/// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size
+/// CSS2: <https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-size>
 ///
-/// https://www.w3.org/TR/css-fonts-3/#font-size-prop
+/// CSS Fonts 3: <https://www.w3.org/TR/css-fonts-3/#font-size-prop>
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum FontSize {
@@ -276,9 +276,9 @@ impl Parse for FontSize {
 
 /// `font-weight` property.
 ///
-/// https://drafts.csswg.org/css-fonts-4/#font-weight-prop
+/// CSS Fonts 3: <https://www.w3.org/TR/css-fonts-3/#propdef-font-weight>
 ///
-/// https://www.w3.org/TR/css-fonts-3/#propdef-font-weight
+/// CSS Fonts 4: <https://drafts.csswg.org/css-fonts-4/#font-weight-prop>
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FontWeight {
     Normal,
@@ -368,9 +368,9 @@ impl FontWeight {
 
 /// `letter-spacing` property.
 ///
-/// https://www.w3.org/TR/SVG/text.html#LetterSpacingProperty
+/// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#LetterSpacingProperty>
 ///
-/// https://www.w3.org/TR/css-text-3/#letter-spacing-property
+/// CSS Text 3: <https://www.w3.org/TR/css-text-3/#letter-spacing-property>
 #[derive(Debug, Clone, PartialEq)]
 pub enum LetterSpacing {
     Normal,
@@ -415,9 +415,7 @@ impl Parse for LetterSpacing {
 
 /// `line-height` property.
 ///
-/// https://drafts.csswg.org/css2/visudet.html#propdef-line-height
-///
-/// https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height
+/// CSS2: <https://www.w3.org/TR/CSS2/visudet.html#propdef-line-height>
 #[derive(Debug, Clone, PartialEq)]
 pub enum LineHeight {
     Normal,
@@ -489,11 +487,11 @@ impl Parse for LineHeight {
 
 /// `font-family` property.
 ///
-/// https://www.w3.org/TR/SVG/text.html#FontFamilyProperty
+/// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#FontFamilyProperty>
 ///
-/// https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family
+/// CSS 2: <https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#propdef-font-family>
 ///
-/// https://www.w3.org/TR/css-fonts-3/#font-family-prop
+/// CSS Fonts 3: <https://www.w3.org/TR/css-fonts-3/#font-family-prop>
 #[derive(Debug, Clone, PartialEq)]
 pub struct FontFamily(pub String);
 
@@ -539,9 +537,9 @@ impl FontFamily {
 /// now it only takes values `auto`, `0deg`, `90deg`, `0`, `90`.  At parsing time, this
 /// gets translated to fixed enum values.
 ///
-/// https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical
+/// CSS Writing Modes 3: <https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical>
 ///
-/// Obsolete: https://www.w3.org/TR/SVG11/text.html#GlyphOrientationVerticalProperty
+/// Obsolete SVG1.1: <https://www.w3.org/TR/SVG11/text.html#GlyphOrientationVerticalProperty>
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum GlyphOrientationVertical {
     Auto,

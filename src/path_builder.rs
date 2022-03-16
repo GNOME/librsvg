@@ -121,8 +121,8 @@ impl EllipticalArc {
     ///
     /// Radii may be adjusted if there is no solution.
     ///
-    /// See section B.2.4. Conversion from endpoint to center parameterization
-    /// https://www.w3.org/TR/SVG2/implnote.html#ArcConversionEndpointToCenter
+    /// See section [B.2.4. Conversion from endpoint to center
+    /// parameterization](https://www.w3.org/TR/SVG2/implnote.html#ArcConversionEndpointToCenter)
     pub(crate) fn center_parameterization(&self) -> ArcParameterization {
         let Self {
             r: (mut rx, mut ry),

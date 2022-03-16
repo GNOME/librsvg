@@ -59,9 +59,9 @@ use crate::unit_interval::UnitInterval;
 make_property!(
     /// `baseline-shift` property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#BaselineShiftProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#BaselineShiftProperty>
     ///
-    /// https://www.w3.org/TR/SVG2/text.html#BaselineShiftProperty
+    /// SVG2: <https://www.w3.org/TR/SVG2/text.html#BaselineShiftProperty>
     BaselineShift,
     default: Length::<Both>::parse_str("0.0").unwrap(),
     newtype: Length<Both>,
@@ -122,9 +122,9 @@ make_property!(
 make_property!(
     /// `clip-path` property.
     ///
-    /// https://www.w3.org/TR/SVG/masking.html#ClipPathPropert
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/masking.html#ClipPathProperty>
     ///
-    /// https://www.w3.org/TR/css-masking-1/#the-clip-path
+    /// CSS Masking 1: <https://www.w3.org/TR/css-masking-1/#the-clip-path>
     ClipPath,
     default: Iri::None,
     inherits_automatically: false,
@@ -134,9 +134,9 @@ make_property!(
 make_property!(
     /// `clip-rule` property.
     ///
-    /// https://www.w3.org/TR/SVG/masking.html#ClipRuleProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/masking.html#ClipRuleProperty>
     ///
-    /// https://www.w3.org/TR/css-masking-1/#the-clip-rule
+    /// CSS Masking 1: <https://www.w3.org/TR/css-masking-1/#the-clip-rule>
     ClipRule,
     default: NonZero,
     inherits_automatically: true,
@@ -149,9 +149,9 @@ make_property!(
 make_property!(
     /// `color` property, the fallback for `currentColor` values.
     ///
-    /// https://www.w3.org/TR/SVG/color.html#ColorProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/color.html#ColorProperty>
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#ColorProperty
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#ColorProperty>
     ///
     /// The SVG spec allows the user agent to choose its own initial value for the "color"
     /// property.  Here we start with opaque black for the initial value.  Clients can
@@ -168,9 +168,9 @@ make_property!(
 make_property!(
     /// `color-interpolation-filters` property.
     ///
-    /// https://www.w3.org/TR/SVG11/painting.html#ColorInterpolationProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/painting.html#ColorInterpolationFiltersProperty>
     ///
-    /// https://www.w3.org/TR/filter-effects/#propdef-color-interpolation-filters
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#propdef-color-interpolation-filters>
     ColorInterpolationFilters,
     default: LinearRgb,
     inherits_automatically: true,
@@ -182,9 +182,11 @@ make_property!(
 );
 
 make_property!(
-    /// `cx` attribute.
+    /// `cx` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#CX
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#CX>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     CX,
     default: Length::<Horizontal>::parse_str("0").unwrap(),
     inherits_automatically: false,
@@ -194,7 +196,9 @@ make_property!(
 make_property!(
     /// `cy` attribute.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#CY
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#CY>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     CY,
     default: Length::<Vertical>::parse_str("0").unwrap(),
     inherits_automatically: false,
@@ -204,9 +208,9 @@ make_property!(
 make_property!(
     /// `direction` property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#DirectionProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#DirectionProperty>
     ///
-    /// https://www.w3.org/TR/SVG2/text.html#DirectionProperty
+    /// SVG2: <https://www.w3.org/TR/SVG2/text.html#DirectionProperty>
     Direction,
     default: Ltr,
     inherits_automatically: true,
@@ -219,9 +223,9 @@ make_property!(
 make_property!(
     /// `display` property.
     ///
-    /// https://www.w3.org/TR/CSS2/visuren.html#display-prop
+    /// SVG1.1: <https://www.w3.org/TR/CSS2/visuren.html#display-prop>
     ///
-    /// https://www.w3.org/TR/SVG2/render.html#VisibilityControl
+    /// SVG2: <https://www.w3.org/TR/SVG2/render.html#VisibilityControl>
     Display,
     default: Inline,
     inherits_automatically: false,
@@ -248,7 +252,7 @@ make_property!(
 
 /// `enable-background` property.
 ///
-/// https://www.w3.org/TR/SVG/filters.html#EnableBackgroundProperty
+/// SVG1.1: <https://www.w3.org/TR/SVG11/filters.html#EnableBackgroundProperty>
 ///
 /// This is deprecated in SVG2.  We just have a parser for it to avoid setting elements in
 /// error if they have this property.  Librsvg does not use the value of this property.
@@ -319,9 +323,9 @@ fn parses_enable_background() {
 make_property!(
     /// `fill` property.
     ///
-    /// https://www.w3.org/TR/SVG/painting.html#FillProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/painting.html#FillProperty>
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#FillProperty
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#FillProperty>
     Fill,
     default: PaintServer::parse_str("#000").unwrap(),
     inherits_automatically: true,
@@ -331,9 +335,9 @@ make_property!(
 make_property!(
     /// `fill-opacity` property.
     ///
-    /// https://www.w3.org/TR/SVG/painting.html#FillOpacityProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/painting.html#FillOpacityProperty>
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#FillOpacity
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#FillOpacity>
     FillOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
@@ -343,9 +347,9 @@ make_property!(
 make_property!(
     /// `fill-rule` property.
     ///
-    /// https://www.w3.org/TR/SVG/painting.html#FillRuleProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/painting.html#FillRuleProperty>
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#WindingRule
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#WindingRule>
     FillRule,
     default: NonZero,
     inherits_automatically: true,
@@ -357,9 +361,9 @@ make_property!(
 
 /// `filter` property.
 ///
-/// https://www.w3.org/TR/SVG/filters.html#FilterProperty
+/// SVG1.1: <https://www.w3.org/TR/SVG11/filters.html#FilterProperty>
 ///
-/// https://www.w3.org/TR/filter-effects/#FilterProperty
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#FilterProperty>
 ///
 /// Note that in SVG2, the filters got offloaded to the [Filter Effects Module Level
 /// 1](https://www.w3.org/TR/filter-effects/) specification.
@@ -393,9 +397,9 @@ make_property!(
 make_property!(
     /// `flood-color` property, for `feFlood` and `feDropShadow` filter elements.
     ///
-    /// https://www.w3.org/TR/SVG11/filters.html#feFloodElement
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/filters.html#feFloodElement>
     ///
-    /// https://www.w3.org/TR/filter-effects/#FloodColorProperty
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#FloodColorProperty>
     FloodColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
@@ -405,9 +409,9 @@ make_property!(
 make_property!(
     /// `flood-opacity` property, for `feFlood` and `feDropShadow` filter elements.
     ///
-    /// https://www.w3.org/TR/SVG11/filters.html#feFloodElement
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/filters.html#feFloodElement>
     ///
-    /// https://www.w3.org/TR/filter-effects/#FloodOpacityProperty
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#FloodOpacityProperty>
     FloodOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -448,9 +452,9 @@ make_property!(
 make_property!(
     /// `font-stretch` property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#FontStretchProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#FontStretchProperty>
     ///
-    /// https://www.w3.org/TR/css-fonts-3/#font-size-propstret
+    /// CSS Fonts 3: <https://www.w3.org/TR/css-fonts-3/#font-size-propstret>
     FontStretch,
     default: Normal,
     inherits_automatically: true,
@@ -472,9 +476,9 @@ make_property!(
 make_property!(
     /// `font-style` property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#FontStyleProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#FontStyleProperty>
     ///
-    /// https://www.w3.org/TR/css-fonts-3/#font-size-propstret
+    /// CSS Fonts 3: <https://www.w3.org/TR/css-fonts-3/#font-size-propstret>
     FontStyle,
     default: Normal,
     inherits_automatically: true,
@@ -488,9 +492,9 @@ make_property!(
 make_property!(
     /// `font-variant` property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#FontVariantProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#FontVariantProperty>
     ///
-    /// https://www.w3.org/TR/css-fonts-3/#propdef-font-variant
+    /// CSS Fonts 3: <https://www.w3.org/TR/css-fonts-3/#propdef-font-variant>
     ///
     /// Note that in CSS3, this is a lot more complex than CSS2.1 / SVG1.1.
     FontVariant,
@@ -531,9 +535,11 @@ make_property!(
 );
 
 make_property!(
-    /// `height` attribute.
+    /// `height` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#Sizing
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#Sizing>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     Height,
     default: LengthOrAuto::<Vertical>::Auto,
     inherits_automatically: false,
@@ -543,7 +549,7 @@ make_property!(
 make_property!(
     /// `isolation` property.
     ///
-    /// https://www.w3.org/TR/compositing-1/#isolation
+    /// CSS Compositing and Blending 1: <https://www.w3.org/TR/compositing-1/#isolation>
     Isolation,
     default: Auto,
     inherits_automatically: false,
@@ -580,9 +586,9 @@ make_property!(
 make_property!(
     /// `lighting-color` property for `feDiffuseLighting` and `feSpecularLighting` filter elements.
     ///
-    /// https://www.w3.org/TR/SVG/filters.html#LightingColorProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/filters.html#LightingColorProperty>
     ///
-    /// https://www.w3.org/TR/filter-effects/#LightingColorProperty
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#LightingColorProperty>
     LightingColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
     inherits_automatically: false,
@@ -592,7 +598,7 @@ make_property!(
 make_property!(
     /// `marker` shorthand property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#MarkerShorthand
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#MarkerShorthand>
     ///
     /// This is a shorthand, which expands to the `marker-start`, `marker-mid`,
     /// `marker-end` longhand properties.
@@ -605,7 +611,7 @@ make_property!(
 make_property!(
     /// `marker-end` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#VertexMarkerProperties
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#VertexMarkerProperties>
     MarkerEnd,
     default: Iri::None,
     inherits_automatically: true,
@@ -615,7 +621,7 @@ make_property!(
 make_property!(
     /// `marker-mid` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#VertexMarkerProperties
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#VertexMarkerProperties>
     MarkerMid,
     default: Iri::None,
     inherits_automatically: true,
@@ -625,7 +631,7 @@ make_property!(
 make_property!(
     /// `marker-start` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#VertexMarkerProperties
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#VertexMarkerProperties>
     MarkerStart,
     default: Iri::None,
     inherits_automatically: true,
@@ -635,9 +641,9 @@ make_property!(
 make_property!(
     /// `mask` shorthand property.
     ///
-    /// https://www.w3.org/TR/SVG/masking.html#MaskProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/masking.html#MaskProperty>
     ///
-    /// https://www.w3.org/TR/css-masking-1/#the-mask
+    /// CSS Masking 1: <https://www.w3.org/TR/css-masking-1/#the-mask>
     ///
     /// Note that librsvg implements SVG1.1 semantics, where this is not a shorthand.
     Mask,
@@ -649,7 +655,7 @@ make_property!(
 make_property!(
     /// `mask-type` property.
     ///
-    /// https://www.w3.org/TR/css-masking-1/#the-mask-type
+    /// CSS Masking 1: <https://www.w3.org/TR/css-masking-1/#the-mask-type>
     MaskType,
     default: Luminance,
     inherits_automatically: false,
@@ -662,7 +668,7 @@ make_property!(
 make_property!(
     /// `mix-blend-mode` property.
     ///
-    /// https://www.w3.org/TR/compositing/#mix-blend-mode
+    /// Compositing and Blending 1: <https://www.w3.org/TR/compositing/#mix-blend-mode>
     MixBlendMode,
     default: Normal,
     inherits_automatically: false,
@@ -689,7 +695,7 @@ make_property!(
 make_property!(
     /// `opacity` property.
     ///
-    /// https://www.w3.org/TR/css-color-3/#opacity
+    /// CSS Color 3: <https://www.w3.org/TR/css-color-3/#opacity>
     Opacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -699,9 +705,9 @@ make_property!(
 make_property!(
     /// `overflow` shorthand property.
     ///
-    /// https://www.w3.org/TR/CSS2/visufx.html#overflow
+    /// CSS2: <https://www.w3.org/TR/CSS2/visufx.html#overflow>
     ///
-    /// https://www.w3.org/TR/css-overflow-3/#propdef-overflow
+    /// CSS Overflow 3: <https://www.w3.org/TR/css-overflow-3/#propdef-overflow>
     ///
     /// Note that librsvg implements SVG1.1 semantics, where this is not a shorthand.
     Overflow,
@@ -727,7 +733,7 @@ pub enum PaintTarget {
 make_property!(
     /// `paint-order` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#PaintOrder
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#PaintOrder>
     ///
     /// The `targets` field specifies the order in which graphic elements should be filled/stroked.
     /// Instead of hard-coding an order of fill/stroke/markers, use the order specified by the `targets`.
@@ -805,9 +811,11 @@ fn parses_paint_order() {
 }
 
 make_property!(
-    /// `r` attribute.
+    /// `r` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#R
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#R>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     R,
     default: ULength::<Both>::parse_str("0").unwrap(),
     inherits_automatically: false,
@@ -815,9 +823,11 @@ make_property!(
 );
 
 make_property!(
-    /// `rx` attribute.
+    /// `rx` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#RX
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#RX>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     RX,
     default: LengthOrAuto::<Horizontal>::Auto,
     inherits_automatically: false,
@@ -825,9 +835,11 @@ make_property!(
 );
 
 make_property!(
-    /// `ry` attribute.
+    /// `ry` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#RY
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#RY>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     RY,
     default: LengthOrAuto::<Vertical>::Auto,
     inherits_automatically: false,
@@ -837,7 +849,7 @@ make_property!(
 make_property!(
     /// `shape-rendering` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#ShapeRendering
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#ShapeRendering>
     ShapeRendering,
     default: Auto,
     inherits_automatically: true,
@@ -852,7 +864,7 @@ make_property!(
 make_property!(
     /// `stop-color` property for gradient stops.
     ///
-    /// https://www.w3.org/TR/SVG2/pservers.html#StopColorProperty
+    /// SVG2: <https://www.w3.org/TR/SVG2/pservers.html#StopColorProperty>
     StopColor,
     default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
     inherits_automatically: false,
@@ -862,7 +874,7 @@ make_property!(
 make_property!(
     /// `stop-opacity` property for gradient stops.
     ///
-    /// https://www.w3.org/TR/SVG2/pservers.html#StopOpacityProperty
+    /// SVG2: <https://www.w3.org/TR/SVG2/pservers.html#StopOpacityProperty>
     StopOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: false,
@@ -872,7 +884,7 @@ make_property!(
 make_property!(
     /// `stroke` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#SpecifyingStrokePaint
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#SpecifyingStrokePaint>
     Stroke,
     default: PaintServer::None,
     inherits_automatically: true,
@@ -882,7 +894,7 @@ make_property!(
 make_property!(
     /// `stroke-dasharray` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#StrokeDashing
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#StrokeDashing>
     StrokeDasharray,
     default: Dasharray::default(),
     inherits_automatically: true,
@@ -892,7 +904,7 @@ make_property!(
 make_property!(
     /// `stroke-dashoffset` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#StrokeDashingdas
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#StrokeDashingdas>
     StrokeDashoffset,
     default: Length::<Both>::default(),
     inherits_automatically: true,
@@ -902,7 +914,7 @@ make_property!(
 make_property!(
     /// `stroke-linecap` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#LineCaps
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#LineCaps>
     StrokeLinecap,
     default: Butt,
     inherits_automatically: true,
@@ -916,7 +928,7 @@ make_property!(
 make_property!(
     /// `stroke-linejoin` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#LineJoin
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#LineJoin>
     StrokeLinejoin,
     default: Miter,
     inherits_automatically: true,
@@ -930,7 +942,7 @@ make_property!(
 make_property!(
     /// `stroke-miterlimit` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#StrokeMiterlimitProperty
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#StrokeMiterlimitProperty>
     StrokeMiterlimit,
     default: 4f64,
     inherits_automatically: true,
@@ -940,7 +952,7 @@ make_property!(
 make_property!(
     /// `stroke-opacity` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#StrokeOpacity
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#StrokeOpacity>
     StrokeOpacity,
     default: UnitInterval(1.0),
     inherits_automatically: true,
@@ -950,7 +962,7 @@ make_property!(
 make_property!(
     /// `stroke-width` property.
     ///
-    /// https://www.w3.org/TR/SVG2/painting.html#StrokeWidth
+    /// SVG2: <https://www.w3.org/TR/SVG2/painting.html#StrokeWidth>
     StrokeWidth,
     default: Length::<Both>::parse_str("1.0").unwrap(),
     inherits_automatically: true,
@@ -960,7 +972,7 @@ make_property!(
 make_property!(
     /// `text-anchor` property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#TextAnchorProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#TextAnchorProperty>
     TextAnchor,
     default: Start,
     inherits_automatically: true,
@@ -974,9 +986,9 @@ make_property!(
 make_property!(
     /// `text-decoration` shorthand property.
     ///
-    /// https://www.w3.org/TR/SVG/text.html#TextDecorationProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#TextDecorationProperty>
     ///
-    /// https://www.w3.org/TR/css-text-decor-3/#text-decoration-property
+    /// CSS Text Decoration 3: <https://www.w3.org/TR/css-text-decor-3/#text-decoration-property>
     ///
     /// Note that librsvg implements SVG1.1 semantics, where this is not a shorthand.
     TextDecoration,
@@ -1075,7 +1087,7 @@ fn parses_text_decoration() {
 make_property!(
     /// `text-orientation` property.
     ///
-    /// https://www.w3.org/TR/css-writing-modes-3/#propdef-text-orientation
+    /// CSS Writing Modes 3: <https://www.w3.org/TR/css-writing-modes-3/#propdef-text-orientation>
     TextOrientation,
     default: Mixed,
     inherits_automatically: true,
@@ -1089,7 +1101,7 @@ make_property!(
 impl From<GlyphOrientationVertical> for TextOrientation {
     /// Converts the `glyph-orientation-vertical` shorthand to a `text-orientation` longhand.
     ///
-    /// See https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical for the conversion table.
+    /// See <https://www.w3.org/TR/css-writing-modes-3/#propdef-glyph-orientation-vertical> for the conversion table.
     fn from(o: GlyphOrientationVertical) -> TextOrientation {
         match o {
             GlyphOrientationVertical::Auto => TextOrientation::Mixed,
@@ -1102,7 +1114,7 @@ impl From<GlyphOrientationVertical> for TextOrientation {
 make_property!(
     /// `text-rendering` property.
     ///
-    /// https://www.w3.org/TR/SVG/painting.html#TextRenderingProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/painting.html#TextRenderingProperty>
     TextRendering,
     default: Auto,
     inherits_automatically: true,
@@ -1117,7 +1129,7 @@ make_property!(
 make_property!(
     /// `transform` property.
     ///
-    /// https://www.w3.org/TR/css-transforms-1/#transform-property
+    /// CSS Transforms 1: <https://www.w3.org/TR/css-transforms-1/#transform-property>
     Transform,
     default: TransformProperty::None,
     inherits_automatically: false,
@@ -1127,7 +1139,7 @@ make_property!(
 make_property!(
     /// `unicode-bidi` property.
     ///
-    /// https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi
+    /// CSS Writing Modes 3: <https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi>
     UnicodeBidi,
     default: Normal,
     inherits_automatically: false,
@@ -1144,9 +1156,7 @@ make_property!(
 make_property!(
     /// `visibility` property.
     ///
-    /// https://www.w3.org/TR/CSS2/visufx.html#visibility
-    ///
-    /// https://drafts.csswg.org/css2/#propdef-visibility
+    /// CSS2: <https://www.w3.org/TR/CSS2/visufx.html#visibility>
     Visibility,
     default: Visible,
     inherits_automatically: true,
@@ -1158,9 +1168,11 @@ make_property!(
 );
 
 make_property!(
-    /// `width` attribute.
+    /// `width` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#Sizing
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#Sizing>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     Width,
     default: LengthOrAuto::<Horizontal>::Auto,
     inherits_automatically: false,
@@ -1170,9 +1182,11 @@ make_property!(
 make_property!(
     /// `writing-mode` property.
     ///
-    /// https://www.w3.org/TR/css-writing-modes-3/#block-flow
-    /// https://svgwg.org/svg2-draft/text.html#WritingModeProperty
-    /// https://www.w3.org/TR/SVG/text.html#WritingModeProperty
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/text.html#WritingModeProperty>
+    ///
+    /// SVG2: <https://svgwg.org/svg2-draft/text.html#WritingModeProperty>
+    ///
+    /// CSS Writing Modes 3: <https://www.w3.org/TR/css-writing-modes-3/#block-flow>
     ///
     /// See the comments in the SVG2 spec for how the SVG1.1 values must be translated
     /// into CSS Writing Modes 3 values.
@@ -1218,9 +1232,11 @@ impl WritingMode {
 }
 
 make_property!(
-    /// `x` attribute.
+    /// `x` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#X
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#X>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     X,
     default: Length::<Horizontal>::parse_str("0").unwrap(),
     inherits_automatically: false,
@@ -1230,7 +1246,7 @@ make_property!(
 make_property!(
     /// `xml:lang` attribute.
     ///
-    /// https://www.w3.org/TR/xml/#sec-lang-tag
+    /// XML1.0: <https://www.w3.org/TR/xml/#sec-lang-tag>
     ///
     /// Similar to `XmlSpace`, this is a hack in librsvg: the `xml:lang` attribute is
     /// supposed to apply to an element and all its children.  This more or less matches
@@ -1269,7 +1285,7 @@ fn parses_xml_lang() {
 make_property!(
     /// `xml:space` attribute.
     ///
-    /// https://www.w3.org/TR/xml/#sec-white-space
+    /// XML1.0: <https://www.w3.org/TR/xml/#sec-white-space>
     ///
     /// Similar to `XmlLang`, this is a hack in librsvg.  The `xml:space` attribute is
     /// supposed to be applied to all the children of the element in which it appears, so
@@ -1286,9 +1302,11 @@ make_property!(
 );
 
 make_property!(
-    /// `y` attribute.
+    /// `y` property.
     ///
-    /// https://www.w3.org/TR/SVG2/geometry.html#Y
+    /// SVG2: <https://www.w3.org/TR/SVG2/geometry.html#Y>
+    ///
+    /// Note that in SVG1.1, this was an attribute, not a property.
     Y,
     default: Length::<Vertical>::parse_str("0").unwrap(),
     inherits_automatically: false,

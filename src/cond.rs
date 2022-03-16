@@ -19,7 +19,7 @@ pub struct RequiredExtensions(pub bool);
 impl RequiredExtensions {
     /// Parse a requiredExtensions attribute.
     ///
-    /// http://www.w3.org/TR/SVG/struct.html#RequiredExtensionsAttribute
+    /// <http://www.w3.org/TR/SVG/struct.html#RequiredExtensionsAttribute>
     pub fn from_attribute(s: &str) -> Result<RequiredExtensions, ValueErrorKind> {
         Ok(RequiredExtensions(
             s.split_whitespace()

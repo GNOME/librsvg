@@ -718,7 +718,7 @@ impl selectors::Element for RsvgElement {
     /// Returns whether this element matches `:empty`.
     ///
     /// That is, whether it does not contain any child element or any non-zero-length text node.
-    /// See http://dev.w3.org/csswg/selectors-3/#empty-pseudo
+    /// See <http://dev.w3.org/csswg/selectors-3/#empty-pseudo>.
     fn is_empty(&self) -> bool {
         // .all() returns true for the empty iterator
         self.0
@@ -736,9 +736,11 @@ impl selectors::Element for RsvgElement {
     }
 }
 
-/// Origin for a stylesheet, per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
+/// Origin for a stylesheet, per CSS 2.2.
 ///
 /// This is used when sorting selector matches according to their origin and specificity.
+///
+/// CSS2.2: <https://www.w3.org/TR/CSS22/cascade.html#cascading-order>
 #[derive(Copy, Clone, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Origin {
     UserAgent,
@@ -760,7 +762,7 @@ pub struct Stylesheet {
 ///
 /// This type implements `Ord` so a list of `Match` can be sorted.
 /// That implementation does ordering based on origin and specificity
-/// as per https://www.w3.org/TR/CSS22/cascade.html#cascading-order
+/// as per <https://www.w3.org/TR/CSS22/cascade.html#cascading-order>.
 struct Match<'a> {
     specificity: u32,
     origin: Origin,

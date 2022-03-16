@@ -10,8 +10,8 @@ use crate::xml::Attributes;
 ///
 /// Currently only "text/css" is supported.
 ///
-/// https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute
-/// https://www.w3.org/TR/SVG11/styling.html#ContentStyleTypeAttribute
+/// <https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute>
+/// <https://www.w3.org/TR/SVG11/styling.html#ContentStyleTypeAttribute>
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum StyleType {
     TextCss,

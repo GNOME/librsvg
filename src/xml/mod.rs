@@ -117,7 +117,7 @@ pub struct XmlState {
 
 /// Errors returned from XmlState::acquire()
 ///
-/// These follow the terminology from https://www.w3.org/TR/xinclude/#terminology
+/// These follow the terminology from <https://www.w3.org/TR/xinclude/#terminology>
 enum AcquireError {
     /// Resource could not be acquired (file not found), or I/O error.
     /// In this case, the `xi:fallback` can be used if present.

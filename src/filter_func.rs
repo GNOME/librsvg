@@ -33,7 +33,7 @@ use crate::unit_interval::UnitInterval;
 
 /// CSS Filter functions from the Filter Effects Module Level 1
 ///
-/// https://www.w3.org/TR/filter-effects/#filter-functions
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#filter-functions>
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterFunction {
     Blur(Blur),
@@ -50,7 +50,7 @@ pub enum FilterFunction {
 
 /// Parameters for the `blur()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-blur
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-blur>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Blur {
     std_deviation: Option<Length<Both>>,
@@ -58,7 +58,7 @@ pub struct Blur {
 
 /// Parameters for the `brightness()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-brightness
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-brightness>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Brightness {
     proportion: Option<f64>,
@@ -66,7 +66,7 @@ pub struct Brightness {
 
 /// Parameters for the `contrast()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-contrast
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-contrast>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Contrast {
     proportion: Option<f64>,
@@ -74,7 +74,7 @@ pub struct Contrast {
 
 /// Parameters for the `drop-shadow()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-drop-shadow
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-drop-shadow>
 #[derive(Debug, Clone, PartialEq)]
 pub struct DropShadow {
     color: Option<Color>,
@@ -85,7 +85,7 @@ pub struct DropShadow {
 
 /// Parameters for the `grayscale()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-grayscale
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-grayscale>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Grayscale {
     proportion: Option<f64>,
@@ -93,7 +93,7 @@ pub struct Grayscale {
 
 /// Parameters for the `hue-rotate()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-huerotate
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-huerotate>
 #[derive(Debug, Clone, PartialEq)]
 pub struct HueRotate {
     angle: Option<Angle>,
@@ -101,7 +101,7 @@ pub struct HueRotate {
 
 /// Parameters for the `invert()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-invert
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-invert>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Invert {
     proportion: Option<f64>,
@@ -109,7 +109,7 @@ pub struct Invert {
 
 /// Parameters for the `opacity()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-opacity
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-opacity>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Opacity {
     proportion: Option<f64>,
@@ -117,7 +117,7 @@ pub struct Opacity {
 
 /// Parameters for the `saturate()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-saturate
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-saturate>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Saturate {
     proportion: Option<f64>,
@@ -125,7 +125,7 @@ pub struct Saturate {
 
 /// Parameters for the `sepia()` filter function
 ///
-/// https://www.w3.org/TR/filter-effects/#funcdef-filter-sepia
+/// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#funcdef-filter-sepia>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sepia {
     proportion: Option<f64>,
@@ -367,7 +367,7 @@ impl Contrast {
 impl DropShadow {
     /// Converts a DropShadow into the set of filter element primitives.
     ///
-    /// See https://www.w3.org/TR/filter-effects/#dropshadowEquivalent
+    /// See <https://www.w3.org/TR/filter-effects/#dropshadowEquivalent>.
     fn to_filter_spec(&self, params: &NormalizeParams, default_color: RGBA) -> FilterSpec {
         let user_space_filter = Filter::default().to_user_space(params);
         let dx = self.dx.map(|l| l.to_user(params)).unwrap_or(0.0);

@@ -48,7 +48,7 @@ struct Item {
 
 /// Stores a parsed version of an HTTP Accept-Language header.
 ///
-/// <https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.5>
+/// RFC 7231: <https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.5>
 #[derive(Clone, Debug, PartialEq)]
 pub struct AcceptLanguage(Box<[Item]>);
 
@@ -74,7 +74,9 @@ impl fmt::Display for AcceptLanguageError {
     }
 }
 
-/// Optional whitespace, Space or Tab, per https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3
+/// Optional whitespace, Space or Tab, per RFC 7230.
+///
+/// RFC 7230: <https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3>
 const OWS: [char; 2] = ['\x20', '\x09'];
 
 impl AcceptLanguage {
@@ -165,7 +167,7 @@ impl Item {
 
 /// A list of BCP47 language tags.
 ///
-/// https://www.rfc-editor.org/info/rfc5664
+/// RFC 5664: <https://www.rfc-editor.org/info/rfc5664>
 #[derive(Debug, Clone, PartialEq)]
 pub struct LanguageTags(Vec<LanguageTag>);
 

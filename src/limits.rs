@@ -3,8 +3,8 @@
 /// Maximum number of times that elements can be referenced through URL fragments.
 ///
 /// This is a mitigation for the security-related bugs:
-/// https://gitlab.gnome.org/GNOME/librsvg/issues/323
-/// https://gitlab.gnome.org/GNOME/librsvg/issues/515
+/// <https://gitlab.gnome.org/GNOME/librsvg/issues/323>
+/// <https://gitlab.gnome.org/GNOME/librsvg/issues/515>
 ///
 /// Imagine the XML [billion laughs attack], but done in SVG's terms:
 ///

@@ -95,7 +95,7 @@ pub enum DefsLookupErrorKind {
     /// Used when the public API tries to look up an external URL, which is not allowed.
     ///
     /// This catches the case where a public API wants to be misused to access an external
-    /// resource.  For example, `SvgHandle.has_sub("https://evil.com/phone_home#element_id") will
+    /// resource.  For example, `SvgHandle.has_sub("https://evil.com/phone_home#element_id")` will
     /// fail with this error.
     CannotLookupExternalReferences,
 
