@@ -1,3 +1,24 @@
+==============
+Version 2.54.0
+==============
+
+This is a summary of the 2.53.x release notes; you can also read them
+for more detail.  Not many new features; we've been working on
+infrastructure and documentation.
+
+- Librsvg now supports SVG2 geometry properties for these elements:
+  rect, circle, ellipse, image, svg (Jeremias Ortega).
+
+- #721 - Catch circular references when rendering patterns.
+
+- The C API documentation now uses gi-docgen instead of gtk-doc.
+  Rsvg-convert's man page is now converted to reStructuredText instead
+  of troff.
+
+- The "Recommendations for applications" chapter in the documentation
+  is much improved!
+
+==============
 Version 2.53.2
 ==============
 
