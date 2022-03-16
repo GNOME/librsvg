@@ -167,10 +167,30 @@ impl From<cairo::Error> for RenderingError {
     }
 }
 
+/// Errors from [`crate::document::AcquiredNodes`].
 pub enum AcquireError {
+    /// An element with the specified id was not found.
     LinkNotFound(NodeId),
+
     InvalidLinkType(NodeId),
+
+    /// A circular reference was detected; non-fatal error.
+    ///
+    /// Callers are expected to treat the offending element as invalid, for example
+    /// if a graphic element uses a pattern fill, but the pattern in turn includes
+    /// another graphic element that references the same pattern.
+    ///
+    /// ```xml
+    /// <pattern id="foo">
+    ///   <rect width="1" height="1" fill="url(#foo)"/>
+    /// </pattern>
+    /// ```
     CircularReference(Node),
+
+    /// Too many referenced objects were resolved; fatal error.
+    ///
+    /// Callers are expected to exit as early as possible and return an error to
+    /// the public API.  See [`ImplementationLimit::TooManyReferencedElements`] for details.
     MaxReferencesExceeded,
 }
 

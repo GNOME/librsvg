@@ -339,15 +339,37 @@ impl AcquiredNode {
     }
 }
 
-/// This helper struct is used when looking up urls to other nodes.
-/// Its methods do recursion checking and thereby avoid infinite loops.
+/// Detects circular references between nodes, and enforces referencing limits.
 ///
-/// Malformed SVGs, for example, may reference a marker by its IRI, but
-/// the object referenced by the IRI is not a marker.
+/// Consider this fragment of SVG:
 ///
-/// Note that if you acquire a node, you have to release it before trying to
-/// acquire it again.  If you acquire a node "#foo" and don't release it before
-/// trying to acquire "foo" again, you will obtain a None the second time.
+/// ```xml
+/// <pattern id="foo">
+///   <rect width="1" height="1" fill="url(#foo)"/>
+/// </pattern>
+/// ```
+///
+/// The pattern has a child element that references the pattern itself.  This kind of circular
+/// reference is invalid.  The `AcquiredNodes` struct is passed around
+/// wherever it may be necessary to resolve references to nodes, or to access nodes
+/// "elsewhere" in the DOM that is not the current subtree.
+///
+/// Also, such constructs that reference other elements can be maliciously arranged like
+/// in the [billion laughs attack][lol], to cause huge amounts of CPU to be consumed through
+/// creating an exponential number of references.  `AcquiredNodes` imposes a hard limit on
+/// the number of references that can be resolved for typical, well-behaved SVG documents.
+///
+/// The [`Self::acquire()`] and [`Self::acquire_ref()`] methods return an [`AcquiredNode`], which
+/// acts like a smart pointer for a [`Node`].  Once a node has been acquired, it cannot be
+/// acquired again until its [`AcquiredNode`] is dropped.  In the example above, a graphic element
+/// would acquire the `pattern`, which would then acquire its `rect` child, which then would fail
+/// to re-acquired the `pattern` — thus signaling a circular reference.
+///
+/// Those methods return an [`AcquireError`] to signal circular references.  Also, they
+/// can return [`AcquireError::MaxReferencesExceeded`] if the aforementioned referencing limit
+/// is exceeded.
+///
+/// [lol]: https://bitbucket.org/tiran/defusedxml
 pub struct AcquiredNodes<'i> {
     document: &'i Document,
     num_elements_acquired: usize,
@@ -367,8 +389,10 @@ impl<'i> AcquiredNodes<'i> {
         self.document.lookup_image(href)
     }
 
-    /// Acquires a node.
-    /// Nodes acquired by this function must be released in reverse acquiring order.
+    /// Acquires a node by its id.
+    ///
+    /// This is typically used during an "early resolution" stage, when XML `id`s are being
+    /// resolved to node references.
     pub fn acquire(&mut self, node_id: &NodeId) -> Result<AcquiredNode, AcquireError> {
         self.num_elements_acquired += 1;
 
@@ -402,6 +426,18 @@ impl<'i> AcquiredNodes<'i> {
         }
     }
 
+    /// Acquires a node whose reference is already known.
+    ///
+    /// This is useful for cases where a node is initially referenced by its id with
+    /// [`Self::acquire`] and kept around for later use.  During the later use, the node
+    /// needs to be re-acquired with this method.  For example:
+    ///
+    /// * At an "early resolution" stage, `acquire()` a pattern by its id, and keep around its
+    /// [`Node`] reference.
+    ///
+    /// * At the drawing stage, `acquire_ref()` the pattern node that we already had, so that
+    /// its child elements that reference other paint servers will be able to detect circular
+    /// references to the pattern.
     pub fn acquire_ref(&self, node: &Node) -> Result<AcquiredNode, AcquireError> {
         if self.node_stack.borrow().contains(node) {
             Err(AcquireError::CircularReference(node.clone()))

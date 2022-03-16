@@ -837,26 +837,41 @@ typedef struct {
 /**
  * rsvg_handle_get_intrinsic_dimensions:
  * @handle: An [class@Rsvg.Handle]
- * @out_has_width: (out)(optional): Will be set to `TRUE` if the toplevel SVG has a `width` attribute
- * @out_width: (out)(optional): Will be set to the value of the `width` attribute in the toplevel SVG
- * @out_has_height: (out)(optional): Will be set to `TRUE` if the toplevel SVG has a `height` attribute
- * @out_height: (out)(optional): Will be set to the value of the `height` attribute in the toplevel SVG
+ * @out_has_width: (out)(optional): Will be set to `TRUE`; see below.
+ * @out_width: (out)(optional): Will be set to the computed value of the `width` property in the toplevel SVG.
+ * @out_has_height: (out)(optional): Will be set to `TRUE`; see below.
+ * @out_height: (out)(optional): Will be set to the computed value of the `height` property in the toplevel SVG.
  * @out_has_viewbox: (out)(optional): Will be set to `TRUE` if the toplevel SVG has a `viewBox` attribute
  * @out_viewbox: (out)(optional): Will be set to the value of the `viewBox` attribute in the toplevel SVG
  *
- * Queries the `width`, `height`, and `viewBox` attributes in an SVG document.
+ * In simple terms, queries the `width`, `height`, and `viewBox` attributes in an SVG document.
  *
  * If you are calling this function to compute a scaling factor to render the SVG,
  * consider simply using [method@Rsvg.Handle.render_document] instead; it will do the
  * scaling computations automatically.
  *
- * As an example, the following SVG element has a `width` of 100 pixels and a `height` of 400 pixels, but no `viewBox`:
+ * Before librsvg 2.54.0, the `out_has_width` and `out_has_height` arguments would be set to true or false
+ * depending on whether the SVG document actually had `width` and `height` attributes, respectively.
+ *
+ * However, since librsvg 2.54.0, `width` and `height` are now [geometry
+ * properties](https://www.w3.org/TR/SVG2/geometry.html) per the SVG2 specification; they
+ * are not plain attributes.  SVG2 made it so that the initial value of those properties
+ * is `auto`, which is equivalent to specifing a value of `100%`.  In this sense, even SVG
+ * documents which lack `width` or `height` attributes semantically have to make them
+ * default to `100%`.  This is why since librsvg 2.54.0, `out_has_width` and
+ * `out_has_heigth` are always returned as `TRUE`, since with SVG2 all documents *have* a
+ * default width and height of `100%`.
+ *
+ * As an example, the following SVG element has a `width` of 100 pixels and a `height` of 400 pixels, but no `viewBox`.  This
+ * function will return those sizes in `out_width` and `out_height`, and set `out_has_viewbox` to `FALSE`.
  *
  * ```
  * <svg xmlns="http://www.w3.org/2000/svg" width="100" height="400">
  * ```
  *
- * Conversely, the following element has a `viewBox`, but no `width` or `height`:
+ * Conversely, the following element has a `viewBox`, but no `width` or `height`.  This function will
+ * set `out_has_viewbox` to `TRUE`, and it will also set `out_has_width` and `out_has_height` to `TRUE` but
+ * return both length values as `100%`.
  *
  * ```
  * <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 400">
@@ -900,7 +915,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * physical units, the dimensions are normalized to pixels using the dots-per-inch (DPI)
  * value set previously with [method@Rsvg.Handle.set_dpi].  For font-based units, this function
  * uses the computed value of the `font-size` property for the toplevel
- * `&lt;svg&gt;` element.  In those cases, this function returns `TRUE`.
+ * `<svg>` element.  In those cases, this function returns `TRUE`.
  *
  * This function is not able to extract the size in pixels directly from the intrinsic
  * dimensions of the SVG document if the `width` or
@@ -916,7 +931,7 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * <svg xmlns="http://www.w3.org/2000/svg" width="20" height="30"/>
  * ```
  *
- * Similarly, if the DPI is set to 96, this document will resolve to 192x288 pixels (i.e. 96*2 x 96*3).
+ * Similarly, if the DPI is set to 96, this document will resolve to 192×288 pixels (i.e. 96×2 × 96×3).
  *
  * ```
  * <svg xmlns="http://www.w3.org/2000/svg" width="2in" height="3in"/>
