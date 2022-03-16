@@ -35,7 +35,7 @@ pub struct Transform {
 
 /// The `transform` property from the CSS Transforms Module Level 1.
 ///
-/// https://www.w3.org/TR/css-transforms-1/#transform-property
+/// CSS Transforms 1: <https://www.w3.org/TR/css-transforms-1/#transform-property>
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransformProperty {
     None,
@@ -44,7 +44,7 @@ pub enum TransformProperty {
 
 /// The `transform` attribute from SVG1.1
 ///
-/// https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
+/// SVG1.1: <https://www.w3.org/TR/SVG11/coords.html#TransformAttribute>
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct TransformAttribute(Transform);
 

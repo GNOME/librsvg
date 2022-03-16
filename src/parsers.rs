@@ -92,7 +92,7 @@ impl Parse for NonNegative {
 
 /// CSS number-optional-number
 ///
-/// https://www.w3.org/TR/SVG/types.html#DataTypeNumberOptionalNumber
+/// SVG1.1: <https://www.w3.org/TR/SVG11/types.html#DataTypeNumberOptionalNumber>
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct NumberOptionalNumber<T: Parse>(pub T, pub T);
 
@@ -112,7 +112,7 @@ impl<T: Parse + Copy> Parse for NumberOptionalNumber<T> {
 
 /// CSS number-percentage
 ///
-/// https://www.w3.org/TR/css3-values/#typedef-number-percentage
+/// CSS Values and Units 3: <https://www.w3.org/TR/css3-values/#typedef-number-percentage>
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct NumberOrPercentage {
     pub value: f64,
@@ -138,7 +138,7 @@ impl Parse for NumberOrPercentage {
 impl Parse for i32 {
     /// CSS integer
     ///
-    /// <https://www.w3.org/TR/SVG11/types.html#DataTypeInteger>
+    /// SVG1.1: <https://www.w3.org/TR/SVG11/types.html#DataTypeInteger>
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         Ok(parser.expect_integer()?)
     }
@@ -156,7 +156,7 @@ impl Parse for u32 {
     }
 }
 
-/// CSS number-list values.
+/// Number lists with bounds for the required and maximum number of items.
 #[derive(Debug, PartialEq)]
 pub struct NumberList<const REQUIRED: usize, const MAX: usize>(pub Vec<f64>);
 
@@ -219,7 +219,9 @@ macro_rules! parse_identifiers {
     };
 }
 
-/// https://www.w3.org/TR/css-values-4/#custom-idents
+/// CSS Custom identifier.
+///
+/// CSS Values and Units 4: <https://www.w3.org/TR/css-values-4/#custom-idents>
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CustomIdent(pub String);
 

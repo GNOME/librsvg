@@ -78,7 +78,7 @@ where
 
 /// Whether a property also has a presentation attribute.
 ///
-/// https://svgwg.org/svg2-draft/styling.html#PresentationAttributes
+/// <https://svgwg.org/svg2-draft/styling.html#PresentationAttributes>
 #[derive(PartialEq)]
 enum PresentationAttr {
     No,
@@ -135,14 +135,14 @@ impl ComputedValues {
 
     /// Whether we should draw the element or skip both space allocation
     /// and drawing.
-    /// https://www.w3.org/TR/SVG2/render.html#VisibilityControl
+    /// <https://www.w3.org/TR/SVG2/render.html#VisibilityControl>
     pub fn is_displayed(&self) -> bool {
         self.display() != Display::None
     }
 
     /// Whether we should draw the element or allocate its space but
     /// skip drawing.
-    /// https://www.w3.org/TR/SVG2/render.html#VisibilityControl
+    /// <https://www.w3.org/TR/SVG2/render.html#VisibilityControl>
     pub fn is_visible(&self) -> bool {
         self.visibility() == Visibility::Visible
     }

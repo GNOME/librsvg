@@ -1132,7 +1132,7 @@ impl BidiControl {
     /// Creates a `BidiControl` from the properties that determine it.
     ///
     /// See the table titled "Bidi control codes injected..." in
-    /// https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi
+    /// <https://www.w3.org/TR/css-writing-modes-3/#unicode-bidi>
     #[rustfmt::skip]
     fn from_unicode_bidi_and_direction(unicode_bidi: UnicodeBidi, direction: Direction) -> BidiControl {
         use UnicodeBidi::*;

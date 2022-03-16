@@ -254,13 +254,12 @@ document's aspect ratio.
 
 ### SVGs with no intrinsic dimensions nor aspect ratio
 
-SVG documents that have none of the `width`, `height`, or `viewBox`
-attributes are thankfully not very common, but they are hard to deal
-with: the software cannot immediately know their natural size or aspect
-ratio, so they cannot be easily scaled to fit within a viewport. Librsvg
-has to actually measure the extents of every single element in the SVG
-document in that case. If you need to do this by hand, use
-[method@Rsvg.Handle.get_geometry_for_layer].
+SVG documents that have none of the `width`, `height`, or `viewBox` attributes are
+thankfully not very common, but they are hard to deal with: the software cannot
+immediately know their natural size or aspect ratio, so they cannot be easily scaled to
+fit within a viewport.  If you need to measure the extents of all the objects in an SVG
+document, you can use [method@Rsvg.Handle.get_geometry_for_element] by passing `NULL` for
+the target element's `id`; this will measure all the elements in the document.
 
 ## Migrating to the geometry APIs
 

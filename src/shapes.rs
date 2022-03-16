@@ -255,6 +255,11 @@ impl BasicShape for Path {
     }
 }
 
+/// List-of-points for polyline and polygon elements.
+///
+/// SVG1.1: <https://www.w3.org/TR/SVG/shapes.html#PointsBNF>
+///
+/// SVG2: <https://www.w3.org/TR/SVG/shapes.html#DataTypePoints>
 #[derive(Debug, Default, PartialEq)]
 struct Points(Vec<(f64, f64)>);
 
@@ -266,8 +271,6 @@ impl Deref for Points {
     }
 }
 
-// Parse a list-of-points as for polyline and polygon elements
-// https://www.w3.org/TR/SVG/shapes.html#PointsBNF
 impl Parse for Points {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Points, ParseError<'i>> {
         let mut v = Vec::new();

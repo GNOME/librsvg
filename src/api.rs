@@ -254,11 +254,18 @@ const DEFAULT_DPI_X: f64 = 96.0;
 const DEFAULT_DPI_Y: f64 = 96.0;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-/// Contains the values of the `<svg>` element's `width`, `height`, and `viewBox` attributes.
+/// Contains the computed values of the `<svg>` element's `width`, `height`, and `viewBox`.
 ///
 /// An SVG document has a toplevel `<svg>` element, with optional attributes `width`,
 /// `height`, and `viewBox`.  This structure contains the values for those attributes; you
 /// can obtain the struct from [`CairoRenderer::intrinsic_dimensions`].
+///
+/// Since librsvg 2.54.0, there is support for [geometry
+/// properties](https://www.w3.org/TR/SVG2/geometry.html) from SVG2.  This means that
+/// `width` and `height` are no longer attributes; they are instead CSS properties that
+/// default to `auto`.  The computed value for `auto` is `100%`, so for a `<svg>` that
+/// does not have these attributes/properties, the `width`/`height` fields will be
+/// returned as a [`Length`] of 100%.
 ///
 /// As an example, the following SVG element has a `width` of 100 pixels
 /// and a `height` of 400 pixels, but no `viewBox`.
@@ -266,15 +273,18 @@ const DEFAULT_DPI_Y: f64 = 96.0;
 /// ```xml
 /// <svg xmlns="http://www.w3.org/2000/svg" width="100" height="400">
 /// ```
-/// In this case, the length fields will be set to `Some()`, and `vbox` to `None`.
+///
+/// In this case, the length fields will be set to the corresponding
+/// values with [`LengthUnit::Px`] units, and the `vbox` field will be
+/// set to to `None`.
 pub struct IntrinsicDimensions {
-    /// `width` attribute of the `<svg>`
+    /// Computed value of the `width` property of the `<svg>`.
     pub width: Length,
 
-    /// `height` attribute of the `<svg>`
+    /// Computed value of the `height` property of the `<svg>`.
     pub height: Length,
 
-    /// `viewBox` attribute of the `<svg>`, if present
+    /// `viewBox` attribute of the `<svg>`, if present.
     pub vbox: Option<cairo::Rectangle>,
 }
 

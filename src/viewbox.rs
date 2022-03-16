@@ -10,7 +10,7 @@ use crate::rect::Rect;
 /// Newtype around a [`Rect`], used to represent the `viewBox` attribute.
 ///
 /// A `ViewBox` is a new user-space coordinate system mapped onto the rectangle defined by
-/// the current viewport.  See https://www.w3.org/TR/SVG2/coords.html#ViewBoxAttribute
+/// the current viewport.  See <https://www.w3.org/TR/SVG2/coords.html#ViewBoxAttribute>
 ///
 /// `ViewBox` derefs to [`Rect`], so you can use [`Rect`]'s methods and fields directly like
 /// `vbox.x0` or `vbox.width()`.

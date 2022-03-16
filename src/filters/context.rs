@@ -197,7 +197,7 @@ impl FilterContext {
 
     /// Returns a surface filled with the current stroke's paint, for `StrokePaint` inputs in primitives.
     ///
-    /// https://www.w3.org/TR/filter-effects/#attr-valuedef-in-strokepaint
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-strokepaint>
     fn stroke_paint_image(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -217,7 +217,7 @@ impl FilterContext {
 
     /// Returns a surface filled with the current fill's paint, for `FillPaint` inputs in primitives.
     ///
-    /// https://www.w3.org/TR/filter-effects/#attr-valuedef-in-fillpaint
+    /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#attr-valuedef-in-fillpaint>
     fn fill_paint_image(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
