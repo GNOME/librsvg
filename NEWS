@@ -1,4 +1,12 @@
 ==============
+Version 2.52.8
+==============
+
+Just a bug fix:
+
+- #721 - Catch circular references when rendering patterns.
+
+==============
 Version 2.52.7
 ==============
 
