@@ -117,15 +117,17 @@ dnl Man page generator
 
 AC_CHECK_PROGS(RST2MAN, [rst2man rst2man.py], [no])
 AS_IF(test x$RST2MAN = xno,
-    AC_MSG_ERROR([rst2man is required.  Please install python3-docutils.])
+    AC_MSG_WARN([rst2man not found - not building man pages])
 )
+AM_CONDITIONAL(HAVE_RST2MAN, [test "x$RST2MAN" != "xno"])
 
 dnl Gi-docgen
 
 AC_CHECK_TOOL(GI_DOCGEN, [gi-docgen], [no])
 AS_IF(test x$GI_DOCGEN = xno,
-    AC_MSG_ERROR([gi-docgen is required.  Please install it.])
+    AC_MSG_WARN([gi-docgen not found - not building docs])
 )
+AM_CONDITIONAL(HAVE_GI_DOCGEN, [test "x$GI_DOCGEN" != "xno"])
 
 dnl ===========================================================================
 
