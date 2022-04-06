@@ -122,7 +122,7 @@ GType rsvg_error_get_type (void);
  * if the base file is `/foo/bar/baz.svg`, then librsvg will
  * only try to load referenced files (from SVG's
  * `<image>` element, for example, or from content
- * included through XML entities) if those files are in `/foo/bar/*` or in `/foo/bar/*\/.../*`.
+ * included through XML entities) if those files are in `/foo/bar/<anything>` or in `/foo/bar/<anything>\/.../<anything>`.
  * This is so that malicious SVG files cannot include files that are in a directory above.
  *
  * The full set of rules for deciding which URLs may be loaded is as follows;
