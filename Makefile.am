@@ -1,4 +1,8 @@
-SUBDIRS = . gdk-pixbuf-loader tests doc win32
+if HAVE_GI_DOCGEN
+RSVG_DOC = doc
+endif
+
+SUBDIRS = . gdk-pixbuf-loader tests $(RSVG_DOC) win32
 
 NULL =
 
@@ -229,11 +233,20 @@ rsvg-convert$(EXEEXT): $(RSVG_CONVERT_BIN)
 	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
 
 rsvg-convert.1: rsvg-convert.rst
+if HAVE_RST2MAN
 	$(RST2MAN) $(top_srcdir)/rsvg-convert.rst rsvg-convert.1
+else
+	@echo "========================================"
+	@echo "You need rst2man installed to make dist"
+	@echo "========================================"
+	@false
+endif
 
+if HAVE_RST2MAN
 man1_MANS = rsvg-convert.1
 
 CLEANFILES += rsvg-convert.1
+endif
 
 dist_doc_DATA =				\
 	COMPILING.md			\
