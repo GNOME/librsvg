@@ -12,10 +12,10 @@ pacman --noconfirm -Suy
 
 pacman --noconfirm -S --needed \
     base-devel \
-    mingw-w64-$MSYS2_ARCH-gtk-doc \
-    mingw-w64-$MSYS2_ARCH-gi-docgen \
+    mingw-w64-$MSYS2_ARCH-autotools \
     mingw-w64-$MSYS2_ARCH-gobject-introspection \
     mingw-w64-$MSYS2_ARCH-gdk-pixbuf2 \
+    mingw-w64-$MSYS2_ARCH-gtk-doc \
     mingw-w64-$MSYS2_ARCH-harfbuzz \
     mingw-w64-$MSYS2_ARCH-fontconfig \
     mingw-w64-$MSYS2_ARCH-fribidi \
