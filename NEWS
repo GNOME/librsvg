@@ -1,4 +1,18 @@
 ==============
+Version 2.54.1
+==============
+
+This release just has some build-time fixes.
+
+- Fix oversight in the Minimum Supported Rust Version (MSRV) - this
+  release requires Rust 1.56 or later.  This has been true since
+  librsvg 2.53.1, but it was not checked correctly. (Matt Turner)
+
+- #859 - Make rst2man and gi-docgen optional. (Kleis Auke Wolthuizen)
+
+- #856 - Fix documentation comments.
+
+==============
 Version 2.54.0
 ==============
 
