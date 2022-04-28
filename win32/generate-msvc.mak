@@ -19,6 +19,17 @@ $(OUTDIR)\librsvg\Rsvg_2_0_gir_list: $(librsvg_real_pub_HDRS)
 	@if exist $@ del $@
 	@for %%s in ($**) do @echo %%s >> $@
 
+# Generate documentation (introspection must be built)
+!ifdef INTROSPECTION
+generate-docs: ..\doc\librsvg.toml $(OUTDIR)\Rsvg-$(RSVG_API_VER).gir
+	@echo Generating documentation...
+	@$(GI_DOCGEN) generate -C $** --content-dir=..\doc	\
+	--add-include-path=$(G_IR_INCLUDEDIR)
+!else
+generate-docs:
+	@echo Introspection must be enabled to build documentation
+!endif
+
 # Generate NMake Makefiles (for git checkouts only)
 
 !ifndef IS_NOT_GIT

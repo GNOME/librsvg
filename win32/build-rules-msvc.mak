@@ -111,6 +111,7 @@ $(OUTDIR)\Rsvg-2.0.typelib: $(OUTDIR)\Rsvg-2.0.gir
 !endif
 
 clean:
+	@-if exist Rsvg-$(RSVG_API_VER)\ rmdir /s/q Rsvg-$(RSVG_API_VER)
 	@if exist $(OUTDIR)\Rsvg-$(RSVG_API_VER).typelib del /f /q $(OUTDIR)\Rsvg-$(RSVG_API_VER).typelib
 	@if exist $(OUTDIR)\Rsvg-$(RSVG_API_VER).gir del /f /q $(OUTDIR)\Rsvg-$(RSVG_API_VER).gir
 	@-del /f /q $(OUTDIR)\*.dll
