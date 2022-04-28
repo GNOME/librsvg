@@ -1575,6 +1575,13 @@ static DimensionsFixtureData dimensions_fixtures[] =
         50.0, 60.0, 70.0, 80.0,
         TRUE, TRUE
     },
+    {
+        "/dimensions/sub/823",
+        "dimensions/823-position-sub.svg",
+        "#pad_width",
+        444.0, 139.0, 0.0, 0.0,
+        TRUE, FALSE
+    },
 };
 
 typedef struct
