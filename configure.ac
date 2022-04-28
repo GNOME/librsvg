@@ -123,11 +123,19 @@ AM_CONDITIONAL(HAVE_RST2MAN, [test "x$RST2MAN" != "xno"])
 
 dnl Gi-docgen
 
-AC_CHECK_TOOL(GI_DOCGEN, [gi-docgen], [no])
-AS_IF(test x$GI_DOCGEN = xno,
-    AC_MSG_WARN([gi-docgen not found - not building docs])
-)
-AM_CONDITIONAL(HAVE_GI_DOCGEN, [test "x$GI_DOCGEN" != "xno"])
+AC_ARG_ENABLE([gtk-doc],
+              [AS_HELP_STRING([--disable-gtk-doc],[Disable building documentation (requires introspection)])],
+              [enable_gtk_doc=$enableval],[enable_gtk_doc=auto])
+
+AS_IF([test "x$enable_gtk_doc" != xno],
+      [AC_CHECK_TOOL(GI_DOCGEN, [gi-docgen], [no])
+       AS_IF([test "x$GI_DOCGEN" = no],
+             [AS_CASE(["$enable_gtk_doc"],
+                      [yes], [AC_MSG_ERROR([gi-docgen not found - cannot build docs])],
+                      [auto], [AC_MSG_WARN([gi-docgen not found - not building docs])])
+              enable_gtk_doc=no]
+             [enable_gtk_doc=yes])])
+AM_CONDITIONAL(ENABLE_GTK_DOC, [test "x$enable_gtk_doc" = xyes])
 
 dnl ===========================================================================
 
@@ -359,4 +367,5 @@ librsvg-$VERSION
 	Build introspectable bindings:  ${found_introspection}
 	Build Vala bindings:            ${enable_vala}
 	Build GdkPixbuf loader:         ${enable_pixbuf_loader}
+	Build developer documentation:  ${enable_gtk_doc}
 "

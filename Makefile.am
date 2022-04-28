@@ -1,4 +1,4 @@
-if HAVE_GI_DOCGEN
+if ENABLE_GTK_DOC
 RSVG_DOC = doc
 endif
 
