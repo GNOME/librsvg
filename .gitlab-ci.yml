@@ -240,7 +240,6 @@ clippy:
     - cargo clippy --version
     - gitlab-clippy --version
     - cargo clippy
-  after_script:
     - cargo clippy --message-format=json | gitlab-clippy -o gl-code-quality-report.json
   artifacts:
     reports:
