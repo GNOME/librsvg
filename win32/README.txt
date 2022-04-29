@@ -62,15 +62,14 @@ x86/x86-64 Windows 7+ or on Windows 10 ARM64.
 It is recommended that the dependent libraries are built with the same version
 of Visual Studio that is being used to build librsvg, as far as possible.
 
-If building from a git checkout is desired, you will need to open the following
-*.in files, and replace any items that are surrounded by the '@' characters,
-and save those files without the .in file extension:
+If building from a git checkout is desired, you will need to run in this directory (not supported in an unpacked release tarball):
 
-(open file)                           -> (save as file)
-===========                              ==============
-config-msvc.mak.in                    -> config-msvc.mak
-config.h.win32.in                     -> config.h.win32
-$(srcroot)\librsvg\rsvg-version.h.in  -> $(srcroot)\librsvg\rsvg-version.h
+nmake /f generate-msvc.mak generate-nmake-files
+
+You may need to pass in PYTHON=<path_to_python_interpreter> in the
+NMake command line above if your Python interpreter is not in your
+%PATH%.  Run `nmake /f generate-msvc.mak remove-generated-nmake-files`
+to remove any generated files
 
 From this directory in a Visual Studio command prompt, run the following:
 
