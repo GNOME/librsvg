@@ -43,6 +43,10 @@ You will also need the following tools:
  You will need to set or pass in PKG_CONFIG_PATH if the pkg-config
  files cannot be found from the default locations that pkg-config will 
  look for.
+-For building documentation, in addition to the items needed for introspection,
+ the gi-docgen tool that can be installed for your Python installation via
+ PIP.  Documentation can only be built if the introspection files are being
+ built.
 
 It is now possible to cross-compile librsvg for ARM64 Windows, as well as for
 x64 Windows on 32-bit or ARM64 Windows systems, using this set of NMake Makefiles.
@@ -87,6 +91,8 @@ for all targets.
 -rsvg_rust_tests: Makes a build of the rust items into an executable to test the rust
                   bits.  You may need to make a copy of libxml2.lib (or so) to xml2.lib
                   in order to build this successfully.
+-generate-docs: Build the librsvg HTML documentation, requires the gi-docgen tool
+                and must be built in conjunction with introspection.
 -clean: Removes all build files
 -install: Same as (not specified) and also copies the built DLLs, .lib's, headers,
           tools and possibly introspection files to appropriate locations under
@@ -130,6 +136,18 @@ for all targets.
                %PATH% or in $(BINDIR) as well, for building the
                introspection files or for creating the GDK-Pixbuf
                loaders cache file.
+-G_IR_SCANNER:  Paths to the g-ir-scanner script and g-ir-compiler program,
+ G_IR_COMPILER: which are set to be $(BINDIR)\g-ir-scanner and
+                $(BINDIR)\g-ir-compiler by default.  Used for building
+                introspection files.
+-G_IR_INCLUDEDIR:  Paths to where the dependent .gir and .typelib files,
+ G_IR_TYPELIBDIR:  can be found, which are set to be $(BINDIR)\..\share\gir-1.0
+                   and $(BINDIR)\..\lib\girepository-1.0 by default.  Used for
+                   building introspection files as well as building the
+                   HTML documentation.
+-GI_DOCGEN:  Path to the gi-docgen tool, needed if it is not in %PATH% and/or
+             is not in .exe format (installing gi-docgen by PIP typically
+             produces gi-docgen in .exe format).
 
 <other_options> is as follows, activate the options using <option>=1:
 -INTROSPECTION: Build the introspection files.  Please see notes above.
