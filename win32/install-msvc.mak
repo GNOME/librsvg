@@ -25,3 +25,5 @@ install: all
 	@if not exist librsvg-2.0.pc echo *** librsvg-2.0.pc is not generated!  Generate it later using ^$(PYTHON) --version=$(RSVG_PKG_VERSION) --prefix=^$(PREFIX)
 	@if exist librsvg-2.0.pc if not exist $(PREFIX)\lib\pkgconfig mkdir $(PREFIX)\lib\pkgconfig
 	@if exist librsvg-2.0.pc move librsvg-2.0.pc $(PREFIX)\lib\pkgconfig
+	@if exist Rsvg-$(RSVG_API_VER)\ if not exist $(PREFIX)\doc\Rsvg-$(RSVG_API_VER)\ mkdir $(PREFIX)\doc\Rsvg-$(RSVG_API_VER)
+	@copy /b/y Rsvg-$(RSVG_API_VER)\* $(PREFIX)\doc\Rsvg-$(RSVG_API_VER)
