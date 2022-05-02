@@ -29,6 +29,9 @@ mod loading_crash;
 mod predicates;
 
 #[cfg(test)]
+mod primitive_geometries;
+
+#[cfg(test)]
 mod primitives;
 
 #[cfg(test)]

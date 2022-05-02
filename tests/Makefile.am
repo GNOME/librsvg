@@ -10,6 +10,7 @@ test_sources =				\
 	src/legacy_sizing.rs		\
 	src/loading_crash.rs		\
 	src/main.rs			\
+	src/primitive_geometries.rs	\
 	src/primitives.rs		\
 	src/reference.rs		\
 	src/reference_utils.rs		\
