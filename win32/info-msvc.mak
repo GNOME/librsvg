@@ -72,6 +72,21 @@ help:
 	@echo GObject-Introspection built with Meson, consult the shebang line in
 	@echo ^$(BINDIR)\g-ir-scanner for determining the correct Python interpreter.
 	@echo.
+	@echo G_IR_SCANNER, G_IR_COMPILER: Paths to g-ir-scanner and g-ir-compiler,
+	@echo defaults are ^$(BINDIR)\g-ir-scanner and ^$(BINDIR)\g-ir-compiler
+	@echo respectively.
+	@echo.
+	@echo G_IR_INCLUDEDIR, G_IR_TYPELIBDIR: Paths to look for the dependent
+	@echo .gir and .typelib files for introspection as well as generating
+	@echo documentation.  Defaults are ^$(BINDIR)\..\share\gir-1.0 and
+	@echo ^$(BINDIR)\..\lib\girepository-1.0 respectively.
+	@echo.
+	@echo GI_DOCGEN: Path to the script `gi-docgen` which may be installed
+	@echo in your Python installation via PIP.  Required for building
+	@echo documentation and when gi-docgen is not in your ^%PATH^% and/or is
+	@echo not in a .exe format (installation via PIP normally gives the
+	@echo gi-docgen .exe format).
+	@echo.
 	@echo OPTION: Optional, may be any of the following, use OPTION=1 to enable;
 	@echo multiple OPTION's may be used.  If no OPTION is specified, a default
 	@echo librsvg, without the introspection files.
@@ -104,6 +119,10 @@ help:
 	@echo object files and binaries for the specified configuration.
 	@echo.
 	@echo A 'tests' target is supported to build and runthe test programs.
+	@echo.
+	@echo A 'generate-docs' target is supported to generate the documentation.
+	@echo Requires building introspection and requires the gi-docgen tool (as noted
+	@echo above)
 	@echo.
 	@echo An 'install' target is supported to copy the build (DLLs, utility programs,
 	@echo LIBs, along with the introspection files if applicable) to appropriate
