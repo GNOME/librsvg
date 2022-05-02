@@ -43,10 +43,18 @@ PKG_CONFIG=pkg-config
 GIR_SUBDIR = share\gir-1.0
 GIR_TYPELIBDIR = lib\girepository-1.0
 
+!ifndef G_IR_SCANNER
 G_IR_SCANNER = $(BINDIR)\g-ir-scanner
+!endif
+!ifndef G_IR_COMPILER
 G_IR_COMPILER = $(BINDIR)\g-ir-compiler.exe
+!endif
+!ifndef G_IR_INCLUDEDIR
 G_IR_INCLUDEDIR = $(BINDIR)\..\$(GIR_SUBDIR)
+!endif
+!ifndef G_IR_TYPELIBDIR
 G_IR_TYPELIBDIR = $(BINDIR)\..\$(GIR_TYPELIBDIR)
+!endif
 
 # Used for generating the documentation using gi-docgen
 !ifndef GI_DOCGEN
