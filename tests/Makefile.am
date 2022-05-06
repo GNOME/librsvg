@@ -6,6 +6,7 @@ test_sources =				\
 	src/compare_surfaces.rs		\
 	src/errors.rs			\
 	src/filters.rs			\
+	src/geometries.rs		\
 	src/intrinsic_dimensions.rs	\
 	src/legacy_sizing.rs		\
 	src/loading_crash.rs		\

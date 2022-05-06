@@ -17,6 +17,9 @@ mod errors;
 mod filters;
 
 #[cfg(test)]
+mod geometries;
+
+#[cfg(test)]
 mod intrinsic_dimensions;
 
 #[cfg(test)]
