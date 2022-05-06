@@ -88,6 +88,8 @@ pangocairo = "0.15"
 png = "0.17.2"
 predicates = "2.0.0"
 proptest = "1.0.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 tempfile = "3"
 test-generator = "0.3"
 yeslogic-fontconfig-sys = "2.11.1"
