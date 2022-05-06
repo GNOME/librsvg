@@ -74,6 +74,7 @@ url = "2"
 xml5ever = "0.16.1"
 
 [dev-dependencies]
+anyhow = "1.0"
 assert_cmd = "2.0.2"
 cairo-rs = { version = "0.15", features = ["png"] }
 cast = "0.3.0"
