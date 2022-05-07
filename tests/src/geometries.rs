@@ -48,3 +48,29 @@ fn read_geometries(path: &Path) -> Result<Geometries> {
     Ok(serde_json::from_str(&contents).context(format!("could not parse JSON from {:?}", path))?)
 }
 
+fn test(base_filename: &str) {
+    let mut geometries_filename = String::from(base_filename);
+    geometries_filename.push_str(".subs");
+
+    let geometries = read_geometries(Path::new(&geometries_filename)).expect("reading geometries JSON");
+}
+
+#[test]
+fn dual() {
+    test("tests/fixtures/geometries/dual.svg");
+}
+
+#[test]
+fn grid() {
+    test("tests/fixtures/geometries/grid.svg");
+}
+
+#[test]
+fn quad() {
+    test("tests/fixtures/geometries/quad.svg");
+}
+
+#[test]
+fn single() {
+    test("tests/fixtures/geometries/single.svg");
+}
