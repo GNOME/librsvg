@@ -61,6 +61,7 @@ test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
 	$(wildcard $(srcdir)/fixtures/geometries/*)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
+	$(wildcard $(srcdir)/fixtures/primitive_geometries/*)		\
 	$(wildcard $(srcdir)/fixtures/reftests/*.css)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.png)			\
