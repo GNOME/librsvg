@@ -89,7 +89,11 @@ impl Element {
         }
     }
 
-    fn from_rectangles(id: &str, ink_rect: cairo::Rectangle, logical_rect: cairo::Rectangle) -> Element {
+    fn from_rectangles(
+        id: &str,
+        ink_rect: cairo::Rectangle,
+        logical_rect: cairo::Rectangle,
+    ) -> Element {
         Element {
             id: String::from(id),
             ink_rect: Some(ink_rect.into()),
@@ -156,5 +160,13 @@ fn rect_stroke_unfilled() {
     test(
         "tests/fixtures/primitive_geometries/rect_stroke_unfilled.svg",
         "tests/fixtures/primitive_geometries/rect_stroke_unfilled.svg.geom",
+    );
+}
+
+#[test]
+fn rect_isolate() {
+    test(
+        "tests/fixtures/primitive_geometries/rect_isolate.svg",
+        "tests/fixtures/primitive_geometries/rect_isolate.svg.geom",
     );
 }
