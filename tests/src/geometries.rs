@@ -13,7 +13,7 @@
 //! time.
 
 use anyhow::{Context, Result};
-use librsvg::{CairoRenderer, LengthUnit, Loader};
+use librsvg::{CairoRenderer, LengthUnit, Loader, Rect};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs;
@@ -30,13 +30,13 @@ struct Rectangle {
     height: f64,
 }
 
-impl From<Rectangle> for cairo::Rectangle {
-    fn from(r: Rectangle) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
+impl From<Rectangle> for Rect {
+    fn from(r: Rectangle) -> Rect {
+        Rect {
+            x0: r.x,
+            y0: r.y,
+            x1: r.x + r.width,
+            y1: r.y + r.height,
         }
     }
 }
@@ -54,7 +54,21 @@ fn read_geometries(path: &Path) -> Result<Geometries> {
 #[derive(Debug, PartialEq)]
 struct Element {
     id: String,
-    geom: cairo::Rectangle,
+    geom: Rect,
+}
+
+macro_rules! assert_rectangles_approx_eq {
+    ($id:expr, $expected:expr, $computed:expr) => {
+        if !$expected.approx_eq(&$computed) {
+            eprintln!(
+                "assertion failed: rectangles are not approximately equal for id={}",
+                $id
+            );
+            eprintln!("  expected: {:?}", $expected);
+            eprintln!("  computed: {:?}", $computed);
+            panic!();
+        }
+    };
 }
 
 fn test(svg_filename: &str) {
@@ -82,7 +96,7 @@ fn test(svg_filename: &str) {
         println!("id: {}", id);
         let expected = Element {
             id: String::from(id),
-            geom: cairo::Rectangle::from(*expected),
+            geom: Rect::from(*expected),
         };
 
         let viewport = cairo::Rectangle {
@@ -98,10 +112,10 @@ fn test(svg_filename: &str) {
 
         let computed = Element {
             id: String::from(id),
-            geom: geometry,
+            geom: geometry.into(),
         };
 
-        assert_eq!(expected, computed);
+        assert_rectangles_approx_eq!(id, expected.geom, computed.geom);
     }
 }
 
