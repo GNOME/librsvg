@@ -17,6 +17,9 @@ mod errors;
 mod filters;
 
 #[cfg(test)]
+mod geometries;
+
+#[cfg(test)]
 mod intrinsic_dimensions;
 
 #[cfg(test)]
@@ -27,6 +30,9 @@ mod loading_crash;
 
 #[cfg(test)]
 mod predicates;
+
+#[cfg(test)]
+mod primitive_geometries;
 
 #[cfg(test)]
 mod primitives;

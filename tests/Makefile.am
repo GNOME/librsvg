@@ -6,10 +6,12 @@ test_sources =				\
 	src/compare_surfaces.rs		\
 	src/errors.rs			\
 	src/filters.rs			\
+	src/geometries.rs		\
 	src/intrinsic_dimensions.rs	\
 	src/legacy_sizing.rs		\
 	src/loading_crash.rs		\
 	src/main.rs			\
+	src/primitive_geometries.rs	\
 	src/primitives.rs		\
 	src/reference.rs		\
 	src/reference_utils.rs		\
@@ -57,7 +59,9 @@ test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/crash/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/crash/*.png)			\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
+	$(wildcard $(srcdir)/fixtures/geometries/*)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
+	$(wildcard $(srcdir)/fixtures/primitive_geometries/*)		\
 	$(wildcard $(srcdir)/fixtures/reftests/*.css)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.png)			\

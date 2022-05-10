@@ -326,7 +326,7 @@ impl DrawingCtx {
             cr,
             user_language: self.user_language.clone(),
             viewport_stack: self.viewport_stack.clone(),
-            drawsub_stack: Vec::new(),
+            drawsub_stack: self.drawsub_stack.clone(),
             measuring: self.measuring,
             testing: self.testing,
         }
