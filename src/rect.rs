@@ -159,10 +159,10 @@ mod rect {
         pub fn approx_eq(&self, other: &Self) -> bool {
             // FIXME: this is super fishy; shouldn't we be using 2x the epsilon against the width/height
             // instead of the raw coordinates?
-            approx_eq!(f64, self.x0, other.x0)
-                && approx_eq!(f64, self.y0, other.y0)
-                && approx_eq!(f64, self.x1, other.x1)
-                && approx_eq!(f64, self.y1, other.y1)
+            approx_eq!(f64, self.x0, other.x0, epsilon = 0.0001)
+                && approx_eq!(f64, self.y0, other.y0, epsilon = 0.0001)
+                && approx_eq!(f64, self.x1, other.x1, epsilon = 0.0001)
+                && approx_eq!(f64, self.y1, other.y1, epsilon = 0.00012)
         }
     }
 }
