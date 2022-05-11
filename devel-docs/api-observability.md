@@ -33,6 +33,23 @@ Shaved.
 
 ## Desiderata
 
+Know exactly what an application did with librsvg:
+
+* All API calls and their parameters.
+
+* State of the Cairo context at entry.
+
+* "What SVG?" - be careful and explicit about exfiltrating SVG data to the logs.
+
+Internals of the library:
+
+* Regular debug tracing.  We may have options to enable/disable
+  tracing domains: parsing, cascading, referencing elements, temporary
+  surfaces during filtering, render tree, etc.
+
+* Log all points where an error is detected/generated, even if it will
+  be discarded later (e.g. invalid CSS values are silently ignored,
+  per the spec).
 
 ## Stuff to log
 
