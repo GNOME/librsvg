@@ -41,6 +41,12 @@ Know exactly what an application did with librsvg:
 
 * "What SVG?" - be careful and explicit about exfiltrating SVG data to the logs.
 
+* Basic platform stuff?  Is the platform triple enough?  Distro ID?
+
+* Versions of dependencies.
+
+* Version of librsvg itself.
+
 Internals of the library:
 
 * Regular debug tracing.  We may have options to enable/disable
@@ -50,29 +56,110 @@ Internals of the library:
 * Log all points where an error is detected/generated, even if it will
   be discarded later (e.g. invalid CSS values are silently ignored,
   per the spec).
+  
+## Enabling logging
 
-## Stuff to log
+It may be useful to be able to enable logging in various ways:
+
+* Programmatically, for when one has control of the source code of the
+  problematic application.  Enable logging at the problem spot, for
+  the SVG you know that exhibits the problem, and be done with it.
+  This can probably be at the individual `RsvgHandle` level, not
+  globally.  For global logging within a single process, see the next
+  point.
+  
+* For a single process which one can easily launch via the command
+  line; e.g. with an environment variable.  This works well for
+  non-sandboxed applications.  Something like
+  `RSVG_LOG_CONFIG=my_log_config.toml`.
+  
+* With a configuration file, a la `~/.config/librsvg.toml`.  Many
+  programs use librsvg and you don't want logs for all of them; allow
+  the configuration file to specify a process name, or maybe other
+  ways of determining when to log.  For session programs like
+  gnome-shell, you can't easily set an environment variable to enable
+  logging - hence, a configuration file that only turns on logging
+  from the gnome-shell process.
+  
+All of the above should be well documented, and then we can deprecate `RSVG_LOG`.
+
+## Which SVG caused a crash?
+
+Every once in a while, a bug report comes in like "$application
+crashed in librsvg".  The application renders many SVGs, often
+indirectly via gdk-pixbuf, and it is hard to know exactly which SVG
+caused the problem.  Think of gnome-shell or gnome-software.
+
+For applications that call librsvg directly, if they pass the filename
+or a GFile then it is not hard to find out the source SVG.
+
+But for those that feed bytes into librsvg, including those that use
+it indirectly via gdk-pixbuf, librsvg has no knowledge of the
+filename.  We need to use the base_uri then, or see if the pixbuf
+loader can be modified to propagate this information (is it even
+available from the GdkPixbufLoader machinery?).
+
+If all else fails, we can have an exfiltration mechanism.  How can we
+avoid logging *all* the SVG data that gnome-shell renders, for
+example?  Configure the logger to skip the first N SVGs, and hope that
+the order is deterministic?  We can't really "log only if there is a
+crash during rendering".
+
+Log only the checksums of SVGs or data lengths, and use that to find
+which SVG caused the crash?  I.e. have the user use a two-step process
+to find a crash: get a log (written synchronously) of all SVG
+checksums/lengths, and then reconfigure the logger to only exfiltrate
+the last one that got logged - presumably that one caused the crash.
+
+## Which dynamically-created SVG caused a problem?
+
+Consider a bug like
+https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/5415 where an
+application dynamically generates an SVG and feeds it to librsvg.
+That bug was not a crash; it was about incorrect values returned from
+an librsvg API function.  For those cases it may be useful to be able
+to exfiltrate an SVG and its stylesheets only if it matches a
+user-provided substring.
+
+## Global configuration
+
+`$(XDG_CONFIG_HOME)/librsvg.toml` - for startup-like processes like
+gnome-shell, for which it is hard to set an environment variable:
+
+## Per-process configuration
+
+`RSVG_LOG_CONFIG=my_log_config.toml my_process`
 
 
 
-Log cr state at entry.
+## Programmatic API
+
+FIXME
+
+
+## Configuration format
+
+```toml
+[logging]
+enabled=true
+process=gnome-shell              # mandatory for global config - don't want to log all processes - warn to g_log if key is not set
+output=/home/username/rsvg.log   # if missing, log to g_log only - or use a output_to_g_log=true instead?
+```
+
+
+## API logging
+
+Log cr state at entry, surface type, starting transform.
 
 Log name/base_uri of rendered document.
 
 Can we know if it is a gresource?  Or a byte buffer?  Did it come from gdk-pixbuf?
 
-## Invocation
+## Log contents
 
-RSVG_LOG=1 is easy for specific processes or rsvg-convert
+/home/username/rsvg.log - json doesn't have comments; put one of these in a string somehow:
 
-Login processes like gnome-shell need a config file.  ~/.config/librsvg.toml:
-
-  [logging]
-  enabled=true                     # make this the default if the file exists?
-  process=gnome-shell              # mandatory - don't want to log all processes - warn to g_log if key is not set
-  output=/home/federico/rsvg.log   # if missing, log to g_log only
-
-/home/federico/rsvg.log - json doesn't have comments; put this in a string somehow:
+```
   ******************************************************************************
   * This log file exists because you enabled logging in ~/.config/librsvg.toml *
   * for the "gnome-shell" process.                                             *
@@ -87,6 +174,7 @@ Login processes like gnome-shell need a config file.  ~/.config/librsvg.toml:
   *                                                                            *
   * If you want to disable this kind of log, FIXME                             */
   ******************************************************************************
+```
 
 ** To-do list [0/1]
 
@@ -95,54 +183,3 @@ Login processes like gnome-shell need a config file.  ~/.config/librsvg.toml:
 - [ ] Audit code for Cairo calls that yield errors; log there.
 
 - [ ] Log the entire ancestry of the element that caused the error?  Is that an insta-reproducer?
-
-** Ideas 
-
-*** Log API calls?
-
-Is this useful?  Not all the entry points; most cases are new_from_whatever() / render().
-
-Better, log the filename, or the base_uri for a stream, or optionally exfiltrate the SVG in case of a resource or raw data.
-
-*** What to log
-
-Entry point at rendering: state of the Cairo context, surface type, starting transform, etc.
-
-Versions of dependencies - pango, cairo, etc.  Distro name / Windows / MacOS?
-
-*** Limit to a process
-
-For global configuration (see below), put the process name in the configuration file.
-
-For single-process config, use RSVG_LOG_CONFIG=filename.toml env var
-
-
-*** Configuration and log format
-
-~/.config/librsvg.toml - global configuration
-  [logging]
-  enabled=true
-  process=gnome-shell              # mandatory - don't want to log all processes
-  output=/home/federico/rsvg.log
-
-/home/federico/rsvg.log - json doesn't have comments; put this in a string somehow:
-  ******************************************************************************
-  * This log file exists because you enabled logging in ~/.config/librsvg.toml *
-  * for the "gnome-shell" process.                                             *
-  *                                                                            *
-  * If you want to disable this kind of log, please turn it off in that file   *
-  * or delete that file entirely.                                              *
-  ******************************************************************************
-
-  ******************************************************************************
-  * This log file exists because you enabled logging with                      *
-  * RSVG_LOG_CONFIG=config.toml for the "single-process-name" process.         *
-  *                                                                            *
-  * If you want to disable this kind of log, FIXME                             */
-  ******************************************************************************
-
-Output JSON, so it can nest <g> and such?
-
-Add a replayer?  This would effectively be "paint the render tree".
-Just replay the user's provided log file, reproduce the bug.
-
