@@ -114,10 +114,10 @@ fn test(svg_filename: &str, geometries_filename: &str) {
         .intrinsic_size_in_pixels()
         .expect("intrinsic size in pixels");
 
-    assert!(matches!(dimensions.width.unit, LengthUnit::Px));
-    assert!(matches!(dimensions.height.unit, LengthUnit::Px));
-    assert_eq!(dimensions.width.length, svg_width);
-    assert_eq!(dimensions.height.length, svg_height);
+    assert!(matches!(dimensions.width.unwrap().unit, LengthUnit::Px));
+    assert!(matches!(dimensions.height.unwrap().unit, LengthUnit::Px));
+    assert_eq!(dimensions.width.unwrap().length, svg_width);
+    assert_eq!(dimensions.height.unwrap().length, svg_height);
 
     for (id, expected) in geometries.0.iter() {
         let expected = Element::from_element_geometry(id, expected);
