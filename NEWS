@@ -1,4 +1,17 @@
 ==============
+Version 2.54.2
+==============
+
+- #823 - Fix regressions when computing element geometries.
+
+- Add a --disable-gtk-doc option for the configure script, so people
+  can disable generating documentation for cross-compiling (Matt
+  Turner).
+
+- MSVC: Support generating documentation, and passing introspection
+  paths (Chun-wei Fan)
+
+==============
 Version 2.54.1
 ==============
 
