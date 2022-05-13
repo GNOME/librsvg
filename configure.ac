@@ -129,11 +129,11 @@ AC_ARG_ENABLE([gtk-doc],
 
 AS_IF([test "x$enable_gtk_doc" != xno],
       [AC_CHECK_TOOL(GI_DOCGEN, [gi-docgen], [no])
-       AS_IF([test "x$GI_DOCGEN" = no],
+       AS_IF([test "x$GI_DOCGEN" = xno],
              [AS_CASE(["$enable_gtk_doc"],
                       [yes], [AC_MSG_ERROR([gi-docgen not found - cannot build docs])],
                       [auto], [AC_MSG_WARN([gi-docgen not found - not building docs])])
-              enable_gtk_doc=no]
+              enable_gtk_doc=no],
              [enable_gtk_doc=yes])])
 AM_CONDITIONAL(ENABLE_GTK_DOC, [test "x$enable_gtk_doc" = xyes])
 

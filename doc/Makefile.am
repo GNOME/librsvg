@@ -21,11 +21,14 @@ build.stamp: $(DOCS_SRC) $(HEADERS_WITH_DOCS) $(GIR_FILE)
 clean-local:
 	rm -rf Rsvg-2.0
 
+# This is the devhelp convention for documentation paths; it will look for the .devhelp file there
+DOC_INSTALL_DIR=$(DESTDIR)/$(datadir)/doc/Rsvg-2.0
+
 install-data-local: build.stamp
-	$(MKDIR_P) $(DESTDIR)/$(docdir)/Rsvg-2.0
-	for f in Rsvg-2.0/*; do $(INSTALL_DATA) $$f $(DESTDIR)/$(docdir)/Rsvg-2.0; done
+	$(MKDIR_P) $(DOC_INSTALL_DIR)
+	for f in Rsvg-2.0/*; do $(INSTALL_DATA) $$f $(DOC_INSTALL_DIR); done
 
 uninstall-local:
-	rm -rf $(DESTDIR)/$(docdir)/Rsvg-2.0
+	rm -rf $(DOC_INSTALL_DIR)
 
 all-local: build.stamp
