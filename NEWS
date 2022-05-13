@@ -1,4 +1,10 @@
 ==============
+Version 2.52.9
+==============
+
+- #823 - Fix regressions when computing element geometries.
+
+==============
 Version 2.52.8
 ==============
 
