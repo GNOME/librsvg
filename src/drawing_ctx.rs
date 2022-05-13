@@ -326,7 +326,7 @@ impl DrawingCtx {
             cr,
             user_language: self.user_language.clone(),
             viewport_stack: self.viewport_stack.clone(),
-            drawsub_stack: Vec::new(),
+            drawsub_stack: self.drawsub_stack.clone(),
             measuring: self.measuring,
             testing: self.testing,
         }
@@ -691,7 +691,6 @@ impl DrawingCtx {
         }
 
         let orig_transform = self.get_transform();
-
         self.cr.transform(stacking_ctx.transform.into());
 
         let res = if clipping {
@@ -893,7 +892,6 @@ impl DrawingCtx {
                     }
 
                     self.cr.set_matrix(affine_at_start.into());
-
                     res
                 } else {
                     let current_transform = self.get_transform();
@@ -909,14 +907,7 @@ impl DrawingCtx {
         };
 
         self.cr.set_matrix(orig_transform.into());
-
-        if let Ok(bbox) = res {
-            let mut res_bbox = BoundingBox::new().with_transform(orig_transform);
-            res_bbox.insert(&bbox);
-            Ok(res_bbox)
-        } else {
-            res
-        }
+        res
     }
 
     /// Run the drawing function with the specified opacity
