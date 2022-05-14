@@ -1,4 +1,13 @@
 ==============
+Version 2.54.3
+==============
+
+- #866 - Fix detection of gi-docgen (David King, Jan Alexander Steffens).
+
+- Install the generated documentation in the correct place so that
+  Devhelp can find it (thanks to Jan Tojnar for pointing this out).
+
+==============
 Version 2.54.2
 ==============
 
