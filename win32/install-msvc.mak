@@ -26,4 +26,4 @@ install: all
 	@if exist librsvg-2.0.pc if not exist $(PREFIX)\lib\pkgconfig mkdir $(PREFIX)\lib\pkgconfig
 	@if exist librsvg-2.0.pc move librsvg-2.0.pc $(PREFIX)\lib\pkgconfig
 	@if exist Rsvg-$(RSVG_API_VER)\ if not exist $(PREFIX)\doc\Rsvg-$(RSVG_API_VER)\ mkdir $(PREFIX)\doc\Rsvg-$(RSVG_API_VER)
-	@copy /b/y Rsvg-$(RSVG_API_VER)\* $(PREFIX)\doc\Rsvg-$(RSVG_API_VER)
+	@if exist Rsvg-$(RSVG_API_VER)\ copy /b/y Rsvg-$(RSVG_API_VER)\* $(PREFIX)\doc\Rsvg-$(RSVG_API_VER)
