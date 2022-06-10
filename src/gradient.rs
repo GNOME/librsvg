@@ -55,22 +55,6 @@ impl Parse for SpreadMethod {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-struct StopOffset(UnitInterval);
-
-impl Parse for StopOffset {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        let loc = parser.current_source_location();
-        let l: Length<Both> = Parse::parse(parser)?;
-        match l.unit {
-            LengthUnit::Px | LengthUnit::Percent => Ok(StopOffset(UnitInterval::clamp(l.length))),
-            _ => Err(loc.new_custom_error(ValueErrorKind::value_error(
-                "stop offset must be in default or percent units",
-            ))),
-        }
-    }
-}
-
 /// Node for the <stop> element
 #[derive(Default)]
 pub struct Stop {
@@ -84,8 +68,7 @@ impl SetAttributes for Stop {
     fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "offset") = attr.expanded() {
-                let StopOffset(o) = attr.parse(value)?;
-                self.offset = o;
+                self.offset = attr.parse(value)?;
             }
         }
 
