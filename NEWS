@@ -1,4 +1,18 @@
 ==============
+Version 2.54.4
+==============
+
+- #817 - Support CSS Color 4 for alpha values.  Opacities can be
+  specified as numbers or percentages now, e.g. 0.5 or 50%
+  (Michael Howell).
+
+- #870 - Roll back minimum required version of Pango to 1.46.0
+  (Kleis Auke Wolthuizen).
+
+- #867 - Fix Windows NMake install when documentation is not built.
+  (Peter Williams).
+
+==============
 Version 2.54.3
 ==============
 
