@@ -258,17 +258,19 @@ EXTRA_DIST =				\
 	$(LIBRSVG_SRC)			\
 	$(RUST_EXTRA)			\
 	$(RSVG_CONVERT_SRC)		\
-	librsvg.doap			\
 	AUTHORS				\
-	NEWS				\
 	COPYING.LIB 			\
-	librsvg-zip.in 			\
+	NEWS.md				\
+	SECURITY.md			\
 	Rsvg-2.0-custom.vala		\
 	Rsvg-2.0.metadata		\
-	rsvg-convert.rst		\
 	glib-tap.mk			\
+	librsvg-zip.in 			\
+	librsvg.doap			\
+	rsvg-convert.rst		\
 	tap-driver.sh			\
-	tap-test
+	tap-test			\
+	$(NULL)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librsvg-$(RSVG_API_VERSION).pc
