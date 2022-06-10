@@ -365,6 +365,7 @@ distcheck:
       when: manual
       allow_failure: true
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 reference:
   extends:
