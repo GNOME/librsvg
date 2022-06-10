@@ -3,6 +3,16 @@
 include:
   - local: 'ci/container_builds.yml'
 
+# Enable merge request pipelines and avoid duplicate pipelines
+# https://docs.gitlab.com/ee/ci/yaml/index.html#switch-between-branch-pipelines-and-merge-request-pipelines
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH'
+
 variables:
   LIBRSVG_DEBUG: "yes"
   # Turn compiler warnings into errors
@@ -344,6 +354,7 @@ distcheck:
     - '.cache'
   needs:
     - job: check
+      artifacts: false
   tags:
     # FIXME: remove this once the runners get CentOS upgraded
     # see https://gitlab.gnome.org/GNOME/librsvg/-/issues/848
