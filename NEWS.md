@@ -1,9 +1,8 @@
-==============
 Version 2.54.4
 ==============
 
-- #817 - Support CSS Color 4 for alpha values.  Opacities can be
-  specified as numbers or percentages now, e.g. 0.5 or 50%
+- #817 - Support CSS Color 4 syntax for `<alpha-value>`.  Opacities
+  can be specified as numbers or percentages now, e.g. `0.5` or `50%`
   (Michael Howell).
 
 - #870 - Roll back minimum required version of Pango to 1.46.0
@@ -12,7 +11,6 @@ Version 2.54.4
 - #867 - Fix Windows NMake install when documentation is not built.
   (Peter Williams).
 
-==============
 Version 2.54.3
 ==============
 
@@ -21,7 +19,6 @@ Version 2.54.3
 - Install the generated documentation in the correct place so that
   Devhelp can find it (thanks to Jan Tojnar for pointing this out).
 
-==============
 Version 2.54.2
 ==============
 
@@ -34,7 +31,6 @@ Version 2.54.2
 - MSVC: Support generating documentation, and passing introspection
   paths (Chun-wei Fan)
 
-==============
 Version 2.54.1
 ==============
 
@@ -48,7 +44,6 @@ This release just has some build-time fixes.
 
 - #856 - Fix documentation comments.
 
-==============
 Version 2.54.0
 ==============
 
@@ -68,7 +63,6 @@ infrastructure and documentation.
 - The "Recommendations for applications" chapter in the documentation
   is much improved!
 
-==============
 Version 2.53.2
 ==============
 
@@ -92,7 +86,6 @@ Version 2.53.2
 
 - Add links to functions and types throughout the C API documentation.
 
-==============
 Version 2.53.1
 ==============
 
@@ -116,7 +109,6 @@ the time to add it!
 
 - Windows build fixes (Martin Hertz, Chun-wei Fan)
 
-==============
 Version 2.53.0
 ==============
 
@@ -137,7 +129,6 @@ gi-docgen before compiling librsvg from a tarball.
 
 - Link against bcrypt for Visual Studio builds (Martin Hertz).
 
-==============
 Version 2.52.5
 ==============
 
@@ -166,7 +157,6 @@ Miscellaneous:
   float-cmp, itertools, nalgebra, png, proptest, rctree, selectors,
   system-deps.
 
-==============
 Version 2.52.4
 ==============
 
@@ -191,7 +181,6 @@ Fixes:
   only manifests itself in s/390x due to its calling convention.  See
   https://github.com/gtk-rs/gtk-rs-core/issues/335
 
-==============
 Version 2.52.3
 ==============
 
@@ -212,7 +201,6 @@ Bugfixes, mostly for text layout.  Also, text links in PDF!
 
 - #807 - PDF now includes links inside text elements. (Michael Howell)
 
-==============
 Version 2.52.2
 ==============
 
@@ -266,7 +254,6 @@ Please see the man page for details.
 - For developers, there is now devel-docs/adding-a-property.md with a
   tutorial on how to add support for new CSS properties.
 
-==============
 Version 2.52.1
 ==============
 
@@ -291,8 +278,6 @@ This is a bugfix release; there are no new features this time.
 - Clarify documentation for the rsvg_handle_write() /
   rsvg_handle_close() deprecated APIs.
 
-
-==============
 Version 2.52.0
 ==============
 
@@ -453,7 +438,6 @@ Chun-wei Fan, Abraham Toriz, Christian Hergert, Ignacio Casal Quinteiro
 have been keeping the Windows and MacOS builds working.
 
 
-==============
 Version 2.51.4
 ==============
 
@@ -475,7 +459,7 @@ Version 2.51.4
 
 - #757 - Fix 32-bit builds.
 
-==============
+
 Version 2.51.3
 ==============
 
@@ -529,7 +513,7 @@ John Ledbetter.
 
 - Various updates to the developer's documentation.
 
-==============
+
 Version 2.51.2
 ==============
 
@@ -595,7 +579,6 @@ Special thanks to John Ledbetter for carefully implementing each of
 the new shortcuts for filter functions in SVG2.
 
 
-==============
 Version 2.51.1
 ==============
 
@@ -639,7 +622,6 @@ Special thanks to Dunja Lalic for adding the start of code coverage
 analysis to the build.
 
 
-==============
 Version 2.51.0
 ==============
 
@@ -769,7 +751,6 @@ Special thanks for this release:
 - Paolo Borelli for constant refactoring.
 
 
-==============
 Version 2.50.7
 ==============
 
@@ -779,7 +760,6 @@ Two cairo-related bug fixes:
 - #746 - Possible cairo_save() without cairo_restore() in render_layer().
 
 
-==============
 Version 2.50.6
 ==============
 
@@ -797,7 +777,6 @@ requirements!
   single Arc command.
 
 
-==============
 Version 2.50.5
 ==============
 
@@ -811,7 +790,6 @@ Version 2.50.5
 - #718 - Negative rx/ry in rect element should be ignored.
 
 
-==============
 Version 2.50.4
 ==============
 
@@ -828,6 +806,7 @@ Update dependent crates that had security vulnerabilities:
 
 
 Version 2.50.3
+==============
 
 - #601 - Compute correct bounds for objects with stroke-width=0.
 
@@ -836,10 +815,12 @@ Version 2.50.3
 - Fix test suite on Rust 1.49 (Sven Neumann).
 
 Version 2.50.2
+==============
 
 - #642 - Fix dx/dy offsets in nested <tspan> elements.
 
 Version 2.50.1
+==============
 
 - #615: SVG2: Support a chain of uri() filters in the "filter" property
   (John Ledbetter, Sven Neumann).
@@ -858,6 +839,7 @@ Version 2.50.1
 - #624 - The source repository no longer produces a librsvg-uninstalled.pc file.
 
 Version 2.50.0
+==============
 
 - The following is a summary of changes between 2.48.x and 2.50.0.  For
   full details, please see the 2.49.x release notes below.
@@ -902,6 +884,7 @@ Version 2.50.0
 
 
 Version 2.49.5
+==============
 
 - #607 - Support the mix-blend-mode property from SVG2 and the
   Compositing and Blending Level 1 specification, so layers can be
@@ -918,6 +901,7 @@ Version 2.49.5
 - Improved documentation on the library's internals.
 
 Version 2.49.4
+==============
 
 - Support ARM64 Windows builds (Chun-wei Fan).
 
@@ -936,6 +920,7 @@ Version 2.49.4
 - Many style fixes per cargo-clippy (Dunja Lalic, Sven Neumann).
 
 Version 2.49.3
+==============
 
 - #34 - The 'font' shorthand in is now supported in CSS.  Librsvg
   ignores the 'line-height' sub-property because it cannot be done
@@ -950,15 +935,18 @@ Version 2.49.3
 - Fixed some typos in the documentation (codespell is awesome!).
 
 Version 2.49.2
+==============
 
 - Fix failing tests.
 
 Version 2.49.1
+==============
 
 - (#604) - Fix build on big-endian machines.  Thanks to Daniel Kolesa
   for testing this repeatedly.
 
 Version 2.49.0
+==============
 
 - Memory consumption of parsed SVG data is greatly reduced.  Property
   values, path data, and text nodes now use much less memory than
@@ -987,6 +975,7 @@ Version 2.49.0
   in librsvg/ and rsvg_internals/.
 
 Version 2.48.5
+==============
 
 - #577 - Support multiple fonts in the font-family property (Bastien Orivel).
   Previously in font-family="Foo, Bar, Baz" only Foo would get used.
@@ -1003,6 +992,7 @@ Version 2.48.5
   GdkPixbufs is now faster.
 
 Version 2.48.4
+==============
 
 - #590 - Fix regression when rendering masks.
 
@@ -1011,6 +1001,7 @@ Version 2.48.4
 - #592 - Fix invalid argument to g_log_structured_array()
 
 Version 2.48.3
+==============
 
 - Librsvg now requires glib 2.50.0 or later.
 
@@ -1025,10 +1016,12 @@ Version 2.48.3
 - #581 - Don't require upcalls into C code for Debian powerpc.
 
 Version 2.48.2
+==============
 
 - Fix linking of the test suite against Harfbuzz.
 
 Version 2.48.1
+==============
 
 - #129 - Fix baseline-shift for simple subscripts/superscripts and
   absolute offsets.  This should fix a lot of Wikimedia images with
@@ -1043,6 +1036,7 @@ Version 2.48.1
 - Support running the rsvg_internals tests on Windows (Chun-wei Fan).
 
 Version 2.48.0
+==============
 
 - The following is a summary of changes between 2.46.x and 2.48.0.
   For full details, please see the 2.47.x release notes below.
@@ -1087,6 +1081,7 @@ Version 2.48.0
 - Many bugfixes; please see the 2.47.x release notes below.
 
 Version 2.47.4
+==============
 
 - (#240) - Fix rsvg-convert's multipage PDF output when the zoom
   option is used (Sven Neumann).
@@ -1100,6 +1095,7 @@ Version 2.47.4
 - Updated the man page for rsvg-convert (Sven Neumann).
 
 Version 2.47.3
+==============
 
 - #379 - New API, rsvg_handle_set_stylesheet(), to set a CSS
   stylesheet independent of the SVG document.
@@ -1111,6 +1107,7 @@ Version 2.47.3
 - Update the gtk-rs version.
 
 Version 2.47.2
+==============
 
 - Handling of the "result", "in", "in2" attributes in filter
   primitives is slightly stricter now, and spec compliant.  Their
@@ -1140,6 +1137,7 @@ Version 2.47.2
   (Paolo Borelli).
 
 Version 2.47.1
+==============
 
 - Librsvg no longer depends on libcroco!  It now does all CSS
   processing using Rust crates from Mozilla Servo; these are also the
@@ -1164,6 +1162,7 @@ Version 2.47.1
   This should be interest of newcomers to librsvg's source code.
 
 Version 2.47.0
+==============
 
 - Librsvg's XML parser now supports namespaces (xmlns), and is
   stricter than before about it.  Files may fail to parse if there are
@@ -1209,6 +1208,7 @@ Version 2.47.0
   children.
 
 Version 2.46.0
+==============
 
 - The following are highlights compared to the 2.44.x series.  For
   full details, please see the release notes for the 2.45.x series.
@@ -1265,6 +1265,8 @@ Version 2.46.0
   accomplishment!
 
 Version 2.45.92
+===============
+
 - #496 - Ensure all lengths and angles parse as finite numbers
 
 - #497 - Don't panic on paths with all-invalid commands
@@ -1274,6 +1276,8 @@ Version 2.45.92
 - Some changes in the build structure to allow for faster builds.
 
 Version 2.45.91
+===============
+
 - The documentation has a new chapter, Recommendations for Applications.
 
 - #451 - Make rsvg-convert detect images larger than pixman's limit.
@@ -1287,6 +1291,8 @@ Version 2.45.91
 - Updated Rust crates to avoid duplicates (Bastien Orivel)
 
 Version 2.45.90
+===============
+
 - New API functions:
     rsvg_handle_render_document()
     rsvg_handle_render_layer()
@@ -1306,6 +1312,8 @@ Version 2.45.90
 - API reference documentation is much improved.
 
 Version 2.45.8
+==============
+
 - This version requires at least Rust 1.34.
 
 - #485 - Fix build on Rust earlier than 1.36 (Kleis Auke Wolthuizen).
@@ -1315,6 +1323,8 @@ Version 2.45.8
 - Update gtk-rs and dependent crates (Bastien Orivel)
 
 Version 2.45.7
+==============
+
 - Fix #463 - Don't panic if an SVG has character data outside the
   first element.
 
@@ -1364,6 +1374,7 @@ Version 2.45.7
 - Fix static linking and Windows builds (Kleis Auke Wolthuizen).
 
 Version 2.45.6
+==============
 - Librsvg now requires Rust 1.30.0 or later.
 
 - Librsvg now requires Cairo 1.16.0 or later.  Thanks to
@@ -1414,6 +1425,8 @@ Version 2.45.6
 - Check for Cairo errors when constructing paths.
 
 Version 2.45.5
+==============
+
 - At build time, you can now pass $CARGO and $RUSTC environment
   variables if you need to override the default Rust toolchain.
   Please see COMPILING.md for details.  (Tobias Kortkamp)
@@ -1430,11 +1443,15 @@ Version 2.45.5
 - Updated parts of the reference documentation.
 
 Version 2.45.4
+==============
+
 - Brown paper bag release, my apologies.
 - Fix #402 - Fix the library's soname.  Thanks to Gabriele Balducci
   for reporting it, and Kalev Lember for fixing it.
 
 Version 2.45.3
+==============
+
 - Big news!  All the real work in the library is now implemented in
   Rust.  The public API is implemented in C, but most it calls
   immediately into the Rust code.  Special thanks to Paolo Borelli and
@@ -1455,6 +1472,8 @@ Version 2.45.3
 - Lots and lots of refactoring (Paolo Borelli, Federico Mena).
 
 Version 2.45.2
+==============
+
 - rsvg_cleanup() is now deprecated.  This was only meant to be called
   from code to be checked by Valgrind.  Leak checkers may show
   reachable memory from libxml2; real memory leaks should still be
@@ -1488,6 +1507,8 @@ Version 2.45.2
 - Cleanups in the code that calls libxml2 (Kornel Lesiński).
 
 Version 2.45.1
+==============
+
 - New public API, rsvg_handle_get_geometry_sub(), to get the exact
   geometry of an element.  The functions
   rsvg_handle_get_position_sub() and rsvg_handle_get_dimensions_sub()
@@ -1519,6 +1540,8 @@ Version 2.45.1
 - configure.ac cleanups by Maya Rashish.
 
 Version 2.45.0
+==============
+
 - Librsvg now requires Rust 1.27.
 - Librsvg now requires Cairo 1.15.12.
 - Fix building when srcdir != builddir (Mathieu Bridon).
@@ -1582,6 +1605,8 @@ Version 2.45.0
 - Special thanks to Alex Crichton for ensuring that MacOS builds work.
 
 Version 2.44.2
+==============
+
 - A *double brown paper bag* release!  Super strong, this one!
 - Fix #325 - Don't leak all the elements at the toplevel.
 - Fix #328 - Make masking work on big-endian.  Thanks to
@@ -1589,6 +1614,8 @@ Version 2.44.2
 - Fix library ordering so -Wl,--as-needed works (Simon McVittie).
 
 Version 2.44.1
+==============
+
 - This is a brown paper bag release!  Apologies for the bugs:
 - Fix #324 - Don't panic if trying to render a non-empty SVG with no
   elements (Paolo Borelli).
@@ -1597,6 +1624,8 @@ Version 2.44.1
   18.04 because it has a rust version that is too old.
 
 Version 2.44.0
+==============
+
 - Librsvg now has minimal logging for debugging by setting the
   RSVG_LOG environment variable.  See CONTRIBUTING.md for details.
 - Speed improvements for Gaussian blur, SRGB conversions, and various
@@ -1613,17 +1642,23 @@ Version 2.44.0
   (letheed).
 
 Version 2.43.4
+==============
+
 - This is an early release to test the effects of threading in librsvg.
 - The lighting and Gaussian blur filters are now parallelized with
   Rayon; they will use all available cores (Ivan Molodetskikh).
 
 Version 2.43.3
+==============
+
 - Tentative fix: #309 - Don't panic if rendering to a non-image Cairo surface.
 - Optimizations for Gaussian blur and other filters (Ivan Molodetskikh).
 - Optimizations in SRGB <-> linear RGB conversions (Ivan Molodetskikh).
 - More C to Rust conversion in the loading code (Paolo Borelli).
 
 Version 2.43.2
+==============
+
 - All the filter effects have been ported to Rust as part of Ivan
   Molodetskikh's Summer of Code project!!!!!
 - We now require Rust 1.26.
@@ -1640,6 +1675,8 @@ Version 2.43.2
 - Updated Rust dependencies (Igor Gnatenko).
 
 Version 2.43.1
+==============
+
 - Fix: #259 - Test fonts should now work with --enable-installed-tests
 - Fix: #277 - Don't panic when trying to filter an empty group
   (Ivan Molodetskikh).
@@ -1661,6 +1698,8 @@ Version 2.43.1
 - All the style property parsers have been moved to rust-cssparser.
 
 Version 2.43.0
+==============
+
 - This is the start of the 2.43 development series, and you bet we are
   doing extensive changes!
 - Many, many thanks to Jordan Petridis for keeping our Continuous
@@ -1724,6 +1763,8 @@ Version 2.43.0
   instead of /tmp (Saurav Sachidanand).
 
 Version 2.42.3
+==============
+
 - gitlab#205 - The configure script now checks for Rust 1.20.0 -
   previously this minimum requirement was not well-defined.
 - gitlab#204 - New feature: If an SVG has an <a> link element, we now
@@ -1768,6 +1809,8 @@ Version 2.42.3
   Also for setting up 32-bit builds for continuous integration.
 
 Version 2.42.2
+==============
+
 - gitlab#193 - Don't crash when feConvolveMatrix doesn't specify
   orderx/ordery attributes.
 - gitlab#136 - Parse stroke-dasharray property correctly.  This code
@@ -1777,6 +1820,8 @@ Version 2.42.2
 - Update rust-cssparser to 0.23 (Igor Gnatenko).
 
 Version 2.42.1
+==============
+
 - gitlab#182 - Parse the transform attribute in a faster/simpler way.
   We now use rust-cssparser instead of lalrpop.  This is especially
   noticeable on SVGs with lots of "transform" attributes.
@@ -1794,6 +1839,8 @@ Version 2.42.1
 - Fix typos and links in the .md files.
 
 Version 2.42.0
+==============
+
 - Fix a memory leak in rsvg_handle_new_from_file() (Lovell Fuller).
 - Optimize the xml:space normalization function (Jordan Petridis).
 - gitlab#179 - fix a runtime warning in the feMergeNode code.
@@ -1803,6 +1850,8 @@ Version 2.42.0
 - New ARCHITECTURE.md with a description of librsvg's internals.
 
 Version 2.41.2
+==============
+
 - We now require glib 2.52.0.
 - bgo#787895 - Fix mis-use of libxml2.  Thanks to Nick Wellnhofer for
   the guidance.
@@ -1830,6 +1879,8 @@ Version 2.41.2
 - Lots of internal refactoring.
 
 Version 2.41.1
+==============
+
 - The feConvolveMatrix filter primitive wasn't being rendered at all;
   now it works.
 - Pattern specifications can now have a fallback color, per the spec -
@@ -1889,6 +1940,8 @@ Version 2.41.1
   http://doc.crates.io/source-replacement.html
 
 Version 2.41.0
+==============
+
 - The big news is that parts of librsvg are now implemented in the
   Rust programming language, instead of C.  The public API remains
   identical.  Rust should provide us with memory safety and nicer
@@ -1936,6 +1989,8 @@ Version 2.41.0
 - Improved the README.
 
 Version 2.40.16
+===============
+
 - Chun-wei Fan added support for building the introspection files under MSVC.
 - Fixed bgo#760262 - Make the zooming options in rsvg-convert(1) work again
   for scaling the resulting image.  Fix by Menner <mix@gmx.org>.
@@ -1947,6 +2002,8 @@ Version 2.40.16
   rsvg_handle_set_size_callback().
 
 Version 2.40.15
+===============
+
 - Apologies for the lack of 2.40.14.  I mistakenly tagged the
   repository before updating the NEWS file.
 - librsvg now uses the Contributor Covenant Code of Conduct, 
@@ -1960,6 +2017,8 @@ Version 2.40.15
   filter.  Fix by Ron Hopper.
 
 Version 2.40.13
+===============
+
 - Chun-wei Fan and Paolo Borelli fixed the Windows build.
 - Menner added basic support for the "baseline-shift" attribute in
   text objects.  We support "sub", "super", and plain "baseline", so
@@ -1980,6 +2039,8 @@ Version 2.40.13
   set.
 
 Version 2.40.12
+===============
+
 - Benjamin Otte did *great* work in refactoring the test harness to
   use Glib's gtest infrastructure, instead of using home-grown
   machinery.  Tests can simply be put as SVG files in the tests/
@@ -1995,6 +2056,8 @@ Version 2.40.12
 - Fixed bgo#677068 - incorrect reflection points in paths.
 
 Version 2.40.11
+===============
+
 - Add project files for building on Visual Studio (bgo#753555).  Work
   by Chun-wei Fan.
 - Added an "--export-id" option to rsvg-convert(1).  This lets you
@@ -2006,6 +2069,8 @@ Version 2.40.11
   Cairo to render to SVG.
 
 Version 2.40.10
+===============
+
 - Fixed bgo#748608 - Memory leak when Gaussian-blurring.  Thanks to
   Carlos Garnacho for fixing my leaky code.
 - Fixed bgo#739329 - font-family attributes with singly-quoted names
@@ -2021,6 +2086,8 @@ Version 2.40.10
   the old, in with the old.
 
 Version 2.40.9
+==============
+
 - Fixed bgo#738367 - V/v/H/h commands in path elements were not
   working.  Patch by Andrea Griffini.
 - Fixed bgo#605875 - Gaussian-blurred objects were sometimes missing.
@@ -2029,6 +2096,8 @@ Version 2.40.9
   filenames.  Patch by LRN.
 
 Version 2.40.8
+==============
+
 - Bugs fixed from fuzz testing: #744688 - possible double g_free()
   when processing stroke-dasharray
 - Optimize rendering of polylines, lines, rectangles, circles, and
@@ -2036,6 +2105,8 @@ Version 2.40.8
   precise, and should put less pressure on the memory allocator.
 
 Version 2.40.7
+==============
+
 - Bugs fixed from fuzz testing: #703102, #738050, #738169, #744270, #744299
 - Fixed unfiled bug from fuzz testing, where the convolution filter
   had an integer multiplication overflow.
@@ -2043,15 +2114,21 @@ Version 2.40.7
 - Fix a bunch of compiler warnings.
 
 Version 2.40.6
+==============
+
 - MinGW build fixes
 - Fix path data number parsing
 - Fix build with newer libtool
 
 Version 2.40.1
+==============
+
 - Build fixes
 - Crash fixes
 
 Version 2.40
+============
+
 - Add support for parsing rgba() colours and improve colour parsing
 - rsvg-filter: Fix memory leak
 - Remove support for GTK+2 along with the old theme engine
@@ -2063,34 +2140,50 @@ Version 2.39.0
 - don't load resources from the net (#691708, CVE-2013-1881)
 
 Version 2.37.0
+
 - bump pango requirement to 1.32.6
 - mark pixbuf loader as threadsafe
 
 Version 2.36.4
+==============
+
 - build fixes
 
 Version 2.36.3
+==============
+
 - build fixes
 
 Version 2.36.2
+==============
+
 - GObject introspection fixes (#677674)
 - added Vala bindings (#677676)
 - deprecate including headers apart from rsvg.h directly
 - build fixes (#677661)
 
 Version 2.36.1
+==============
+
 - Bugs fixed: #672725, #672791, #672885, #673748
 
 Version 2.36.0
+==============
+
 - Bugs fixed: #669563, #672414, #672792, #672725
 
 Version 2.35.2
+==============
+
 _ Bug fixes
 
 Version 2.35.1
+==============
+
 - Bugs fixed: #664684, #664533, #665905, #665824
 
 Version 2.35.0
+==============
 
 This version contains many bug fixes and improvements.
 - Update libxml2 dependency to 2.7.0
@@ -2101,6 +2194,7 @@ This version contains many bug fixes and improvements.
               #630733, #473862, #590788, #626559, #663049, #663049
 
 Version 2.34.1
+==============
 
 This version contains fixes for CVE-2011-3146.
 
@@ -2110,6 +2204,7 @@ This version contains fixes for CVE-2011-3146.
 - Store node type separately in RsvgNode (#658014)
 
 Version 2.34.0
+==============
 
 - Allow building rsvg-view with gtk 3
 
@@ -2124,10 +2219,13 @@ Bugs fixed:
   630714 - fix stray comma 
 
 Version 2.32.1
+==============
 
 Version 2.32.0
+==============
 
 Version 2.31.0
+==============
 
 - buildable against standalone gdk-pixbuf
 - require GIO
@@ -2149,6 +2247,7 @@ Version 2.31.0
   623383 [PATCH] crash on rsvg-gobject.c:141, in instance_dispose function
 
 Version 2.26.3
+==============
 
 - Bug fixed:
   143300 wrong bounding box when importing SVG
@@ -2187,12 +2286,14 @@ Version 2.26.3
   617163 !important directive support without libcroco.
 
 Version 2.26.2
+==============
 
 - Enable silent build by default
 - Use GDK_DRAWABLE() instead of non-existing GTK_DRAWABLE()
 - Fix compiler warnings
 
 Version 2.26.1
+==============
 
 - Remove some deprecated gtk+/gdk functions and bump gtk+ requirement
 - Fix linking with pedantic linkers
@@ -2200,6 +2301,7 @@ Version 2.26.1
 - Drop mozilla plugin
 
 Version 2.22.3
+==============
 
 - Make librsvg buildable on windows without freetype dependency
 - Fix build and tests
@@ -2212,10 +2314,12 @@ Version 2.22.3
 - If an ID is not found, return an error and/or do not render whole SVG
 
 Version 2.22.2
+==============
 
 - Fix rsvg-convert crash in  _rsvg_acquire_xlink_href_resource()
 
 Version 2.22.1
+==============
 
 - If a moveto is followed by multiple pairs of coordinates, the subsequent
   pairs are treated as implicit lineto commands.
@@ -2223,6 +2327,7 @@ Version 2.22.1
 - Handle xml:space="preserve"
 
 Version 2.22.0
+==============
 
 - Text rendering fixes (especially for non-ASCII text)
 - Better cairo integration (fixed bugs when rendering inside of cairo groups)
@@ -2230,6 +2335,7 @@ Version 2.22.0
 - Migrate rsvg-view from GnomePrint to GtkPrint
 
 Version 2.18.0
+==============
 
 - Support for some of the SVG 1.2 comp-op properties
 - Less-blurry output
@@ -2240,6 +2346,7 @@ Version 2.18.0
 - Support for SVG 1.1's shape-rendering and text-rendering properties
 
 Version 2.7.x
+=============
 
 - Filters
 - Hugely improved text support
@@ -2255,19 +2362,23 @@ Version 2.7.x
 == gnome-2-6 branch ==
 
 Version 2.6.x
+=============
 
 - A slew of bug fixes
 
 Version 2.5.x
+=============
 
 - A slew of bug fixes
 
 Version 2.4.0
+=============
 
 - gdk-pixbuf loader fix
 - support for title and desc elements
 
 Version 2.3.0
+=============
 
 - Support Paths inside of <defs> and use them in <use/> statements
 - Vastly improved CSS support (libcroco and builtin)
@@ -2277,20 +2388,24 @@ Version 2.3.0
 == gnome-2-2 branch ==
 
 Version 2.2.5
+=============
 
 - Gimp Import/Load plugin
 - Bugfixes
 
 Version 2.2.4
+=============
 
 - Few bugfixes
 
 Version 2.2.3
+=============
 
 - All sorts of build and installation fixes
 - "Bugfix" for a regression in GTK+'s pixbuf-io loader scheme
 
 Version 2.2.2
+=============
 
 - Handle SVGZ files (Gzipped SVG)
 - Handle objectBoundingBox coordinates on gradients
@@ -2298,6 +2413,7 @@ Version 2.2.2
 - Various bugfixes and crash fixes
 
 Version 2.2.1
+=============
 
 - Better CSS style handling
 - Fix for a crasher exploited by Sodipodi. Improved gradient handling
@@ -2305,6 +2421,7 @@ Version 2.2.1
 - Handles Kontour's conicalGradients to some extent
 
 Version 2.2.0
+=============
 
 - Better CSS style handling
 - Works in "international" locales (non-C locales) in a threadsafe manner
@@ -2313,24 +2430,29 @@ Version 2.2.0
 - Handle "ex" units better
 
 Version 2.1.5
+=============
 
 - Missed files in tarball added. 
 
 Version 2.1.4
+=============
 
 - Fixed memory leak
 
 - Better handling of display and visibility styles.
 
 Version 2.1.3
+=============
 
 - Better font handling (stretch, style, variant, weight supported, inherited)
 
 Version 2.1.2
+=============
 
 - Fixed crash with non-utf8 characters.
 
 Version 2.1.1
+=============
 
 - Better ellipse rendering
 
@@ -2347,6 +2469,7 @@ Version 2.1.1
 - Now installs a binary that can rasterize svgs.
 
 Version 2.1.0
+=============
 
 - New co-maintainer Dom Lachowicz
 
@@ -2355,22 +2478,27 @@ Version 2.1.0
 - Handles SVGs a lot better. Especially with regards to units.
 
 Version 2.0.1
+=============
 
 - Fixed misrender of the ScalableGorilla trashcan.
 
 Version 2.0.0
+=============
 
 - Fixed crash when trying to open empty files (Anders)
 
 Version 1.1.6
+=============
 
 - Fix division by zero crashes when scaling an .svg without dimensions (Darin)
 
 Version 1.1.5
+=============
 
 - Add another new function for use in Nautilus icons (Alex Larsson)
 
 Version 1.1.4
+=============
 
 - Add new function for auto-scaling svg for use in Nautilus icons (Alex Larsson)
 - Fix xml parsing to read much faster and work around libxml bug (Michael Meeks)
@@ -2378,14 +2506,17 @@ Version 1.1.4
 - Improved internal error handling (Darin)
 
 Version 1.1.3
+=============
 
 - Fix major storage leaks (Anders)
 
 Version 1.1.2
+=============
 
 - Use the new intersector (Alex)
 
 Version 1.1.1
+=============
 
 - Ported to Gnome 2 (Ramiro, Darin)
 - Ported to Pango instead of using FreeType directly (Darin)
