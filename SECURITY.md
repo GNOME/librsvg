@@ -1,8 +1,15 @@
+# Reporting security bugs
+
+Please mail the maintainer at federico@gnome.org.  You can use the GPG
+public key from https://viruta.org/docs/fmq-gpg.asc to send encrypted
+mail.
+
 # Librsvg releases with security fixes
 
-Note that releases with an odd minor number (e.g. 2.47.x since
-47 is odd) are considered development releases and should not be used
-in production systems.
+Librsvg releases have a version number like major.minor.micro. Note
+that releases with an odd minor number (e.g. 2.47.x since 47 is odd)
+are considered development releases and should not be used in
+production systems.
 
 The following list is only for stable release streams, where the minor
 number is even (e.g. 2.50.x).
