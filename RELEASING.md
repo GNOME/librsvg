@@ -200,3 +200,21 @@ should be substituted for something else.
 
 [cargo-audit]: https://github.com/RustSec/cargo-audit
 [rustsec]: https://rustsec.org/
+
+## Creating a stable release branch
+
+* Create a branch named `librsvg-xx.yy`, e.g. `librsvg-2.54`
+
+* Make the `BASE_TAG` in `ci/container-builds.yml` refer to the new
+  `librsvg-xx.yy` branch instead of `main`.
+
+* Push that branch to origin.
+
+* (Branches with that naming scheme are already automatically
+  protected in gitlab's Settings/Repository/Protected branches.)
+
+* Edit the badge for the stable branch so it points to the new branch:
+  Settings/General/Badges, find the existing badge for the stable
+  branch, click on the edit button that looks like a pencil.  Change
+  the **Link** and **Badge image URL**; usually it is enough to just
+  change the version number in both.
