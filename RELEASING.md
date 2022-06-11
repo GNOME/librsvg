@@ -11,7 +11,7 @@ off items while making a release.
 - [ ] `cargo update` - needed because you tweaked `Cargo.toml`, and
       also to get new dependencies.
 - [ ] Tweak the library version number in `configure.ac` if the API changed; follow the steps there.
-- [ ] Update `NEWS`, see below for the preferred format.
+- [ ] Update `NEWS.md`, see below for the preferred format.
 - [ ] Commit the changes above.
 - [ ] Make a tarball with `./autogen.sh --enable-vala && make distcheck DESTDIR=/tmp/foo` - fix things until it passes.
 - [ ] Create a signed tag - `git tag -s x.y.z` with the version number.
@@ -39,7 +39,7 @@ For `x.y.0` releases, at least, do the following:
 
 - [ ] Fill in the release title - `x.y.z - stable` or `x.y.z - development`.
 
-- [ ] Copy the release notes from NEWS.
+- [ ] Copy the release notes from NEWS.md.
 
 - [ ] Add a release asset link to
       `https://download.gnome.org/sources/librsvg/x.y/librsvg-x.y.z.tar.xz`
@@ -115,18 +115,17 @@ distributors][distributors] about their plans!  (That is, posts on
 [msrv-rfc]: https://github.com/rust-lang/rfcs/pull/2495
 [distributors]: https://discourse.gnome.org/tag/distributor
 
-## Format for release notes in NEWS
+## Format for release notes in NEWS.md
 
-The `NEWS` file contains the release notes.  Please use something
+The `NEWS.md` file contains the release notes.  Please use something
 close to this format; it is not mandatory, but makes the formatting
 consistent, and is what tooling expects elsewhere - also by writing
 Markdown, you can just cut&paste it into a Gitlab release.  You can
-skim bits of the NEWS file for examples on style and content.
+skim bits of the `NEWS.md` file for examples on style and content.
 
 New entries go at the **top** of the file.
 
 ```
-=============
 Version x.y.z
 =============
 
@@ -200,3 +199,21 @@ should be substituted for something else.
 
 [cargo-audit]: https://github.com/RustSec/cargo-audit
 [rustsec]: https://rustsec.org/
+
+## Creating a stable release branch
+
+* Create a branch named `librsvg-xx.yy`, e.g. `librsvg-2.54`
+
+* Make the `BASE_TAG` in `ci/container-builds.yml` refer to the new
+  `librsvg-xx.yy` branch instead of `main`.
+
+* Push that branch to origin.
+
+* (Branches with that naming scheme are already automatically
+  protected in gitlab's Settings/Repository/Protected branches.)
+
+* Edit the badge for the stable branch so it points to the new branch:
+  Settings/General/Badges, find the existing badge for the stable
+  branch, click on the edit button that looks like a pencil.  Change
+  the **Link** and **Badge image URL**; usually it is enough to just
+  change the version number in both.
