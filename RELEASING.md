@@ -11,7 +11,7 @@ off items while making a release.
 - [ ] `cargo update` - needed because you tweaked `Cargo.toml`, and
       also to get new dependencies.
 - [ ] Tweak the library version number in `configure.ac` if the API changed; follow the steps there.
-- [ ] Update `NEWS`, see below for the preferred format.
+- [ ] Update `NEWS.md`, see below for the preferred format.
 - [ ] Commit the changes above.
 - [ ] Make a tarball with `./autogen.sh --enable-vala && make distcheck DESTDIR=/tmp/foo` - fix things until it passes.
 - [ ] Create a signed tag - `git tag -s x.y.z` with the version number.
@@ -39,7 +39,7 @@ For `x.y.0` releases, at least, do the following:
 
 - [ ] Fill in the release title - `x.y.z - stable` or `x.y.z - development`.
 
-- [ ] Copy the release notes from NEWS.
+- [ ] Copy the release notes from NEWS.md.
 
 - [ ] Add a release asset link to
       `https://download.gnome.org/sources/librsvg/x.y/librsvg-x.y.z.tar.xz`
@@ -115,18 +115,17 @@ distributors][distributors] about their plans!  (That is, posts on
 [msrv-rfc]: https://github.com/rust-lang/rfcs/pull/2495
 [distributors]: https://discourse.gnome.org/tag/distributor
 
-## Format for release notes in NEWS
+## Format for release notes in NEWS.md
 
-The `NEWS` file contains the release notes.  Please use something
+The `NEWS.md` file contains the release notes.  Please use something
 close to this format; it is not mandatory, but makes the formatting
 consistent, and is what tooling expects elsewhere - also by writing
 Markdown, you can just cut&paste it into a Gitlab release.  You can
-skim bits of the NEWS file for examples on style and content.
+skim bits of the `NEWS.md` file for examples on style and content.
 
 New entries go at the **top** of the file.
 
 ```
-=============
 Version x.y.z
 =============
 
