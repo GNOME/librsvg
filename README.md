@@ -19,6 +19,24 @@ Table of contents:
 
 [[_TOC_]]
 
+# Supported branches
+
+Generally two branches are supported:
+
+* The latest stable branch, which has an **even minor version
+  number**.  See the [branches
+  page](https://gitlab.gnome.org/GNOME/librsvg/-/branches) and look
+  for the one called `librsvg-x.yy` where the `x.yy` numbers are
+  highest, `yy` should be an even number.  You can use this branch
+  safely for production work.
+
+* The `main` branch.  All development happens here; development
+  releases have an **odd minor version number**, for example `2.53.4`.
+
+Stable branches become unsupported when a new one appears.  For
+example, `librsvg-2.52` will become unsupported when `librsvg-2.54`
+appears.
+
 # Using librsvg
 
 * [C API documentation][c-docs]
