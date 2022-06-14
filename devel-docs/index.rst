@@ -14,10 +14,40 @@ design document modeled on the following ones, and submit a merge
 request.  We can then discuss it before coding.  This way we will have
 a sort of big-picture development history apart from commit messages.
 
+Getting started
+===============
+
+FIXME: link to doc with stuff from CONTRIBUTING.md's "Hacking on librsvg"
+
+Add basic info on cloning the repo, getting a gitlab account, forking.
+
+Development roadmap.
+
+Understand the code
+===================
+
+FIXME: Overview of the source tree.
+
+Tour of the code - load a file, render it.
+
+Information for maintainers
+===========================
+
+FIXME: Move RELEASING.md here
+
+Overview of the maintainer's workflow.
+
+Documentation on the CI.
+
 Design documents
 ================
 
+FIXME: link the md here.
 
+Bibliography
+============
+
+Link to SVG/CSS specs; other useful bits.
 
 Indices and tables
 ==================
