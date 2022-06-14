@@ -287,10 +287,7 @@ coverage:
     - make -k check
   after_script:
     - source ./ci/env.sh
-    - mkdir -p public
-    - grcov coverage-profiles _build --binary-path ./_build/target/debug/ --source-dir . --prefix-dir ../../ --output-type cobertura --branch --ignore-not-existing --ignore "build.rs" --ignore 'cargo_cache/*' -o coverage.xml
-    - grcov coverage-profiles _build --binary-path ./_build/target/debug/ --source-dir . --prefix-dir ../../ --output-type html --branch --ignore-not-existing --ignore "build.rs" --ignore 'cargo_cache/*' --output-path public/coverage
-    - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
+    - bash -x ./ci/gen-coverage.sh
   coverage: '/Coverage: \d+\.\d+/'
   artifacts:
     name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
