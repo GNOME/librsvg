@@ -275,6 +275,7 @@ coverage:
     # see https://gitlab.gnome.org/GNOME/librsvg/-/issues/848
     - crun
   variables:
+    CFLAGS: "-coverage -ftest-coverage -fprofile-arcs"
     RUSTFLAGS: "-Zinstrument-coverage"
     RUSTDOCFLAGS: "-Zinstrument-coverage"
     LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
