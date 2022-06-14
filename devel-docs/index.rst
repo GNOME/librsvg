@@ -44,10 +44,12 @@ Overview of the maintainer's workflow.
 
 Documentation on the CI.
 
-Bibliography
-============
+References
+==========
 
 Link to SVG/CSS specs; other useful bits.
+
+Links to Mozilla's SVG, WebKit, resvg, Inkscape.
 
 Indices and tables
 ==================
