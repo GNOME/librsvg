@@ -30,6 +30,11 @@ FIXME: Overview of the source tree.
 
 Tour of the code - load a file, render it.
 
+Design documents
+================
+
+FIXME: link the md here.
+
 Information for maintainers
 ===========================
 
@@ -38,11 +43,6 @@ FIXME: Move RELEASING.md here
 Overview of the maintainer's workflow.
 
 Documentation on the CI.
-
-Design documents
-================
-
-FIXME: link the md here.
 
 Bibliography
 ============
