@@ -288,8 +288,8 @@ coverage:
   after_script:
     - source ./ci/env.sh
     - mkdir -p public
-    - grcov coverage-profiles --binary-path ./_build/target/debug/ --source-dir . --output-type cobertura --branch --ignore-not-existing --ignore "build.rs" --ignore '_build/*' --ignore 'cargo_cache/*' -o coverage.xml
-    - grcov coverage-profiles --binary-path ./_build/target/debug/ --source-dir . --output-type html --branch --ignore-not-existing --ignore "build.rs" --ignore '_build/*' --ignore 'cargo_cache/*' --output-path public/coverage
+    - grcov coverage-profiles _build --binary-path ./_build/target/debug/ --source-dir . --prefix-dir ../../ --output-type cobertura --branch --ignore-not-existing --ignore "build.rs" --ignore 'cargo_cache/*' -o coverage.xml
+    - grcov coverage-profiles _build --binary-path ./_build/target/debug/ --source-dir . --prefix-dir ../../ --output-type html --branch --ignore-not-existing --ignore "build.rs" --ignore 'cargo_cache/*' --output-path public/coverage
     - grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
   coverage: '/Coverage: \d+\.\d+/'
   artifacts:
