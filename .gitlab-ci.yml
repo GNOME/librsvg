@@ -276,8 +276,8 @@ coverage:
     - crun
   variables:
     CFLAGS: "-coverage -ftest-coverage -fprofile-arcs"
-    RUSTFLAGS: "-Zinstrument-coverage"
-    RUSTDOCFLAGS: "-Zinstrument-coverage"
+    RUSTFLAGS: "-Cinstrument-coverage"
+    RUSTDOCFLAGS: "-Cinstrument-coverage"
     LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
   script:
     - mkdir -p _build
