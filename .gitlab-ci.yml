@@ -294,7 +294,9 @@ coverage:
     expire_in: 2 days
     when: always
     reports:
-      cobertura: coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
     paths:
       - public
 
