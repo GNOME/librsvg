@@ -20,7 +20,7 @@ pub type AttributeValue = DefaultAtom;
 ///
 /// [`new_from_xml2_attributes`]: #method.new_from_xml2_attributes
 #[derive(Clone)]
-pub struct Attributes(Vec<(QualName, AttributeValue)>);
+pub struct Attributes(Box<[(QualName, AttributeValue)]>);
 
 /// Iterator from `Attributes.iter`.
 pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
@@ -28,7 +28,7 @@ pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 impl Attributes {
     #[cfg(test)]
     pub fn new() -> Attributes {
-        Attributes(Vec::new())
+        Attributes([].into())
     }
 
     /// Creates an iterable `Attributes` from the C array of borrowed C strings.
@@ -92,7 +92,7 @@ impl Attributes {
             }
         }
 
-        Attributes(array)
+        Attributes(array.into())
     }
 
     /// Returns the number of attributes.
