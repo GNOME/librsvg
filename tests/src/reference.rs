@@ -400,3 +400,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/svg2-reftests/mask-and-opacity.svg",
     "tests/fixtures/reftests/svg2-reftests/mask-and-opacity-ref.svg"
 );
+
+test_svg_reference!(
+    bug_880_horizontal_vertical_stroked_lines,
+    "tests/fixtures/reftests/bugs-reftests/880-stroke-wide-line.svg",
+    "tests/fixtures/reftests/bugs-reftests/880-stroke-wide-line-ref.svg"
+);
