@@ -307,6 +307,14 @@ impl UnresolvedChildren {
     }
 }
 
+fn nonempty_rect_from_bbox(bbox: &BoundingBox) -> Option<Rect> {
+    match bbox.rect {
+        None => None,
+        Some(r) if r.is_empty() => None,
+        Some(r) => Some(r),
+    }
+}
+
 impl ResolvedPattern {
     fn node_with_children(&self) -> Option<Node> {
         match self.children {
@@ -340,22 +348,19 @@ impl ResolvedPattern {
 
         let rect = self.get_rect(&params);
 
-        let bbrect = match bbox.rect {
-            None => return None,
-            Some(r) if r.is_empty() => return None,
-            Some(r) => r,
-        };
-
         // Create the pattern coordinate system
         let (width, height, coord_transform) = match self.units {
-            PatternUnits(CoordUnits::ObjectBoundingBox) => (
-                rect.width() * bbrect.width(),
-                rect.height() * bbrect.height(),
-                Transform::new_translate(
-                    bbrect.x0 + rect.x0 * bbrect.width(),
-                    bbrect.y0 + rect.y0 * bbrect.height(),
-                ),
-            ),
+            PatternUnits(CoordUnits::ObjectBoundingBox) => {
+                let bbrect = nonempty_rect_from_bbox(bbox)?;
+                (
+                    rect.width() * bbrect.width(),
+                    rect.height() * bbrect.height(),
+                    Transform::new_translate(
+                        bbrect.x0 + rect.x0 * bbrect.width(),
+                        bbrect.y0 + rect.y0 * bbrect.height(),
+                    ),
+                )
+            }
             PatternUnits(CoordUnits::UserSpaceOnUse) => (
                 rect.width(),
                 rect.height(),
@@ -381,6 +386,7 @@ impl ResolvedPattern {
         } else {
             match self.content_units {
                 PatternContentUnits(CoordUnits::ObjectBoundingBox) => {
+                    let bbrect = nonempty_rect_from_bbox(bbox)?;
                     Transform::new_scale(bbrect.width(), bbrect.height())
                 }
                 PatternContentUnits(CoordUnits::UserSpaceOnUse) => Transform::identity(),
