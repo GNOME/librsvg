@@ -379,13 +379,11 @@ impl ResolvedPattern {
 
             Transform::new_scale(sw, sh).pre_translate(x, y)
         } else {
-            let PatternContentUnits(content_units) = self.content_units;
-
-            match content_units {
-                CoordUnits::ObjectBoundingBox => {
+            match self.content_units {
+                PatternContentUnits(CoordUnits::ObjectBoundingBox) => {
                     Transform::new_scale(bbrect.width(), bbrect.height())
                 }
-                CoordUnits::UserSpaceOnUse => Transform::identity(),
+                PatternContentUnits(CoordUnits::UserSpaceOnUse) => Transform::identity(),
             }
         };
 
