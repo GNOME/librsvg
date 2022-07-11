@@ -104,6 +104,10 @@ impl Attributes {
     pub fn iter(&self) -> AttributesIter<'_> {
         AttributesIter(self.0.iter())
     }
+
+    pub fn get_by_idx(&self, idx: usize) -> Option<&str> {
+        self.0.get(idx).map(|(_name, value)| &value[..])
+    }
 }
 
 impl<'a> Iterator for AttributesIter<'a> {

@@ -94,8 +94,8 @@ pub trait Draw {
 
 pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
-    id: Option<String>,    // id attribute from XML element
-    class: Option<String>, // class attribute from XML element
+    id_idx: Option<usize>,    // id attribute from XML element
+    class_idx: Option<usize>, // class attribute from XML element
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
@@ -110,16 +110,16 @@ pub struct ElementInner<T: SetAttributes + Draw> {
 impl<T: SetAttributes + Draw> ElementInner<T> {
     fn new(
         element_name: QualName,
-        id: Option<String>,
-        class: Option<String>,
+        id_idx: Option<usize>,
+        class_idx: Option<usize>,
         attributes: Attributes,
         result: Result<(), ElementError>,
         element_impl: T,
     ) -> ElementInner<T> {
         let mut e = Self {
             element_name,
-            id,
-            class,
+            id_idx,
+            class_idx,
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
@@ -153,11 +153,13 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn get_id(&self) -> Option<&str> {
-        self.id.as_deref()
+        self.id_idx
+            .and_then(|id_idx| self.attributes.get_by_idx(id_idx))
     }
 
     fn get_class(&self) -> Option<&str> {
-        self.class.as_deref()
+        self.class_idx
+            .and_then(|class_idx| self.attributes.get_by_idx(class_idx))
     }
 
     fn inherit_xml_lang(&mut self, parent: Option<Node>) {
@@ -452,13 +454,13 @@ impl Element {
     /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
     /// element.
     pub fn new(name: &QualName, attrs: Attributes) -> Element {
-        let mut id = None;
-        let mut class = None;
+        let mut id_idx = None;
+        let mut class_idx = None;
 
-        for (attr, value) in attrs.iter() {
+        for (idx, (attr, _)) in attrs.iter().enumerate() {
             match attr.expanded() {
-                expanded_name!("", "id") => id = Some(String::from(value)),
-                expanded_name!("", "class") => class = Some(String::from(value)),
+                expanded_name!("", "id") => id_idx = Some(idx),
+                expanded_name!("", "class") => class_idx = Some(idx),
                 _ => (),
             }
         }
@@ -478,12 +480,12 @@ impl Element {
         };
 
         if flags == ElementCreateFlags::IgnoreClass {
-            class = None;
+            class_idx = None;
         };
 
         //    sizes::print_sizes();
 
-        create_fn(name, attrs, id, class)
+        create_fn(name, attrs, id_idx, class_idx)
     }
 
     pub fn element_name(&self) -> &QualName {
@@ -605,8 +607,8 @@ macro_rules! e {
         pub fn $name(
             element_name: &QualName,
             attributes: Attributes,
-            id: Option<String>,
-            class: Option<String>,
+            id_idx: Option<usize>,
+            class_idx: Option<usize>,
         ) -> Element {
             let mut element_impl = <$element_type>::default();
 
@@ -614,8 +616,8 @@ macro_rules! e {
 
             let element = Element::$element_type(Box::new(ElementInner::new(
                 element_name.clone(),
-                id,
-                class,
+                id_idx,
+                class_idx,
                 attributes,
                 result,
                 element_impl,
@@ -702,8 +704,8 @@ use creators::*;
 type ElementCreateFn = fn(
     element_name: &QualName,
     attributes: Attributes,
-    id: Option<String>,
-    class: Option<String>,
+    id_idx: Option<usize>,
+    class_idx: Option<usize>,
 ) -> Element;
 
 #[derive(Copy, Clone, PartialEq)]
