@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400">
+  <!-- Two lines, one horizontal and one vertical, that have an empty objectBoundingBox.
+       However, they have a stroke with a userSpaceOnUse pattern, which *should* be drawn.
+  -->
+
+  <pattern id="pat" x="0" y="0" width="400" height="400" patternUnits="userSpaceOnUse">
+    <rect x="0" y="0" width="400" height="400" fill="lime"/>
+  </pattern>
+
+  <line x1="0" y1="100" x2="400" y2="100" stroke="url(#pat)" stroke-width="200"/>
+  <line x1="200" y1="200" x2="200" y2="400" stroke="url(#pat)" stroke-width="400"/>
+</svg>
