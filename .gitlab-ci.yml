@@ -359,9 +359,6 @@ distcheck:
     paths:
       - librsvg-*.tar.xz
     expire_in: 1 week
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: 'always'
 
 reference:
   extends:
