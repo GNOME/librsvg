@@ -62,10 +62,6 @@ cargo_test:
     - cargo test -- --skip loading_crash --skip reference --skip render_crash
 
 .build-rsvg:
-  tags:
-    # FIXME: remove this once the runners get CentOS upgraded
-    # see https://gitlab.gnome.org/GNOME/librsvg/-/issues/848
-    - crun
   extends: '.cache'
   stage: build
   script:
@@ -270,10 +266,6 @@ coverage:
     - job: opensuse-container@x86_64.nightly
     - job: check
       artifacts: false
-  tags:
-    # FIXME: remove this once the runners get CentOS upgraded
-    # see https://gitlab.gnome.org/GNOME/librsvg/-/issues/848
-    - crun
   variables:
     CFLAGS: "-coverage -ftest-coverage -fprofile-arcs"
     RUSTFLAGS: "-Cinstrument-coverage"
@@ -355,10 +347,6 @@ distcheck:
   needs:
     - job: check
       artifacts: false
-  tags:
-    # FIXME: remove this once the runners get CentOS upgraded
-    # see https://gitlab.gnome.org/GNOME/librsvg/-/issues/848
-    - crun
   variables:
     DESTDIR: "/tmp/distcheck"
     LIBRSVG_DEBUG: "no"
