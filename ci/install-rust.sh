@@ -3,7 +3,7 @@ source ./ci/env.sh
 set -eu
 export CARGO_HOME='/usr/local/cargo'
 
-RUSTUP_VERSION=1.24.3
+RUSTUP_VERSION=1.25.1
 RUST_VERSION=$1
 RUST_ARCH=$2
 
