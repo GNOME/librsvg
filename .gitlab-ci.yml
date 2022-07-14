@@ -360,11 +360,8 @@ distcheck:
       - librsvg-*.tar.xz
     expire_in: 1 week
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: 'always'
 
 reference:
   extends:
