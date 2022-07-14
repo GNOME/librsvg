@@ -3,7 +3,7 @@ source ./ci/env.sh
 set -eu
 export CARGO_HOME='/usr/local/cargo'
 
-RUSTUP_VERSION=1.24.3
+RUSTUP_VERSION=1.25.1
 RUST_VERSION=$1
 RUST_ARCH=$2
 
@@ -21,7 +21,7 @@ rustc --version
 
 rustup component add clippy-preview
 rustup component add rustfmt
-cargo install --force cargo-c
+# cargo install --force cargo-c
 cargo install --version ^1.0 gitlab_clippy
 # cargo install --force cargo-deny
 # cargo install --force cargo-outdated
