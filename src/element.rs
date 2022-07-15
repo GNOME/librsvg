@@ -42,7 +42,7 @@ use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
-use crate::xml::Attributes;
+use crate::xml::{AttributeIndex, Attributes};
 
 // After creating/parsing a Element, it will be in a success or an error state.
 // We represent this with a Result, aliased as a ElementResult.  There is no
@@ -94,8 +94,8 @@ pub trait Draw {
 
 pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
-    id_idx: Option<usize>,    // id attribute from XML element
-    class_idx: Option<usize>, // class attribute from XML element
+    id_idx: Option<AttributeIndex>,    // id attribute from XML element
+    class_idx: Option<AttributeIndex>, // class attribute from XML element
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
@@ -110,8 +110,8 @@ pub struct ElementInner<T: SetAttributes + Draw> {
 impl<T: SetAttributes + Draw> ElementInner<T> {
     fn new(
         element_name: QualName,
-        id_idx: Option<usize>,
-        class_idx: Option<usize>,
+        id_idx: Option<AttributeIndex>,
+        class_idx: Option<AttributeIndex>,
         attributes: Attributes,
         result: Result<(), ElementError>,
         element_impl: T,
@@ -154,12 +154,12 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     fn get_id(&self) -> Option<&str> {
         self.id_idx
-            .and_then(|id_idx| self.attributes.get_by_idx(id_idx))
+            .and_then(|id_idx| self.attributes.get_by_index(id_idx))
     }
 
     fn get_class(&self) -> Option<&str> {
         self.class_idx
-            .and_then(|class_idx| self.attributes.get_by_idx(class_idx))
+            .and_then(|class_idx| self.attributes.get_by_index(class_idx))
     }
 
     fn inherit_xml_lang(&mut self, parent: Option<Node>) {
@@ -457,7 +457,7 @@ impl Element {
         let mut id_idx = None;
         let mut class_idx = None;
 
-        for (idx, (attr, _)) in attrs.iter().enumerate() {
+        for (idx, attr, _) in attrs.iter_indexed() {
             match attr.expanded() {
                 expanded_name!("", "id") => id_idx = Some(idx),
                 expanded_name!("", "class") => class_idx = Some(idx),
@@ -607,8 +607,8 @@ macro_rules! e {
         pub fn $name(
             element_name: &QualName,
             attributes: Attributes,
-            id_idx: Option<usize>,
-            class_idx: Option<usize>,
+            id_idx: Option<AttributeIndex>,
+            class_idx: Option<AttributeIndex>,
         ) -> Element {
             let mut element_impl = <$element_type>::default();
 
@@ -704,8 +704,8 @@ use creators::*;
 type ElementCreateFn = fn(
     element_name: &QualName,
     attributes: Attributes,
-    id_idx: Option<usize>,
-    class_idx: Option<usize>,
+    id_idx: Option<AttributeIndex>,
+    class_idx: Option<AttributeIndex>,
 ) -> Element;
 
 #[derive(Copy, Clone, PartialEq)]

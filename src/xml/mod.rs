@@ -33,7 +33,7 @@ mod attributes;
 mod xml2;
 mod xml2_load;
 
-pub use attributes::Attributes;
+pub use attributes::{AttributeIndex, Attributes, TooManyAttributesError};
 
 #[derive(Clone)]
 enum Context {

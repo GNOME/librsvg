@@ -14,6 +14,13 @@ use crate::util::{opt_utf8_cstr, utf8_cstr};
 /// string_cache crate.
 pub type AttributeValue = DefaultAtom;
 
+/// Type used to store an index into the attributes list.
+///
+/// Searching by name requires a linear scan, while looking up by index happens in
+/// constant time.
+#[derive(Clone, Copy)]
+pub struct AttributeIndex(u16);
+
 /// Iterable wrapper for libxml2's representation of attribute/value.
 ///
 /// See the [`new_from_xml2_attributes`] function for information.
@@ -24,6 +31,11 @@ pub struct Attributes(Box<[(QualName, AttributeValue)]>);
 
 /// Iterator from `Attributes.iter`.
 pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
+
+/// Error struct returned when there are too many attributes.
+/// This libraries has a hardcoded limit of [`u16::MAX`].
+#[derive(Clone, Copy, Debug)]
+pub struct TooManyAttributesError;
 
 impl Attributes {
     #[cfg(test)]
@@ -50,8 +62,12 @@ impl Attributes {
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
-    ) -> Attributes {
+    ) -> Result<Attributes, TooManyAttributesError> {
         let mut array = Vec::with_capacity(n_attributes);
+
+        if n_attributes > u16::MAX.into() {
+            return Err(TooManyAttributesError);
+        }
 
         if n_attributes > 0 && !attrs.is_null() {
             for attr in slice::from_raw_parts(attrs, n_attributes * 5).chunks_exact(5) {
@@ -92,7 +108,7 @@ impl Attributes {
             }
         }
 
-        Attributes(array.into())
+        Ok(Attributes(array.into()))
     }
 
     /// Returns the number of attributes.
@@ -105,8 +121,22 @@ impl Attributes {
         AttributesIter(self.0.iter())
     }
 
-    pub fn get_by_idx(&self, idx: usize) -> Option<&str> {
-        self.0.get(idx).map(|(_name, value)| &value[..])
+    /// Creates an iterator that yields `(AttributeIndex, QualName, &'a str)` tuples.
+    pub fn iter_indexed(&self) -> impl Iterator<Item = (AttributeIndex, QualName, &'_ str)> + '_ {
+        self.iter().enumerate().map(|(index, (name, value))| {
+            let index = AttributeIndex(
+                index
+                    .try_into()
+                    .expect("overlong indexes are filtered at creation time"),
+            );
+            (index, name, value)
+        })
+    }
+
+    pub fn get_by_index(&self, idx: AttributeIndex) -> Option<&str> {
+        self.0
+            .get(usize::from(idx.0))
+            .map(|(_name, value)| &value[..])
     }
 }
 
@@ -127,7 +157,7 @@ mod tests {
 
     #[test]
     fn empty_attributes() {
-        let map = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
+        let map = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()).unwrap() };
         assert_eq!(map.len(), 0);
     }
 
@@ -176,7 +206,7 @@ mod tests {
             v.push(val_end); // value_end
         }
 
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(3, v.as_ptr()) };
+        let attrs = unsafe { Attributes::new_from_xml2_attributes(3, v.as_ptr()).unwrap() };
 
         let mut had_href: bool = false;
         let mut had_ry: bool = false;
