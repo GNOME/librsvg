@@ -122,7 +122,6 @@ LIBRSVG_SRC =					\
 
 RUST_EXTRA =					\
 	Cargo.lock				\
-	cargo-vendor-config			\
 	example.svg				\
 	benches/box_blur.rs			\
 	benches/composite.rs			\
@@ -173,12 +172,6 @@ distcheck-hook:
 		echo "Please specify DESTDIR=/tmp/foo so distcheck will work";	\
 		exit 1;								\
 	fi
-
-dist-hook:
-	(cd $(distdir) &&							\
-	$(CARGO) vendor -q &&							\
-	mkdir .cargo &&								\
-	cp cargo-vendor-config .cargo/config)
 
 librsvg_c_api.la: $(librsvg_c_api_la_OBJECTS) $(LIBRSVG_SRC)
 	+cd $(top_srcdir) &&							\
