@@ -19,8 +19,8 @@ use crate::error::LoadingError;
 use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
 
 use super::xml2::*;
+use super::Attributes;
 use super::XmlState;
-use super::{Attributes, TooManyAttributesError};
 
 #[rustfmt::skip]
 fn get_xml2_sax_handler() -> xmlSAXHandler {
@@ -218,7 +218,8 @@ unsafe extern "C" fn sax_start_element_ns_cb(
     let attrs =
         match Attributes::new_from_xml2_attributes(nb_attributes, attributes as *const *const _) {
             Ok(attrs) => attrs,
-            Err(TooManyAttributesError) => {
+            Err(e) => {
+                xml2_parser.state.error(e);
                 let parser = xml2_parser.parser.get();
                 xmlStopParser(parser);
                 return;

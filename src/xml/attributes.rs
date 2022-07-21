@@ -6,6 +6,8 @@ use std::str;
 use markup5ever::{namespace_url, LocalName, Namespace, Prefix, QualName};
 use string_cache::DefaultAtom;
 
+use crate::error::{ImplementationLimit, LoadingError};
+use crate::limits;
 use crate::util::{opt_utf8_cstr, utf8_cstr};
 
 /// Type used to store attribute values.
@@ -32,11 +34,6 @@ pub struct Attributes(Box<[(QualName, AttributeValue)]>);
 /// Iterator from `Attributes.iter`.
 pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 
-/// Error struct returned when there are too many attributes.
-/// This libraries has a hardcoded limit of [`u16::MAX`].
-#[derive(Clone, Copy, Debug)]
-pub struct TooManyAttributesError;
-
 impl Attributes {
     #[cfg(test)]
     pub fn new() -> Attributes {
@@ -62,11 +59,13 @@ impl Attributes {
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
-    ) -> Result<Attributes, TooManyAttributesError> {
+    ) -> Result<Attributes, LoadingError> {
         let mut array = Vec::with_capacity(n_attributes);
 
-        if n_attributes > u16::MAX.into() {
-            return Err(TooManyAttributesError);
+        if n_attributes > limits::MAX_LOADED_ATTRIBUTES {
+            return Err(LoadingError::LimitExceeded(
+                ImplementationLimit::TooManyAttributes,
+            ));
         }
 
         if n_attributes > 0 && !attrs.is_null() {
