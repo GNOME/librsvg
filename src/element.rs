@@ -42,7 +42,7 @@ use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
-use crate::xml::{AttributeIndex, Attributes};
+use crate::xml::Attributes;
 
 // After creating/parsing a Element, it will be in a success or an error state.
 // We represent this with a Result, aliased as a ElementResult.  There is no
@@ -94,8 +94,6 @@ pub trait Draw {
 
 pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
-    id_idx: Option<AttributeIndex>,    // id attribute from XML element
-    class_idx: Option<AttributeIndex>, // class attribute from XML element
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
@@ -110,16 +108,12 @@ pub struct ElementInner<T: SetAttributes + Draw> {
 impl<T: SetAttributes + Draw> ElementInner<T> {
     fn new(
         element_name: QualName,
-        id_idx: Option<AttributeIndex>,
-        class_idx: Option<AttributeIndex>,
         attributes: Attributes,
         result: Result<(), ElementError>,
         element_impl: T,
     ) -> ElementInner<T> {
         let mut e = Self {
             element_name,
-            id_idx,
-            class_idx,
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
@@ -153,13 +147,11 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn get_id(&self) -> Option<&str> {
-        self.id_idx
-            .and_then(|id_idx| self.attributes.get_by_index(id_idx))
+        self.attributes.get_id()
     }
 
     fn get_class(&self) -> Option<&str> {
-        self.class_idx
-            .and_then(|class_idx| self.attributes.get_by_index(class_idx))
+        self.attributes.get_class()
     }
 
     fn inherit_xml_lang(&mut self, parent: Option<Node>) {
@@ -453,18 +445,7 @@ impl Element {
     ///
     /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
     /// element.
-    pub fn new(name: &QualName, attrs: Attributes) -> Element {
-        let mut id_idx = None;
-        let mut class_idx = None;
-
-        for (idx, attr, _) in attrs.iter_indexed() {
-            match attr.expanded() {
-                expanded_name!("", "id") => id_idx = Some(idx),
-                expanded_name!("", "class") => class_idx = Some(idx),
-                _ => (),
-            }
-        }
-
+    pub fn new(name: &QualName, mut attrs: Attributes) -> Element {
         let (create_fn, flags): (ElementCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
             match ELEMENT_CREATORS.get(name.local.as_ref()) {
                 // hack in the SVG namespace for supported element names
@@ -480,12 +461,12 @@ impl Element {
         };
 
         if flags == ElementCreateFlags::IgnoreClass {
-            class_idx = None;
+            attrs.clear_class();
         };
 
         //    sizes::print_sizes();
 
-        create_fn(name, attrs, id_idx, class_idx)
+        create_fn(name, attrs)
     }
 
     pub fn element_name(&self) -> &QualName {
@@ -604,20 +585,13 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(
-            element_name: &QualName,
-            attributes: Attributes,
-            id_idx: Option<AttributeIndex>,
-            class_idx: Option<AttributeIndex>,
-        ) -> Element {
+        pub fn $name(element_name: &QualName, attributes: Attributes) -> Element {
             let mut element_impl = <$element_type>::default();
 
             let result = element_impl.set_attributes(&attributes);
 
             let element = Element::$element_type(Box::new(ElementInner::new(
                 element_name.clone(),
-                id_idx,
-                class_idx,
                 attributes,
                 result,
                 element_impl,
@@ -701,12 +675,7 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn = fn(
-    element_name: &QualName,
-    attributes: Attributes,
-    id_idx: Option<AttributeIndex>,
-    class_idx: Option<AttributeIndex>,
-) -> Element;
+type ElementCreateFn = fn(element_name: &QualName, attributes: Attributes) -> Element;
 
 #[derive(Copy, Clone, PartialEq)]
 enum ElementCreateFlags {

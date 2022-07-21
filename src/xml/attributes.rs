@@ -3,7 +3,9 @@
 use std::slice;
 use std::str;
 
-use markup5ever::{namespace_url, LocalName, Namespace, Prefix, QualName};
+use markup5ever::{
+    expanded_name, local_name, namespace_url, ns, LocalName, Namespace, Prefix, QualName,
+};
 use string_cache::DefaultAtom;
 
 use crate::error::{ImplementationLimit, LoadingError};
@@ -16,20 +18,17 @@ use crate::util::{opt_utf8_cstr, utf8_cstr};
 /// string_cache crate.
 pub type AttributeValue = DefaultAtom;
 
-/// Type used to store an index into the attributes list.
-///
-/// Searching by name requires a linear scan, while looking up by index happens in
-/// constant time.
-#[derive(Clone, Copy)]
-pub struct AttributeIndex(u16);
-
 /// Iterable wrapper for libxml2's representation of attribute/value.
 ///
 /// See the [`new_from_xml2_attributes`] function for information.
 ///
 /// [`new_from_xml2_attributes`]: #method.new_from_xml2_attributes
 #[derive(Clone)]
-pub struct Attributes(Box<[(QualName, AttributeValue)]>);
+pub struct Attributes {
+    attrs: Box<[(QualName, AttributeValue)]>,
+    id_idx: Option<u16>,
+    class_idx: Option<u16>,
+}
 
 /// Iterator from `Attributes.iter`.
 pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
@@ -37,7 +36,11 @@ pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 impl Attributes {
     #[cfg(test)]
     pub fn new() -> Attributes {
-        Attributes([].into())
+        Attributes {
+            attrs: [].into(),
+            id_idx: None,
+            class_idx: None,
+        }
     }
 
     /// Creates an iterable `Attributes` from the C array of borrowed C strings.
@@ -61,6 +64,8 @@ impl Attributes {
         attrs: *const *const libc::c_char,
     ) -> Result<Attributes, LoadingError> {
         let mut array = Vec::with_capacity(n_attributes);
+        let mut id_idx = None;
+        let mut class_idx = None;
 
         if n_attributes > limits::MAX_LOADED_ATTRIBUTES {
             return Err(LoadingError::LimitExceeded(
@@ -102,40 +107,53 @@ impl Attributes {
                     let value_str = str::from_utf8_unchecked(value_slice);
                     let value_atom = DefaultAtom::from(value_str);
 
+                    let idx = array.len() as u16;
+                    match qual_name.expanded() {
+                        expanded_name!("", "id") => id_idx = Some(idx),
+                        expanded_name!("", "class") => class_idx = Some(idx),
+                        _ => (),
+                    }
+
                     array.push((qual_name, value_atom));
                 }
             }
         }
 
-        Ok(Attributes(array.into()))
+        Ok(Attributes {
+            attrs: array.into(),
+            id_idx,
+            class_idx,
+        })
     }
 
     /// Returns the number of attributes.
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.attrs.len()
     }
 
     /// Creates an iterator that yields `(QualName, &'a str)` tuples.
     pub fn iter(&self) -> AttributesIter<'_> {
-        AttributesIter(self.0.iter())
+        AttributesIter(self.attrs.iter())
     }
 
-    /// Creates an iterator that yields `(AttributeIndex, QualName, &'a str)` tuples.
-    pub fn iter_indexed(&self) -> impl Iterator<Item = (AttributeIndex, QualName, &'_ str)> + '_ {
-        self.iter().enumerate().map(|(index, (name, value))| {
-            let index = AttributeIndex(
-                index
-                    .try_into()
-                    .expect("overlong indexes are filtered at creation time"),
-            );
-            (index, name, value)
+    pub fn get_id(&self) -> Option<&str> {
+        self.id_idx.and_then(|idx| {
+            self.attrs
+                .get(usize::from(idx))
+                .map(|(_name, value)| &value[..])
         })
     }
 
-    pub fn get_by_index(&self, idx: AttributeIndex) -> Option<&str> {
-        self.0
-            .get(usize::from(idx.0))
-            .map(|(_name, value)| &value[..])
+    pub fn get_class(&self) -> Option<&str> {
+        self.class_idx.and_then(|idx| {
+            self.attrs
+                .get(usize::from(idx))
+                .map(|(_name, value)| &value[..])
+        })
+    }
+
+    pub fn clear_class(&mut self) {
+        self.class_idx = None;
     }
 }
 
