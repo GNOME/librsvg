@@ -3,9 +3,13 @@
 use std::slice;
 use std::str;
 
-use markup5ever::{namespace_url, LocalName, Namespace, Prefix, QualName};
+use markup5ever::{
+    expanded_name, local_name, namespace_url, ns, LocalName, Namespace, Prefix, QualName,
+};
 use string_cache::DefaultAtom;
 
+use crate::error::{ImplementationLimit, LoadingError};
+use crate::limits;
 use crate::util::{opt_utf8_cstr, utf8_cstr};
 
 /// Type used to store attribute values.
@@ -20,7 +24,11 @@ pub type AttributeValue = DefaultAtom;
 ///
 /// [`new_from_xml2_attributes`]: #method.new_from_xml2_attributes
 #[derive(Clone)]
-pub struct Attributes(Box<[(QualName, AttributeValue)]>);
+pub struct Attributes {
+    attrs: Box<[(QualName, AttributeValue)]>,
+    id_idx: Option<u16>,
+    class_idx: Option<u16>,
+}
 
 /// Iterator from `Attributes.iter`.
 pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
@@ -28,7 +36,11 @@ pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 impl Attributes {
     #[cfg(test)]
     pub fn new() -> Attributes {
-        Attributes([].into())
+        Attributes {
+            attrs: [].into(),
+            id_idx: None,
+            class_idx: None,
+        }
     }
 
     /// Creates an iterable `Attributes` from the C array of borrowed C strings.
@@ -50,8 +62,16 @@ impl Attributes {
     pub unsafe fn new_from_xml2_attributes(
         n_attributes: usize,
         attrs: *const *const libc::c_char,
-    ) -> Attributes {
+    ) -> Result<Attributes, LoadingError> {
         let mut array = Vec::with_capacity(n_attributes);
+        let mut id_idx = None;
+        let mut class_idx = None;
+
+        if n_attributes > limits::MAX_LOADED_ATTRIBUTES {
+            return Err(LoadingError::LimitExceeded(
+                ImplementationLimit::TooManyAttributes,
+            ));
+        }
 
         if n_attributes > 0 && !attrs.is_null() {
             for attr in slice::from_raw_parts(attrs, n_attributes * 5).chunks_exact(5) {
@@ -87,22 +107,53 @@ impl Attributes {
                     let value_str = str::from_utf8_unchecked(value_slice);
                     let value_atom = DefaultAtom::from(value_str);
 
+                    let idx = array.len() as u16;
+                    match qual_name.expanded() {
+                        expanded_name!("", "id") => id_idx = Some(idx),
+                        expanded_name!("", "class") => class_idx = Some(idx),
+                        _ => (),
+                    }
+
                     array.push((qual_name, value_atom));
                 }
             }
         }
 
-        Attributes(array.into())
+        Ok(Attributes {
+            attrs: array.into(),
+            id_idx,
+            class_idx,
+        })
     }
 
     /// Returns the number of attributes.
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.attrs.len()
     }
 
     /// Creates an iterator that yields `(QualName, &'a str)` tuples.
     pub fn iter(&self) -> AttributesIter<'_> {
-        AttributesIter(self.0.iter())
+        AttributesIter(self.attrs.iter())
+    }
+
+    pub fn get_id(&self) -> Option<&str> {
+        self.id_idx.and_then(|idx| {
+            self.attrs
+                .get(usize::from(idx))
+                .map(|(_name, value)| &value[..])
+        })
+    }
+
+    pub fn get_class(&self) -> Option<&str> {
+        self.class_idx.and_then(|idx| {
+            self.attrs
+                .get(usize::from(idx))
+                .map(|(_name, value)| &value[..])
+        })
+    }
+
+    pub fn clear_class(&mut self) {
+        self.class_idx = None;
     }
 }
 
@@ -123,7 +174,7 @@ mod tests {
 
     #[test]
     fn empty_attributes() {
-        let map = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()) };
+        let map = unsafe { Attributes::new_from_xml2_attributes(0, ptr::null()).unwrap() };
         assert_eq!(map.len(), 0);
     }
 
@@ -172,7 +223,7 @@ mod tests {
             v.push(val_end); // value_end
         }
 
-        let attrs = unsafe { Attributes::new_from_xml2_attributes(3, v.as_ptr()) };
+        let attrs = unsafe { Attributes::new_from_xml2_attributes(3, v.as_ptr()).unwrap() };
 
         let mut had_href: bool = false;
         let mut had_ry: bool = false;

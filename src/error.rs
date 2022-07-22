@@ -436,6 +436,15 @@ pub enum ImplementationLimit {
     /// allow loading more than a certain number of elements during
     /// the initial loading process.
     TooManyLoadedElements,
+
+    /// Document exceeded the number of attributes that can be attached to
+    /// an element.
+    ///
+    /// This is here because librsvg uses u16 to address attributes. It should
+    /// be essentially impossible to actually hit this limit, because the
+    /// number of attributes that the SVG standard ascribes meaning to are
+    /// lower than this limit.
+    TooManyAttributes,
 }
 
 impl error::Error for LoadingError {}
@@ -484,6 +493,12 @@ impl fmt::Display for ImplementationLimit {
             ImplementationLimit::TooManyLoadedElements => write!(
                 f,
                 "cannot load more than {} XML elements",
+                limits::MAX_LOADED_ELEMENTS
+            ),
+
+            ImplementationLimit::TooManyAttributes => write!(
+                f,
+                "cannot load more than {} XML attributes",
                 limits::MAX_LOADED_ELEMENTS
             ),
         }

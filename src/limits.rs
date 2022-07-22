@@ -32,3 +32,11 @@ pub const MAX_REFERENCED_ELEMENTS: usize = 500_000;
 /// in an attempt to exhaust memory.  We don't allow loading more than
 /// this number of elements during the initial streaming load process.
 pub const MAX_LOADED_ELEMENTS: usize = 1_000_000;
+
+/// Maximum number of attributes loadable per document.
+///
+/// This is here because librsvg uses u16 to address attributes. It should
+/// be essentially impossible to actually hit this limit, because the number
+/// of attributes that the SVG standard ascribes meaning to are lower than
+/// this limit.
+pub const MAX_LOADED_ATTRIBUTES: usize = u16::MAX as usize;

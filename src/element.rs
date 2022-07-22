@@ -94,8 +94,6 @@ pub trait Draw {
 
 pub struct ElementInner<T: SetAttributes + Draw> {
     element_name: QualName,
-    id: Option<String>,    // id attribute from XML element
-    class: Option<String>, // class attribute from XML element
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
@@ -110,16 +108,12 @@ pub struct ElementInner<T: SetAttributes + Draw> {
 impl<T: SetAttributes + Draw> ElementInner<T> {
     fn new(
         element_name: QualName,
-        id: Option<String>,
-        class: Option<String>,
         attributes: Attributes,
         result: Result<(), ElementError>,
         element_impl: T,
     ) -> ElementInner<T> {
         let mut e = Self {
             element_name,
-            id,
-            class,
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
@@ -153,11 +147,11 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn get_id(&self) -> Option<&str> {
-        self.id.as_deref()
+        self.attributes.get_id()
     }
 
     fn get_class(&self) -> Option<&str> {
-        self.class.as_deref()
+        self.attributes.get_class()
     }
 
     fn inherit_xml_lang(&mut self, parent: Option<Node>) {
@@ -451,18 +445,7 @@ impl Element {
     ///
     /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
     /// element.
-    pub fn new(name: &QualName, attrs: Attributes) -> Element {
-        let mut id = None;
-        let mut class = None;
-
-        for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                expanded_name!("", "id") => id = Some(String::from(value)),
-                expanded_name!("", "class") => class = Some(String::from(value)),
-                _ => (),
-            }
-        }
-
+    pub fn new(name: &QualName, mut attrs: Attributes) -> Element {
         let (create_fn, flags): (ElementCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
             match ELEMENT_CREATORS.get(name.local.as_ref()) {
                 // hack in the SVG namespace for supported element names
@@ -478,12 +461,12 @@ impl Element {
         };
 
         if flags == ElementCreateFlags::IgnoreClass {
-            class = None;
+            attrs.clear_class();
         };
 
         //    sizes::print_sizes();
 
-        create_fn(name, attrs, id, class)
+        create_fn(name, attrs)
     }
 
     pub fn element_name(&self) -> &QualName {
@@ -602,20 +585,13 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(
-            element_name: &QualName,
-            attributes: Attributes,
-            id: Option<String>,
-            class: Option<String>,
-        ) -> Element {
+        pub fn $name(element_name: &QualName, attributes: Attributes) -> Element {
             let mut element_impl = <$element_type>::default();
 
             let result = element_impl.set_attributes(&attributes);
 
             let element = Element::$element_type(Box::new(ElementInner::new(
                 element_name.clone(),
-                id,
-                class,
                 attributes,
                 result,
                 element_impl,
@@ -699,12 +675,7 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn = fn(
-    element_name: &QualName,
-    attributes: Attributes,
-    id: Option<String>,
-    class: Option<String>,
-) -> Element;
+type ElementCreateFn = fn(element_name: &QualName, attributes: Attributes) -> Element;
 
 #[derive(Copy, Clone, PartialEq)]
 enum ElementCreateFlags {
