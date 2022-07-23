@@ -208,6 +208,12 @@ impl LoadState {
     }
 }
 
+impl Default for LoadState {
+    fn default() -> Self {
+        Self::Start
+    }
+}
+
 /// Holds the base URL for loading a handle, and the C-accessible version of it
 ///
 /// There is a public API to query the base URL, and we need to
@@ -287,11 +293,13 @@ mod imp {
 
     /// Contains all the interior mutability for a RsvgHandle to be called
     /// from the C API.
+    #[derive(Default)]
     pub struct CHandle {
         pub(super) inner: RefCell<CHandleInner>,
         pub(super) load_state: RefCell<LoadState>,
     }
 
+    #[derive(Default)]
     pub(super) struct CHandleInner {
         pub(super) dpi: Dpi,
         pub(super) load_flags: LoadFlags,
@@ -308,19 +316,6 @@ mod imp {
 
         type Instance = RsvgHandle;
         type Class = RsvgHandleClass;
-
-        fn new() -> Self {
-            CHandle {
-                inner: RefCell::new(CHandleInner {
-                    dpi: Dpi::default(),
-                    load_flags: LoadFlags::default(),
-                    base_url: BaseUrl::default(),
-                    size_callback: SizeCallback::default(),
-                    is_testing: false,
-                }),
-                load_state: RefCell::new(LoadState::Start),
-            }
-        }
     }
 
     impl ObjectImpl for CHandle {
