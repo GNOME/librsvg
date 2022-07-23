@@ -327,46 +327,39 @@ mod imp {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
                 vec![
-                    ParamSpecFlags::new(
-                        "flags",
-                        "",
-                        "",
-                        HandleFlags::static_type(),
-                        0,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
-                    ),
-                    ParamSpecDouble::new(
-                        "dpi-x",
-                        "",
-                        "",
-                        0.0,
-                        f64::MAX,
-                        0.0,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                    ),
-                    ParamSpecDouble::new(
-                        "dpi-y",
-                        "",
-                        "",
-                        0.0,
-                        f64::MAX,
-                        0.0,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                    ),
-                    ParamSpecString::new(
-                        "base-uri",
-                        "",
-                        "",
-                        None,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                    ),
-                    ParamSpecInt::new("width", "", "", 0, i32::MAX, 0, ParamFlags::READABLE),
-                    ParamSpecInt::new("height", "", "", 0, i32::MAX, 0, ParamFlags::READABLE),
-                    ParamSpecDouble::new("em", "", "", 0.0, f64::MAX, 0.0, ParamFlags::READABLE),
-                    ParamSpecDouble::new("ex", "", "", 0.0, f64::MAX, 0.0, ParamFlags::READABLE),
-                    ParamSpecString::new("title", "", "", None, ParamFlags::READABLE),
-                    ParamSpecString::new("desc", "", "", None, ParamFlags::READABLE),
-                    ParamSpecString::new("metadata", "", "", None, ParamFlags::READABLE),
+                    ParamSpecFlags::builder("flags", HandleFlags::static_type())
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY)
+                        .build(),
+                    ParamSpecDouble::builder("dpi-x")
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
+                        .build(),
+                    ParamSpecDouble::builder("dpi-y")
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
+                        .build(),
+                    ParamSpecString::builder("base-uri")
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
+                        .build(),
+                    ParamSpecInt::builder("width")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecInt::builder("height")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecDouble::builder("em")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecDouble::builder("ex")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecString::builder("title")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecString::builder("desc")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecString::builder("metadata")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
                 ]
             });
             PROPERTIES.as_ref()
