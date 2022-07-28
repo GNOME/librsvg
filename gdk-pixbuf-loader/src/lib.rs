@@ -341,7 +341,7 @@ mod tests {
             xmlns:svg="http://www.w3.org/2000/svg">
             <defs id="defs2" />
             <g id="layer1">
-                <rect style="fill:#000000;stroke-width:0.130147" id="rect31"
+                <rect style="fill:#aa1144;stroke-width:0.130147" id="rect31"
                     width="26.458334" height="26.458334"
                     x="-3.1789145e-07" y="-3.1789145e-07" />
             </g>
@@ -366,15 +366,15 @@ mod tests {
             let pixels = gdk_pixbuf_sys::gdk_pixbuf_get_pixels(pb);
 
             // Upper left pixel, black with full opacity #000000ff
-            assert_eq!(*pixels, 0x00);
-            assert_eq!(*pixels.offset(1), 0x00);
-            assert_eq!(*pixels.offset(2), 0x00);
+            assert_eq!(*pixels, 0xaa);
+            assert_eq!(*pixels.offset(1), 0x11);
+            assert_eq!(*pixels.offset(2), 0x44);
             assert_eq!(*pixels.offset(3), 0xff);
 
             // Bottom left pixel
-            assert_eq!(*pixels.offset((stride * 99) as isize), 0x00);
-            assert_eq!(*pixels.offset((stride * 99) as isize + 1), 0x00);
-            assert_eq!(*pixels.offset((stride * 99) as isize + 2), 0x00);
+            assert_eq!(*pixels.offset((stride * 99) as isize), 0xaa);
+            assert_eq!(*pixels.offset((stride * 99) as isize + 1), 0x11);
+            assert_eq!(*pixels.offset((stride * 99) as isize + 2), 0x44);
             assert_eq!(*pixels.offset((stride * 99) as isize + 3), 0xff);
         }
 
