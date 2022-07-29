@@ -208,6 +208,12 @@ impl LoadState {
     }
 }
 
+impl Default for LoadState {
+    fn default() -> Self {
+        Self::Start
+    }
+}
+
 /// Holds the base URL for loading a handle, and the C-accessible version of it
 ///
 /// There is a public API to query the base URL, and we need to
@@ -287,11 +293,13 @@ mod imp {
 
     /// Contains all the interior mutability for a RsvgHandle to be called
     /// from the C API.
+    #[derive(Default)]
     pub struct CHandle {
         pub(super) inner: RefCell<CHandleInner>,
         pub(super) load_state: RefCell<LoadState>,
     }
 
+    #[derive(Default)]
     pub(super) struct CHandleInner {
         pub(super) dpi: Dpi,
         pub(super) load_flags: LoadFlags,
@@ -308,115 +316,45 @@ mod imp {
 
         type Instance = RsvgHandle;
         type Class = RsvgHandleClass;
-
-        fn new() -> Self {
-            CHandle {
-                inner: RefCell::new(CHandleInner {
-                    dpi: Dpi::default(),
-                    load_flags: LoadFlags::default(),
-                    base_url: BaseUrl::default(),
-                    size_callback: SizeCallback::default(),
-                    is_testing: false,
-                }),
-                load_state: RefCell::new(LoadState::Start),
-            }
-        }
     }
 
     impl ObjectImpl for CHandle {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
                 vec![
-                    ParamSpecFlags::new(
-                        "flags",
-                        "Flags",
-                        "Loading flags",
-                        HandleFlags::static_type(),
-                        0,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY,
-                    ),
-                    ParamSpecDouble::new(
-                        "dpi-x",
-                        "Horizontal DPI",
-                        "Horizontal resolution in dots per inch",
-                        0.0,
-                        f64::MAX,
-                        0.0,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                    ),
-                    ParamSpecDouble::new(
-                        "dpi-y",
-                        "Vertical DPI",
-                        "Vertical resolution in dots per inch",
-                        0.0,
-                        f64::MAX,
-                        0.0,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                    ),
-                    ParamSpecString::new(
-                        "base-uri",
-                        "Base URI",
-                        "Base URI for resolving relative references",
-                        None,
-                        ParamFlags::READWRITE | ParamFlags::CONSTRUCT,
-                    ),
-                    ParamSpecInt::new(
-                        "width",
-                        "Image width",
-                        "Image width",
-                        0,
-                        i32::MAX,
-                        0,
-                        ParamFlags::READABLE,
-                    ),
-                    ParamSpecInt::new(
-                        "height",
-                        "Image height",
-                        "Image height",
-                        0,
-                        i32::MAX,
-                        0,
-                        ParamFlags::READABLE,
-                    ),
-                    ParamSpecDouble::new(
-                        "em",
-                        "em",
-                        "em",
-                        0.0,
-                        f64::MAX,
-                        0.0,
-                        ParamFlags::READABLE,
-                    ),
-                    ParamSpecDouble::new(
-                        "ex",
-                        "ex",
-                        "ex",
-                        0.0,
-                        f64::MAX,
-                        0.0,
-                        ParamFlags::READABLE,
-                    ),
-                    ParamSpecString::new(
-                        "title",
-                        "deprecated",
-                        "deprecated",
-                        None,
-                        ParamFlags::READABLE,
-                    ),
-                    ParamSpecString::new(
-                        "desc",
-                        "deprecated",
-                        "deprecated",
-                        None,
-                        ParamFlags::READABLE,
-                    ),
-                    ParamSpecString::new(
-                        "metadata",
-                        "deprecated",
-                        "deprecated",
-                        None,
-                        ParamFlags::READABLE,
-                    ),
+                    ParamSpecFlags::builder("flags", HandleFlags::static_type())
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY)
+                        .build(),
+                    ParamSpecDouble::builder("dpi-x")
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
+                        .build(),
+                    ParamSpecDouble::builder("dpi-y")
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
+                        .build(),
+                    ParamSpecString::builder("base-uri")
+                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
+                        .build(),
+                    ParamSpecInt::builder("width")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecInt::builder("height")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecDouble::builder("em")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecDouble::builder("ex")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecString::builder("title")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecString::builder("desc")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
+                    ParamSpecString::builder("metadata")
+                        .flags(ParamFlags::READABLE)
+                        .build(),
                 ]
             });
             PROPERTIES.as_ref()
