@@ -499,7 +499,7 @@ impl fmt::Display for ImplementationLimit {
             ImplementationLimit::TooManyAttributes => write!(
                 f,
                 "cannot load more than {} XML attributes",
-                limits::MAX_LOADED_ELEMENTS
+                limits::MAX_LOADED_ATTRIBUTES
             ),
         }
     }
