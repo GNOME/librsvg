@@ -372,10 +372,28 @@ mod tests {
             assert_eq!(*pixels.offset(3), 0xff);
 
             // Bottom left pixel
-            assert_eq!(*pixels.offset((stride * 99) as isize), 0xaa);
-            assert_eq!(*pixels.offset((stride * 99) as isize + 1), 0x11);
-            assert_eq!(*pixels.offset((stride * 99) as isize + 2), 0x44);
-            assert_eq!(*pixels.offset((stride * 99) as isize + 3), 0xff);
+            assert_eq!(*pixels.offset((stride * (h - 1)) as isize), 0xaa);
+            assert_eq!(*pixels.offset((stride * (h - 1)) as isize + 1), 0x11);
+            assert_eq!(*pixels.offset((stride * (h - 1)) as isize + 2), 0x44);
+            assert_eq!(*pixels.offset((stride * (h - 1)) as isize + 3), 0xff);
+
+            // Bottom right pixel
+            assert_eq!(
+                *pixels.offset((stride * (h - 1)) as isize + (w as isize - 1) * 4),
+                0xaa
+            );
+            assert_eq!(
+                *pixels.offset((stride * (h - 1)) as isize + (w as isize - 1) * 4 + 1),
+                0x11
+            );
+            assert_eq!(
+                *pixels.offset((stride * (h - 1)) as isize + (w as isize - 1) * 4 + 2),
+                0x44
+            );
+            assert_eq!(
+                *pixels.offset((stride * (h - 1)) as isize + (w as isize - 1) * 4 + 3),
+                0xff
+            );
         }
 
         let ctx = unsafe { crate::begin_load(None, Some(prep_cb), None, null_mut(), null_mut()) };
