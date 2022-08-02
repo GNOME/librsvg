@@ -263,19 +263,20 @@ coverage:
     - .cache
   stage: unit test
   needs:
-    - job: opensuse-container@x86_64.nightly
+    - job: opensuse-container@x86_64.stable
     - job: check
       artifacts: false
   variables:
     # Mixed gcc and Rust/LLVM coverage for the C API tests:
     # https://searchfox.org/mozilla-central/source/browser/config/mozconfigs/linux64/code-coverage#15
+    CC: "clang"
     CFLAGS: "-coverage -ftest-coverage -fprofile-arcs"
     # RUSTFLAGS: "-Cinstrument-coverage"
     RUSTDOCFLAGS: "-Cinstrument-coverage"
     LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
     LDFLAGS: "--coverage -L/usr/lib64/clang/14.0.6/lib/linux"
     LIBS: "-lclang_rt.profile-x86_64"
-    RUSTFLAGS: "-Ccodegen-units=1 -Zprofile -Cpanic=abort -Zpanic_abort_tests -Clink-dead-code -Coverflow-checks=off"    
+    RUSTFLAGS: "-Cinstrument-coverage -Ccodegen-units=1 -Cpanic=abort -Zpanic_abort_tests -Clink-dead-code -Coverflow-checks=off"
   script:
     - mkdir -p _build
     - cd _build
