@@ -276,7 +276,7 @@ coverage:
     LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
     LDFLAGS: "--coverage -L/usr/lib64/clang/14.0.6/lib/linux"
     LIBS: "-lclang_rt.profile-x86_64"
-    RUSTFLAGS: "-Cinstrument-coverage -Ccodegen-units=1 -Cpanic=abort -Zpanic_abort_tests -Clink-dead-code -Coverflow-checks=off"
+    RUSTFLAGS: "-Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
   script:
     - mkdir -p _build
     - cd _build
