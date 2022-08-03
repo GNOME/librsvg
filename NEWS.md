@@ -1,3 +1,22 @@
+Version 2.55.0-alpha
+====================
+
+This is the first release in the new development series.
+
+- The Minimum Supported Rust Version (MSRV) is now Rust 1.58.
+
+- #855: The release tarball no longer contains vendored Rust
+  dependencies.  Most distributions now have infrastructure to pull
+  these themselves, so let's make the tarball smaller.
+
+- #880 - Accept patterns with userSpaceOnUse units for the stroke of
+  axis-aligned lines.
+
+- #706: Small reductions in memory consumption of the DOM tree
+  (Michael Howell).
+
+- Updates for the gtk-rs API (Bilal Elmoussaoui).
+
 Version 2.54.4
 ==============
 
