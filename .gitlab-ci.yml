@@ -258,7 +258,7 @@ clippy:
 
 coverage:
   extends:
-    - '.container.opensuse@x86_64.nightly'
+    - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
     - .cache
   stage: unit test
