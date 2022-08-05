@@ -214,7 +214,7 @@ const SIGNATURE: [GdkPixbufModulePattern; 3] = [
     },
 ];
 
-const MIME_TYPES: [*const i8; 7] = [
+const MIME_TYPES: [*const c_char; 7] = [
     cstr!("image/svg+xml").as_ptr(),
     cstr!("image/svg").as_ptr(),
     cstr!("image/svg-xml").as_ptr(),
@@ -224,7 +224,7 @@ const MIME_TYPES: [*const i8; 7] = [
     std::ptr::null(),
 ];
 
-const EXTENSIONS: [*const i8; 4] = [
+const EXTENSIONS: [*const c_char; 4] = [
     cstr!("svg").as_ptr(),
     cstr!("svgz").as_ptr(),
     cstr!("svg.gz").as_ptr(),
@@ -250,6 +250,7 @@ mod tests {
 
     use crate::{EXTENSIONS, MIME_TYPES};
     use std::ptr::{null, null_mut};
+    use libc::c_char;
 
     fn pb_format_new() -> GdkPixbufFormat {
         let mut info = super::GdkPixbufFormat {
@@ -284,7 +285,7 @@ mod tests {
         assert_ne!(info.license, null_mut());
     }
 
-    fn check_null_terminated_arr_cstrings(arr: &[*const i8]) {
+    fn check_null_terminated_arr_cstrings(arr: &[*const c_char]) {
         let n_strings = arr
             .iter()
             .filter(|e| e != &&null())
@@ -292,7 +293,7 @@ mod tests {
                 if e != &null() {
                     // We use strlen in all of them to ensure some safety
                     // We could use CStr instead but it'd be a bit more cumbersome
-                    assert!(unsafe { libc::strlen(*e as *const i8) } > 0)
+                    assert!(unsafe { libc::strlen(*e as *const c_char) } > 0)
                 }
             })
             .count(); // Count all non_null items
@@ -325,8 +326,8 @@ mod tests {
                 assert_ne!(unsafe { (*ptr).prefix }, null_mut());
                 if unsafe { (*ptr).mask } != null_mut() {
                     // Mask can be null
-                    assert_eq!(unsafe { libc::strlen((*ptr).prefix as *mut i8) }, unsafe {
-                        libc::strlen((*ptr).mask as *mut i8)
+                    assert_eq!(unsafe { libc::strlen((*ptr).prefix as *mut c_char) }, unsafe {
+                        libc::strlen((*ptr).mask as *mut c_char)
                     });
                 }
                 // Relevance must be 0 to 100
