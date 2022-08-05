@@ -6,8 +6,8 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2022-08-02.0-main"
-  RUST_STABLE: "1.58.1"
+  BASE_TAG: "2022-08-04.1-c-api-coverage"
+  RUST_STABLE: "1.60.0"
   RUST_MINIMUM: "1.58.1"
 
 .container.opensuse@common:
@@ -18,7 +18,7 @@ variables:
     FDO_DISTRIBUTION_VERSION: "tumbleweed"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
     FDO_DISTRIBUTION_PACKAGES: >-
-      gcc gdb make vala
+      gcc gdb make vala clang clang-tools
       automake autoconf curl gettext git itstool libtool
       gtk-doc gobject-introspection-devel gtk3-devel
       cairo-devel libxml2-devel wget openssl-devel
