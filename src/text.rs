@@ -657,7 +657,7 @@ impl Chars {
         &self,
         node: &Node,
         values: Rc<ComputedValues>,
-        chunks: &mut Vec<Chunk>,
+        chunks: &mut [Chunk],
         dx: f64,
         dy: f64,
         depth: usize,
