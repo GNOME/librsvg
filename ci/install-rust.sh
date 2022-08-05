@@ -26,11 +26,11 @@ cargo install --version ^1.0 gitlab_clippy
 # cargo install --force cargo-deny
 # cargo install --force cargo-outdated
 
-if [ "$RUST_VERSION" = "nightly" ]; then
-  # Coverage tools
-  cargo install grcov
-  rustup component add llvm-tools-preview
+# Coverage tools
+cargo install grcov
+rustup component add llvm-tools-preview
 
+if [ "$RUST_VERSION" = "nightly" ]; then
   # Documentation tools
   cargo install --force rustdoc-stripper
 fi

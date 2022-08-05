@@ -6,7 +6,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2022-08-04.0-c-api-coverage"
+  BASE_TAG: "2022-08-04.1-c-api-coverage"
   RUST_STABLE: "1.60.0"
   RUST_MINIMUM: "1.58.1"
 
