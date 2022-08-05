@@ -9,7 +9,7 @@ use gdk_pixbuf_sys::{
 use glib::translate::IntoGlib;
 use glib_sys::{gboolean, GError};
 use gobject_sys::GObject;
-use libc::{c_char, c_int, c_uint};
+use libc::{c_char, c_uint};
 
 use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
@@ -84,7 +84,7 @@ fn argb_to_rgba(data: &mut Vec<u8>, width: usize, height: usize, stride: usize) 
 }
 
 #[no_mangle]
-unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut GError) -> c_int {
+unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut GError) -> gboolean {
     let ctx = Box::from_raw(user_data as *mut SvgContext);
     if error != null_mut() {
         *error = null_mut();
