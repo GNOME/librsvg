@@ -203,8 +203,8 @@ const SIGNATURE: [GdkPixbufModulePattern; 3] = [
         relevance: 100,
     },
     GdkPixbufModulePattern {
-        prefix: " <!DOCTYPE svg\0".as_ptr() as *mut c_char,
-        mask: "*             \0".as_ptr() as *mut c_char,
+        prefix: cstr!(" <!DOCTYPE svg").as_ptr() as *mut c_char,
+        mask: cstr!("*             ").as_ptr() as *mut c_char,
         relevance: 100,
     },
     GdkPixbufModulePattern {
