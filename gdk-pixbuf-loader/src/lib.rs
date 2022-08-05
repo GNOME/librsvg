@@ -6,7 +6,8 @@ use gdk_pixbuf_sys::{
     GDK_PIXBUF_FORMAT_THREADSAFE,
 };
 
-use glib_sys::{GError, gboolean};
+use glib::translate::IntoGlib;
+use glib_sys::{gboolean, GError};
 use gobject_sys::GObject;
 use libc::{c_char, c_int, c_uint};
 
@@ -65,7 +66,7 @@ unsafe extern "C" fn load_increment(
     let data = std::slice::from_raw_parts(buffer, size as usize);
     let data = data.to_vec();
     (&*ctx).stream.add_bytes(&Bytes::from_owned(data));
-    1
+    true.into_glib()
 }
 
 fn argb_to_rgba(data: &mut Vec<u8>, width: usize, height: usize, stride: usize) {
@@ -141,7 +142,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
         Err(e) => {
             let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e.to_string());
             *error = gerr.into_raw();
-            return 0;
+            return false.into_glib();
         }
     };
 
@@ -162,7 +163,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
     let pixbuf = gdk_pixbuf_sys::gdk_pixbuf_new_from_data(
         pb_data.as_mut_ptr(),
         gdk_pixbuf_sys::GDK_COLORSPACE_RGB,
-        1,
+        true.into_glib(),
         8,
         w,
         h,
@@ -183,7 +184,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
     // The module loader increases a ref so we drop the pixbuf here
     gobject_sys::g_object_unref(pixbuf as *mut GObject);
 
-    1
+    true.into_glib()
 }
 
 #[no_mangle]
@@ -244,10 +245,11 @@ mod tests {
     use gdk_pixbuf_sys::{
         GdkPixbufFormat, GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE,
     };
+    use glib::translate::IntoGlib;
 
     use crate::{EXTENSIONS, MIME_TYPES};
-    use std::ptr::{null, null_mut};
     use libc::c_char;
+    use std::ptr::{null, null_mut};
 
     fn pb_format_new() -> GdkPixbufFormat {
         let mut info = super::GdkPixbufFormat {
@@ -258,7 +260,7 @@ mod tests {
             extensions: null_mut(),
             flags: 0,
             license: null_mut(),
-            disabled: 0,
+            disabled: false.into_glib(),
             domain: null_mut(),
         };
 
@@ -323,9 +325,10 @@ mod tests {
                 assert_ne!(unsafe { (*ptr).prefix }, null_mut());
                 if unsafe { (*ptr).mask } != null_mut() {
                     // Mask can be null
-                    assert_eq!(unsafe { libc::strlen((*ptr).prefix as *mut c_char) }, unsafe {
-                        libc::strlen((*ptr).mask as *mut c_char)
-                    });
+                    assert_eq!(
+                        unsafe { libc::strlen((*ptr).prefix as *mut c_char) },
+                        unsafe { libc::strlen((*ptr).mask as *mut c_char) }
+                    );
                 }
                 // Relevance must be 0 to 100
                 assert!(unsafe { (*ptr).relevance } >= 0);
