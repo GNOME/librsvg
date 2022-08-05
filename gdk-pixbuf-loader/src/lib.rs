@@ -64,8 +64,7 @@ unsafe extern "C" fn load_increment(
     let ctx = user_data as *mut SvgContext;
 
     let data = std::slice::from_raw_parts(buffer, size as usize);
-    let data = data.to_vec();
-    (&*ctx).stream.add_bytes(&Bytes::from_owned(data));
+    (&*ctx).stream.add_bytes(&Bytes::from(data));
     true.into_glib()
 }
 
