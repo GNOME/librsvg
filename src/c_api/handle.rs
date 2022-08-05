@@ -1557,7 +1557,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     rsvg_return_val_if_fail! {
         rsvg_handle_new_from_data => ptr::null();
 
-        (!data.is_null() && data_len != 0) || (data_len == 0),
+        !data.is_null() || data_len == 0,
         data_len <= std::isize::MAX as usize,
         error.is_null() || (*error).is_null(),
     }
