@@ -6,7 +6,7 @@ use gdk_pixbuf_sys::{
     GDK_PIXBUF_FORMAT_THREADSAFE,
 };
 
-use glib_sys::GError;
+use glib_sys::{GError, gboolean};
 use gobject_sys::GObject;
 use libc::{c_char, c_int, c_uint};
 
@@ -14,9 +14,6 @@ use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
 use glib::Bytes;
 use librsvg::Loader;
-
-#[allow(non_camel_case_types)]
-type c_bool = c_int;
 
 use cstr::cstr;
 
@@ -58,7 +55,7 @@ unsafe extern "C" fn load_increment(
     buffer: *const u8,
     size: c_uint,
     error: *mut *mut GError,
-) -> c_bool {
+) -> gboolean {
     if error != null_mut() {
         *error = null_mut();
     }
