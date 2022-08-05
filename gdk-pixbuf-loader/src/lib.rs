@@ -8,7 +8,7 @@ use gdk_pixbuf_sys::{
 
 use glib_sys::GError;
 use gobject_sys::GObject;
-use libc::{c_char, c_int, c_uint, c_void};
+use libc::{c_char, c_int, c_uint};
 
 use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
@@ -24,7 +24,7 @@ struct SvgContext {
     size_func: GdkPixbufModuleSizeFunc,
     prep_func: GdkPixbufModulePreparedFunc,
     update_func: GdkPixbufModuleUpdatedFunc,
-    user_data: *mut c_void,
+    user_data: glib_sys::gpointer,
     stream: MemoryInputStream,
 }
 
@@ -33,9 +33,9 @@ unsafe extern "C" fn begin_load(
     size_func: GdkPixbufModuleSizeFunc,
     prep_func: GdkPixbufModulePreparedFunc,
     update_func: GdkPixbufModuleUpdatedFunc,
-    user_data: *mut c_void,
+    user_data: glib_sys::gpointer,
     error: *mut *mut GError,
-) -> *mut c_void {
+) -> glib_sys::gpointer {
     if error != null_mut() {
         *error = null_mut();
     }
@@ -49,12 +49,12 @@ unsafe extern "C" fn begin_load(
         stream,
     });
 
-    Box::into_raw(ctx) as *mut c_void
+    Box::into_raw(ctx) as glib_sys::gpointer
 }
 
 #[no_mangle]
 unsafe extern "C" fn load_increment(
-    user_data: *mut c_void,
+    user_data: glib_sys::gpointer,
     buffer: *const u8,
     size: c_uint,
     error: *mut *mut GError,
@@ -86,7 +86,7 @@ fn argb_to_rgba(data: &mut Vec<u8>, width: usize, height: usize, stride: usize) 
 }
 
 #[no_mangle]
-unsafe extern "C" fn stop_load(user_data: *mut c_void, error: *mut *mut GError) -> c_int {
+unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut GError) -> c_int {
     let ctx = Box::from_raw(user_data as *mut SvgContext);
     if error != null_mut() {
         *error = null_mut();
@@ -156,7 +156,7 @@ unsafe extern "C" fn stop_load(user_data: *mut c_void, error: *mut *mut GError) 
 
     // Function to free the pixel data by rebuilding the Vec object
     #[no_mangle]
-    unsafe extern "C" fn destroy_cb_foo(pixels: *mut u8, user_data: *mut c_void) {
+    unsafe extern "C" fn destroy_cb_foo(pixels: *mut u8, user_data: glib_sys::gpointer) {
         let data = Box::<(usize, usize)>::from_raw(user_data as *mut (usize, usize));
         Vec::from_raw_parts(pixels, data.0, data.1);
     }
@@ -171,7 +171,7 @@ unsafe extern "C" fn stop_load(user_data: *mut c_void, error: *mut *mut GError) 
         h,
         stride,
         Some(destroy_cb_foo),
-        Box::into_raw(cb_data) as *mut c_void,
+        Box::into_raw(cb_data) as glib_sys::gpointer,
     );
     if let Some(size_func) = ctx.size_func {
         size_func(&mut w as *mut i32, &mut h as *mut i32, ctx.user_data);
