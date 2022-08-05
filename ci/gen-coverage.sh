@@ -46,4 +46,7 @@ call_grcov html public/coverage
 
 # Print "Coverage: 42.42" so .gitlab-ci.yml will pick it up with a regex
 #
-# grep -Eo 'line-rate="[^"]+"' coverage.xml | head -n 1 | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 * 100 }'
+# We scrape this from the HTML report, not the JSON summary, because coverage.json
+# uses no decimal places, just something like "42%".
+
+grep -Eo 'abbr title.* %' public/coverage/index.html | head -n 1 | grep -Eo '[0-9.]+ %' | grep -Eo '[0-9.]+' | awk '{ print "Coverage:", $1 }'
