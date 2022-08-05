@@ -276,7 +276,9 @@ coverage:
     LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
     LDFLAGS: "--coverage -L/usr/lib64/clang/14.0.6/lib/linux"
     LIBS: "-lclang_rt.profile-x86_64"
-    RUSTFLAGS: "-Cinstrument-coverage -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
+    RUSTC_BOOTSTRAP: "1"   # hack to make -Zprofile work on the non-nightly compiler
+    CARGO_INCREMENTAL: "0" # -Zprofile (gcov) doesn't like incremental compilation
+    RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
   script:
     - mkdir -p _build
     - cd _build
