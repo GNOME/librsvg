@@ -294,11 +294,18 @@ noops (void)
     rsvg_init ();
     rsvg_term ();
     rsvg_cleanup ();
+}
 
-    /* Just test that these are in the binary */
-    g_assert_nonnull (rsvg_handle_get_title);
-    g_assert_nonnull (rsvg_handle_get_desc);
-    g_assert_nonnull (rsvg_handle_get_metadata);
+static void
+noops_return_null (void)
+{
+    RsvgHandle *handle = rsvg_handle_new ();
+
+    g_assert_null (rsvg_handle_get_title (handle));
+    g_assert_null (rsvg_handle_get_desc (handle));
+    g_assert_null (rsvg_handle_get_metadata (handle));
+
+    g_object_unref (handle);
 }
 
 static void
@@ -1662,6 +1669,7 @@ add_api_tests (void)
     g_test_add_func ("/api/flags_registration", flags_registration);
     g_test_add_func ("/api/error_registration", error_registration);
     g_test_add_func ("/api/noops", noops);
+    g_test_add_func ("/api/noops_return_null", noops_return_null);
     g_test_add_func ("/api/set_dpi", set_dpi);
     g_test_add_func ("/api/base_uri", base_uri);
     g_test_add_func ("/api/base_gfile", base_gfile);
