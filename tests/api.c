@@ -1036,6 +1036,57 @@ get_intrinsic_size_in_pixels_no (void)
 }
 
 static void
+set_stylesheet (void)
+{
+    char *filename = get_test_filename ("stylesheet.svg");
+    char *ref_filename = get_test_filename ("stylesheet-ref.svg");
+    const char *css = "rect { fill: #00ff00; }";
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_assert_no_error (error);
+
+    RsvgHandle *ref_handle = rsvg_handle_new_from_file (ref_filename, &error);
+    g_assert_no_error (error);
+
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 100, 100);
+    cairo_surface_t *reference = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 100, 100);
+
+    RsvgRectangle viewport = { 0.0, 0.0, 100.0, 100.0 };
+
+    cairo_t *output_cr = cairo_create (output);
+    cairo_t *ref_cr = cairo_create (reference);
+
+    g_assert (rsvg_handle_set_stylesheet (handle, (const guint8 *) css, strlen (css), &error));
+    g_assert_no_error (error);
+
+    g_assert (rsvg_handle_render_document (handle, output_cr, &viewport, &error));
+    g_assert_no_error (error);
+
+    g_assert (rsvg_handle_render_document (ref_handle, ref_cr, &viewport, &error));
+    g_assert_no_error (error);
+
+    cairo_surface_t *diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 100, 100);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (output, reference, diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (diff);
+    cairo_destroy (ref_cr);
+    cairo_destroy (output_cr);
+    cairo_surface_destroy (reference);
+    cairo_surface_destroy (output);
+    g_object_unref (ref_handle);
+    g_object_unref (handle);
+    g_free (ref_filename);
+    g_free (filename);
+}
+
+static void
 render_document (void)
 {
     char *filename = get_test_filename ("document.svg");
@@ -1693,6 +1744,7 @@ add_api_tests (void)
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
     g_test_add_func ("/api/get_intrinsic_size_in_pixels/yes", get_intrinsic_size_in_pixels_yes);
     g_test_add_func ("/api/get_intrinsic_size_in_pixels/no", get_intrinsic_size_in_pixels_no);
+    g_test_add_func ("/api/set_stylesheet", set_stylesheet);
     g_test_add_func ("/api/render_document", render_document);
     g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
     g_test_add_func ("/api/render_layer", render_layer);
