@@ -9,7 +9,7 @@ use gdk_pixbuf_sys::{
 use glib::translate::IntoGlib;
 use glib_sys::{gboolean, GError};
 use gobject_sys::GObject;
-use libc::{c_char, c_uint};
+use libc::{c_char, c_int, c_uint};
 
 use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
@@ -89,7 +89,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
         *error = null_mut();
     }
 
-    fn _inner_stop_load(ctx: &Box<SvgContext>) -> Result<(Vec<u8>, i32, i32, i32), String> {
+    fn _inner_stop_load(ctx: &Box<SvgContext>) -> Result<(Vec<u8>, c_int, c_int, c_int), String> {
         let handle = Loader::new()
             .read_stream::<_, gio::File, gio::Cancellable>(&ctx.stream, None, None)
             .map_err(|e| e.to_string())?;
@@ -104,9 +104,12 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
             }
         };
 
-        let surface =
-            cairo::ImageSurface::create(cairo::Format::ARgb32, w.ceil() as i32, h.ceil() as i32)
-                .map_err(|e| e.to_string())?;
+        let surface = cairo::ImageSurface::create(
+            cairo::Format::ARgb32,
+            w.ceil() as c_int,
+            h.ceil() as c_int,
+        )
+        .map_err(|e| e.to_string())?;
 
         let cr = cairo::Context::new(&surface).map_err(|e| e.to_string())?;
 
@@ -122,8 +125,8 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
             )
             .map_err(|e| e.to_string())?;
 
-        let w = w.ceil() as i32;
-        let h = h.ceil() as i32;
+        let w = w.ceil() as c_int;
+        let h = h.ceil() as c_int;
 
         let stride = surface.stride();
         // The cairo::Context holds a reference to the surface which needs to be dropped to access the data
@@ -171,7 +174,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
         Box::into_raw(cb_data) as glib_sys::gpointer,
     );
     if let Some(size_func) = ctx.size_func {
-        size_func(&mut w as *mut i32, &mut h as *mut i32, ctx.user_data);
+        size_func(&mut w, &mut h, ctx.user_data);
     }
     if let Some(update_func) = ctx.update_func {
         update_func(pixbuf, 0, 0, w, h, ctx.user_data);
