@@ -215,7 +215,7 @@ RSVG_CONVERT_BIN=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/rsvg-convert$(EXEEXT)
 
 RSVG_CONVERT_SRC = src/bin/rsvg-convert.rs
 
-$(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC)
+$(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC) | librsvg_c_api.la
 	+cd $(top_srcdir) &&							\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
