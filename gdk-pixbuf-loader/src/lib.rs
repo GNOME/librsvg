@@ -328,7 +328,7 @@ mod tests {
 
             let pixels = gdk_pixbuf_sys::gdk_pixbuf_get_pixels(pb);
 
-            // Upper left pixel, black with full opacity #000000ff
+            // Upper left pixel #aa1144ff
             assert_eq!(*pixels, 0xaa);
             assert_eq!(*pixels.offset(1), 0x11);
             assert_eq!(*pixels.offset(2), 0x44);
