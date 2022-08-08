@@ -116,7 +116,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
         Ok(r) => r,
         Err(e) => {
             let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e);
-            *error = gerr.into_raw();
+            *error = gerr.to_glib_full() as *mut GError;
             return false.into_glib();
         }
     };
