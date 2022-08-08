@@ -1,5 +1,6 @@
 use std::ptr::null_mut;
 
+use gdk_pixbuf_sys::GdkPixbuf;
 use gdk_pixbuf_sys::{
     GdkPixbufFormat, GdkPixbufModule, GdkPixbufModulePattern, GdkPixbufModulePreparedFunc,
     GdkPixbufModuleSizeFunc, GdkPixbufModuleUpdatedFunc, GDK_PIXBUF_FORMAT_SCALABLE,
@@ -7,6 +8,7 @@ use gdk_pixbuf_sys::{
 };
 
 use glib::translate::IntoGlib;
+use glib::translate::ToGlibPtr;
 use glib_sys::{gboolean, GError};
 use gobject_sys::GObject;
 use libc::{c_char, c_int, c_uint};
@@ -17,6 +19,7 @@ use glib::Bytes;
 use librsvg::Loader;
 
 use cstr::cstr;
+use librsvg::rsvg_convert_only::LegacySize;
 
 struct SvgContext {
     size_func: GdkPixbufModuleSizeFunc,
@@ -68,20 +71,6 @@ unsafe extern "C" fn load_increment(
     true.into_glib()
 }
 
-fn argb_to_rgba(data: &mut Vec<u8>, width: usize, height: usize, stride: usize) {
-    assert!((width * 4) >= stride);
-    assert!((stride * height) <= data.len());
-    for i in 0..height {
-        let row_index = i * stride;
-        for j in 0..width {
-            let pixel_index = row_index + (j * 4);
-            let tmp = data[pixel_index + 2];
-            data[pixel_index + 2] = data[pixel_index];
-            data[pixel_index] = tmp;
-        }
-    }
-}
-
 #[no_mangle]
 unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut GError) -> gboolean {
     let ctx = Box::from_raw(user_data as *mut SvgContext);
@@ -89,57 +78,41 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
         *error = null_mut();
     }
 
-    fn _inner_stop_load(ctx: &Box<SvgContext>) -> Result<(Vec<u8>, c_int, c_int, c_int), String> {
+    fn _inner_stop_load(ctx: &Box<SvgContext>) -> Result<gdk_pixbuf::Pixbuf, String> {
         let handle = Loader::new()
             .read_stream::<_, gio::File, gio::Cancellable>(&ctx.stream, None, None)
             .map_err(|e| e.to_string())?;
 
         let renderer = librsvg::CairoRenderer::new(&handle);
-        let (w, h) = match renderer.intrinsic_size_in_pixels() {
-            Some((w, h)) => (w, h),
-            None => {
-                return Err(String::from(
-                    "Could not get intrinsic size in pixel of Cairo memory surface",
-                ));
-            }
-        };
+        let (w, h) = renderer.legacy_document_size().map_err(|e| e.to_string())?;
+        let mut w = w.ceil() as c_int;
+        let mut h = h.ceil() as c_int;
 
-        let surface = cairo::ImageSurface::create(
-            cairo::Format::ARgb32,
-            w.ceil() as c_int,
-            h.ceil() as c_int,
+        if let Some(size_func) = ctx.size_func {
+            let mut tmp_w: c_int = w;
+            let mut tmp_h: c_int = h;
+            unsafe {
+                size_func(
+                    &mut tmp_w as *mut c_int,
+                    &mut tmp_h as *mut c_int,
+                    ctx.user_data,
+                )
+            };
+            if tmp_w != 0 && tmp_h != 0 {
+                w = tmp_w;
+                h = tmp_h;
+            }
+        }
+
+        let pb = librsvg::c_api::pixbuf_utils::render_to_pixbuf_at_size(
+            &renderer, w as f64, h as f64, w as f64, h as f64,
         )
         .map_err(|e| e.to_string())?;
 
-        let cr = cairo::Context::new(&surface).map_err(|e| e.to_string())?;
-
-        renderer
-            .render_document(
-                &cr,
-                &cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: w,
-                    height: h,
-                },
-            )
-            .map_err(|e| e.to_string())?;
-
-        let w = w.ceil() as c_int;
-        let h = h.ceil() as c_int;
-
-        let stride = surface.stride();
-        // The cairo::Context holds a reference to the surface which needs to be dropped to access the data
-        std::mem::drop(cr);
-        let sfc_data = surface.take_data().map_err(|e| e.to_string())?;
-        let sfc_data = unsafe { std::slice::from_raw_parts(sfc_data.as_ptr(), sfc_data.len()) }; // This is just a slice to the canonical data
-                                                                                                 // We need it as a mutable vector to move the alpha channel around
-        let pb_data = sfc_data.to_vec();
-
-        Ok((pb_data, w, h, stride))
+        Ok(pb)
     }
 
-    let (mut pb_data, mut w, mut h, stride) = match _inner_stop_load(&ctx) {
+    let pixbuf = match _inner_stop_load(&ctx) {
         Ok(r) => r,
         Err(e) => {
             let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e.to_string());
@@ -148,39 +121,15 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
         }
     };
 
-    // GDK Pixbuf only support RGBA and Cairo only ARGB32, we swap channels around
-    argb_to_rgba(&mut pb_data, w as usize, h as usize, stride as usize);
+    let w = pixbuf.width();
+    let h = pixbuf.height();
+    let pixbuf: *mut GdkPixbuf = pixbuf.to_glib_full();
 
-    // Vector length and capacity to rebuild and destroy the vector in destroy_fn
-    let cb_data = Box::new((pb_data.len(), pb_data.capacity()));
-
-    // Function to free the pixel data by rebuilding the Vec object
-    #[no_mangle]
-    unsafe extern "C" fn destroy_cb_foo(pixels: *mut u8, user_data: glib_sys::gpointer) {
-        let data = Box::<(usize, usize)>::from_raw(user_data as *mut (usize, usize));
-        Vec::from_raw_parts(pixels, data.0, data.1);
-    }
-
-    let pb_data = pb_data.leak::<'static>(); // Allocator stops tracking vector data
-    let pixbuf = gdk_pixbuf_sys::gdk_pixbuf_new_from_data(
-        pb_data.as_mut_ptr(),
-        gdk_pixbuf_sys::GDK_COLORSPACE_RGB,
-        true.into_glib(),
-        8,
-        w,
-        h,
-        stride,
-        Some(destroy_cb_foo),
-        Box::into_raw(cb_data) as glib_sys::gpointer,
-    );
-    if let Some(size_func) = ctx.size_func {
-        size_func(&mut w, &mut h, ctx.user_data);
+    if let Some(prep_func) = ctx.prep_func {
+        prep_func(pixbuf, null_mut(), ctx.user_data);
     }
     if let Some(update_func) = ctx.update_func {
         update_func(pixbuf, 0, 0, w, h, ctx.user_data);
-    }
-    if let Some(prep_func) = ctx.prep_func {
-        prep_func(pixbuf, null_mut(), ctx.user_data);
     }
 
     // The module loader increases a ref so we drop the pixbuf here
@@ -339,16 +288,24 @@ mod tests {
         }
     }
 
-    const SVG_DATA: &'static str = r#"<svg
-            width="100" height="100" viewBox="0 0 26.458333 26.458333" version="1.1" id="svg5" xmlns="http://www.w3.org/2000/svg"
-            xmlns:svg="http://www.w3.org/2000/svg">
-            <defs id="defs2" />
-            <g id="layer1">
-                <rect style="fill:#aa1144;stroke-width:0.130147" id="rect31"
-                    width="26.458334" height="26.458334"
-                    x="-3.1789145e-07" y="-3.1789145e-07" />
-            </g>
-        </svg>"#;
+    const SVG_DATA: &'static str = r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+                                    <svg
+                                    width="100px"
+                                    height="150px"
+                                    viewBox="0 0 26.458333 26.458333"
+                                    version="1.1"
+                                    id="svg5"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    xmlns:svg="http://www.w3.org/2000/svg">
+                                    <rect
+                                        style="fill:#aa1144;stroke-width:0.0344347"
+                                        width="26.458332"
+                                        height="39.6875"
+                                        x="4.691162e-07"
+                                        y="-6.6145835"
+                                        id="rect2" />
+                                    </svg>
+    "#;
 
     #[test]
     fn minimal_svg() {
@@ -364,7 +321,7 @@ mod tests {
             let h = gdk_pixbuf_sys::gdk_pixbuf_get_height(pb);
             let stride = gdk_pixbuf_sys::gdk_pixbuf_get_rowstride(pb);
             assert_eq!(w, 100);
-            assert_eq!(h, 100);
+            assert_eq!(h, 150);
 
             let pixels = gdk_pixbuf_sys::gdk_pixbuf_get_pixels(pb);
 
