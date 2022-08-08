@@ -7,19 +7,20 @@ use gdk_pixbuf_sys::{
     GDK_PIXBUF_FORMAT_THREADSAFE,
 };
 
-use glib::translate::IntoGlib;
-use glib::translate::ToGlibPtr;
-use glib_sys::{gboolean, GError};
-use gobject_sys::GObject;
 use libc::{c_char, c_int, c_uint};
+
+use glib::translate::{IntoGlib, ToGlibPtr};
+use glib::Bytes;
+use glib_sys::{gboolean, GError};
 
 use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
-use glib::Bytes;
+use gobject_sys::GObject;
+
+use librsvg::rsvg_convert_only::LegacySize;
 use librsvg::Loader;
 
 use cstr::cstr;
-use librsvg::rsvg_convert_only::LegacySize;
 
 struct SvgContext {
     size_func: GdkPixbufModuleSizeFunc,
