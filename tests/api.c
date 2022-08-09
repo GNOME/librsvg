@@ -989,6 +989,32 @@ get_intrinsic_dimensions (void)
 }
 
 static void
+get_intrinsic_dimensions_missing_values (void)
+{
+    char *filename = get_test_filename ("no-viewbox.svg");
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
+
+    gboolean has_width;
+    RsvgLength width;
+    gboolean has_height;
+    RsvgLength height;
+    gboolean has_viewbox;
+    RsvgRectangle viewbox;
+
+    rsvg_handle_get_intrinsic_dimensions (handle, &has_width, &width, &has_height, &height, &has_viewbox, &viewbox);
+    g_assert_true (has_width);
+    g_assert_true (has_height);
+    g_assert_false (has_viewbox);
+    g_object_unref (handle);
+}
+
+static void
 get_intrinsic_size_in_pixels_yes (void)
 {
     char *filename = get_test_filename ("size.svg");
@@ -1742,6 +1768,7 @@ add_api_tests (void)
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
+    g_test_add_func ("/api/get_intrinsic_dimensions_missing_values", get_intrinsic_dimensions_missing_values);
     g_test_add_func ("/api/get_intrinsic_size_in_pixels/yes", get_intrinsic_size_in_pixels_yes);
     g_test_add_func ("/api/get_intrinsic_size_in_pixels/no", get_intrinsic_size_in_pixels_no);
     g_test_add_func ("/api/set_stylesheet", set_stylesheet);
