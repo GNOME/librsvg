@@ -637,6 +637,11 @@ dimensions_and_position (void)
     g_assert_false (rsvg_handle_get_position_sub (handle, &pos, EXAMPLE_NONEXISTENT_ID));
     g_assert_false (rsvg_handle_get_dimensions_sub (handle, &dim, EXAMPLE_NONEXISTENT_ID));
 
+    /* Asking for "position of the whole SVG" (id=NULL) always returns (0, 0) */
+    g_assert (rsvg_handle_get_position_sub (handle, &pos, NULL));
+    g_assert_cmpint (pos.x, ==, 0);
+    g_assert_cmpint (pos.y, ==, 0);
+
     g_object_unref (handle);
 }
 
