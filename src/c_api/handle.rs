@@ -253,7 +253,7 @@ impl BaseUrl {
     }
 }
 
-#[derive(Default, Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RsvgRectangle {
     pub x: f64,
