@@ -45,12 +45,6 @@ impl Dpi {
     }
 }
 
-impl From<Dpi> for crate::dpi::Dpi {
-    fn from(dpi: Dpi) -> crate::dpi::Dpi {
-        crate::dpi::Dpi::new(dpi.x(), dpi.y())
-    }
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_set_default_dpi_x_y(dpi_x: libc::c_double, dpi_y: libc::c_double) {
     if dpi_x <= 0.0 {
@@ -68,11 +62,5 @@ pub unsafe extern "C" fn rsvg_set_default_dpi_x_y(dpi_x: libc::c_double, dpi_y: 
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_set_default_dpi(dpi: libc::c_double) {
-    if dpi <= 0.0 {
-        DPI_X = DEFAULT_DPI_X;
-        DPI_Y = DEFAULT_DPI_Y;
-    } else {
-        DPI_X = dpi;
-        DPI_Y = dpi;
-    }
+    rsvg_set_default_dpi_x_y(dpi, dpi);
 }

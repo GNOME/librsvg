@@ -18,6 +18,7 @@ call_grcov() {
     #       --ignore '**/build/markup5ever*'       - ignore generated code from dependencies
     #       --ignore '**/build/cssparser*'         - ignore generated code from dependencies
     #       --ignore 'cargo_cache/*'               - ignore code from dependencies
+    #       --excl-line 'unreachable!'             - ignore lines with the unreachable!() macro
     #       --output-type $output_type
     #       --output-path $output_path
 
@@ -30,6 +31,7 @@ call_grcov() {
           --ignore '**/build/markup5ever*'       \
           --ignore '**/build/cssparser*'         \
           --ignore 'cargo_cache/*'               \
+          --excl-line 'unreachable!'             \
           --output-type $output_type             \
           --output-path $output_path
 }

@@ -154,6 +154,20 @@ get_test_filename (const char *basename) {
                              NULL);
 }
 
+static RsvgHandle *
+load_test_document (const char *basename) {
+    char *filename = get_test_filename (basename);
+    GError *error = NULL;
+
+    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
+    g_free (filename);
+
+    g_assert_nonnull (handle);
+    g_assert_no_error (error);
+
+    return handle;
+}
+
 #define EXAMPLE_WIDTH 100
 #define EXAMPLE_HEIGHT 400
 
@@ -294,26 +308,29 @@ noops (void)
     rsvg_init ();
     rsvg_term ();
     rsvg_cleanup ();
+}
 
-    /* Just test that these are in the binary */
-    g_assert_nonnull (rsvg_handle_get_title);
-    g_assert_nonnull (rsvg_handle_get_desc);
-    g_assert_nonnull (rsvg_handle_get_metadata);
+static void
+noops_return_null (void)
+{
+    RsvgHandle *handle = rsvg_handle_new ();
+
+    g_assert_null (rsvg_handle_get_title (handle));
+    g_assert_null (rsvg_handle_get_desc (handle));
+    g_assert_null (rsvg_handle_get_metadata (handle));
+
+    g_object_unref (handle);
 }
 
 static void
 set_dpi (void)
 {
-    char *filename = get_test_filename ("dpi.svg");
-    GError *error = NULL;
     RsvgHandle *handle;
     RsvgDimensionData dim;
 
     rsvg_set_default_dpi (100.0);
 
-    handle = rsvg_handle_new_from_file (filename, &error);
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    handle = load_test_document ("dpi.svg");
 
     rsvg_handle_get_dimensions (handle, &dim);
     g_assert_cmpint (dim.width,  ==, 100);
@@ -325,17 +342,13 @@ set_dpi (void)
     g_assert_cmpint (dim.height, ==, 800);
     g_object_unref (handle);
 
-    handle = rsvg_handle_new_from_file (filename, &error);
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    handle = load_test_document ("dpi.svg");
 
     rsvg_handle_set_dpi_x_y (handle, 400.0, 300.0);
     rsvg_handle_get_dimensions (handle, &dim);
     g_assert_cmpint (dim.width,  ==, 400);
     g_assert_cmpint (dim.height, ==, 1200);
     g_object_unref (handle);
-
-    g_free (filename);
 }
 
 static void
@@ -398,6 +411,10 @@ handle_write_close_free (void)
         g_assert_no_error (error);
     }
 
+    g_assert (rsvg_handle_close (handle, &error));
+    g_assert_no_error (error);
+
+    /* Test that close() is idempotent in the happy case */
     g_assert (rsvg_handle_close (handle, &error));
     g_assert_no_error (error);
 
@@ -529,14 +546,7 @@ handle_read_stream_sync (void)
 static void
 handle_has_sub (void)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("example.svg");
 
     g_assert (rsvg_handle_has_sub (handle, EXAMPLE_ONE_ID));
     g_assert (rsvg_handle_has_sub (handle, EXAMPLE_TWO_ID));
@@ -548,14 +558,7 @@ handle_has_sub (void)
 static void
 test_get_pixbuf (gboolean sub)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("example.svg");
 
     GdkPixbuf *pixbuf;
     if (sub) {
@@ -619,15 +622,7 @@ handle_get_pixbuf_sub (void)
 static void
 dimensions_and_position (void)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
-
+    RsvgHandle *handle = load_test_document ("example.svg");
     RsvgDimensionData dim;
 
     g_assert (rsvg_handle_get_dimensions_sub (handle, &dim, EXAMPLE_TWO_ID));
@@ -641,6 +636,11 @@ dimensions_and_position (void)
 
     g_assert_false (rsvg_handle_get_position_sub (handle, &pos, EXAMPLE_NONEXISTENT_ID));
     g_assert_false (rsvg_handle_get_dimensions_sub (handle, &dim, EXAMPLE_NONEXISTENT_ID));
+
+    /* Asking for "position of the whole SVG" (id=NULL) always returns (0, 0) */
+    g_assert (rsvg_handle_get_position_sub (handle, &pos, NULL));
+    g_assert_cmpint (pos.x, ==, 0);
+    g_assert_cmpint (pos.y, ==, 0);
 
     g_object_unref (handle);
 }
@@ -682,17 +682,11 @@ size_func_destroy (gpointer user_data)
 static void
 set_size_callback (void)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
     RsvgHandle *handle;
     struct size_func_data data;
     RsvgDimensionData dim;
 
-    handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    handle = load_test_document ("example.svg");
 
     data.called = FALSE;
     data.destroyed = FALSE;
@@ -713,17 +707,11 @@ set_size_callback (void)
 static void
 reset_size_callback (void)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
     RsvgHandle *handle;
     struct size_func_data data_1;
     struct size_func_data data_2;
 
-    handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    handle = load_test_document ("example.svg");
 
     data_1.called = FALSE;
     data_1.destroyed = FALSE;
@@ -763,16 +751,10 @@ render_with_zero_size_callback (void)
      * test is to check that there is no such crash now.  Instead, librsvg
      * will return a 1x1 transparent pixbuf.
      */
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
     RsvgHandle *handle;
     GdkPixbuf *pixbuf;
 
-    handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    handle = load_test_document ("example.svg");
 
     rsvg_handle_set_size_callback (handle, zero_size_func, NULL, NULL);
 
@@ -829,14 +811,7 @@ static void
 detects_cairo_context_in_error (void)
 {
     if (g_test_subprocess ()) {
-        char *filename = get_test_filename ("example.svg");
-        GError *error = NULL;
-
-        RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-        g_free (filename);
-
-        g_assert_nonnull (handle);
-        g_assert_no_error (error);
+        RsvgHandle *handle = load_test_document ("example.svg");
 
         /* this is wrong; it is to simulate creating a surface and a cairo_t in error */
         cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, -1, -1);
@@ -870,14 +845,7 @@ can_draw_to_non_image_surface (void)
     cairo_surface_t *surface;
     cairo_t *cr;
 
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("example.svg");
 
     rect.x = 0.0;
     rect.y = 0.0;
@@ -914,14 +882,7 @@ can_draw_to_non_image_surface (void)
 static void
 render_cairo_sub (void)
 {
-    char *filename = get_test_filename ("334-element-positions.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("334-element-positions.svg");
 
     cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 200, 200);
     cairo_t *cr = cairo_create (surf);
@@ -946,14 +907,7 @@ render_cairo_sub (void)
 static void
 get_intrinsic_dimensions (void)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("example.svg");
 
     gboolean has_width;
     RsvgLength width;
@@ -982,17 +936,29 @@ get_intrinsic_dimensions (void)
 }
 
 static void
+get_intrinsic_dimensions_missing_values (void)
+{
+    RsvgHandle *handle = load_test_document ("no-viewbox.svg");
+
+    gboolean has_width;
+    RsvgLength width;
+    gboolean has_height;
+    RsvgLength height;
+    gboolean has_viewbox;
+    RsvgRectangle viewbox;
+
+    rsvg_handle_get_intrinsic_dimensions (handle, &has_width, &width, &has_height, &height, &has_viewbox, &viewbox);
+    g_assert_true (has_width);
+    g_assert_true (has_height);
+    g_assert_false (has_viewbox);
+    g_object_unref (handle);
+}
+
+static void
 get_intrinsic_size_in_pixels_yes (void)
 {
-    char *filename = get_test_filename ("size.svg");
-    GError *error = NULL;
+    RsvgHandle *handle = load_test_document ("size.svg");
     gdouble width, height;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
 
     rsvg_handle_set_dpi (handle, 96.0);
 
@@ -1010,15 +976,8 @@ get_intrinsic_size_in_pixels_yes (void)
 static void
 get_intrinsic_size_in_pixels_no (void)
 {
-    char *filename = get_test_filename ("no-size.svg");
-    GError *error = NULL;
+    RsvgHandle *handle = load_test_document ("no-size.svg");
     gdouble width, height;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
 
     rsvg_handle_set_dpi (handle, 96.0);
     g_assert (!rsvg_handle_get_intrinsic_size_in_pixels (handle, &width, &height));
@@ -1029,22 +988,60 @@ get_intrinsic_size_in_pixels_no (void)
 }
 
 static void
+set_stylesheet (void)
+{
+    const char *css = "rect { fill: #00ff00; }";
+
+    RsvgHandle *handle = load_test_document ("stylesheet.svg");
+    RsvgHandle *ref_handle = load_test_document ("stylesheet-ref.svg");
+
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 100, 100);
+    cairo_surface_t *reference = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 100, 100);
+
+    RsvgRectangle viewport = { 0.0, 0.0, 100.0, 100.0 };
+
+    cairo_t *output_cr = cairo_create (output);
+    cairo_t *ref_cr = cairo_create (reference);
+
+    GError *error = NULL;
+    g_assert (rsvg_handle_set_stylesheet (handle, (const guint8 *) css, strlen (css), &error));
+    g_assert_no_error (error);
+
+    g_assert (rsvg_handle_render_document (handle, output_cr, &viewport, &error));
+    g_assert_no_error (error);
+
+    g_assert (rsvg_handle_render_document (ref_handle, ref_cr, &viewport, &error));
+    g_assert_no_error (error);
+
+    cairo_surface_t *diff = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 100, 100);
+
+    TestUtilsBufferDiffResult result = {0, 0};
+    test_utils_compare_surfaces (output, reference, diff, &result);
+
+    if (result.pixels_changed && result.max_diff > 0) {
+        g_test_fail ();
+    }
+
+    cairo_surface_destroy (diff);
+    cairo_destroy (ref_cr);
+    cairo_destroy (output_cr);
+    cairo_surface_destroy (reference);
+    cairo_surface_destroy (output);
+    g_object_unref (ref_handle);
+    g_object_unref (handle);
+}
+
+static void
 render_document (void)
 {
-    char *filename = get_test_filename ("document.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("document.svg");
 
     cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 150, 150);
     cairo_t *cr = cairo_create (output);
 
     RsvgRectangle viewport = { 50.0, 50.0, 50.0, 50.0 };
 
+    GError *error = NULL;
     g_assert (rsvg_handle_render_document (handle, cr, &viewport, &error));
     g_assert_no_error (error);
 
@@ -1077,18 +1074,13 @@ render_document (void)
 static void
 get_geometry_for_layer (void)
 {
-    char *filename = get_test_filename ("geometry.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("geometry.svg");
 
     RsvgRectangle viewport = { 0.0, 0.0, 100.0, 400.0 };
     RsvgRectangle ink_rect;
     RsvgRectangle logical_rect;
+
+    GError *error = NULL;
 
     g_assert_false (rsvg_handle_get_geometry_for_layer (handle, "#nonexistent", &viewport,
                                                         &ink_rect, &logical_rect, &error));
@@ -1116,19 +1108,14 @@ get_geometry_for_layer (void)
 static void
 render_layer (void)
 {
-    char *filename = get_test_filename ("layers.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("layers.svg");
 
     cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
     cairo_t *cr = cairo_create (output);
 
     RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
+
+    GError *error = NULL;
 
     g_assert (rsvg_handle_render_layer (handle, cr, "#bar", &viewport, &error));
     g_assert_no_error (error);
@@ -1162,17 +1149,12 @@ render_layer (void)
 static void
 untransformed_element (void)
 {
-    char *filename = get_test_filename ("geometry-element.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("geometry-element.svg");
 
     RsvgRectangle ink_rect;
     RsvgRectangle logical_rect;
+
+    GError *error = NULL;
 
     g_assert (!rsvg_handle_get_geometry_for_element (handle, "#nonexistent",
                                                      &ink_rect, &logical_rect, &error));
@@ -1243,6 +1225,11 @@ no_write_before_close (void)
     g_assert_false (rsvg_handle_close (handle, &error));
     g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
     g_error_free (error);
+    error = NULL;
+
+    /* Test that close() is idempotent in the error case */
+    g_assert (rsvg_handle_close (handle, &error));
+    g_assert_no_error (error);
 
     g_object_unref (handle);
 }
@@ -1272,17 +1259,8 @@ cannot_request_external_elements (void)
      * if the element's id is within an external file.
      */
 
-    char *filename = get_test_filename ("example.svg");
-
-    RsvgHandle *handle;
-    GError *error = NULL;
+    RsvgHandle *handle = load_test_document ("example.svg");
     RsvgPositionData pos;
-
-    handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
 
     g_assert_false (rsvg_handle_get_position_sub (handle, &pos, "dpi.svg#one"));
 
@@ -1353,14 +1331,7 @@ property_base_uri (void)
 static void
 property_dimensions (void)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("example.svg");
 
     int width;
     int height;
@@ -1386,14 +1357,7 @@ property_dimensions (void)
 static void
 property_deprecated (void)
 {
-    char *filename = get_test_filename ("example.svg");
-    GError *error = NULL;
-
-    RsvgHandle *handle = rsvg_handle_new_from_file (filename, &error);
-    g_free (filename);
-
-    g_assert_nonnull (handle);
-    g_assert_no_error (error);
+    RsvgHandle *handle = load_test_document ("example.svg");
 
     char *title;
     char *desc;
@@ -1662,6 +1626,7 @@ add_api_tests (void)
     g_test_add_func ("/api/flags_registration", flags_registration);
     g_test_add_func ("/api/error_registration", error_registration);
     g_test_add_func ("/api/noops", noops);
+    g_test_add_func ("/api/noops_return_null", noops_return_null);
     g_test_add_func ("/api/set_dpi", set_dpi);
     g_test_add_func ("/api/base_uri", base_uri);
     g_test_add_func ("/api/base_gfile", base_gfile);
@@ -1683,8 +1648,10 @@ add_api_tests (void)
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
     g_test_add_func ("/api/get_intrinsic_dimensions", get_intrinsic_dimensions);
+    g_test_add_func ("/api/get_intrinsic_dimensions_missing_values", get_intrinsic_dimensions_missing_values);
     g_test_add_func ("/api/get_intrinsic_size_in_pixels/yes", get_intrinsic_size_in_pixels_yes);
     g_test_add_func ("/api/get_intrinsic_size_in_pixels/no", get_intrinsic_size_in_pixels_no);
+    g_test_add_func ("/api/set_stylesheet", set_stylesheet);
     g_test_add_func ("/api/render_document", render_document);
     g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
     g_test_add_func ("/api/render_layer", render_layer);
