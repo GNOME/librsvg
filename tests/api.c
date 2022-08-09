@@ -414,6 +414,10 @@ handle_write_close_free (void)
     g_assert (rsvg_handle_close (handle, &error));
     g_assert_no_error (error);
 
+    /* Test that close() is idempotent in the happy case */
+    g_assert (rsvg_handle_close (handle, &error));
+    g_assert_no_error (error);
+
     rsvg_handle_free (handle);
     g_free (data);
 }
@@ -1216,6 +1220,11 @@ no_write_before_close (void)
     g_assert_false (rsvg_handle_close (handle, &error));
     g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
     g_error_free (error);
+    error = NULL;
+
+    /* Test that close() is idempotent in the error case */
+    g_assert (rsvg_handle_close (handle, &error));
+    g_assert_no_error (error);
 
     g_object_unref (handle);
 }
