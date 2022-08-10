@@ -235,4 +235,15 @@ mod tests {
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         ));
     }
+
+    #[cfg(windows)]
+    #[test]
+    fn invalid_url_from_test_suite() {
+        let resolver = UrlResolver::new(Some(Url::parse("file:///c:/foo.svg").expect("initial url")));
+        match resolver.resolve_href("file://invalid.css") {
+            Ok(_) => println!("yay!"),
+            Err(e) => println!("err: {}", e),
+        }
+    }
+    
 }
