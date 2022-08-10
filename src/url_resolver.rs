@@ -239,8 +239,10 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn invalid_url_from_test_suite() {
-        // let resolver = UrlResolver::new(Some(Url::parse("file:///c:/foo.svg").expect("initial url")));
-        let resolver = UrlResolver::new(None);
+        // This is required for Url to panic.
+        let resolver = UrlResolver::new(Some(Url::parse("file:///c:/foo.svg").expect("initial url")));
+        // With this, it doesn't panic:
+        //   let resolver = UrlResolver::new(None);
         match resolver.resolve_href("file://invalid.css") {
             Ok(_) => println!("yay!"),
             Err(e) => println!("err: {}", e),
