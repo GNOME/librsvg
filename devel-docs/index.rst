@@ -3,6 +3,7 @@ Development guide for librsvg
 
 .. toctree::
    product
+   ci
    :maxdepth: 2
    :caption: Contents:
 
