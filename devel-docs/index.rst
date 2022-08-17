@@ -3,6 +3,7 @@ Development guide for librsvg
 
 .. toctree::
    product
+   contributing
    ci
    :maxdepth: 2
    :caption: Contents:
@@ -43,6 +44,8 @@ Understand the code
 FIXME: Overview of the source tree.
 
 Tour of the code - load a file, render it.
+
+Test suite - move tests/readme here?
 
 Design documents
 ================
