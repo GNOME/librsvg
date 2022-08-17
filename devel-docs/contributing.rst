@@ -24,7 +24,8 @@ elsewhere, instead of hard-coding an actual value in every place it is
 used.  For example, define a ``button-color`` variable instead of
 hard-coding ``#aabbcc`` everywhere.
 
-::
+.. code-block:: css
+
    /* Define two variables */
    :root {
      --main-color: #06c;
@@ -55,7 +56,8 @@ machinery for CSS.
 
 One particularly interesting bit in Servo's implementation is that it guards against exponential expansion of malicious variables.
 
-::
+.. code-block:: css
+
    :root {
      --prop1: lol;
      --prop2: var(--prop1) var(--prop1);
