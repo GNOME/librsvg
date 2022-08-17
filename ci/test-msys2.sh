@@ -34,5 +34,5 @@ cd _build
 # Stolen from https://github.com/msys2/MINGW-packages/blob/master/mingw-w64-librsvg/PKGBUILD
 ../autogen.sh LIBS="-lws2_32 -luserenv"
 make
-make check || true # allow failure
-
+export RUST_BACKTRACE=1
+make check
