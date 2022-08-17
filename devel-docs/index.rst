@@ -1,18 +1,31 @@
-Development documentation for librsvg
-=====================================
+Development guide for librsvg
+=============================
 
 .. toctree::
+   product
    :maxdepth: 2
    :caption: Contents:
 
-Welcome to the developer's manual for librsvg.  This is for people who
-want to work on librsvg's development, not for users of the library or
-the `rsvg-convert` program.
+Welcome to the developer's guide for librsvg.  This is for people who
+want to work on the development of librsvg itself, not for users of
+the library or the `rsvg-convert` program.
 
 Before embarking on big changes to librsvg, please write a little
 design document modeled on the following ones, and submit a merge
 request.  We can then discuss it before coding.  This way we will have
 a sort of big-picture development history apart from commit messages.
+
+Introduction
+------------
+
+Librsvg is a project with a long history; it started 2001 as a way to
+use the then-new Scalable Vector Graphics format (SVG) for GNOME's
+icons and other graphical assets on the desktop.  Since then, it has
+evolved into a few different tools.
+
+You may want to familiarize yourself with :doc:`product` to see what a
+full build produces: the library itself, the ``rsvg-convert``
+executable, etc.
 
 Getting started
 ===============
@@ -50,6 +63,8 @@ References
 Link to SVG/CSS specs; other useful bits.
 
 Links to Mozilla's SVG, WebKit, resvg, Inkscape.
+
+Talks on librsvg.
 
 Indices and tables
 ==================
