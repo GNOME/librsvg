@@ -35,5 +35,4 @@ cd _build
 ../autogen.sh LIBS="-lws2_32 -luserenv"
 make
 export RUST_BACKTRACE=1
-make check || true # allow failure
-
+make check
