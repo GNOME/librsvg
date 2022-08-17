@@ -5,7 +5,7 @@ Development guide for librsvg
    product
    contributing
    ci
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
 Welcome to the developer's guide for librsvg.  This is for people who
