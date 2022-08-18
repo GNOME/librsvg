@@ -6,6 +6,7 @@ Development guide for librsvg
    devel_environment
    contributing
    ci
+   text_layout
    :maxdepth: 1
    :caption: Contents:
 
@@ -57,6 +58,8 @@ Before embarking on big changes to librsvg, please write a little
 design document modeled on the following ones, and submit a merge
 request.  We can then discuss it before coding.  This way we will have
 a sort of big-picture development history apart from commit messages.
+
+- :doc:`text_layout`
 
 See https://rustc-dev-guide.rust-lang.org/walkthrough.html, section
 Overview, to formalize the RFC process for features vs. drive-by
