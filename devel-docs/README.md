@@ -21,6 +21,8 @@ Design documents:
 
 ## Short term
 
+* Merge [the Rust port of the gdk-pixbuf-loader](https://gitlab.gnome.org/GNOME/librsvg/-/merge_requests/722).
+
 * Update the CI pipelines for the main and stable branches; a design document is upcoming.
 
 * #778 is not the common case, but worrysome.
@@ -32,3 +34,7 @@ Design documents:
 * Switch to meson, for real now.
 
 * After that, #552 - Build the C library with cargo-c.
+
+* [#459](https://gitlab.gnome.org/GNOME/librsvg/-/issues/459) - Support CSS var() for custom colors and other SVG properties
+
+* [#843](https://gitlab.gnome.org/GNOME/librsvg/-/issues/843) - Support CSS calc()
