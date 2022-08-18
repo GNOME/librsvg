@@ -13,6 +13,9 @@ Welcome to the developer's guide for librsvg.  This is for people who
 want to work on the development of librsvg itself, not for users of
 the library or the `rsvg-convert` program.
 
+If you want to modify this document, `please see its source code
+<https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/devel-docs>`_.
+
 Introduction
 ------------
 
