@@ -3,6 +3,7 @@ Development guide for librsvg
 
 .. toctree::
    product
+   devel_environment
    contributing
    ci
    :maxdepth: 1
@@ -26,6 +27,8 @@ itself, the ``rsvg-convert`` executable, etc.
 
 Getting started
 ---------------
+
+- :doc:`devel_environment`
 
 FIXME: link to doc with stuff from CONTRIBUTING.md's "Hacking on librsvg"
 
