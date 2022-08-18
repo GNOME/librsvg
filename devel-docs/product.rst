@@ -12,9 +12,10 @@ Library artifacts
 
 Librsvg is part of the `GNOME platform libraries
 <https://developer.gnome.org/documentation/introduction/overview/libraries.html>`_,
-and needs to maintain a C-compatible API and ABI stability across versions.
+and needs to maintain a C-compatible API with ABI stability across versions.
 
-The build produces these, which are typical of GNOME libraries:
+The build produces these artifacts, which are typical of GNOME libraries that
+can be used from C and other languages:
 
 - A shared library ``librsvg-2.so`` (the file extension will be
   different on MacOS or Windows).  This is usually installed as part
@@ -48,11 +49,11 @@ Apart from the C-compatible library, the Rust code for the library
 defines a ``librsvg`` crate that can be used by Rust programs.  As of
 2022/Aug, that API is still a bit experimental and subject to change,
 and it is not published yet on ``crates.io``.  In the future, when
-librsvg gets `published to crates.io`_, it will follow Rust's usual
-semantic versioning scheme for API compatibility and stability
-throughout versions.
+librsvg gets published to crates.io (`see what is missing to do
+that`_), it will follow Rust's usual semantic versioning scheme for
+API compatibility and stability throughout versions.
 
-.. _published to crates.io: https://gitlab.gnome.org/GNOME/librsvg/-/issues/635
+.. _see what is missing to do that: https://gitlab.gnome.org/GNOME/librsvg/-/issues/635
 
 
 ``rsvg-convert`` artifacts
