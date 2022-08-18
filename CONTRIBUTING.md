@@ -91,7 +91,7 @@ a new CSS property.
 What can you hack on?
 
 * [Bugs for newcomers](https://gitlab.gnome.org/GNOME/librsvg/-/issues?label_name%5B%5D=4.+Newcomers)
-* Pick something from the [development roadmap](devel-docs/README.md)!
+* Pick something from the [development roadmap](devel-docs/README.md)! FIXME: relink
 
 ### Working on the source
 

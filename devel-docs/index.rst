@@ -3,6 +3,7 @@ Development guide for librsvg
 
 .. toctree::
    product
+   roadmap
    devel_environment
    contributing
    ci
@@ -25,9 +26,9 @@ use the then-new Scalable Vector Graphics format (SVG) for GNOME's
 icons and other graphical assets on the desktop.  Since then, it has
 evolved into a few different tools.
 
-You may want to familiarize yourself with :doc:`product` to read about
-these tools, and the things that a full build produces: the library
-itself, the ``rsvg-convert`` executable, etc.
+- :doc:`product` - What comes out of this repository once it is compiled?
+- :doc:`roadmap` - Ever-changing list of priorities for the
+  maintainers; check this often!
 
 Getting started
 ---------------
