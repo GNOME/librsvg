@@ -25,7 +25,7 @@ these tools, and the things that a full build produces: the library
 itself, the ``rsvg-convert`` executable, etc.
 
 Getting started
-===============
+---------------
 
 FIXME: link to doc with stuff from CONTRIBUTING.md's "Hacking on librsvg"
 
@@ -34,7 +34,7 @@ Add basic info on cloning the repo, getting a gitlab account, forking.
 Development roadmap.
 
 Understand the code
-===================
+-------------------
 
 FIXME: Overview of the source tree.
 
@@ -45,7 +45,7 @@ Test suite - move tests/readme here?
 Link to the internals documentation.
 
 Design documents
-================
+----------------
 
 Before embarking on big changes to librsvg, please write a little
 design document modeled on the following ones, and submit a merge
@@ -59,7 +59,7 @@ contributions.
 FIXME: link the md here.
 
 Information for maintainers
-===========================
+---------------------------
 
 FIXME: Move RELEASING.md here
 
@@ -70,7 +70,7 @@ Marge-bot.
 Documentation on the CI.
 
 References
-==========
+----------
 
 Link to SVG/CSS specs; other useful bits.
 
@@ -79,7 +79,7 @@ Links to Mozilla's SVG, WebKit, resvg, Inkscape.
 Talks on librsvg.
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
