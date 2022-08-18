@@ -1,25 +1,27 @@
 Librsvg as a product
 ====================
 
-A full build of librsvg produces several *artifacts*.  For this
-discussion, we will talk about the "library part" of the build, the
-"rsvg-convert" part, and everything else for miscellaneous artifacts.
+A full build of librsvg produces several *artifacts*, which are the
+final "products" that are produced from the build.  We will discuss
+them in three groups: library artifacts, ``rsvg-convert`` artifacts,
+and others.
 
 
-The library part
-----------------
+Library artifacts
+-----------------
 
 Librsvg is part of the `GNOME platform libraries
 <https://developer.gnome.org/documentation/introduction/overview/libraries.html>`_,
-and needs to maintain API and ABI stability across versions.
+and needs to maintain a C-compatible API and ABI stability across versions.
 
-The build produces these:
+The build produces these, which are typical of GNOME libraries:
 
 - A shared library ``librsvg-2.so`` (the file extension will be
   different on MacOS or Windows).  This is usually installed as part
   of the system's libraries.  For example, the GTK toolkit assumes
   that librsvg's library is installed in the system, and uses it to
-  load SVG assets like icons.
+  load SVG assets like icons.  Applications can generally link to this
+  library and load SVG documents for different purposes.
 
 - A group of C header files (``*.h``) that will be installed in the
   system's location for header files.  C and C++ programs can use
@@ -36,22 +38,25 @@ The build produces these:
   language bindings to make librsvg's functionality available to many
   programming languages.
 
-- A ``.vapi`` description of the API for the `Vala
+- A ``.vapi`` description of the API for the `Vala language
   <https://vala.dev/>`_ compiler.
 
-Apart from that, the Rust code for the library defines a ``librsvg``
-crate that can be used by Rust programs.  Rust will automatically
-build the code and link it into such a program, so this is not
-considered part of librsvg's normal build artifacts.  However, its API
-stability promise still applies, but not as strictly as for the C API.
-When librsvg gets `published to crates.io`_, it will follow Rust's
-usual semantic versioning scheme for API compatibility.
+Rust API
+^^^^^^^^
+
+Apart from the C-compatible library, the Rust code for the library
+defines a ``librsvg`` crate that can be used by Rust programs.  As of
+2022/Aug, that API is still a bit experimental and subject to change,
+and it is not published yet on ``crates.io``.  In the future, when
+librsvg gets `published to crates.io`_, it will follow Rust's usual
+semantic versioning scheme for API compatibility and stability
+throughout versions.
 
 .. _published to crates.io: https://gitlab.gnome.org/GNOME/librsvg/-/issues/635
 
 
-The `rsvg-convert` part
------------------------
+``rsvg-convert`` artifacts
+--------------------------
 
 ``rsvg-convert`` is a command-line tool to render SVG documents to
 various output formats.  It is a very widely-used tool, and many
@@ -66,7 +71,7 @@ The build produces these:
 - A Unix manual page for ``rsvg-convert(1)``.
 
 
-Everything else
+Other artifacts
 ---------------
 
 - A ``libpixbufloader-svg.so`` module for `gdk-pixbuf
