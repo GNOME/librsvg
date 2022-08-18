@@ -75,6 +75,11 @@ documentation for information on how to load the `Rsvg` namespace.
 There is a code of conduct for contributors to librsvg; please see the
 file [`code-of-conduct.md`][coc].
 
+Please see the [Development guide for
+librsvg](https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html)
+on how to contribute to librsvg, how set up your development
+environment, and for a description of librsvg's architecture.
+
 For information on how to report bugs, or how to contribute to librsvg
 in general, please see the file [`CONTRIBUTING.md`][contributing].
 
