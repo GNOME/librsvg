@@ -29,13 +29,18 @@ pub fn log_enabled() -> bool {
 #[derive(Copy, Clone, Debug, PartialEq)]
 struct CairoContextState {
     surface_type: cairo::SurfaceType,
+    matrix: cairo::Matrix,
 }
 
 impl CairoContextState {
     fn new(cr: &cairo::Context) -> Self {
         let surface_type = cr.target().type_();
+        let matrix = cr.matrix();
 
-        Self { surface_type }
+        Self {
+            surface_type,
+            matrix,
+        }
     }
 }
 
@@ -44,7 +49,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn captures_cr_surface_type() {
+    fn captures_cr_state() {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 10, 10).unwrap();
         let cr = cairo::Context::new(&surface).unwrap();
         let state = CairoContextState::new(&cr);
@@ -52,17 +57,23 @@ mod tests {
         assert_eq!(
             CairoContextState {
                 surface_type: cairo::SurfaceType::Image,
+                matrix: cairo::Matrix::identity(),
             },
             state,
         );
 
         let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None).unwrap();
         let cr = cairo::Context::new(&surface).unwrap();
+        cr.scale(2.0, 3.0);
         let state = CairoContextState::new(&cr);
+
+        let mut matrix = cairo::Matrix::identity();
+        matrix.scale(2.0, 3.0);
 
         assert_eq!(
             CairoContextState {
                 surface_type: cairo::SurfaceType::Recording,
+                matrix,
             },
             state,
         );
