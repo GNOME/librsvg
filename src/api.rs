@@ -218,6 +218,7 @@ impl Loader {
                 stream.as_ref(),
                 cancellable.map(|c| c.as_ref()),
             )?,
+            session: self.session,
         })
     }
 }
@@ -231,6 +232,7 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 /// You can create this from one of the `read` methods in
 /// [`Loader`].
 pub struct SvgHandle {
+    session: Arc<Session>,
     pub(crate) handle: Handle,
 }
 
