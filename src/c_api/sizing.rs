@@ -51,7 +51,7 @@ impl<'a> LegacySize for CairoRenderer<'a> {
                 let size_from_intrinsic_dimensions =
                     self.intrinsic_size_in_pixels().or_else(|| {
                         size_in_pixels_from_percentage_width_and_height(
-                            &self.handle.0,
+                            &self.handle.handle,
                             &self.intrinsic_dimensions(),
                             self.dpi,
                         )

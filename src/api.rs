@@ -212,11 +212,13 @@ impl Loader {
             .with_unlimited_size(self.unlimited_size)
             .keep_image_data(self.keep_image_data);
 
-        Ok(SvgHandle(Handle::from_stream(
-            &load_options,
-            stream.as_ref(),
-            cancellable.map(|c| c.as_ref()),
-        )?))
+        Ok(SvgHandle {
+            handle: Handle::from_stream(
+                &load_options,
+                stream.as_ref(),
+                cancellable.map(|c| c.as_ref()),
+            )?,
+        })
     }
 }
 
@@ -228,7 +230,9 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 ///
 /// You can create this from one of the `read` methods in
 /// [`Loader`].
-pub struct SvgHandle(pub(crate) Handle);
+pub struct SvgHandle {
+    pub(crate) handle: Handle,
+}
 
 impl SvgHandle {
     /// Checks if the SVG has an element with the specified `id`.
@@ -239,7 +243,7 @@ impl SvgHandle {
     /// The purpose of the `Err()` case in the return value is to indicate an
     /// incorrectly-formatted `id` argument.
     pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
-        self.0.has_sub(id)
+        self.handle.has_sub(id)
     }
 
     /// Sets a CSS stylesheet to use for an SVG document.
@@ -251,7 +255,7 @@ impl SvgHandle {
     ///
     /// [origin]: https://drafts.csswg.org/css-cascade-3/#cascading-origins
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
-        self.0.set_stylesheet(css)
+        self.handle.set_stylesheet(css)
     }
 }
 
@@ -364,7 +368,7 @@ impl<'a> CairoRenderer<'a> {
     /// [`render_document`]: #method.render_document
     /// [`intrinsic_size_in_pixels`]: #method.intrinsic_size_in_pixels
     pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let d = self.handle.0.get_intrinsic_dimensions();
+        let d = self.handle.handle.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
             width: Into::into(d.width),
@@ -397,7 +401,7 @@ impl<'a> CairoRenderer<'a> {
             return None;
         }
 
-        Some(self.handle.0.width_height_to_user(self.dpi))
+        Some(self.handle.handle.width_height_to_user(self.dpi))
     }
 
     /// Renders the whole SVG document fitted to a viewport
@@ -414,7 +418,7 @@ impl<'a> CairoRenderer<'a> {
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
         self.handle
-            .0
+            .handle
             .render_document(cr, viewport, &self.user_language, self.dpi, self.is_testing)
     }
 
@@ -448,7 +452,7 @@ impl<'a> CairoRenderer<'a> {
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
-            .0
+            .handle
             .get_geometry_for_layer(id, viewport, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
@@ -478,7 +482,7 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.0.render_layer(
+        self.handle.handle.render_layer(
             cr,
             id,
             viewport,
@@ -523,7 +527,7 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
-            .0
+            .handle
             .get_geometry_for_element(id, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
@@ -550,7 +554,7 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.0.render_element(
+        self.handle.handle.render_element(
             cr,
             id,
             element_viewport,
