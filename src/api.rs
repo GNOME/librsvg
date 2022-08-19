@@ -214,6 +214,7 @@ impl Loader {
 
         Ok(SvgHandle {
             handle: Handle::from_stream(
+                self.session.clone(),
                 &load_options,
                 stream.as_ref(),
                 cancellable.map(|c| c.as_ref()),
