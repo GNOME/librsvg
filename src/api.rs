@@ -13,6 +13,7 @@ pub use crate::{
 use url::Url;
 
 use std::path::Path;
+use std::sync::Arc;
 
 use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
@@ -20,6 +21,7 @@ use gio::Cancellable;
 use crate::{
     dpi::Dpi,
     handle::{Handle, LoadOptions},
+    session::Session,
     url_resolver::UrlResolver,
 };
 
@@ -31,10 +33,10 @@ use crate::{
 /// of `Loader` in sequence to configure how SVG data should be
 /// loaded, and finally use one of the loading functions to load an
 /// [`SvgHandle`].
-#[derive(Default)]
 pub struct Loader {
     unlimited_size: bool,
     keep_image_data: bool,
+    session: Arc<Session>,
 }
 
 impl Loader {
@@ -58,7 +60,19 @@ impl Loader {
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        Self::default()
+        Self::new_with_session(Arc::new(Session::new()))
+    }
+
+    /// Creates a `Loader` from a pre-created [`Session`].
+    ///
+    /// This is useful when a `Loader` must be created by the C API, which should already
+    /// have created a session for logging.
+    pub(crate) fn new_with_session(session: Arc<Session>) -> Self {
+        Self {
+            unlimited_size: false,
+            keep_image_data: false,
+            session,
+        }
     }
 
     /// Controls safety limits used in the XML parser.
