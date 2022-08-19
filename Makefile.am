@@ -98,6 +98,7 @@ LIBRSVG_SRC =					\
 	src/property_defs.rs			\
 	src/property_macros.rs			\
 	src/rect.rs				\
+	src/session.rs				\
 	src/shapes.rs				\
 	src/space.rs				\
 	src/structure.rs			\

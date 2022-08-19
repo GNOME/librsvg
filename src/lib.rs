@@ -209,6 +209,7 @@ mod pattern;
 mod properties;
 mod property_defs;
 mod rect;
+mod session;
 mod shapes;
 mod space;
 mod structure;
