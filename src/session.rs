@@ -27,6 +27,15 @@ impl Session {
         }
     }
 
+    #[cfg(test)]
+    pub fn new_for_test_suite() -> Self {
+        Self {
+            inner: Arc::new(SessionInner {
+                log_enabled: false,
+            }),
+        }
+    }
+
     pub fn log_enabled(&self) -> bool {
         self.inner.log_enabled
     }
