@@ -30,9 +30,7 @@ impl Session {
     #[cfg(test)]
     pub fn new_for_test_suite() -> Self {
         Self {
-            inner: Arc::new(SessionInner {
-                log_enabled: false,
-            }),
+            inner: Arc::new(SessionInner { log_enabled: false }),
         }
     }
 

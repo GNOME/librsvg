@@ -93,8 +93,13 @@ impl Handle {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
-            session,
-            document: Document::load_from_stream(load_options, stream, cancellable)?,
+            session: session.clone(),
+            document: Document::load_from_stream(
+                session.clone(),
+                load_options,
+                stream,
+                cancellable,
+            )?,
         })
     }
 

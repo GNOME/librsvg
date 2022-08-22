@@ -419,9 +419,13 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle
-            .handle
-            .render_document(cr, viewport, &self.user_language, self.dpi, self.is_testing)
+        self.handle.handle.render_document(
+            cr,
+            viewport,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )
     }
 
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if

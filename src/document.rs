@@ -18,6 +18,7 @@ use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
+use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
 use crate::xml::{xml_load_from_possibly_compressed_stream, Attributes};
@@ -72,6 +73,9 @@ pub struct Document {
     /// Tree of nodes; the root is guaranteed to be an `<svg>` element.
     tree: Node,
 
+    /// Metadata about the SVG handle.
+    session: Session,
+
     /// Mapping from `id` attributes to nodes.
     ids: HashMap<String, Node>,
 
@@ -94,12 +98,13 @@ pub struct Document {
 impl Document {
     /// Constructs a `Document` by loading it from a stream.
     pub fn load_from_stream(
+        session: Session,
         load_options: &LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
         xml_load_from_possibly_compressed_stream(
-            DocumentBuilder::new(load_options),
+            DocumentBuilder::new(session, load_options),
             load_options.unlimited_size,
             stream,
             cancellable,
@@ -115,6 +120,7 @@ impl Document {
         let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
         Document::load_from_stream(
+            Session::new_for_test_suite(),
             &LoadOptions::new(UrlResolver::new(None)),
             &stream.upcast(),
             None::<&gio::Cancellable>,
@@ -134,7 +140,7 @@ impl Document {
             NodeId::External(url, id) => self
                 .externs
                 .borrow_mut()
-                .lookup(&self.load_options, url, id)
+                .lookup(&self.session, &self.load_options, url, id)
                 .ok(),
         }
     }
@@ -177,16 +183,18 @@ impl Resources {
 
     pub fn lookup(
         &mut self,
+        session: &Session,
         load_options: &LoadOptions,
         url: &str,
         id: &str,
     ) -> Result<Node, LoadingError> {
-        self.get_extern_document(load_options, url)
+        self.get_extern_document(session, load_options, url)
             .and_then(|doc| doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl))
     }
 
     fn get_extern_document(
         &mut self,
+        session: &Session,
         load_options: &LoadOptions,
         href: &str,
     ) -> Result<Rc<Document>, LoadingError> {
@@ -204,6 +212,7 @@ impl Resources {
                     .map_err(LoadingError::from)
                     .and_then(|stream| {
                         Document::load_from_stream(
+                            session.clone(),
                             &load_options.copy_with_base_url(aurl),
                             &stream,
                             None,
@@ -477,6 +486,7 @@ impl NodeStack {
 }
 
 pub struct DocumentBuilder {
+    session: Session,
     load_options: LoadOptions,
     tree: Option<Node>,
     ids: HashMap<String, Node>,
@@ -484,13 +494,18 @@ pub struct DocumentBuilder {
 }
 
 impl DocumentBuilder {
-    pub fn new(load_options: &LoadOptions) -> DocumentBuilder {
+    pub fn new(session: Session, load_options: &LoadOptions) -> DocumentBuilder {
         DocumentBuilder {
+            session,
             load_options: load_options.clone(),
             tree: None,
             ids: HashMap::new(),
             stylesheets: Vec::new(),
         }
+    }
+
+    pub fn session(&self) -> &Session {
+        &self.session
     }
 
     pub fn append_stylesheet_from_xml_processing_instruction(
@@ -575,6 +590,7 @@ impl DocumentBuilder {
     pub fn build(self) -> Result<Document, LoadingError> {
         let DocumentBuilder {
             load_options,
+            session,
             tree,
             ids,
             stylesheets,
@@ -586,6 +602,7 @@ impl DocumentBuilder {
                 if is_element_of_type!(root, Svg) {
                     let mut document = Document {
                         tree: root,
+                        session,
                         ids,
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
