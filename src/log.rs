@@ -13,6 +13,18 @@ macro_rules! rsvg_log {
     };
 }
 
+#[macro_export]
+macro_rules! rsvg_log_session {
+    (
+        $session:expr,
+        $($arg:tt)+
+    ) => {
+        if $session.log_enabled() {
+            println!("{}", format_args!($($arg)+));
+        }
+    };
+}
+
 pub fn log_enabled() -> bool {
     static ENABLED: Lazy<bool> = Lazy::new(|| ::std::env::var_os("RSVG_LOG").is_some());
 
