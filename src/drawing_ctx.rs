@@ -37,6 +37,7 @@ use crate::properties::{
     Overflow, PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{IRect, Rect};
+use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
@@ -169,6 +170,8 @@ struct Viewport {
 }
 
 pub struct DrawingCtx {
+    session: Session,
+
     initial_viewport: Viewport,
 
     dpi: Dpi,
@@ -196,6 +199,7 @@ pub enum DrawingMode {
 ///
 /// This creates a DrawingCtx internally and starts drawing at the specified `node`.
 pub fn draw_tree(
+    session: Session,
     mode: DrawingMode,
     cr: &cairo::Context,
     viewport: Rect,
@@ -239,6 +243,7 @@ pub fn draw_tree(
     let viewport = viewport.translate((-viewport.x0, -viewport.y0));
 
     let mut draw_ctx = DrawingCtx::new(
+        session,
         cr,
         transform,
         viewport,
@@ -281,6 +286,7 @@ const CAIRO_TAG_LINK: &str = "Link";
 
 impl DrawingCtx {
     fn new(
+        session: Session,
         cr: &cairo::Context,
         transform: Transform,
         viewport: Rect,
@@ -296,6 +302,7 @@ impl DrawingCtx {
         let viewport_stack = vec![initial_viewport];
 
         DrawingCtx {
+            session,
             initial_viewport,
             dpi,
             cr_stack: Rc::new(RefCell::new(Vec::new())),
@@ -320,6 +327,7 @@ impl DrawingCtx {
         cr_stack.borrow_mut().push(self.cr.clone());
 
         DrawingCtx {
+            session: self.session.clone(),
             initial_viewport: self.initial_viewport,
             dpi: self.dpi,
             cr_stack,
@@ -488,7 +496,8 @@ impl DrawingCtx {
                         "viewport_to_viewbox_transform only returns errors when vbox != None"
                     ),
                     Some(v) => {
-                        rsvg_log!(
+                        rsvg_log_session!(
+                            self.session,
                             "ignoring viewBox ({}, {}, {}, {}) since it is not usable",
                             v.x0,
                             v.y0,
@@ -575,7 +584,7 @@ impl DrawingCtx {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(_)) => {
-                rsvg_log!("circular reference in element {}", mask_node);
+                rsvg_log_session!(self.session, "circular reference in element {}", mask_node);
                 return Ok(None);
             }
 
@@ -1036,7 +1045,7 @@ impl DrawingCtx {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(ref node)) => {
-                rsvg_log!("circular reference in element {}", node);
+                rsvg_log_session!(self.session, "circular reference in element {}", node);
                 return Ok(false);
             }
 
@@ -1611,7 +1620,7 @@ impl DrawingCtx {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(_)) => {
-                rsvg_log!("circular reference in element {}", node);
+                rsvg_log_session!(self.session, "circular reference in element {}", node);
                 return Ok(self.empty_bbox());
             }
 
@@ -1622,7 +1631,7 @@ impl DrawingCtx {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(node)) => {
-                rsvg_log!("circular reference in element {}", node);
+                rsvg_log_session!(self.session, "circular reference in element {}", node);
                 return Ok(self.empty_bbox());
             }
 
@@ -1635,7 +1644,12 @@ impl DrawingCtx {
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
 
             Err(AcquireError::LinkNotFound(node_id)) => {
-                rsvg_log!("element {} references nonexistent \"{}\"", node, node_id);
+                rsvg_log_session!(
+                    self.session,
+                    "element {} references nonexistent \"{}\"",
+                    node,
+                    node_id
+                );
                 return Ok(self.empty_bbox());
             }
         };

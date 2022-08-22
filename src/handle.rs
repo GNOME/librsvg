@@ -160,6 +160,7 @@ impl Handle {
         let cr = cairo::Context::new(&target)?;
 
         let bbox = draw_tree(
+            self.session.clone(),
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
@@ -253,6 +254,7 @@ impl Handle {
 
         with_saved_cr(cr, || {
             draw_tree(
+                self.session.clone(),
                 DrawingMode::LimitToStack { node, root },
                 cr,
                 viewport,
@@ -279,6 +281,7 @@ impl Handle {
         let node = node.clone();
 
         draw_tree(
+            self.session.clone(),
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
@@ -351,6 +354,7 @@ impl Handle {
             cr.translate(-ink_r.x0, -ink_r.y0);
 
             draw_tree(
+                self.session.clone(),
                 DrawingMode::OnlyNode(node),
                 cr,
                 unit_rectangle(),
