@@ -340,6 +340,10 @@ impl DrawingCtx {
         }
     }
 
+    pub fn session(&self) -> &Session {
+        &self.session
+    }
+
     pub fn user_language(&self) -> &UserLanguage {
         &self.user_language
     }
