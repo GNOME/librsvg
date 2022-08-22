@@ -2,8 +2,6 @@
 //!
 //! This module provides the primitives on which the public APIs are implemented.
 
-use std::sync::Arc;
-
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
@@ -82,14 +80,14 @@ impl LoadOptions {
 ///
 /// [`from_stream`]: #method.from_stream
 pub struct Handle {
-    session: Arc<Session>,
+    session: Session,
     document: Document,
 }
 
 impl Handle {
     /// Loads an SVG document into a `Handle`.
     pub fn from_stream(
-        session: Arc<Session>,
+        session: Session,
         load_options: &LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
