@@ -276,7 +276,11 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
                 Ok(draw_ctx.empty_bbox())
             }
         } else {
-            rsvg_log!("(not rendering element {} because it is in error)", self);
+            rsvg_log_session!(
+                draw_ctx.session(),
+                "(not rendering element {} because it is in error)",
+                self
+            );
 
             // maybe we should actually return a RenderingError::ElementIsInError here?
             Ok(draw_ctx.empty_bbox())
