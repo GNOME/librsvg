@@ -42,7 +42,8 @@ use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError,
 
 use crate::{
     length::RsvgLength,
-    rsvg_log,
+    rsvg_log_session,
+    session::Session,
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
 };
 
@@ -297,6 +298,7 @@ mod imp {
     pub struct CHandle {
         pub(super) inner: RefCell<CHandleInner>,
         pub(super) load_state: RefCell<LoadState>,
+        pub(super) session: Session,
     }
 
     #[derive(Default)]
@@ -559,6 +561,7 @@ impl CairoRectangleExt for cairo::Rectangle {
 impl CHandle {
     fn set_base_url(&self, url: &str) {
         let imp = self.imp();
+        let session = &imp.session;
         let state = imp.load_state.borrow();
 
         match *state {
@@ -573,13 +576,14 @@ impl CHandle {
 
         match Url::parse(url) {
             Ok(u) => {
-                rsvg_log!("setting base_uri to \"{}\"", u.as_str());
+                rsvg_log_session!(session, "setting base_uri to \"{}\"", u.as_str());
                 let mut inner = imp.inner.borrow_mut();
                 inner.base_url.set(u);
             }
 
             Err(e) => {
-                rsvg_log!(
+                rsvg_log_session!(
+                    session,
                     "not setting base_uri to \"{}\" since it is invalid: {}",
                     url,
                     e
@@ -760,9 +764,11 @@ impl CHandle {
     }
 
     fn make_loader(&self) -> Loader {
-        let inner = self.imp().inner.borrow();
+        let imp = self.imp();
+        let inner = imp.inner.borrow();
+        let session = imp.session.clone();
 
-        Loader::new()
+        Loader::new_with_session(session)
             .with_unlimited_size(inner.load_flags.unlimited_size)
             .keep_image_data(inner.load_flags.keep_image_data)
     }
@@ -1326,7 +1332,8 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
     match rhandle.get_pixbuf_sub(None) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
-            rsvg_log!("could not render: {}", e);
+            let session = &rhandle.imp().session;
+            rsvg_log_session!(session, "could not render: {}", e);
             ptr::null_mut()
         }
     }
@@ -1349,7 +1356,8 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
     match rhandle.get_pixbuf_sub(id.as_deref()) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
-            rsvg_log!("could not render: {}", e);
+            let session = &rhandle.imp().session;
+            rsvg_log_session!(session, "could not render: {}", e);
             ptr::null_mut()
         }
     }
@@ -1387,7 +1395,8 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
         }
 
         Err(e) => {
-            rsvg_log!("could not get dimensions: {}", e);
+            let session = &rhandle.imp().session;
+            rsvg_log_session!(session, "could not get dimensions: {}", e);
             *dimension_data = RsvgDimensionData::empty();
             false.into_glib()
         }
@@ -1423,7 +1432,8 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
             p.x = 0;
             p.y = 0;
 
-            rsvg_log!("could not get position: {}", e);
+            let session = &rhandle.imp().session;
+            rsvg_log_session!(session, "could not get position: {}", e);
             false.into_glib()
         }
     }
