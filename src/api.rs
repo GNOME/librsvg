@@ -59,7 +59,7 @@ impl Loader {
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        Self::new_with_session(Session::new())
+        Self::new_with_session(Session::default())
     }
 
     /// Creates a `Loader` from a pre-created [`Session`].

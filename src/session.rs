@@ -18,15 +18,17 @@ struct SessionInner {
     log_enabled: bool,
 }
 
-impl Session {
-    pub fn new() -> Self {
+impl Default for Session {
+    fn default() -> Self {
         Self {
             inner: Arc::new(SessionInner {
                 log_enabled: log::log_enabled(),
             }),
         }
     }
+}
 
+impl Session {
     #[cfg(test)]
     pub fn new_for_test_suite() -> Self {
         Self {
