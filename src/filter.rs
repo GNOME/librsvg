@@ -125,10 +125,13 @@ fn filter_spec_from_filter_node(
     node_id: &NodeId,
     node_being_filtered_name: &str,
 ) -> Result<FilterSpec, FilterResolveError> {
+    let session = draw_ctx.session().clone();
+
     acquired_nodes
         .acquire(node_id)
         .map_err(|e| {
-            rsvg_log!(
+            rsvg_log_session!(
+                session,
                 "element {} will not be filtered with \"{}\": {}",
                 node_being_filtered_name,
                 node_id,
@@ -143,7 +146,8 @@ fn filter_spec_from_filter_node(
             match *element {
                 Element::Filter(_) => {
                     if element.is_in_error() {
-                        rsvg_log!(
+                        rsvg_log_session!(
+                            session,
                             "element {} will not be filtered since its filter \"{}\" is in error",
                             node_being_filtered_name,
                             node_id,
@@ -155,7 +159,8 @@ fn filter_spec_from_filter_node(
                 }
 
                 _ => {
-                    rsvg_log!(
+                    rsvg_log_session!(
+                        session,
                         "element {} will not be filtered since \"{}\" is not a filter",
                         node_being_filtered_name,
                         node_id,
