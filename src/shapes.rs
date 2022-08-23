@@ -138,8 +138,13 @@ macro_rules! impl_draw {
                 };
 
                 let elt = node.borrow_element();
-                let stacking_ctx =
-                    StackingContext::new(acquired_nodes, &elt, values.transform(), values);
+                let stacking_ctx = StackingContext::new(
+                    draw_ctx.session(),
+                    acquired_nodes,
+                    &elt,
+                    values.transform(),
+                    values,
+                );
 
                 draw_ctx.draw_shape(
                     &view_params,

@@ -21,6 +21,7 @@ use crate::properties::{
     TextDecoration, TextRendering, UnicodeBidi, XmlLang,
 };
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
@@ -137,6 +138,7 @@ pub struct FontProperties {
 
 impl StackingContext {
     pub fn new(
+        session: &Session,
         acquired_nodes: &mut AcquiredNodes<'_>,
         element: &Element,
         transform: Transform,
@@ -189,7 +191,8 @@ impl StackingContext {
                     Element::Mask(_) => Some(node.clone()),
 
                     _ => {
-                        rsvg_log!(
+                        rsvg_log_session!(
+                            session,
                             "element {} references \"{}\" which is not a mask",
                             element,
                             mask_id
@@ -199,7 +202,8 @@ impl StackingContext {
                     }
                 }
             } else {
-                rsvg_log!(
+                rsvg_log_session!(
+                    session,
                     "element {} references nonexistent mask \"{}\"",
                     element,
                     mask_id
@@ -227,13 +231,14 @@ impl StackingContext {
     }
 
     pub fn new_with_link(
+        session: &Session,
         acquired_nodes: &mut AcquiredNodes<'_>,
         element: &Element,
         transform: Transform,
         values: &ComputedValues,
         link_target: Option<String>,
     ) -> StackingContext {
-        let mut ctx = Self::new(acquired_nodes, element, transform, values);
+        let mut ctx = Self::new(session, acquired_nodes, element, transform, values);
         ctx.link_target = link_target;
         ctx
     }

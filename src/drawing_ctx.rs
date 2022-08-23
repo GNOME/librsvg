@@ -654,8 +654,13 @@ impl DrawingCtx {
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
-            let stacking_ctx =
-                StackingContext::new(acquired_nodes, &mask_element, Transform::identity(), values);
+            let stacking_ctx = StackingContext::new(
+                self.session(),
+                acquired_nodes,
+                &mask_element,
+                Transform::identity(),
+                values,
+            );
 
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
@@ -1111,6 +1116,7 @@ impl DrawingCtx {
                     let elt = pattern_node.borrow_element();
 
                     let stacking_ctx = StackingContext::new(
+                        self.session(),
                         acquired_nodes,
                         &elt,
                         Transform::identity(),
@@ -1694,8 +1700,13 @@ impl DrawingCtx {
                 None
             };
 
-            let stacking_ctx =
-                StackingContext::new(acquired_nodes, &use_element, Transform::identity(), values);
+            let stacking_ctx = StackingContext::new(
+                self.session(),
+                acquired_nodes,
+                &use_element,
+                Transform::identity(),
+                values,
+            );
 
             self.with_discrete_layer(
                 &stacking_ctx,
@@ -1728,6 +1739,7 @@ impl DrawingCtx {
             // otherwise the referenced node is not a <symbol>; process it generically
 
             let stacking_ctx = StackingContext::new(
+                self.session(),
                 acquired_nodes,
                 &use_element,
                 Transform::new_translate(use_rect.x0, use_rect.y0),
