@@ -38,6 +38,7 @@ use crate::marker::Marker;
 use crate::node::*;
 use crate::pattern::Pattern;
 use crate::properties::{ComputedValues, SpecifiedValues};
+use crate::session::Session;
 use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
@@ -107,6 +108,7 @@ pub struct ElementInner<T: SetAttributes + Draw> {
 
 impl<T: SetAttributes + Draw> ElementInner<T> {
     fn new(
+        session: &Session,
         element_name: QualName,
         attributes: Attributes,
         result: Result<(), ElementError>,
@@ -127,7 +129,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
         let mut set_attributes = || -> Result<(), ElementError> {
             e.set_conditional_processing_attributes()?;
-            e.set_presentation_attributes()?;
+            e.set_presentation_attributes(session)?;
             Ok(())
         };
 
@@ -215,9 +217,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
     #[allow(clippy::unnecessary_wraps)]
-    fn set_presentation_attributes(&mut self) -> Result<(), ElementError> {
+    fn set_presentation_attributes(&mut self, session: &Session) -> Result<(), ElementError> {
         self.specified_values
-            .parse_presentation_attributes(&self.attributes)
+            .parse_presentation_attributes(session, &self.attributes)
     }
 
     // Applies a style declaration to the node's specified_values
@@ -449,7 +451,7 @@ impl Element {
     ///
     /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
     /// element.
-    pub fn new(name: &QualName, mut attrs: Attributes) -> Element {
+    pub fn new(session: &Session, name: &QualName, mut attrs: Attributes) -> Element {
         let (create_fn, flags): (ElementCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
             match ELEMENT_CREATORS.get(name.local.as_ref()) {
                 // hack in the SVG namespace for supported element names
@@ -470,7 +472,7 @@ impl Element {
 
         //    sizes::print_sizes();
 
-        create_fn(name, attrs)
+        create_fn(session, name, attrs)
     }
 
     pub fn element_name(&self) -> &QualName {
@@ -589,12 +591,17 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(element_name: &QualName, attributes: Attributes) -> Element {
+        pub fn $name(
+            session: &Session,
+            element_name: &QualName,
+            attributes: Attributes,
+        ) -> Element {
             let mut element_impl = <$element_type>::default();
 
             let result = element_impl.set_attributes(&attributes);
 
             let element = Element::$element_type(Box::new(ElementInner::new(
+                session,
                 element_name.clone(),
                 attributes,
                 result,
@@ -679,7 +686,8 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn = fn(element_name: &QualName, attributes: Attributes) -> Element;
+type ElementCreateFn =
+    fn(session: &Session, element_name: &QualName, attributes: Attributes) -> Element;
 
 #[derive(Copy, Clone, PartialEq)]
 enum ElementCreateFlags {

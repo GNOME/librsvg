@@ -26,6 +26,7 @@ use crate::css::{DeclParser, Declaration, Origin};
 use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_macros::Property;
+use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute, TransformProperty};
 use crate::xml::Attributes;
 
@@ -805,7 +806,7 @@ impl SpecifiedValues {
         }
     }
 
-    fn parse_one_presentation_attribute(&mut self, attr: QualName, value: &str) {
+    fn parse_one_presentation_attribute(&mut self, session: &Session, attr: QualName, value: &str) {
         let mut input = ParserInput::new(value);
         let mut parser = Parser::new(&mut input);
 
@@ -814,7 +815,8 @@ impl SpecifiedValues {
                 if parser.expect_exhausted().is_ok() {
                     self.set_parsed_property(&prop);
                 } else {
-                    rsvg_log!(
+                    rsvg_log_session!(
+                        session,
                         "(ignoring invalid presentation attribute {:?}\n    value=\"{}\")\n",
                         attr.expanded(),
                         value,
@@ -887,6 +889,7 @@ impl SpecifiedValues {
 
     pub fn parse_presentation_attributes(
         &mut self,
+        session: &Session,
         attrs: &Attributes,
     ) -> Result<(), ElementError> {
         for (attr, value) in attrs.iter() {
@@ -918,7 +921,7 @@ impl SpecifiedValues {
                     )));
                 }
 
-                _ => self.parse_one_presentation_attribute(attr, value),
+                _ => self.parse_one_presentation_attribute(session, attr, value),
             }
         }
 

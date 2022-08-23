@@ -18,6 +18,7 @@ use crate::element::*;
 use crate::error::*;
 use crate::paint_server::PaintSource;
 use crate::properties::ComputedValues;
+use crate::session::Session;
 use crate::text::Chars;
 use crate::xml::Attributes;
 
@@ -65,8 +66,8 @@ pub enum NodeData {
 }
 
 impl NodeData {
-    pub fn new_element(name: &QualName, attrs: Attributes) -> NodeData {
-        NodeData::Element(Element::new(name, attrs))
+    pub fn new_element(session: &Session, name: &QualName, attrs: Attributes) -> NodeData {
+        NodeData::Element(Element::new(session, name, attrs))
     }
 
     pub fn new_chars(initial_text: &str) -> NodeData {

@@ -716,6 +716,7 @@ impl ResolvedGradient {
 mod tests {
     use super::*;
     use crate::node::{Node, NodeData};
+    use crate::session::Session;
     use markup5ever::{namespace_url, ns, QualName};
 
     #[test]
@@ -734,7 +735,10 @@ mod tests {
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
+        let session = Session::default();
+
         let node = Node::new(NodeData::new_element(
+            &session,
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             Attributes::new(),
         ));
@@ -745,6 +749,7 @@ mod tests {
         assert!(gradient.is_resolved());
 
         let node = Node::new(NodeData::new_element(
+            &session,
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             Attributes::new(),
         ));

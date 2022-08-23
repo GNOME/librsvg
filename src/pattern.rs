@@ -497,6 +497,7 @@ mod tests {
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
         let node = Node::new(NodeData::new_element(
+            &Session::default(),
             &QualName::new(None, ns!(svg), local_name!("pattern")),
             Attributes::new(),
         ));

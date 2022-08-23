@@ -542,7 +542,7 @@ impl DocumentBuilder {
         attrs: Attributes,
         parent: Option<Node>,
     ) -> Node {
-        let node = Node::new(NodeData::new_element(name, attrs));
+        let node = Node::new(NodeData::new_element(&self.session, name, attrs));
 
         if let Some(id) = node.borrow_element().get_id() {
             // This is so we don't overwrite an existing id
