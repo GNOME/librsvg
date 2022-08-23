@@ -45,6 +45,7 @@ struct CairoContextState {
 }
 
 impl CairoContextState {
+    #[cfg(test)]
     fn new(cr: &cairo::Context) -> Self {
         let surface_type = cr.target().type_();
         let matrix = cr.matrix();
