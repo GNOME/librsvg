@@ -18,6 +18,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::properties::ComputedValues;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 #[derive(PartialEq)]
@@ -86,10 +87,15 @@ macro_rules! impl_draw {
                 let marker_mid_node;
                 let marker_end_node;
 
+                let session = draw_ctx.session();
+
                 if shape_def.markers == Markers::Yes {
-                    marker_start_node = acquire_marker(acquired_nodes, &values.marker_start().0);
-                    marker_mid_node = acquire_marker(acquired_nodes, &values.marker_mid().0);
-                    marker_end_node = acquire_marker(acquired_nodes, &values.marker_end().0);
+                    marker_start_node =
+                        acquire_marker(session, acquired_nodes, &values.marker_start().0);
+                    marker_mid_node =
+                        acquire_marker(session, acquired_nodes, &values.marker_mid().0);
+                    marker_end_node =
+                        acquire_marker(session, acquired_nodes, &values.marker_end().0);
                 } else {
                     marker_start_node = None;
                     marker_mid_node = None;
@@ -146,12 +152,16 @@ macro_rules! impl_draw {
     };
 }
 
-fn acquire_marker(acquired_nodes: &mut AcquiredNodes<'_>, iri: &Iri) -> Option<Node> {
+fn acquire_marker(
+    session: &Session,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    iri: &Iri,
+) -> Option<Node> {
     iri.get().and_then(|id| {
         acquired_nodes
             .acquire(id)
             .map_err(|e| {
-                rsvg_log!("cannot render marker: {}", e);
+                rsvg_log_session!(session, "cannot render marker: {}", e);
             })
             .ok()
             .and_then(|acquired| {
@@ -160,7 +170,7 @@ fn acquire_marker(acquired_nodes: &mut AcquiredNodes<'_>, iri: &Iri) -> Option<N
                 if is_element_of_type!(node, Marker) {
                     Some(node.clone())
                 } else {
-                    rsvg_log!("{} is not a marker element", id);
+                    rsvg_log_session!(session, "{} is not a marker element", id);
                     None
                 }
             })
