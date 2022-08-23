@@ -1173,18 +1173,23 @@ pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
 trait IntoGError {
     type GlibResult;
 
-    fn into_gerror(self, error: *mut *mut glib::ffi::GError) -> Self::GlibResult;
+    fn into_gerror(self, session: &Session, error: *mut *mut glib::ffi::GError)
+        -> Self::GlibResult;
 }
 
 impl<E: fmt::Display> IntoGError for Result<(), E> {
     type GlibResult = glib::ffi::gboolean;
 
-    fn into_gerror(self, error: *mut *mut glib::ffi::GError) -> Self::GlibResult {
+    fn into_gerror(
+        self,
+        session: &Session,
+        error: *mut *mut glib::ffi::GError,
+    ) -> Self::GlibResult {
         match self {
             Ok(()) => true.into_glib(),
 
             Err(e) => {
-                set_gerror(error, 0, &format!("{}", e));
+                set_gerror(session, error, 0, &format!("{}", e));
                 false.into_glib()
             }
         }
@@ -1208,13 +1213,14 @@ pub unsafe extern "C" fn rsvg_handle_read_stream_sync(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
 
     let stream = gio::InputStream::from_glib_none(stream);
     let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
 
     rhandle
         .read_stream_sync(&stream, cancellable.as_ref())
-        .into_gerror(error)
+        .into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1252,8 +1258,9 @@ pub unsafe extern "C" fn rsvg_handle_close(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
 
-    rhandle.close().into_gerror(error)
+    rhandle.close().into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1290,10 +1297,11 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
 
     rhandle
         .render_cairo_sub(cr, None)
-        .into_gerror(ptr::null_mut())
+        .into_gerror(&session, ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1310,11 +1318,13 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
+
     let id: Option<String> = from_glib_none(id);
 
     rhandle
         .render_cairo_sub(cr, id.as_deref())
-        .into_gerror(ptr::null_mut())
+        .into_gerror(&session, ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1470,7 +1480,12 @@ pub unsafe extern "C" fn rsvg_handle_new_from_file(
         Ok(p) => p.get_gfile(),
 
         Err(s) => {
-            set_gerror(error, 0, &s);
+            // Here we don't have a handle created yet, so it's fine to create a session
+            // to log the error message.  We'll need to change this when we start logging
+            // API calls, so that we can log the call to rsvg_handle_new_from_file() and
+            // then pass *that* session to rsvg_handle_new_from_gfile_sync() below.
+            let session = Session::default();
+            set_gerror(&session, error, 0, &s);
             return ptr::null_mut();
         }
     };
@@ -1496,6 +1511,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
     let raw_handle = rsvg_handle_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
+    let session = rhandle.imp().session.clone();
 
     let file = gio::File::from_glib_none(file);
     rhandle.set_base_gfile(&file);
@@ -1511,7 +1527,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
         Ok(()) => raw_handle,
 
         Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{}", e));
             gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
@@ -1538,6 +1554,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
     let raw_handle = rsvg_handle_new_with_flags(flags);
 
     let rhandle = get_rust_handle(raw_handle);
+    let session = rhandle.imp().session.clone();
 
     let base_file: Option<gio::File> = from_glib_none(base_file);
     if let Some(base_file) = base_file {
@@ -1551,7 +1568,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
         Ok(()) => raw_handle,
 
         Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{}", e));
             gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
@@ -1640,6 +1657,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
 
     let css = match (css, css_len) {
         (p, 0) if p.is_null() => "",
@@ -1648,14 +1666,19 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
             match str::from_utf8(s) {
                 Ok(s) => s,
                 Err(e) => {
-                    set_gerror(error, 0, &format!("CSS is not valid UTF-8: {}", e));
+                    set_gerror(
+                        &session,
+                        error,
+                        0,
+                        &format!("CSS is not valid UTF-8: {}", e),
+                    );
                     return false.into_glib();
                 }
             }
         }
     };
 
-    rhandle.set_stylesheet(css).into_gerror(error)
+    rhandle.set_stylesheet(css).into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1737,10 +1760,11 @@ pub unsafe extern "C" fn rsvg_handle_render_document(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
 
     rhandle
         .render_document(cr, &(*viewport).into())
-        .into_gerror(error)
+        .into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1761,6 +1785,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
 
     let id: Option<String> = from_glib_none(id);
 
@@ -1775,7 +1800,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_layer(
                 *out_logical_rect = logical_rect;
             }
         })
-        .into_gerror(error)
+        .into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1796,11 +1821,13 @@ pub unsafe extern "C" fn rsvg_handle_render_layer(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
+
     let id: Option<String> = from_glib_none(id);
 
     rhandle
         .render_layer(cr, id.as_deref(), &(*viewport).into())
-        .into_gerror(error)
+        .into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1819,6 +1846,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
 
     let id: Option<String> = from_glib_none(id);
 
@@ -1833,7 +1861,7 @@ pub unsafe extern "C" fn rsvg_handle_get_geometry_for_element(
                 *out_logical_rect = logical_rect;
             }
         })
-        .into_gerror(error)
+        .into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1854,11 +1882,13 @@ pub unsafe extern "C" fn rsvg_handle_render_element(
     }
 
     let rhandle = get_rust_handle(handle);
+    let session = rhandle.imp().session.clone();
+
     let id: Option<String> = from_glib_none(id);
 
     rhandle
         .render_element(cr, id.as_deref(), &(*element_viewport).into())
-        .into_gerror(error)
+        .into_gerror(&session, error)
 }
 
 #[no_mangle]
@@ -1995,7 +2025,12 @@ fn check_cairo_context(cr: *mut cairo::ffi::cairo_t) -> Result<cairo::Context, R
     }
 }
 
-pub(crate) fn set_gerror(err: *mut *mut glib::ffi::GError, code: u32, msg: &str) {
+pub(crate) fn set_gerror(
+    session: &Session,
+    err: *mut *mut glib::ffi::GError,
+    code: u32,
+    msg: &str,
+) {
     unsafe {
         // this is RSVG_ERROR_FAILED, the only error code available in RsvgError
         assert!(code == 0);
@@ -2005,7 +2040,7 @@ pub(crate) fn set_gerror(err: *mut *mut glib::ffi::GError, code: u32, msg: &str)
         //
         // See https://gitlab.gnome.org/GNOME/gtk/issues/2294 for an example of code that
         // passed a NULL GError and so we had no easy way to see what was wrong.
-        rsvg_log!("{}", msg);
+        rsvg_log_session!(session, "{}", msg);
 
         glib::ffi::g_set_error_literal(
             err,

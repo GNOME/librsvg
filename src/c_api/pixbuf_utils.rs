@@ -11,9 +11,10 @@ use glib::translate::*;
 use super::dpi::Dpi;
 use super::handle::{checked_i32, set_gerror};
 use super::sizing::LegacySize;
-use crate::api::{CairoRenderer, Loader};
 
+use crate::api::{CairoRenderer, Loader};
 use crate::error::RenderingError;
+use crate::session::Session;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
@@ -155,10 +156,12 @@ unsafe fn pixbuf_from_file_with_size_mode(
 ) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
     let path = PathBuf::from_glib_none(filename);
 
-    let handle = match Loader::new().read_path(path) {
+    let session = Session::default();
+
+    let handle = match Loader::new_with_session(session.clone()).read_path(path) {
         Ok(handle) => handle,
         Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{}", e));
             return ptr::null_mut();
         }
     };
@@ -169,7 +172,7 @@ unsafe fn pixbuf_from_file_with_size_mode(
     let (document_width, document_height) = match renderer.legacy_document_size() {
         Ok(dim) => dim,
         Err(e) => {
-            set_gerror(error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{}", e));
             return ptr::null_mut();
         }
     };
@@ -186,7 +189,7 @@ unsafe fn pixbuf_from_file_with_size_mode(
     )
     .map(|pixbuf| pixbuf.to_glib_full())
     .unwrap_or_else(|e| {
-        set_gerror(error, 0, &format!("{}", e));
+        set_gerror(&session, error, 0, &format!("{}", e));
         ptr::null_mut()
     })
 }
