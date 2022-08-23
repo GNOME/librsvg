@@ -840,7 +840,8 @@ impl SpecifiedValues {
                 let mut tok = String::new();
 
                 t.to_css(&mut tok).unwrap(); // FIXME: what do we do with a fmt::Error?
-                rsvg_log!(
+                rsvg_log_session!(
+                    session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected token '{}')",
                     attr.expanded(),
@@ -853,7 +854,8 @@ impl SpecifiedValues {
                 kind: ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput),
                 ..
             }) => {
-                rsvg_log!(
+                rsvg_log_session!(
+                    session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected end of input)",
                     attr.expanded(),
@@ -865,7 +867,8 @@ impl SpecifiedValues {
                 kind: ParseErrorKind::Basic(_),
                 ..
             }) => {
-                rsvg_log!(
+                rsvg_log_session!(
+                    session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected error)",
                     attr.expanded(),
@@ -877,7 +880,8 @@ impl SpecifiedValues {
                 kind: ParseErrorKind::Custom(ref v),
                 ..
             }) => {
-                rsvg_log!(
+                rsvg_log_session!(
+                    session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
                     attr.expanded(),
                     value,
@@ -954,6 +958,7 @@ impl SpecifiedValues {
         declarations: &str,
         origin: Origin,
         important_styles: &mut HashSet<QualName>,
+        session: &Session,
     ) -> Result<(), ElementError> {
         let mut input = ParserInput::new(declarations);
         let mut parser = Parser::new(&mut input);
@@ -962,7 +967,7 @@ impl SpecifiedValues {
             .filter_map(|r| match r {
                 Ok(decl) => Some(decl),
                 Err(e) => {
-                    rsvg_log!("Invalid declaration; ignoring: {:?}", e);
+                    rsvg_log_session!(session, "Invalid declaration; ignoring: {:?}", e);
                     None
                 }
             })
@@ -1118,7 +1123,7 @@ mod tests {
         let mut specified = SpecifiedValues::default();
 
         assert!(specified
-            .parse_style_declarations("", Origin::Author, &mut HashSet::new())
+            .parse_style_declarations("", Origin::Author, &mut HashSet::new(), &Session::default())
             .is_ok())
     }
 }

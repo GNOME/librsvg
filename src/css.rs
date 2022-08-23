@@ -941,6 +941,7 @@ pub fn cascade(
     ua_stylesheets: &[Stylesheet],
     author_stylesheets: &[Stylesheet],
     user_stylesheets: &[Stylesheet],
+    session: &Session,
 ) {
     for mut node in root.descendants().filter(|n| n.is_element()) {
         let mut matches = Vec::new();
@@ -975,7 +976,7 @@ pub fn cascade(
                 .apply_style_declaration(m.declaration, m.origin);
         }
 
-        node.borrow_element_mut().set_style_attribute();
+        node.borrow_element_mut().set_style_attribute(session);
     }
 
     let values = ComputedValues::default();

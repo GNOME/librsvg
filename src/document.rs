@@ -166,8 +166,14 @@ impl Document {
     ///
     /// This uses the default UserAgent stylesheet, the document's internal stylesheets,
     /// plus an extra set of stylesheets supplied by the caller.
-    pub fn cascade(&mut self, extra: &[Stylesheet]) {
-        css::cascade(&mut self.tree, &UA_STYLESHEETS, &self.stylesheets, extra);
+    pub fn cascade(&mut self, extra: &[Stylesheet], session: &Session) {
+        css::cascade(
+            &mut self.tree,
+            &UA_STYLESHEETS,
+            &self.stylesheets,
+            extra,
+            session,
+        );
     }
 }
 
@@ -609,7 +615,7 @@ impl DocumentBuilder {
                 if is_element_of_type!(root, Svg) {
                     let mut document = Document {
                         tree: root,
-                        session,
+                        session: session.clone(),
                         ids,
                         externs: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
@@ -617,7 +623,7 @@ impl DocumentBuilder {
                         stylesheets,
                     };
 
-                    document.cascade(&[]);
+                    document.cascade(&[], &session);
 
                     Ok(document)
                 } else {

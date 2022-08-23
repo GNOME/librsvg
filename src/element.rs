@@ -232,7 +232,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     /// Applies CSS styles from the "style" attribute
-    fn set_style_attribute(&mut self) {
+    fn set_style_attribute(&mut self, session: &Session) {
         let style = self
             .attributes
             .iter()
@@ -244,6 +244,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 style,
                 Origin::Author,
                 &mut self.important_styles,
+                session,
             ) {
                 self.set_error(e);
             }
@@ -515,8 +516,8 @@ impl Element {
         call_inner!(self, apply_style_declaration, declaration, origin)
     }
 
-    pub fn set_style_attribute(&mut self) {
-        call_inner!(self, set_style_attribute);
+    pub fn set_style_attribute(&mut self, session: &Session) {
+        call_inner!(self, set_style_attribute, session);
     }
 
     pub fn is_in_error(&self) -> bool {
