@@ -9,6 +9,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
@@ -115,7 +116,7 @@ impl Image {
 }
 
 impl SetAttributes for FeImage {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.base.parse_no_inputs(attrs)?;
 
         for (attr, value) in attrs.iter() {

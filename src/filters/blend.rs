@@ -9,6 +9,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::surface_utils::shared_surface::Operator;
 use crate::xml::Attributes;
 
@@ -59,7 +60,7 @@ pub struct Blend {
 }
 
 impl SetAttributes for FeBlend {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         let (in1, in2) = self.base.parse_two_inputs(attrs)?;
         self.params.in1 = in1;
         self.params.in2 = in2;

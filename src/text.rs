@@ -732,7 +732,7 @@ impl Text {
 }
 
 impl SetAttributes for Text {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -926,7 +926,7 @@ fn extract_chars_children_to_chunks_recursively(
 }
 
 impl SetAttributes for TRef {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.link = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!(xlink "href"))
@@ -994,7 +994,7 @@ impl TSpan {
 }
 
 impl SetAttributes for TSpan {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,

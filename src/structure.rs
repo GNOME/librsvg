@@ -16,6 +16,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::viewbox::*;
 use crate::xml::Attributes;
 
@@ -264,7 +265,7 @@ impl Svg {
 }
 
 impl SetAttributes for Svg {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -345,7 +346,7 @@ impl Default for Use {
 }
 
 impl SetAttributes for Use {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 ref a if is_href(a) => set_href(
@@ -431,7 +432,7 @@ impl Symbol {
 }
 
 impl SetAttributes for Symbol {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -462,7 +463,7 @@ impl ClipPath {
 }
 
 impl SetAttributes for ClipPath {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "clipPathUnits"))
@@ -525,7 +526,7 @@ impl Mask {
 }
 
 impl SetAttributes for Mask {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -550,7 +551,7 @@ pub struct Link {
 }
 
 impl SetAttributes for Link {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 ref a if is_href(a) => set_href(a, &mut self.link, value.to_owned()),

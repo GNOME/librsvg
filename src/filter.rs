@@ -15,6 +15,7 @@ use crate::length::*;
 use crate::node::NodeBorrow;
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 /// The <filter> node.
@@ -70,7 +71,7 @@ impl Filter {
 }
 
 impl SetAttributes for Filter {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "filterUnits") => self.filter_units = attr.parse(value)?,

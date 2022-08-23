@@ -71,7 +71,7 @@ pub trait SetAttributes {
     /// Sets per-element attributes.
     ///
     /// Each element is supposed to iterate the `attributes`, and parse any ones it needs.
-    fn set_attributes(&mut self, _attributes: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) -> ElementResult {
         Ok(())
     }
 }
@@ -599,7 +599,7 @@ macro_rules! e {
         ) -> Element {
             let mut element_impl = <$element_type>::default();
 
-            let result = element_impl.set_attributes(&attributes);
+            let result = element_impl.set_attributes(&attributes, session);
 
             let element = Element::$element_type(Box::new(ElementInner::new(
                 session,

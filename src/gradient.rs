@@ -17,6 +17,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
+use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
 use crate::xml::Attributes;
@@ -65,7 +66,7 @@ pub struct Stop {
 }
 
 impl SetAttributes for Stop {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "offset") = attr.expanded() {
                 self.offset = attr.parse(value)?;
@@ -515,7 +516,7 @@ impl RadialGradient {
 }
 
 impl SetAttributes for Common {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => self.units = attr.parse(value)?,
@@ -540,8 +541,8 @@ impl SetAttributes for Common {
 }
 
 impl SetAttributes for LinearGradient {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.common.set_attributes(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.common.set_attributes(attrs, session)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -632,8 +633,8 @@ impl_gradient!(LinearGradient, RadialGradient);
 impl_gradient!(RadialGradient, LinearGradient);
 
 impl SetAttributes for RadialGradient {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.common.set_attributes(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.common.set_attributes(attrs, session)?;
         // Create a local expanded name for "fr" because markup5ever doesn't have built-in
         let expanded_name_fr = ExpandedName {
             ns: &Namespace::from(""),
@@ -716,7 +717,6 @@ impl ResolvedGradient {
 mod tests {
     use super::*;
     use crate::node::{Node, NodeData};
-    use crate::session::Session;
     use markup5ever::{namespace_url, ns, QualName};
 
     #[test]

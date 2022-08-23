@@ -14,6 +14,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 /// The `<image>` element.
@@ -27,7 +28,7 @@ pub struct Image {
 }
 
 impl SetAttributes for Image {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,

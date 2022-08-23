@@ -4,6 +4,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -27,7 +28,7 @@ pub struct Tile {
 }
 
 impl SetAttributes for FeTile {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.params.in1 = self.base.parse_one_input(attrs)?;
         Ok(())
     }

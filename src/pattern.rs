@@ -125,7 +125,7 @@ pub struct Pattern {
 }
 
 impl SetAttributes for Pattern {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "patternUnits") => self.common.units = attr.parse(value)?,
