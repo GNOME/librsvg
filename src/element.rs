@@ -134,7 +134,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         };
 
         if let Err(error) = set_attributes() {
-            e.set_error(error);
+            e.set_error(error, session);
         }
 
         e
@@ -246,13 +246,13 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 &mut self.important_styles,
                 session,
             ) {
-                self.set_error(e);
+                self.set_error(e, session);
             }
         }
     }
 
-    fn set_error(&mut self, error: ElementError) {
-        rsvg_log!("setting node {} in error: {}", self, error);
+    fn set_error(&mut self, error: ElementError, session: &Session) {
+        rsvg_log_session!(session, "setting node {} in error: {}", self, error);
         self.result = Err(error);
     }
 
