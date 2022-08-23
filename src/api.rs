@@ -17,8 +17,10 @@ use std::path::Path;
 use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
 
+use locale_config::{LanguageRange, Locale};
+
 use crate::{
-    accept_language::UserLanguage,
+    accept_language::{LanguageTags, UserLanguage},
     dpi::Dpi,
     handle::{Handle, LoadOptions},
     session::Session,
@@ -307,6 +309,44 @@ pub struct IntrinsicDimensions {
 
     /// `viewBox` attribute of the `<svg>`, if present.
     pub vbox: Option<cairo::Rectangle>,
+}
+
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+///
+/// The `Locale::current()` call only contemplates a single language,
+/// but glib is smarter, and `g_get_langauge_names()` can provide
+/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
+/// English and German).  This function converts the output of
+/// `g_get_language_names()` into a `Locale` with appropriate
+/// fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::language_names() {
+        let name = name.as_str();
+        if let Ok(range) = LanguageRange::from_unix(name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
+}
+
+impl UserLanguage {
+    fn new(language: &Language) -> UserLanguage {
+        match *language {
+            Language::FromEnvironment => UserLanguage::LanguageTags(
+                LanguageTags::from_locale(&locale_from_environment())
+                    .map_err(|s| {
+                        rsvg_log!("could not convert locale to language tags: {}", s);
+                    })
+                    .unwrap_or_else(|_| LanguageTags::empty()),
+            ),
+
+            Language::AcceptLanguage(ref a) => UserLanguage::AcceptLanguage(a.clone()),
+        }
+    }
 }
 
 impl<'a> CairoRenderer<'a> {
