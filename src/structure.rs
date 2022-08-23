@@ -368,6 +368,7 @@ impl Draw for Use {
                 values.color().0,
                 cascaded.context_fill.clone(),
                 cascaded.context_stroke.clone(),
+                draw_ctx.session(),
             );
 
             let fill_paint = values.fill().0.resolve(
@@ -376,6 +377,7 @@ impl Draw for Use {
                 values.color().0,
                 cascaded.context_fill.clone(),
                 cascaded.context_stroke.clone(),
+                draw_ctx.session(),
             );
 
             draw_ctx.draw_from_use_node(

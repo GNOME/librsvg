@@ -806,6 +806,7 @@ impl DrawingCtx {
                                         current_color,
                                         None,
                                         None,
+                                        self.session(),
                                     )
                                     .to_user_space(&bbox, &params, values),
                             );
@@ -820,6 +821,7 @@ impl DrawingCtx {
                                         current_color,
                                         None,
                                         None,
+                                        self.session(),
                                     )
                                     .to_user_space(&bbox, &params, values),
                             );

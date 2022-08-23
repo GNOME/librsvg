@@ -21,6 +21,7 @@ use crate::properties::{
     TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use crate::transform::Transform;
 use crate::xml::Attributes;
@@ -38,6 +39,9 @@ struct LayoutContext {
 
     /// For normalizing lengths.
     view_params: ViewParams,
+
+    /// Session metadata for the document
+    session: Session,
 }
 
 /// An absolutely-positioned array of `Span`s
@@ -451,6 +455,7 @@ impl PositionedSpan {
             self.values.color().0,
             None,
             None,
+            &layout_context.session,
         );
 
         let fill_paint = self.values.fill().0.resolve(
@@ -459,6 +464,7 @@ impl PositionedSpan {
             self.values.color().0,
             None,
             None,
+            &layout_context.session,
         );
 
         let paint_order = self.values.paint_order();
@@ -556,7 +562,14 @@ fn children_to_chunks(
 
                 Element::TRef(ref tref) => {
                     let cascaded = CascadedValues::clone_with_node(cascaded, &child);
-                    tref.to_chunks(&child, acquired_nodes, &cascaded, chunks, depth + 1);
+                    tref.to_chunks(
+                        &child,
+                        acquired_nodes,
+                        &cascaded,
+                        chunks,
+                        depth + 1,
+                        layout_context,
+                    );
                 }
 
                 _ => (),
@@ -763,6 +776,7 @@ impl Draw for Text {
                     transform: *transform,
                     font_options: dc.get_font_options(),
                     view_params: dc.get_view_params(),
+                    session: dc.session().clone(),
                 };
 
                 let mut x = self.x.to_user(&params);
@@ -859,6 +873,7 @@ impl TRef {
         cascaded: &CascadedValues<'_>,
         chunks: &mut Vec<Chunk>,
         depth: usize,
+        layout_context: &LayoutContext,
     ) {
         if self.link.is_none() {
             return;
@@ -875,7 +890,8 @@ impl TRef {
             let c = acquired.get();
             extract_chars_children_to_chunks_recursively(chunks, c, Rc::new(values.clone()), depth);
         } else {
-            rsvg_log!(
+            rsvg_log_session!(
+                layout_context.session,
                 "element {} references a nonexistent text source \"{}\"",
                 node,
                 link,

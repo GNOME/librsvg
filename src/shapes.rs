@@ -63,12 +63,15 @@ macro_rules! impl_draw {
 
                 let stroke = Stroke::new(values, &params);
 
+                let session = draw_ctx.session();
+
                 let stroke_paint = values.stroke().0.resolve(
                     acquired_nodes,
                     values.stroke_opacity().0,
                     values.color().0,
                     cascaded.context_fill.clone(),
                     cascaded.context_stroke.clone(),
+                    session,
                 );
 
                 let fill_paint = values.fill().0.resolve(
@@ -77,6 +80,7 @@ macro_rules! impl_draw {
                     values.color().0,
                     cascaded.context_fill.clone(),
                     cascaded.context_stroke.clone(),
+                    session,
                 );
 
                 let fill_rule = values.fill_rule();
@@ -86,8 +90,6 @@ macro_rules! impl_draw {
                 let marker_start_node;
                 let marker_mid_node;
                 let marker_end_node;
-
-                let session = draw_ctx.session();
 
                 if shape_def.markers == Markers::Yes {
                     marker_start_node =

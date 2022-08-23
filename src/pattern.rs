@@ -15,6 +15,7 @@ use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
@@ -436,6 +437,7 @@ impl Pattern {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
+        session: &Session,
     ) -> Result<ResolvedPattern, AcquireError> {
         let Unresolved {
             mut pattern,
@@ -471,7 +473,7 @@ impl Pattern {
                     }
 
                     Err(e) => {
-                        rsvg_log!("Stopping pattern resolution: {}", e);
+                        rsvg_log_session!(session, "Stopping pattern resolution: {}", e);
                         pattern = pattern.resolve_from_defaults();
                         break;
                     }

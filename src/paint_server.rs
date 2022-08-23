@@ -12,6 +12,7 @@ use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::{ResolvedPattern, UserSpacePattern};
 use crate::properties::ComputedValues;
+use crate::session::Session;
 use crate::unit_interval::UnitInterval;
 use crate::util;
 
@@ -126,6 +127,7 @@ impl PaintServer {
         current_color: cssparser::RGBA,
         context_fill: Option<PaintSource>,
         context_stroke: Option<PaintSource>,
+        session: &Session,
     ) -> PaintSource {
         match self {
             PaintServer::Iri {
@@ -147,7 +149,7 @@ impl PaintServer {
                             })
                         }
                         Element::Pattern(ref p) => {
-                            p.resolve(node, acquired_nodes, opacity).map(|p| {
+                            p.resolve(node, acquired_nodes, opacity, session).map(|p| {
                                 PaintSource::Pattern(
                                     p,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
