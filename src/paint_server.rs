@@ -181,7 +181,8 @@ impl PaintServer {
                     // later in the drawing code, so it should be fine to translate this
                     // condition to that for an invalid paint server.
                     Some(color) => {
-                        rsvg_log!(
+                        rsvg_log_session!(
+                            session,
                             "could not resolve paint server \"{}\", using alternate color",
                             iri
                         );
@@ -190,7 +191,8 @@ impl PaintServer {
                     }
 
                     None => {
-                        rsvg_log!(
+                        rsvg_log_session!(
+                            session,
                             "could not resolve paint server \"{}\", no alternate color specified",
                             iri
                         );
