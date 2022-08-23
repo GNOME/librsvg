@@ -221,7 +221,7 @@ impl Loader {
                 stream.as_ref(),
                 cancellable.map(|c| c.as_ref()),
             )?,
-            _session: self.session,
+            session: self.session,
         })
     }
 }
@@ -235,7 +235,7 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 /// You can create this from one of the `read` methods in
 /// [`Loader`].
 pub struct SvgHandle {
-    _session: Session,
+    session: Session,
     pub(crate) handle: Handle,
 }
 
@@ -334,12 +334,16 @@ fn locale_from_environment() -> Locale {
 }
 
 impl UserLanguage {
-    fn new(language: &Language) -> UserLanguage {
+    fn new(language: &Language, session: &Session) -> UserLanguage {
         match *language {
             Language::FromEnvironment => UserLanguage::LanguageTags(
                 LanguageTags::from_locale(&locale_from_environment())
                     .map_err(|s| {
-                        rsvg_log!("could not convert locale to language tags: {}", s);
+                        rsvg_log_session!(
+                            session,
+                            "could not convert locale to language tags: {}",
+                            s
+                        );
                     })
                     .unwrap_or_else(|_| LanguageTags::empty()),
             ),
@@ -357,10 +361,12 @@ impl<'a> CairoRenderer<'a> {
     ///
     /// [`with_dpi`]: #method.with_dpi
     pub fn new(handle: &'a SvgHandle) -> Self {
+        let session = &handle.session;
+
         CairoRenderer {
             handle,
             dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
-            user_language: UserLanguage::new(&Language::FromEnvironment),
+            user_language: UserLanguage::new(&Language::FromEnvironment, session),
             is_testing: false,
         }
     }
@@ -391,7 +397,7 @@ impl<'a> CairoRenderer<'a> {
     /// be obtained from the program's environment.  To set an explicit list of languages,
     /// you can use `Language::AcceptLanguage` instead.
     pub fn with_language(self, language: &Language) -> Self {
-        let user_language = UserLanguage::new(language);
+        let user_language = UserLanguage::new(language, &self.handle.session);
 
         CairoRenderer {
             user_language,
