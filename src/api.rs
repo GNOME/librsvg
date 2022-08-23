@@ -5,7 +5,7 @@
 #![warn(missing_docs)]
 
 pub use crate::{
-    accept_language::{AcceptLanguage, Language, UserLanguage},
+    accept_language::{AcceptLanguage, Language},
     error::{ImplementationLimit, LoadingError, RenderingError},
     length::{LengthUnit, RsvgLength as Length},
 };
@@ -18,6 +18,7 @@ use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
 
 use crate::{
+    accept_language::UserLanguage,
     dpi::Dpi,
     handle::{Handle, LoadOptions},
     session::Session,
