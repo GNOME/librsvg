@@ -93,6 +93,7 @@ use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_value, ComputedValues, ParseAs, ParsedProperty};
+use crate::session::Session;
 use crate::url_resolver::UrlResolver;
 
 /// A parsed CSS declaration
@@ -147,9 +148,10 @@ impl<'i> AtRuleParser<'i> for DeclParser {
     type Error = ValueErrorKind;
 }
 
-/// Dummy struct to implement cssparser::QualifiedRuleParser and
-/// cssparser::AtRuleParser
-pub struct RuleParser;
+/// Struct to implement cssparser::QualifiedRuleParser and cssparser::AtRuleParser
+pub struct RuleParser {
+    session: Session,
+}
 
 /// Errors from the CSS parsing process
 #[derive(Debug)]
@@ -283,7 +285,7 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
             .filter_map(|r| match r {
                 Ok(decl) => Some(decl),
                 Err(e) => {
-                    rsvg_log!("Invalid declaration; ignoring: {:?}", e);
+                    rsvg_log_session!(self.session, "Invalid declaration; ignoring: {:?}", e);
                     None
                 }
             })
@@ -804,9 +806,10 @@ impl Stylesheet {
         buf: &str,
         url_resolver: &UrlResolver,
         origin: Origin,
+        session: Session,
     ) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::new(origin);
-        stylesheet.parse(buf, url_resolver)?;
+        stylesheet.parse(buf, url_resolver, session)?;
         Ok(stylesheet)
     }
 
@@ -814,9 +817,10 @@ impl Stylesheet {
         href: &str,
         url_resolver: &UrlResolver,
         origin: Origin,
+        session: Session,
     ) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::new(origin);
-        stylesheet.load(href, url_resolver)?;
+        stylesheet.load(href, url_resolver, session)?;
         Ok(stylesheet)
     }
 
@@ -824,22 +828,30 @@ impl Stylesheet {
     ///
     /// The `base_url` is required for `@import` rules, so that librsvg
     /// can determine if the requested path is allowed.
-    pub fn parse(&mut self, buf: &str, url_resolver: &UrlResolver) -> Result<(), LoadingError> {
+    pub fn parse(
+        &mut self,
+        buf: &str,
+        url_resolver: &UrlResolver,
+        session: Session,
+    ) -> Result<(), LoadingError> {
         let mut input = ParserInput::new(buf);
         let mut parser = Parser::new(&mut input);
+        let rule_parser = RuleParser {
+            session: session.clone(),
+        };
 
-        RuleListParser::new_for_stylesheet(&mut parser, RuleParser)
+        RuleListParser::new_for_stylesheet(&mut parser, rule_parser)
             .filter_map(|r| match r {
                 Ok(rule) => Some(rule),
                 Err(e) => {
-                    rsvg_log!("Invalid rule; ignoring: {:?}", e);
+                    rsvg_log_session!(session, "Invalid rule; ignoring: {:?}", e);
                     None
                 }
             })
             .for_each(|rule| match rule {
                 Rule::AtRule(AtRule::Import(url)) => {
                     // ignore invalid imports
-                    let _ = self.load(&url, url_resolver);
+                    let _ = self.load(&url, url_resolver, session.clone());
                 }
                 Rule::QualifiedRule(qr) => self.qualified_rules.push(qr),
             });
@@ -848,7 +860,12 @@ impl Stylesheet {
     }
 
     /// Parses a stylesheet referenced by an URL
-    fn load(&mut self, href: &str, url_resolver: &UrlResolver) -> Result<(), LoadingError> {
+    fn load(
+        &mut self,
+        href: &str,
+        url_resolver: &UrlResolver,
+        session: Session,
+    ) -> Result<(), LoadingError> {
         let aurl = url_resolver
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
@@ -864,20 +881,21 @@ impl Stylesheet {
                 if is_text_css(&mime_type) {
                     Ok(bytes)
                 } else {
-                    rsvg_log!("\"{}\" is not of type text/css; ignoring", aurl);
+                    rsvg_log_session!(session, "\"{}\" is not of type text/css; ignoring", aurl);
                     Err(LoadingError::BadCss)
                 }
             })
             .and_then(|bytes| {
                 String::from_utf8(bytes).map_err(|_| {
-                    rsvg_log!(
+                    rsvg_log_session!(
+                        session,
                         "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
                         aurl
                     );
                     LoadingError::BadCss
                 })
             })
-            .and_then(|utf8| self.parse(&utf8, &UrlResolver::new(Some((*aurl).clone()))))
+            .and_then(|utf8| self.parse(&utf8, &UrlResolver::new(Some((*aurl).clone())), session))
     }
 
     /// Appends the style declarations that match a specified node to a given vector

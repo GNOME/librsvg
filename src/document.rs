@@ -28,8 +28,9 @@ static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
         include_str!("ua.css"),
         &UrlResolver::new(None),
         Origin::UserAgent,
+        Session::default(),
     )
-    .unwrap()]
+    .expect("could not parse user agent stylesheet for librsvg, there's a bug!")]
 });
 
 /// Identifier of a node
@@ -523,9 +524,12 @@ impl DocumentBuilder {
         }
 
         // FIXME: handle CSS errors
-        if let Ok(stylesheet) =
-            Stylesheet::from_href(href, &self.load_options.url_resolver, Origin::Author)
-        {
+        if let Ok(stylesheet) = Stylesheet::from_href(
+            href,
+            &self.load_options.url_resolver,
+            Origin::Author,
+            self.session.clone(),
+        ) {
             self.stylesheets.push(stylesheet);
         }
 
@@ -560,9 +564,12 @@ impl DocumentBuilder {
 
     pub fn append_stylesheet_from_text(&mut self, text: &str) {
         // FIXME: handle CSS errors
-        if let Ok(stylesheet) =
-            Stylesheet::from_data(text, &self.load_options.url_resolver, Origin::Author)
-        {
+        if let Ok(stylesheet) = Stylesheet::from_data(
+            text,
+            &self.load_options.url_resolver,
+            Origin::Author,
+            self.session.clone(),
+        ) {
             self.stylesheets.push(stylesheet);
         }
     }

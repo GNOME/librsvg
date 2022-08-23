@@ -377,7 +377,7 @@ impl Handle {
 
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
         let mut stylesheet = Stylesheet::new(Origin::User);
-        stylesheet.parse(css, &UrlResolver::new(None))?;
+        stylesheet.parse(css, &UrlResolver::new(None), self.session.clone())?;
         self.document.cascade(&[stylesheet]);
         Ok(())
     }
