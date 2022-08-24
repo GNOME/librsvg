@@ -2,8 +2,6 @@
 
 use std::sync::Arc;
 
-use crate::log;
-
 /// Metadata for a loading/rendering session.
 ///
 /// When the calling program first uses one of the API entry points (e.g. `Loader::new()`
@@ -18,11 +16,15 @@ struct SessionInner {
     log_enabled: bool,
 }
 
+fn log_enabled_via_env_var() -> bool {
+    ::std::env::var_os("RSVG_LOG").is_some()
+}
+
 impl Default for Session {
     fn default() -> Self {
         Self {
             inner: Arc::new(SessionInner {
-                log_enabled: log::log_enabled(),
+                log_enabled: log_enabled_via_env_var(),
             }),
         }
     }
