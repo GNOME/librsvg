@@ -94,12 +94,7 @@ impl Handle {
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
             session: session.clone(),
-            document: Document::load_from_stream(
-                session,
-                load_options,
-                stream,
-                cancellable,
-            )?,
+            document: Document::load_from_stream(session, load_options, stream, cancellable)?,
         })
     }
 
