@@ -5,6 +5,7 @@ Development guide for librsvg
    product
    roadmap
    devel_environment
+   memory_leaks
    contributing
    ci
    text_layout
@@ -52,6 +53,8 @@ Tour of the code - load a file, render it.
 Test suite - move tests/readme here?
 
 Link to the internals documentation.
+
+- :doc:`memory_leaks`
 
 Design documents
 ----------------
