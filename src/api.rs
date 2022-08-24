@@ -61,6 +61,7 @@ impl Loader {
     ///     .read_path("example.svg")
     ///     .unwrap();
     /// ```
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self::new_with_session(Session::default())
     }
