@@ -98,7 +98,7 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
-    result: ElementResult,
+    is_in_error: bool,
     values: ComputedValues,
     required_extensions: Option<RequiredExtensions>,
     required_features: Option<RequiredFeatures>,
@@ -111,7 +111,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         session: &Session,
         element_name: QualName,
         attributes: Attributes,
-        result: Result<(), ElementError>,
+        is_in_error: bool,
         element_impl: T,
     ) -> ElementInner<T> {
         let mut e = Self {
@@ -119,7 +119,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
-            result,
+            is_in_error,
             values: Default::default(),
             required_extensions: Default::default(),
             required_features: Default::default(),
@@ -253,11 +253,11 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     fn set_error(&mut self, error: ElementError, session: &Session) {
         rsvg_log_session!(session, "setting node {} in error: {}", self, error);
-        self.result = Err(error);
+        self.is_in_error = true;
     }
 
     fn is_in_error(&self) -> bool {
-        self.result.is_err()
+        self.is_in_error
     }
 }
 
@@ -599,13 +599,20 @@ macro_rules! e {
         ) -> Element {
             let mut element_impl = <$element_type>::default();
 
-            let result = element_impl.set_attributes(&attributes, session);
+            let is_in_error = if let Err(e) = element_impl.set_attributes(&attributes, session) {
+                // FIXME: this does not provide a clue of what was the problematic attribute, or the
+                // problematic element.  We need tracking of the current parsing position to do that.
+                rsvg_log_session!(session, "setting element in error: {}", e);
+                true
+            } else {
+                false
+            };
 
             let element = Element::$element_type(Box::new(ElementInner::new(
                 session,
                 element_name.clone(),
                 attributes,
-                result,
+                is_in_error,
                 element_impl,
             )));
 
