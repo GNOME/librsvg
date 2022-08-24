@@ -95,7 +95,7 @@ impl Handle {
         Ok(Handle {
             session: session.clone(),
             document: Document::load_from_stream(
-                session.clone(),
+                session,
                 load_options,
                 stream,
                 cancellable,
