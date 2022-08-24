@@ -15,6 +15,7 @@ use crate::length::*;
 use crate::node::NodeBorrow;
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 /// The <filter> node.
@@ -70,7 +71,7 @@ impl Filter {
 }
 
 impl SetAttributes for Filter {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "filterUnits") => self.filter_units = attr.parse(value)?,
@@ -125,10 +126,13 @@ fn filter_spec_from_filter_node(
     node_id: &NodeId,
     node_being_filtered_name: &str,
 ) -> Result<FilterSpec, FilterResolveError> {
+    let session = draw_ctx.session().clone();
+
     acquired_nodes
         .acquire(node_id)
         .map_err(|e| {
             rsvg_log!(
+                session,
                 "element {} will not be filtered with \"{}\": {}",
                 node_being_filtered_name,
                 node_id,
@@ -144,6 +148,7 @@ fn filter_spec_from_filter_node(
                 Element::Filter(_) => {
                     if element.is_in_error() {
                         rsvg_log!(
+                            session,
                             "element {} will not be filtered since its filter \"{}\" is in error",
                             node_being_filtered_name,
                             node_id,
@@ -156,6 +161,7 @@ fn filter_spec_from_filter_node(
 
                 _ => {
                     rsvg_log!(
+                        session,
                         "element {} will not be filtered since \"{}\" is not a filter",
                         node_being_filtered_name,
                         node_id,

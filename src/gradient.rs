@@ -17,6 +17,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
+use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
 use crate::xml::Attributes;
@@ -65,7 +66,7 @@ pub struct Stop {
 }
 
 impl SetAttributes for Stop {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "offset") = attr.expanded() {
                 self.offset = attr.parse(value)?;
@@ -409,7 +410,7 @@ impl UnresolvedGradient {
 
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
-    fn add_color_stops_from_node(&mut self, node: &Node, opacity: UnitInterval) {
+    fn add_color_stops_from_node(&mut self, node: &Node, opacity: UnitInterval, session: &Session) {
         assert!(matches!(
             *node.borrow_element(),
             Element::LinearGradient(_) | Element::RadialGradient(_)
@@ -420,7 +421,11 @@ impl UnresolvedGradient {
 
             if let Element::Stop(ref stop) = *elt {
                 if elt.is_in_error() {
-                    rsvg_log!("(not using gradient stop {} because it is in error)", child);
+                    rsvg_log!(
+                        session,
+                        "(not using gradient stop {} because it is in error)",
+                        child
+                    );
                 } else {
                     let cascaded = CascadedValues::new_from_node(&child);
                     let values = cascaded.get();
@@ -515,7 +520,7 @@ impl RadialGradient {
 }
 
 impl SetAttributes for Common {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => self.units = attr.parse(value)?,
@@ -540,8 +545,8 @@ impl SetAttributes for Common {
 }
 
 impl SetAttributes for LinearGradient {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.common.set_attributes(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.common.set_attributes(attrs, session)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -563,7 +568,12 @@ impl Draw for LinearGradient {}
 macro_rules! impl_gradient {
     ($gradient_type:ident, $other_type:ident) => {
         impl $gradient_type {
-            fn get_unresolved(&self, node: &Node, opacity: UnitInterval) -> Unresolved {
+            fn get_unresolved(
+                &self,
+                node: &Node,
+                opacity: UnitInterval,
+                session: &Session,
+            ) -> Unresolved {
                 let mut gradient = UnresolvedGradient {
                     units: self.common.units,
                     transform: self.common.transform,
@@ -572,7 +582,7 @@ macro_rules! impl_gradient {
                     variant: self.get_unresolved_variant(),
                 };
 
-                gradient.add_color_stops_from_node(node, opacity);
+                gradient.add_color_stops_from_node(node, opacity, session);
 
                 Unresolved {
                     gradient,
@@ -585,11 +595,12 @@ macro_rules! impl_gradient {
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 opacity: UnitInterval,
+                session: &Session,
             ) -> Result<ResolvedGradient, AcquireError> {
                 let Unresolved {
                     mut gradient,
                     mut fallback,
-                } = self.get_unresolved(node, opacity);
+                } = self.get_unresolved(node, opacity, session);
 
                 let mut stack = NodeStack::new();
 
@@ -604,10 +615,10 @@ macro_rules! impl_gradient {
 
                         let unresolved = match *acquired_node.borrow_element() {
                             Element::$gradient_type(ref g) => {
-                                g.get_unresolved(&acquired_node, opacity)
+                                g.get_unresolved(&acquired_node, opacity, session)
                             }
                             Element::$other_type(ref g) => {
-                                g.get_unresolved(&acquired_node, opacity)
+                                g.get_unresolved(&acquired_node, opacity, session)
                             }
                             _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
                         };
@@ -632,8 +643,8 @@ impl_gradient!(LinearGradient, RadialGradient);
 impl_gradient!(RadialGradient, LinearGradient);
 
 impl SetAttributes for RadialGradient {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
-        self.common.set_attributes(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.common.set_attributes(attrs, session)?;
         // Create a local expanded name for "fr" because markup5ever doesn't have built-in
         let expanded_name_fr = ExpandedName {
             ns: &Namespace::from(""),
@@ -734,23 +745,33 @@ mod tests {
 
     #[test]
     fn gradient_resolved_from_defaults_is_really_resolved() {
+        let session = Session::default();
+
         let node = Node::new(NodeData::new_element(
+            &session,
             &QualName::new(None, ns!(svg), local_name!("linearGradient")),
             Attributes::new(),
         ));
 
-        let unresolved = borrow_element_as!(node, LinearGradient)
-            .get_unresolved(&node, UnitInterval::clamp(1.0));
+        let unresolved = borrow_element_as!(node, LinearGradient).get_unresolved(
+            &node,
+            UnitInterval::clamp(1.0),
+            &session,
+        );
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
         let node = Node::new(NodeData::new_element(
+            &session,
             &QualName::new(None, ns!(svg), local_name!("radialGradient")),
             Attributes::new(),
         ));
 
-        let unresolved = borrow_element_as!(node, RadialGradient)
-            .get_unresolved(&node, UnitInterval::clamp(1.0));
+        let unresolved = borrow_element_as!(node, RadialGradient).get_unresolved(
+            &node,
+            UnitInterval::clamp(1.0),
+            &session,
+        );
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
     }

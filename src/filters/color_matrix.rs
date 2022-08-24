@@ -10,6 +10,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberList, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
 };
@@ -63,7 +64,7 @@ impl Default for ColorMatrix {
 
 #[rustfmt::skip]
 impl SetAttributes for FeColorMatrix {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.params.in1 = self.base.parse_one_input(attrs)?;
 
         // First, determine the operation type.

@@ -7,6 +7,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::surface_utils::shared_surface::{Operator, SharedImageSurface, SurfaceType};
 use crate::xml::Attributes;
 
@@ -51,14 +52,14 @@ impl Default for FeMerge {
 }
 
 impl SetAttributes for FeMerge {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.base.parse_no_inputs(attrs)
     }
 }
 
 impl SetAttributes for FeMergeNode {
     #[inline]
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "in") = attr.expanded() {
                 self.in1 = attr.parse(value)?;

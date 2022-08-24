@@ -11,6 +11,7 @@ use crate::node::Node;
 use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::ExclusiveImageSurface,
@@ -50,7 +51,7 @@ pub struct Morphology {
 }
 
 impl SetAttributes for FeMorphology {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {

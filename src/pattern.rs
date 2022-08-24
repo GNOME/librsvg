@@ -15,6 +15,7 @@ use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::*;
@@ -124,7 +125,7 @@ pub struct Pattern {
 }
 
 impl SetAttributes for Pattern {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "patternUnits") => self.common.units = attr.parse(value)?,
@@ -436,6 +437,7 @@ impl Pattern {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
+        session: &Session,
     ) -> Result<ResolvedPattern, AcquireError> {
         let Unresolved {
             mut pattern,
@@ -471,7 +473,7 @@ impl Pattern {
                     }
 
                     Err(e) => {
-                        rsvg_log!("Stopping pattern resolution: {}", e);
+                        rsvg_log!(session, "Stopping pattern resolution: {}", e);
                         pattern = pattern.resolve_from_defaults();
                         break;
                     }
@@ -495,6 +497,7 @@ mod tests {
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {
         let node = Node::new(NodeData::new_element(
+            &Session::default(),
             &QualName::new(None, ns!(svg), local_name!("pattern")),
             Attributes::new(),
         ));

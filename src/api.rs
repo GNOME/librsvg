@@ -5,7 +5,7 @@
 #![warn(missing_docs)]
 
 pub use crate::{
-    accept_language::{AcceptLanguage, Language, UserLanguage},
+    accept_language::{AcceptLanguage, Language},
     error::{ImplementationLimit, LoadingError, RenderingError},
     length::{LengthUnit, RsvgLength as Length},
 };
@@ -17,9 +17,13 @@ use std::path::Path;
 use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
 
+use locale_config::{LanguageRange, Locale};
+
 use crate::{
+    accept_language::{LanguageTags, UserLanguage},
     dpi::Dpi,
     handle::{Handle, LoadOptions},
+    session::Session,
     url_resolver::UrlResolver,
 };
 
@@ -31,10 +35,10 @@ use crate::{
 /// of `Loader` in sequence to configure how SVG data should be
 /// loaded, and finally use one of the loading functions to load an
 /// [`SvgHandle`].
-#[derive(Default)]
 pub struct Loader {
     unlimited_size: bool,
     keep_image_data: bool,
+    session: Session,
 }
 
 impl Loader {
@@ -58,7 +62,19 @@ impl Loader {
     ///     .unwrap();
     /// ```
     pub fn new() -> Self {
-        Self::default()
+        Self::new_with_session(Session::default())
+    }
+
+    /// Creates a `Loader` from a pre-created [`Session`].
+    ///
+    /// This is useful when a `Loader` must be created by the C API, which should already
+    /// have created a session for logging.
+    pub(crate) fn new_with_session(session: Session) -> Self {
+        Self {
+            unlimited_size: false,
+            keep_image_data: false,
+            session,
+        }
     }
 
     /// Controls safety limits used in the XML parser.
@@ -198,11 +214,15 @@ impl Loader {
             .with_unlimited_size(self.unlimited_size)
             .keep_image_data(self.keep_image_data);
 
-        Ok(SvgHandle(Handle::from_stream(
-            &load_options,
-            stream.as_ref(),
-            cancellable.map(|c| c.as_ref()),
-        )?))
+        Ok(SvgHandle {
+            handle: Handle::from_stream(
+                self.session.clone(),
+                &load_options,
+                stream.as_ref(),
+                cancellable.map(|c| c.as_ref()),
+            )?,
+            session: self.session,
+        })
     }
 }
 
@@ -214,7 +234,10 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 ///
 /// You can create this from one of the `read` methods in
 /// [`Loader`].
-pub struct SvgHandle(pub(crate) Handle);
+pub struct SvgHandle {
+    session: Session,
+    pub(crate) handle: Handle,
+}
 
 impl SvgHandle {
     /// Checks if the SVG has an element with the specified `id`.
@@ -225,7 +248,7 @@ impl SvgHandle {
     /// The purpose of the `Err()` case in the return value is to indicate an
     /// incorrectly-formatted `id` argument.
     pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
-        self.0.has_sub(id)
+        self.handle.has_sub(id)
     }
 
     /// Sets a CSS stylesheet to use for an SVG document.
@@ -237,7 +260,7 @@ impl SvgHandle {
     ///
     /// [origin]: https://drafts.csswg.org/css-cascade-3/#cascading-origins
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
-        self.0.set_stylesheet(css)
+        self.handle.set_stylesheet(css)
     }
 }
 
@@ -288,6 +311,44 @@ pub struct IntrinsicDimensions {
     pub vbox: Option<cairo::Rectangle>,
 }
 
+/// Gets the user's preferred locale from the environment and
+/// translates it to a `Locale` with `LanguageRange` fallbacks.
+///
+/// The `Locale::current()` call only contemplates a single language,
+/// but glib is smarter, and `g_get_langauge_names()` can provide
+/// fallbacks, for example, when LC_MESSAGES="en_US.UTF-8:de" (USA
+/// English and German).  This function converts the output of
+/// `g_get_language_names()` into a `Locale` with appropriate
+/// fallbacks.
+fn locale_from_environment() -> Locale {
+    let mut locale = Locale::invariant();
+
+    for name in glib::language_names() {
+        let name = name.as_str();
+        if let Ok(range) = LanguageRange::from_unix(name) {
+            locale.add(&range);
+        }
+    }
+
+    locale
+}
+
+impl UserLanguage {
+    fn new(language: &Language, session: &Session) -> UserLanguage {
+        match *language {
+            Language::FromEnvironment => UserLanguage::LanguageTags(
+                LanguageTags::from_locale(&locale_from_environment())
+                    .map_err(|s| {
+                        rsvg_log!(session, "could not convert locale to language tags: {}", s);
+                    })
+                    .unwrap_or_else(|_| LanguageTags::empty()),
+            ),
+
+            Language::AcceptLanguage(ref a) => UserLanguage::AcceptLanguage(a.clone()),
+        }
+    }
+}
+
 impl<'a> CairoRenderer<'a> {
     /// Creates a `CairoRenderer` for the specified `SvgHandle`.
     ///
@@ -296,10 +357,12 @@ impl<'a> CairoRenderer<'a> {
     ///
     /// [`with_dpi`]: #method.with_dpi
     pub fn new(handle: &'a SvgHandle) -> Self {
+        let session = &handle.session;
+
         CairoRenderer {
             handle,
             dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
-            user_language: UserLanguage::new(&Language::FromEnvironment),
+            user_language: UserLanguage::new(&Language::FromEnvironment, session),
             is_testing: false,
         }
     }
@@ -330,7 +393,7 @@ impl<'a> CairoRenderer<'a> {
     /// be obtained from the program's environment.  To set an explicit list of languages,
     /// you can use `Language::AcceptLanguage` instead.
     pub fn with_language(self, language: &Language) -> Self {
-        let user_language = UserLanguage::new(language);
+        let user_language = UserLanguage::new(language, &self.handle.session);
 
         CairoRenderer {
             user_language,
@@ -350,7 +413,7 @@ impl<'a> CairoRenderer<'a> {
     /// [`render_document`]: #method.render_document
     /// [`intrinsic_size_in_pixels`]: #method.intrinsic_size_in_pixels
     pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let d = self.handle.0.get_intrinsic_dimensions();
+        let d = self.handle.handle.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
             width: Into::into(d.width),
@@ -383,7 +446,7 @@ impl<'a> CairoRenderer<'a> {
             return None;
         }
 
-        Some(self.handle.0.width_height_to_user(self.dpi))
+        Some(self.handle.handle.width_height_to_user(self.dpi))
     }
 
     /// Renders the whole SVG document fitted to a viewport
@@ -399,9 +462,13 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle
-            .0
-            .render_document(cr, viewport, &self.user_language, self.dpi, self.is_testing)
+        self.handle.handle.render_document(
+            cr,
+            viewport,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )
     }
 
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if
@@ -434,7 +501,7 @@ impl<'a> CairoRenderer<'a> {
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
-            .0
+            .handle
             .get_geometry_for_layer(id, viewport, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
@@ -464,7 +531,7 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.0.render_layer(
+        self.handle.handle.render_layer(
             cr,
             id,
             viewport,
@@ -509,7 +576,7 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         self.handle
-            .0
+            .handle
             .get_geometry_for_element(id, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))
     }
@@ -536,7 +603,7 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.0.render_element(
+        self.handle.handle.render_element(
             cr,
             id,
             element_viewport,

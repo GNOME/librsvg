@@ -268,6 +268,8 @@ impl XmlState {
 
             let mut inner = self.inner.borrow_mut();
 
+            let session = inner.document_builder.as_mut().unwrap().session().clone();
+
             if let Some(href) = href {
                 // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
                 // what to do if the stylesheet cannot be loaded, so here we ignore the error.
@@ -279,12 +281,16 @@ impl XmlState {
                     .is_err()
                 {
                     rsvg_log!(
+                        session,
                         "invalid xml-stylesheet {} in XML processing instruction",
                         href
                     );
                 }
             } else {
-                rsvg_log!("xml-stylesheet processing instruction does not have href; ignoring");
+                rsvg_log!(
+                    session,
+                    "xml-stylesheet processing instruction does not have href; ignoring"
+                );
             }
         } else {
             self.error(LoadingError::XmlParseError(String::from(
@@ -477,6 +483,15 @@ impl XmlState {
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         if let Some(href) = href {
+            let session = self
+                .inner
+                .borrow()
+                .document_builder
+                .as_ref()
+                .unwrap()
+                .session()
+                .clone();
+
             let aurl = self
                 .inner
                 .borrow()
@@ -487,7 +502,7 @@ impl XmlState {
                 .map_err(|e| {
                     // FIXME: should AlloweUrlError::UrlParseError be a fatal error,
                     // not a resource error?
-                    rsvg_log!("could not acquire \"{}\": {}", href, e);
+                    rsvg_log!(session, "could not acquire \"{}\": {}", href, e);
                     AcquireError::ResourceError
                 })?;
 
@@ -517,8 +532,17 @@ impl XmlState {
     }
 
     fn acquire_text(&self, aurl: &AllowedUrl, encoding: Option<&str>) -> Result<(), AcquireError> {
+        let session = self
+            .inner
+            .borrow()
+            .document_builder
+            .as_ref()
+            .unwrap()
+            .session()
+            .clone();
+
         let binary = io::acquire_data(aurl, None).map_err(|e| {
-            rsvg_log!("could not acquire \"{}\": {}", aurl, e);
+            rsvg_log!(session, "could not acquire \"{}\": {}", aurl, e);
             AcquireError::ResourceError
         })?;
 

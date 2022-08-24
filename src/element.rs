@@ -38,6 +38,7 @@ use crate::marker::Marker;
 use crate::node::*;
 use crate::pattern::Pattern;
 use crate::properties::{ComputedValues, SpecifiedValues};
+use crate::session::Session;
 use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};
 use crate::style::Style;
@@ -70,7 +71,7 @@ pub trait SetAttributes {
     /// Sets per-element attributes.
     ///
     /// Each element is supposed to iterate the `attributes`, and parse any ones it needs.
-    fn set_attributes(&mut self, _attributes: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) -> ElementResult {
         Ok(())
     }
 }
@@ -97,7 +98,7 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
-    result: ElementResult,
+    is_in_error: bool,
     values: ComputedValues,
     required_extensions: Option<RequiredExtensions>,
     required_features: Option<RequiredFeatures>,
@@ -107,9 +108,10 @@ pub struct ElementInner<T: SetAttributes + Draw> {
 
 impl<T: SetAttributes + Draw> ElementInner<T> {
     fn new(
+        session: &Session,
         element_name: QualName,
         attributes: Attributes,
-        result: Result<(), ElementError>,
+        is_in_error: bool,
         element_impl: T,
     ) -> ElementInner<T> {
         let mut e = Self {
@@ -117,7 +119,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
-            result,
+            is_in_error,
             values: Default::default(),
             required_extensions: Default::default(),
             required_features: Default::default(),
@@ -127,12 +129,12 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
         let mut set_attributes = || -> Result<(), ElementError> {
             e.set_conditional_processing_attributes()?;
-            e.set_presentation_attributes()?;
+            e.set_presentation_attributes(session)?;
             Ok(())
         };
 
         if let Err(error) = set_attributes() {
-            e.set_error(error);
+            e.set_error(error, session);
         }
 
         e
@@ -215,9 +217,9 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
     #[allow(clippy::unnecessary_wraps)]
-    fn set_presentation_attributes(&mut self) -> Result<(), ElementError> {
+    fn set_presentation_attributes(&mut self, session: &Session) -> Result<(), ElementError> {
         self.specified_values
-            .parse_presentation_attributes(&self.attributes)
+            .parse_presentation_attributes(session, &self.attributes)
     }
 
     // Applies a style declaration to the node's specified_values
@@ -230,7 +232,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     /// Applies CSS styles from the "style" attribute
-    fn set_style_attribute(&mut self) {
+    fn set_style_attribute(&mut self, session: &Session) {
         let style = self
             .attributes
             .iter()
@@ -242,19 +244,20 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 style,
                 Origin::Author,
                 &mut self.important_styles,
+                session,
             ) {
-                self.set_error(e);
+                self.set_error(e, session);
             }
         }
     }
 
-    fn set_error(&mut self, error: ElementError) {
-        rsvg_log!("setting node {} in error: {}", self, error);
-        self.result = Err(error);
+    fn set_error(&mut self, error: ElementError, session: &Session) {
+        rsvg_log!(session, "setting node {} in error: {}", self, error);
+        self.is_in_error = true;
     }
 
     fn is_in_error(&self) -> bool {
-        self.result.is_err()
+        self.is_in_error
     }
 }
 
@@ -276,7 +279,11 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
                 Ok(draw_ctx.empty_bbox())
             }
         } else {
-            rsvg_log!("(not rendering element {} because it is in error)", self);
+            rsvg_log!(
+                draw_ctx.session(),
+                "(not rendering element {} because it is in error)",
+                self
+            );
 
             // maybe we should actually return a RenderingError::ElementIsInError here?
             Ok(draw_ctx.empty_bbox())
@@ -445,7 +452,7 @@ impl Element {
     ///
     /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
     /// element.
-    pub fn new(name: &QualName, mut attrs: Attributes) -> Element {
+    pub fn new(session: &Session, name: &QualName, mut attrs: Attributes) -> Element {
         let (create_fn, flags): (ElementCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
             match ELEMENT_CREATORS.get(name.local.as_ref()) {
                 // hack in the SVG namespace for supported element names
@@ -466,7 +473,7 @@ impl Element {
 
         //    sizes::print_sizes();
 
-        create_fn(name, attrs)
+        create_fn(session, name, attrs)
     }
 
     pub fn element_name(&self) -> &QualName {
@@ -509,8 +516,8 @@ impl Element {
         call_inner!(self, apply_style_declaration, declaration, origin)
     }
 
-    pub fn set_style_attribute(&mut self) {
-        call_inner!(self, set_style_attribute);
+    pub fn set_style_attribute(&mut self, session: &Session) {
+        call_inner!(self, set_style_attribute, session);
     }
 
     pub fn is_in_error(&self) -> bool {
@@ -585,15 +592,27 @@ impl fmt::Display for Element {
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(element_name: &QualName, attributes: Attributes) -> Element {
+        pub fn $name(
+            session: &Session,
+            element_name: &QualName,
+            attributes: Attributes,
+        ) -> Element {
             let mut element_impl = <$element_type>::default();
 
-            let result = element_impl.set_attributes(&attributes);
+            let is_in_error = if let Err(e) = element_impl.set_attributes(&attributes, session) {
+                // FIXME: this does not provide a clue of what was the problematic attribute, or the
+                // problematic element.  We need tracking of the current parsing position to do that.
+                rsvg_log!(session, "setting element in error: {}", e);
+                true
+            } else {
+                false
+            };
 
             let element = Element::$element_type(Box::new(ElementInner::new(
+                session,
                 element_name.clone(),
                 attributes,
-                result,
+                is_in_error,
                 element_impl,
             )));
 
@@ -675,7 +694,8 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn = fn(element_name: &QualName, attributes: Attributes) -> Element;
+type ElementCreateFn =
+    fn(session: &Session, element_name: &QualName, attributes: Attributes) -> Element;
 
 #[derive(Copy, Clone, PartialEq)]
 enum ElementCreateFlags {

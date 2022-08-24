@@ -18,6 +18,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::properties::ComputedValues;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 #[derive(PartialEq)]
@@ -62,12 +63,15 @@ macro_rules! impl_draw {
 
                 let stroke = Stroke::new(values, &params);
 
+                let session = draw_ctx.session();
+
                 let stroke_paint = values.stroke().0.resolve(
                     acquired_nodes,
                     values.stroke_opacity().0,
                     values.color().0,
                     cascaded.context_fill.clone(),
                     cascaded.context_stroke.clone(),
+                    session,
                 );
 
                 let fill_paint = values.fill().0.resolve(
@@ -76,6 +80,7 @@ macro_rules! impl_draw {
                     values.color().0,
                     cascaded.context_fill.clone(),
                     cascaded.context_stroke.clone(),
+                    session,
                 );
 
                 let fill_rule = values.fill_rule();
@@ -87,9 +92,12 @@ macro_rules! impl_draw {
                 let marker_end_node;
 
                 if shape_def.markers == Markers::Yes {
-                    marker_start_node = acquire_marker(acquired_nodes, &values.marker_start().0);
-                    marker_mid_node = acquire_marker(acquired_nodes, &values.marker_mid().0);
-                    marker_end_node = acquire_marker(acquired_nodes, &values.marker_end().0);
+                    marker_start_node =
+                        acquire_marker(session, acquired_nodes, &values.marker_start().0);
+                    marker_mid_node =
+                        acquire_marker(session, acquired_nodes, &values.marker_mid().0);
+                    marker_end_node =
+                        acquire_marker(session, acquired_nodes, &values.marker_end().0);
                 } else {
                     marker_start_node = None;
                     marker_mid_node = None;
@@ -130,8 +138,13 @@ macro_rules! impl_draw {
                 };
 
                 let elt = node.borrow_element();
-                let stacking_ctx =
-                    StackingContext::new(acquired_nodes, &elt, values.transform(), values);
+                let stacking_ctx = StackingContext::new(
+                    draw_ctx.session(),
+                    acquired_nodes,
+                    &elt,
+                    values.transform(),
+                    values,
+                );
 
                 draw_ctx.draw_shape(
                     &view_params,
@@ -146,12 +159,16 @@ macro_rules! impl_draw {
     };
 }
 
-fn acquire_marker(acquired_nodes: &mut AcquiredNodes<'_>, iri: &Iri) -> Option<Node> {
+fn acquire_marker(
+    session: &Session,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    iri: &Iri,
+) -> Option<Node> {
     iri.get().and_then(|id| {
         acquired_nodes
             .acquire(id)
             .map_err(|e| {
-                rsvg_log!("cannot render marker: {}", e);
+                rsvg_log!(session, "cannot render marker: {}", e);
             })
             .ok()
             .and_then(|acquired| {
@@ -160,7 +177,7 @@ fn acquire_marker(acquired_nodes: &mut AcquiredNodes<'_>, iri: &Iri) -> Option<N
                 if is_element_of_type!(node, Marker) {
                     Some(node.clone())
                 } else {
-                    rsvg_log!("{} is not a marker element", id);
+                    rsvg_log!(session, "{} is not a marker element", id);
                     None
                 }
             })
@@ -231,7 +248,7 @@ pub struct Path {
 impl_draw!(Path);
 
 impl SetAttributes for Path {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "d") {
                 let mut builder = PathBuilder::default();
@@ -239,7 +256,7 @@ impl SetAttributes for Path {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
 
-                    rsvg_log!("could not parse path: {}", e);
+                    rsvg_log!(session, "could not parse path: {}", e);
                 }
                 self.path = Rc::new(builder.into_path());
             }
@@ -322,7 +339,7 @@ pub struct Polygon {
 impl_draw!(Polygon);
 
 impl SetAttributes for Polygon {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value)?;
@@ -347,7 +364,7 @@ pub struct Polyline {
 impl_draw!(Polyline);
 
 impl SetAttributes for Polyline {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 self.points = attr.parse(value)?;
@@ -375,7 +392,7 @@ pub struct Line {
 impl_draw!(Line);
 
 impl SetAttributes for Line {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x1") => self.x1 = attr.parse(value)?,

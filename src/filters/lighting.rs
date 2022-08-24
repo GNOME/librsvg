@@ -21,6 +21,7 @@ use crate::paint_server::resolve_color;
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel,
@@ -213,7 +214,7 @@ impl FeDistantLight {
 }
 
 impl SetAttributes for FeDistantLight {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
@@ -247,7 +248,7 @@ impl FePointLight {
 }
 
 impl SetAttributes for FePointLight {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -297,7 +298,7 @@ impl FeSpotLight {
 }
 
 impl SetAttributes for FeSpotLight {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -332,7 +333,7 @@ fn transform_dist(t: Transform, d: f64) -> f64 {
 }
 
 impl SetAttributes for FeDiffuseLighting {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {
@@ -377,7 +378,7 @@ impl DiffuseLighting {
 }
 
 impl SetAttributes for FeSpecularLighting {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {

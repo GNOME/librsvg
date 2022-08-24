@@ -12,6 +12,7 @@ use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
 
@@ -79,18 +80,26 @@ impl LoadOptions {
 ///
 /// [`from_stream`]: #method.from_stream
 pub struct Handle {
+    session: Session,
     document: Document,
 }
 
 impl Handle {
     /// Loads an SVG document into a `Handle`.
     pub fn from_stream(
+        session: Session,
         load_options: &LoadOptions,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
         Ok(Handle {
-            document: Document::load_from_stream(load_options, stream, cancellable)?,
+            session: session.clone(),
+            document: Document::load_from_stream(
+                session.clone(),
+                load_options,
+                stream,
+                cancellable,
+            )?,
         })
     }
 
@@ -151,6 +160,7 @@ impl Handle {
         let cr = cairo::Context::new(&target)?;
 
         let bbox = draw_tree(
+            self.session.clone(),
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
@@ -205,6 +215,7 @@ impl Handle {
                 .ok_or(DefsLookupErrorKind::NotFound),
             NodeId::External(_, _) => {
                 rsvg_log!(
+                    self.session,
                     "the public API is not allowed to look up external references: {}",
                     node_id
                 );
@@ -243,6 +254,7 @@ impl Handle {
 
         with_saved_cr(cr, || {
             draw_tree(
+                self.session.clone(),
                 DrawingMode::LimitToStack { node, root },
                 cr,
                 viewport,
@@ -269,6 +281,7 @@ impl Handle {
         let node = node.clone();
 
         draw_tree(
+            self.session.clone(),
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
@@ -341,6 +354,7 @@ impl Handle {
             cr.translate(-ink_r.x0, -ink_r.y0);
 
             draw_tree(
+                self.session.clone(),
                 DrawingMode::OnlyNode(node),
                 cr,
                 unit_rectangle(),
@@ -363,8 +377,8 @@ impl Handle {
 
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
         let mut stylesheet = Stylesheet::new(Origin::User);
-        stylesheet.parse(css, &UrlResolver::new(None))?;
-        self.document.cascade(&[stylesheet]);
+        stylesheet.parse(css, &UrlResolver::new(None), self.session.clone())?;
+        self.document.cascade(&[stylesheet], &self.session);
         Ok(())
     }
 }

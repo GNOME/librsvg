@@ -20,6 +20,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::transform::Transform;
 use crate::viewbox::*;
 use crate::xml::Attributes;
@@ -184,7 +185,8 @@ impl Marker {
         };
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, transform, values);
+        let stacking_ctx =
+            StackingContext::new(draw_ctx.session(), acquired_nodes, &elt, transform, values);
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -198,7 +200,7 @@ impl Marker {
 }
 
 impl SetAttributes for Marker {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,
@@ -596,7 +598,7 @@ fn emit_marker_by_node(
         }
 
         Err(e) => {
-            rsvg_log!("could not acquire marker: {}", e);
+            rsvg_log!(draw_ctx.session(), "could not acquire marker: {}", e);
             Ok(draw_ctx.empty_bbox())
         }
     }

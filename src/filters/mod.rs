@@ -246,6 +246,8 @@ pub fn extract_filter_from_filter_node(
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &DrawingCtx,
 ) -> Result<FilterSpec, FilterResolveError> {
+    let session = draw_ctx.session().clone();
+
     let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
@@ -270,7 +272,11 @@ pub fn extract_filter_from_filter_node(
             let in_error = c.borrow_element().is_in_error();
 
             if in_error {
-                rsvg_log!("(ignoring filter primitive {} because it is in error)", c);
+                rsvg_log!(
+                    session,
+                    "(ignoring filter primitive {} because it is in error)",
+                    c
+                );
             }
 
             !in_error
@@ -293,6 +299,7 @@ pub fn extract_filter_from_filter_node(
                 .resolve(acquired_nodes, &primitive_node)
                 .map_err(|e| {
                     rsvg_log!(
+                        session,
                         "(filter primitive {} returned an error: {})",
                         primitive_name,
                         e
@@ -320,6 +327,8 @@ pub fn render(
     transform: Transform,
     node_bbox: BoundingBox,
 ) -> Result<SharedImageSurface, RenderingError> {
+    let session = draw_ctx.session().clone();
+
     FilterContext::new(
         &filter.user_space_filter,
         stroke_paint_source,
@@ -336,6 +345,7 @@ pub fn render(
                 Ok(output) => {
                     let elapsed = start.elapsed();
                     rsvg_log!(
+                        session,
                         "(rendered filter primitive {} in\n    {} seconds)",
                         user_space_primitive.params.name(),
                         elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
@@ -349,6 +359,7 @@ pub fn render(
 
                 Err(err) => {
                     rsvg_log!(
+                        session,
                         "(filter primitive {} returned an error: {})",
                         user_space_primitive.params.name(),
                         err

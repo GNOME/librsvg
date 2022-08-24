@@ -10,6 +10,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberList, NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::surface_utils::{
     iterators::{PixelRectangle, Pixels},
     shared_surface::ExclusiveImageSurface,
@@ -69,7 +70,7 @@ impl Default for ConvolveMatrix {
 }
 
 impl SetAttributes for FeConvolveMatrix {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.params.in1 = self.base.parse_one_input(attrs)?;
 
         for (attr, value) in attrs.iter() {

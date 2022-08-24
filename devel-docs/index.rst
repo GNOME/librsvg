@@ -8,6 +8,7 @@ Development guide for librsvg
    contributing
    ci
    text_layout
+   api_observability
    :maxdepth: 1
    :caption: Contents:
 
@@ -61,12 +62,11 @@ request.  We can then discuss it before coding.  This way we will have
 a sort of big-picture development history apart from commit messages.
 
 - :doc:`text_layout`
+- :doc:`api_observability`
 
 See https://rustc-dev-guide.rust-lang.org/walkthrough.html, section
 Overview, to formalize the RFC process for features vs. drive-by
 contributions.
-
-FIXME: link the md here.
 
 Information for maintainers
 ---------------------------

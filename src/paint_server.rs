@@ -12,6 +12,7 @@ use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::{ResolvedPattern, UserSpacePattern};
 use crate::properties::ComputedValues;
+use crate::session::Session;
 use crate::unit_interval::UnitInterval;
 use crate::util;
 
@@ -126,6 +127,7 @@ impl PaintServer {
         current_color: cssparser::RGBA,
         context_fill: Option<PaintSource>,
         context_stroke: Option<PaintSource>,
+        session: &Session,
     ) -> PaintSource {
         match self {
             PaintServer::Iri {
@@ -139,7 +141,7 @@ impl PaintServer {
 
                     match *node.borrow_element() {
                         Element::LinearGradient(ref g) => {
-                            g.resolve(node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity, session).map(|g| {
                                 PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
@@ -147,7 +149,7 @@ impl PaintServer {
                             })
                         }
                         Element::Pattern(ref p) => {
-                            p.resolve(node, acquired_nodes, opacity).map(|p| {
+                            p.resolve(node, acquired_nodes, opacity, session).map(|p| {
                                 PaintSource::Pattern(
                                     p,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
@@ -155,7 +157,7 @@ impl PaintServer {
                             })
                         }
                         Element::RadialGradient(ref g) => {
-                            g.resolve(node, acquired_nodes, opacity).map(|g| {
+                            g.resolve(node, acquired_nodes, opacity, session).map(|g| {
                                 PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
@@ -180,6 +182,7 @@ impl PaintServer {
                     // condition to that for an invalid paint server.
                     Some(color) => {
                         rsvg_log!(
+                            session,
                             "could not resolve paint server \"{}\", using alternate color",
                             iri
                         );
@@ -189,6 +192,7 @@ impl PaintServer {
 
                     None => {
                         rsvg_log!(
+                            session,
                             "could not resolve paint server \"{}\", no alternate color specified",
                             iri
                         );

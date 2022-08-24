@@ -4,6 +4,7 @@ use crate::element::{ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
 use crate::rect::IRect;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 use super::bounds::BoundsBuilder;
@@ -24,7 +25,7 @@ pub struct Flood {
 }
 
 impl SetAttributes for FeFlood {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         self.base.parse_no_inputs(attrs)
     }
 }

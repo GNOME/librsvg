@@ -14,6 +14,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 /// The `<image>` element.
@@ -27,7 +28,7 @@ pub struct Image {
 }
 
 impl SetAttributes for Image {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
@@ -58,7 +59,12 @@ impl Draw for Image {
             Some(ref url) => match acquired_nodes.lookup_image(url) {
                 Ok(surf) => surf,
                 Err(e) => {
-                    rsvg_log!("could not load image \"{}\": {}", url, e);
+                    rsvg_log!(
+                        draw_ctx.session(),
+                        "could not load image \"{}\": {}",
+                        url,
+                        e
+                    );
                     return Ok(draw_ctx.empty_bbox());
                 }
             },
@@ -97,7 +103,13 @@ impl Draw for Image {
         };
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
+        let stacking_ctx = StackingContext::new(
+            draw_ctx.session(),
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            values,
+        );
 
         draw_ctx.draw_image(&image, &stacking_ctx, acquired_nodes, values, clipping)
     }

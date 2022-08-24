@@ -4,6 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::*;
+use crate::session::Session;
 use crate::xml::Attributes;
 
 /// Represents the syntax used in the <style> node.
@@ -53,7 +54,7 @@ impl Style {
 }
 
 impl SetAttributes for Style {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "type") {
                 self.type_ = StyleType::parse(value).attribute(attr)?;

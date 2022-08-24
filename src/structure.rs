@@ -16,6 +16,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::session::Session;
 use crate::viewbox::*;
 use crate::xml::Attributes;
 
@@ -36,7 +37,13 @@ impl Draw for Group {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
+        let stacking_ctx = StackingContext::new(
+            draw_ctx.session(),
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            values,
+        );
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -77,7 +84,13 @@ impl Draw for Switch {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
+        let stacking_ctx = StackingContext::new(
+            draw_ctx.session(),
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            values,
+        );
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -252,7 +265,7 @@ impl Svg {
 }
 
 impl SetAttributes for Svg {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -279,7 +292,13 @@ impl Draw for Svg {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(acquired_nodes, &elt, values.transform(), values);
+        let stacking_ctx = StackingContext::new(
+            draw_ctx.session(),
+            acquired_nodes,
+            &elt,
+            values.transform(),
+            values,
+        );
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -327,7 +346,7 @@ impl Default for Use {
 }
 
 impl SetAttributes for Use {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 ref a if is_href(a) => set_href(
@@ -368,6 +387,7 @@ impl Draw for Use {
                 values.color().0,
                 cascaded.context_fill.clone(),
                 cascaded.context_stroke.clone(),
+                draw_ctx.session(),
             );
 
             let fill_paint = values.fill().0.resolve(
@@ -376,6 +396,7 @@ impl Draw for Use {
                 values.color().0,
                 cascaded.context_fill.clone(),
                 cascaded.context_stroke.clone(),
+                draw_ctx.session(),
             );
 
             draw_ctx.draw_from_use_node(
@@ -411,7 +432,7 @@ impl Symbol {
 }
 
 impl SetAttributes for Symbol {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -442,7 +463,7 @@ impl ClipPath {
 }
 
 impl SetAttributes for ClipPath {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         let result = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!("", "clipPathUnits"))
@@ -505,7 +526,7 @@ impl Mask {
 }
 
 impl SetAttributes for Mask {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => self.x = attr.parse(value)?,
@@ -530,7 +551,7 @@ pub struct Link {
 }
 
 impl SetAttributes for Link {
-    fn set_attributes(&mut self, attrs: &Attributes) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 ref a if is_href(a) => set_href(a, &mut self.link, value.to_owned()),
@@ -573,6 +594,7 @@ impl Draw for Link {
         };
 
         let stacking_ctx = StackingContext::new_with_link(
+            draw_ctx.session(),
             acquired_nodes,
             &elt,
             values.transform(),
