@@ -3,17 +3,6 @@
 use once_cell::sync::Lazy;
 
 #[macro_export]
-macro_rules! rsvg_log {
-    (
-        $($arg:tt)+
-    ) => {
-        if $crate::log::log_enabled() {
-            println!("{}", format_args!($($arg)+));
-        }
-    };
-}
-
-#[macro_export]
 macro_rules! rsvg_log_session {
     (
         $session:expr,
