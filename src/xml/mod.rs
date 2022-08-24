@@ -280,14 +280,14 @@ impl XmlState {
                     .append_stylesheet_from_xml_processing_instruction(alternate, type_, &href)
                     .is_err()
                 {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "invalid xml-stylesheet {} in XML processing instruction",
                         href
                     );
                 }
             } else {
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "xml-stylesheet processing instruction does not have href; ignoring"
                 );
@@ -502,7 +502,7 @@ impl XmlState {
                 .map_err(|e| {
                     // FIXME: should AlloweUrlError::UrlParseError be a fatal error,
                     // not a resource error?
-                    rsvg_log_session!(session, "could not acquire \"{}\": {}", href, e);
+                    rsvg_log!(session, "could not acquire \"{}\": {}", href, e);
                     AcquireError::ResourceError
                 })?;
 
@@ -542,7 +542,7 @@ impl XmlState {
             .clone();
 
         let binary = io::acquire_data(aurl, None).map_err(|e| {
-            rsvg_log_session!(session, "could not acquire \"{}\": {}", aurl, e);
+            rsvg_log!(session, "could not acquire \"{}\": {}", aurl, e);
             AcquireError::ResourceError
         })?;
 

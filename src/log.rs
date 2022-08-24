@@ -1,7 +1,7 @@
 //! Utilities for logging messages from the library.
 
 #[macro_export]
-macro_rules! rsvg_log_session {
+macro_rules! rsvg_log {
     (
         $session:expr,
         $($arg:tt)+

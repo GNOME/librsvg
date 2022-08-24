@@ -598,7 +598,7 @@ fn emit_marker_by_node(
         }
 
         Err(e) => {
-            rsvg_log_session!(draw_ctx.session(), "could not acquire marker: {}", e);
+            rsvg_log!(draw_ctx.session(), "could not acquire marker: {}", e);
             Ok(draw_ctx.empty_bbox())
         }
     }

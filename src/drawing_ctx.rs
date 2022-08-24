@@ -500,7 +500,7 @@ impl DrawingCtx {
                         "viewport_to_viewbox_transform only returns errors when vbox != None"
                     ),
                     Some(v) => {
-                        rsvg_log_session!(
+                        rsvg_log!(
                             self.session,
                             "ignoring viewBox ({}, {}, {}, {}) since it is not usable",
                             v.x0,
@@ -588,7 +588,7 @@ impl DrawingCtx {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(_)) => {
-                rsvg_log_session!(self.session, "circular reference in element {}", mask_node);
+                rsvg_log!(self.session, "circular reference in element {}", mask_node);
                 return Ok(None);
             }
 
@@ -1056,7 +1056,7 @@ impl DrawingCtx {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(ref node)) => {
-                rsvg_log_session!(self.session, "circular reference in element {}", node);
+                rsvg_log!(self.session, "circular reference in element {}", node);
                 return Ok(false);
             }
 
@@ -1632,7 +1632,7 @@ impl DrawingCtx {
             Ok(n) => n,
 
             Err(AcquireError::CircularReference(_)) => {
-                rsvg_log_session!(self.session, "circular reference in element {}", node);
+                rsvg_log!(self.session, "circular reference in element {}", node);
                 return Ok(self.empty_bbox());
             }
 
@@ -1643,7 +1643,7 @@ impl DrawingCtx {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(node)) => {
-                rsvg_log_session!(self.session, "circular reference in element {}", node);
+                rsvg_log!(self.session, "circular reference in element {}", node);
                 return Ok(self.empty_bbox());
             }
 
@@ -1656,7 +1656,7 @@ impl DrawingCtx {
             Err(AcquireError::InvalidLinkType(_)) => unreachable!(),
 
             Err(AcquireError::LinkNotFound(node_id)) => {
-                rsvg_log_session!(
+                rsvg_log!(
                     self.session,
                     "element {} references nonexistent \"{}\"",
                     node,

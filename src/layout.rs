@@ -191,7 +191,7 @@ impl StackingContext {
                     Element::Mask(_) => Some(node.clone()),
 
                     _ => {
-                        rsvg_log_session!(
+                        rsvg_log!(
                             session,
                             "element {} references \"{}\" which is not a mask",
                             element,
@@ -202,7 +202,7 @@ impl StackingContext {
                     }
                 }
             } else {
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "element {} references nonexistent mask \"{}\"",
                     element,

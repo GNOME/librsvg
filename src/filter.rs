@@ -131,7 +131,7 @@ fn filter_spec_from_filter_node(
     acquired_nodes
         .acquire(node_id)
         .map_err(|e| {
-            rsvg_log_session!(
+            rsvg_log!(
                 session,
                 "element {} will not be filtered with \"{}\": {}",
                 node_being_filtered_name,
@@ -147,7 +147,7 @@ fn filter_spec_from_filter_node(
             match *element {
                 Element::Filter(_) => {
                     if element.is_in_error() {
-                        rsvg_log_session!(
+                        rsvg_log!(
                             session,
                             "element {} will not be filtered since its filter \"{}\" is in error",
                             node_being_filtered_name,
@@ -160,7 +160,7 @@ fn filter_spec_from_filter_node(
                 }
 
                 _ => {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "element {} will not be filtered since \"{}\" is not a filter",
                         node_being_filtered_name,

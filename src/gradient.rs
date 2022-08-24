@@ -421,7 +421,7 @@ impl UnresolvedGradient {
 
             if let Element::Stop(ref stop) = *elt {
                 if elt.is_in_error() {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "(not using gradient stop {} because it is in error)",
                         child

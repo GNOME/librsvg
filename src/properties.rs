@@ -815,7 +815,7 @@ impl SpecifiedValues {
                 if parser.expect_exhausted().is_ok() {
                     self.set_parsed_property(&prop);
                 } else {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "(ignoring invalid presentation attribute {:?}\n    value=\"{}\")\n",
                         attr.expanded(),
@@ -840,7 +840,7 @@ impl SpecifiedValues {
                 let mut tok = String::new();
 
                 t.to_css(&mut tok).unwrap(); // FIXME: what do we do with a fmt::Error?
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected token '{}')",
@@ -854,7 +854,7 @@ impl SpecifiedValues {
                 kind: ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput),
                 ..
             }) => {
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected end of input)",
@@ -867,7 +867,7 @@ impl SpecifiedValues {
                 kind: ParseErrorKind::Basic(_),
                 ..
             }) => {
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    \
                      unexpected error)",
@@ -880,7 +880,7 @@ impl SpecifiedValues {
                 kind: ParseErrorKind::Custom(ref v),
                 ..
             }) => {
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "(ignoring invalid presentation attribute {:?}\n    value=\"{}\"\n    {})",
                     attr.expanded(),
@@ -967,7 +967,7 @@ impl SpecifiedValues {
             .filter_map(|r| match r {
                 Ok(decl) => Some(decl),
                 Err(e) => {
-                    rsvg_log_session!(session, "Invalid declaration; ignoring: {:?}", e);
+                    rsvg_log!(session, "Invalid declaration; ignoring: {:?}", e);
                     None
                 }
             })

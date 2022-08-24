@@ -272,7 +272,7 @@ pub fn extract_filter_from_filter_node(
             let in_error = c.borrow_element().is_in_error();
 
             if in_error {
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "(ignoring filter primitive {} because it is in error)",
                     c
@@ -298,7 +298,7 @@ pub fn extract_filter_from_filter_node(
             effect
                 .resolve(acquired_nodes, &primitive_node)
                 .map_err(|e| {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "(filter primitive {} returned an error: {})",
                         primitive_name,
@@ -344,7 +344,7 @@ pub fn render(
             match render_primitive(user_space_primitive, &filter_ctx, acquired_nodes, draw_ctx) {
                 Ok(output) => {
                     let elapsed = start.elapsed();
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "(rendered filter primitive {} in\n    {} seconds)",
                         user_space_primitive.params.name(),
@@ -358,7 +358,7 @@ pub fn render(
                 }
 
                 Err(err) => {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "(filter primitive {} returned an error: {})",
                         user_space_primitive.params.name(),

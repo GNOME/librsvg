@@ -285,7 +285,7 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
             .filter_map(|r| match r {
                 Ok(decl) => Some(decl),
                 Err(e) => {
-                    rsvg_log_session!(self.session, "Invalid declaration; ignoring: {:?}", e);
+                    rsvg_log!(self.session, "Invalid declaration; ignoring: {:?}", e);
                     None
                 }
             })
@@ -844,7 +844,7 @@ impl Stylesheet {
             .filter_map(|r| match r {
                 Ok(rule) => Some(rule),
                 Err(e) => {
-                    rsvg_log_session!(session, "Invalid rule; ignoring: {:?}", e);
+                    rsvg_log!(session, "Invalid rule; ignoring: {:?}", e);
                     None
                 }
             })
@@ -881,13 +881,13 @@ impl Stylesheet {
                 if is_text_css(&mime_type) {
                     Ok(bytes)
                 } else {
-                    rsvg_log_session!(session, "\"{}\" is not of type text/css; ignoring", aurl);
+                    rsvg_log!(session, "\"{}\" is not of type text/css; ignoring", aurl);
                     Err(LoadingError::BadCss)
                 }
             })
             .and_then(|bytes| {
                 String::from_utf8(bytes).map_err(|_| {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         session,
                         "\"{}\" does not contain valid UTF-8 CSS data; ignoring",
                         aurl

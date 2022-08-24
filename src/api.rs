@@ -339,11 +339,7 @@ impl UserLanguage {
             Language::FromEnvironment => UserLanguage::LanguageTags(
                 LanguageTags::from_locale(&locale_from_environment())
                     .map_err(|s| {
-                        rsvg_log_session!(
-                            session,
-                            "could not convert locale to language tags: {}",
-                            s
-                        );
+                        rsvg_log!(session, "could not convert locale to language tags: {}", s);
                     })
                     .unwrap_or_else(|_| LanguageTags::empty()),
             ),

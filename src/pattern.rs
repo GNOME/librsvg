@@ -473,7 +473,7 @@ impl Pattern {
                     }
 
                     Err(e) => {
-                        rsvg_log_session!(session, "Stopping pattern resolution: {}", e);
+                        rsvg_log!(session, "Stopping pattern resolution: {}", e);
                         pattern = pattern.resolve_from_defaults();
                         break;
                     }

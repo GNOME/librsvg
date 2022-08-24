@@ -59,7 +59,7 @@ impl Draw for Image {
             Some(ref url) => match acquired_nodes.lookup_image(url) {
                 Ok(surf) => surf,
                 Err(e) => {
-                    rsvg_log_session!(
+                    rsvg_log!(
                         draw_ctx.session(),
                         "could not load image \"{}\": {}",
                         url,

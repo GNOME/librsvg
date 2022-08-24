@@ -168,7 +168,7 @@ fn acquire_marker(
         acquired_nodes
             .acquire(id)
             .map_err(|e| {
-                rsvg_log_session!(session, "cannot render marker: {}", e);
+                rsvg_log!(session, "cannot render marker: {}", e);
             })
             .ok()
             .and_then(|acquired| {
@@ -177,7 +177,7 @@ fn acquire_marker(
                 if is_element_of_type!(node, Marker) {
                     Some(node.clone())
                 } else {
-                    rsvg_log_session!(session, "{} is not a marker element", id);
+                    rsvg_log!(session, "{} is not a marker element", id);
                     None
                 }
             })
@@ -256,7 +256,7 @@ impl SetAttributes for Path {
                     // FIXME: we don't propagate errors upstream, but creating a partial
                     // path is OK per the spec
 
-                    rsvg_log_session!(session, "could not parse path: {}", e);
+                    rsvg_log!(session, "could not parse path: {}", e);
                 }
                 self.path = Rc::new(builder.into_path());
             }

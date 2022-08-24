@@ -214,7 +214,7 @@ impl Handle {
                 .lookup_internal_node(&id)
                 .ok_or(DefsLookupErrorKind::NotFound),
             NodeId::External(_, _) => {
-                rsvg_log_session!(
+                rsvg_log!(
                     self.session,
                     "the public API is not allowed to look up external references: {}",
                     node_id

@@ -896,7 +896,7 @@ impl TRef {
             let c = acquired.get();
             extract_chars_children_to_chunks_recursively(chunks, c, Rc::new(values.clone()), depth);
         } else {
-            rsvg_log_session!(
+            rsvg_log!(
                 layout_context.session,
                 "element {} references a nonexistent text source \"{}\"",
                 node,

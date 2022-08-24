@@ -42,7 +42,7 @@ use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError,
 
 use crate::{
     length::RsvgLength,
-    rsvg_log_session,
+    rsvg_log,
     session::Session,
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
 };
@@ -576,13 +576,13 @@ impl CHandle {
 
         match Url::parse(url) {
             Ok(u) => {
-                rsvg_log_session!(session, "setting base_uri to \"{}\"", u.as_str());
+                rsvg_log!(session, "setting base_uri to \"{}\"", u.as_str());
                 let mut inner = imp.inner.borrow_mut();
                 inner.base_url.set(u);
             }
 
             Err(e) => {
-                rsvg_log_session!(
+                rsvg_log!(
                     session,
                     "not setting base_uri to \"{}\" since it is invalid: {}",
                     url,
@@ -1343,7 +1343,7 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             let session = &rhandle.imp().session;
-            rsvg_log_session!(session, "could not render: {}", e);
+            rsvg_log!(session, "could not render: {}", e);
             ptr::null_mut()
         }
     }
@@ -1367,7 +1367,7 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             let session = &rhandle.imp().session;
-            rsvg_log_session!(session, "could not render: {}", e);
+            rsvg_log!(session, "could not render: {}", e);
             ptr::null_mut()
         }
     }
@@ -1406,7 +1406,7 @@ pub unsafe extern "C" fn rsvg_handle_get_dimensions_sub(
 
         Err(e) => {
             let session = &rhandle.imp().session;
-            rsvg_log_session!(session, "could not get dimensions: {}", e);
+            rsvg_log!(session, "could not get dimensions: {}", e);
             *dimension_data = RsvgDimensionData::empty();
             false.into_glib()
         }
@@ -1443,7 +1443,7 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
             p.y = 0;
 
             let session = &rhandle.imp().session;
-            rsvg_log_session!(session, "could not get position: {}", e);
+            rsvg_log!(session, "could not get position: {}", e);
             false.into_glib()
         }
     }
@@ -2040,7 +2040,7 @@ pub(crate) fn set_gerror(
         //
         // See https://gitlab.gnome.org/GNOME/gtk/issues/2294 for an example of code that
         // passed a NULL GError and so we had no easy way to see what was wrong.
-        rsvg_log_session!(session, "{}", msg);
+        rsvg_log!(session, "{}", msg);
 
         glib::ffi::g_set_error_literal(
             err,

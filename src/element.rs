@@ -252,7 +252,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     fn set_error(&mut self, error: ElementError, session: &Session) {
-        rsvg_log_session!(session, "setting node {} in error: {}", self, error);
+        rsvg_log!(session, "setting node {} in error: {}", self, error);
         self.is_in_error = true;
     }
 
@@ -279,7 +279,7 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
                 Ok(draw_ctx.empty_bbox())
             }
         } else {
-            rsvg_log_session!(
+            rsvg_log!(
                 draw_ctx.session(),
                 "(not rendering element {} because it is in error)",
                 self
@@ -602,7 +602,7 @@ macro_rules! e {
             let is_in_error = if let Err(e) = element_impl.set_attributes(&attributes, session) {
                 // FIXME: this does not provide a clue of what was the problematic attribute, or the
                 // problematic element.  We need tracking of the current parsing position to do that.
-                rsvg_log_session!(session, "setting element in error: {}", e);
+                rsvg_log!(session, "setting element in error: {}", e);
                 true
             } else {
                 false
