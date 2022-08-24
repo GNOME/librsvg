@@ -5,6 +5,7 @@ Development guide for librsvg
    product
    roadmap
    devel_environment
+   adding_a_property
    memory_leaks
    contributing
    ci
@@ -54,6 +55,7 @@ Test suite - move tests/readme here?
 
 Link to the internals documentation.
 
+- :doc:`adding_a_property`
 - :doc:`memory_leaks`
 
 Design documents
