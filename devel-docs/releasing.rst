@@ -97,9 +97,11 @@ Rust that is too old — instead of getting an obscure error message from
 ``rustc`` in the middle of the build when it finds an unsupported
 language construct.
 
-As of March 2021, Cargo does not allow setting a minimum supported Rust
-version; you may want to keep an eye on `the MSRV
-RFC <https://github.com/rust-lang/rfcs/pull/2495>`__.
+Please update both of these when increasing the MSRV:
+
+- The ``MININUM_RUST_MAJOR`` and ``MINIMUM_RUST_MINOR`` values in ``configure.ac``.
+
+- The ``rust-version`` value in ``Cargo.toml``.
 
 Sometimes librsvg’s dependencies update their MSRV and librsvg may need
 to increase it as well. Please consider the following before doing this:
