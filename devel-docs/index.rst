@@ -12,6 +12,7 @@ Development guide for librsvg
    ci
    text_layout
    api_observability
+   releasing
    :maxdepth: 1
    :caption: Contents:
 
@@ -74,7 +75,7 @@ contributions.
 Information for maintainers
 ---------------------------
 
-FIXME: Move RELEASING.md here
+- :doc:`releasing`
 
 Overview of the maintainer's workflow.
 
