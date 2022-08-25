@@ -5,6 +5,7 @@ Development guide for librsvg
    product
    roadmap
    devel_environment
+   architecture
    adding_a_property
    memory_leaks
    contributing
@@ -42,19 +43,16 @@ FIXME: link to doc with stuff from CONTRIBUTING.md's "Hacking on librsvg"
 
 Add basic info on cloning the repo, getting a gitlab account, forking.
 
-Development roadmap.
-
 Understand the code
 -------------------
-
-FIXME: Overview of the source tree.
 
 Tour of the code - load a file, render it.
 
 Test suite - move tests/readme here?
 
-Link to the internals documentation.
+- `Documentation of the library's internals <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html>`_
 
+- :doc:`architecture`
 - :doc:`adding_a_property`
 - :doc:`memory_leaks`
 
