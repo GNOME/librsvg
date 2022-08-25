@@ -91,10 +91,3 @@ Link to SVG/CSS specs; other useful bits.
 Links to Mozilla's SVG, WebKit, resvg, Inkscape.
 
 Talks on librsvg.
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
