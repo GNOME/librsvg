@@ -1,3 +1,9 @@
+Version 2.54.5
+==============
+
+- #880 - Accept patterns with userSpaceOnUse units for the stroke of
+  axis-aligned lines.
+
 Version 2.54.4
 ==============
 
