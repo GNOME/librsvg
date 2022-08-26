@@ -5,11 +5,14 @@ Development guide for librsvg
    product
    roadmap
    devel_environment
+   architecture
+   adding_a_property
    memory_leaks
    contributing
    ci
    text_layout
    api_observability
+   releasing
    :maxdepth: 1
    :caption: Contents:
 
@@ -41,19 +44,17 @@ FIXME: link to doc with stuff from CONTRIBUTING.md's "Hacking on librsvg"
 
 Add basic info on cloning the repo, getting a gitlab account, forking.
 
-Development roadmap.
-
 Understand the code
 -------------------
-
-FIXME: Overview of the source tree.
 
 Tour of the code - load a file, render it.
 
 Test suite - move tests/readme here?
 
-Link to the internals documentation.
+- `Documentation of the library's internals <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html>`_
 
+- :doc:`architecture`
+- :doc:`adding_a_property`
 - :doc:`memory_leaks`
 
 Design documents
@@ -74,7 +75,7 @@ contributions.
 Information for maintainers
 ---------------------------
 
-FIXME: Move RELEASING.md here
+- :doc:`releasing`
 
 Overview of the maintainer's workflow.
 
@@ -85,15 +86,38 @@ Documentation on the CI.
 References
 ----------
 
-Link to SVG/CSS specs; other useful bits.
+- `SVG2 specification <https://www.w3.org/TR/SVG2/>`_.  This is the current Candidate Recommendation and it should
+  be your main reference...
 
-Links to Mozilla's SVG, WebKit, resvg, Inkscape.
+- ... except for things which are later clarified in the `SVG2 Editor's Draft <https://svgwg.org/svg2-draft/>`_.
+
+- `Filter Effects Module Level 1 <https://www.w3.org/TR/filter-effects/>`_.
+
+- `References listed in the SVG2 spec
+  <https://www.w3.org/TR/SVG2/refs.html>`_ - if you need to consult
+  the CSS specifications.
+  
+- `SVG1.1 specification <https://www.w3.org/TR/SVG11/>`_.  Use this mostly for historical reference.
+
+- `SVG Working Group repository
+  <https://github.com/w3c/svgwg/tree/master>`_.  The github issues are
+  especially interesting.  Use this to ask for clarifications of the
+  spec.
+
+- `SVG Working Group page <https://svgwg.org/>`_.
+
+- Presentation at GUADEC 2017, `Replacing C library code with Rust: What I learned with
+  librsvg <https://viruta.org/docs/fmq-porting-c-to-rust.pdf>`_.    It gives
+  a little history of librsvg, and how/why it was being ported to Rust
+  from C.
+
+- Presentation at GUADEC 2018, `Patterns of refactoring C to Rust: the case of
+  librsvg <https://viruta.org/docs/fmq-refactoring-c-to-rust.pdf>`_.  It
+  describes ways in which librsvg's C code was refactored to allow
+  porting it to Rust.
+
+- `Federico Mena's blog posts on librsvg
+  <https://viruta.org/tag/librsvg.html>`_ - plenty of of history and
+  stories from the development process.
 
 Talks on librsvg.
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

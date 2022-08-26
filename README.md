@@ -197,7 +197,7 @@ ways:
 [contributing]: CONTRIBUTING.md
 [reporting-bugs]: CONTRIBUTING.md#reporting-bugs
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
-[federico]: https://people.gnome.org/~federico/
+[federico]: https://viruta.org/
 [platform]: https://developer.gnome.org/
-[guadec-presentation-1]: https://people.gnome.org/~federico/blog/docs/fmq-porting-c-to-rust.pdf
-[guadec-presentation-2]: https://people.gnome.org/~federico/blog/docs/fmq-refactoring-c-to-rust.pdf
+[guadec-presentation-1]: https://viruta.org/docs/fmq-porting-c-to-rust.pdf
+[guadec-presentation-2]: https://viruta.org/docs/fmq-refactoring-c-to-rust.pdf
