@@ -260,7 +260,7 @@ EXTRA_DIST =				\
 	$(RSVG_CONVERT_SRC)		\
 	AUTHORS				\
 	COPYING.LIB 			\
-	NEWS.md				\
+	NEWS				\
 	SECURITY.md			\
 	Rsvg-2.0-custom.vala		\
 	Rsvg-2.0.metadata		\
