@@ -406,3 +406,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/bugs-reftests/880-stroke-wide-line.svg",
     "tests/fixtures/reftests/bugs-reftests/880-stroke-wide-line-ref.svg"
 );
+
+test_svg_reference!(
+    bug_92_symbol_clip,
+    "tests/fixtures/reftests/bugs-reftests/92-symbol-clip.svg",
+    "tests/fixtures/reftests/bugs-reftests/92-symbol-clip-ref.svg"
+);

@@ -226,10 +226,11 @@ impl Svg {
 
         let has_parent = node.parent().is_some();
 
+        // FIXME: do we need to look at preserveAspectRatio.slice, like in DrawingCtx::draw_image()?
         let clip_mode = if !values.is_overflow() && has_parent {
-            Some(ClipMode::ClipToViewport)
+            ClipMode::ClipToViewport
         } else {
-            None
+            ClipMode::NoClip
         };
 
         let svg_viewport = self.get_viewport(&params, values, !has_parent);
