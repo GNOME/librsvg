@@ -108,9 +108,7 @@ pub struct FontOptions {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ClipMode {
     ClipToViewport,
-
-    // FIXME: this is not used anymore!?
-    ClipToVbox,
+    NoClip,
 }
 
 /// Set path on the cairo context, or clear it.
@@ -488,9 +486,9 @@ impl DrawingCtx {
         vbox: Option<ViewBox>,
         viewport: Rect,
         preserve_aspect_ratio: AspectRatio,
-        clip_mode: Option<ClipMode>,
+        clip_mode: ClipMode,
     ) -> Option<ViewParams> {
-        if let Some(ClipMode::ClipToViewport) = clip_mode {
+        if let ClipMode::ClipToViewport = clip_mode {
             clip_to_rectangle(&self.cr, &viewport);
         }
 
@@ -516,12 +514,6 @@ impl DrawingCtx {
             })
             .map(|t| {
                 self.cr.transform(t.into());
-
-                if let Some(vbox) = vbox {
-                    if let Some(ClipMode::ClipToVbox) = clip_mode {
-                        clip_to_rectangle(&self.cr, &*vbox);
-                    }
-                }
 
                 let top_viewport = self.get_top_viewport();
 
@@ -1364,9 +1356,9 @@ impl DrawingCtx {
             || image.overflow == Overflow::Visible)
             && image.aspect.is_slice()
         {
-            Some(ClipMode::ClipToViewport)
+            ClipMode::ClipToViewport
         } else {
-            None
+            ClipMode::NoClip
         };
 
         // The bounding box for <image> is decided by the values of the image's x, y, w, h
@@ -1694,10 +1686,11 @@ impl DrawingCtx {
             let symbol = borrow_element_as!(child, Symbol);
             let symbol_values = elt.get_computed_values();
 
+            // FIXME: do we need to look at preserveAspectRatio.slice, like in draw_image()?
             let clip_mode = if !symbol_values.is_overflow() {
-                Some(ClipMode::ClipToViewport)
+                ClipMode::ClipToViewport
             } else {
-                None
+                ClipMode::NoClip
             };
 
             let stacking_ctx = StackingContext::new(
