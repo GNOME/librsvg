@@ -108,6 +108,8 @@ pub struct FontOptions {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum ClipMode {
     ClipToViewport,
+
+    // FIXME: this is not used anymore!?
     ClipToVbox,
 }
 
@@ -1690,12 +1692,10 @@ impl DrawingCtx {
             let elt = child.borrow_element();
 
             let symbol = borrow_element_as!(child, Symbol);
+            let symbol_values = elt.get_computed_values();
 
-            let clip_mode = if !values.is_overflow()
-                || (values.overflow() == Overflow::Visible
-                    && elt.get_specified_values().is_overflow())
-            {
-                Some(ClipMode::ClipToVbox)
+            let clip_mode = if !symbol_values.is_overflow() {
+                Some(ClipMode::ClipToViewport)
             } else {
                 None
             };
