@@ -831,7 +831,7 @@ impl Stylesheet {
     ///
     /// The `base_url` is required for `@import` rules, so that librsvg
     /// can determine if the requested path is allowed.
-    pub fn parse(
+    fn parse(
         &mut self,
         buf: &str,
         url_resolver: &UrlResolver,
