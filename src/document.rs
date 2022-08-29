@@ -562,6 +562,17 @@ impl DocumentBuilder {
         Ok(())
     }
 
+    /// Creates an element of the specified `name` as a child of `parent`.
+    ///
+    /// This is the main function to create new SVG elements while parsing XML.
+    ///
+    /// `name` is the XML element's name, for example `rect`.
+    ///
+    /// `attrs` has the XML element's attributes, e.g. cx/cy/r for `<circle cx="0" cy="0"
+    /// r="5">`.
+    ///
+    /// If `parent` is `None` it means that we are creating the root node in the tree of
+    /// elements.  The code will later validate that this is indeed an `<svg>` element.
     pub fn append_element(
         &mut self,
         name: &QualName,
@@ -600,6 +611,7 @@ impl DocumentBuilder {
         }
     }
 
+    /// Creates a node for an XML text element as a child of `parent`.
     pub fn append_characters(&mut self, text: &str, parent: &mut Node) {
         if !text.is_empty() {
             self.append_chars_to_parent(text, parent);
