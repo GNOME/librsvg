@@ -614,18 +614,14 @@ impl DocumentBuilder {
     /// Creates a node for an XML text element as a child of `parent`.
     pub fn append_characters(&mut self, text: &str, parent: &mut Node) {
         if !text.is_empty() {
-            self.append_chars_to_parent(text, parent);
+            // When the last child is a Chars node we can coalesce
+            // the text and avoid screwing up the Pango layouts
+            if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
+                child.borrow_chars().append(text);
+            } else {
+                parent.append(Node::new(NodeData::new_chars(text)));
+            };
         }
-    }
-
-    fn append_chars_to_parent(&mut self, text: &str, parent: &mut Node) {
-        // When the last child is a Chars node we can coalesce
-        // the text and avoid screwing up the Pango layouts
-        if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
-            child.borrow_chars().append(text);
-        } else {
-            parent.append(Node::new(NodeData::new_chars(text)));
-        };
     }
 
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
