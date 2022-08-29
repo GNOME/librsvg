@@ -92,7 +92,7 @@ pub struct Document {
     /// Used to load referenced resources.
     load_options: LoadOptions,
 
-    /// Stylesheets defined in the document
+    /// Stylesheets defined in the document.
     stylesheets: Vec<Stylesheet>,
 }
 
@@ -492,11 +492,31 @@ impl NodeStack {
     }
 }
 
+/// Used to build a tree of SVG nodes while an XML document is being read.
+///
+/// This struct holds the document-related state while loading an SVG document from XML:
+/// the loading options, the partially-built tree of nodes, the CSS stylesheets that
+/// appear while loading the document.
+///
+/// The XML loader asks a `DocumentBuilder` to
+/// [`append_element`][DocumentBuilder::append_element],
+/// [`append_characters`][DocumentBuilder::append_characters], etc.  When all the XML has
+/// been consumed, the caller can use [`build`][DocumentBuilder::build] to get a
+/// fully-loaded [`Document`].
 pub struct DocumentBuilder {
+    /// Metadata for the document's lifetime.
     session: Session,
+
+    /// Loading options; mainly the URL resolver.
     load_options: LoadOptions,
+
+    /// Root node of the tree.
     tree: Option<Node>,
+
+    /// Mapping from `id` attributes to nodes.
     ids: HashMap<String, Node>,
+
+    /// Stylesheets defined in the document.
     stylesheets: Vec<Stylesheet>,
 }
 
