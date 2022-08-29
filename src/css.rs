@@ -795,7 +795,7 @@ impl<'a> PartialEq for Match<'a> {
 impl<'a> Eq for Match<'a> {}
 
 impl Stylesheet {
-    pub fn new(origin: Origin) -> Stylesheet {
+    fn empty(origin: Origin) -> Stylesheet {
         Stylesheet {
             origin,
             qualified_rules: Vec::new(),
@@ -808,7 +808,7 @@ impl Stylesheet {
         origin: Origin,
         session: Session,
     ) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::new(origin);
+        let mut stylesheet = Stylesheet::empty(origin);
         stylesheet.parse(buf, url_resolver, session)?;
         Ok(stylesheet)
     }
@@ -819,7 +819,7 @@ impl Stylesheet {
         origin: Origin,
         session: Session,
     ) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::new(origin);
+        let mut stylesheet = Stylesheet::empty(origin);
         let aurl = url_resolver
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
