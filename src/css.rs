@@ -507,10 +507,9 @@ impl SelectorImpl for Selector {
     type PseudoElement = PseudoElement;
 }
 
-/// Wraps an `Node` with a locally-defined type, so we can implement
-/// a foreign trait on it.
+/// Newtype wrapper around `Node` so we can implement [`selectors::Element`] for it.
 ///
-/// `Node` is an alias for `rctree::Node`, so we can't implement
+/// `Node` is an alias for [`rctree::Node`], so we can't implement
 /// `selectors::Element` directly on it.  We implement it on the
 /// `RsvgElement` wrapper instead.
 #[derive(Clone, PartialEq)]
@@ -758,11 +757,11 @@ pub struct Stylesheet {
 
 /// A match during the selector matching process
 ///
-/// This struct comes from `Stylesheet.get_matches()`, and represents
+/// This struct comes from [`Stylesheet::get_matches`], and represents
 /// that a certain node matched a CSS rule which has a selector with a
 /// certain `specificity`.  The stylesheet's `origin` is also given here.
 ///
-/// This type implements `Ord` so a list of `Match` can be sorted.
+/// This type implements [`Ord`] so a list of `Match` can be sorted.
 /// That implementation does ordering based on origin and specificity
 /// as per <https://www.w3.org/TR/CSS22/cascade.html#cascading-order>.
 struct Match<'a> {
