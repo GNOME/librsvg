@@ -94,7 +94,7 @@ use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_value, ComputedValues, ParseAs, ParsedProperty};
 use crate::session::Session;
-use crate::url_resolver::UrlResolver;
+use crate::url_resolver::{AllowedUrl, UrlResolver};
 
 /// A parsed CSS declaration
 ///
@@ -820,7 +820,10 @@ impl Stylesheet {
         session: Session,
     ) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::new(origin);
-        stylesheet.load(href, url_resolver, session)?;
+        let aurl = url_resolver
+            .resolve_href(href)
+            .map_err(|_| LoadingError::BadUrl)?;
+        stylesheet.load(&aurl, session)?;
         Ok(stylesheet)
     }
 
@@ -849,10 +852,17 @@ impl Stylesheet {
                 }
             })
             .for_each(|rule| match rule {
-                Rule::AtRule(AtRule::Import(url)) => {
-                    // ignore invalid imports
-                    let _ = self.load(&url, url_resolver, session.clone());
-                }
+                Rule::AtRule(AtRule::Import(url)) => match url_resolver.resolve_href(&url) {
+                    Ok(aurl) => {
+                        // ignore invalid imports
+                        let _ = self.load(&aurl, session.clone());
+                    }
+
+                    Err(e) => {
+                        rsvg_log!(session, "Not loading stylesheet from \"{}\": {}", url, e);
+                    }
+                },
+
                 Rule::QualifiedRule(qr) => self.qualified_rules.push(qr),
             });
 
@@ -860,16 +870,7 @@ impl Stylesheet {
     }
 
     /// Parses a stylesheet referenced by an URL
-    fn load(
-        &mut self,
-        href: &str,
-        url_resolver: &UrlResolver,
-        session: Session,
-    ) -> Result<(), LoadingError> {
-        let aurl = url_resolver
-            .resolve_href(href)
-            .map_err(|_| LoadingError::BadUrl)?;
-
+    fn load(&mut self, aurl: &AllowedUrl, session: Session) -> Result<(), LoadingError> {
         io::acquire_data(&aurl, None)
             .map_err(LoadingError::from)
             .and_then(|data| {
@@ -895,7 +896,10 @@ impl Stylesheet {
                     LoadingError::BadCss
                 })
             })
-            .and_then(|utf8| self.parse(&utf8, &UrlResolver::new(Some((*aurl).clone())), session))
+            .and_then(|utf8| {
+                let url = (**aurl).clone();
+                self.parse(&utf8, &UrlResolver::new(Some(url)), session)
+            })
     }
 
     /// Appends the style declarations that match a specified node to a given vector
