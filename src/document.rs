@@ -549,13 +549,13 @@ impl DocumentBuilder {
             )));
         }
 
-        // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_href(
-            href,
-            &self.load_options.url_resolver,
-            Origin::Author,
-            self.session.clone(),
-        ) {
+        let aurl = self
+            .load_options
+            .url_resolver
+            .resolve_href(href)
+            .map_err(|_| LoadingError::BadUrl)?;
+
+        if let Ok(stylesheet) = Stylesheet::from_href(&aurl, Origin::Author, self.session.clone()) {
             self.stylesheets.push(stylesheet);
         }
 

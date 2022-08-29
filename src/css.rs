@@ -750,7 +750,7 @@ pub enum Origin {
     Author,
 }
 
-/// A parsed CSS stylesheet
+/// A parsed CSS stylesheet.
 pub struct Stylesheet {
     origin: Origin,
     qualified_rules: Vec<QualifiedRule>,
@@ -802,6 +802,10 @@ impl Stylesheet {
         }
     }
 
+    /// Parses a new stylesheet from CSS data in a string.
+    ///
+    /// The `url_resolver_url` is required for `@import` rules, so that librsvg can determine if
+    /// the requested path is allowed.
     pub fn from_data(
         buf: &str,
         url_resolver: &UrlResolver,
@@ -809,29 +813,29 @@ impl Stylesheet {
         session: Session,
     ) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::empty(origin);
-        stylesheet.parse(buf, url_resolver, session)?;
+        stylesheet.add_rules_from_string(buf, url_resolver, session)?;
         Ok(stylesheet)
     }
 
+    /// Parses a new stylesheet by loading CSS data from a URL.
     pub fn from_href(
-        href: &str,
-        url_resolver: &UrlResolver,
+        aurl: &AllowedUrl,
         origin: Origin,
         session: Session,
     ) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::empty(origin);
-        let aurl = url_resolver
-            .resolve_href(href)
-            .map_err(|_| LoadingError::BadUrl)?;
         stylesheet.load(&aurl, session)?;
         Ok(stylesheet)
     }
 
-    /// Parses a CSS stylesheet from a string
+    /// Parses the CSS rules in `buf` and appends them to the stylesheet.
     ///
-    /// The `base_url` is required for `@import` rules, so that librsvg
-    /// can determine if the requested path is allowed.
-    fn parse(
+    /// The `url_resolver_url` is required for `@import` rules, so that librsvg can determine if
+    /// the requested path is allowed.
+    ///
+    /// If there is an `@import` rule, its rules will be recursively added into the
+    /// stylesheet, in the order in which they appear.
+    fn add_rules_from_string(
         &mut self,
         buf: &str,
         url_resolver: &UrlResolver,
@@ -898,7 +902,7 @@ impl Stylesheet {
             })
             .and_then(|utf8| {
                 let url = (**aurl).clone();
-                self.parse(&utf8, &UrlResolver::new(Some(url)), session)
+                self.add_rules_from_string(&utf8, &UrlResolver::new(Some(url)), session)
             })
     }
 
