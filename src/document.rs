@@ -11,6 +11,7 @@ use std::fmt;
 use std::include_str;
 use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, AllowedUrlError, LoadingError, NodeIdError};
@@ -90,7 +91,7 @@ pub struct Document {
     images: RefCell<Images>,
 
     /// Used to load referenced resources.
-    load_options: LoadOptions,
+    load_options: Arc<LoadOptions>,
 
     /// Stylesheets defined in the document.
     stylesheets: Vec<Stylesheet>,
@@ -100,13 +101,15 @@ impl Document {
     /// Constructs a `Document` by loading it from a stream.
     pub fn load_from_stream(
         session: Session,
-        load_options: &LoadOptions,
+        load_options: Arc<LoadOptions>,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
+        let unlimited_size = load_options.unlimited_size;
+
         xml_load_from_possibly_compressed_stream(
             DocumentBuilder::new(session, load_options),
-            load_options.unlimited_size,
+            unlimited_size,
             stream,
             cancellable,
         )
@@ -122,7 +125,7 @@ impl Document {
 
         Document::load_from_stream(
             Session::new_for_test_suite(),
-            &LoadOptions::new(UrlResolver::new(None)),
+            Arc::new(LoadOptions::new(UrlResolver::new(None))),
             &stream.upcast(),
             None::<&gio::Cancellable>,
         )
@@ -220,7 +223,7 @@ impl Resources {
                     .and_then(|stream| {
                         Document::load_from_stream(
                             session.clone(),
-                            &load_options.copy_with_base_url(aurl),
+                            Arc::new(load_options.copy_with_base_url(aurl)),
                             &stream,
                             None,
                         )
@@ -508,7 +511,7 @@ pub struct DocumentBuilder {
     session: Session,
 
     /// Loading options; mainly the URL resolver.
-    load_options: LoadOptions,
+    load_options: Arc<LoadOptions>,
 
     /// Root node of the tree.
     tree: Option<Node>,
@@ -521,10 +524,10 @@ pub struct DocumentBuilder {
 }
 
 impl DocumentBuilder {
-    pub fn new(session: Session, load_options: &LoadOptions) -> DocumentBuilder {
+    pub fn new(session: Session, load_options: Arc<LoadOptions>) -> DocumentBuilder {
         DocumentBuilder {
             session,
-            load_options: load_options.clone(),
+            load_options,
             tree: None,
             ids: HashMap::new(),
             stylesheets: Vec::new(),

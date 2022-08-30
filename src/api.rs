@@ -13,6 +13,7 @@ pub use crate::{
 use url::Url;
 
 use std::path::Path;
+use std::sync::Arc;
 
 use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
@@ -218,7 +219,7 @@ impl Loader {
         Ok(SvgHandle {
             handle: Handle::from_stream(
                 self.session.clone(),
-                &load_options,
+                Arc::new(load_options),
                 stream.as_ref(),
                 cancellable.map(|c| c.as_ref()),
             )?,
