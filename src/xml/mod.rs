@@ -16,11 +16,13 @@ use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::str;
 use std::string::ToString;
+use std::sync::Arc;
 use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
 use crate::document::{Document, DocumentBuilder};
 use crate::error::{ImplementationLimit, LoadingError};
+use crate::handle::LoadOptions;
 use crate::io::{self, IoError};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
@@ -112,7 +114,7 @@ struct XmlStateInner {
 pub struct XmlState {
     inner: RefCell<XmlStateInner>,
 
-    unlimited_size: bool,
+    load_options: Arc<LoadOptions>,
 }
 
 /// Errors returned from XmlState::acquire()
@@ -135,7 +137,7 @@ impl XmlStateInner {
 }
 
 impl XmlState {
-    fn new(document_builder: DocumentBuilder, unlimited_size: bool) -> XmlState {
+    fn new(document_builder: DocumentBuilder, load_options: Arc<LoadOptions>) -> XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
                 weak: None,
@@ -146,7 +148,7 @@ impl XmlState {
                 entities: HashMap::new(),
             }),
 
-            unlimited_size,
+            load_options,
         }
     }
 
@@ -611,9 +613,14 @@ impl XmlState {
             .unwrap()
             .upgrade()
             .unwrap();
-        Xml2Parser::from_stream(strong, self.unlimited_size, stream, cancellable)
-            .and_then(|parser| parser.parse())
-            .and_then(|_: ()| self.check_last_error())
+        Xml2Parser::from_stream(
+            strong,
+            self.load_options.unlimited_size,
+            stream,
+            cancellable,
+        )
+        .and_then(|parser| parser.parse())
+        .and_then(|_: ()| self.check_last_error())
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &QualName) -> Context {
@@ -713,11 +720,11 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 
 pub fn xml_load_from_possibly_compressed_stream(
     document_builder: DocumentBuilder,
-    unlimited_size: bool,
+    load_options: Arc<LoadOptions>,
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Document, LoadingError> {
-    let state = Rc::new(XmlState::new(document_builder, unlimited_size));
+    let state = Rc::new(XmlState::new(document_builder, load_options));
 
     state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
 

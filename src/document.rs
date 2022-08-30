@@ -105,11 +105,9 @@ impl Document {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
-        let unlimited_size = load_options.unlimited_size;
-
         xml_load_from_possibly_compressed_stream(
-            DocumentBuilder::new(session, load_options),
-            unlimited_size,
+            DocumentBuilder::new(session, load_options.clone()),
+            load_options,
             stream,
             cancellable,
         )
