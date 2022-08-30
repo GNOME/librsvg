@@ -543,23 +543,6 @@ impl DocumentBuilder {
         self.stylesheets.push(stylesheet);
     }
 
-    pub fn append_stylesheet_from_xml_processing_instruction(
-        &mut self,
-        href: &str,
-    ) -> Result<(), LoadingError> {
-        let aurl = self
-            .load_options
-            .url_resolver
-            .resolve_href(href)
-            .map_err(|_| LoadingError::BadUrl)?;
-
-        if let Ok(stylesheet) = Stylesheet::from_href(&aurl, Origin::Author, self.session.clone()) {
-            self.append_stylesheet(stylesheet);
-        }
-
-        Ok(())
-    }
-
     /// Creates an element of the specified `name` as a child of `parent`.
     ///
     /// This is the main function to create new SVG elements while parsing XML.

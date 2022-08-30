@@ -20,6 +20,7 @@ use std::sync::Arc;
 use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
+use crate::css::{Origin, Stylesheet};
 use crate::document::{Document, DocumentBuilder};
 use crate::error::{ImplementationLimit, LoadingError};
 use crate::handle::LoadOptions;
@@ -283,18 +284,28 @@ impl XmlState {
             }
 
             if let Some(href) = href {
-                // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
-                // what to do if the stylesheet cannot be loaded, so here we ignore the error.
-                if inner
-                    .document_builder
-                    .as_mut()
-                    .unwrap()
-                    .append_stylesheet_from_xml_processing_instruction(&href)
-                    .is_err()
-                {
+                if let Ok(aurl) = self.load_options.url_resolver.resolve_href(&href) {
+                    if let Ok(stylesheet) =
+                        Stylesheet::from_href(&aurl, Origin::Author, session.clone())
+                    {
+                        inner
+                            .document_builder
+                            .as_mut()
+                            .unwrap()
+                            .append_stylesheet(stylesheet);
+                    } else {
+                        // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
+                        // what to do if the stylesheet cannot be loaded, so here we ignore the error.
+                        rsvg_log!(
+                            session,
+                            "could not create stylesheet from {} in XML processing instruction",
+                            href
+                        );
+                    }
+                } else {
                     rsvg_log!(
                         session,
-                        "invalid xml-stylesheet {} in XML processing instruction",
+                        "{} not allowed for xml-stylesheet in XML processing instruction",
                         href
                     );
                 }
