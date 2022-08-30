@@ -535,6 +535,13 @@ impl DocumentBuilder {
         &self.session
     }
 
+    /// Adds a stylesheet in order to the document.
+    ///
+    /// Stylesheets will later be matched in the order in which they were added.
+    pub fn append_stylesheet(&mut self, stylesheet: Stylesheet) {
+        self.stylesheets.push(stylesheet);
+    }
+
     pub fn append_stylesheet_from_xml_processing_instruction(
         &mut self,
         alternate: Option<String>,
@@ -556,7 +563,7 @@ impl DocumentBuilder {
             .map_err(|_| LoadingError::BadUrl)?;
 
         if let Ok(stylesheet) = Stylesheet::from_href(&aurl, Origin::Author, self.session.clone()) {
-            self.stylesheets.push(stylesheet);
+            self.append_stylesheet(stylesheet);
         }
 
         Ok(())
@@ -607,7 +614,7 @@ impl DocumentBuilder {
             Origin::Author,
             self.session.clone(),
         ) {
-            self.stylesheets.push(stylesheet);
+            self.append_stylesheet(stylesheet);
         }
     }
 
