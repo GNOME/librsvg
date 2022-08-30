@@ -11,6 +11,7 @@ use std::fmt;
 use std::include_str;
 use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, AllowedUrlError, LoadingError, NodeIdError};
@@ -90,9 +91,9 @@ pub struct Document {
     images: RefCell<Images>,
 
     /// Used to load referenced resources.
-    load_options: LoadOptions,
+    load_options: Arc<LoadOptions>,
 
-    /// Stylesheets defined in the document
+    /// Stylesheets defined in the document.
     stylesheets: Vec<Stylesheet>,
 }
 
@@ -100,13 +101,13 @@ impl Document {
     /// Constructs a `Document` by loading it from a stream.
     pub fn load_from_stream(
         session: Session,
-        load_options: &LoadOptions,
+        load_options: Arc<LoadOptions>,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
         xml_load_from_possibly_compressed_stream(
-            DocumentBuilder::new(session, load_options),
-            load_options.unlimited_size,
+            DocumentBuilder::new(session, load_options.clone()),
+            load_options,
             stream,
             cancellable,
         )
@@ -122,7 +123,7 @@ impl Document {
 
         Document::load_from_stream(
             Session::new_for_test_suite(),
-            &LoadOptions::new(UrlResolver::new(None)),
+            Arc::new(LoadOptions::new(UrlResolver::new(None))),
             &stream.upcast(),
             None::<&gio::Cancellable>,
         )
@@ -220,7 +221,7 @@ impl Resources {
                     .and_then(|stream| {
                         Document::load_from_stream(
                             session.clone(),
-                            &load_options.copy_with_base_url(aurl),
+                            Arc::new(load_options.copy_with_base_url(aurl)),
                             &stream,
                             None,
                         )
@@ -492,19 +493,39 @@ impl NodeStack {
     }
 }
 
+/// Used to build a tree of SVG nodes while an XML document is being read.
+///
+/// This struct holds the document-related state while loading an SVG document from XML:
+/// the loading options, the partially-built tree of nodes, the CSS stylesheets that
+/// appear while loading the document.
+///
+/// The XML loader asks a `DocumentBuilder` to
+/// [`append_element`][DocumentBuilder::append_element],
+/// [`append_characters`][DocumentBuilder::append_characters], etc.  When all the XML has
+/// been consumed, the caller can use [`build`][DocumentBuilder::build] to get a
+/// fully-loaded [`Document`].
 pub struct DocumentBuilder {
+    /// Metadata for the document's lifetime.
     session: Session,
-    load_options: LoadOptions,
+
+    /// Loading options; mainly the URL resolver.
+    load_options: Arc<LoadOptions>,
+
+    /// Root node of the tree.
     tree: Option<Node>,
+
+    /// Mapping from `id` attributes to nodes.
     ids: HashMap<String, Node>,
+
+    /// Stylesheets defined in the document.
     stylesheets: Vec<Stylesheet>,
 }
 
 impl DocumentBuilder {
-    pub fn new(session: Session, load_options: &LoadOptions) -> DocumentBuilder {
+    pub fn new(session: Session, load_options: Arc<LoadOptions>) -> DocumentBuilder {
         DocumentBuilder {
             session,
-            load_options: load_options.clone(),
+            load_options,
             tree: None,
             ids: HashMap::new(),
             stylesheets: Vec::new(),
@@ -515,33 +536,24 @@ impl DocumentBuilder {
         &self.session
     }
 
-    pub fn append_stylesheet_from_xml_processing_instruction(
-        &mut self,
-        alternate: Option<String>,
-        type_: Option<String>,
-        href: &str,
-    ) -> Result<(), LoadingError> {
-        if type_.as_deref() != Some("text/css")
-            || (alternate.is_some() && alternate.as_deref() != Some("no"))
-        {
-            return Err(LoadingError::Other(String::from(
-                "invalid parameters in XML processing instruction for stylesheet",
-            )));
-        }
-
-        // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_href(
-            href,
-            &self.load_options.url_resolver,
-            Origin::Author,
-            self.session.clone(),
-        ) {
-            self.stylesheets.push(stylesheet);
-        }
-
-        Ok(())
+    /// Adds a stylesheet in order to the document.
+    ///
+    /// Stylesheets will later be matched in the order in which they were added.
+    pub fn append_stylesheet(&mut self, stylesheet: Stylesheet) {
+        self.stylesheets.push(stylesheet);
     }
 
+    /// Creates an element of the specified `name` as a child of `parent`.
+    ///
+    /// This is the main function to create new SVG elements while parsing XML.
+    ///
+    /// `name` is the XML element's name, for example `rect`.
+    ///
+    /// `attrs` has the XML element's attributes, e.g. cx/cy/r for `<circle cx="0" cy="0"
+    /// r="5">`.
+    ///
+    /// If `parent` is `None` it means that we are creating the root node in the tree of
+    /// elements.  The code will later validate that this is indeed an `<svg>` element.
     pub fn append_element(
         &mut self,
         name: &QualName,
@@ -568,38 +580,24 @@ impl DocumentBuilder {
         node
     }
 
-    pub fn append_stylesheet_from_text(&mut self, text: &str) {
-        // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_data(
-            text,
-            &self.load_options.url_resolver,
-            Origin::Author,
-            self.session.clone(),
-        ) {
-            self.stylesheets.push(stylesheet);
-        }
-    }
-
+    /// Creates a node for an XML text element as a child of `parent`.
     pub fn append_characters(&mut self, text: &str, parent: &mut Node) {
         if !text.is_empty() {
-            self.append_chars_to_parent(text, parent);
+            // When the last child is a Chars node we can coalesce
+            // the text and avoid screwing up the Pango layouts
+            if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
+                child.borrow_chars().append(text);
+            } else {
+                parent.append(Node::new(NodeData::new_chars(text)));
+            };
         }
-    }
-
-    fn append_chars_to_parent(&mut self, text: &str, parent: &mut Node) {
-        // When the last child is a Chars node we can coalesce
-        // the text and avoid screwing up the Pango layouts
-        if let Some(child) = parent.last_child().filter(|c| c.is_chars()) {
-            child.borrow_chars().append(text);
-        } else {
-            parent.append(Node::new(NodeData::new_chars(text)));
-        };
     }
 
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
         self.load_options.url_resolver.resolve_href(href)
     }
 
+    /// Does the final validation on the `Document` being read, and returns it.
     pub fn build(self) -> Result<Document, LoadingError> {
         let DocumentBuilder {
             load_options,

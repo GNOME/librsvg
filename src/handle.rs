@@ -2,6 +2,8 @@
 //!
 //! This module provides the primitives on which the public APIs are implemented.
 
+use std::sync::Arc;
+
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
@@ -88,7 +90,7 @@ impl Handle {
     /// Loads an SVG document into a `Handle`.
     pub fn from_stream(
         session: Session,
-        load_options: &LoadOptions,
+        load_options: Arc<LoadOptions>,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Handle, LoadingError> {
@@ -371,8 +373,12 @@ impl Handle {
     }
 
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
-        let mut stylesheet = Stylesheet::new(Origin::User);
-        stylesheet.parse(css, &UrlResolver::new(None), self.session.clone())?;
+        let stylesheet = Stylesheet::from_data(
+            css,
+            &UrlResolver::new(None),
+            Origin::User,
+            self.session.clone(),
+        )?;
         self.document.cascade(&[stylesheet], &self.session);
         Ok(())
     }

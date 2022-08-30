@@ -94,7 +94,7 @@ use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_value, ComputedValues, ParseAs, ParsedProperty};
 use crate::session::Session;
-use crate::url_resolver::UrlResolver;
+use crate::url_resolver::{AllowedUrl, UrlResolver};
 
 /// A parsed CSS declaration
 ///
@@ -507,10 +507,9 @@ impl SelectorImpl for Selector {
     type PseudoElement = PseudoElement;
 }
 
-/// Wraps an `Node` with a locally-defined type, so we can implement
-/// a foreign trait on it.
+/// Newtype wrapper around `Node` so we can implement [`selectors::Element`] for it.
 ///
-/// `Node` is an alias for `rctree::Node`, so we can't implement
+/// `Node` is an alias for [`rctree::Node`], so we can't implement
 /// `selectors::Element` directly on it.  We implement it on the
 /// `RsvgElement` wrapper instead.
 #[derive(Clone, PartialEq)]
@@ -750,7 +749,7 @@ pub enum Origin {
     Author,
 }
 
-/// A parsed CSS stylesheet
+/// A parsed CSS stylesheet.
 pub struct Stylesheet {
     origin: Origin,
     qualified_rules: Vec<QualifiedRule>,
@@ -758,11 +757,11 @@ pub struct Stylesheet {
 
 /// A match during the selector matching process
 ///
-/// This struct comes from `Stylesheet.get_matches()`, and represents
+/// This struct comes from [`Stylesheet::get_matches`], and represents
 /// that a certain node matched a CSS rule which has a selector with a
 /// certain `specificity`.  The stylesheet's `origin` is also given here.
 ///
-/// This type implements `Ord` so a list of `Match` can be sorted.
+/// This type implements [`Ord`] so a list of `Match` can be sorted.
 /// That implementation does ordering based on origin and specificity
 /// as per <https://www.w3.org/TR/CSS22/cascade.html#cascading-order>.
 struct Match<'a> {
@@ -795,40 +794,47 @@ impl<'a> PartialEq for Match<'a> {
 impl<'a> Eq for Match<'a> {}
 
 impl Stylesheet {
-    pub fn new(origin: Origin) -> Stylesheet {
+    fn empty(origin: Origin) -> Stylesheet {
         Stylesheet {
             origin,
             qualified_rules: Vec::new(),
         }
     }
 
+    /// Parses a new stylesheet from CSS data in a string.
+    ///
+    /// The `url_resolver_url` is required for `@import` rules, so that librsvg can determine if
+    /// the requested path is allowed.
     pub fn from_data(
         buf: &str,
         url_resolver: &UrlResolver,
         origin: Origin,
         session: Session,
     ) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::new(origin);
-        stylesheet.parse(buf, url_resolver, session)?;
+        let mut stylesheet = Stylesheet::empty(origin);
+        stylesheet.add_rules_from_string(buf, url_resolver, session)?;
         Ok(stylesheet)
     }
 
+    /// Parses a new stylesheet by loading CSS data from a URL.
     pub fn from_href(
-        href: &str,
-        url_resolver: &UrlResolver,
+        aurl: &AllowedUrl,
         origin: Origin,
         session: Session,
     ) -> Result<Self, LoadingError> {
-        let mut stylesheet = Stylesheet::new(origin);
-        stylesheet.load(href, url_resolver, session)?;
+        let mut stylesheet = Stylesheet::empty(origin);
+        stylesheet.load(aurl, session)?;
         Ok(stylesheet)
     }
 
-    /// Parses a CSS stylesheet from a string
+    /// Parses the CSS rules in `buf` and appends them to the stylesheet.
     ///
-    /// The `base_url` is required for `@import` rules, so that librsvg
-    /// can determine if the requested path is allowed.
-    pub fn parse(
+    /// The `url_resolver_url` is required for `@import` rules, so that librsvg can determine if
+    /// the requested path is allowed.
+    ///
+    /// If there is an `@import` rule, its rules will be recursively added into the
+    /// stylesheet, in the order in which they appear.
+    fn add_rules_from_string(
         &mut self,
         buf: &str,
         url_resolver: &UrlResolver,
@@ -849,10 +855,17 @@ impl Stylesheet {
                 }
             })
             .for_each(|rule| match rule {
-                Rule::AtRule(AtRule::Import(url)) => {
-                    // ignore invalid imports
-                    let _ = self.load(&url, url_resolver, session.clone());
-                }
+                Rule::AtRule(AtRule::Import(url)) => match url_resolver.resolve_href(&url) {
+                    Ok(aurl) => {
+                        // ignore invalid imports
+                        let _ = self.load(&aurl, session.clone());
+                    }
+
+                    Err(e) => {
+                        rsvg_log!(session, "Not loading stylesheet from \"{}\": {}", url, e);
+                    }
+                },
+
                 Rule::QualifiedRule(qr) => self.qualified_rules.push(qr),
             });
 
@@ -860,17 +873,8 @@ impl Stylesheet {
     }
 
     /// Parses a stylesheet referenced by an URL
-    fn load(
-        &mut self,
-        href: &str,
-        url_resolver: &UrlResolver,
-        session: Session,
-    ) -> Result<(), LoadingError> {
-        let aurl = url_resolver
-            .resolve_href(href)
-            .map_err(|_| LoadingError::BadUrl)?;
-
-        io::acquire_data(&aurl, None)
+    fn load(&mut self, aurl: &AllowedUrl, session: Session) -> Result<(), LoadingError> {
+        io::acquire_data(aurl, None)
             .map_err(LoadingError::from)
             .and_then(|data| {
                 let BinaryData {
@@ -895,7 +899,10 @@ impl Stylesheet {
                     LoadingError::BadCss
                 })
             })
-            .and_then(|utf8| self.parse(&utf8, &UrlResolver::new(Some((*aurl).clone())), session))
+            .and_then(|utf8| {
+                let url = (**aurl).clone();
+                self.add_rules_from_string(&utf8, &UrlResolver::new(Some(url)), session)
+            })
     }
 
     /// Appends the style declarations that match a specified node to a given vector
