@@ -823,7 +823,7 @@ impl Stylesheet {
         session: Session,
     ) -> Result<Self, LoadingError> {
         let mut stylesheet = Stylesheet::empty(origin);
-        stylesheet.load(&aurl, session)?;
+        stylesheet.load(aurl, session)?;
         Ok(stylesheet)
     }
 
@@ -874,7 +874,7 @@ impl Stylesheet {
 
     /// Parses a stylesheet referenced by an URL
     fn load(&mut self, aurl: &AllowedUrl, session: Session) -> Result<(), LoadingError> {
-        io::acquire_data(&aurl, None)
+        io::acquire_data(aurl, None)
             .map_err(LoadingError::from)
             .and_then(|data| {
                 let BinaryData {
