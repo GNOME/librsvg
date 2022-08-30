@@ -628,6 +628,7 @@ impl DocumentBuilder {
         self.load_options.url_resolver.resolve_href(href)
     }
 
+    /// Does the final validation on the `Document` being read, and returns it.
     pub fn build(self) -> Result<Document, LoadingError> {
         let DocumentBuilder {
             load_options,
