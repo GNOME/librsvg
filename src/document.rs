@@ -544,18 +544,8 @@ impl DocumentBuilder {
 
     pub fn append_stylesheet_from_xml_processing_instruction(
         &mut self,
-        alternate: Option<String>,
-        type_: Option<String>,
         href: &str,
     ) -> Result<(), LoadingError> {
-        if type_.as_deref() != Some("text/css")
-            || (alternate.is_some() && alternate.as_deref() != Some("no"))
-        {
-            return Err(LoadingError::Other(String::from(
-                "invalid parameters in XML processing instruction for stylesheet",
-            )));
-        }
-
         let aurl = self
             .load_options
             .url_resolver

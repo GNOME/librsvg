@@ -270,6 +270,16 @@ impl XmlState {
 
             let session = inner.document_builder.as_mut().unwrap().session().clone();
 
+            if type_.as_deref() != Some("text/css")
+                || (alternate.is_some() && alternate.as_deref() != Some("no"))
+            {
+                rsvg_log!(
+                    session,
+                    "invalid parameters in XML processing instruction for stylesheet",
+                );
+                return;
+            }
+
             if let Some(href) = href {
                 // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
                 // what to do if the stylesheet cannot be loaded, so here we ignore the error.
@@ -277,7 +287,7 @@ impl XmlState {
                     .document_builder
                     .as_mut()
                     .unwrap()
-                    .append_stylesheet_from_xml_processing_instruction(alternate, type_, &href)
+                    .append_stylesheet_from_xml_processing_instruction(&href)
                     .is_err()
                 {
                     rsvg_log!(
