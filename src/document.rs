@@ -580,18 +580,6 @@ impl DocumentBuilder {
         node
     }
 
-    pub fn append_stylesheet_from_text(&mut self, text: &str) {
-        // FIXME: handle CSS errors
-        if let Ok(stylesheet) = Stylesheet::from_data(
-            text,
-            &self.load_options.url_resolver,
-            Origin::Author,
-            self.session.clone(),
-        ) {
-            self.append_stylesheet(stylesheet);
-        }
-    }
-
     /// Creates a node for an XML text element as a child of `parent`.
     pub fn append_characters(&mut self, text: &str, parent: &mut Node) {
         if !text.is_empty() {

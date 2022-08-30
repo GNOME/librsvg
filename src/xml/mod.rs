@@ -407,7 +407,18 @@ impl XmlState {
                 .collect::<String>();
 
             let builder = inner.document_builder.as_mut().unwrap();
-            builder.append_stylesheet_from_text(&stylesheet_text);
+            let session = builder.session().clone();
+
+            if let Ok(stylesheet) = Stylesheet::from_data(
+                &stylesheet_text,
+                &self.load_options.url_resolver,
+                Origin::Author,
+                session.clone(),
+            ) {
+                builder.append_stylesheet(stylesheet);
+            } else {
+                rsvg_log!(session, "invalid inline stylesheet");
+            }
         }
     }
 
