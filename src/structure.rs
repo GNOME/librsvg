@@ -213,6 +213,14 @@ impl Svg {
         Rect::new(nx, ny, nx + nw, ny + nh)
     }
 
+    pub fn get_viewbox(&self) -> Option<ViewBox> {
+        self.vbox
+    }
+
+    pub fn get_preserve_aspect_ratio(&self) -> AspectRatio {
+        self.preserve_aspect_ratio
+    }
+
     fn push_viewport(
         &self,
         node: &Node,

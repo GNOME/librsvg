@@ -412,3 +412,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/bugs-reftests/92-symbol-clip.svg",
     "tests/fixtures/reftests/bugs-reftests/92-symbol-clip-ref.svg"
 );
+
+test_svg_reference!(
+    bug_875_svg_use_width_height,
+    "tests/fixtures/reftests/bugs-reftests/875-svg-use-width-height.svg",
+    "tests/fixtures/reftests/bugs-reftests/875-svg-use-width-height-ref.svg"
+);

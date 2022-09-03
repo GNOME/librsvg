@@ -1678,16 +1678,27 @@ impl DrawingCtx {
 
         let use_element = node.borrow_element();
 
-        let res = if is_element_of_type!(child, Symbol) {
-            // if the <use> references a <symbol>, it gets handled specially
+        let defines_a_viewport = if is_element_of_type!(child, Symbol) {
+            let symbol = borrow_element_as!(child, Symbol);
+            Some((symbol.get_viewbox(), symbol.get_preserve_aspect_ratio()))
+        } else if is_element_of_type!(child, Svg) {
+            let svg = borrow_element_as!(child, Svg);
+            Some((svg.get_viewbox(), svg.get_preserve_aspect_ratio()))
+        } else {
+            None
+        };
+
+        let res = if let Some((viewbox, preserve_aspect_ratio)) = defines_a_viewport {
+            // <symbol> and <svg> define a viewport, as described in the specification:
+            // https://www.w3.org/TR/SVG2/struct.html#UseElement
+            // https://gitlab.gnome.org/GNOME/librsvg/-/issues/875#note_1482705
 
             let elt = child.borrow_element();
 
-            let symbol = borrow_element_as!(child, Symbol);
-            let symbol_values = elt.get_computed_values();
+            let values = elt.get_computed_values();
 
             // FIXME: do we need to look at preserveAspectRatio.slice, like in draw_image()?
-            let clip_mode = if !symbol_values.is_overflow() {
+            let clip_mode = if !values.is_overflow() {
                 ClipMode::ClipToViewport
             } else {
                 ClipMode::NoClip
@@ -1708,12 +1719,8 @@ impl DrawingCtx {
                 clipping,
                 None,
                 &mut |an, dc, _transform| {
-                    let _params = dc.push_new_viewport(
-                        symbol.get_viewbox(),
-                        use_rect,
-                        symbol.get_preserve_aspect_ratio(),
-                        clip_mode,
-                    );
+                    let _params =
+                        dc.push_new_viewport(viewbox, use_rect, preserve_aspect_ratio, clip_mode);
 
                     child.draw_children(
                         an,
