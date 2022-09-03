@@ -418,3 +418,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/bugs-reftests/875-svg-use-width-height.svg",
     "tests/fixtures/reftests/bugs-reftests/875-svg-use-width-height-ref.svg"
 );
+
+test_svg_reference!(
+    bug_885_vector_effect_non_scaling_stroke,
+    "tests/fixtures/reftests/bugs-reftests/885-vector-effect-non-scaling-stroke.svg",
+    "tests/fixtures/reftests/bugs-reftests/885-vector-effect-non-scaling-stroke-ref.svg"
+);

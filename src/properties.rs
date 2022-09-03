@@ -484,7 +484,6 @@ make_properties! {
         // "transform-box"            => (PresentationAttr::Yes, unimplemented),
         // "transform-origin"         => (PresentationAttr::Yes, unimplemented),
         "unicode-bidi"                => (PresentationAttr::Yes, unicode_bidi                : UnicodeBidi),
-        // "vector-effect"            => (PresentationAttr::Yes, unimplemented),
         "visibility"                  => (PresentationAttr::Yes, visibility                  : Visibility),
         // "white-space"              => (PresentationAttr::Yes, unimplemented),
         // "word-spacing"             => (PresentationAttr::Yes, unimplemented),
@@ -501,6 +500,7 @@ make_properties! {
         "mix-blend-mode"              => (PresentationAttr::No,  mix_blend_mode              : MixBlendMode),
         "paint-order"                 => (PresentationAttr::Yes, paint_order                 : PaintOrder),
         "text-orientation"            => (PresentationAttr::No,  text_orientation            : TextOrientation),
+        "vector-effect"               => (PresentationAttr::Yes, vector_effect               : VectorEffect),
     }
 
     // These are not properties, but presentation attributes.  However,
@@ -750,6 +750,7 @@ impl SpecifiedValues {
         compute!(TextRendering, text_rendering);
         compute!(TransformProperty, transform_property);
         compute!(UnicodeBidi, unicode_bidi);
+        compute!(VectorEffect, vector_effect);
         compute!(Visibility, visibility);
         compute!(Width, width);
         compute!(WritingMode, writing_mode);

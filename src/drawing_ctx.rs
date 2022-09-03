@@ -1275,7 +1275,12 @@ impl DrawingCtx {
                 cr.set_fill_rule(cairo::FillRule::from(shape.fill_rule));
 
                 path_helper.set()?;
-                let bbox = compute_stroke_and_fill_box(&cr, &shape.stroke, &shape.stroke_paint)?;
+                let bbox = compute_stroke_and_fill_box(
+                    &cr,
+                    &shape.stroke,
+                    &shape.stroke_paint,
+                    &dc.initial_viewport,
+                )?;
 
                 let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
                 let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
@@ -1292,7 +1297,17 @@ impl DrawingCtx {
 
                             PaintTarget::Stroke => {
                                 path_helper.set()?;
+                                let backup_matrix = if shape.stroke.non_scaling {
+                                    let matrix = cr.matrix();
+                                    cr.set_matrix(dc.initial_viewport.transform.into());
+                                    Some(matrix)
+                                } else {
+                                    None
+                                };
                                 dc.stroke(&cr, an, &stroke_paint)?;
+                                if let Some(matrix) = backup_matrix {
+                                    cr.set_matrix(matrix);
+                                }
                             }
 
                             PaintTarget::Markers => {
@@ -1420,8 +1435,12 @@ impl DrawingCtx {
             }
 
             path.to_cairo(&self.cr, false)?;
-            let bbox =
-                compute_stroke_and_fill_box(&self.cr, &span.stroke, &span.stroke_paint_source)?;
+            let bbox = compute_stroke_and_fill_box(
+                &self.cr,
+                &span.stroke,
+                &span.stroke_paint_source,
+                &self.initial_viewport,
+            )?;
             self.cr.new_path();
 
             if span.is_visible {
@@ -1968,6 +1987,7 @@ fn compute_stroke_and_fill_extents(
     cr: &cairo::Context,
     stroke: &Stroke,
     stroke_paint_source: &PaintSource,
+    initial_viewport: &Viewport,
 ) -> Result<PathExtents, RenderingError> {
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
     // _rendering_ time speedups, are these rather expensive operations
@@ -2000,7 +2020,17 @@ fn compute_stroke_and_fill_extents(
     let stroke_extents = if !stroke.width.approx_eq_cairo(0.0)
         && !matches!(stroke_paint_source, PaintSource::None)
     {
+        let backup_matrix = if stroke.non_scaling {
+            let matrix = cr.matrix();
+            cr.set_matrix(initial_viewport.transform.into());
+            Some(matrix)
+        } else {
+            None
+        };
         let (x0, y0, x1, y1) = cr.stroke_extents()?;
+        if let Some(matrix) = backup_matrix {
+            cr.set_matrix(matrix);
+        }
         Some(Rect::new(x0, y0, x1, y1))
     } else {
         None
@@ -2026,8 +2056,10 @@ fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     stroke: &Stroke,
     stroke_paint_source: &PaintSource,
+    initial_viewport: &Viewport,
 ) -> Result<BoundingBox, RenderingError> {
-    let extents = compute_stroke_and_fill_extents(cr, stroke, stroke_paint_source)?;
+    let extents =
+        compute_stroke_and_fill_extents(cr, stroke, stroke_paint_source, initial_viewport)?;
 
     let ink_rect = match (extents.fill, extents.stroke) {
         (None, None) => None,
