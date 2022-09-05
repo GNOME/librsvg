@@ -1,3 +1,24 @@
+Version 2.55.1
+==============
+
+As an experiment, I'll move librsvg from even-odd versioning (odd
+minor version is unstable, even minor version is stable), to the
+versioning scheme that GNOME uses these days.  So, 2.55.x is the new
+stable series.
+
+* There is a new development guide for librsvg, for people who want to
+  help in its development.  I hope this will be especially useful to
+  Outreachy and Summer of Code interns:
+  https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
+
+* Define missing crate metadata for Cargo.toml (Guillaume Desmottes).
+
+* Add some tests that were missing for the C API.
+
+* Fix the basic test suite in Windows.
+
+* Miscellaneous fixes for the build and CI (Jürg Billeter).
+
 Version 2.55.0-alpha
 ====================
 
