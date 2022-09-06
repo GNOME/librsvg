@@ -18,7 +18,7 @@ use crate::properties::{
     ClipRule, ComputedValues, Direction, FillRule, Filter, FontFamily, FontStretch, FontStyle,
     FontVariant, FontWeight, Isolation, MixBlendMode, Opacity, Overflow, PaintOrder,
     ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
-    TextDecoration, TextRendering, UnicodeBidi, XmlLang,
+    TextDecoration, TextRendering, UnicodeBidi, VectorEffect, XmlLang,
 };
 use crate::rect::Rect;
 use crate::session::Session;
@@ -62,6 +62,8 @@ pub struct Stroke {
     pub line_join: StrokeLinejoin,
     pub dash_offset: f64,
     pub dashes: Box<[f64]>,
+    // https://svgwg.org/svg2-draft/painting.html#non-scaling-stroke
+    pub non_scaling: bool,
 }
 
 /// Paths and basic shapes resolved to a path.
@@ -251,6 +253,7 @@ impl Stroke {
         let line_cap = values.stroke_line_cap();
         let line_join = values.stroke_line_join();
         let dash_offset = values.stroke_dashoffset().0.to_user(params);
+        let non_scaling = values.vector_effect() == VectorEffect::NonScalingStroke;
 
         let dashes = match values.stroke_dasharray() {
             StrokeDasharray(Dasharray::None) => Box::new([]),
@@ -267,6 +270,7 @@ impl Stroke {
             line_join,
             dash_offset,
             dashes,
+            non_scaling,
         }
     }
 }

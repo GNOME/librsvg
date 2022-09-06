@@ -1154,6 +1154,20 @@ make_property!(
 );
 
 make_property!(
+    /// `vector-effect` property.
+    ///
+    /// SVG2: <https://svgwg.org/svg2-draft/coords.html#VectorEffectProperty>
+    VectorEffect,
+    default: None,
+    inherits_automatically: false,
+
+    identifiers:
+    "none" => None,
+    "non-scaling-stroke" => NonScalingStroke,
+    // non-scaling-size, non-rotation, fixed-position not implemented
+);
+
+make_property!(
     /// `visibility` property.
     ///
     /// CSS2: <https://www.w3.org/TR/CSS2/visufx.html#visibility>
