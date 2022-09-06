@@ -18,8 +18,3 @@ chmod -R a+w $RUSTUP_HOME $CARGO_HOME
 rustup --version
 cargo --version
 rustc --version
-
-if [ "$RUST_VERSION" = "nightly" ]; then
-  # Documentation tools
-  cargo install --force rustdoc-stripper
-fi
