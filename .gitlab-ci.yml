@@ -61,7 +61,23 @@ cargo_test:
   script:
     - cargo test -- --skip loading_crash --skip reference --skip render_crash
 
-.build-rsvg:
+.build-rsvg-no-docs:
+  extends: '.cache'
+  stage: build
+  script:
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh --disable-gtk-doc --enable-vala
+    - make
+    - make check
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/*.log
+      - _build/tests/output
+    expire_in: 1 day
+
+.build-rsvg-full:
   extends: '.cache'
   stage: build
   script:
@@ -81,7 +97,7 @@ build-rsvg-opensuse@x86_64.stable:
   extends:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-full
     # make check runs extra tests that require extra crates, hence cache is pushed
     - .cache_push
   needs:
@@ -94,7 +110,7 @@ build-rsvg-opensuse@x86_64.minimum:
   extends:
     - '.container.opensuse@x86_64.minimum'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: opensuse-container@x86_64.minimum
       artifacts: false
@@ -105,7 +121,7 @@ build-rsvg-opensuse@x86_64.nightly:
   extends:
     - '.container.opensuse@x86_64.nightly'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: opensuse-container@x86_64.nightly
       artifacts: false
@@ -116,7 +132,7 @@ build-rsvg-opensuse@x86_64.nightly:
   extends:
     - .container.opensuse@aarch64
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: opensuse-container@aarch64
       artifacts: false
@@ -127,7 +143,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - .container.fedora@x86_64
     - .fdo.distribution-image@fedora
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: fedora-container@x86_64
       artifacts: false
@@ -143,7 +159,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - .container.fedora@aarch64
     - .fdo.distribution-image@fedora
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: fedora-container@aarch64
       artifacts: false
@@ -159,7 +175,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - '.container.debian@x86_64'
     - '.fdo.distribution-image@debian'
-    - '.build-rsvg'
+    - '.build-rsvg-no-docs'
   variables:
     # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
     # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
@@ -180,7 +196,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - '.container.debian@aarch64'
     - '.fdo.distribution-image@debian'
-    - '.build-rsvg'
+    - '.build-rsvg-no-docs'
   variables:
     # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
     # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
