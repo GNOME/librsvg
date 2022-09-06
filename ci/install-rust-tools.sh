@@ -3,7 +3,7 @@ source ./ci/env.sh
 set -eu
 export CARGO_HOME='/usr/local/cargo'
 
-rustup component add clippy-preview
+rustup component add clippy
 rustup component add rustfmt
 # cargo install --force cargo-c
 cargo install --version ^1.0 gitlab_clippy
