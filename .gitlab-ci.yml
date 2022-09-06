@@ -23,10 +23,8 @@ stages:
   - check
   - build
   - lint
-  - unit test
+  - analysis
   - acceptance test
-  - cross distro
-  - release
   - docs
 
 default:
@@ -279,7 +277,7 @@ coverage:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
     - .cache
-  stage: unit test
+  stage: analysis
   needs:
     - job: opensuse-container@x86_64.stable
     - job: check
@@ -329,7 +327,7 @@ cargo_bench:
     - '.container.opensuse@x86_64.stable'
     - '.fdo.distribution-image@opensuse'
     - '.cache'
-  stage: unit test
+  stage: analysis
   needs:
     - job: check
   script: |
@@ -371,7 +369,7 @@ msys2-mingw64:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 distcheck:
-  stage: release
+  stage: acceptance test
   extends:
     - '.container.opensuse@x86_64.stable'
     - '.fdo.distribution-image@opensuse'
@@ -384,7 +382,6 @@ distcheck:
     LIBRSVG_DEBUG: "no"
   script:
     - ./autogen.sh --enable-vala
-    - make
     - make distcheck
   artifacts:
     when: 'on_success'
