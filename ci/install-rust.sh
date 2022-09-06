@@ -19,10 +19,6 @@ rustup --version
 cargo --version
 rustc --version
 
-# Coverage tools
-cargo install grcov
-rustup component add llvm-tools-preview
-
 if [ "$RUST_VERSION" = "nightly" ]; then
   # Documentation tools
   cargo install --force rustdoc-stripper
