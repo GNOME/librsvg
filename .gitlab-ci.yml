@@ -23,7 +23,7 @@ stages:
   - check
   - build
   - lint
-  - unit test
+  - analysis
   - acceptance test
   - cross distro
   - release
@@ -279,7 +279,7 @@ coverage:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
     - .cache
-  stage: unit test
+  stage: analysis
   needs:
     - job: opensuse-container@x86_64.stable
     - job: check
@@ -329,7 +329,7 @@ cargo_bench:
     - '.container.opensuse@x86_64.stable'
     - '.fdo.distribution-image@opensuse'
     - '.cache'
-  stage: unit test
+  stage: analysis
   needs:
     - job: check
   script: |
