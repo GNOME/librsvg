@@ -371,7 +371,7 @@ msys2-mingw64:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 distcheck:
-  stage: release
+  stage: acceptance test
   extends:
     - '.container.opensuse@x86_64.stable'
     - '.fdo.distribution-image@opensuse'
