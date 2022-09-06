@@ -87,10 +87,10 @@ cargo_test:
     - make
     - make check
   artifacts:
-    when: 'on_failure'
+    when: 'always'
     paths:
+      - _build/doc/
       - _build/tests/*.log
-      - _build/tests/output
     expire_in: 1 day
 
 build-rsvg-opensuse@x86_64.stable:
@@ -393,22 +393,11 @@ distcheck:
     expire_in: 1 week
 
 reference:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
   stage: docs
   needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-    - job: check
-      artifacts: false
+    - job: build-rsvg-opensuse@x86_64.stable
+      artifacts: true
   script:
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --enable-vala
-    - make
-    - cd ..
     - mkdir -p public/
     - mv _build/doc/Rsvg-2.0 public/
   artifacts:
