@@ -33,6 +33,7 @@ variables:
     FDO_DISTRIBUTION_EXEC: >-
       bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
+      bash ci/install-grcov.sh &&
       pip3 install gi-docgen sphinx sphinx_rtd_theme
 
 .container.opensuse@x86_64.minimum:
