@@ -300,7 +300,7 @@ coverage:
   script:
     - mkdir -p _build
     - cd _build
-    - ../autogen.sh --enable-gtk-doc --enable-vala --enable-debug
+    - ../autogen.sh --disable-gtk-doc --disable-vala --enable-debug
     - make
     - make -k check
   after_script:
