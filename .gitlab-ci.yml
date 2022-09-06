@@ -384,7 +384,6 @@ distcheck:
     LIBRSVG_DEBUG: "no"
   script:
     - ./autogen.sh --enable-vala
-    - make
     - make distcheck
   artifacts:
     when: 'on_success'
