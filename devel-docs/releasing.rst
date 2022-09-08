@@ -28,7 +28,7 @@ off items while making a release.
    ``ftpadmin install librsvg-x.y.z.tar.xz``
 -  ☐ Create a `release in Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
 
-For ``x.y.0`` releases, at least, do the following:
+For ``x.y.0`` releases, do the following:
 
 -  ☐ `Notify the release
    team <https://gitlab.gnome.org/GNOME/releng/-/issues>`__ on whether
@@ -48,8 +48,7 @@ Gitlab release
 
 -  ☐ If there is an associated milestone, select it too.
 
--  ☐ Fill in the release title - ``x.y.z - stable`` or
-   ``x.y.z - development``.
+-  ☐ Fill in the release title - ``x.y.z``.
 
 -  ☐ Copy the release notes from NEWS.
 
@@ -62,8 +61,8 @@ Gitlab release
    and call it
    ``librsvg-x.y.z.sha256sum - release tarball       sha256sum``.
 
-Version numbers
----------------
+Version numbers and release schedule
+------------------------------------
 
 ``configure.ac`` and ``Cargo.toml`` must have the same **package
 version** number - this is the number that users of the library see.
@@ -71,15 +70,19 @@ version** number - this is the number that users of the library see.
 ``configure.ac`` is where the **library version** is defined; this is
 what gets encoded in the SONAME of ``librsvg.so``.
 
-Librsvg follows an even/odd numbering scheme for the **package
-version**. For example, the 2.50.x series is for stable releases, and
-2.51.x is for unstable/development ones. The
-`release-team <https://gitlab.gnome.org/GNOME/releng/-/issues>`__ needs
-to be notified when a new series comes about, so they can adjust their
-tooling for the stable or development GNOME releases. File an issue in
-their `repository <https://gitlab.gnome.org/GNOME/releng/-/issues>`__ to
-indicate whether the new ``librsvg-x.y.0`` is a stable or development
-series.
+Librsvg follows `GNOME's release versioning as of 2022/September
+<https://discourse.gnome.org/t/even-odd-versioning-is-confusing-lets-stop-doing-it/10391>`_.
+(Note that it used an even/odd numbering scheme before librsvg 2.55.x)
+
+Librsvg follows `GNOME's six-month release schedule
+<https://wiki.gnome.org/ReleasePlanning>`_.
+
+The `release-team <https://gitlab.gnome.org/GNOME/releng/-/issues>`__
+needs to be notified when a new series comes about, so they can adjust
+their tooling for the stable GNOME releases. File an
+issue in their `repository
+<https://gitlab.gnome.org/GNOME/releng/-/issues>`__ to indicate that
+the new ``librsvg-x.y.0`` is a stable series.
 
 Minimum supported Rust version (MSRV)
 -------------------------------------
