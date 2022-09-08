@@ -23,10 +23,8 @@ stages:
   - check
   - build
   - lint
-  - unit test
+  - analysis
   - acceptance test
-  - cross distro
-  - release
   - docs
 
 default:
@@ -61,13 +59,13 @@ cargo_test:
   script:
     - cargo test -- --skip loading_crash --skip reference --skip render_crash
 
-.build-rsvg:
+.build-rsvg-no-docs:
   extends: '.cache'
   stage: build
   script:
     - mkdir -p _build
     - cd _build
-    - ../autogen.sh --enable-gtk-doc --enable-vala
+    - ../autogen.sh --disable-gtk-doc --enable-vala
     - make
     - make check
   artifacts:
@@ -77,11 +75,27 @@ cargo_test:
       - _build/tests/output
     expire_in: 1 day
 
+.build-rsvg-full:
+  extends: '.cache'
+  stage: build
+  script:
+    - mkdir -p _build
+    - cd _build
+    - ../autogen.sh --enable-gtk-doc --enable-vala
+    - make
+    - make check
+  artifacts:
+    when: 'always'
+    paths:
+      - _build/doc/
+      - _build/tests/*.log
+    expire_in: 1 day
+
 build-rsvg-opensuse@x86_64.stable:
   extends:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-full
     # make check runs extra tests that require extra crates, hence cache is pushed
     - .cache_push
   needs:
@@ -94,7 +108,7 @@ build-rsvg-opensuse@x86_64.minimum:
   extends:
     - '.container.opensuse@x86_64.minimum'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: opensuse-container@x86_64.minimum
       artifacts: false
@@ -105,7 +119,7 @@ build-rsvg-opensuse@x86_64.nightly:
   extends:
     - '.container.opensuse@x86_64.nightly'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: opensuse-container@x86_64.nightly
       artifacts: false
@@ -116,7 +130,7 @@ build-rsvg-opensuse@x86_64.nightly:
   extends:
     - .container.opensuse@aarch64
     - .fdo.distribution-image@opensuse
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: opensuse-container@aarch64
       artifacts: false
@@ -127,7 +141,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - .container.fedora@x86_64
     - .fdo.distribution-image@fedora
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: fedora-container@x86_64
       artifacts: false
@@ -143,7 +157,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - .container.fedora@aarch64
     - .fdo.distribution-image@fedora
-    - .build-rsvg
+    - .build-rsvg-no-docs
   needs:
     - job: fedora-container@aarch64
       artifacts: false
@@ -159,7 +173,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - '.container.debian@x86_64'
     - '.fdo.distribution-image@debian'
-    - '.build-rsvg'
+    - '.build-rsvg-no-docs'
   variables:
     # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
     # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
@@ -180,7 +194,7 @@ build-rsvg-fedora@x86_64:
   extends:
     - '.container.debian@aarch64'
     - '.fdo.distribution-image@debian'
-    - '.build-rsvg'
+    - '.build-rsvg-no-docs'
   variables:
     # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
     # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
@@ -263,7 +277,7 @@ coverage:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
     - .cache
-  stage: unit test
+  stage: analysis
   needs:
     - job: opensuse-container@x86_64.stable
     - job: check
@@ -284,7 +298,7 @@ coverage:
   script:
     - mkdir -p _build
     - cd _build
-    - ../autogen.sh --enable-gtk-doc --enable-vala --enable-debug
+    - ../autogen.sh --disable-gtk-doc --disable-vala --enable-debug
     - make
     - make -k check
   after_script:
@@ -313,7 +327,7 @@ cargo_bench:
     - '.container.opensuse@x86_64.stable'
     - '.fdo.distribution-image@opensuse'
     - '.cache'
-  stage: unit test
+  stage: analysis
   needs:
     - job: check
   script: |
@@ -355,7 +369,7 @@ msys2-mingw64:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 distcheck:
-  stage: release
+  stage: acceptance test
   extends:
     - '.container.opensuse@x86_64.stable'
     - '.fdo.distribution-image@opensuse'
@@ -368,7 +382,6 @@ distcheck:
     LIBRSVG_DEBUG: "no"
   script:
     - ./autogen.sh --enable-vala
-    - make
     - make distcheck
   artifacts:
     when: 'on_success'
@@ -377,22 +390,11 @@ distcheck:
     expire_in: 1 week
 
 reference:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - '.fdo.distribution-image@opensuse'
-    - '.cache'
   stage: docs
   needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-    - job: check
-      artifacts: false
+    - job: build-rsvg-opensuse@x86_64.stable
+      artifacts: true
   script:
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --enable-vala
-    - make
-    - cd ..
     - mkdir -p public/
     - mv _build/doc/Rsvg-2.0 public/
   artifacts:
