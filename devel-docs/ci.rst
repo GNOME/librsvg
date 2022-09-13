@@ -69,16 +69,37 @@ Librsvg uses CI templates to test its various build configurations.
 The container images are stored here:
 https://gitlab.gnome.org/GNOME/librsvg/container_registry
 
-What sort of environments for building are produced by this step?
+See the section below on the "Full test suite and different
+environments" for details on what gets tested on the different
+container images produced by this stage.
 
-- Build with a certain Minimum Supported Rust Version (MSRV), also a
-  relatively recent stable Rust, and Rust nightly.  Building with the
-  MSRV is to help distros that don't update Rust super regularly, and
-  also to ensure that librsvg's dependencies do not suddently start
-  depending on a too-recent Rust version, for example.  Building on
-  nightly is hopefully to catch compiler bugs early, or to get an
-  early warning when the Rust compiler is about to introduce newer
-  lints/warnings.
+
+Quick checks
+------------
+
+`cargo check` and `cargo test` run relatively quickly, and can catch
+trivial compilation problems as well as breakage in the "fast" section
+of the test suite.  When trying out things in a branch or a merge
+request, you can generally look at only these two jobs for a fast
+feedback loop.
+
+
+Full test suite and different environments
+------------------------------------------
+
+- The "full test suite" in principle runs `autogen.sh && make check`.
+  This runs the "fast" portion of the test suite, but also a few slow
+  tests which are designed to test librsvg's built-in limits.  It also
+  runs the C API tests, which require a C compiler.
+
+- There are builds use a certain Minimum Supported Rust Version
+  (MSRV), also a relatively recent stable Rust, and Rust nightly.
+  Building with the MSRV is to help distros that don't update Rust
+  super regularly, and also to ensure that librsvg's dependencies do
+  not suddently start depending on a too-recent Rust version, for
+  example.  Building on nightly is hopefully to catch compiler bugs
+  early, or to get an early warning when the Rust compiler is about to
+  introduce newer lints/warnings.
 
 - Build on a couple of distros.  Librsvg's test suite is especially
   sensitive to changes in rendering from Cairo, Pixman, and the
@@ -86,19 +107,6 @@ What sort of environments for building are produced by this step?
   slightly different versions of those dependencies, so that we can
   catch breakage early.
 
-- There is an environment for doing a "full build and test", that runs
-  the whole test suite, and tests all the artifacts produced by the
-  build.  This environment also has all the tools for generating
-  documentation, or producing a test coverage report.  As of
-  2022/Sept/12 this is the ``opensuse-container@x86_64.stable`` image.
-
-Quick checks
-------------
-
-
-
-Full test suite and different environments
-------------------------------------------
 
 Lints and formatting
 --------------------
