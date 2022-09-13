@@ -59,11 +59,13 @@ want to test another distro, then you want to make those container
 images easily available to your project's forks, and then you start
 pulling your hair.
 
-[Fredesktop CI Templates][ci-templates]
-([documentation][ci-templates-docs]) are a solution to this.  They can
-automatically build container images for various distros, make them
-available to forks of your project, and have some nice amenities to
-reduce the maintenance burden.
+`Fredesktop CI Templates
+<https://gitlab.freedesktop.org/freedesktop/ci-templates/>`_
+(`documentation
+<https://freedesktop.pages.freedesktop.org/ci-templates/>`_) are a
+solution to this.  They can automatically build container images for
+various distros, make them available to forks of your project, and
+have some nice amenities to reduce the maintenance burden.
 
 Librsvg uses CI templates to test its various build configurations.
 The container images are stored here:
@@ -77,7 +79,7 @@ container images produced by this stage.
 Quick checks
 ------------
 
-`cargo check` and `cargo test` run relatively quickly, and can catch
+``cargo check`` and ``cargo test`` run relatively quickly, and can catch
 trivial compilation problems as well as breakage in the "fast" section
 of the test suite.  When trying out things in a branch or a merge
 request, you can generally look at only these two jobs for a fast
@@ -87,7 +89,7 @@ feedback loop.
 Full test suite and different environments
 ------------------------------------------
 
-- The "full test suite" in principle runs `autogen.sh && make check`.
+- The "full test suite" in principle runs ``autogen.sh && make check``.
   This runs the "fast" portion of the test suite, but also a few slow
   tests which are designed to test librsvg's built-in limits.  It also
   runs the C API tests, which require a C compiler.
@@ -111,15 +113,54 @@ Full test suite and different environments
 Lints and formatting
 --------------------
 
+There is a job for ``cargo clippy``.  Clippy usually has very good
+suggestions to improve the coding style, so take advantage of them!
+And if Clippy's suggetions don't make sense for a particular portion
+of the code, feel free to add exceptions like
+``#[allow(clippy::foo_bar)]`` to the corresponding block.
+
+There is a job for ``cargo fmt``.  Librsvg uses the default formatting
+for Rust code.  For portions of code that are more legible if
+indented/aligned by hand, please use ``#[rustfmt::skip]``.
+
+
 Test coverage report
 --------------------
+
+There is a job that generates a `test coverage report
+<https://gnome.pages.gitlab.gnome.org/librsvg/coverage/index.html>`_.
+The code gets instrumented, and as the test suite runs, the
+instrumentation remembers which lines of code were executed and which
+ones were not; this then gets presented in an HTML report.  This can
+be used for various things:
+
+- See which parts of the code are not executed while running the test
+  suite.  Maybe we need to add tests that cause them to run!
+
+- If you disable most of the test suite, you can use the coverage
+  report to explore which parts of the code get executed with a
+  particular SVG.  This can aid in learning the code base.
+
 
 Release tests
 -------------
 
+There is a job that runs ``make distcheck``, a part of Autotools that
+simulates building a full release tarball.  This needs frequent
+babysitting if one adds or removes source files or test documents.
+Running ``make distcheck`` in the CI helps us guarantee that librsvg
+is always in a release-worthy state.
+
+
 Generate documentation
 ----------------------
 
-- C API docs
-- Rust API docs
-- Internals docs
+The following sets of documentation get generated:
+
+- `C API docs
+  <https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html>`_,
+  with `gi-docgen <https://gitlab.gnome.org/GNOME/gi-docgen>`_.
+- `Rust API docs <https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html>`_, with ``cargo doc``.
+- `Internals docs <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html>`_, with ``cargo doc --document-private-items``.
+- `This development guide <https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html>`_, with ``sphinx``.
+  
