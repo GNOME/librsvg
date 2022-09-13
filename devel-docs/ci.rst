@@ -50,10 +50,52 @@ We'll explain each stage in detail next.
 Creating a reproducible environment
 -----------------------------------
 
-Describe ci-templates; copy most of the stuff from at-spi2-core's CI README.
+The task of setting up CI for a particular distro or build
+configuration is rather repetitive.  One has to start with a "bare"
+distro image, then install the build-time dependencies that your
+project requires, then that is slow, then you want to build a
+container image instead of installing packages every time, then you
+want to test another distro, then you want to make those container
+images easily available to your project's forks, and then you start
+pulling your hair.
+
+[Fredesktop CI Templates][ci-templates]
+([documentation][ci-templates-docs]) are a solution to this.  They can
+automatically build container images for various distros, make them
+available to forks of your project, and have some nice amenities to
+reduce the maintenance burden.
+
+Librsvg uses CI templates to test its various build configurations.
+The container images are stored here:
+https://gitlab.gnome.org/GNOME/librsvg/container_registry
+
+What sort of environments for building are produced by this step?
+
+- Build with a certain Minimum Supported Rust Version (MSRV), also a
+  relatively recent stable Rust, and Rust nightly.  Building with the
+  MSRV is to help distros that don't update Rust super regularly, and
+  also to ensure that librsvg's dependencies do not suddently start
+  depending on a too-recent Rust version, for example.  Building on
+  nightly is hopefully to catch compiler bugs early, or to get an
+  early warning when the Rust compiler is about to introduce newer
+  lints/warnings.
+
+- Build on a couple of distros.  Librsvg's test suite is especially
+  sensitive to changes in rendering from Cairo, Pixman, and the
+  Pango/Freetype2/Harfbuzz stack.  Building on a few distros gives us
+  slightly different versions of those dependencies, so that we can
+  catch breakage early.
+
+- There is an environment for doing a "full build and test", that runs
+  the whole test suite, and tests all the artifacts produced by the
+  build.  This environment also has all the tools for generating
+  documentation, or producing a test coverage report.  As of
+  2022/Sept/12 this is the ``opensuse-container@x86_64.stable`` image.
 
 Quick checks
 ------------
+
+
 
 Full test suite and different environments
 ------------------------------------------
