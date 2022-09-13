@@ -21,21 +21,21 @@ Table of contents:
 
 # Supported branches
 
-Generally two branches are supported:
+Generally two branches are supported at any one time:
 
-* The latest stable branch, which has an **even minor version
-  number**.  See the [branches
-  page](https://gitlab.gnome.org/GNOME/librsvg/-/branches) and look
-  for the one called `librsvg-x.yy` where the `x.yy` numbers are
-  highest, `yy` should be an even number.  You can use this branch
-  safely for production work.
+* The latest stable branch.  See the [branches
+  page](https://gitlab.gnome.org/GNOME/librsvg/-/branches) and look for
+  the one called `librsvg-x.yy` where the `x.yy` numbers are highest You
+  can use this branch safely for production work.
 
-* The `main` branch.  All development happens here; development
-  releases have an **odd minor version number**, for example `2.53.4`.
+* The `main` branch.  All development happens here.
 
 Stable branches become unsupported when a new one appears.  For
-example, `librsvg-2.52` will become unsupported when `librsvg-2.54`
+example, `librsvg-2.55` will become unsupported when `librsvg-2.56`
 appears.
+
+* [Release archive](https://gitlab.gnome.org/GNOME/librsvg/-/releases) in gitlab.gnome.org
+* [Source tarballs for download](https://download.gnome.org/sources/librsvg/) at download.gnome.org
 
 # Using librsvg
 
