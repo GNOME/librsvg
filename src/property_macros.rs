@@ -121,8 +121,8 @@ macro_rules! make_property {
         impl_default!($name, $name::$default);
         impl_property!($name, $inherits_automatically);
 
-        impl crate::parsers::Parse for $name {
-            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
+        impl $crate::parsers::Parse for $name {
+            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, $crate::error::ParseError<'i>> {
                 Ok(parse_identifiers!(
                     parser,
                     $($str_prop => $name::$variant,)+
@@ -147,8 +147,8 @@ macro_rules! make_property {
         impl_default!($name, $name::$default);
         $prop
 
-        impl crate::parsers::Parse for $name {
-            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
+        impl $crate::parsers::Parse for $name {
+            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, $crate::error::ParseError<'i>> {
                 Ok(parse_identifiers!(
                     parser,
                     $($str_prop => $name::$variant,)+
@@ -170,9 +170,9 @@ macro_rules! make_property {
         impl_default!($name, $name($default));
         impl_property!($name, $inherits_automatically);
 
-        impl crate::parsers::Parse for $name {
-            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, crate::error::ParseError<'i>> {
-                Ok($name(<$type as crate::parsers::Parse>::parse(parser)?))
+        impl $crate::parsers::Parse for $name {
+            fn parse<'i>(parser: &mut ::cssparser::Parser<'i, '_>) -> Result<$name, $crate::error::ParseError<'i>> {
+                Ok($name(<$type as $crate::parsers::Parse>::parse(parser)?))
             }
         }
     };
@@ -275,12 +275,12 @@ macro_rules! impl_default {
 
 macro_rules! impl_property {
     ($name:ident, $inherits_automatically:expr) => {
-        impl crate::property_macros::Property for $name {
+        impl $crate::property_macros::Property for $name {
             fn inherits_automatically() -> bool {
                 $inherits_automatically
             }
 
-            fn compute(&self, _v: &crate::properties::ComputedValues) -> Self {
+            fn compute(&self, _v: &$crate::properties::ComputedValues) -> Self {
                 self.clone()
             }
         }
