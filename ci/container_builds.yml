@@ -42,7 +42,6 @@ variables:
       python3-pip
       python38-docutils
       shadow
-      sudo
       system-group-wheel
       vala
       wget
