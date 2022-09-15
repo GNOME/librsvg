@@ -55,7 +55,8 @@ variables:
       bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&
-      pip3 install gi-docgen sphinx sphinx_rtd_theme
+      pip3 install gi-docgen sphinx sphinx_rtd_theme &&
+      rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
 
 .container.opensuse@x86_64.minimum:
   extends: .container.opensuse@common
