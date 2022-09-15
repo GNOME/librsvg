@@ -36,8 +36,8 @@ api_SOURCES = 		\
 	test-utils.h	\
 	$(NULL)
 
-api_LDADD = $(top_builddir)/librsvg-@RSVG_API_MAJOR_VERSION@.la	\
-	$(LIBRSVG_LIBS)						\
+api_LDADD = $(top_builddir)/librsvg_c_api.la	\
+	$(LIBRSVG_LIBS)				\
 	$(LIBM)
 
 api_LDFLAGS = -static
