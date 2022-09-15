@@ -140,6 +140,7 @@
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::derive_partial_eq_without_eq)]
 #![warn(nonstandard_style, rust_2018_idioms, unused)]
 // Some lints no longer exist
 #![warn(renamed_and_removed_lints)]
