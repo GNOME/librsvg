@@ -226,6 +226,8 @@ unsafe extern "C" fn sax_start_element_ns_cb(
             }
         };
 
+    // This clippy::let_unit_value is for the "let _: () = e" guard below.
+    #[allow(clippy::let_unit_value)]
     if let Err(e) = xml2_parser.state.start_element(qual_name, attrs) {
         let _: () = e; // guard in case we change the error type later
 
