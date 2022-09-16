@@ -127,7 +127,7 @@ impl<'a> CascadedValues<'a> {
 
             CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(
                 node,
-                &*v,
+                v,
                 self.context_fill.clone(),
                 self.context_stroke.clone(),
             ),
@@ -177,7 +177,7 @@ impl<'a> CascadedValues<'a> {
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {
             CascadedInner::FromNode(ref e) => e.get_computed_values(),
-            CascadedInner::FromValues(ref v) => &*v,
+            CascadedInner::FromValues(ref v) => v,
         }
 
         // if values.fill == "context-fill" {
@@ -249,7 +249,7 @@ macro_rules! is_element_of_type {
     ($node:expr, $element_type:ident) => {
         matches!(
             *$node.borrow_element(),
-            crate::element::Element::$element_type(_)
+            $crate::element::Element::$element_type(_)
         )
     };
 }
@@ -258,7 +258,7 @@ macro_rules! is_element_of_type {
 macro_rules! borrow_element_as {
     ($node:expr, $element_type:ident) => {
         std::cell::Ref::map($node.borrow_element(), |e| match *e {
-            crate::element::Element::$element_type(ref e) => &*e,
+            $crate::element::Element::$element_type(ref e) => &*e,
             _ => panic!("tried to borrow_element_as {}", stringify!($element_type)),
         })
     };

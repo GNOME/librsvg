@@ -6,8 +6,8 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2022-09-06.0-main"
-  RUST_STABLE: "1.60.0"
+  BASE_TAG: "2022-09-15.1-main"
+  RUST_STABLE: "1.63.0"
   RUST_MINIMUM: "1.58.1"
 
 .container.opensuse@common:
@@ -18,13 +18,34 @@ variables:
     FDO_DISTRIBUTION_VERSION: "tumbleweed"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
     FDO_DISTRIBUTION_PACKAGES: >-
-      gcc gdb make vala clang clang-tools
-      automake autoconf curl gettext git itstool libtool
-      gtk-doc gobject-introspection-devel gtk3-devel
-      cairo-devel libxml2-devel wget openssl-devel
-      pango-devel gdk-pixbuf-devel ccache gettext-tools
-      sudo shadow system-group-wheel xz python38-docutils python3-pip
+      autoconf
+      automake
+      cairo-devel
+      ccache
+      clang
+      clang-tools
+      curl
+      gcc
+      gdb
+      gdk-pixbuf-devel
+      gettext
+      gettext-tools
+      git
+      gobject-introspection-devel
       google-roboto-fonts
+      itstool
+      libtool
+      libxml2-devel
+      make
+      openssl-devel
+      pango-devel
+      python3-pip
+      python38-docutils
+      shadow
+      system-group-wheel
+      vala
+      wget
+      xz
 
 .container.opensuse@x86_64.stable:
   extends: .container.opensuse@common
@@ -34,7 +55,8 @@ variables:
       bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&
-      pip3 install gi-docgen sphinx sphinx_rtd_theme
+      pip3 install gi-docgen sphinx sphinx_rtd_theme &&
+      rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
 
 .container.opensuse@x86_64.minimum:
   extends: .container.opensuse@common
@@ -93,13 +115,29 @@ opensuse-container@x86_64.nightly:
     FDO_DISTRIBUTION_VERSION: "33"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
     FDO_DISTRIBUTION_PACKAGES: >-
-      gcc make vala curl
-      automake autoconf libtool gettext itstool
-      gdk-pixbuf2-devel gobject-introspection-devel
-      gtk-doc git redhat-rpm-config gtk3-devel ccache
-      libxml2-devel cairo-devel pango-devel wget openssl-devel
-      gettext-devel python3-docutils python3-pip
+      autoconf
+      automake
+      cairo-devel
+      ccache
+      curl
+      gcc
+      gdk-pixbuf2-devel
+      gettext
+      gettext-devel
+      git
+      gobject-introspection-devel
       google-roboto-fonts
+      itstool
+      libtool
+      libxml2-devel
+      make
+      openssl-devel
+      pango-devel
+      python3-docutils
+      python3-pip
+      redhat-rpm-config
+      vala
+      wget
 
 .container.fedora@x86_64:
   extends: .container.fedora@common
@@ -140,14 +178,31 @@ fedora-container@x86_64:
     FDO_DISTRIBUTION_VERSION: "testing"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
     FDO_DISTRIBUTION_PACKAGES: >-
-      curl gcc make valac git wget
-      automake autoconf libtool gettext itstool
-      libgdk-pixbuf2.0-dev libgirepository1.0-dev
-      gtk-doc-tools libpango1.0-dev libgtk-3-dev
-      libxml2-dev libcairo2-dev python3-docutils
-      ca-certificates openssl libssl-dev python3-pip
-      autotools-dev libltdl-dev autopoint
+      autoconf
+      automake
+      autopoint
+      autotools-dev
+      ca-certificates
+      curl
       fonts-roboto
+      gcc
+      gettext
+      git
+      itstool
+      libcairo2-dev
+      libgdk-pixbuf2.0-dev
+      libgirepository1.0-dev
+      libltdl-dev
+      libpango1.0-dev
+      libssl-dev
+      libtool
+      libxml2-dev
+      make
+      openssl
+      python3-docutils
+      python3-pip
+      valac
+      wget
 
 .container.debian@x86_64:
   extends: .container.debian@common

@@ -135,7 +135,7 @@ impl Item {
                     if let Some(decimals) = qvalue[1..].strip_prefix('.') {
                         if (first_digit == '0'
                             && decimals.len() <= 3
-                            && decimals.chars().all(|c| c.is_digit(10)))
+                            && decimals.chars().all(|c| c.is_ascii_digit()))
                             || (first_digit == '1'
                                 && decimals.len() <= 3
                                 && decimals.chars().all(|c| c == '0'))

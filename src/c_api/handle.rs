@@ -683,7 +683,7 @@ impl CHandle {
             }
 
             LoadState::Loading { ref buffer } => {
-                let bytes = Bytes::from(&*buffer);
+                let bytes = Bytes::from(buffer);
                 let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
                 let base_file = inner.base_url.get_gfile();
@@ -853,7 +853,7 @@ impl CHandle {
     fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
         let inner = self.imp().inner.borrow();
 
-        CairoRenderer::new(&*handle_ref)
+        CairoRenderer::new(handle_ref)
             .with_dpi(inner.dpi.x(), inner.dpi.y())
             .test_mode(inner.is_testing)
     }

@@ -608,19 +608,21 @@ impl Sepia {
 }
 
 impl Parse for FilterFunction {
+    #[allow(clippy::type_complexity)]
+    #[rustfmt::skip]
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, crate::error::ParseError<'i>> {
         let loc = parser.current_source_location();
         let fns: Vec<(&str, &dyn Fn(&mut Parser<'i, '_>) -> _)> = vec![
-            ("blur", &parse_blur),
-            ("brightness", &parse_brightness),
-            ("contrast", &parse_contrast),
+            ("blur",        &parse_blur),
+            ("brightness",  &parse_brightness),
+            ("contrast",    &parse_contrast),
             ("drop-shadow", &parse_dropshadow),
-            ("grayscale", &parse_grayscale),
-            ("hue-rotate", &parse_huerotate),
-            ("invert", &parse_invert),
-            ("opacity", &parse_opacity),
-            ("saturate", &parse_saturate),
-            ("sepia", &parse_sepia),
+            ("grayscale",   &parse_grayscale),
+            ("hue-rotate",  &parse_huerotate),
+            ("invert",      &parse_invert),
+            ("opacity",     &parse_opacity),
+            ("saturate",    &parse_saturate),
+            ("sepia",       &parse_sepia),
         ];
 
         for (filter_name, parse_fn) in fns {
