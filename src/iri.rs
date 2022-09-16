@@ -23,7 +23,7 @@ impl Iri {
     pub fn get(&self) -> Option<&NodeId> {
         match *self {
             Iri::None => None,
-            Iri::Resource(ref f) => Some(&*f),
+            Iri::Resource(ref f) => Some(f),
         }
     }
 }

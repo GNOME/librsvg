@@ -248,7 +248,6 @@ pub fn extract_filter_from_filter_node(
 ) -> Result<FilterSpec, FilterResolveError> {
     let session = draw_ctx.session().clone();
 
-    let filter_node = &*filter_node;
     assert!(is_element_of_type!(filter_node, Filter));
 
     let filter_element = filter_node.borrow_element();

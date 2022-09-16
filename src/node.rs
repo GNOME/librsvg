@@ -127,7 +127,7 @@ impl<'a> CascadedValues<'a> {
 
             CascadedInner::FromValues(ref v) => CascadedValues::new_from_values(
                 node,
-                &*v,
+                v,
                 self.context_fill.clone(),
                 self.context_stroke.clone(),
             ),
@@ -177,7 +177,7 @@ impl<'a> CascadedValues<'a> {
     pub fn get(&'a self) -> &'a ComputedValues {
         match self.inner {
             CascadedInner::FromNode(ref e) => e.get_computed_values(),
-            CascadedInner::FromValues(ref v) => &*v,
+            CascadedInner::FromValues(ref v) => v,
         }
 
         // if values.fill == "context-fill" {
