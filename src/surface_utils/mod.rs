@@ -194,7 +194,7 @@ impl PixelOps for Pixel {
     fn diff(&self, other: &Pixel) -> Pixel {
         self.iter()
             .zip(other.iter())
-            .map(|(l, r)| (l as i32 - r as i32).abs() as u8)
+            .map(|(l, r)| (l as i32 - r as i32).unsigned_abs() as u8)
             .collect()
     }
 
