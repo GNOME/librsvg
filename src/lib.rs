@@ -249,7 +249,7 @@ pub mod rsvg_convert_only {
     pub use crate::dpi::Dpi;
     pub use crate::error::ParseError;
     pub use crate::length::{
-        CssLength, Horizontal, Length, Normalize, NormalizeParams, ULength, Validate, Vertical,
+        CssLength, Horizontal, Length, Normalize, NormalizeParams, Signed, ULength, Unsigned, Validate, Vertical,
     };
     pub use crate::parsers::{Parse, ParseValue};
     pub use crate::rect::Rect;
