@@ -19,7 +19,6 @@ use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
 
 /// Loading options for SVG documents.
-#[derive(Clone)]
 pub struct LoadOptions {
     /// Load url resolver; all references will be resolved with respect to this.
     pub url_resolver: UrlResolver,
