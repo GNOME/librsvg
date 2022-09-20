@@ -897,7 +897,7 @@ fn parse_args() -> Result<Converter, Error> {
             clap::Arg::with_name("output")
                 .short('o')
                 .long("output")
-                .empty_values(false)
+                .value_parser(clap::value_parser!(PathBuf))
                 .help("Output filename [defaults to stdout]"),
         )
         .arg(
@@ -1067,8 +1067,8 @@ fn parse_args() -> Result<Converter, Error> {
         language,
         input,
         output: matches
-            .value_of_os("output")
-            .map(PathBuf::from)
+            .get_one::<PathBuf>("output")
+            .cloned()
             .map(Output::Path)
             .unwrap_or(Output::Stdout),
         testing: matches.is_present("testing"),
