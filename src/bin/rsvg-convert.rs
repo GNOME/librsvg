@@ -900,6 +900,7 @@ fn parse_args() -> Result<Converter, Error> {
             clap::Arg::with_name("output")
                 .short('o')
                 .long("output")
+                .takes_value(true)
                 .value_parser(clap::value_parser!(PathBuf))
                 .help("Output filename [defaults to stdout]"),
         )
@@ -1067,6 +1068,11 @@ fn parse_args() -> Result<Converter, Error> {
 
     let export_id: Option<String> = matches.get_one::<String>("export_id").map(lookup_id);
 
+    let output = match matches.get_one::<PathBuf>("output") {
+        None => Output::Stdout,
+        Some(path) => Output::Path(path.clone()),
+    };
+
     Ok(Converter {
         dpi_x,
         dpi_y,
@@ -1088,11 +1094,7 @@ fn parse_args() -> Result<Converter, Error> {
         keep_image_data,
         language,
         input,
-        output: matches
-            .get_one::<PathBuf>("output")
-            .cloned()
-            .map(Output::Path)
-            .unwrap_or(Output::Stdout),
+        output,
         testing: matches.is_present("testing"),
     })
 }
