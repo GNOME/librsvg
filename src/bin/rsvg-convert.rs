@@ -1,4 +1,4 @@
-use clap::{arg_enum, crate_version, value_t};
+use clap::crate_version;
 
 use gio::prelude::*;
 use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
@@ -18,11 +18,15 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
+use cssparser::{_cssparser_internal_to_lowercase, match_ignore_ascii_case};
+
 use librsvg::rsvg_convert_only::{
     AspectRatio, CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, Parse,
-    PathOrUrl, Rect, ULength, Validate, Vertical, ViewBox,
+    PathOrUrl, Rect, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
 };
 use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, RenderingError};
+
+use std::ffi::OsString;
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -468,20 +472,19 @@ impl std::fmt::Display for Output {
     }
 }
 
-arg_enum! {
-    // Keep this enum in sync with supported_formats in parse_args()
-    #[derive(Clone, Copy, Debug)]
-    enum Format {
-        Png,
-        Pdf,
-        Ps,
-        Eps,
-        Svg,
-    }
+// Keep this enum in sync with supported_formats in parse_args()
+#[derive(Clone, Copy, Debug)]
+enum Format {
+    Png,
+    Pdf,
+    Ps,
+    Eps,
+    Svg,
 }
 
 struct Converter {
-    pub dpi: (f64, f64),
+    pub dpi_x: Resolution,
+    pub dpi_y: Resolution,
     pub zoom: Scale,
     pub width: Option<ULength<Horizontal>>,
     pub height: Option<ULength<Vertical>>,
@@ -555,7 +558,7 @@ impl Converter {
             }
 
             let renderer = CairoRenderer::new(&handle)
-                .with_dpi(self.dpi.0, self.dpi.1)
+                .with_dpi(self.dpi_x.0, self.dpi_y.0)
                 .with_language(&self.language)
                 .test_mode(self.testing);
 
@@ -563,7 +566,7 @@ impl Converter {
 
             let natural_size = Size::new(geometry.width, geometry.height);
 
-            let params = NormalizeParams::from_dpi(Dpi::new(self.dpi.0, self.dpi.1));
+            let params = NormalizeParams::from_dpi(Dpi::new(self.dpi_x.0, self.dpi_y.0));
 
             // Convert natural size and requested size to pixels or points, depending on the target format,
             let (natural_size, requested_width, requested_height, page_size) = match self.format {
@@ -768,85 +771,87 @@ fn natural_geometry(
 
 fn parse_args() -> Result<Converter, Error> {
     let supported_formats = vec![
-        "Png",
+        "png",
         #[cfg(system_deps_have_cairo_pdf)]
-        "Pdf",
+        "pdf",
         #[cfg(system_deps_have_cairo_ps)]
-        "Ps",
+        "ps",
         #[cfg(system_deps_have_cairo_ps)]
-        "Eps",
+        "eps",
         #[cfg(system_deps_have_cairo_svg)]
-        "Svg",
+        "svg",
     ];
 
-    let app = clap::App::new("rsvg-convert")
+    let app = clap::Command::new("rsvg-convert")
         .version(concat!("version ", crate_version!()))
         .about("Convert SVG files to other image formats")
-        .help_short("?")
-        .version_short("v")
+        .help_short('?')
+        .version_short('v')
         .arg(
             clap::Arg::with_name("res_x")
-                .short("d")
+                .short('d')
                 .long("dpi-x")
                 .takes_value(true)
                 .value_name("number")
                 .default_value("96")
-                .validator(is_valid_resolution)
+                .value_parser(parse_resolution)
                 .help("Pixels per inch"),
         )
         .arg(
             clap::Arg::with_name("res_y")
-                .short("p")
+                .short('p')
                 .long("dpi-y")
                 .takes_value(true)
                 .value_name("number")
                 .default_value("96")
-                .validator(is_valid_resolution)
+                .value_parser(parse_resolution)
                 .help("Pixels per inch"),
         )
         .arg(
             clap::Arg::with_name("zoom_x")
-                .short("x")
+                .short('x')
                 .long("x-zoom")
                 .takes_value(true)
                 .value_name("number")
                 .conflicts_with("zoom")
-                .validator(is_valid_zoom_factor)
+                .value_parser(parse_zoom_factor)
                 .help("Horizontal zoom factor"),
         )
         .arg(
             clap::Arg::with_name("zoom_y")
-                .short("y")
+                .short('y')
                 .long("y-zoom")
                 .takes_value(true)
                 .value_name("number")
                 .conflicts_with("zoom")
-                .validator(is_valid_zoom_factor)
+                .value_parser(parse_zoom_factor)
                 .help("Vertical zoom factor"),
         )
         .arg(
             clap::Arg::with_name("zoom")
-                .short("z")
+                .short('z')
                 .long("zoom")
                 .takes_value(true)
                 .value_name("number")
-                .validator(is_valid_zoom_factor)
+                .value_parser(parse_zoom_factor)
                 .help("Zoom factor"),
         )
         .arg(
             clap::Arg::with_name("size_x")
-                .short("w")
+                .short('w')
                 .long("width")
                 .takes_value(true)
                 .value_name("length")
+                .value_parser(parse_length::<Horizontal, Unsigned>)
                 .help("Width [defaults to the width of the SVG]"),
         )
         .arg(
             clap::Arg::with_name("size_y")
-                .short("h")
+                .short('h')
                 .long("height")
                 .takes_value(true)
                 .value_name("length")
+                .value_parser(parse_length::<Vertical, Unsigned>)
                 .help("Height [defaults to the height of the SVG]"),
         )
         .arg(
@@ -854,6 +859,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("top")
                 .takes_value(true)
                 .value_name("length")
+                .value_parser(parse_length::<Vertical, Signed>)
                 .help("Distance between top edge of page and the image [defaults to 0]"),
         )
         .arg(
@@ -861,6 +867,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("left")
                 .takes_value(true)
                 .value_name("length")
+                .value_parser(parse_length::<Horizontal, Signed>)
                 .help("Distance between left edge of page and the image [defaults to 0]"),
         )
         .arg(
@@ -868,6 +875,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("page-width")
                 .takes_value(true)
                 .value_name("length")
+                .value_parser(parse_length::<Horizontal, Unsigned>)
                 .help("Width of output media [defaults to the width of the SVG]"),
         )
         .arg(
@@ -875,28 +883,30 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("page-height")
                 .takes_value(true)
                 .value_name("length")
+                .value_parser(parse_length::<Vertical, Unsigned>)
                 .help("Height of output media [defaults to the height of the SVG]"),
         )
         .arg(
             clap::Arg::with_name("format")
-                .short("f")
+                .short('f')
                 .long("format")
                 .takes_value(true)
                 .possible_values(supported_formats.as_slice())
-                .case_insensitive(true)
+                .ignore_case(true)
                 .default_value("png")
                 .help("Output format"),
         )
         .arg(
             clap::Arg::with_name("output")
-                .short("o")
+                .short('o')
                 .long("output")
-                .empty_values(false)
+                .takes_value(true)
+                .value_parser(clap::value_parser!(PathBuf))
                 .help("Output filename [defaults to stdout]"),
         )
         .arg(
             clap::Arg::with_name("export_id")
-                .short("i")
+                .short('i')
                 .long("export-id")
                 .empty_values(false)
                 .value_name("object id")
@@ -904,7 +914,7 @@ fn parse_args() -> Result<Converter, Error> {
         )
         .arg(
             clap::Arg::with_name("accept-language")
-                .short("l")
+                .short('l')
                 .long("accept-language")
                 .empty_values(false)
                 .value_name("languages")
@@ -912,29 +922,32 @@ fn parse_args() -> Result<Converter, Error> {
         )
         .arg(
             clap::Arg::with_name("keep_aspect")
-                .short("a")
+                .short('a')
                 .long("keep-aspect-ratio")
                 .help("Preserve the aspect ratio"),
         )
         .arg(
             clap::Arg::with_name("background")
-                .short("b")
+                .short('b')
                 .long("background-color")
                 .takes_value(true)
                 .value_name("color")
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
+                .default_value("none")
                 .help("Set the background color using a CSS color spec"),
         )
         .arg(
             clap::Arg::with_name("stylesheet")
-                .short("s")
+                .short('s')
                 .long("stylesheet")
-                .empty_values(false)
+                .takes_value(true)
+                .value_parser(clap::value_parser!(PathBuf))
                 .value_name("filename.css")
                 .help("Filename of CSS stylesheet to apply"),
         )
         .arg(
             clap::Arg::with_name("unlimited")
-                .short("u")
+                .short('u')
                 .long("unlimited")
                 .help("Allow huge SVG files"),
         )
@@ -956,70 +969,67 @@ fn parse_args() -> Result<Converter, Error> {
         )
         .arg(
             clap::Arg::with_name("FILE")
+                .value_parser(clap::value_parser!(OsString))
                 .help("The input file(s) to convert")
                 .multiple(true),
         );
 
     let matches = app.get_matches();
 
-    let format = value_t!(matches, "format", Format)?;
+    let format_str: &String = matches
+        .get_one("format")
+        .expect("already provided default_value");
 
-    let keep_image_data = match format {
-        Format::Ps | Format::Eps | Format::Pdf => !matches.is_present("no_keep_image_data"),
-        _ => matches.is_present("keep_image_data"),
+    let format = match_ignore_ascii_case! {
+        format_str,
+        "png" => Format::Png,
+        "pdf" => Format::Pdf,
+        "ps" => Format::Ps,
+        "eps" => Format::Eps,
+        "svg" => Format::Svg,
+        _ => unreachable!("clap should already have the list of possible values"),
     };
 
-    let language = value_t!(matches, "accept-language", String)
-        .or_none()
-        .and_then(|lang_str| match lang_str {
-            None => Ok(Language::FromEnvironment),
-            Some(s) => AcceptLanguage::parse(&s)
-                .map(Language::AcceptLanguage)
-                .map_err(|e| {
-                    let desc = format!("{}", e);
-                    clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
-                }),
-        });
+    let keep_image_data = match format {
+        Format::Ps | Format::Eps | Format::Pdf => !matches.contains_id("no_keep_image_data"),
+        _ => matches.contains_id("keep_image_data"),
+    };
 
-    let background_color = value_t!(matches, "background", String).and_then(parse_color_string);
+    let language = match matches.get_one::<String>("accept-language") {
+        None => Language::FromEnvironment,
+        Some(s) => AcceptLanguage::parse(s)
+            .map(Language::AcceptLanguage)
+            .map_err(|e| {
+                let desc = format!("{}", e);
+                clap::Error::with_description(desc, clap::ErrorKind::InvalidValue)
+            })?,
+    };
+
+    let background_str: &String = matches
+        .get_one("background")
+        .expect("already provided default_value");
+    let background_color: Option<Color> = parse_background_color(&**background_str)
+        .map_err(|e| clap::Error::with_description(e, clap::ErrorKind::InvalidValue))?;
 
     // librsvg expects ids starting with '#', so it can lookup ids in externs like "subfile.svg#subid".
     // For the user's convenience, we prepend '#' automatically; we only support specifying ids from
     // the toplevel, and don't expect users to lookup things in externs.
-    let lookup_id = |id: String| {
+    let lookup_id = |id: &String| {
         if id.starts_with('#') {
-            id
+            id.clone()
         } else {
             format!("#{}", id)
         }
     };
 
-    let width = value_t!(matches, "size_x", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
-    let height = value_t!(matches, "size_y", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
+    let width: Option<ULength<Horizontal>> = matches.get_one("size_x").copied();
+    let height: Option<ULength<Vertical>> = matches.get_one("size_y").copied();
 
-    let left = value_t!(matches, "left", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
-    let top = value_t!(matches, "top", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
+    let left: Option<Length<Horizontal>> = matches.get_one("left").copied();
+    let top: Option<Length<Vertical>> = matches.get_one("top").copied();
 
-    let page_width = value_t!(matches, "page_width", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
-    let page_height = value_t!(matches, "page_height", String)
-        .or_none()?
-        .map(parse_length)
-        .transpose()?;
+    let page_width: Option<ULength<Horizontal>> = matches.get_one("page_width").copied();
+    let page_height: Option<ULength<Vertical>> = matches.get_one("page_height").copied();
 
     let page_size = match (page_width, page_height) {
         (None, None) => None,
@@ -1031,9 +1041,16 @@ fn parse_args() -> Result<Converter, Error> {
         (Some(w), Some(h)) => Some((w, h)),
     };
 
-    let zoom = value_t!(matches, "zoom", f64).or_none()?;
-    let zoom_x = value_t!(matches, "zoom_x", f64).or_none()?;
-    let zoom_y = value_t!(matches, "zoom_y", f64).or_none()?;
+    let dpi_x = *matches
+        .get_one::<Resolution>("res_x")
+        .expect("already provided default_value");
+    let dpi_y = *matches
+        .get_one::<Resolution>("res_y")
+        .expect("already provided default_value");
+
+    let zoom: Option<ZoomFactor> = matches.get_one("zoom").copied();
+    let zoom_x: Option<ZoomFactor> = matches.get_one("zoom_x").copied();
+    let zoom_y: Option<ZoomFactor> = matches.get_one("zoom_y").copied();
 
     let input = match matches.values_of_os("FILE") {
         Some(values) => values
@@ -1050,14 +1067,19 @@ fn parse_args() -> Result<Converter, Error> {
         ));
     }
 
+    let export_id: Option<String> = matches.get_one::<String>("export_id").map(lookup_id);
+
+    let output = match matches.get_one::<PathBuf>("output") {
+        None => Output::Stdout,
+        Some(path) => Output::Path(path.clone()),
+    };
+
     Ok(Converter {
-        dpi: (
-            value_t!(matches, "res_x", f64)?,
-            value_t!(matches, "res_y", f64)?,
-        ),
+        dpi_x,
+        dpi_y,
         zoom: Scale {
-            x: zoom.or(zoom_x).unwrap_or(1.0),
-            y: zoom.or(zoom_y).unwrap_or(1.0),
+            x: zoom.or(zoom_x).map(|factor| factor.0).unwrap_or(1.0),
+            y: zoom.or(zoom_y).map(|factor| factor.0).unwrap_or(1.0),
         },
         width,
         height,
@@ -1065,36 +1087,36 @@ fn parse_args() -> Result<Converter, Error> {
         top,
         page_size,
         format,
-        export_id: value_t!(matches, "export_id", String)
-            .or_none()?
-            .map(lookup_id),
-        keep_aspect_ratio: matches.is_present("keep_aspect"),
-        background_color: background_color.or_none()?,
-        stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
-        unlimited: matches.is_present("unlimited"),
+        export_id,
+        keep_aspect_ratio: matches.contains_id("keep_aspect"),
+        background_color,
+        stylesheet: matches.get_one("stylesheet").cloned(),
+        unlimited: matches.contains_id("unlimited"),
         keep_image_data,
-        language: language?,
+        language,
         input,
-        output: matches
-            .value_of_os("output")
-            .map(PathBuf::from)
-            .map(Output::Path)
-            .unwrap_or(Output::Stdout),
+        output,
         testing: matches.is_present("testing"),
     })
 }
 
-fn is_valid_resolution(v: String) -> Result<(), String> {
+#[derive(Copy, Clone)]
+struct Resolution(f64);
+
+fn parse_resolution(v: &str) -> Result<Resolution, String> {
     match v.parse::<f64>() {
-        Ok(res) if res > 0.0 => Ok(()),
+        Ok(res) if res > 0.0 => Ok(Resolution(res)),
         Ok(_) => Err(String::from("Invalid resolution")),
         Err(e) => Err(format!("{}", e)),
     }
 }
 
-fn is_valid_zoom_factor(v: String) -> Result<(), String> {
+#[derive(Copy, Clone)]
+struct ZoomFactor(f64);
+
+fn parse_zoom_factor(v: &str) -> Result<ZoomFactor, String> {
     match v.parse::<f64>() {
-        Ok(res) if res > 0.0 => Ok(()),
+        Ok(res) if res > 0.0 => Ok(ZoomFactor(res)),
         Ok(_) => Err(String::from("Invalid zoom factor")),
         Err(e) => Err(format!("{}", e)),
     }
@@ -1127,18 +1149,14 @@ impl<T> NotFound for Result<T, clap::Error> {
     }
 }
 
-fn parse_color_string<T: AsRef<str> + std::fmt::Display>(s: T) -> Result<Color, clap::Error> {
-    match s.as_ref() {
-        "none" | "None" => Err(clap::Error::with_description(
-            s.as_ref(),
-            clap::ErrorKind::ArgumentNotFound,
-        )),
-        _ => <Color as Parse>::parse_str(s.as_ref()).map_err(|_| {
-            let desc = format!(
+fn parse_background_color(s: &str) -> Result<Option<Color>, String> {
+    match s {
+        "none" | "None" => Ok(None),
+        _ => <Color as Parse>::parse_str(s).map(Some).map_err(|_| {
+            format!(
                 "Invalid value: The argument '{}' can not be parsed as a CSS color value",
                 s
-            );
-            clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
+            )
         }),
     }
 }
@@ -1152,26 +1170,21 @@ fn is_absolute_unit(u: LengthUnit) -> bool {
     }
 }
 
-fn parse_length<N: Normalize, V: Validate>(s: String) -> Result<CssLength<N, V>, clap::Error> {
-    <CssLength<N, V> as Parse>::parse_str(&s)
+fn parse_length<N: Normalize, V: Validate>(s: &str) -> Result<CssLength<N, V>, String> {
+    <CssLength<N, V> as Parse>::parse_str(s)
         .map_err(|_| {
-            let desc = format!(
+            format!(
                 "Invalid value: The argument '{}' can not be parsed as a length",
                 s
-            );
-            clap::Error::with_description(&desc, clap::ErrorKind::InvalidValue)
+            )
         })
         .and_then(|l| {
             if is_absolute_unit(l.unit) {
                 Ok(l)
             } else {
-                let desc = format!(
+                Err(format!(
                     "Invalid value '{}': supported units are px, in, cm, mm, pt, pc",
                     s
-                );
-                Err(clap::Error::with_description(
-                    &desc,
-                    clap::ErrorKind::InvalidValue,
                 ))
             }
         })
@@ -1190,23 +1203,17 @@ mod color_tests {
 
     #[test]
     fn valid_color_is_ok() {
-        assert!(parse_color_string("Red").is_ok());
+        assert!(parse_background_color("Red").is_ok());
     }
 
     #[test]
-    fn none_is_handled_as_not_found() {
-        assert_eq!(
-            parse_color_string("None").map_err(|e| e.kind),
-            Err(clap::ErrorKind::ArgumentNotFound)
-        );
+    fn none_is_handled_as_transparent() {
+        assert_eq!(parse_background_color("None").unwrap(), None,);
     }
 
     #[test]
     fn invalid_is_handled_as_invalid_value() {
-        assert_eq!(
-            parse_color_string("foo").map_err(|e| e.kind),
-            Err(clap::ErrorKind::InvalidValue)
-        );
+        assert!(parse_background_color("foo").is_err());
     }
 }
 
