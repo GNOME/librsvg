@@ -25,6 +25,8 @@ use librsvg::rsvg_convert_only::{
     PathOrUrl, Rect, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
 };
 use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, RenderingError};
+
+use std::ffi::OsString;
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -965,6 +967,7 @@ fn parse_args() -> Result<Converter, Error> {
         )
         .arg(
             clap::Arg::with_name("FILE")
+                .value_parser(clap::value_parser!(OsString))
                 .help("The input file(s) to convert")
                 .multiple(true),
         );
