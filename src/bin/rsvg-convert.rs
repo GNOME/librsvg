@@ -941,7 +941,8 @@ fn parse_args() -> Result<Converter, Error> {
             clap::Arg::with_name("stylesheet")
                 .short('s')
                 .long("stylesheet")
-                .empty_values(false)
+                .takes_value(true)
+                .value_parser(clap::value_parser!(PathBuf))
                 .value_name("filename.css")
                 .help("Filename of CSS stylesheet to apply"),
         )
@@ -1090,7 +1091,7 @@ fn parse_args() -> Result<Converter, Error> {
         export_id,
         keep_aspect_ratio: matches.contains_id("keep_aspect"),
         background_color,
-        stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
+        stylesheet: matches.get_one("stylesheet").cloned(),
         unlimited: matches.contains_id("unlimited"),
         keep_image_data,
         language,
