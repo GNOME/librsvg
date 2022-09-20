@@ -1,4 +1,4 @@
-use clap::{crate_version, ValueEnum};
+use clap::crate_version;
 
 use gio::prelude::*;
 use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
@@ -474,7 +474,7 @@ impl std::fmt::Display for Output {
 }
 
 // Keep this enum in sync with supported_formats in parse_args()
-#[derive(ValueEnum, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
 enum Format {
     Png,
     Pdf,
