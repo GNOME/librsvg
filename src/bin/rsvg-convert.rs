@@ -1,4 +1,4 @@
-use clap::{ValueEnum, crate_version};
+use clap::{crate_version, ValueEnum};
 
 use gio::prelude::*;
 use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
@@ -18,7 +18,7 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
-use cssparser::{match_ignore_ascii_case, _cssparser_internal_to_lowercase};
+use cssparser::{_cssparser_internal_to_lowercase, match_ignore_ascii_case};
 
 use librsvg::rsvg_convert_only::{
     AspectRatio, CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, Parse,
@@ -932,6 +932,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .takes_value(true)
                 .value_name("color")
                 .value_parser(parse_background_color)
+                .default_value("none")
                 .help("Set the background color using a CSS color spec"),
         )
         .arg(
@@ -972,7 +973,9 @@ fn parse_args() -> Result<Converter, Error> {
 
     let matches = app.get_matches();
 
-    let format_str: &String = matches.get_one("format").expect("already provided default_value");
+    let format_str: &String = matches
+        .get_one("format")
+        .expect("already provided default_value");
 
     let format = match_ignore_ascii_case! {
         format_str,
@@ -1031,8 +1034,12 @@ fn parse_args() -> Result<Converter, Error> {
         (Some(w), Some(h)) => Some((w, h)),
     };
 
-    let dpi_x = *matches.get_one::<Resolution>("res_x").expect("already provided default_value");
-    let dpi_y = *matches.get_one::<Resolution>("res_y").expect("already provided default_value");
+    let dpi_x = *matches
+        .get_one::<Resolution>("res_x")
+        .expect("already provided default_value");
+    let dpi_y = *matches
+        .get_one::<Resolution>("res_y")
+        .expect("already provided default_value");
 
     let zoom: Option<ZoomFactor> = matches.get_one("zoom").copied();
     let zoom_x: Option<ZoomFactor> = matches.get_one("zoom_x").copied();
@@ -1053,7 +1060,9 @@ fn parse_args() -> Result<Converter, Error> {
         ));
     }
 
-    let keep_aspect_ratio = *matches.get_one("keep_aspect").expect("already provided default_value");
+    let keep_aspect_ratio = *matches
+        .get_one("keep_aspect")
+        .expect("already provided default_value");
 
     let export_id: Option<String> = matches.get_one::<String>("export_id").map(lookup_id);
 
@@ -1136,10 +1145,10 @@ impl<T> NotFound for Result<T, clap::Error> {
     }
 }
 
-fn parse_background_color(s: &str) -> Result<Color, String> {
+fn parse_background_color(s: &str) -> Result<Option<Color>, String> {
     match s {
-        "none" | "None" => Err(format!("argument not found: {}", s)),
-        _ => <Color as Parse>::parse_str(s).map_err(|_| {
+        "none" | "None" => Ok(None),
+        _ => <Color as Parse>::parse_str(s).map(Some).map_err(|_| {
             format!(
                 "Invalid value: The argument '{}' can not be parsed as a CSS color value",
                 s
@@ -1194,8 +1203,8 @@ mod color_tests {
     }
 
     #[test]
-    fn none_is_handled_as_not_found() {
-        assert!(parse_background_color("None").is_err());
+    fn none_is_handled_as_transparent() {
+        assert_eq!(parse_background_color("None").unwrap(), None,);
     }
 
     #[test]
