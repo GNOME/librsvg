@@ -922,7 +922,6 @@ fn parse_args() -> Result<Converter, Error> {
             clap::Arg::with_name("keep_aspect")
                 .short('a')
                 .long("keep-aspect-ratio")
-                .default_value("false")
                 .help("Preserve the aspect ratio"),
         )
         .arg(
@@ -1064,10 +1063,6 @@ fn parse_args() -> Result<Converter, Error> {
         ));
     }
 
-    let keep_aspect_ratio = *matches
-        .get_one("keep_aspect")
-        .expect("already provided default_value");
-
     let export_id: Option<String> = matches.get_one::<String>("export_id").map(lookup_id);
 
     Ok(Converter {
@@ -1084,7 +1079,7 @@ fn parse_args() -> Result<Converter, Error> {
         page_size,
         format,
         export_id,
-        keep_aspect_ratio,
+        keep_aspect_ratio: matches.contains_id("keep_aspect"),
         background_color,
         stylesheet: matches.value_of_os("stylesheet").map(PathBuf::from),
         unlimited: matches.contains_id("unlimited"),
