@@ -59,6 +59,26 @@ cargo_test:
   script:
     - cargo test -- --skip loading_crash --skip reference --skip render_crash
 
+test_rust_gdk_pixbuf_loader:
+  stage: check
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    # Tests require extra crates, hence cache is pushed
+    - '.cache_push'
+  needs:
+    - job: check
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/output
+    expire_in: 1 day
+  variables:
+    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+  script:
+    - cd gdk-pixbuf-loader
+    - cargo test
+
 .build-rsvg-no-docs:
   extends: '.cache'
   stage: build
