@@ -931,7 +931,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("background-color")
                 .takes_value(true)
                 .value_name("color")
-                .value_parser(parse_background_color)
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .default_value("none")
                 .help("Set the background color using a CSS color spec"),
         )
@@ -1002,7 +1002,11 @@ fn parse_args() -> Result<Converter, Error> {
             })?,
     };
 
-    let background_color: Option<Color> = matches.get_one("background").copied();
+    let background_str: &String = matches
+        .get_one("background")
+        .expect("already provided default_value");
+    let background_color: Option<Color> = parse_background_color(&**background_str)
+        .map_err(|e| clap::Error::with_description(e, clap::ErrorKind::InvalidValue))?;
 
     // librsvg expects ids starting with '#', so it can lookup ids in externs like "subfile.svg#subid".
     // For the user's convenience, we prepend '#' automatically; we only support specifying ids from
