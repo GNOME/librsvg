@@ -997,7 +997,7 @@ fn parse_args() -> Result<Converter, Error> {
 
     let language = match matches.get_one::<String>("accept-language") {
         None => Language::FromEnvironment,
-        Some(s) => AcceptLanguage::parse(&s)
+        Some(s) => AcceptLanguage::parse(s)
             .map(Language::AcceptLanguage)
             .map_err(|e| {
                 let desc = format!("{}", e);
