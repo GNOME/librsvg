@@ -18,6 +18,8 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
+use cssparser::{match_ignore_ascii_case, _cssparser_internal_to_lowercase};
+
 use librsvg::rsvg_convert_only::{
     AspectRatio, CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, Parse,
     PathOrUrl, Rect, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
@@ -768,15 +770,15 @@ fn natural_geometry(
 
 fn parse_args() -> Result<Converter, Error> {
     let supported_formats = vec![
-        "Png",
+        "png",
         #[cfg(system_deps_have_cairo_pdf)]
-        "Pdf",
+        "pdf",
         #[cfg(system_deps_have_cairo_ps)]
-        "Ps",
+        "ps",
         #[cfg(system_deps_have_cairo_ps)]
-        "Eps",
+        "eps",
         #[cfg(system_deps_have_cairo_svg)]
-        "Svg",
+        "svg",
     ];
 
     let app = clap::Command::new("rsvg-convert")
@@ -889,7 +891,7 @@ fn parse_args() -> Result<Converter, Error> {
                 .long("format")
                 .takes_value(true)
                 .possible_values(supported_formats.as_slice())
-                .case_insensitive(true)
+                .ignore_case(true)
                 .default_value("png")
                 .help("Output format"),
         )
@@ -970,7 +972,17 @@ fn parse_args() -> Result<Converter, Error> {
 
     let matches = app.get_matches();
 
-    let format: Format = *matches.get_one("format").expect("already provided default_value");
+    let format_str: &String = matches.get_one("format").expect("already provided default_value");
+
+    let format = match_ignore_ascii_case! {
+        format_str,
+        "png" => Format::Png,
+        "pdf" => Format::Pdf,
+        "ps" => Format::Ps,
+        "eps" => Format::Eps,
+        "svg" => Format::Svg,
+        _ => unreachable!("clap should already have the list of possible values"),
+    };
 
     let keep_image_data = match format {
         Format::Ps | Format::Eps | Format::Pdf => !matches.contains_id("no_keep_image_data"),
