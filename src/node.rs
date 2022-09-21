@@ -10,6 +10,7 @@
 use markup5ever::QualName;
 use std::cell::{Ref, RefMut};
 use std::fmt;
+use std::sync::Arc;
 
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
@@ -102,8 +103,8 @@ impl fmt::Display for NodeData {
 /// `&ComputedValues` whose fields you can access.
 pub struct CascadedValues<'a> {
     inner: CascadedInner<'a>,
-    pub context_stroke: Option<PaintSource>,
-    pub context_fill: Option<PaintSource>,
+    pub context_stroke: Option<Arc<PaintSource>>,
+    pub context_fill: Option<Arc<PaintSource>>,
 }
 
 enum CascadedInner<'a> {
@@ -155,8 +156,8 @@ impl<'a> CascadedValues<'a> {
     pub fn new_from_values(
         node: &'a Node,
         values: &ComputedValues,
-        fill: Option<PaintSource>,
-        stroke: Option<PaintSource>,
+        fill: Option<Arc<PaintSource>>,
+        stroke: Option<Arc<PaintSource>>,
     ) -> CascadedValues<'a> {
         let mut v = Box::new(values.clone());
         node.borrow_element()

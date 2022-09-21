@@ -3,6 +3,7 @@
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
 use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
@@ -76,8 +77,8 @@ pub struct Shape {
     pub is_visible: bool,
     pub paint_order: PaintOrder,
     pub stroke: Stroke,
-    pub stroke_paint: PaintSource,
-    pub fill_paint: PaintSource,
+    pub stroke_paint: Arc<PaintSource>,
+    pub fill_paint: Arc<PaintSource>,
     pub fill_rule: FillRule,
     pub clip_rule: ClipRule,
     pub shape_rendering: ShapeRendering,
@@ -88,8 +89,8 @@ pub struct Shape {
 
 pub struct Marker {
     pub node_ref: Option<Node>,
-    pub context_stroke: PaintSource,
-    pub context_fill: PaintSource,
+    pub context_stroke: Arc<PaintSource>,
+    pub context_fill: Arc<PaintSource>,
 }
 
 /// Image in user-space coordinates.
@@ -112,7 +113,7 @@ pub struct TextSpan {
     pub paint_order: PaintOrder,
     pub stroke: Stroke,
     pub stroke_paint: UserSpacePaintSource,
-    pub stroke_paint_source: PaintSource,
+    pub stroke_paint_source: Arc<PaintSource>,
     pub fill_paint: UserSpacePaintSource,
     pub text_rendering: TextRendering,
     pub link_target: Option<String>,
