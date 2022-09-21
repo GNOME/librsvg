@@ -50,7 +50,6 @@ pub enum PaintServer {
 ///
 /// Use [`PaintSource.to_user_space`](#method.to_user_space) to turn this into a
 /// [`UserSpacePaintSource`].
-#[derive(Clone)]
 pub enum PaintSource {
     None,
     Gradient(ResolvedGradient, Option<cssparser::RGBA>),
