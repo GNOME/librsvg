@@ -98,3 +98,10 @@ implementation advice.  It requires some substantial preliminary work,
 like completing the separation between specified values and computed
 values in librsvg's CSS implementation.  Please ask the maintainer to
 prioritize this work if you intend to implement CSS calc().
+
+Performance tracking
+--------------------
+
+See the - :doc:`performance_tracking` document.  This does not involve
+hacking on librsvg itself, but rather creating an infrastructure to
+track performance metrics.

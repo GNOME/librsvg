@@ -12,6 +12,7 @@ Development guide for librsvg
    ci
    text_layout
    api_observability
+   performance_tracking
    releasing
    :maxdepth: 1
    :caption: Contents:
@@ -67,6 +68,7 @@ a sort of big-picture development history apart from commit messages.
 
 - :doc:`text_layout`
 - :doc:`api_observability`
+- :doc:`performance_tracking`
 
 See https://rustc-dev-guide.rust-lang.org/walkthrough.html, section
 Overview, to formalize the RFC process for features vs. drive-by
