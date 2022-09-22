@@ -162,6 +162,28 @@ Log name/base_uri of rendered document.
 Can we know if it is a gresource? Or a byte buffer? Did it come from
 gdk-pixbuf?
 
+Implementation
+--------------
+
+There is currently the start of a `Session
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/session/struct.Session.html>`_
+type woven throughout the source code, with the idea of it being the
+thing that records logging events, it may be better to plug into the ``tracing`` ecosystem:
+
+https://crates.io/crates/tracing
+
+Initial ideas:
+
+* See the "In libraries" section in ``tracing``'s README; it shows how
+  to create spans for API calls.
+
+* How would we capture from gnome-shell?  `tracing-journald
+  <https://tracing-rs.netlify.app/tracing_journald/index.html>`_?
+  Or would things be easier for casual users if we logged to a file?
+
+* Maybe later, have a ``tracing-sysprof`` crate to send the events to
+  `sysprof <https://gitlab.gnome.org/GNOME/sysprof/-/tree/master/src>`_?
+
 Log contents
 ------------
 
