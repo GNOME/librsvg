@@ -42,6 +42,114 @@ trait BasicShape {
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef;
 }
 
+fn draw_basic_shape(
+    basic_shape: &dyn BasicShape,
+    node: &Node,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    cascaded: &CascadedValues<'_>,
+    draw_ctx: &mut DrawingCtx,
+    clipping: bool,
+) -> Result<BoundingBox, RenderingError> {
+    let values = cascaded.get();
+    let view_params = draw_ctx.get_view_params();
+    let params = NormalizeParams::new(values, &view_params);
+    let shape_def = basic_shape.make_shape(&params, values);
+
+    let is_visible = values.is_visible();
+    let paint_order = values.paint_order();
+
+    let stroke = Stroke::new(values, &params);
+
+    let session = draw_ctx.session();
+
+    let stroke_paint = values.stroke().0.resolve(
+        acquired_nodes,
+        values.stroke_opacity().0,
+        values.color().0,
+        cascaded.context_fill.clone(),
+        cascaded.context_stroke.clone(),
+        session,
+    );
+
+    let fill_paint = values.fill().0.resolve(
+        acquired_nodes,
+        values.fill_opacity().0,
+        values.color().0,
+        cascaded.context_fill.clone(),
+        cascaded.context_stroke.clone(),
+        session,
+    );
+
+    let fill_rule = values.fill_rule();
+    let clip_rule = values.clip_rule();
+    let shape_rendering = values.shape_rendering();
+
+    let marker_start_node;
+    let marker_mid_node;
+    let marker_end_node;
+
+    if shape_def.markers == Markers::Yes {
+        marker_start_node = acquire_marker(session, acquired_nodes, &values.marker_start().0);
+        marker_mid_node = acquire_marker(session, acquired_nodes, &values.marker_mid().0);
+        marker_end_node = acquire_marker(session, acquired_nodes, &values.marker_end().0);
+    } else {
+        marker_start_node = None;
+        marker_mid_node = None;
+        marker_end_node = None;
+    }
+
+    let marker_start = Marker {
+        node_ref: marker_start_node,
+        context_stroke: stroke_paint.clone(),
+        context_fill: fill_paint.clone(),
+    };
+
+    let marker_mid = Marker {
+        node_ref: marker_mid_node,
+        context_stroke: stroke_paint.clone(),
+        context_fill: fill_paint.clone(),
+    };
+
+    let marker_end = Marker {
+        node_ref: marker_end_node,
+        context_stroke: stroke_paint.clone(),
+        context_fill: fill_paint.clone(),
+    };
+
+    let shape = Shape {
+        path: shape_def.path,
+        is_visible,
+        paint_order,
+        stroke,
+        stroke_paint,
+        fill_paint,
+        fill_rule,
+        clip_rule,
+        shape_rendering,
+        marker_start,
+        marker_mid,
+        marker_end,
+    };
+
+    let elt = node.borrow_element();
+    let stacking_ctx = StackingContext::new(
+        draw_ctx.session(),
+        acquired_nodes,
+        &elt,
+        values.transform(),
+        values,
+    );
+
+    draw_ctx.draw_shape(
+        &view_params,
+        &shape,
+        &stacking_ctx,
+        acquired_nodes,
+        values,
+        clipping,
+    )
+}
+
 macro_rules! impl_draw {
     ($name:ident) => {
         impl Draw for $name {
@@ -53,107 +161,7 @@ macro_rules! impl_draw {
                 draw_ctx: &mut DrawingCtx,
                 clipping: bool,
             ) -> Result<BoundingBox, RenderingError> {
-                let values = cascaded.get();
-                let view_params = draw_ctx.get_view_params();
-                let params = NormalizeParams::new(values, &view_params);
-                let shape_def = self.make_shape(&params, values);
-
-                let is_visible = values.is_visible();
-                let paint_order = values.paint_order();
-
-                let stroke = Stroke::new(values, &params);
-
-                let session = draw_ctx.session();
-
-                let stroke_paint = values.stroke().0.resolve(
-                    acquired_nodes,
-                    values.stroke_opacity().0,
-                    values.color().0,
-                    cascaded.context_fill.clone(),
-                    cascaded.context_stroke.clone(),
-                    session,
-                );
-
-                let fill_paint = values.fill().0.resolve(
-                    acquired_nodes,
-                    values.fill_opacity().0,
-                    values.color().0,
-                    cascaded.context_fill.clone(),
-                    cascaded.context_stroke.clone(),
-                    session,
-                );
-
-                let fill_rule = values.fill_rule();
-                let clip_rule = values.clip_rule();
-                let shape_rendering = values.shape_rendering();
-
-                let marker_start_node;
-                let marker_mid_node;
-                let marker_end_node;
-
-                if shape_def.markers == Markers::Yes {
-                    marker_start_node =
-                        acquire_marker(session, acquired_nodes, &values.marker_start().0);
-                    marker_mid_node =
-                        acquire_marker(session, acquired_nodes, &values.marker_mid().0);
-                    marker_end_node =
-                        acquire_marker(session, acquired_nodes, &values.marker_end().0);
-                } else {
-                    marker_start_node = None;
-                    marker_mid_node = None;
-                    marker_end_node = None;
-                }
-
-                let marker_start = Marker {
-                    node_ref: marker_start_node,
-                    context_stroke: stroke_paint.clone(),
-                    context_fill: fill_paint.clone(),
-                };
-
-                let marker_mid = Marker {
-                    node_ref: marker_mid_node,
-                    context_stroke: stroke_paint.clone(),
-                    context_fill: fill_paint.clone(),
-                };
-
-                let marker_end = Marker {
-                    node_ref: marker_end_node,
-                    context_stroke: stroke_paint.clone(),
-                    context_fill: fill_paint.clone(),
-                };
-
-                let shape = Shape {
-                    path: shape_def.path,
-                    is_visible,
-                    paint_order,
-                    stroke,
-                    stroke_paint,
-                    fill_paint,
-                    fill_rule,
-                    clip_rule,
-                    shape_rendering,
-                    marker_start,
-                    marker_mid,
-                    marker_end,
-                };
-
-                let elt = node.borrow_element();
-                let stacking_ctx = StackingContext::new(
-                    draw_ctx.session(),
-                    acquired_nodes,
-                    &elt,
-                    values.transform(),
-                    values,
-                );
-
-                draw_ctx.draw_shape(
-                    &view_params,
-                    &shape,
-                    &stacking_ctx,
-                    acquired_nodes,
-                    values,
-                    clipping,
-                )
+                draw_basic_shape(self, node, acquired_nodes, cascaded, draw_ctx, clipping)
             }
         }
     };

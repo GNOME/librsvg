@@ -12,6 +12,7 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::f64::consts::*;
 use std::rc::{Rc, Weak};
+use std::sync::Arc;
 
 use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
@@ -1631,8 +1632,8 @@ impl DrawingCtx {
         use_rect: Rect,
         link: &NodeId,
         clipping: bool,
-        fill_paint: PaintSource,
-        stroke_paint: PaintSource,
+        fill_paint: Arc<PaintSource>,
+        stroke_paint: Arc<PaintSource>,
     ) -> Result<BoundingBox, RenderingError> {
         // <use> is an element that is used directly, unlike
         // <pattern>, which is used through a fill="url(#...)"

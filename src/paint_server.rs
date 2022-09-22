@@ -1,5 +1,7 @@
 //! SVG paint servers.
 
+use std::sync::Arc;
+
 use cssparser::Parser;
 
 use crate::bbox::BoundingBox;
@@ -48,7 +50,6 @@ pub enum PaintServer {
 ///
 /// Use [`PaintSource.to_user_space`](#method.to_user_space) to turn this into a
 /// [`UserSpacePaintSource`].
-#[derive(Clone)]
 pub enum PaintSource {
     None,
     Gradient(ResolvedGradient, Option<cssparser::RGBA>),
@@ -120,15 +121,20 @@ impl PaintServer {
     /// the paint server is for the `stroke` or `fill` properties.
     ///
     /// `current_color` should be the value of `ComputedValues.color()`.
+    ///
+    /// After a paint server is resolved, the resulting [`PaintSource`] can be used in
+    /// many places: for an actual shape, or for the `context-fill` of a marker for that
+    /// shape.  Therefore, this returns an [`Arc`] so that the `PaintSource` may be shared
+    /// easily.
     pub fn resolve(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         current_color: cssparser::RGBA,
-        context_fill: Option<PaintSource>,
-        context_stroke: Option<PaintSource>,
+        context_fill: Option<Arc<PaintSource>>,
+        context_stroke: Option<Arc<PaintSource>>,
         session: &Session,
-    ) -> PaintSource {
+    ) -> Arc<PaintSource> {
         match self {
             PaintServer::Iri {
                 ref iri,
@@ -142,26 +148,26 @@ impl PaintServer {
                     match *node.borrow_element() {
                         Element::LinearGradient(ref g) => {
                             g.resolve(node, acquired_nodes, opacity, session).map(|g| {
-                                PaintSource::Gradient(
+                                Arc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
-                                )
+                                ))
                             })
                         }
                         Element::Pattern(ref p) => {
                             p.resolve(node, acquired_nodes, opacity, session).map(|p| {
-                                PaintSource::Pattern(
+                                Arc::new(PaintSource::Pattern(
                                     p,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
-                                )
+                                ))
                             })
                         }
                         Element::RadialGradient(ref g) => {
                             g.resolve(node, acquired_nodes, opacity, session).map(|g| {
-                                PaintSource::Gradient(
+                                Arc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, current_color)),
-                                )
+                                ))
                             })
                         }
                         _ => Err(AcquireError::InvalidLinkType(iri.as_ref().clone())),
@@ -187,7 +193,11 @@ impl PaintServer {
                             iri
                         );
 
-                        PaintSource::SolidColor(resolve_color(color, opacity, current_color))
+                        Arc::new(PaintSource::SolidColor(resolve_color(
+                            color,
+                            opacity,
+                            current_color,
+                        )))
                     }
 
                     None => {
@@ -197,19 +207,21 @@ impl PaintServer {
                             iri
                         );
 
-                        PaintSource::None
+                        Arc::new(PaintSource::None)
                     }
                 }),
 
-            PaintServer::SolidColor(color) => {
-                PaintSource::SolidColor(resolve_color(color, opacity, current_color))
-            }
+            PaintServer::SolidColor(color) => Arc::new(PaintSource::SolidColor(resolve_color(
+                color,
+                opacity,
+                current_color,
+            ))),
 
             PaintServer::ContextFill => {
                 if let Some(paint) = context_fill {
                     paint
                 } else {
-                    PaintSource::None
+                    Arc::new(PaintSource::None)
                 }
             }
 
@@ -217,11 +229,11 @@ impl PaintServer {
                 if let Some(paint) = context_stroke {
                     paint
                 } else {
-                    PaintSource::None
+                    Arc::new(PaintSource::None)
                 }
             }
 
-            PaintServer::None => PaintSource::None,
+            PaintServer::None => Arc::new(PaintSource::None),
         }
     }
 }
