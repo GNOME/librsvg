@@ -618,7 +618,7 @@ impl XmlState {
     }
 
     fn build_document(
-        &self,
+        self,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
