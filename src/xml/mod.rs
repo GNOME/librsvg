@@ -104,11 +104,18 @@ macro_rules! xinclude_name {
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
 struct XmlStateInner {
-    document_builder: Option<DocumentBuilder>,
+    document_builder: DocumentBuilder,
     num_loaded_elements: usize,
     context_stack: Vec<Context>,
     current_node: Option<Node>,
 
+    // Note that neither XmlStateInner nor Xmlstate implement Drop.
+    //
+    // An XmlState is finally consumed in XmlState::build_document(), and that
+    // function is responsible for freeing all the XmlEntityPtr from this field.
+    //
+    // (The structs cannot impl Drop because build_document()
+    // destructures and consumes them at the same time.)
     entities: HashMap<String, XmlEntityPtr>,
 }
 
@@ -146,7 +153,7 @@ impl XmlState {
     ) -> XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
-                document_builder: Some(document_builder),
+                document_builder,
                 num_loaded_elements: 0,
                 context_stack: vec![Context::Start],
                 current_node: None,
@@ -291,11 +298,7 @@ impl XmlState {
                     if let Ok(stylesheet) =
                         Stylesheet::from_href(&aurl, Origin::Author, self.session.clone())
                     {
-                        inner
-                            .document_builder
-                            .as_mut()
-                            .unwrap()
-                            .append_stylesheet(stylesheet);
+                        inner.document_builder.append_stylesheet(stylesheet);
                     } else {
                         // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
                         // what to do if the stylesheet cannot be loaded, so here we ignore the error.
@@ -355,11 +358,7 @@ impl XmlState {
             let mut inner = self.inner.borrow_mut();
 
             let parent = inner.current_node.clone();
-            let node = inner
-                .document_builder
-                .as_mut()
-                .unwrap()
-                .append_element(name, attrs, parent);
+            let node = inner.document_builder.append_element(name, attrs, parent);
             inner.current_node = Some(node);
 
             if name.expanded() == expanded_name!(svg "style") {
@@ -380,11 +379,7 @@ impl XmlState {
         let mut inner = self.inner.borrow_mut();
 
         let mut parent = inner.current_node.clone().unwrap();
-        inner
-            .document_builder
-            .as_mut()
-            .unwrap()
-            .append_characters(text, &mut parent);
+        inner.document_builder.append_characters(text, &mut parent);
     }
 
     fn style_end_element(&self) {
@@ -409,15 +404,13 @@ impl XmlState {
                 })
                 .collect::<String>();
 
-            let builder = inner.document_builder.as_mut().unwrap();
-
             if let Ok(stylesheet) = Stylesheet::from_data(
                 &stylesheet_text,
                 &self.load_options.url_resolver,
                 Origin::Author,
                 self.session.clone(),
             ) {
-                builder.append_stylesheet(stylesheet);
+                inner.document_builder.append_stylesheet(stylesheet);
             } else {
                 rsvg_log!(self.session, "invalid inline stylesheet");
             }
@@ -624,24 +617,23 @@ impl XmlState {
     ) -> Result<Document, LoadingError> {
         self.parse_from_stream(stream, cancellable)?;
 
-        self.inner
-            .borrow_mut()
-            .document_builder
-            .take()
-            .unwrap()
-            .build()
-    }
-}
+        // consume self, then consume inner, then consume document_builder by calling .build()
 
-impl Drop for XmlState {
-    fn drop(&mut self) {
-        unsafe {
-            let mut inner = self.inner.borrow_mut();
+        let XmlState { inner, .. } = self;
+        let mut inner = inner.into_inner();
 
-            for (_key, entity) in inner.entities.drain() {
+        // Free the hash of XmlEntityPtr.  We cannot do this in Drop because we will
+        // consume inner by destructuring it after the for() loop.
+        for (_key, entity) in inner.entities.drain() {
+            unsafe {
                 xmlFreeNode(entity);
             }
         }
+
+        let XmlStateInner {
+            document_builder, ..
+        } = inner;
+        document_builder.build()
     }
 }
 
