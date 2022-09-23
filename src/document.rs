@@ -14,7 +14,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::{AcquireError, AllowedUrlError, LoadingError, NodeIdError};
+use crate::error::{AcquireError, LoadingError, NodeIdError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::limits;
@@ -106,6 +106,7 @@ impl Document {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
         xml_load_from_possibly_compressed_stream(
+            session.clone(),
             DocumentBuilder::new(session, load_options.clone()),
             load_options,
             stream,
@@ -532,10 +533,6 @@ impl DocumentBuilder {
         }
     }
 
-    pub fn session(&self) -> &Session {
-        &self.session
-    }
-
     /// Adds a stylesheet in order to the document.
     ///
     /// Stylesheets will later be matched in the order in which they were added.
@@ -591,10 +588,6 @@ impl DocumentBuilder {
                 parent.append(Node::new(NodeData::new_chars(text)));
             };
         }
-    }
-
-    pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
-        self.load_options.url_resolver.resolve_href(href)
     }
 
     /// Does the final validation on the `Document` being read, and returns it.

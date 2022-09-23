@@ -13,7 +13,7 @@ use markup5ever::{
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 use std::str;
 use std::string::ToString;
 use std::sync::Arc;
@@ -27,6 +27,7 @@ use crate::handle::LoadOptions;
 use crate::io::{self, IoError};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
+use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
@@ -103,18 +104,25 @@ macro_rules! xinclude_name {
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
 struct XmlStateInner {
-    weak: Option<Weak<XmlState>>,
-    document_builder: Option<DocumentBuilder>,
+    document_builder: DocumentBuilder,
     num_loaded_elements: usize,
     context_stack: Vec<Context>,
     current_node: Option<Node>,
 
+    // Note that neither XmlStateInner nor Xmlstate implement Drop.
+    //
+    // An XmlState is finally consumed in XmlState::build_document(), and that
+    // function is responsible for freeing all the XmlEntityPtr from this field.
+    //
+    // (The structs cannot impl Drop because build_document()
+    // destructures and consumes them at the same time.)
     entities: HashMap<String, XmlEntityPtr>,
 }
 
 pub struct XmlState {
     inner: RefCell<XmlStateInner>,
 
+    session: Session,
     load_options: Arc<LoadOptions>,
 }
 
@@ -138,17 +146,21 @@ impl XmlStateInner {
 }
 
 impl XmlState {
-    fn new(document_builder: DocumentBuilder, load_options: Arc<LoadOptions>) -> XmlState {
+    fn new(
+        session: Session,
+        document_builder: DocumentBuilder,
+        load_options: Arc<LoadOptions>,
+    ) -> XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
-                weak: None,
-                document_builder: Some(document_builder),
+                document_builder,
                 num_loaded_elements: 0,
                 context_stack: vec![Context::Start],
                 current_node: None,
                 entities: HashMap::new(),
             }),
 
+            session,
             load_options,
         }
     }
@@ -271,13 +283,11 @@ impl XmlState {
 
             let mut inner = self.inner.borrow_mut();
 
-            let session = inner.document_builder.as_mut().unwrap().session().clone();
-
             if type_.as_deref() != Some("text/css")
                 || (alternate.is_some() && alternate.as_deref() != Some("no"))
             {
                 rsvg_log!(
-                    session,
+                    self.session,
                     "invalid parameters in XML processing instruction for stylesheet",
                 );
                 return;
@@ -286,32 +296,28 @@ impl XmlState {
             if let Some(href) = href {
                 if let Ok(aurl) = self.load_options.url_resolver.resolve_href(&href) {
                     if let Ok(stylesheet) =
-                        Stylesheet::from_href(&aurl, Origin::Author, session.clone())
+                        Stylesheet::from_href(&aurl, Origin::Author, self.session.clone())
                     {
-                        inner
-                            .document_builder
-                            .as_mut()
-                            .unwrap()
-                            .append_stylesheet(stylesheet);
+                        inner.document_builder.append_stylesheet(stylesheet);
                     } else {
                         // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
                         // what to do if the stylesheet cannot be loaded, so here we ignore the error.
                         rsvg_log!(
-                            session,
+                            self.session,
                             "could not create stylesheet from {} in XML processing instruction",
                             href
                         );
                     }
                 } else {
                     rsvg_log!(
-                        session,
+                        self.session,
                         "{} not allowed for xml-stylesheet in XML processing instruction",
                         href
                     );
                 }
             } else {
                 rsvg_log!(
-                    session,
+                    self.session,
                     "xml-stylesheet processing instruction does not have href; ignoring"
                 );
             }
@@ -352,11 +358,7 @@ impl XmlState {
             let mut inner = self.inner.borrow_mut();
 
             let parent = inner.current_node.clone();
-            let node = inner
-                .document_builder
-                .as_mut()
-                .unwrap()
-                .append_element(name, attrs, parent);
+            let node = inner.document_builder.append_element(name, attrs, parent);
             inner.current_node = Some(node);
 
             if name.expanded() == expanded_name!(svg "style") {
@@ -377,11 +379,7 @@ impl XmlState {
         let mut inner = self.inner.borrow_mut();
 
         let mut parent = inner.current_node.clone().unwrap();
-        inner
-            .document_builder
-            .as_mut()
-            .unwrap()
-            .append_characters(text, &mut parent);
+        inner.document_builder.append_characters(text, &mut parent);
     }
 
     fn style_end_element(&self) {
@@ -406,18 +404,15 @@ impl XmlState {
                 })
                 .collect::<String>();
 
-            let builder = inner.document_builder.as_mut().unwrap();
-            let session = builder.session().clone();
-
             if let Ok(stylesheet) = Stylesheet::from_data(
                 &stylesheet_text,
                 &self.load_options.url_resolver,
                 Origin::Author,
-                session.clone(),
+                self.session.clone(),
             ) {
-                builder.append_stylesheet(stylesheet);
+                inner.document_builder.append_stylesheet(stylesheet);
             } else {
-                rsvg_log!(session, "invalid inline stylesheet");
+                rsvg_log!(self.session, "invalid inline stylesheet");
             }
         }
     }
@@ -517,26 +512,14 @@ impl XmlState {
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         if let Some(href) = href {
-            let session = self
-                .inner
-                .borrow()
-                .document_builder
-                .as_ref()
-                .unwrap()
-                .session()
-                .clone();
-
             let aurl = self
-                .inner
-                .borrow()
-                .document_builder
-                .as_ref()
-                .unwrap()
+                .load_options
+                .url_resolver
                 .resolve_href(href)
                 .map_err(|e| {
                     // FIXME: should AlloweUrlError::UrlParseError be a fatal error,
                     // not a resource error?
-                    rsvg_log!(session, "could not acquire \"{}\": {}", href, e);
+                    rsvg_log!(self.session, "could not acquire \"{}\": {}", href, e);
                     AcquireError::ResourceError
                 })?;
 
@@ -566,17 +549,8 @@ impl XmlState {
     }
 
     fn acquire_text(&self, aurl: &AllowedUrl, encoding: Option<&str>) -> Result<(), AcquireError> {
-        let session = self
-            .inner
-            .borrow()
-            .document_builder
-            .as_ref()
-            .unwrap()
-            .session()
-            .clone();
-
         let binary = io::acquire_data(aurl, None).map_err(|e| {
-            rsvg_log!(session, "could not acquire \"{}\": {}", aurl, e);
+            rsvg_log!(self.session, "could not acquire \"{}\": {}", aurl, e);
             AcquireError::ResourceError
         })?;
 
@@ -627,22 +601,9 @@ impl XmlState {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        let strong = self
-            .inner
-            .borrow()
-            .weak
-            .as_ref()
-            .unwrap()
-            .upgrade()
-            .unwrap();
-        Xml2Parser::from_stream(
-            strong,
-            self.load_options.unlimited_size,
-            stream,
-            cancellable,
-        )
-        .and_then(|parser| parser.parse())
-        .and_then(|_: ()| self.check_last_error())
+        Xml2Parser::from_stream(self, self.load_options.unlimited_size, stream, cancellable)
+            .and_then(|parser| parser.parse())
+            .and_then(|_: ()| self.check_last_error())
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &QualName) -> Context {
@@ -650,30 +611,29 @@ impl XmlState {
     }
 
     fn build_document(
-        &self,
+        self,
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
         self.parse_from_stream(stream, cancellable)?;
 
-        self.inner
-            .borrow_mut()
-            .document_builder
-            .take()
-            .unwrap()
-            .build()
-    }
-}
+        // consume self, then consume inner, then consume document_builder by calling .build()
 
-impl Drop for XmlState {
-    fn drop(&mut self) {
-        unsafe {
-            let mut inner = self.inner.borrow_mut();
+        let XmlState { inner, .. } = self;
+        let mut inner = inner.into_inner();
 
-            for (_key, entity) in inner.entities.drain() {
+        // Free the hash of XmlEntityPtr.  We cannot do this in Drop because we will
+        // consume inner by destructuring it after the for() loop.
+        for (_key, entity) in inner.entities.drain() {
+            unsafe {
                 xmlFreeNode(entity);
             }
         }
+
+        let XmlStateInner {
+            document_builder, ..
+        } = inner;
+        document_builder.build()
     }
 }
 
@@ -741,14 +701,13 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 }
 
 pub fn xml_load_from_possibly_compressed_stream(
+    session: Session,
     document_builder: DocumentBuilder,
     load_options: Arc<LoadOptions>,
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Document, LoadingError> {
-    let state = Rc::new(XmlState::new(document_builder, load_options));
-
-    state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
+    let state = XmlState::new(session, document_builder, load_options);
 
     let stream = get_input_stream_for_loading(stream, cancellable)?;
 
