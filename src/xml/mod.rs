@@ -13,7 +13,7 @@ use markup5ever::{
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 use std::str;
 use std::string::ToString;
 use std::sync::Arc;
@@ -104,7 +104,6 @@ macro_rules! xinclude_name {
 /// trait objects. Normally the context refers to a `NodeCreationContext` implementation which is
 /// what creates normal graphical elements.
 struct XmlStateInner {
-    weak: Option<Weak<XmlState>>,
     document_builder: Option<DocumentBuilder>,
     num_loaded_elements: usize,
     context_stack: Vec<Context>,
@@ -147,7 +146,6 @@ impl XmlState {
     ) -> XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
-                weak: None,
                 document_builder: Some(document_builder),
                 num_loaded_elements: 0,
                 context_stack: vec![Context::Start],
@@ -610,22 +608,9 @@ impl XmlState {
         stream: &gio::InputStream,
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<(), LoadingError> {
-        let strong = self
-            .inner
-            .borrow()
-            .weak
-            .as_ref()
-            .unwrap()
-            .upgrade()
-            .unwrap();
-        Xml2Parser::from_stream(
-            strong,
-            self.load_options.unlimited_size,
-            stream,
-            cancellable,
-        )
-        .and_then(|parser| parser.parse())
-        .and_then(|_: ()| self.check_last_error())
+        Xml2Parser::from_stream(self, self.load_options.unlimited_size, stream, cancellable)
+            .and_then(|parser| parser.parse())
+            .and_then(|_: ()| self.check_last_error())
     }
 
     fn unsupported_xinclude_start_element(&self, _name: &QualName) -> Context {
@@ -731,8 +716,6 @@ pub fn xml_load_from_possibly_compressed_stream(
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Document, LoadingError> {
     let state = Rc::new(XmlState::new(session, document_builder, load_options));
-
-    state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
 
     let stream = get_input_stream_for_loading(stream, cancellable)?;
 
