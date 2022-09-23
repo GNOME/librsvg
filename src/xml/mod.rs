@@ -715,7 +715,7 @@ pub fn xml_load_from_possibly_compressed_stream(
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Document, LoadingError> {
-    let state = Rc::new(XmlState::new(session, document_builder, load_options));
+    let state = XmlState::new(session, document_builder, load_options);
 
     let stream = get_input_stream_for_loading(stream, cancellable)?;
 
