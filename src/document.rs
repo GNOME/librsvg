@@ -106,6 +106,7 @@ impl Document {
         cancellable: Option<&gio::Cancellable>,
     ) -> Result<Document, LoadingError> {
         xml_load_from_possibly_compressed_stream(
+            session.clone(),
             DocumentBuilder::new(session, load_options.clone()),
             load_options,
             stream,
@@ -530,10 +531,6 @@ impl DocumentBuilder {
             ids: HashMap::new(),
             stylesheets: Vec::new(),
         }
-    }
-
-    pub fn session(&self) -> &Session {
-        &self.session
     }
 
     /// Adds a stylesheet in order to the document.

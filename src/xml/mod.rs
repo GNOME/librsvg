@@ -27,6 +27,7 @@ use crate::handle::LoadOptions;
 use crate::io::{self, IoError};
 use crate::limits::MAX_LOADED_ELEMENTS;
 use crate::node::{Node, NodeBorrow};
+use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
 
@@ -115,6 +116,7 @@ struct XmlStateInner {
 pub struct XmlState {
     inner: RefCell<XmlStateInner>,
 
+    session: Session,
     load_options: Arc<LoadOptions>,
 }
 
@@ -138,7 +140,11 @@ impl XmlStateInner {
 }
 
 impl XmlState {
-    fn new(document_builder: DocumentBuilder, load_options: Arc<LoadOptions>) -> XmlState {
+    fn new(
+        session: Session,
+        document_builder: DocumentBuilder,
+        load_options: Arc<LoadOptions>,
+    ) -> XmlState {
         XmlState {
             inner: RefCell::new(XmlStateInner {
                 weak: None,
@@ -149,6 +155,7 @@ impl XmlState {
                 entities: HashMap::new(),
             }),
 
+            session,
             load_options,
         }
     }
@@ -271,13 +278,11 @@ impl XmlState {
 
             let mut inner = self.inner.borrow_mut();
 
-            let session = inner.document_builder.as_mut().unwrap().session().clone();
-
             if type_.as_deref() != Some("text/css")
                 || (alternate.is_some() && alternate.as_deref() != Some("no"))
             {
                 rsvg_log!(
-                    session,
+                    self.session,
                     "invalid parameters in XML processing instruction for stylesheet",
                 );
                 return;
@@ -286,7 +291,7 @@ impl XmlState {
             if let Some(href) = href {
                 if let Ok(aurl) = self.load_options.url_resolver.resolve_href(&href) {
                     if let Ok(stylesheet) =
-                        Stylesheet::from_href(&aurl, Origin::Author, session.clone())
+                        Stylesheet::from_href(&aurl, Origin::Author, self.session.clone())
                     {
                         inner
                             .document_builder
@@ -297,21 +302,21 @@ impl XmlState {
                         // FIXME: https://www.w3.org/TR/xml-stylesheet/ does not seem to specify
                         // what to do if the stylesheet cannot be loaded, so here we ignore the error.
                         rsvg_log!(
-                            session,
+                            self.session,
                             "could not create stylesheet from {} in XML processing instruction",
                             href
                         );
                     }
                 } else {
                     rsvg_log!(
-                        session,
+                        self.session,
                         "{} not allowed for xml-stylesheet in XML processing instruction",
                         href
                     );
                 }
             } else {
                 rsvg_log!(
-                    session,
+                    self.session,
                     "xml-stylesheet processing instruction does not have href; ignoring"
                 );
             }
@@ -407,17 +412,16 @@ impl XmlState {
                 .collect::<String>();
 
             let builder = inner.document_builder.as_mut().unwrap();
-            let session = builder.session().clone();
 
             if let Ok(stylesheet) = Stylesheet::from_data(
                 &stylesheet_text,
                 &self.load_options.url_resolver,
                 Origin::Author,
-                session.clone(),
+                self.session.clone(),
             ) {
                 builder.append_stylesheet(stylesheet);
             } else {
-                rsvg_log!(session, "invalid inline stylesheet");
+                rsvg_log!(self.session, "invalid inline stylesheet");
             }
         }
     }
@@ -517,15 +521,6 @@ impl XmlState {
         encoding: Option<&str>,
     ) -> Result<(), AcquireError> {
         if let Some(href) = href {
-            let session = self
-                .inner
-                .borrow()
-                .document_builder
-                .as_ref()
-                .unwrap()
-                .session()
-                .clone();
-
             let aurl = self
                 .load_options
                 .url_resolver
@@ -533,7 +528,7 @@ impl XmlState {
                 .map_err(|e| {
                     // FIXME: should AlloweUrlError::UrlParseError be a fatal error,
                     // not a resource error?
-                    rsvg_log!(session, "could not acquire \"{}\": {}", href, e);
+                    rsvg_log!(self.session, "could not acquire \"{}\": {}", href, e);
                     AcquireError::ResourceError
                 })?;
 
@@ -563,17 +558,8 @@ impl XmlState {
     }
 
     fn acquire_text(&self, aurl: &AllowedUrl, encoding: Option<&str>) -> Result<(), AcquireError> {
-        let session = self
-            .inner
-            .borrow()
-            .document_builder
-            .as_ref()
-            .unwrap()
-            .session()
-            .clone();
-
         let binary = io::acquire_data(aurl, None).map_err(|e| {
-            rsvg_log!(session, "could not acquire \"{}\": {}", aurl, e);
+            rsvg_log!(self.session, "could not acquire \"{}\": {}", aurl, e);
             AcquireError::ResourceError
         })?;
 
@@ -738,12 +724,13 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
 }
 
 pub fn xml_load_from_possibly_compressed_stream(
+    session: Session,
     document_builder: DocumentBuilder,
     load_options: Arc<LoadOptions>,
     stream: &gio::InputStream,
     cancellable: Option<&gio::Cancellable>,
 ) -> Result<Document, LoadingError> {
-    let state = Rc::new(XmlState::new(document_builder, load_options));
+    let state = Rc::new(XmlState::new(session, document_builder, load_options));
 
     state.inner.borrow_mut().weak = Some(Rc::downgrade(&state));
 
