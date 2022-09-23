@@ -527,11 +527,8 @@ impl XmlState {
                 .clone();
 
             let aurl = self
-                .inner
-                .borrow()
-                .document_builder
-                .as_ref()
-                .unwrap()
+                .load_options
+                .url_resolver
                 .resolve_href(href)
                 .map_err(|e| {
                     // FIXME: should AlloweUrlError::UrlParseError be a fatal error,
