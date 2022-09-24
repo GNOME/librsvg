@@ -6,8 +6,9 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use crate::bbox::BoundingBox;
+use crate::coord_units::CoordUnits;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::filter::UserSpaceFilter;
@@ -16,6 +17,7 @@ use crate::node::{Node, NodeBorrow};
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
+use crate::session::Session;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
 use crate::xml::Attributes;
@@ -241,13 +243,42 @@ impl Primitive {
     }
 }
 
+/// Holds the viewport parameters for both objectBoundingBox and userSpaceOnUse units.
+///
+/// When collecting a set of filter primitives (`feFoo`) into a [`FilterSpec`], which is
+/// in user space, we need to convert each primitive's units into user space units.  So,
+/// pre-compute both cases and pass them around.
+///
+/// This struct needs a better name; I didn't want to make it seem specific to filters by
+/// calling `FiltersViewParams` or `FilterCollectionProcessViewParams`.  Maybe the
+/// original [`ViewParams`] should be this struct, with both cases included...
+pub struct ViewParamsGen {
+    object_bounding_box: ViewParams,
+    user_space_on_use: ViewParams,
+}
+
+impl ViewParamsGen {
+    pub fn new(draw_ctx: &DrawingCtx) -> Self {
+        ViewParamsGen {
+            object_bounding_box: draw_ctx.get_view_params_for_units(CoordUnits::ObjectBoundingBox),
+            user_space_on_use: draw_ctx.get_view_params_for_units(CoordUnits::UserSpaceOnUse),
+        }
+    }
+
+    fn get(&self, units: CoordUnits) -> &ViewParams {
+        match units {
+            CoordUnits::ObjectBoundingBox => &self.object_bounding_box,
+            CoordUnits::UserSpaceOnUse => &self.user_space_on_use,
+        }
+    }
+}
+
 pub fn extract_filter_from_filter_node(
     filter_node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
-    draw_ctx: &DrawingCtx,
+    session: &Session,
+    filter_view_params: &ViewParamsGen,
 ) -> Result<FilterSpec, FilterResolveError> {
-    let session = draw_ctx.session().clone();
-
     assert!(is_element_of_type!(filter_node, Filter));
 
     let filter_element = filter_node.borrow_element();
@@ -259,9 +290,11 @@ pub fn extract_filter_from_filter_node(
 
         filter.to_user_space(&NormalizeParams::new(
             filter_values,
-            &draw_ctx.get_view_params_for_units(filter.get_filter_units()),
+            filter_view_params.get(filter.get_filter_units()),
         ))
     };
+
+    let primitive_view_params = filter_view_params.get(user_space_filter.primitive_units);
 
     let primitives = filter_node
         .children()
@@ -289,10 +322,7 @@ pub fn extract_filter_from_filter_node(
             let primitive_name = format!("{}", primitive_node);
 
             let primitive_values = elt.get_computed_values();
-            let params = NormalizeParams::new(
-                primitive_values,
-                &draw_ctx.get_view_params_for_units(user_space_filter.primitive_units),
-            );
+            let params = NormalizeParams::new(primitive_values, primitive_view_params);
 
             effect
                 .resolve(acquired_nodes, &primitive_node)

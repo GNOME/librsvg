@@ -10,7 +10,9 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
-use crate::filters::{extract_filter_from_filter_node, FilterResolveError, FilterSpec};
+use crate::filters::{
+    extract_filter_from_filter_node, FilterResolveError, FilterSpec, ViewParamsGen,
+};
 use crate::length::*;
 use crate::node::NodeBorrow;
 use crate::parsers::{Parse, ParseValue};
@@ -128,6 +130,8 @@ fn filter_spec_from_filter_node(
 ) -> Result<FilterSpec, FilterResolveError> {
     let session = draw_ctx.session().clone();
 
+    let filter_view_params = ViewParamsGen::new(draw_ctx);
+
     acquired_nodes
         .acquire(node_id)
         .map_err(|e| {
@@ -155,7 +159,12 @@ fn filter_spec_from_filter_node(
                         );
                         Err(FilterResolveError::ChildNodeInError)
                     } else {
-                        extract_filter_from_filter_node(node, acquired_nodes, draw_ctx)
+                        extract_filter_from_filter_node(
+                            node,
+                            acquired_nodes,
+                            &session,
+                            &filter_view_params,
+                        )
                     }
                 }
 
