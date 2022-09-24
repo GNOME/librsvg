@@ -970,7 +970,15 @@ impl DrawingCtx {
         current_color: RGBA,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
-        let surface = if let Ok(specs) = filter_list
+        // We try to convert each item in the filter_list to a FilterSpec.
+        //
+        // However, the spec mentions, "If the filter references a non-existent object or
+        // the referenced object is not a filter element, then the whole filter chain is
+        // ignored." - https://www.w3.org/TR/filter-effects/#FilterProperty
+        //
+        // So, run through the filter_list and collect into a Result<Vec<FilterSpec>>.
+        // This will return an Err if any of the conversions failed.
+        let filter_specs = filter_list
             .iter()
             .map(|filter_value| {
                 filter_value.to_filter_spec(
@@ -981,25 +989,37 @@ impl DrawingCtx {
                     node_name,
                 )
             })
-            .collect::<Result<Vec<FilterSpec>, _>>()
-        {
-            specs.iter().try_fold(surface_to_filter, |surface, spec| {
-                filters::render(
-                    spec,
-                    stroke_paint_source.clone(),
-                    fill_paint_source.clone(),
-                    surface,
-                    acquired_nodes,
-                    self,
-                    self.get_transform(),
-                    node_bbox,
-                )
-            })?
-        } else {
-            surface_to_filter
-        };
+            .collect::<Result<Vec<FilterSpec>, _>>();
 
-        Ok(surface)
+        match filter_specs {
+            Ok(specs) => {
+                // Start with the surface_to_filter, and apply each filter spec in turn;
+                // the final result is our return value.
+                specs.iter().try_fold(surface_to_filter, |surface, spec| {
+                    filters::render(
+                        spec,
+                        stroke_paint_source.clone(),
+                        fill_paint_source.clone(),
+                        surface,
+                        acquired_nodes,
+                        self,
+                        self.get_transform(),
+                        node_bbox,
+                    )
+                })
+            }
+
+            Err(e) => {
+                rsvg_log!(
+                    self.session,
+                    "not rendering filter list on node {} because it was in error: {}",
+                    node_name,
+                    e
+                );
+                // just return the original surface without filtering it
+                Ok(surface_to_filter)
+            }
+        }
     }
 
     fn set_gradient(&mut self, gradient: &UserSpaceGradient) -> Result<(), cairo::Error> {

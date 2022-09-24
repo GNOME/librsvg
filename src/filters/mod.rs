@@ -12,7 +12,7 @@ use crate::element::{Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
-use crate::node::{Node, NodeBorrow};
+use crate::node::Node;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
@@ -239,80 +239,6 @@ impl Primitive {
     pub fn parse_two_inputs(&mut self, attrs: &Attributes) -> Result<(Input, Input), ElementError> {
         self.parse_standard_attributes(attrs)
     }
-}
-
-pub fn extract_filter_from_filter_node(
-    filter_node: &Node,
-    acquired_nodes: &mut AcquiredNodes<'_>,
-    draw_ctx: &DrawingCtx,
-) -> Result<FilterSpec, FilterResolveError> {
-    let session = draw_ctx.session().clone();
-
-    assert!(is_element_of_type!(filter_node, Filter));
-
-    let filter_element = filter_node.borrow_element();
-
-    let user_space_filter = {
-        let filter_values = filter_element.get_computed_values();
-
-        let filter = borrow_element_as!(filter_node, Filter);
-
-        filter.to_user_space(&NormalizeParams::new(
-            filter_values,
-            &draw_ctx.get_view_params_for_units(filter.get_filter_units()),
-        ))
-    };
-
-    let primitives = filter_node
-        .children()
-        .filter(|c| c.is_element())
-        // Skip nodes in error.
-        .filter(|c| {
-            let in_error = c.borrow_element().is_in_error();
-
-            if in_error {
-                rsvg_log!(
-                    session,
-                    "(ignoring filter primitive {} because it is in error)",
-                    c
-                );
-            }
-
-            !in_error
-        })
-        // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow_element().as_filter_effect().is_some())
-        .map(|primitive_node| {
-            let elt = primitive_node.borrow_element();
-            let effect = elt.as_filter_effect().unwrap();
-
-            let primitive_name = format!("{}", primitive_node);
-
-            let primitive_values = elt.get_computed_values();
-            let params = NormalizeParams::new(
-                primitive_values,
-                &draw_ctx.get_view_params_for_units(user_space_filter.primitive_units),
-            );
-
-            effect
-                .resolve(acquired_nodes, &primitive_node)
-                .map_err(|e| {
-                    rsvg_log!(
-                        session,
-                        "(filter primitive {} returned an error: {})",
-                        primitive_name,
-                        e
-                    );
-                    e
-                })
-                .map(|primitive| primitive.into_user_space(&params))
-        })
-        .collect::<Result<Vec<UserSpacePrimitive>, FilterResolveError>>()?;
-
-    Ok(FilterSpec {
-        user_space_filter,
-        primitives,
-    })
 }
 
 /// Applies a filter and returns the resulting surface.

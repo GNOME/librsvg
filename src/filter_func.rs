@@ -24,7 +24,7 @@ use crate::filters::{
     gaussian_blur::GaussianBlur,
     merge::{Merge, MergeNode},
     offset::Offset,
-    FilterResolveError, FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
 };
 use crate::length::*;
 use crate::paint_server::resolve_color;
@@ -638,22 +638,18 @@ impl Parse for FilterFunction {
 impl FilterFunction {
     // If this function starts actually returning an Err, remove this Clippy exception:
     #[allow(clippy::unnecessary_wraps)]
-    pub fn to_filter_spec(
-        &self,
-        params: &NormalizeParams,
-        current_color: RGBA,
-    ) -> Result<FilterSpec, FilterResolveError> {
+    pub fn to_filter_spec(&self, params: &NormalizeParams, current_color: RGBA) -> FilterSpec {
         match self {
-            FilterFunction::Blur(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::Brightness(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::Contrast(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::DropShadow(v) => Ok(v.to_filter_spec(params, current_color)),
-            FilterFunction::Grayscale(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::HueRotate(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::Invert(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::Opacity(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::Saturate(v) => Ok(v.to_filter_spec(params)),
-            FilterFunction::Sepia(v) => Ok(v.to_filter_spec(params)),
+            FilterFunction::Blur(v) => v.to_filter_spec(params),
+            FilterFunction::Brightness(v) => v.to_filter_spec(params),
+            FilterFunction::Contrast(v) => v.to_filter_spec(params),
+            FilterFunction::DropShadow(v) => v.to_filter_spec(params, current_color),
+            FilterFunction::Grayscale(v) => v.to_filter_spec(params),
+            FilterFunction::HueRotate(v) => v.to_filter_spec(params),
+            FilterFunction::Invert(v) => v.to_filter_spec(params),
+            FilterFunction::Opacity(v) => v.to_filter_spec(params),
+            FilterFunction::Saturate(v) => v.to_filter_spec(params),
+            FilterFunction::Sepia(v) => v.to_filter_spec(params),
         }
     }
 }
