@@ -116,7 +116,7 @@ impl FilterValue {
             ),
 
             FilterValue::Function(ref func) => {
-                func.to_filter_spec(user_space_params, current_color)
+                Ok(func.to_filter_spec(user_space_params, current_color))
             }
         }
     }
