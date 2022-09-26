@@ -6,7 +6,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2022-09-26.3-main"
+  BASE_TAG: "2022-09-26.4-main"
   RUST_STABLE: "1.64.0"
   RUST_MINIMUM: "1.58.1"
 
@@ -143,16 +143,14 @@ opensuse-container@aarch64:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
-      pip3 install gi-docgen
+      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu
 
 .container.fedora@aarch64:
   extends: .container.fedora@common
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
-      pip3 install gi-docgen
+      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu
   tags:
     - aarch64
 
@@ -208,16 +206,14 @@ fedora-container@x86_64:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
-      pip3 install gi-docgen
+      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu
 
 .container.debian@aarch64:
   extends: .container.debian@common
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
-      pip3 install gi-docgen
+      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu
   tags:
     - aarch64
 
