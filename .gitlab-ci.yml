@@ -79,6 +79,12 @@ test_rust_gdk_pixbuf_loader:
     - cd gdk-pixbuf-loader
     - cargo test
 
+.cargo-test:
+  extends: '.cache'
+  stage: build
+  script:
+    - cargo test
+
 .build-rsvg-no-docs:
   extends: '.cache'
   stage: build
@@ -111,7 +117,7 @@ test_rust_gdk_pixbuf_loader:
       - _build/tests/*.log
     expire_in: 1 day
 
-build-rsvg-opensuse@x86_64.stable:
+autotools build - opensuse@x86_64.stable:
   extends:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
@@ -124,22 +130,22 @@ build-rsvg-opensuse@x86_64.stable:
     - job: check
       artifacts: false
 
-build-rsvg-opensuse@x86_64.minimum:
+cargo test - opensuse@x86_64.minimum:
   extends:
     - '.container.opensuse@x86_64.minimum'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg-no-docs
+    - .cargo-test
   needs:
     - job: opensuse-container@x86_64.minimum
       artifacts: false
     - job: check
       artifacts: false
 
-build-rsvg-opensuse@x86_64.nightly:
+cargo test - opensuse@x86_64.nightly:
   extends:
     - '.container.opensuse@x86_64.nightly'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg-no-docs
+    - .cargo-test
   needs:
     - job: opensuse-container@x86_64.nightly
       artifacts: false
@@ -396,7 +402,7 @@ distcheck:
 reference:
   stage: docs
   needs:
-    - job: build-rsvg-opensuse@x86_64.stable
+    - job: autotools build - opensuse@x86_64.stable
       artifacts: true
   script:
     - mkdir -p public/
