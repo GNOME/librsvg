@@ -6,7 +6,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2022-09-26.2-main"
+  BASE_TAG: "2022-09-26.3-main"
   RUST_STABLE: "1.64.0"
   RUST_MINIMUM: "1.58.1"
 
@@ -111,7 +111,7 @@ opensuse-container@aarch64:
   before_script:
     - source ./ci/env.sh
   variables:
-    FDO_DISTRIBUTION_VERSION: "33"
+    FDO_DISTRIBUTION_VERSION: "36"
     FDO_UPSTREAM_REPO: "gnome/librsvg"
     FDO_DISTRIBUTION_PACKAGES: >-
       autoconf
