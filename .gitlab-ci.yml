@@ -302,25 +302,9 @@ coverage:
     - job: opensuse-container@x86_64.stable
     - job: check
       artifacts: false
-  variables:
-    # Mixed gcc and Rust/LLVM coverage for the C API tests:
-    # https://searchfox.org/mozilla-central/source/browser/config/mozconfigs/linux64/code-coverage#15
-    CC: "clang"
-    CFLAGS: "-coverage -ftest-coverage -fprofile-arcs"
-    # RUSTFLAGS: "-Cinstrument-coverage"
-    RUSTDOCFLAGS: "-Cinstrument-coverage"
-    LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
-    LDFLAGS: "--coverage -L/usr/lib64/clang/14.0.6/lib/linux"
-    LIBS: "-lclang_rt.profile-x86_64"
-    RUSTC_BOOTSTRAP: "1"   # hack to make -Zprofile work on the non-nightly compiler
-    CARGO_INCREMENTAL: "0" # -Zprofile (gcov) doesn't like incremental compilation
-    RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
   script:
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --disable-gtk-doc --disable-vala --enable-debug
-    - make
-    - make -k check
+    - source ./ci/env.sh
+    - bash -x ./ci/build-with-coverage.sh
   after_script:
     - source ./ci/env.sh
     - bash -x ./ci/gen-coverage.sh
