@@ -152,11 +152,11 @@ cargo test - opensuse@x86_64.nightly:
     - job: check
       artifacts: false
 
-.build-rsvg-opensuse@aarch64:
+cargo test - opensuse@aarch64:
   extends:
     - .container.opensuse@aarch64
     - .fdo.distribution-image@opensuse
-    - .build-rsvg-no-docs
+    - .cargo-test
   needs:
     - job: opensuse-container@aarch64
       artifacts: false
