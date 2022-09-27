@@ -79,6 +79,19 @@ test_rust_gdk_pixbuf_loader:
     - cd gdk-pixbuf-loader
     - cargo test
 
+.cargo-test:
+  extends: '.cache'
+  stage: build
+  script:
+    - cargo test
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/output
+    expire_in: 1 day
+  variables:
+    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+
 .build-rsvg-no-docs:
   extends: '.cache'
   stage: build
@@ -111,7 +124,7 @@ test_rust_gdk_pixbuf_loader:
       - _build/tests/*.log
     expire_in: 1 day
 
-build-rsvg-opensuse@x86_64.stable:
+autotools build - opensuse@x86_64.stable:
   extends:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
@@ -124,54 +137,51 @@ build-rsvg-opensuse@x86_64.stable:
     - job: check
       artifacts: false
 
-build-rsvg-opensuse@x86_64.minimum:
+cargo test - opensuse@x86_64.minimum:
   extends:
     - '.container.opensuse@x86_64.minimum'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg-no-docs
+    - .cargo-test
   needs:
     - job: opensuse-container@x86_64.minimum
       artifacts: false
     - job: check
       artifacts: false
 
-build-rsvg-opensuse@x86_64.nightly:
+cargo test - opensuse@x86_64.nightly:
   extends:
     - '.container.opensuse@x86_64.nightly'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg-no-docs
+    - .cargo-test
   needs:
     - job: opensuse-container@x86_64.nightly
       artifacts: false
     - job: check
       artifacts: false
 
-.build-rsvg-opensuse@aarch64:
+cargo test - opensuse@aarch64:
   extends:
     - .container.opensuse@aarch64
     - .fdo.distribution-image@opensuse
-    - .build-rsvg-no-docs
+    - .cargo-test
   needs:
     - job: opensuse-container@aarch64
       artifacts: false
     - job: check
       artifacts: false
+  # The tests fail on aarch64 - some rendering differences.  Needs diagnosis.
+  allow_failure: true
 
-build-rsvg-fedora@x86_64:
+cargo test - fedora@x86_64:
   extends:
     - .container.fedora@x86_64
     - .fdo.distribution-image@fedora
-    - .build-rsvg-no-docs
+    - .cargo-test
   needs:
     - job: fedora-container@x86_64
       artifacts: false
     - job: check
       artifacts: false
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 .build-rsvg-fedora@aarch64:
   extends:
@@ -302,25 +312,9 @@ coverage:
     - job: opensuse-container@x86_64.stable
     - job: check
       artifacts: false
-  variables:
-    # Mixed gcc and Rust/LLVM coverage for the C API tests:
-    # https://searchfox.org/mozilla-central/source/browser/config/mozconfigs/linux64/code-coverage#15
-    CC: "clang"
-    CFLAGS: "-coverage -ftest-coverage -fprofile-arcs"
-    # RUSTFLAGS: "-Cinstrument-coverage"
-    RUSTDOCFLAGS: "-Cinstrument-coverage"
-    LLVM_PROFILE_FILE: "coverage-profiles/coverage-%p-%m.profraw"
-    LDFLAGS: "--coverage -L/usr/lib64/clang/14.0.6/lib/linux"
-    LIBS: "-lclang_rt.profile-x86_64"
-    RUSTC_BOOTSTRAP: "1"   # hack to make -Zprofile work on the non-nightly compiler
-    CARGO_INCREMENTAL: "0" # -Zprofile (gcov) doesn't like incremental compilation
-    RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks=off"
   script:
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --disable-gtk-doc --disable-vala --enable-debug
-    - make
-    - make -k check
+    - source ./ci/env.sh
+    - bash -x ./ci/build-with-coverage.sh
   after_script:
     - source ./ci/env.sh
     - bash -x ./ci/gen-coverage.sh
@@ -412,7 +406,7 @@ distcheck:
 reference:
   stage: docs
   needs:
-    - job: build-rsvg-opensuse@x86_64.stable
+    - job: autotools build - opensuse@x86_64.stable
       artifacts: true
   script:
     - mkdir -p public/
