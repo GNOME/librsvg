@@ -136,6 +136,7 @@
 //! [SVG 1.1]: https://www.w3.org/TR/SVG11/
 //! [SVG 2]: https://www.w3.org/TR/SVG2/
 
+#![doc(html_logo_url = "https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/librsvg-r.svg")]
 #![allow(rustdoc::private_intra_doc_links)]
 #![allow(clippy::clone_on_ref_ptr)]
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
