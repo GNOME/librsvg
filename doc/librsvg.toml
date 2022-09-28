@@ -27,6 +27,9 @@ content_files = [
   "recommendations.md",
   "migrating.md"
 ]
+content_images = [
+  "librsvg-r.svg"
+]
 urlmap_file = "urlmap.js"
 
 [[object]]
