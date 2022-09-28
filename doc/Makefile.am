@@ -1,5 +1,7 @@
 DOCS_SRC =					\
 	librsvg.toml				\
+	librsvg-r.svg				\
+	librsvg.svg				\
 	load-and-render.c			\
 	migrating.md				\
 	overview.md				\
