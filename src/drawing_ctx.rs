@@ -1273,7 +1273,6 @@ impl DrawingCtx {
 
     pub fn draw_shape(
         &mut self,
-        view_params: &ViewParams,
         shape: &Shape,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -1317,15 +1316,6 @@ impl DrawingCtx {
                     &dc.initial_viewport,
                 )?;
 
-                let stroke_paint =
-                    shape
-                        .stroke_paint
-                        .to_user_space(&shape.extents, view_params, values);
-                let fill_paint =
-                    shape
-                        .fill_paint
-                        .to_user_space(&shape.extents, view_params, values);
-
                 if shape.is_visible {
                     for &target in &shape.paint_order.targets {
                         // fill and stroke operations will preserve the path.
@@ -1333,7 +1323,7 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, &fill_paint)?;
+                                dc.fill(&cr, an, &shape.fill_paint)?;
                             }
 
                             PaintTarget::Stroke => {
@@ -1345,7 +1335,7 @@ impl DrawingCtx {
                                 } else {
                                     None
                                 };
-                                dc.stroke(&cr, an, &stroke_paint)?;
+                                dc.stroke(&cr, an, &shape.stroke_paint)?;
                                 if let Some(matrix) = backup_matrix {
                                     cr.set_matrix(matrix);
                                 }
@@ -1479,7 +1469,7 @@ impl DrawingCtx {
             let bbox = compute_stroke_and_fill_box(
                 &self.cr,
                 &span.stroke,
-                &span.stroke_paint_source,
+                &span.stroke_paint,
                 &self.initial_viewport,
             )?;
             self.cr.new_path();
@@ -2027,7 +2017,7 @@ impl CompositingAffines {
 fn compute_stroke_and_fill_extents(
     cr: &cairo::Context,
     stroke: &Stroke,
-    stroke_paint_source: &PaintSource,
+    stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
 ) -> Result<PathExtents, RenderingError> {
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
@@ -2059,7 +2049,7 @@ fn compute_stroke_and_fill_extents(
     // bounding box if so.
 
     let stroke_extents = if !stroke.width.approx_eq_cairo(0.0)
-        && !matches!(stroke_paint_source, PaintSource::None)
+        && !matches!(stroke_paint_source, UserSpacePaintSource::None)
     {
         let backup_matrix = if stroke.non_scaling {
             let matrix = cr.matrix();
@@ -2096,7 +2086,7 @@ fn compute_stroke_and_fill_extents(
 fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     stroke: &Stroke,
-    stroke_paint_source: &PaintSource,
+    stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
 ) -> Result<BoundingBox, RenderingError> {
     let extents =

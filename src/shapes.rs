@@ -118,6 +118,9 @@ fn draw_basic_shape(
 
     let extents = draw_ctx.compute_path_extents(&shape_def.path)?;
 
+    let stroke_paint = stroke_paint.to_user_space(&extents, &view_params, values);
+    let fill_paint = fill_paint.to_user_space(&extents, &view_params, values);
+
     let shape = Shape {
         path: shape_def.path,
         extents,
@@ -143,14 +146,7 @@ fn draw_basic_shape(
         values,
     );
 
-    draw_ctx.draw_shape(
-        &view_params,
-        &shape,
-        &stacking_ctx,
-        acquired_nodes,
-        values,
-        clipping,
-    )
+    draw_ctx.draw_shape(&shape, &stacking_ctx, acquired_nodes, values, clipping)
 }
 
 macro_rules! impl_draw {
