@@ -830,12 +830,12 @@ impl Draw for Text {
                 let mut text_spans = Vec::new();
                 for span in layout_spans {
                     let stroke_paint = span.stroke_paint.to_user_space(
-                        &text_bbox,
+                        &text_bbox.rect,
                         &layout_context.view_params,
                         &span.values,
                     );
                     let fill_paint = span.fill_paint.to_user_space(
-                        &text_bbox,
+                        &text_bbox.rect,
                         &layout_context.view_params,
                         &span.values,
                     );

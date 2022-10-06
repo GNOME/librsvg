@@ -5,7 +5,6 @@ use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
 };
 
-use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
@@ -17,7 +16,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
-use crate::rect::rect_to_transform;
+use crate::rect::{rect_to_transform, Rect};
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
@@ -679,12 +678,12 @@ impl Draw for RadialGradient {}
 impl ResolvedGradient {
     pub fn to_user_space(
         &self,
-        bbox: &BoundingBox,
+        object_bbox: &Option<Rect>,
         current_params: &ViewParams,
         values: &ComputedValues,
     ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
-        let transform = rect_to_transform(&bbox.rect, units).ok()?;
+        let transform = rect_to_transform(&object_bbox, units).ok()?;
         let view_params = current_params.with_units(units);
         let params = NormalizeParams::new(values, &view_params);
 

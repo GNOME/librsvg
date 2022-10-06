@@ -808,7 +808,7 @@ impl DrawingCtx {
                                         None,
                                         self.session(),
                                     )
-                                    .to_user_space(&bbox, &params, values),
+                                    .to_user_space(&bbox.rect, &params, values),
                             );
 
                             let fill_paint_source = Rc::new(
@@ -823,7 +823,7 @@ impl DrawingCtx {
                                         None,
                                         self.session(),
                                     )
-                                    .to_user_space(&bbox, &params, values),
+                                    .to_user_space(&bbox.rect, &params, values),
                             );
 
                             // Filter functions (like "blend()", not the <filter> element) require
@@ -1280,7 +1280,7 @@ impl DrawingCtx {
         values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if shape.path.is_empty() {
+        if shape.extents.is_none() {
             return Ok(self.empty_bbox());
         }
 
@@ -1317,8 +1317,14 @@ impl DrawingCtx {
                     &dc.initial_viewport,
                 )?;
 
-                let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
-                let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
+                let stroke_paint =
+                    shape
+                        .stroke_paint
+                        .to_user_space(&shape.extents, view_params, values);
+                let fill_paint =
+                    shape
+                        .fill_paint
+                        .to_user_space(&shape.extents, view_params, values);
 
                 if shape.is_visible {
                     for &target in &shape.paint_order.targets {
