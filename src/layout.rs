@@ -74,6 +74,7 @@ pub struct Stroke {
 /// involves knowing the bounding box of the path.
 pub struct Shape {
     pub path: Rc<Path>,
+    pub extents: Option<Rect>,
     pub is_visible: bool,
     pub paint_order: PaintOrder,
     pub stroke: Stroke,

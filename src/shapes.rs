@@ -116,8 +116,11 @@ fn draw_basic_shape(
         context_fill: fill_paint.clone(),
     };
 
+    let extents = draw_ctx.compute_path_extents(&shape_def.path)?;
+
     let shape = Shape {
         path: shape_def.path,
+        extents,
         is_visible,
         paint_order,
         stroke,
