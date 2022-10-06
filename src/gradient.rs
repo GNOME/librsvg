@@ -17,6 +17,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ComputedValues;
+use crate::rect::rect_to_transform;
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
@@ -683,7 +684,7 @@ impl ResolvedGradient {
         values: &ComputedValues,
     ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
-        let transform = bbox.rect_to_transform(units).ok()?;
+        let transform = rect_to_transform(&bbox.rect, units).ok()?;
         let view_params = current_params.with_units(units);
         let params = NormalizeParams::new(values, &view_params);
 

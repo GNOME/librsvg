@@ -37,7 +37,7 @@ use crate::properties::{
     ClipRule, ComputedValues, FillRule, Filter, Isolation, MaskType, MixBlendMode, Opacity,
     Overflow, PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
-use crate::rect::{IRect, Rect};
+use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
@@ -538,7 +538,7 @@ impl DrawingCtx {
         let node = clip_node.as_ref().unwrap();
         let units = borrow_element_as!(node, ClipPath).get_units();
 
-        if let Ok(transform) = bbox.rect_to_transform(units) {
+        if let Ok(transform) = rect_to_transform(&bbox.rect, units) {
             let cascaded = CascadedValues::new_from_node(node);
             let values = cascaded.get();
 
