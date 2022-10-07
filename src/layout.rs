@@ -68,10 +68,6 @@ pub struct Stroke {
 }
 
 /// Paths and basic shapes resolved to a path.
-///
-/// Note that `stroke_paint` and `fill_paint` are not in user-space coordinates;
-/// they are just resolved to a `PaintSource`.  Turning them to a `UserSpacePaintSource`
-/// involves knowing the bounding box of the path.
 pub struct Shape {
     pub path: Rc<Path>,
     pub extents: Option<Rect>,
