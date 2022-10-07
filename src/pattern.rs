@@ -3,7 +3,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::*;
-use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
@@ -308,8 +307,8 @@ impl UnresolvedChildren {
     }
 }
 
-fn nonempty_rect_from_bbox(bbox: &BoundingBox) -> Option<Rect> {
-    match bbox.rect {
+fn nonempty_rect(bbox: &Option<Rect>) -> Option<Rect> {
+    match *bbox {
         None => None,
         Some(r) if r.is_empty() => None,
         Some(r) => Some(r),
@@ -338,7 +337,7 @@ impl ResolvedPattern {
 
     pub fn to_user_space(
         &self,
-        bbox: &BoundingBox,
+        object_bbox: &Option<Rect>,
         current_params: &ViewParams,
         values: &ComputedValues,
     ) -> Option<UserSpacePattern> {
@@ -352,7 +351,7 @@ impl ResolvedPattern {
         // Create the pattern coordinate system
         let (width, height, coord_transform) = match self.units {
             PatternUnits(CoordUnits::ObjectBoundingBox) => {
-                let bbrect = nonempty_rect_from_bbox(bbox)?;
+                let bbrect = nonempty_rect(object_bbox)?;
                 (
                     rect.width() * bbrect.width(),
                     rect.height() * bbrect.height(),
@@ -387,7 +386,7 @@ impl ResolvedPattern {
         } else {
             match self.content_units {
                 PatternContentUnits(CoordUnits::ObjectBoundingBox) => {
-                    let bbrect = nonempty_rect_from_bbox(bbox)?;
+                    let bbrect = nonempty_rect(object_bbox)?;
                     Transform::new_scale(bbrect.width(), bbrect.height())
                 }
                 PatternContentUnits(CoordUnits::UserSpaceOnUse) => Transform::identity(),

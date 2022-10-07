@@ -11,6 +11,7 @@ Development guide for librsvg
    contributing
    ci
    text_layout
+   render_tree
    api_observability
    performance_tracking
    releasing
@@ -67,6 +68,7 @@ request.  We can then discuss it before coding.  This way we will have
 a sort of big-picture development history apart from commit messages.
 
 - :doc:`text_layout`
+- :doc:`render_tree`
 - :doc:`api_observability`
 - :doc:`performance_tracking`
 

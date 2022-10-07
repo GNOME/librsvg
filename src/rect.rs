@@ -1,5 +1,8 @@
 //! Types for rectangles.
 
+use crate::coord_units::CoordUnits;
+use crate::transform::Transform;
+
 #[allow(clippy::module_inception)]
 mod rect {
     use crate::float_eq_cairo::ApproxEqCairo;
@@ -201,6 +204,38 @@ impl From<Rect> for cairo::Rectangle {
             y: r.y0,
             width: r.x1 - r.x0,
             height: r.y1 - r.y0,
+        }
+    }
+}
+
+/// Creates a transform to map to a rectangle.
+///
+/// The rectangle is an `Option<Rect>` to indicate the possibility that there is no
+/// bounding box from where the rectangle could be obtained.
+///
+/// This depends on a `CoordUnits` parameter.  When this is
+/// `CoordUnits::ObjectBoundingBox`, the bounding box must not be empty, since the calling
+/// code would then not have a usable size to work with.  In that case, if the bbox is
+/// empty, this function returns `Err(())`.
+///
+/// Usually calling code can simply ignore the action it was about to take if this
+/// function returns an error.
+pub fn rect_to_transform(rect: &Option<Rect>, units: CoordUnits) -> Result<Transform, ()> {
+    match units {
+        CoordUnits::UserSpaceOnUse => Ok(Transform::identity()),
+        CoordUnits::ObjectBoundingBox => {
+            if rect.as_ref().map_or(true, |r| r.is_empty()) {
+                Err(())
+            } else {
+                let r = rect.as_ref().unwrap();
+                let t = Transform::new_unchecked(r.width(), 0.0, 0.0, r.height(), r.x0, r.y0);
+
+                if t.is_invertible() {
+                    Ok(t)
+                } else {
+                    Err(())
+                }
+            }
         }
     }
 }

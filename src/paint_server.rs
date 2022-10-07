@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use cssparser::Parser;
 
-use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::ViewParams;
 use crate::element::Element;
@@ -14,6 +13,7 @@ use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::{ResolvedPattern, UserSpacePattern};
 use crate::properties::ComputedValues;
+use crate::rect::Rect;
 use crate::session::Session;
 use crate::unit_interval::UnitInterval;
 use crate::util;
@@ -242,7 +242,7 @@ impl PaintSource {
     /// Converts lengths to user-space.
     pub fn to_user_space(
         &self,
-        bbox: &BoundingBox,
+        object_bbox: &Option<Rect>,
         current_params: &ViewParams,
         values: &ComputedValues,
     ) -> UserSpacePaintSource {
@@ -251,7 +251,7 @@ impl PaintSource {
             PaintSource::SolidColor(c) => UserSpacePaintSource::SolidColor(c),
 
             PaintSource::Gradient(ref g, c) => {
-                match (g.to_user_space(bbox, current_params, values), c) {
+                match (g.to_user_space(object_bbox, current_params, values), c) {
                     (Some(gradient), c) => UserSpacePaintSource::Gradient(gradient, c),
                     (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
                     (None, None) => UserSpacePaintSource::None,
@@ -259,7 +259,7 @@ impl PaintSource {
             }
 
             PaintSource::Pattern(ref p, c) => {
-                match (p.to_user_space(bbox, current_params, values), c) {
+                match (p.to_user_space(object_bbox, current_params, values), c) {
                     (Some(pattern), c) => UserSpacePaintSource::Pattern(pattern, c),
                     (None, Some(c)) => UserSpacePaintSource::SolidColor(c),
                     (None, None) => UserSpacePaintSource::None,

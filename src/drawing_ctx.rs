@@ -37,7 +37,7 @@ use crate::properties::{
     ClipRule, ComputedValues, FillRule, Filter, Isolation, MaskType, MixBlendMode, Opacity,
     Overflow, PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
-use crate::rect::{IRect, Rect};
+use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
@@ -538,7 +538,7 @@ impl DrawingCtx {
         let node = clip_node.as_ref().unwrap();
         let units = borrow_element_as!(node, ClipPath).get_units();
 
-        if let Ok(transform) = bbox.rect_to_transform(units) {
+        if let Ok(transform) = rect_to_transform(&bbox.rect, units) {
             let cascaded = CascadedValues::new_from_node(node);
             let values = cascaded.get();
 
@@ -808,7 +808,7 @@ impl DrawingCtx {
                                         None,
                                         self.session(),
                                     )
-                                    .to_user_space(&bbox, &params, values),
+                                    .to_user_space(&bbox.rect, &params, values),
                             );
 
                             let fill_paint_source = Rc::new(
@@ -823,7 +823,7 @@ impl DrawingCtx {
                                         None,
                                         self.session(),
                                     )
-                                    .to_user_space(&bbox, &params, values),
+                                    .to_user_space(&bbox.rect, &params, values),
                             );
 
                             // Filter functions (like "blend()", not the <filter> element) require
@@ -1257,16 +1257,29 @@ impl DrawingCtx {
         Ok(())
     }
 
+    pub fn compute_path_extents(&self, path: &Path) -> Result<Option<Rect>, RenderingError> {
+        if path.is_empty() {
+            return Ok(None);
+        }
+
+        let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
+        let cr = cairo::Context::new(&surface)?;
+
+        path.to_cairo(&cr, false)?;
+        let (x0, y0, x1, y1) = cr.path_extents()?;
+
+        Ok(Some(Rect::new(x0, y0, x1, y1)))
+    }
+
     pub fn draw_shape(
         &mut self,
-        view_params: &ViewParams,
         shape: &Shape,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if shape.path.is_empty() {
+        if shape.extents.is_none() {
             return Ok(self.empty_bbox());
         }
 
@@ -1303,9 +1316,6 @@ impl DrawingCtx {
                     &dc.initial_viewport,
                 )?;
 
-                let stroke_paint = shape.stroke_paint.to_user_space(&bbox, view_params, values);
-                let fill_paint = shape.fill_paint.to_user_space(&bbox, view_params, values);
-
                 if shape.is_visible {
                     for &target in &shape.paint_order.targets {
                         // fill and stroke operations will preserve the path.
@@ -1313,7 +1323,7 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, &fill_paint)?;
+                                dc.fill(&cr, an, &shape.fill_paint)?;
                             }
 
                             PaintTarget::Stroke => {
@@ -1325,7 +1335,7 @@ impl DrawingCtx {
                                 } else {
                                     None
                                 };
-                                dc.stroke(&cr, an, &stroke_paint)?;
+                                dc.stroke(&cr, an, &shape.stroke_paint)?;
                                 if let Some(matrix) = backup_matrix {
                                     cr.set_matrix(matrix);
                                 }
@@ -1459,7 +1469,7 @@ impl DrawingCtx {
             let bbox = compute_stroke_and_fill_box(
                 &self.cr,
                 &span.stroke,
-                &span.stroke_paint_source,
+                &span.stroke_paint,
                 &self.initial_viewport,
             )?;
             self.cr.new_path();
@@ -2007,7 +2017,7 @@ impl CompositingAffines {
 fn compute_stroke_and_fill_extents(
     cr: &cairo::Context,
     stroke: &Stroke,
-    stroke_paint_source: &PaintSource,
+    stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
 ) -> Result<PathExtents, RenderingError> {
     // Dropping the precision of cairo's bezier subdivision, yielding 2x
@@ -2039,7 +2049,7 @@ fn compute_stroke_and_fill_extents(
     // bounding box if so.
 
     let stroke_extents = if !stroke.width.approx_eq_cairo(0.0)
-        && !matches!(stroke_paint_source, PaintSource::None)
+        && !matches!(stroke_paint_source, UserSpacePaintSource::None)
     {
         let backup_matrix = if stroke.non_scaling {
             let matrix = cr.matrix();
@@ -2076,7 +2086,7 @@ fn compute_stroke_and_fill_extents(
 fn compute_stroke_and_fill_box(
     cr: &cairo::Context,
     stroke: &Stroke,
-    stroke_paint_source: &PaintSource,
+    stroke_paint_source: &UserSpacePaintSource,
     initial_viewport: &Viewport,
 ) -> Result<BoundingBox, RenderingError> {
     let extents =
