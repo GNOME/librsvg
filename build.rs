@@ -64,6 +64,12 @@ fn generate_srgb_tables() {
     print_table(&mut file, "UNLINEARIZE", unlinearize, 256);
 }
 
+struct Version {
+    major: String,
+    minor: String,
+    micro: String,
+}
+
 fn write_version() {
     let mut major = None;
     let mut minor = None;
@@ -100,6 +106,12 @@ fn write_version() {
         }
     }
 
+    let version = if let (Some(major), Some(minor), Some(micro)) = (major, minor, micro) {
+        Version { major, minor, micro }
+    } else {
+        panic!("Could not find version in configure.ac");
+    };
+
     let output = Path::new(&env::var("OUT_DIR").unwrap()).join("version.rs");
     let mut file = File::create(output).expect("open version.rs for writing");
     file.write_all(
@@ -116,9 +128,9 @@ pub static rsvg_minor_version: c_uint = {};
 #[no_mangle]
 pub static rsvg_micro_version: c_uint = {};
 "#,
-            major.expect("major version is set"),
-            minor.expect("minor version is set"),
-            micro.expect("micro version is set")
+            version.major,
+            version.minor,
+            version.micro,
         )
         .as_bytes(),
     )
