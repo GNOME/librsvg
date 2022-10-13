@@ -9,6 +9,7 @@ Development guide for librsvg
    adding_a_property
    memory_leaks
    contributing
+   meson
    ci
    text_layout
    render_tree
@@ -71,6 +72,7 @@ a sort of big-picture development history apart from commit messages.
 - :doc:`render_tree`
 - :doc:`api_observability`
 - :doc:`performance_tracking`
+- :doc:`meson`
 
 See https://rustc-dev-guide.rust-lang.org/walkthrough.html, section
 Overview, to formalize the RFC process for features vs. drive-by
@@ -80,6 +82,7 @@ Information for maintainers
 ---------------------------
 
 - :doc:`releasing`
+- :doc:`ci`
 
 Overview of the maintainer's workflow.
 
