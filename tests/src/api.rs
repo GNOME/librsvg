@@ -53,12 +53,7 @@ fn render_layer() {
 
     let res = {
         let cr = cairo::Context::new(&output).expect("Failed to create cairo context");
-        let viewport = cairo::Rectangle {
-            x: 100.0,
-            y: 100.0,
-            width: 100.0,
-            height: 100.0,
-        };
+        let viewport = cairo::Rectangle::new(100.0, 100.0, 100.0, 100.0);
 
         renderer.render_layer(&cr, Some("#bar"), &viewport)
     };
@@ -109,25 +104,9 @@ fn untransformed_element() {
 
     let (ink_r, logical_r) = renderer.geometry_for_element(Some("#foo")).unwrap();
 
-    assert_eq!(
-        ink_r,
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 40.0,
-            height: 50.0,
-        }
-    );
+    assert_eq!(ink_r, cairo::Rectangle::new(0.0, 0.0, 40.0, 50.0));
 
-    assert_eq!(
-        logical_r,
-        cairo::Rectangle {
-            x: 5.0,
-            y: 5.0,
-            width: 30.0,
-            height: 40.0,
-        }
-    );
+    assert_eq!(logical_r, cairo::Rectangle::new(5.0, 5.0, 30.0, 40.0));
 
     /* Rendering */
 
@@ -135,12 +114,7 @@ fn untransformed_element() {
 
     let res = {
         let cr = cairo::Context::new(&output).expect("Failed to create cairo context");
-        let viewport = cairo::Rectangle {
-            x: 100.0,
-            y: 100.0,
-            width: 100.0,
-            height: 100.0,
-        };
+        let viewport = cairo::Rectangle::new(100.0, 100.0, 100.0, 100.0);
 
         renderer.render_element(&cr, Some("#foo"), &viewport)
     };
@@ -191,12 +165,7 @@ fn set_stylesheet() {
 
     let res = {
         let cr = cairo::Context::new(&output).expect("Failed to create cairo context");
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 100.0,
-        };
+        let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
         renderer.render_document(&cr, &viewport)
     };
@@ -239,12 +208,7 @@ fn text_doesnt_leave_points_in_current_path() {
 
     assert!(!cr.has_current_point().unwrap());
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
     renderer.render_document(&cr, &viewport).unwrap();
 

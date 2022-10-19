@@ -122,12 +122,7 @@ fn test(svg_filename: &str, geometries_filename: &str) {
     for (id, expected) in geometries.0.iter() {
         let expected = Element::from_element_geometry(id, expected);
 
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: svg_width,
-            height: svg_height,
-        };
+        let viewport = cairo::Rectangle::new(0.0, 0.0, svg_width, svg_height);
 
         let (ink_rect, logical_rect) = renderer
             .geometry_for_layer(Some(id), &viewport)

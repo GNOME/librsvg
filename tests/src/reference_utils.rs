@@ -200,12 +200,7 @@ macro_rules! test_compare_render_output {
                 &svg,
                 SurfaceSize(sx, sy),
                 |_| (),
-                cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: sx as f64,
-                    height: sy as f64,
-                },
+                cairo::Rectangle::new(0.0, 0.0, f64::from(sx), f64::from(sy)),
             )
             .unwrap();
 
@@ -214,12 +209,7 @@ macro_rules! test_compare_render_output {
                 &reference,
                 SurfaceSize(sx, sy),
                 |_| (),
-                cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: sx as f64,
-                    height: sy as f64,
-                },
+                cairo::Rectangle::new(0.0, 0.0, f64::from(sx), f64::from(sy)),
             )
             .unwrap();
 
@@ -278,12 +268,7 @@ macro_rules! test_svg_reference {
                 &svg,
                 SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
                 |_| (),
-                cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: pixels.0,
-                    height: pixels.1,
-                },
+                cairo::Rectangle::new(0.0, 0.0, pixels.0, pixels.1),
             )
             .unwrap();
 
@@ -291,12 +276,7 @@ macro_rules! test_svg_reference {
                 &reference,
                 SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
                 |_| (),
-                cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: pixels.0,
-                    height: pixels.1,
-                },
+                cairo::Rectangle::new(0.0, 0.0, pixels.0, pixels.1),
             )
             .unwrap();
 

@@ -44,12 +44,7 @@ fn main() {
 
     let res = renderer.render_document(
         &cr,
-        &cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: f64::from(width),
-            height: f64::from(height),
-        },
+        &cairo::Rectangle::new(0.0, 0.0, f64::from(width), f64::from(height)),
     );
 
     match res {

@@ -38,12 +38,7 @@ fn has_intrinsic_dimensions() {
         IntrinsicDimensions {
             width: Length::new(10.0, LengthUnit::Cm),
             height: Length::new(20.0, LengthUnit::Px),
-            vbox: Some(cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 100.0,
-                height: 200.0,
-            }),
+            vbox: Some(cairo::Rectangle::new(0.0, 0.0, 100.0, 200.0)),
         }
     );
 }
@@ -112,21 +107,11 @@ fn root_geometry_with_percent_viewport() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
     let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
 
-    let rect = cairo::Rectangle {
-        x: 10.0,
-        y: 20.0,
-        width: 30.0,
-        height: 40.0,
-    };
+    let rect = cairo::Rectangle::new(10.0, 20.0, 30.0, 40.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -144,21 +129,11 @@ fn layer_geometry_with_offset_viewport() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 100.0,
-        y: 100.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(100.0, 100.0, 100.0, 100.0);
 
     let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
 
-    let rect = cairo::Rectangle {
-        x: 110.0,
-        y: 120.0,
-        width: 30.0,
-        height: 40.0,
-    };
+    let rect = cairo::Rectangle::new(110.0, 120.0, 30.0, 40.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -176,21 +151,11 @@ fn layer_geometry_with_viewbox_and_offset_viewport() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 100.0,
-        y: 100.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(100.0, 100.0, 100.0, 100.0);
 
     let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
 
-    let rect = cairo::Rectangle {
-        x: 110.0,
-        y: 120.0,
-        width: 30.0,
-        height: 40.0,
-    };
+    let rect = cairo::Rectangle::new(110.0, 120.0, 30.0, 40.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -208,21 +173,11 @@ fn layer_geometry_with_no_width_height() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 100.0,
-        y: 100.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(100.0, 100.0, 100.0, 100.0);
 
     let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
 
-    let rect = cairo::Rectangle {
-        x: 105.0,
-        y: 110.0,
-        width: 15.0,
-        height: 20.0,
-    };
+    let rect = cairo::Rectangle::new(105.0, 110.0, 15.0, 20.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -240,24 +195,14 @@ fn layer_geometry_with_no_intrinsic_dimensions() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 100.0,
-        y: 100.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(100.0, 100.0, 100.0, 100.0);
 
     let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
 
     // The SVG document above has no width/height nor viewBox, which means it should
     // start with an identity transform for its coordinate space.  Since the viewport
     // is just offset by (100, 100), this just translates the coordinates of the <rect>.
-    let rect = cairo::Rectangle {
-        x: 210.0,
-        y: 220.0,
-        width: 50.0,
-        height: 40.0,
-    };
+    let rect = cairo::Rectangle::new(210.0, 220.0, 50.0, 40.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -275,23 +220,13 @@ fn layer_geometry_with_percentage_viewport() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 100.0,
-        y: 100.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(100.0, 100.0, 100.0, 100.0);
 
     let (ink_r, logical_r) = renderer.geometry_for_layer(None, &viewport).unwrap();
 
     // Lack of viewBox means we use an identity transform, so the <rect> is just
     // offset by (100, 100) because of the viewport.
-    let rect = cairo::Rectangle {
-        x: 110.0,
-        y: 120.0,
-        width: 50.0,
-        height: 40.0,
-    };
+    let rect = cairo::Rectangle::new(110.0, 120.0, 50.0, 40.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -309,23 +244,13 @@ fn layer_geometry_with_percent_viewport() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
     let (ink_r, logical_r) = renderer
         .geometry_for_layer(Some("#foo"), &viewport)
         .unwrap();
 
-    let rect = cairo::Rectangle {
-        x: 10.0,
-        y: 20.0,
-        width: 30.0,
-        height: 40.0,
-    };
+    let rect = cairo::Rectangle::new(10.0, 20.0, 30.0, 40.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -344,23 +269,13 @@ fn layer_geometry_viewport_viewbox() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 100.0,
-        height: 400.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 400.0);
 
     let (ink_r, logical_r) = renderer
         .geometry_for_layer(Some("#two"), &viewport)
         .unwrap();
 
-    let rect = cairo::Rectangle {
-        x: 0.0,
-        y: 200.0,
-        width: 100.0,
-        height: 200.0,
-    };
+    let rect = cairo::Rectangle::new(0.0, 200.0, 100.0, 200.0);
 
     assert_eq!((ink_r, logical_r), (rect, rect));
 }
@@ -374,12 +289,7 @@ fn layer_geometry_for_nonexistent_element() {
     )
     .unwrap();
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
     let renderer = CairoRenderer::new(&svg);
 
@@ -398,12 +308,7 @@ fn layer_geometry_for_invalid_id() {
     )
     .unwrap();
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
     let renderer = CairoRenderer::new(&svg);
     assert!(matches!(
@@ -437,12 +342,7 @@ fn render_to_viewport_with_different_size() {
         &svg,
         SurfaceSize(128, 128),
         |_cr| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 128.0,
-            height: 128.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 128.0, 128.0),
     )
     .unwrap();
 
@@ -478,12 +378,7 @@ fn render_to_offsetted_viewport() {
         &svg,
         SurfaceSize(100, 100),
         |_cr| (),
-        cairo::Rectangle {
-            x: 10.0,
-            y: 20.0,
-            width: 48.0,
-            height: 48.0,
-        },
+        cairo::Rectangle::new(10.0, 20.0, 48.0, 48.0),
     )
     .unwrap();
 
@@ -521,12 +416,7 @@ fn render_to_viewport_with_transform() {
         &svg,
         SurfaceSize(100, 100),
         |cr| cr.translate(10.0, 20.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 48.0,
-            height: 48.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 48.0, 48.0),
     )
     .unwrap();
 
@@ -571,12 +461,7 @@ fn clip_on_transformed_viewport() {
         &svg,
         SurfaceSize(200, 200),
         |cr| cr.translate(50.0, 50.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 100.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0),
     )
     .unwrap();
 
@@ -637,12 +522,7 @@ fn mask_on_transformed_viewport() {
         &svg,
         SurfaceSize(200, 200),
         |cr| cr.translate(50.0, 50.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 100.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0),
     )
     .unwrap();
 

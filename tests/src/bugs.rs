@@ -29,12 +29,7 @@ fn inf_width() {
         &svg,
         SurfaceSize(150, 150),
         |cr| cr.translate(50.0, 50.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 50.0,
-            height: 50.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 50.0, 50.0),
     )
     .unwrap();
 }
@@ -57,12 +52,7 @@ fn nonexistent_image_shouldnt_cancel_rendering() {
         &svg,
         SurfaceSize(50, 50),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 50.0,
-            height: 50.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 50.0, 50.0),
     )
     .unwrap();
 
@@ -106,12 +96,7 @@ fn href_attribute_overrides_xlink_href() {
         &svg,
         SurfaceSize(500, 500),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 500.0,
-            height: 500.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 500.0, 500.0),
     )
     .unwrap();
 
@@ -147,12 +132,7 @@ fn nonexistent_filter_leaves_object_unfiltered() {
         &svg,
         SurfaceSize(500, 500),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 500.0,
-            height: 500.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 500.0, 500.0),
     )
     .unwrap();
 
@@ -212,12 +192,7 @@ fn recursive_paint_servers_fallback_to_color() {
         &svg,
         SurfaceSize(200, 200),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 200.0,
-            height: 200.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 200.0, 200.0),
     )
     .unwrap();
 
@@ -241,12 +216,7 @@ fn test_renders_as_empty(svg: &SvgHandle, test_name: &str) {
         &svg,
         SurfaceSize(100, 100),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 100.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0),
     )
     .unwrap();
 
@@ -336,22 +306,17 @@ fn test_text_bounds(name: &str) {
     let (ink_r, _) = renderer
         .geometry_for_layer(
             Some("#LabelA"),
-            &cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 248.0,
-                height: 176.0,
-            },
+            &cairo::Rectangle::new(0.0, 0.0, 248.0, 176.0),
         )
         .unwrap();
 
-    assert!(ink_r.x >= 80.0 && ink_r.x < 80.1);
+    assert!(ink_r.x() >= 80.0 && ink_r.x() < 80.1);
 
     // This is kind of suspicious, but we don't know the actual height of the
     // text set at y=49 in the test SVG.  However, this test is more "text
     // elements compute sensible bounds"; the bug #347 was that their ink_rect
     // was not being computed correctly at all.
-    assert!(ink_r.y > 48.0 && ink_r.y < 49.0);
+    assert!(ink_r.y() > 48.0 && ink_r.y() < 49.0);
 }
 
 // https://gitlab.gnome.org/GNOME/librsvg/-/issues/703
@@ -375,12 +340,7 @@ fn switch_element_should_ignore_elements_in_error() {
         &svg,
         SurfaceSize(100, 100),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 100.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0),
     )
     .unwrap();
 
@@ -438,12 +398,7 @@ fn accepted_children_inside_clip_path() {
         &svg,
         SurfaceSize(200, 200),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 200.0,
-            height: 200.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 200.0, 200.0),
     )
     .unwrap();
 
@@ -491,12 +446,7 @@ fn can_draw_to_non_image_surface() {
 
     let renderer = CairoRenderer::new(&svg);
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 200.0,
-        height: 200.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 200.0, 200.0);
 
     let output =
         cairo::RecordingSurface::create(cairo::Content::ColorAlpha, Some(viewport)).unwrap();

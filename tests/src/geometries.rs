@@ -99,12 +99,7 @@ fn test(svg_filename: &str) {
             geom: Rect::from(*expected),
         };
 
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: svg_width,
-            height: svg_height,
-        };
+        let viewport = cairo::Rectangle::new(0.0, 0.0, svg_width, svg_height);
 
         let (geometry, _) = renderer
             .geometry_for_layer(Some(id), &viewport)

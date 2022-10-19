@@ -92,7 +92,7 @@ mod pango_ft2 {
         pango_fc_font_map_set_config(raw_font_map as *mut _, config);
         fontconfig::FcConfigDestroy(config);
 
-        FontMap::set_default(Some(font_map.downcast::<pangocairo::FontMap>().unwrap()));
+        FontMap::set_default(Some(&font_map.downcast::<pangocairo::FontMap>().unwrap()));
     }
 }
 
