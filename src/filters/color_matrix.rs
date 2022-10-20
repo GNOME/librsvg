@@ -79,15 +79,7 @@ impl SetAttributes for FeColorMatrix {
         // Now read the matrix correspondingly.
         // LuminanceToAlpha doesn't accept any matrix.
         if operation_type == OperationType::LuminanceToAlpha {
-            self.params.matrix = {
-                Matrix5::new(
-                    0.0,    0.0,    0.0,    0.0, 0.0,
-                    0.0,    0.0,    0.0,    0.0, 0.0,
-                    0.0,    0.0,    0.0,    0.0, 0.0,
-                    0.2125, 0.7154, 0.0721, 0.0, 0.0,
-                    0.0,    0.0,    0.0,    0.0, 1.0,
-                )
-            };
+            self.params.matrix = ColorMatrix::luminance_to_alpha_matrix();
         } else {
             for (attr, value) in attrs
                 .iter()
@@ -213,6 +205,18 @@ impl ColorMatrix {
         matrix[(3, 3)] = 1.0;
         matrix[(4, 4)] = 1.0;
         matrix
+    }
+
+    // https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    #[rustfmt::skip]
+    fn luminance_to_alpha_matrix() -> Matrix5<f64> {
+        Matrix5::new(
+            0.0,    0.0,    0.0,    0.0, 0.0,
+            0.0,    0.0,    0.0,    0.0, 0.0,
+            0.0,    0.0,    0.0,    0.0, 0.0,
+            0.2126, 0.7152, 0.0722, 0.0, 0.0,
+            0.0,    0.0,    0.0,    0.0, 1.0,
+        )
     }
 }
 
