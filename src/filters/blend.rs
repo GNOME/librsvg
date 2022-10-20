@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
@@ -67,7 +67,7 @@ impl SetAttributes for FeBlend {
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "mode") = attr.expanded() {
-                self.params.mode = attr.parse(value)?;
+                set_attribute(&mut self.params.mode, attr.parse(value), session);
             }
         }
 
