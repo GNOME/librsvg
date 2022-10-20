@@ -1,5 +1,5 @@
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns};
+use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::document::AcquiredNodes;
@@ -62,7 +62,6 @@ impl Default for ColorMatrix {
     }
 }
 
-#[rustfmt::skip]
 impl SetAttributes for FeColorMatrix {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         self.params.in1 = self.base.parse_one_input(attrs, session)?;
@@ -77,39 +76,106 @@ impl SetAttributes for FeColorMatrix {
         }
 
         // Now read the matrix correspondingly.
-        // LuminanceToAlpha doesn't accept any matrix.
-        if operation_type == OperationType::LuminanceToAlpha {
-            self.params.matrix = ColorMatrix::luminance_to_alpha_matrix();
-        } else {
-            for (attr, value) in attrs
-                .iter()
-                .filter(|(attr, _)| attr.expanded() == expanded_name!("", "values"))
-            {
-                let new_matrix = match operation_type {
-                    OperationType::LuminanceToAlpha => unreachable!(),
-                    OperationType::Matrix => {
-                        let NumberList::<20, 20>(v) = attr.parse(value)?;
-                        let matrix = Matrix4x5::from_row_slice(&v);
-                        let mut matrix = matrix.fixed_resize(0.0);
-                        matrix[(4, 4)] = 1.0;
-                        matrix
-                    }
-                    OperationType::Saturate => {
-                        let s: f64 = attr.parse(value)?;
-                        ColorMatrix::saturate_matrix(s)
-                    }
-                    OperationType::HueRotate => {
-                        let degrees: f64 = attr.parse(value)?;
-                        ColorMatrix::hue_rotate_matrix(degrees.to_radians())
-                    }
-                };
+        //
+        // Here we cannot assume that ColorMatrix::default() has provided the correct
+        // initial value for the matrix itself, since the initial value for the matrix
+        // (i.e. the value to which it should fall back if the `values` attribute is in
+        // error) depends on the operation_type.
+        //
+        // So, for each operation_type, first initialize the proper default matrix, then
+        // try to parse the value.
 
-                self.params.matrix = new_matrix;
+        use OperationType::*;
+
+        self.params.matrix = match operation_type {
+            Matrix => ColorMatrix::default_matrix(),
+            Saturate => ColorMatrix::saturate_matrix(1.0),
+            HueRotate => ColorMatrix::hue_rotate_matrix(0.0),
+            LuminanceToAlpha => ColorMatrix::luminance_to_alpha_matrix(),
+        };
+
+        for (attr, value) in attrs
+            .iter()
+            .filter(|(attr, _)| attr.expanded() == expanded_name!("", "values"))
+        {
+            match operation_type {
+                Matrix => parse_matrix(&mut self.params.matrix, attr, value, session),
+                Saturate => parse_saturate_matrix(&mut self.params.matrix, attr, value, session),
+                HueRotate => parse_hue_rotate_matrix(&mut self.params.matrix, attr, value, session),
+                LuminanceToAlpha => {
+                    parse_luminance_to_alpha_matrix(&mut self.params.matrix, attr, value, session)
+                }
             }
         }
 
         Ok(())
     }
+}
+
+fn parse_matrix(dest: &mut Matrix5<f64>, attr: QualName, value: &str, session: &Session) {
+    let parsed: Result<NumberList<20, 20>, _> = attr.parse(value);
+
+    match parsed {
+        Ok(NumberList(v)) => {
+            let matrix = Matrix4x5::from_row_slice(&v);
+            let mut matrix = matrix.fixed_resize(0.0);
+            matrix[(4, 4)] = 1.0;
+            *dest = matrix;
+        }
+
+        Err(e) => {
+            rsvg_log!(session, "element feColorMatrix with type=\"matrix\", expected a values attribute with 20 numbers: {}", e);
+        }
+    }
+}
+
+fn parse_saturate_matrix(dest: &mut Matrix5<f64>, attr: QualName, value: &str, session: &Session) {
+    let parsed: Result<f64, _> = attr.parse(value);
+
+    match parsed {
+        Ok(s) => {
+            *dest = ColorMatrix::saturate_matrix(s);
+        }
+
+        Err(e) => {
+            rsvg_log!(session, "element feColorMatrix with type=\"saturate\", expected a values attribute with 1 number: {}", e);
+        }
+    }
+}
+
+fn parse_hue_rotate_matrix(
+    dest: &mut Matrix5<f64>,
+    attr: QualName,
+    value: &str,
+    session: &Session,
+) {
+    let parsed: Result<f64, _> = attr.parse(value);
+
+    match parsed {
+        Ok(degrees) => {
+            *dest = ColorMatrix::hue_rotate_matrix(degrees.to_radians());
+        }
+
+        Err(e) => {
+            rsvg_log!(session, "element feColorMatrix with type=\"hueRotate\", expected a values attribute with 1 number: {}", e);
+        }
+    }
+}
+
+fn parse_luminance_to_alpha_matrix(
+    _dest: &mut Matrix5<f64>,
+    _attr: QualName,
+    _value: &str,
+    session: &Session,
+) {
+    // There's nothing to parse, since our caller already supplied the default value,
+    // and type="luminanceToAlpha" does not takes a `values` attribute.  So, just warn
+    // that the value is being ignored.
+
+    rsvg_log!(
+        session,
+        "ignoring \"values\" attribute for feColorMatrix with type=\"luminanceToAlpha\""
+    );
 }
 
 impl ColorMatrix {
@@ -177,6 +243,9 @@ impl ColorMatrix {
         })
     }
 
+    /// Compute a `type="hueRotate"` matrix.
+    ///
+    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
     #[rustfmt::skip]
     pub fn hue_rotate_matrix(radians: f64) -> Matrix5<f64> {
         let (sin, cos) = radians.sin_cos();
@@ -207,7 +276,9 @@ impl ColorMatrix {
         matrix
     }
 
-    // https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    /// Compute a `type="luminanceToAlpha"` matrix.
+    ///
+    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
     #[rustfmt::skip]
     fn luminance_to_alpha_matrix() -> Matrix5<f64> {
         Matrix5::new(
@@ -219,7 +290,9 @@ impl ColorMatrix {
         )
     }
 
-    // https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    /// Compute a `type="saturate"` matrix.
+    ///
+    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
     #[rustfmt::skip]
     fn saturate_matrix(s: f64) -> Matrix5<f64> {
         Matrix5::new(
@@ -229,6 +302,13 @@ impl ColorMatrix {
             0.0,               0.0,               0.0,               1.0, 0.0,
             0.0,               0.0,               0.0,               0.0, 1.0,
         )
+    }
+
+    /// Default for `type="matrix"`.
+    ///
+    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    fn default_matrix() -> Matrix5<f64> {
+        Matrix5::identity()
     }
 }
 
