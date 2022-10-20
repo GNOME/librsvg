@@ -41,8 +41,8 @@ pub struct ComponentTransfer {
 }
 
 impl SetAttributes for FeComponentTransfer {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.params.in1 = self.base.parse_one_input(attrs, session)?;
         Ok(())
     }
 }

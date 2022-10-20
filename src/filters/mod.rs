@@ -8,7 +8,7 @@ use std::time::Instant;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, ElementResult, SetAttributes};
 use crate::error::{ElementError, ParseError, RenderingError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
@@ -16,6 +16,7 @@ use crate::node::Node;
 use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
+use crate::session::Session;
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 use crate::transform::Transform;
 use crate::xml::Attributes;
@@ -206,19 +207,28 @@ impl Primitive {
     fn parse_standard_attributes(
         &mut self,
         attrs: &Attributes,
+        session: &Session,
     ) -> Result<(Input, Input), ElementError> {
         let mut input_1 = Input::Unspecified;
         let mut input_2 = Input::Unspecified;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.height = attr.parse(value)?,
-                expanded_name!("", "result") => self.result = attr.parse(value)?,
-                expanded_name!("", "in") => input_1 = attr.parse(value)?,
-                expanded_name!("", "in2") => input_2 = attr.parse(value)?,
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "width") => {
+                    set_attribute(&mut self.width, attr.parse(value), session)
+                }
+                expanded_name!("", "height") => {
+                    set_attribute(&mut self.height, attr.parse(value), session)
+                }
+                expanded_name!("", "result") => {
+                    set_attribute(&mut self.result, attr.parse(value), session)
+                }
+                expanded_name!("", "in") => set_attribute(&mut input_1, attr.parse(value), session),
+                expanded_name!("", "in2") => {
+                    set_attribute(&mut input_2, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
@@ -226,18 +236,26 @@ impl Primitive {
         Ok((input_1, input_2))
     }
 
-    pub fn parse_no_inputs(&mut self, attrs: &Attributes) -> ElementResult {
-        let (_, _) = self.parse_standard_attributes(attrs)?;
+    pub fn parse_no_inputs(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        let (_, _) = self.parse_standard_attributes(attrs, session)?;
         Ok(())
     }
 
-    pub fn parse_one_input(&mut self, attrs: &Attributes) -> Result<Input, ElementError> {
-        let (input_1, _) = self.parse_standard_attributes(attrs)?;
+    pub fn parse_one_input(
+        &mut self,
+        attrs: &Attributes,
+        session: &Session,
+    ) -> Result<Input, ElementError> {
+        let (input_1, _) = self.parse_standard_attributes(attrs, session)?;
         Ok(input_1)
     }
 
-    pub fn parse_two_inputs(&mut self, attrs: &Attributes) -> Result<(Input, Input), ElementError> {
-        self.parse_standard_attributes(attrs)
+    pub fn parse_two_inputs(
+        &mut self,
+        attrs: &Attributes,
+        session: &Session,
+    ) -> Result<(Input, Input), ElementError> {
+        self.parse_standard_attributes(attrs, session)
     }
 }
 

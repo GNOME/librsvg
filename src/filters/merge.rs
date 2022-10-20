@@ -52,8 +52,8 @@ impl Default for FeMerge {
 }
 
 impl SetAttributes for FeMerge {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.base.parse_no_inputs(attrs)
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.base.parse_no_inputs(attrs, session)
     }
 }
 
