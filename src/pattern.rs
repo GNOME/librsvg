@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -124,16 +124,24 @@ pub struct Pattern {
 }
 
 impl SetAttributes for Pattern {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "patternUnits") => self.common.units = attr.parse(value)?,
-                expanded_name!("", "patternContentUnits") => {
-                    self.common.content_units = attr.parse(value)?
+                expanded_name!("", "patternUnits") => {
+                    set_attribute(&mut self.common.units, attr.parse(value), session)
                 }
-                expanded_name!("", "viewBox") => self.common.vbox = attr.parse(value)?,
+                expanded_name!("", "patternContentUnits") => {
+                    set_attribute(&mut self.common.content_units, attr.parse(value), session);
+                }
+                expanded_name!("", "viewBox") => {
+                    set_attribute(&mut self.common.vbox, attr.parse(value), session)
+                }
                 expanded_name!("", "preserveAspectRatio") => {
-                    self.common.preserve_aspect_ratio = attr.parse(value)?
+                    set_attribute(
+                        &mut self.common.preserve_aspect_ratio,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 expanded_name!("", "patternTransform") => {
                     let transform_attr: TransformAttribute = attr.parse(value)?;
@@ -146,10 +154,18 @@ impl SetAttributes for Pattern {
                         NodeId::parse(value).attribute(attr.clone())?,
                     );
                 }
-                expanded_name!("", "x") => self.common.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.common.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.common.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.common.height = attr.parse(value)?,
+                expanded_name!("", "x") => {
+                    set_attribute(&mut self.common.x, attr.parse(value), session)
+                }
+                expanded_name!("", "y") => {
+                    set_attribute(&mut self.common.y, attr.parse(value), session)
+                }
+                expanded_name!("", "width") => {
+                    set_attribute(&mut self.common.width, attr.parse(value), session)
+                }
+                expanded_name!("", "height") => {
+                    set_attribute(&mut self.common.height, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
