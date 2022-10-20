@@ -76,6 +76,26 @@ pub trait SetAttributes {
     }
 }
 
+/// Sets `dest` if `parse_result` is `Ok()`, otherwise just logs the error.
+///
+/// Implementations of the [`SetAttributes`] trait generally scan a list of attributes
+/// for the ones they can handle, and parse their string values.  Per the SVG spec, an attribute
+/// with an invalid value should be ignored, and it should fall back to the default value.
+///
+/// In librsvg, those default values are set in each element's implementation of the [`Default`] trait:
+/// at element creation time, each element gets initialized to its `Default`, and then each attribute
+/// gets parsed.  This function will set that attribute's value only if parsing was successful.
+pub fn set_attribute<T>(dest: &mut T, parse_result: Result<T, ElementError>, session: &Session) {
+    match parse_result {
+        Ok(v) => *dest = v,
+        Err(e) => {
+            // FIXME: this does not provide a clue of what was the problematic element.
+            // We need tracking of the current parsing position to do that.
+            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+        }
+    }
+}
+
 pub trait Draw {
     /// Draw an element
     ///
