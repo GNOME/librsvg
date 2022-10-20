@@ -96,14 +96,7 @@ impl SetAttributes for FeColorMatrix {
                     }
                     OperationType::Saturate => {
                         let s: f64 = attr.parse(value)?;
-
-                        Matrix5::new(
-                            0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0.0, 0.0,
-                            0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0.0, 0.0,
-                            0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s, 0.0, 0.0,
-                            0.0,               0.0,               0.0,               1.0, 0.0,
-                            0.0,               0.0,               0.0,               0.0, 1.0,
-                        )
+                        ColorMatrix::saturate_matrix(s)
                     }
                     OperationType::HueRotate => {
                         let degrees: f64 = attr.parse(value)?;
@@ -223,6 +216,18 @@ impl ColorMatrix {
             0.0,    0.0,    0.0,    0.0, 0.0,
             0.2126, 0.7152, 0.0722, 0.0, 0.0,
             0.0,    0.0,    0.0,    0.0, 1.0,
+        )
+    }
+
+    // https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    #[rustfmt::skip]
+    fn saturate_matrix(s: f64) -> Matrix5<f64> {
+        Matrix5::new(
+            0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0.0, 0.0,
+            0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0.0, 0.0,
+            0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s, 0.0, 0.0,
+            0.0,               0.0,               0.0,               1.0, 0.0,
+            0.0,               0.0,               0.0,               0.0, 1.0,
         )
     }
 }
