@@ -37,7 +37,7 @@ unsafe extern "C" fn begin_load(
     user_data: gpointer,
     error: *mut *mut GError,
 ) -> gpointer {
-    if error != null_mut() {
+    if !error.is_null() {
         *error = null_mut();
     }
 
@@ -60,25 +60,25 @@ unsafe extern "C" fn load_increment(
     size: c_uint,
     error: *mut *mut GError,
 ) -> gboolean {
-    if error != null_mut() {
+    if !error.is_null() {
         *error = null_mut();
     }
 
     let ctx = user_data as *mut SvgContext;
 
     let data = std::slice::from_raw_parts(buffer, size as usize);
-    (&*ctx).stream.add_bytes(&Bytes::from(data));
+    (*ctx).stream.add_bytes(&Bytes::from(data));
     true.into_glib()
 }
 
 #[no_mangle]
 unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> gboolean {
     let ctx = Box::from_raw(user_data as *mut SvgContext);
-    if error != null_mut() {
+    if !error.is_null() {
         *error = null_mut();
     }
 
-    fn _inner_stop_load(ctx: &Box<SvgContext>) -> Result<gdk_pixbuf::Pixbuf, String> {
+    fn _inner_stop_load(ctx: &SvgContext) -> Result<gdk_pixbuf::Pixbuf, String> {
         let handle = Loader::new()
             .read_stream::<_, gio::File, gio::Cancellable>(&ctx.stream, None, None)
             .map_err(|e| e.to_string())?;
@@ -115,7 +115,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
     let pixbuf = match _inner_stop_load(&ctx) {
         Ok(r) => r,
         Err(e) => {
-            if error != null_mut() {
+            if !error.is_null() {
                 let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e);
                 *error = gerr.to_glib_full() as *mut GError;
             }
