@@ -7,7 +7,7 @@ use std::slice::Iter;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
 use crate::filters::{FilterResolveError, FilterSpec, UserSpacePrimitive};
@@ -71,15 +71,23 @@ impl Filter {
 }
 
 impl SetAttributes for Filter {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "filterUnits") => self.filter_units = attr.parse(value)?,
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.height = attr.parse(value)?,
-                expanded_name!("", "primitiveUnits") => self.primitive_units = attr.parse(value)?,
+                expanded_name!("", "filterUnits") => {
+                    set_attribute(&mut self.filter_units, attr.parse(value), session)
+                }
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "width") => {
+                    set_attribute(&mut self.width, attr.parse(value), session)
+                }
+                expanded_name!("", "height") => {
+                    set_attribute(&mut self.height, attr.parse(value), session)
+                }
+                expanded_name!("", "primitiveUnits") => {
+                    set_attribute(&mut self.primitive_units, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
