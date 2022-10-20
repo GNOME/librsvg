@@ -4,7 +4,7 @@ use nalgebra::{Matrix3, Matrix4x5, Matrix5, Vector5};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberList, Parse, ParseValue};
@@ -73,7 +73,7 @@ impl SetAttributes for FeColorMatrix {
             .iter()
             .filter(|(attr, _)| attr.expanded() == expanded_name!("", "type"))
         {
-            operation_type = attr.parse(value)?;
+            set_attribute(&mut operation_type, attr.parse(value), session);
         }
 
         // Now read the matrix correspondingly.
