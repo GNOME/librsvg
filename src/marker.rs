@@ -11,7 +11,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::layout::{self, Shape, StackingContext};
@@ -200,17 +200,33 @@ impl Marker {
 }
 
 impl SetAttributes for Marker {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "markerUnits") => self.units = attr.parse(value)?,
-                expanded_name!("", "refX") => self.ref_x = attr.parse(value)?,
-                expanded_name!("", "refY") => self.ref_y = attr.parse(value)?,
-                expanded_name!("", "markerWidth") => self.width = attr.parse(value)?,
-                expanded_name!("", "markerHeight") => self.height = attr.parse(value)?,
-                expanded_name!("", "orient") => self.orient = attr.parse(value)?,
-                expanded_name!("", "preserveAspectRatio") => self.aspect = attr.parse(value)?,
-                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
+                expanded_name!("", "markerUnits") => {
+                    set_attribute(&mut self.units, attr.parse(value), session)
+                }
+                expanded_name!("", "refX") => {
+                    set_attribute(&mut self.ref_x, attr.parse(value), session)
+                }
+                expanded_name!("", "refY") => {
+                    set_attribute(&mut self.ref_y, attr.parse(value), session)
+                }
+                expanded_name!("", "markerWidth") => {
+                    set_attribute(&mut self.width, attr.parse(value), session)
+                }
+                expanded_name!("", "markerHeight") => {
+                    set_attribute(&mut self.height, attr.parse(value), session)
+                }
+                expanded_name!("", "orient") => {
+                    set_attribute(&mut self.orient, attr.parse(value), session)
+                }
+                expanded_name!("", "preserveAspectRatio") => {
+                    set_attribute(&mut self.aspect, attr.parse(value), session)
+                }
+                expanded_name!("", "viewBox") => {
+                    set_attribute(&mut self.vbox, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
