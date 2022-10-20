@@ -9,7 +9,7 @@ use std::rc::Rc;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::iri::Iri;
 use crate::layout::{Marker, Shape, StackingContext, Stroke};
@@ -346,10 +346,10 @@ pub struct Polygon {
 impl_draw!(Polygon);
 
 impl SetAttributes for Polygon {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
-                self.points = attr.parse(value)?;
+                set_attribute(&mut self.points, attr.parse(value), session);
             }
         }
 
@@ -371,10 +371,10 @@ pub struct Polyline {
 impl_draw!(Polyline);
 
 impl SetAttributes for Polyline {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
-                self.points = attr.parse(value)?;
+                set_attribute(&mut self.points, attr.parse(value), session);
             }
         }
 
@@ -399,13 +399,13 @@ pub struct Line {
 impl_draw!(Line);
 
 impl SetAttributes for Line {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x1") => self.x1 = attr.parse(value)?,
-                expanded_name!("", "y1") => self.y1 = attr.parse(value)?,
-                expanded_name!("", "x2") => self.x2 = attr.parse(value)?,
-                expanded_name!("", "y2") => self.y2 = attr.parse(value)?,
+                expanded_name!("", "x1") => set_attribute(&mut self.x1, attr.parse(value), session),
+                expanded_name!("", "y1") => set_attribute(&mut self.y1, attr.parse(value), session),
+                expanded_name!("", "x2") => set_attribute(&mut self.x2, attr.parse(value), session),
+                expanded_name!("", "y2") => set_attribute(&mut self.y2, attr.parse(value), session),
                 _ => (),
             }
         }
