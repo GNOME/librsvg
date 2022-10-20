@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
 use crate::length::*;
@@ -733,13 +733,13 @@ impl Text {
 }
 
 impl SetAttributes for Text {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "dx") => self.dx = attr.parse(value)?,
-                expanded_name!("", "dy") => self.dy = attr.parse(value)?,
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "dx") => set_attribute(&mut self.dx, attr.parse(value), session),
+                expanded_name!("", "dy") => set_attribute(&mut self.dy, attr.parse(value), session),
                 _ => (),
             }
         }
