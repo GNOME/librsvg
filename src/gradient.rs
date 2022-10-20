@@ -8,7 +8,7 @@ use markup5ever::{
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -66,10 +66,10 @@ pub struct Stop {
 }
 
 impl SetAttributes for Stop {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
-            if let expanded_name!("", "offset") = attr.expanded() {
-                self.offset = attr.parse(value)?;
+            if attr.expanded() == expanded_name!("", "offset") {
+                set_attribute(&mut self.offset, attr.parse(value), session);
             }
         }
 
@@ -520,15 +520,19 @@ impl RadialGradient {
 }
 
 impl SetAttributes for Common {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "gradientUnits") => self.units = attr.parse(value)?,
+                expanded_name!("", "gradientUnits") => {
+                    set_attribute(&mut self.units, attr.parse(value), session)
+                }
                 expanded_name!("", "gradientTransform") => {
                     let transform_attr: TransformAttribute = attr.parse(value)?;
                     self.transform = Some(transform_attr.to_transform());
                 }
-                expanded_name!("", "spreadMethod") => self.spread = attr.parse(value)?,
+                expanded_name!("", "spreadMethod") => {
+                    set_attribute(&mut self.spread, attr.parse(value), session)
+                }
                 ref a if is_href(a) => {
                     set_href(
                         a,
@@ -550,10 +554,10 @@ impl SetAttributes for LinearGradient {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x1") => self.x1 = attr.parse(value)?,
-                expanded_name!("", "y1") => self.y1 = attr.parse(value)?,
-                expanded_name!("", "x2") => self.x2 = attr.parse(value)?,
-                expanded_name!("", "y2") => self.y2 = attr.parse(value)?,
+                expanded_name!("", "x1") => set_attribute(&mut self.x1, attr.parse(value), session),
+                expanded_name!("", "y1") => set_attribute(&mut self.y1, attr.parse(value), session),
+                expanded_name!("", "x2") => set_attribute(&mut self.x2, attr.parse(value), session),
+                expanded_name!("", "y2") => set_attribute(&mut self.y2, attr.parse(value), session),
 
                 _ => (),
             }
@@ -653,19 +657,17 @@ impl SetAttributes for RadialGradient {
 
         for (attr, value) in attrs.iter() {
             let attr_expanded = attr.expanded();
-
-            if attr_expanded == expanded_name_fr {
-                self.fr = attr.parse(value)?;
-            } else {
-                match attr_expanded {
-                    expanded_name!("", "cx") => self.cx = attr.parse(value)?,
-                    expanded_name!("", "cy") => self.cy = attr.parse(value)?,
-                    expanded_name!("", "r") => self.r = attr.parse(value)?,
-                    expanded_name!("", "fx") => self.fx = attr.parse(value)?,
-                    expanded_name!("", "fy") => self.fy = attr.parse(value)?,
-
-                    _ => (),
+            match attr_expanded {
+                expanded_name!("", "cx") => set_attribute(&mut self.cx, attr.parse(value), session),
+                expanded_name!("", "cy") => set_attribute(&mut self.cy, attr.parse(value), session),
+                expanded_name!("", "r") => set_attribute(&mut self.r, attr.parse(value), session),
+                expanded_name!("", "fx") => set_attribute(&mut self.fx, attr.parse(value), session),
+                expanded_name!("", "fy") => set_attribute(&mut self.fy, attr.parse(value), session),
+                a if a == expanded_name_fr => {
+                    set_attribute(&mut self.fr, attr.parse(value), session)
                 }
+
+                _ => (),
             }
         }
 
