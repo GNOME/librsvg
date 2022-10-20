@@ -1234,11 +1234,8 @@ dependencies = [
  "cairo-rs",
  "cstr",
  "gdk-pixbuf",
- "gdk-pixbuf-sys",
  "gio",
  "glib",
- "glib-sys",
- "gobject-sys",
  "libc",
  "librsvg",
 ]
