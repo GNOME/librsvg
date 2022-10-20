@@ -75,8 +75,8 @@ impl Default for Turbulence {
 }
 
 impl SetAttributes for FeTurbulence {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.base.parse_no_inputs(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.base.parse_no_inputs(attrs, session)?;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {

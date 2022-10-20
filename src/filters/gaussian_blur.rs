@@ -46,8 +46,8 @@ pub struct GaussianBlur {
 }
 
 impl SetAttributes for FeGaussianBlur {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+        self.params.in1 = self.base.parse_one_input(attrs, session)?;
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "stdDeviation") = attr.expanded() {
