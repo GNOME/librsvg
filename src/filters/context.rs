@@ -333,12 +333,25 @@ impl FilterContext {
                 .stroke_paint_image(acquired_nodes, draw_ctx)
                 .map(FilterInput::StandardInput),
 
-            Input::FilterOutput(ref name) => self
-                .previous_results
-                .get(name)
-                .cloned()
-                .map(FilterInput::PrimitiveOutput)
-                .ok_or(FilterError::InvalidInput),
+            Input::FilterOutput(ref name) => {
+                let input = match self.previous_results.get(name).cloned() {
+                    Some(filter_output) => {
+                        // Happy path: we found a previous primitive's named output, so pass it on.
+                        FilterInput::PrimitiveOutput(filter_output)
+                    }
+
+                    None => {
+                        // Fallback path: we didn't find a primitive's output by the
+                        // specified name, so fall back to using an unspecified output.
+                        // Per the spec, "References to non-existent results will be
+                        // treated as if no result was specified." -
+                        // https://drafts.fxtf.org/filter-effects/#element-attrdef-filter-primitive-in
+                        self.get_unspecified_input()
+                    }
+                };
+
+                Ok(input)
+            }
         }
     }
 
