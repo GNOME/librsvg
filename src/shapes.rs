@@ -260,8 +260,8 @@ impl SetAttributes for Path {
             if attr.expanded() == expanded_name!("", "d") {
                 let mut builder = PathBuilder::default();
                 if let Err(e) = builder.parse(value) {
-                    // FIXME: we don't propagate errors upstream, but creating a partial
-                    // path is OK per the spec
+                    // Creating a partial path is OK per the spec; we don't throw away the partial
+                    // result in case of an error.
 
                     rsvg_log!(session, "could not parse path: {}", e);
                 }
