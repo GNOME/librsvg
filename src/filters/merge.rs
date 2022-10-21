@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ColorInterpolationFilters;
@@ -60,10 +60,10 @@ impl SetAttributes for FeMerge {
 
 impl SetAttributes for FeMergeNode {
     #[inline]
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "in") = attr.expanded() {
-                self.in1 = attr.parse(value)?;
+                set_attribute(&mut self.in1, attr.parse(value), session);
             }
         }
 
