@@ -397,6 +397,12 @@ test_svg_reference!(
 );
 
 test_svg_reference!(
+    gaussian_blur_nonpositive_913,
+    "tests/fixtures/reftests/svg2-reftests/913-gaussian-blur-nonpositive.svg",
+    "tests/fixtures/reftests/svg2-reftests/913-gaussian-blur-nonpositive-ref.svg"
+);
+
+test_svg_reference!(
     bug_880_horizontal_vertical_stroked_lines,
     "tests/fixtures/reftests/bugs-reftests/880-stroke-wide-line.svg",
     "tests/fixtures/reftests/bugs-reftests/880-stroke-wide-line-ref.svg"
