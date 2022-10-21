@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::properties::ColorInterpolationFilters;
@@ -38,8 +38,12 @@ impl SetAttributes for FeOffset {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "dx") => self.params.dx = attr.parse(value)?,
-                expanded_name!("", "dy") => self.params.dy = attr.parse(value)?,
+                expanded_name!("", "dx") => {
+                    set_attribute(&mut self.params.dx, attr.parse(value), session)
+                }
+                expanded_name!("", "dy") => {
+                    set_attribute(&mut self.params.dy, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
