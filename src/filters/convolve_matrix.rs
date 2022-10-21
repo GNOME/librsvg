@@ -37,7 +37,7 @@ pub struct FeConvolveMatrix {
 #[derive(Clone)]
 pub struct ConvolveMatrix {
     in1: Input,
-    order: (u32, u32),
+    order: NumberOptionalNumber<u32>,
     kernel_matrix: Option<DMatrix<f64>>,
     divisor: f64,
     bias: f64,
@@ -55,7 +55,7 @@ impl Default for ConvolveMatrix {
     fn default() -> ConvolveMatrix {
         ConvolveMatrix {
             in1: Default::default(),
-            order: (3, 3),
+            order: NumberOptionalNumber(3, 3),
             kernel_matrix: None,
             divisor: 0.0,
             bias: 0.0,
@@ -76,8 +76,7 @@ impl SetAttributes for FeConvolveMatrix {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "order") => {
-                    let NumberOptionalNumber(x, y) = attr.parse(value)?;
-                    self.params.order = (x, y);
+                    set_attribute(&mut self.params.order, attr.parse(value), session)
                 }
                 expanded_name!("", "divisor") => {
                     set_attribute(&mut self.params.divisor, attr.parse(value), session)
@@ -112,11 +111,11 @@ impl SetAttributes for FeConvolveMatrix {
             .filter(|(attr, _)| attr.expanded() == expanded_name!("", "kernelMatrix"))
         {
             self.params.kernel_matrix = Some({
-                let number_of_elements =
-                    self.params.order.0 as usize * self.params.order.1 as usize;
+                let cols = self.params.order.0 as usize;
+                let rows = self.params.order.1 as usize;
 
-                // #352: Parse as an unbounded list rather than exact length to prevent aborts due
-                //       to huge allocation attempts by underlying Vec::with_capacity().
+                let number_of_elements = cols * rows;
+
                 // #691: Limit list to 400 (20x20) to mitigate malicious SVGs
                 let NumberList::<0, 400>(v) = attr.parse(value)?;
                 // #691: Update check as v.len can be different than number of elements because
