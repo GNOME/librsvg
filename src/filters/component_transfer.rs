@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, Parse, ParseValue};
@@ -215,20 +215,33 @@ macro_rules! func_x {
 
         impl SetAttributes for $func_name {
             #[inline]
-            fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+            fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
                 for (attr, value) in attrs.iter() {
                     match attr.expanded() {
-                        expanded_name!("", "type") => self.function_type = attr.parse(value)?,
+                        expanded_name!("", "type") => {
+                            set_attribute(&mut self.function_type, attr.parse(value), session)
+                        }
                         expanded_name!("", "tableValues") => {
                             // #691: Limit list to 256 to mitigate malicious SVGs
-                            let NumberList::<0, 256>(v) = attr.parse(value)?;
-                            self.table_values = v;
+                            let mut number_list = NumberList::<0, 256>(Vec::new());
+                            set_attribute(&mut number_list, attr.parse(value), session);
+                            self.table_values = number_list.0;
                         }
-                        expanded_name!("", "slope") => self.slope = attr.parse(value)?,
-                        expanded_name!("", "intercept") => self.intercept = attr.parse(value)?,
-                        expanded_name!("", "amplitude") => self.amplitude = attr.parse(value)?,
-                        expanded_name!("", "exponent") => self.exponent = attr.parse(value)?,
-                        expanded_name!("", "offset") => self.offset = attr.parse(value)?,
+                        expanded_name!("", "slope") => {
+                            set_attribute(&mut self.slope, attr.parse(value), session)
+                        }
+                        expanded_name!("", "intercept") => {
+                            set_attribute(&mut self.intercept, attr.parse(value), session)
+                        }
+                        expanded_name!("", "amplitude") => {
+                            set_attribute(&mut self.amplitude, attr.parse(value), session)
+                        }
+                        expanded_name!("", "exponent") => {
+                            set_attribute(&mut self.exponent, attr.parse(value), session)
+                        }
+                        expanded_name!("", "offset") => {
+                            set_attribute(&mut self.offset, attr.parse(value), session)
+                        }
 
                         _ => (),
                     }
