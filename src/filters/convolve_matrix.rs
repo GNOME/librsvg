@@ -4,7 +4,7 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberList, NumberOptionalNumber, Parse, ParseValue};
@@ -79,17 +79,27 @@ impl SetAttributes for FeConvolveMatrix {
                     let NumberOptionalNumber(x, y) = attr.parse(value)?;
                     self.params.order = (x, y);
                 }
-                expanded_name!("", "divisor") => self.params.divisor = attr.parse(value)?,
-                expanded_name!("", "bias") => self.params.bias = attr.parse(value)?,
-                expanded_name!("", "targetX") => self.params.target_x = attr.parse(value)?,
-                expanded_name!("", "targetY") => self.params.target_y = attr.parse(value)?,
-                expanded_name!("", "edgeMode") => self.params.edge_mode = attr.parse(value)?,
+                expanded_name!("", "divisor") => {
+                    set_attribute(&mut self.params.divisor, attr.parse(value), session)
+                }
+                expanded_name!("", "bias") => {
+                    set_attribute(&mut self.params.bias, attr.parse(value), session)
+                }
+                expanded_name!("", "targetX") => {
+                    set_attribute(&mut self.params.target_x, attr.parse(value), session)
+                }
+                expanded_name!("", "targetY") => {
+                    set_attribute(&mut self.params.target_y, attr.parse(value), session)
+                }
+                expanded_name!("", "edgeMode") => {
+                    set_attribute(&mut self.params.edge_mode, attr.parse(value), session)
+                }
                 expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
                     self.params.kernel_unit_length = Some((x, y))
                 }
                 expanded_name!("", "preserveAlpha") => {
-                    self.params.preserve_alpha = attr.parse(value)?
+                    set_attribute(&mut self.params.preserve_alpha, attr.parse(value), session);
                 }
 
                 _ => (),
