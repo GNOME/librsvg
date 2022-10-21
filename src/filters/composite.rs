@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
@@ -61,11 +61,21 @@ impl SetAttributes for FeComposite {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "operator") => self.params.operator = attr.parse(value)?,
-                expanded_name!("", "k1") => self.params.k1 = attr.parse(value)?,
-                expanded_name!("", "k2") => self.params.k2 = attr.parse(value)?,
-                expanded_name!("", "k3") => self.params.k3 = attr.parse(value)?,
-                expanded_name!("", "k4") => self.params.k4 = attr.parse(value)?,
+                expanded_name!("", "operator") => {
+                    set_attribute(&mut self.params.operator, attr.parse(value), session)
+                }
+                expanded_name!("", "k1") => {
+                    set_attribute(&mut self.params.k1, attr.parse(value), session)
+                }
+                expanded_name!("", "k2") => {
+                    set_attribute(&mut self.params.k2, attr.parse(value), session)
+                }
+                expanded_name!("", "k3") => {
+                    set_attribute(&mut self.params.k3, attr.parse(value), session)
+                }
+                expanded_name!("", "k4") => {
+                    set_attribute(&mut self.params.k4, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
