@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
@@ -85,7 +85,7 @@ impl SetAttributes for FeTurbulence {
                     self.params.base_frequency = (x, y);
                 }
                 expanded_name!("", "numOctaves") => {
-                    self.params.num_octaves = attr.parse(value)?;
+                    set_attribute(&mut self.params.num_octaves, attr.parse(value), session);
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!("", "seed") => {
@@ -97,9 +97,11 @@ impl SetAttributes for FeTurbulence {
                     ) as i32;
                 }
                 expanded_name!("", "stitchTiles") => {
-                    self.params.stitch_tiles = attr.parse(value)?
+                    set_attribute(&mut self.params.stitch_tiles, attr.parse(value), session);
                 }
-                expanded_name!("", "type") => self.params.type_ = attr.parse(value)?,
+                expanded_name!("", "type") => {
+                    set_attribute(&mut self.params.type_, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
