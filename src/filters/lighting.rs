@@ -9,7 +9,7 @@ use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
 use crate::filters::{
     bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
@@ -214,11 +214,15 @@ impl FeDistantLight {
 }
 
 impl SetAttributes for FeDistantLight {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
-                expanded_name!("", "elevation") => self.elevation = attr.parse(value)?,
+                expanded_name!("", "azimuth") => {
+                    set_attribute(&mut self.azimuth, attr.parse(value), session)
+                }
+                expanded_name!("", "elevation") => {
+                    set_attribute(&mut self.elevation, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
@@ -248,12 +252,12 @@ impl FePointLight {
 }
 
 impl SetAttributes for FePointLight {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "z") => self.z = attr.parse(value)?,
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "z") => set_attribute(&mut self.z, attr.parse(value), session),
                 _ => (),
             }
         }
@@ -315,22 +319,28 @@ impl FeSpotLight {
 }
 
 impl SetAttributes for FeSpotLight {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "z") => self.z = attr.parse(value)?,
-                expanded_name!("", "pointsAtX") => self.points_at_x = attr.parse(value)?,
-                expanded_name!("", "pointsAtY") => self.points_at_y = attr.parse(value)?,
-                expanded_name!("", "pointsAtZ") => self.points_at_z = attr.parse(value)?,
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "z") => set_attribute(&mut self.z, attr.parse(value), session),
+                expanded_name!("", "pointsAtX") => {
+                    set_attribute(&mut self.points_at_x, attr.parse(value), session)
+                }
+                expanded_name!("", "pointsAtY") => {
+                    set_attribute(&mut self.points_at_y, attr.parse(value), session)
+                }
+                expanded_name!("", "pointsAtZ") => {
+                    set_attribute(&mut self.points_at_z, attr.parse(value), session)
+                }
 
                 expanded_name!("", "specularExponent") => {
-                    self.specular_exponent = attr.parse(value)?
+                    set_attribute(&mut self.specular_exponent, attr.parse(value), session);
                 }
 
                 expanded_name!("", "limitingConeAngle") => {
-                    self.limiting_cone_angle = attr.parse(value)?
+                    set_attribute(&mut self.limiting_cone_angle, attr.parse(value), session);
                 }
 
                 _ => (),
@@ -356,7 +366,7 @@ impl SetAttributes for FeDiffuseLighting {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "surfaceScale") => {
-                    self.params.surface_scale = attr.parse(value)?
+                    set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
@@ -401,7 +411,7 @@ impl SetAttributes for FeSpecularLighting {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "surfaceScale") => {
-                    self.params.surface_scale = attr.parse(value)?
+                    set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
                     let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
@@ -412,7 +422,11 @@ impl SetAttributes for FeSpecularLighting {
                     self.params.specular_constant = c;
                 }
                 expanded_name!("", "specularExponent") => {
-                    self.params.specular_exponent = attr.parse(value)?;
+                    set_attribute(
+                        &mut self.params.specular_exponent,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 _ => (),
             }
