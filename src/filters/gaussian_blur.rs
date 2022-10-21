@@ -221,6 +221,17 @@ impl GaussianBlur {
             .into();
 
         let NumberOptionalNumber(std_x, std_y) = self.std_deviation;
+
+        // "A negative value or a value of zero disables the effect of
+        // the given filter primitive (i.e., the result is the filter
+        // input image)."
+        if std_x <= 0.0 && std_y <= 0.0 {
+            return Ok(FilterOutput {
+                surface: input_1.surface().clone(),
+                bounds,
+            });
+        }
+
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);
 
         // The deviation can become negative here due to the transform.
