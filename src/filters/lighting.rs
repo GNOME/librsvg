@@ -334,7 +334,7 @@ fn transform_dist(t: Transform, d: f64) -> f64 {
 
 impl SetAttributes for FeDiffuseLighting {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs, session)?;
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -379,7 +379,7 @@ impl DiffuseLighting {
 
 impl SetAttributes for FeSpecularLighting {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs, session)?;
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {

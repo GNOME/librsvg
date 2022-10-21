@@ -52,7 +52,7 @@ pub struct Morphology {
 
 impl SetAttributes for FeMorphology {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs, session)?;
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
