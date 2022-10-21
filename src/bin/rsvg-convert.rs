@@ -790,7 +790,6 @@ fn parse_args() -> Result<Converter, Error> {
         .disable_help_flag(true)
         .arg(
             clap::Arg::new("help")
-                .short('h')
                 .short('?')
                 .long("help")
                 .help("Display the help")
@@ -990,13 +989,15 @@ fn parse_args() -> Result<Converter, Error> {
             clap::Arg::new("keep_image_data")
                 .long("keep-image-data")
                 .help("Keep image data")
+                .conflicts_with("no_keep_image_data")
                 .action(clap::ArgAction::SetTrue),
         )
         .arg(
             clap::Arg::new("no_keep_image_data")
                 .long("no-keep-image-data")
                 .help("Do not keep image data")
-                .action(clap::ArgAction::SetFalse),
+                .conflicts_with("keep_image_data")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
             clap::Arg::new("testing")
@@ -1030,8 +1031,8 @@ fn parse_args() -> Result<Converter, Error> {
     };
 
     let keep_image_data = match format {
-        Format::Ps | Format::Eps | Format::Pdf => !matches.contains_id("no_keep_image_data"),
-        _ => matches.contains_id("keep_image_data"),
+        Format::Ps | Format::Eps | Format::Pdf => !matches.get_flag("no_keep_image_data"),
+        _ => matches.get_flag("keep_image_data"),
     };
 
     let language = match matches.get_one::<String>("accept-language") {
@@ -1127,10 +1128,10 @@ fn parse_args() -> Result<Converter, Error> {
         page_size,
         format,
         export_id,
-        keep_aspect_ratio: matches.contains_id("keep_aspect"),
+        keep_aspect_ratio: matches.get_flag("keep_aspect"),
         background_color,
         stylesheet: matches.get_one("stylesheet").cloned(),
-        unlimited: matches.contains_id("unlimited"),
+        unlimited: matches.get_flag("unlimited"),
         keep_image_data,
         language,
         input,
