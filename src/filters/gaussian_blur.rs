@@ -38,11 +38,22 @@ pub struct FeGaussianBlur {
 }
 
 /// Resolved `feGaussianBlur` primitive for rendering.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct GaussianBlur {
     pub in1: Input,
-    pub std_deviation: (f64, f64),
+    pub std_deviation: NumberOptionalNumber<f64>,
     pub color_interpolation_filters: ColorInterpolationFilters,
+}
+
+// We need this because NumberOptionalNumber doesn't impl Default
+impl Default for GaussianBlur {
+    fn default() -> GaussianBlur {
+        GaussianBlur {
+            in1: Default::default(),
+            std_deviation: NumberOptionalNumber(0.0, 0.0),
+            color_interpolation_filters: Default::default(),
+        }
+    }
 }
 
 impl SetAttributes for FeGaussianBlur {
@@ -52,7 +63,7 @@ impl SetAttributes for FeGaussianBlur {
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "stdDeviation") = attr.expanded() {
                 let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                self.params.std_deviation = (x, y);
+                self.params.std_deviation = NumberOptionalNumber(x, y);
             }
         }
 
@@ -209,7 +220,7 @@ impl GaussianBlur {
             .clipped
             .into();
 
-        let (std_x, std_y) = self.std_deviation;
+        let NumberOptionalNumber(std_x, std_y) = self.std_deviation;
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);
 
         // The deviation can become negative here due to the transform.
