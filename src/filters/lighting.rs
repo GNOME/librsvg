@@ -264,7 +264,7 @@ impl SetAttributes for FePointLight {
 
 impl Draw for FePointLight {}
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FeSpotLight {
     x: f64,
     y: f64,
@@ -274,6 +274,23 @@ pub struct FeSpotLight {
     points_at_z: f64,
     specular_exponent: f64,
     limiting_cone_angle: Option<f64>,
+}
+
+// We need this because, per the spec, the initial values for all fields are 0.0
+// except for specular_exponent, which is 1.
+impl Default for FeSpotLight {
+    fn default() -> FeSpotLight {
+        FeSpotLight {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            points_at_x: 0.0,
+            points_at_y: 0.0,
+            points_at_z: 0.0,
+            specular_exponent: 1.0,
+            limiting_cone_angle: None,
+        }
+    }
 }
 
 impl FeSpotLight {
