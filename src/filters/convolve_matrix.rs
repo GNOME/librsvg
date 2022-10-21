@@ -7,7 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NonNegative, NumberList, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NumberList, NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -94,8 +94,16 @@ impl SetAttributes for FeConvolveMatrix {
                     set_attribute(&mut self.params.edge_mode, attr.parse(value), session)
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.kernel_unit_length = Some((x, y))
+                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
+                    match v {
+                        Ok(NumberOptionalNumber(x, y)) => {
+                            self.params.kernel_unit_length = Some((x, y));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
                 expanded_name!("", "preserveAlpha") => {
                     set_attribute(&mut self.params.preserve_alpha, attr.parse(value), session);
@@ -198,6 +206,13 @@ impl ConvolveMatrix {
 
         let scale = self
             .kernel_unit_length
+            .and_then(|(x, y)| {
+                if x <= 0.0 || y <= 0.0 {
+                    None
+                } else {
+                    Some((x, y))
+                }
+            })
             .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
         if let Some((ox, oy)) = scale {
