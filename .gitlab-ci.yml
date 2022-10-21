@@ -310,6 +310,7 @@ deny:
   stage: lint
   needs:
     - job: check
+      artifacts: false
   script:
     - cargo deny check
 
