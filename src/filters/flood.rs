@@ -26,7 +26,8 @@ pub struct Flood {
 
 impl SetAttributes for FeFlood {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        self.base.parse_no_inputs(attrs, session)
+        self.base.parse_no_inputs(attrs, session);
+        Ok(())
     }
 }
 

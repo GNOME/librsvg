@@ -117,7 +117,7 @@ impl Image {
 
 impl SetAttributes for FeImage {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        self.base.parse_no_inputs(attrs, session)?;
+        self.base.parse_no_inputs(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {

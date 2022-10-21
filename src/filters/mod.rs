@@ -8,8 +8,8 @@ use std::time::Instant;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, ElementResult, SetAttributes};
-use crate::error::{ElementError, ParseError, RenderingError};
+use crate::element::{set_attribute, Draw, SetAttributes};
+use crate::error::{ParseError, RenderingError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
 use crate::node::Node;
@@ -208,7 +208,7 @@ impl Primitive {
         &mut self,
         attrs: &Attributes,
         session: &Session,
-    ) -> Result<(Input, Input), ElementError> {
+    ) -> (Input, Input) {
         let mut input_1 = Input::Unspecified;
         let mut input_2 = Input::Unspecified;
 
@@ -233,28 +233,19 @@ impl Primitive {
             }
         }
 
-        Ok((input_1, input_2))
+        (input_1, input_2)
     }
 
-    pub fn parse_no_inputs(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        let (_, _) = self.parse_standard_attributes(attrs, session)?;
-        Ok(())
+    pub fn parse_no_inputs(&mut self, attrs: &Attributes, session: &Session) {
+        let (_, _) = self.parse_standard_attributes(attrs, session);
     }
 
-    pub fn parse_one_input(
-        &mut self,
-        attrs: &Attributes,
-        session: &Session,
-    ) -> Result<Input, ElementError> {
-        let (input_1, _) = self.parse_standard_attributes(attrs, session)?;
-        Ok(input_1)
+    pub fn parse_one_input(&mut self, attrs: &Attributes, session: &Session) -> Input {
+        let (input_1, _) = self.parse_standard_attributes(attrs, session);
+        input_1
     }
 
-    pub fn parse_two_inputs(
-        &mut self,
-        attrs: &Attributes,
-        session: &Session,
-    ) -> Result<(Input, Input), ElementError> {
+    pub fn parse_two_inputs(&mut self, attrs: &Attributes, session: &Session) -> (Input, Input) {
         self.parse_standard_attributes(attrs, session)
     }
 }

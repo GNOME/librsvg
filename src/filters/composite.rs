@@ -55,7 +55,7 @@ pub struct Composite {
 
 impl SetAttributes for FeComposite {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        let (in1, in2) = self.base.parse_two_inputs(attrs, session)?;
+        let (in1, in2) = self.base.parse_two_inputs(attrs, session);
         self.params.in1 = in1;
         self.params.in2 = in2;
 
