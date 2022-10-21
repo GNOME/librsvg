@@ -98,6 +98,14 @@ impl Morphology {
             .into();
 
         let (rx, ry) = self.radius;
+
+        if rx <= 0.0 && ry <= 0.0 {
+            return Ok(FilterOutput {
+                surface: input_1.surface().clone(),
+                bounds,
+            });
+        }
+
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         // The radii can become negative here due to the transform.
