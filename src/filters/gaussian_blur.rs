@@ -6,9 +6,9 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
+use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -62,8 +62,7 @@ impl SetAttributes for FeGaussianBlur {
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "stdDeviation") = attr.expanded() {
-                let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                self.params.std_deviation = NumberOptionalNumber(x, y);
+                set_attribute(&mut self.params.std_deviation, attr.parse(value), session);
             }
         }
 
