@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::aspect_ratio::AspectRatio;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
@@ -122,7 +122,7 @@ impl SetAttributes for FeImage {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
-                    self.params.aspect = attr.parse(value)?
+                    set_attribute(&mut self.params.aspect, attr.parse(value), session);
                 }
 
                 // "path" is used by some older Adobe Illustrator versions
