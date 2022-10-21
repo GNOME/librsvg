@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
@@ -57,12 +57,22 @@ impl SetAttributes for FeDisplacementMap {
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "scale") => self.params.scale = attr.parse(value)?,
+                expanded_name!("", "scale") => {
+                    set_attribute(&mut self.params.scale, attr.parse(value), session)
+                }
                 expanded_name!("", "xChannelSelector") => {
-                    self.params.x_channel_selector = attr.parse(value)?
+                    set_attribute(
+                        &mut self.params.x_channel_selector,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 expanded_name!("", "yChannelSelector") => {
-                    self.params.y_channel_selector = attr.parse(value)?
+                    set_attribute(
+                        &mut self.params.y_channel_selector,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 _ => (),
             }
