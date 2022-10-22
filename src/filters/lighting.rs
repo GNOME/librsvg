@@ -43,7 +43,7 @@ pub struct DiffuseLightingParams {
     in1: Input,
     surface_scale: f64,
     kernel_unit_length: Option<(f64, f64)>,
-    diffuse_constant: f64,
+    diffuse_constant: NonNegative,
 }
 
 impl Default for DiffuseLightingParams {
@@ -52,7 +52,7 @@ impl Default for DiffuseLightingParams {
             in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,
-            diffuse_constant: 1.0,
+            diffuse_constant: NonNegative(1.0),
         }
     }
 }
@@ -381,8 +381,11 @@ impl SetAttributes for FeDiffuseLighting {
                     }
                 }
                 expanded_name!("", "diffuseConstant") => {
-                    let NonNegative(c) = attr.parse(value)?;
-                    self.params.diffuse_constant = c;
+                    set_attribute(
+                        &mut self.params.diffuse_constant,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 _ => (),
             }
@@ -408,7 +411,7 @@ impl DiffuseLighting {
             normal.dot(&light_vector) / normal.norm()
         };
 
-        self.params.diffuse_constant * k
+        self.params.diffuse_constant.0 * k
     }
 }
 
