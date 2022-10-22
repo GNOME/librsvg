@@ -369,8 +369,16 @@ impl SetAttributes for FeDiffuseLighting {
                     set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.kernel_unit_length = Some((x, y));
+                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
+                    match v {
+                        Ok(NumberOptionalNumber(x, y)) => {
+                            self.params.kernel_unit_length = Some((x, y));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
                 expanded_name!("", "diffuseConstant") => {
                     let NonNegative(c) = attr.parse(value)?;
@@ -414,8 +422,16 @@ impl SetAttributes for FeSpecularLighting {
                     set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.kernel_unit_length = Some((x, y));
+                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
+                    match v {
+                        Ok(NumberOptionalNumber(x, y)) => {
+                            self.params.kernel_unit_length = Some((x, y));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
                 expanded_name!("", "specularConstant") => {
                     let NonNegative(c) = attr.parse(value)?;
@@ -492,6 +508,13 @@ macro_rules! impl_lighting_filter {
                 let scale = self
                     .params
                     .kernel_unit_length
+                    .and_then(|(x, y)| {
+                        if x <= 0.0 || y <= 0.0 {
+                            None
+                        } else {
+                            Some((x, y))
+                        }
+                    })
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
                 let mut input_surface = input_1.surface().clone();
