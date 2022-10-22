@@ -69,7 +69,7 @@ pub struct SpecularLightingParams {
     in1: Input,
     surface_scale: f64,
     kernel_unit_length: Option<(f64, f64)>,
-    specular_constant: f64,
+    specular_constant: NonNegative,
     specular_exponent: f64,
 }
 
@@ -79,7 +79,7 @@ impl Default for SpecularLightingParams {
             in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,
-            specular_constant: 1.0,
+            specular_constant: NonNegative(1.0),
             specular_exponent: 1.0,
         }
     }
@@ -437,8 +437,11 @@ impl SetAttributes for FeSpecularLighting {
                     }
                 }
                 expanded_name!("", "specularConstant") => {
-                    let NonNegative(c) = attr.parse(value)?;
-                    self.params.specular_constant = c;
+                    set_attribute(
+                        &mut self.params.specular_constant,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 expanded_name!("", "specularExponent") => {
                     set_attribute(
@@ -478,9 +481,9 @@ impl SpecularLighting {
         };
 
         if approx_eq!(f64, self.params.specular_exponent, 1.0) {
-            self.params.specular_constant * n_dot_h
+            self.params.specular_constant.0 * n_dot_h
         } else {
-            self.params.specular_constant * n_dot_h.powf(self.params.specular_exponent)
+            self.params.specular_constant.0 * n_dot_h.powf(self.params.specular_exponent)
         }
     }
 }
