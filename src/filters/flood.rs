@@ -1,6 +1,6 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::SetAttributes;
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
 use crate::rect::IRect;
@@ -25,9 +25,8 @@ pub struct Flood {
 }
 
 impl SetAttributes for FeFlood {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.base.parse_no_inputs(attrs, session);
-        Ok(())
     }
 }
 

@@ -9,7 +9,7 @@ use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::filters::{
     bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
@@ -214,7 +214,7 @@ impl FeDistantLight {
 }
 
 impl SetAttributes for FeDistantLight {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "azimuth") => {
@@ -226,8 +226,6 @@ impl SetAttributes for FeDistantLight {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -252,7 +250,7 @@ impl FePointLight {
 }
 
 impl SetAttributes for FePointLight {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
@@ -261,8 +259,6 @@ impl SetAttributes for FePointLight {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -319,7 +315,7 @@ impl FeSpotLight {
 }
 
 impl SetAttributes for FeSpotLight {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
@@ -346,8 +342,6 @@ impl SetAttributes for FeSpotLight {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -360,7 +354,7 @@ fn transform_dist(t: Transform, d: f64) -> f64 {
 }
 
 impl SetAttributes for FeDiffuseLighting {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
@@ -390,8 +384,6 @@ impl SetAttributes for FeDiffuseLighting {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -416,7 +408,7 @@ impl DiffuseLighting {
 }
 
 impl SetAttributes for FeSpecularLighting {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
@@ -453,8 +445,6 @@ impl SetAttributes for FeSpecularLighting {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

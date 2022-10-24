@@ -7,7 +7,7 @@ use std::slice::Iter;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
 use crate::filters::{FilterResolveError, FilterSpec, UserSpacePrimitive};
@@ -71,7 +71,7 @@ impl Filter {
 }
 
 impl SetAttributes for Filter {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "filterUnits") => {
@@ -91,8 +91,6 @@ impl SetAttributes for Filter {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

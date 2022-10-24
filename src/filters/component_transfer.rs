@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, Parse, ParseValue};
@@ -41,9 +41,8 @@ pub struct ComponentTransfer {
 }
 
 impl SetAttributes for FeComponentTransfer {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
-        Ok(())
     }
 }
 
@@ -215,7 +214,7 @@ macro_rules! func_x {
 
         impl SetAttributes for $func_name {
             #[inline]
-            fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+            fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
                 for (attr, value) in attrs.iter() {
                     match attr.expanded() {
                         expanded_name!("", "type") => {
@@ -257,8 +256,6 @@ macro_rules! func_x {
                     }
                     _ => (),
                 }
-
-                Ok(())
             }
         }
 

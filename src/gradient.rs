@@ -8,7 +8,7 @@ use markup5ever::{
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -66,14 +66,12 @@ pub struct Stop {
 }
 
 impl SetAttributes for Stop {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "offset") {
                 set_attribute(&mut self.offset, attr.parse(value), session);
             }
         }
-
-        Ok(())
     }
 }
 
@@ -522,7 +520,7 @@ impl RadialGradient {
 }
 
 impl SetAttributes for Common {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "gradientUnits") => {
@@ -546,14 +544,12 @@ impl SetAttributes for Common {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
 impl SetAttributes for LinearGradient {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        self.common.set_attributes(attrs, session)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.common.set_attributes(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -565,8 +561,6 @@ impl SetAttributes for LinearGradient {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -650,8 +644,9 @@ impl_gradient!(LinearGradient, RadialGradient);
 impl_gradient!(RadialGradient, LinearGradient);
 
 impl SetAttributes for RadialGradient {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
-        self.common.set_attributes(attrs, session)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.common.set_attributes(attrs, session);
+
         // Create a local expanded name for "fr" because markup5ever doesn't have built-in
         let expanded_name_fr = ExpandedName {
             ns: &Namespace::from(""),
@@ -673,8 +668,6 @@ impl SetAttributes for RadialGradient {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

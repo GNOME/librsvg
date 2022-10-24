@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -124,7 +124,7 @@ pub struct Pattern {
 }
 
 impl SetAttributes for Pattern {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "patternUnits") => {
@@ -170,8 +170,6 @@ impl SetAttributes for Pattern {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

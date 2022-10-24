@@ -9,7 +9,7 @@ use std::rc::Rc;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, SetAttributes};
 use crate::error::*;
 use crate::iri::Iri;
 use crate::layout::{Marker, Shape, StackingContext, Stroke};
@@ -255,7 +255,7 @@ pub struct Path {
 impl_draw!(Path);
 
 impl SetAttributes for Path {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "d") {
                 let mut builder = PathBuilder::default();
@@ -268,8 +268,6 @@ impl SetAttributes for Path {
                 self.path = Rc::new(builder.into_path());
             }
         }
-
-        Ok(())
     }
 }
 
@@ -346,14 +344,12 @@ pub struct Polygon {
 impl_draw!(Polygon);
 
 impl SetAttributes for Polygon {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 set_attribute(&mut self.points, attr.parse(value), session);
             }
         }
-
-        Ok(())
     }
 }
 
@@ -371,14 +367,12 @@ pub struct Polyline {
 impl_draw!(Polyline);
 
 impl SetAttributes for Polyline {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
                 set_attribute(&mut self.points, attr.parse(value), session);
             }
         }
-
-        Ok(())
     }
 }
 
@@ -399,7 +393,7 @@ pub struct Line {
 impl_draw!(Line);
 
 impl SetAttributes for Line {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x1") => set_attribute(&mut self.x1, attr.parse(value), session),
@@ -409,8 +403,6 @@ impl SetAttributes for Line {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::StackingContext;
@@ -274,7 +274,7 @@ impl Svg {
 }
 
 impl SetAttributes for Svg {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -286,8 +286,6 @@ impl SetAttributes for Svg {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -357,7 +355,7 @@ impl Default for Use {
 }
 
 impl SetAttributes for Use {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 ref a if is_href(a) => {
@@ -380,8 +378,6 @@ impl SetAttributes for Use {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -451,7 +447,7 @@ impl Symbol {
 }
 
 impl SetAttributes for Symbol {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -463,8 +459,6 @@ impl SetAttributes for Symbol {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -484,14 +478,12 @@ impl ClipPath {
 }
 
 impl SetAttributes for ClipPath {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "clipPathUnits") {
                 set_attribute(&mut self.units, attr.parse(value), session);
             }
         }
-
-        Ok(())
     }
 }
 
@@ -545,7 +537,7 @@ impl Mask {
 }
 
 impl SetAttributes for Mask {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
@@ -565,8 +557,6 @@ impl SetAttributes for Mask {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -578,15 +568,13 @@ pub struct Link {
 }
 
 impl SetAttributes for Link {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) {
         for (attr, value) in attrs.iter() {
             let expanded = attr.expanded();
             if is_href(&expanded) {
                 set_href(&expanded, &mut self.link, Some(value.to_owned()));
             }
         }
-
-        Ok(())
     }
 }
 

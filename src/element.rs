@@ -45,35 +45,15 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 use crate::xml::Attributes;
 
-// After creating/parsing a Element, it will be in a success or an error state.
-// We represent this with a Result, aliased as a ElementResult.  There is no
-// extra information for the Ok case; all the interesting stuff is in the
-// Err case.
-//
-// https://www.w3.org/TR/SVG/implnote.html#ErrorProcessing
-//
-// When an element has an error during parsing, the SVG spec calls the element
-// to be "in error".  We skip rendering of elements that are in error.
-//
-// When we parse an element's attributes, we stop as soon as we
-// encounter the first error:  a parse error, or an invalid value,
-// etc.  No further attributes will be processed, although note that
-// the order in which an element's attributes are processed is not
-// defined.
-//
-// Alternatively, we could try to parse/validate all the attributes
-// that come in an element and build up a Vec<ElementError>.  However, we
-// don't do this now.  Doing that may be more useful for an SVG
-// validator, not a renderer like librsvg is.
-pub type ElementResult = Result<(), ElementError>;
-
 pub trait SetAttributes {
     /// Sets per-element attributes.
     ///
     /// Each element is supposed to iterate the `attributes`, and parse any ones it needs.
-    fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) -> ElementResult {
-        Ok(())
-    }
+    /// SVG specifies that unknown attributes should be ignored, and known attributes with invalid
+    /// values should be ignored so that the attribute ends up with its "initial value".
+    ///
+    /// You can use the [`set_attribute`] function to do that.
+    fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) {}
 }
 
 /// Sets `dest` if `parse_result` is `Ok()`, otherwise just logs the error.
@@ -85,6 +65,9 @@ pub trait SetAttributes {
 /// In librsvg, those default values are set in each element's implementation of the [`Default`] trait:
 /// at element creation time, each element gets initialized to its `Default`, and then each attribute
 /// gets parsed.  This function will set that attribute's value only if parsing was successful.
+///
+/// In case the `parse_result` is an error, this function will log an appropriate notice
+/// via the [`Session`].
 pub fn set_attribute<T>(dest: &mut T, parse_result: Result<T, ElementError>, session: &Session) {
     match parse_result {
         Ok(v) => *dest = v,
@@ -131,7 +114,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         session: &Session,
         element_name: QualName,
         attributes: Attributes,
-        is_in_error: bool,
         element_impl: T,
     ) -> ElementInner<T> {
         let mut e = Self {
@@ -139,7 +121,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
-            is_in_error,
+            is_in_error: false,
             values: Default::default(),
             required_extensions: Default::default(),
             required_features: Default::default(),
@@ -618,21 +600,12 @@ macro_rules! e {
             attributes: Attributes,
         ) -> Element {
             let mut element_impl = <$element_type>::default();
-
-            let is_in_error = if let Err(e) = element_impl.set_attributes(&attributes, session) {
-                // FIXME: this does not provide a clue of what was the problematic attribute, or the
-                // problematic element.  We need tracking of the current parsing position to do that.
-                rsvg_log!(session, "setting element in error: {}", e);
-                true
-            } else {
-                false
-            };
+            element_impl.set_attributes(&attributes, session);
 
             let element = Element::$element_type(Box::new(ElementInner::new(
                 session,
                 element_name.clone(),
                 attributes,
-                is_in_error,
                 element_impl,
             )));
 

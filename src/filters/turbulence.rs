@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, ElementResult, SetAttributes};
+use crate::element::{set_attribute, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
@@ -75,7 +75,7 @@ impl Default for Turbulence {
 }
 
 impl SetAttributes for FeTurbulence {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.base.parse_no_inputs(attrs, session);
 
         for (attr, value) in attrs.iter() {
@@ -99,8 +99,6 @@ impl SetAttributes for FeTurbulence {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

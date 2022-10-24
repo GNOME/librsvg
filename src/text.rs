@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
-use crate::element::{set_attribute, Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
 use crate::length::*;
@@ -733,7 +733,7 @@ impl Text {
 }
 
 impl SetAttributes for Text {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
@@ -743,8 +743,6 @@ impl SetAttributes for Text {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -926,7 +924,7 @@ fn extract_chars_children_to_chunks_recursively(
 }
 
 impl SetAttributes for TRef {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) {
         self.link = attrs
             .iter()
             .find(|(attr, _)| attr.expanded() == expanded_name!(xlink "href"))
@@ -934,8 +932,6 @@ impl SetAttributes for TRef {
             // the <tref> element got removed in SVG2.  So, here we still use a match
             // against the full namespaced version of the attribute.
             .and_then(|(attr, value)| NodeId::parse(value).attribute(attr).ok());
-
-        Ok(())
     }
 }
 
@@ -994,7 +990,7 @@ impl TSpan {
 }
 
 impl SetAttributes for TSpan {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
@@ -1004,8 +1000,6 @@ impl SetAttributes for TSpan {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

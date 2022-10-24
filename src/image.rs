@@ -6,7 +6,7 @@ use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::{self, StackingContext};
@@ -28,7 +28,7 @@ pub struct Image {
 }
 
 impl SetAttributes for Image {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
@@ -43,8 +43,6 @@ impl SetAttributes for Image {
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

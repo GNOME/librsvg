@@ -6,7 +6,7 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, ElementResult, SetAttributes};
+use crate::element::{set_attribute, SetAttributes};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::properties::ColorInterpolationFilters;
@@ -57,7 +57,7 @@ impl Default for GaussianBlur {
 }
 
 impl SetAttributes for FeGaussianBlur {
-    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
@@ -65,8 +65,6 @@ impl SetAttributes for FeGaussianBlur {
                 set_attribute(&mut self.params.std_deviation, attr.parse(value), session);
             }
         }
-
-        Ok(())
     }
 }
 
