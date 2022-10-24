@@ -912,18 +912,36 @@ impl SpecifiedValues {
                     // xml:lang is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.set_parsed_property(&ParsedProperty::XmlLang(SpecifiedValue::Specified(
-                        attr.parse(value)?,
-                    )));
+                    let parse_result: Result<XmlLang, _> = attr.parse(value);
+                    match parse_result {
+                        Ok(lang) => {
+                            self.set_parsed_property(&ParsedProperty::XmlLang(
+                                SpecifiedValue::Specified(lang),
+                            ));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
 
                 expanded_name!(xml "space") => {
                     // xml:space is a non-presentation attribute and as such cannot have the
                     // "inherit" value.  So, we don't call parse_one_presentation_attribute()
                     // for it, but rather call its parser directly.
-                    self.set_parsed_property(&ParsedProperty::XmlSpace(SpecifiedValue::Specified(
-                        attr.parse(value)?,
-                    )));
+                    let parse_result: Result<XmlSpace, _> = attr.parse(value);
+                    match parse_result {
+                        Ok(space) => {
+                            self.set_parsed_property(&ParsedProperty::XmlSpace(
+                                SpecifiedValue::Specified(space),
+                            ));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
 
                 _ => self.parse_one_presentation_attribute(session, attr, value),
