@@ -408,7 +408,7 @@ impl UnresolvedGradient {
 
     /// Looks for <stop> children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
-    fn add_color_stops_from_node(&mut self, node: &Node, opacity: UnitInterval, session: &Session) {
+    fn add_color_stops_from_node(&mut self, node: &Node, opacity: UnitInterval) {
         assert!(matches!(
             *node.borrow_element(),
             Element::LinearGradient(_) | Element::RadialGradient(_)
@@ -561,12 +561,7 @@ impl Draw for LinearGradient {}
 macro_rules! impl_gradient {
     ($gradient_type:ident, $other_type:ident) => {
         impl $gradient_type {
-            fn get_unresolved(
-                &self,
-                node: &Node,
-                opacity: UnitInterval,
-                session: &Session,
-            ) -> Unresolved {
+            fn get_unresolved(&self, node: &Node, opacity: UnitInterval) -> Unresolved {
                 let mut gradient = UnresolvedGradient {
                     units: self.common.units,
                     transform: self.common.transform,
@@ -575,7 +570,7 @@ macro_rules! impl_gradient {
                     variant: self.get_unresolved_variant(),
                 };
 
-                gradient.add_color_stops_from_node(node, opacity, session);
+                gradient.add_color_stops_from_node(node, opacity);
 
                 Unresolved {
                     gradient,
@@ -588,12 +583,11 @@ macro_rules! impl_gradient {
                 node: &Node,
                 acquired_nodes: &mut AcquiredNodes<'_>,
                 opacity: UnitInterval,
-                session: &Session,
             ) -> Result<ResolvedGradient, AcquireError> {
                 let Unresolved {
                     mut gradient,
                     mut fallback,
-                } = self.get_unresolved(node, opacity, session);
+                } = self.get_unresolved(node, opacity);
 
                 let mut stack = NodeStack::new();
 
@@ -608,10 +602,10 @@ macro_rules! impl_gradient {
 
                         let unresolved = match *acquired_node.borrow_element() {
                             Element::$gradient_type(ref g) => {
-                                g.get_unresolved(&acquired_node, opacity, session)
+                                g.get_unresolved(&acquired_node, opacity)
                             }
                             Element::$other_type(ref g) => {
-                                g.get_unresolved(&acquired_node, opacity, session)
+                                g.get_unresolved(&acquired_node, opacity)
                             }
                             _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),
                         };
@@ -744,11 +738,8 @@ mod tests {
             Attributes::new(),
         ));
 
-        let unresolved = borrow_element_as!(node, LinearGradient).get_unresolved(
-            &node,
-            UnitInterval::clamp(1.0),
-            &session,
-        );
+        let unresolved = borrow_element_as!(node, LinearGradient)
+            .get_unresolved(&node, UnitInterval::clamp(1.0));
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
 
@@ -758,11 +749,8 @@ mod tests {
             Attributes::new(),
         ));
 
-        let unresolved = borrow_element_as!(node, RadialGradient).get_unresolved(
-            &node,
-            UnitInterval::clamp(1.0),
-            &session,
-        );
+        let unresolved = borrow_element_as!(node, RadialGradient)
+            .get_unresolved(&node, UnitInterval::clamp(1.0));
         let gradient = unresolved.gradient.resolve_from_defaults();
         assert!(gradient.is_resolved());
     }
