@@ -147,11 +147,13 @@ impl SetAttributes for Pattern {
                     set_attribute(&mut self.common.transform, attr.parse(value), session);
                 }
                 ref a if is_href(a) => {
-                    set_href(
-                        a,
-                        &mut self.fallback,
-                        NodeId::parse(value).attribute(attr.clone())?,
+                    let mut href = None;
+                    set_attribute(
+                        &mut href,
+                        NodeId::parse(value).map(Some).attribute(attr.clone()),
+                        session,
                     );
+                    set_href(a, &mut self.fallback, href);
                 }
                 expanded_name!("", "x") => {
                     set_attribute(&mut self.common.x, attr.parse(value), session)

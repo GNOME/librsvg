@@ -37,7 +37,7 @@ impl SetAttributes for Image {
 
                 // "path" is used by some older Adobe Illustrator versions
                 ref a if is_href(a) || *a == expanded_name!("", "path") => {
-                    set_href(a, &mut self.href, value.to_string())
+                    set_href(a, &mut self.href, Some(value.to_string()))
                 }
 
                 _ => (),

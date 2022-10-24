@@ -535,11 +535,13 @@ impl SetAttributes for Common {
                     set_attribute(&mut self.spread, attr.parse(value), session)
                 }
                 ref a if is_href(a) => {
-                    set_href(
-                        a,
-                        &mut self.fallback,
-                        NodeId::parse(value).attribute(attr.clone())?,
+                    let mut href = None;
+                    set_attribute(
+                        &mut href,
+                        NodeId::parse(value).map(Some).attribute(attr.clone()),
+                        session,
                     );
+                    set_href(a, &mut self.fallback, href);
                 }
                 _ => (),
             }

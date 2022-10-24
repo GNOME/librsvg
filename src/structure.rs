@@ -360,11 +360,15 @@ impl SetAttributes for Use {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) -> ElementResult {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                ref a if is_href(a) => set_href(
-                    a,
-                    &mut self.link,
-                    NodeId::parse(value).attribute(attr.clone())?,
-                ),
+                ref a if is_href(a) => {
+                    let mut href = None;
+                    set_attribute(
+                        &mut href,
+                        NodeId::parse(value).map(Some).attribute(attr.clone()),
+                        session,
+                    );
+                    set_href(a, &mut self.link, href);
+                }
                 expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
                 expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
                 expanded_name!("", "width") => {
@@ -578,7 +582,7 @@ impl SetAttributes for Link {
         for (attr, value) in attrs.iter() {
             let expanded = attr.expanded();
             if is_href(&expanded) {
-                set_href(&expanded, &mut self.link, value.to_owned());
+                set_href(&expanded, &mut self.link, Some(value.to_owned()));
             }
         }
 
