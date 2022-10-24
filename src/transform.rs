@@ -535,7 +535,7 @@ impl Default for Transform {
 }
 
 impl TransformAttribute {
-    pub fn to_transform(&self) -> Transform {
+    pub fn to_transform(self) -> Transform {
         self.0
     }
 }
