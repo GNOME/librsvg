@@ -33,7 +33,7 @@ struct Common {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<Option<ViewBox>>,
     preserve_aspect_ratio: Option<AspectRatio>,
-    transform: Option<Transform>,
+    transform: Option<TransformAttribute>,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<ULength<Horizontal>>,
@@ -93,7 +93,7 @@ pub struct ResolvedPattern {
     content_units: PatternContentUnits,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
-    transform: Transform,
+    transform: TransformAttribute,
     x: Length<Horizontal>,
     y: Length<Vertical>,
     width: ULength<Horizontal>,
@@ -144,8 +144,7 @@ impl SetAttributes for Pattern {
                     );
                 }
                 expanded_name!("", "patternTransform") => {
-                    let transform_attr: TransformAttribute = attr.parse(value)?;
-                    self.common.transform = Some(transform_attr.to_transform());
+                    set_attribute(&mut self.common.transform, attr.parse(value), session);
                 }
                 ref a if is_href(a) => {
                     set_href(
@@ -251,7 +250,10 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or_else(|| Some(AspectRatio::default()));
-        let transform = self.common.transform.or_else(|| Some(Transform::default()));
+        let transform = self
+            .common
+            .transform
+            .or_else(|| Some(TransformAttribute::default()));
         let x = self.common.x.or_else(|| Some(Default::default()));
         let y = self.common.y.or_else(|| Some(Default::default()));
         let width = self.common.width.or_else(|| Some(Default::default()));
@@ -384,7 +386,9 @@ impl ResolvedPattern {
             ),
         };
 
-        let coord_transform = coord_transform.post_transform(&self.transform);
+        let pattern_transform = self.transform.to_transform();
+
+        let coord_transform = coord_transform.post_transform(&pattern_transform);
 
         // Create the pattern contents coordinate system
         let content_transform = if let Some(vbox) = self.vbox {
@@ -412,7 +416,7 @@ impl ResolvedPattern {
         Some(UserSpacePattern {
             width,
             height,
-            transform: self.transform,
+            transform: pattern_transform,
             coord_transform,
             content_transform,
             opacity: self.opacity,
