@@ -287,7 +287,7 @@ impl UnresolvedVariant {
 #[derive(Default)]
 struct Common {
     units: Option<GradientUnits>,
-    transform: Option<Transform>,
+    transform: Option<TransformAttribute>,
     spread: Option<SpreadMethod>,
 
     fallback: Option<NodeId>,
@@ -323,7 +323,7 @@ pub struct RadialGradient {
 /// field was specified.
 struct UnresolvedGradient {
     units: Option<GradientUnits>,
-    transform: Option<Transform>,
+    transform: Option<TransformAttribute>,
     spread: Option<SpreadMethod>,
     stops: Option<Vec<ColorStop>>,
 
@@ -334,7 +334,7 @@ struct UnresolvedGradient {
 #[derive(Clone)]
 pub struct ResolvedGradient {
     units: GradientUnits,
-    transform: Transform,
+    transform: TransformAttribute,
     spread: SpreadMethod,
     stops: Vec<ColorStop>,
 
@@ -470,7 +470,9 @@ impl UnresolvedGradient {
 
     fn resolve_from_defaults(&self) -> UnresolvedGradient {
         let units = self.units.or_else(|| Some(GradientUnits::default()));
-        let transform = self.transform.or_else(|| Some(Transform::default()));
+        let transform = self
+            .transform
+            .or_else(|| Some(TransformAttribute::default()));
         let spread = self.spread.or_else(|| Some(SpreadMethod::default()));
         let stops = self.stops.clone().or_else(|| Some(Vec::<ColorStop>::new()));
         let variant = self.variant.resolve_from_defaults();
@@ -527,8 +529,7 @@ impl SetAttributes for Common {
                     set_attribute(&mut self.units, attr.parse(value), session)
                 }
                 expanded_name!("", "gradientTransform") => {
-                    let transform_attr: TransformAttribute = attr.parse(value)?;
-                    self.transform = Some(transform_attr.to_transform());
+                    set_attribute(&mut self.transform, attr.parse(value), session);
                 }
                 expanded_name!("", "spreadMethod") => {
                     set_attribute(&mut self.spread, attr.parse(value), session)
@@ -689,7 +690,8 @@ impl ResolvedGradient {
         let view_params = current_params.with_units(units);
         let params = NormalizeParams::new(values, &view_params);
 
-        let transform = transform.pre_transform(&self.transform).invert()?;
+        let gradient_transform = self.transform.to_transform();
+        let transform = transform.pre_transform(&gradient_transform).invert()?;
 
         let variant = match self.variant {
             ResolvedGradientVariant::Linear { x1, y1, x2, y2 } => GradientVariant::Linear {
