@@ -129,15 +129,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             element_impl,
         };
 
-        let mut set_attributes = || -> Result<(), ElementError> {
-            e.set_conditional_processing_attributes(session)?;
-            e.set_presentation_attributes(session);
-            Ok(())
-        };
-
-        if let Err(error) = set_attributes() {
-            e.set_error(error, session);
-        }
+        e.set_conditional_processing_attributes(session);
+        e.set_presentation_attributes(session);
 
         e
     }
@@ -192,10 +185,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .unwrap_or(true)
     }
 
-    fn set_conditional_processing_attributes(
-        &mut self,
-        session: &Session,
-    ) -> Result<(), ElementError> {
+    fn set_conditional_processing_attributes(&mut self, session: &Session) {
         for (attr, value) in self.attributes.iter() {
             match attr.expanded() {
                 expanded_name!("", "requiredExtensions") => {
@@ -213,8 +203,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 _ => {}
             }
         }
-
-        Ok(())
     }
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
@@ -248,11 +236,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 session,
             );
         }
-    }
-
-    fn set_error(&mut self, error: ElementError, session: &Session) {
-        rsvg_log!(session, "setting node {} in error: {}", self, error);
-        self.is_in_error = true;
     }
 
     fn is_in_error(&self) -> bool {
