@@ -53,7 +53,7 @@ pub struct FeTurbulence {
 pub struct Turbulence {
     base_frequency: (f64, f64),
     num_octaves: i32,
-    seed: i32,
+    seed: f64,
     stitch_tiles: StitchTiles,
     type_: NoiseType,
     color_interpolation_filters: ColorInterpolationFilters,
@@ -66,7 +66,7 @@ impl Default for Turbulence {
         Turbulence {
             base_frequency: (0.0, 0.0),
             num_octaves: 1,
-            seed: 0,
+            seed: 0.0,
             stitch_tiles: Default::default(),
             type_: Default::default(),
             color_interpolation_filters: Default::default(),
@@ -89,12 +89,7 @@ impl SetAttributes for FeTurbulence {
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!("", "seed") => {
-                    let v: f64 = attr.parse(value)?;
-                    self.params.seed = clamp(
-                        v.trunc(),
-                        f64::from(i32::min_value()),
-                        f64::from(i32::max_value()),
-                    ) as i32;
+                    set_attribute(&mut self.params.seed, attr.parse(value), session);
                 }
                 expanded_name!("", "stitchTiles") => {
                     set_attribute(&mut self.params.stitch_tiles, attr.parse(value), session);
@@ -357,8 +352,14 @@ impl Turbulence {
 
         let affine = ctx.paffine().invert().unwrap();
 
+        let seed = clamp(
+            self.seed.trunc(), // per the spec, round towards zero
+            f64::from(i32::min_value()),
+            f64::from(i32::max_value()),
+        ) as i32;
+
         let noise_generator = NoiseGenerator::new(
-            self.seed,
+            seed,
             self.base_frequency,
             self.num_octaves,
             self.type_,
