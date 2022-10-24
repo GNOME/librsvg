@@ -196,8 +196,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         for (attr, value) in self.attributes.iter() {
             match attr.expanded() {
                 expanded_name!("", "requiredExtensions") => {
-                    self.required_extensions =
-                        Some(RequiredExtensions::from_attribute(value).attribute(attr)?);
+                    self.required_extensions = Some(RequiredExtensions::from_attribute(value));
                 }
 
                 expanded_name!("", "requiredFeatures") => {

@@ -20,11 +20,11 @@ impl RequiredExtensions {
     /// Parse a requiredExtensions attribute.
     ///
     /// <http://www.w3.org/TR/SVG/struct.html#RequiredExtensionsAttribute>
-    pub fn from_attribute(s: &str) -> Result<RequiredExtensions, ValueErrorKind> {
-        Ok(RequiredExtensions(
+    pub fn from_attribute(s: &str) -> RequiredExtensions {
+        RequiredExtensions(
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_EXTENSIONS.binary_search(&f).is_ok()),
-        ))
+        )
     }
 
     /// Evaluate a requiredExtensions value for conditional processing.
@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn required_extensions() {
         assert_eq!(
-            RequiredExtensions::from_attribute("http://test.org/NotExisting/1.0").unwrap(),
+            RequiredExtensions::from_attribute("http://test.org/NotExisting/1.0"),
             RequiredExtensions(false)
         );
     }
