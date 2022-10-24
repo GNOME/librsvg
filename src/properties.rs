@@ -960,7 +960,7 @@ impl SpecifiedValues {
         origin: Origin,
         important_styles: &mut HashSet<QualName>,
         session: &Session,
-    ) -> Result<(), ElementError> {
+    ) {
         let mut input = ParserInput::new(declarations);
         let mut parser = Parser::new(&mut input);
 
@@ -973,8 +973,6 @@ impl SpecifiedValues {
                 }
             })
             .for_each(|decl| self.set_property_from_declaration(&decl, origin, important_styles));
-
-        Ok(())
     }
 }
 
@@ -1117,14 +1115,5 @@ mod tests {
         with_inherit_opacity.to_computed_values(&mut computed);
 
         assert_eq!(computed.opacity(), half_opacity.clone());
-    }
-
-    #[test]
-    fn empty_style_attribute_parses_ok() {
-        let mut specified = SpecifiedValues::default();
-
-        assert!(specified
-            .parse_style_declarations("", Origin::Author, &mut HashSet::new(), &Session::default())
-            .is_ok())
     }
 }

@@ -242,14 +242,12 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             .map(|(_, value)| value);
 
         if let Some(style) = style {
-            if let Err(e) = self.specified_values.parse_style_declarations(
+            self.specified_values.parse_style_declarations(
                 style,
                 Origin::Author,
                 &mut self.important_styles,
                 session,
-            ) {
-                self.set_error(e, session);
-            }
+            );
         }
     }
 
