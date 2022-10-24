@@ -101,7 +101,7 @@ impl Draw for Switch {
             &mut |an, dc, _transform| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
-                    elt.get_cond(dc.user_language()) && !elt.is_in_error()
+                    elt.get_cond(dc.user_language())
                 }) {
                     child.draw(
                         an,

@@ -101,7 +101,6 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
-    is_in_error: bool,
     values: ComputedValues,
     required_extensions: Option<RequiredExtensions>,
     required_features: Option<RequiredFeatures>,
@@ -121,7 +120,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
-            is_in_error: false,
             values: Default::default(),
             required_extensions: Default::default(),
             required_features: Default::default(),
@@ -237,10 +235,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             );
         }
     }
-
-    fn is_in_error(&self) -> bool {
-        self.is_in_error
-    }
 }
 
 impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
@@ -252,22 +246,11 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if !self.is_in_error() {
-            let values = cascaded.get();
-            if values.is_displayed() {
-                self.element_impl
-                    .draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
-            } else {
-                Ok(draw_ctx.empty_bbox())
-            }
+        let values = cascaded.get();
+        if values.is_displayed() {
+            self.element_impl
+                .draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
         } else {
-            rsvg_log!(
-                draw_ctx.session(),
-                "(not rendering element {} because it is in error)",
-                self
-            );
-
-            // maybe we should actually return a RenderingError::ElementIsInError here?
             Ok(draw_ctx.empty_bbox())
         }
     }
@@ -500,10 +483,6 @@ impl Element {
 
     pub fn set_style_attribute(&mut self, session: &Session) {
         call_inner!(self, set_style_attribute, session);
-    }
-
-    pub fn is_in_error(&self) -> bool {
-        call_inner!(self, is_in_error)
     }
 
     pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {

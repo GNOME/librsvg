@@ -407,15 +407,6 @@ fn get_functions(node: &Node) -> Result<Functions, FilterResolveError> {
     let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
     let func_a_node = get_func_x_node!(node, FeFuncA, Channel::A);
 
-    for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
-        .iter()
-        .filter_map(|x| x.as_ref())
-    {
-        if node.borrow_element().is_in_error() {
-            return Err(FilterResolveError::ChildNodeInError);
-        }
-    }
-
     let r = func_or_default!(func_r_node, FeFuncR);
     let g = func_or_default!(func_g_node, FeFuncG);
     let b = func_or_default!(func_b_node, FeFuncB);

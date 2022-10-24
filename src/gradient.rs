@@ -418,26 +418,18 @@ impl UnresolvedGradient {
             let elt = child.borrow_element();
 
             if let Element::Stop(ref stop) = *elt {
-                if elt.is_in_error() {
-                    rsvg_log!(
-                        session,
-                        "(not using gradient stop {} because it is in error)",
-                        child
-                    );
-                } else {
-                    let cascaded = CascadedValues::new_from_node(&child);
-                    let values = cascaded.get();
+                let cascaded = CascadedValues::new_from_node(&child);
+                let values = cascaded.get();
 
-                    let UnitInterval(stop_opacity) = values.stop_opacity().0;
-                    let UnitInterval(o) = opacity;
+                let UnitInterval(stop_opacity) = values.stop_opacity().0;
+                let UnitInterval(o) = opacity;
 
-                    let composed_opacity = UnitInterval(stop_opacity * o);
+                let composed_opacity = UnitInterval(stop_opacity * o);
 
-                    let rgba =
-                        resolve_color(&values.stop_color().0, composed_opacity, values.color().0);
+                let rgba =
+                    resolve_color(&values.stop_color().0, composed_opacity, values.color().0);
 
-                    self.add_color_stop(stop.offset, rgba);
-                }
+                self.add_color_stop(stop.offset, rgba);
             }
         }
     }

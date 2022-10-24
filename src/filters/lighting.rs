@@ -724,10 +724,6 @@ macro_rules! impl_lighting_filter {
                 let source_node = source_node.unwrap();
                 let elt = source_node.borrow_element();
 
-                if elt.is_in_error() {
-                    return Err(FilterResolveError::ChildNodeInError);
-                }
-
                 let source = match *elt {
                     Element::FeDistantLight(ref l) => {
                         UntransformedLightSource::Distant(l.element_impl.clone())

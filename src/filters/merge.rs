@@ -162,10 +162,6 @@ fn resolve_merge_nodes(node: &Node) -> Result<Vec<MergeNode>, FilterResolveError
     for child in node.children().filter(|c| c.is_element()) {
         let elt = child.borrow_element();
 
-        if elt.is_in_error() {
-            return Err(FilterResolveError::ChildNodeInError);
-        }
-
         let cascaded = CascadedValues::new_from_node(&child);
         let values = cascaded.get();
 

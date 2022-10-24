@@ -182,20 +182,6 @@ fn extract_filter_from_filter_node(
     let primitives = filter_node
         .children()
         .filter(|c| c.is_element())
-        // Skip nodes in error.
-        .filter(|c| {
-            let in_error = c.borrow_element().is_in_error();
-
-            if in_error {
-                rsvg_log!(
-                    session,
-                    "(ignoring filter primitive {} because it is in error)",
-                    c
-                );
-            }
-
-            !in_error
-        })
         // Keep only filter primitives (those that implement the Filter trait)
         .filter(|c| c.borrow_element().as_filter_effect().is_some())
         .map(|primitive_node| {
@@ -255,24 +241,12 @@ fn filter_spec_from_filter_node(
             let element = node.borrow_element();
 
             match *element {
-                Element::Filter(_) => {
-                    if element.is_in_error() {
-                        rsvg_log!(
-                            session,
-                            "element {} will not be filtered since its filter \"{}\" is in error",
-                            node_being_filtered_name,
-                            node_id,
-                        );
-                        Err(FilterResolveError::ChildNodeInError)
-                    } else {
-                        extract_filter_from_filter_node(
-                            node,
-                            acquired_nodes,
-                            &session,
-                            &filter_view_params,
-                        )
-                    }
-                }
+                Element::Filter(_) => extract_filter_from_filter_node(
+                    node,
+                    acquired_nodes,
+                    &session,
+                    &filter_view_params,
+                ),
 
                 _ => {
                     rsvg_log!(
