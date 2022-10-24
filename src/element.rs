@@ -130,7 +130,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         };
 
         let mut set_attributes = || -> Result<(), ElementError> {
-            e.set_conditional_processing_attributes()?;
+            e.set_conditional_processing_attributes(session)?;
             e.set_presentation_attributes(session);
             Ok(())
         };
@@ -192,7 +192,10 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .unwrap_or(true)
     }
 
-    fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {
+    fn set_conditional_processing_attributes(
+        &mut self,
+        session: &Session,
+    ) -> Result<(), ElementError> {
         for (attr, value) in self.attributes.iter() {
             match attr.expanded() {
                 expanded_name!("", "requiredExtensions") => {
@@ -204,8 +207,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 }
 
                 expanded_name!("", "systemLanguage") => {
-                    self.system_language =
-                        Some(SystemLanguage::from_attribute(value).attribute(attr)?);
+                    self.system_language = Some(SystemLanguage::from_attribute(value, session));
                 }
 
                 _ => {}
