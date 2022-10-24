@@ -892,11 +892,7 @@ impl SpecifiedValues {
         }
     }
 
-    pub fn parse_presentation_attributes(
-        &mut self,
-        session: &Session,
-        attrs: &Attributes,
-    ) -> Result<(), ElementError> {
+    pub fn parse_presentation_attributes(&mut self, session: &Session, attrs: &Attributes) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "transform") => {
@@ -947,8 +943,6 @@ impl SpecifiedValues {
                 _ => self.parse_one_presentation_attribute(session, attr, value),
             }
         }
-
-        Ok(())
     }
 
     pub fn set_property_from_declaration(

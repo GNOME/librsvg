@@ -131,7 +131,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
 
         let mut set_attributes = || -> Result<(), ElementError> {
             e.set_conditional_processing_attributes()?;
-            e.set_presentation_attributes(session)?;
+            e.set_presentation_attributes(session);
             Ok(())
         };
 
@@ -218,10 +218,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
-    #[allow(clippy::unnecessary_wraps)]
-    fn set_presentation_attributes(&mut self, session: &Session) -> Result<(), ElementError> {
-        self.specified_values
-            .parse_presentation_attributes(session, &self.attributes)
+    fn set_presentation_attributes(&mut self, session: &Session) {
+        self.specified_values.parse_presentation_attributes(session, &self.attributes);
     }
 
     // Applies a style declaration to the node's specified_values
