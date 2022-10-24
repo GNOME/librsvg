@@ -64,11 +64,11 @@ pub struct RequiredFeatures(pub bool);
 impl RequiredFeatures {
     // Parse a requiredFeatures attribute
     // http://www.w3.org/TR/SVG/struct.html#RequiredFeaturesAttribute
-    pub fn from_attribute(s: &str) -> Result<RequiredFeatures, ValueErrorKind> {
-        Ok(RequiredFeatures(
+    pub fn from_attribute(s: &str) -> RequiredFeatures {
+        RequiredFeatures(
             s.split_whitespace()
                 .all(|f| IMPLEMENTED_FEATURES.binary_search(&f).is_ok()),
-        ))
+        )
     }
 
     /// Evaluate a requiredFeatures value for conditional processing.
@@ -132,14 +132,12 @@ mod tests {
     #[test]
     fn required_features() {
         assert_eq!(
-            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#NotExisting")
-                .unwrap(),
+            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#NotExisting"),
             RequiredFeatures(false)
         );
 
         assert_eq!(
-            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#BasicFilter")
-                .unwrap(),
+            RequiredFeatures::from_attribute("http://www.w3.org/TR/SVG11/feature#BasicFilter"),
             RequiredFeatures(true)
         );
 
@@ -147,8 +145,7 @@ mod tests {
             RequiredFeatures::from_attribute(
                 "http://www.w3.org/TR/SVG11/feature#BasicFilter \
                  http://www.w3.org/TR/SVG11/feature#NotExisting",
-            )
-            .unwrap(),
+            ),
             RequiredFeatures(false)
         );
 
@@ -156,8 +153,7 @@ mod tests {
             RequiredFeatures::from_attribute(
                 "http://www.w3.org/TR/SVG11/feature#BasicFilter \
                  http://www.w3.org/TR/SVG11/feature#BasicText",
-            )
-            .unwrap(),
+            ),
             RequiredFeatures(true)
         );
     }
