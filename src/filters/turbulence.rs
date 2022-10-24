@@ -6,7 +6,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementResult, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -51,7 +51,7 @@ pub struct FeTurbulence {
 /// Resolved `feTurbulence` primitive for rendering.
 #[derive(Clone)]
 pub struct Turbulence {
-    base_frequency: (f64, f64),
+    base_frequency: NumberOptionalNumber<f64>,
     num_octaves: i32,
     seed: f64,
     stitch_tiles: StitchTiles,
@@ -64,7 +64,7 @@ impl Default for Turbulence {
     #[inline]
     fn default() -> Turbulence {
         Turbulence {
-            base_frequency: (0.0, 0.0),
+            base_frequency: NumberOptionalNumber(0.0, 0.0),
             num_octaves: 1,
             seed: 0.0,
             stitch_tiles: Default::default(),
@@ -81,8 +81,7 @@ impl SetAttributes for FeTurbulence {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "baseFrequency") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.base_frequency = (x, y);
+                    set_attribute(&mut self.params.base_frequency, attr.parse(value), session);
                 }
                 expanded_name!("", "numOctaves") => {
                     set_attribute(&mut self.params.num_octaves, attr.parse(value), session);
@@ -358,9 +357,19 @@ impl Turbulence {
             f64::from(i32::max_value()),
         ) as i32;
 
+        // "Negative values are unsupported" -> set to the initial value which is 0.0
+        //
+        // https://drafts.fxtf.org/filter-effects/#element-attrdef-feturbulence-basefrequency
+        let base_frequency = {
+            let NumberOptionalNumber(base_freq_x, base_freq_y) = self.base_frequency;
+            let x = base_freq_x.max(0.0);
+            let y = base_freq_y.max(0.0);
+            (x, y)
+        };
+
         let noise_generator = NoiseGenerator::new(
             seed,
-            self.base_frequency,
+            base_frequency,
             self.num_octaves,
             self.type_,
             self.stitch_tiles,
