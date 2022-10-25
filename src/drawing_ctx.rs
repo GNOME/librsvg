@@ -759,7 +759,7 @@ impl DrawingCtx {
                                 .create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
                         )?,
                         Filter::List(_) => {
-                            cairo::Context::new(&*self.create_surface_for_toplevel_viewport()?)?
+                            cairo::Context::new(self.create_surface_for_toplevel_viewport()?)?
                         }
                     };
 
@@ -1847,8 +1847,8 @@ impl DrawingCtx {
 
 /// Create a Pango context with a particular configuration.
 pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -> pango::Context {
-    let font_map = pangocairo::FontMap::default().unwrap();
-    let context = font_map.create_context().unwrap();
+    let font_map = pangocairo::FontMap::default();
+    let context = font_map.create_context();
 
     context.set_round_glyph_positions(false);
 
@@ -2241,7 +2241,7 @@ impl From<TextRendering> for cairo::Antialias {
 impl From<cairo::Matrix> for Transform {
     #[inline]
     fn from(m: cairo::Matrix) -> Self {
-        Self::new_unchecked(m.xx, m.yx, m.xy, m.yy, m.x0, m.y0)
+        Self::new_unchecked(m.xx(), m.yx(), m.xy(), m.yy(), m.x0(), m.y0())
     }
 }
 

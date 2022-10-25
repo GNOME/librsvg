@@ -342,10 +342,10 @@ impl Handle {
         // Render, transforming so element is at the new viewport's origin
 
         with_saved_cr(cr, || {
-            let factor = (element_viewport.width / ink_r.width())
-                .min(element_viewport.height / ink_r.height());
+            let factor = (element_viewport.width() / ink_r.width())
+                .min(element_viewport.height() / ink_r.height());
 
-            cr.translate(element_viewport.x, element_viewport.y);
+            cr.translate(element_viewport.x(), element_viewport.y());
             cr.scale(factor, factor);
             cr.translate(-ink_r.x0, -ink_r.y0);
 

@@ -241,6 +241,12 @@ impl Deref for Surface {
     }
 }
 
+impl AsRef<cairo::Surface> for Surface {
+    fn as_ref(&self) -> &cairo::Surface {
+        self
+    }
+}
+
 impl Surface {
     pub fn new(
         format: Format,
@@ -345,18 +351,13 @@ impl Surface {
         // we do that with a separate transform.
 
         let scale = Scale {
-            x: final_size.w / geometry.width,
-            y: final_size.h / geometry.height,
+            x: final_size.w / geometry.width(),
+            y: final_size.h / geometry.height(),
         };
 
         cr.scale(scale.x, scale.y);
 
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: geometry.width,
-            height: geometry.height,
-        };
+        let viewport = cairo::Rectangle::new(0.0, 0.0, geometry.width(), geometry.height());
 
         match id {
             None => renderer.render_document(&cr, &viewport)?,
@@ -564,7 +565,7 @@ impl Converter {
 
             let geometry = natural_geometry(&renderer, input, self.export_id.as_deref())?;
 
-            let natural_size = Size::new(geometry.width, geometry.height);
+            let natural_size = Size::new(geometry.width(), geometry.height());
 
             let params = NormalizeParams::from_dpi(Dpi::new(self.dpi_x.0, self.dpi_y.0));
 

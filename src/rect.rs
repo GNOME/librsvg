@@ -188,10 +188,10 @@ impl From<cairo::Rectangle> for Rect {
     #[inline]
     fn from(r: cairo::Rectangle) -> Self {
         Self {
-            x0: r.x,
-            y0: r.y,
-            x1: r.x + r.width,
-            y1: r.y + r.height,
+            x0: r.x(),
+            y0: r.y(),
+            x1: r.x() + r.width(),
+            y1: r.y() + r.height(),
         }
     }
 }
@@ -199,12 +199,7 @@ impl From<cairo::Rectangle> for Rect {
 impl From<Rect> for cairo::Rectangle {
     #[inline]
     fn from(r: Rect) -> Self {
-        Self {
-            x: r.x0,
-            y: r.y0,
-            width: r.x1 - r.x0,
-            height: r.y1 - r.y0,
-        }
+        Self::new(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0)
     }
 }
 
@@ -258,10 +253,10 @@ impl From<cairo::Rectangle> for IRect {
     #[inline]
     fn from(r: cairo::Rectangle) -> Self {
         Self {
-            x0: r.x.floor() as i32,
-            y0: r.y.floor() as i32,
-            x1: (r.x + r.width).ceil() as i32,
-            y1: (r.y + r.height).ceil() as i32,
+            x0: r.x().floor() as i32,
+            y0: r.y().floor() as i32,
+            x1: (r.x() + r.width()).ceil() as i32,
+            y1: (r.y() + r.height()).ceil() as i32,
         }
     }
 }
@@ -269,11 +264,11 @@ impl From<cairo::Rectangle> for IRect {
 impl From<IRect> for cairo::Rectangle {
     #[inline]
     fn from(r: IRect) -> Self {
-        Self {
-            x: f64::from(r.x0),
-            y: f64::from(r.y0),
-            width: f64::from(r.x1 - r.x0),
-            height: f64::from(r.y1 - r.y0),
-        }
+        Self::new(
+            f64::from(r.x0),
+            f64::from(r.y0),
+            f64::from(r.x1 - r.x0),
+            f64::from(r.y1 - r.y0),
+        )
     }
 }

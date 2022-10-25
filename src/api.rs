@@ -131,7 +131,7 @@ impl Loader {
     /// let renderer = librsvg::CairoRenderer::new(&svg_handle);
     /// renderer.render_document(
     ///     &cr,
-    ///     &cairo::Rectangle { x: 0.0, y: 0.0, width: 640.0, height: 480.0 },
+    ///     &cairo::Rectangle::new(0.0, 0.0, 640.0, 480.0),
     /// )?;
     /// # Ok::<(), librsvg::RenderingError>(())
     /// ```

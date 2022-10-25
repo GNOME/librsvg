@@ -19,13 +19,6 @@ fn render_crash(path: &str) {
     let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
 
     // We just test for crashes during rendering, and don't care about success/error.
-    let _ = CairoRenderer::new(&handle).render_document(
-        &cr,
-        &cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 100.0,
-        },
-    );
+    let _ = CairoRenderer::new(&handle)
+        .render_document(&cr, &cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0));
 }

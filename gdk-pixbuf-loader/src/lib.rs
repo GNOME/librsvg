@@ -1,21 +1,20 @@
 use std::ptr::null_mut;
 
-use gdk_pixbuf_sys::GdkPixbuf;
-use gdk_pixbuf_sys::{
-    GdkPixbufFormat, GdkPixbufModule, GdkPixbufModulePattern, GdkPixbufModulePreparedFunc,
-    GdkPixbufModuleSizeFunc, GdkPixbufModuleUpdatedFunc, GDK_PIXBUF_FORMAT_SCALABLE,
-    GDK_PIXBUF_FORMAT_THREADSAFE,
+use gdk_pixbuf::ffi::{
+    GdkPixbuf, GdkPixbufFormat, GdkPixbufModule, GdkPixbufModulePattern,
+    GdkPixbufModulePreparedFunc, GdkPixbufModuleSizeFunc, GdkPixbufModuleUpdatedFunc,
+    GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE,
 };
 
 use libc::{c_char, c_int, c_uint};
 
+use glib::ffi::{gboolean, gpointer, GError};
 use glib::translate::{IntoGlib, ToGlibPtr};
 use glib::Bytes;
-use glib_sys::{gboolean, GError};
 
 use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
-use gobject_sys::GObject;
+use glib::gobject_ffi::GObject;
 
 use librsvg::rsvg_convert_only::LegacySize;
 use librsvg::Loader;
@@ -26,7 +25,7 @@ struct SvgContext {
     size_func: GdkPixbufModuleSizeFunc,
     prep_func: GdkPixbufModulePreparedFunc,
     update_func: GdkPixbufModuleUpdatedFunc,
-    user_data: glib_sys::gpointer,
+    user_data: gpointer,
     stream: MemoryInputStream,
 }
 
@@ -35,10 +34,10 @@ unsafe extern "C" fn begin_load(
     size_func: GdkPixbufModuleSizeFunc,
     prep_func: GdkPixbufModulePreparedFunc,
     update_func: GdkPixbufModuleUpdatedFunc,
-    user_data: glib_sys::gpointer,
+    user_data: gpointer,
     error: *mut *mut GError,
-) -> glib_sys::gpointer {
-    if error != null_mut() {
+) -> gpointer {
+    if !error.is_null() {
         *error = null_mut();
     }
 
@@ -51,35 +50,35 @@ unsafe extern "C" fn begin_load(
         stream,
     });
 
-    Box::into_raw(ctx) as glib_sys::gpointer
+    Box::into_raw(ctx) as gpointer
 }
 
 #[no_mangle]
 unsafe extern "C" fn load_increment(
-    user_data: glib_sys::gpointer,
+    user_data: gpointer,
     buffer: *const u8,
     size: c_uint,
     error: *mut *mut GError,
 ) -> gboolean {
-    if error != null_mut() {
+    if !error.is_null() {
         *error = null_mut();
     }
 
     let ctx = user_data as *mut SvgContext;
 
     let data = std::slice::from_raw_parts(buffer, size as usize);
-    (&*ctx).stream.add_bytes(&Bytes::from(data));
+    (*ctx).stream.add_bytes(&Bytes::from(data));
     true.into_glib()
 }
 
 #[no_mangle]
-unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut GError) -> gboolean {
+unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> gboolean {
     let ctx = Box::from_raw(user_data as *mut SvgContext);
-    if error != null_mut() {
+    if !error.is_null() {
         *error = null_mut();
     }
 
-    fn _inner_stop_load(ctx: &Box<SvgContext>) -> Result<gdk_pixbuf::Pixbuf, String> {
+    fn _inner_stop_load(ctx: &SvgContext) -> Result<gdk_pixbuf::Pixbuf, String> {
         let handle = Loader::new()
             .read_stream::<_, gio::File, gio::Cancellable>(&ctx.stream, None, None)
             .map_err(|e| e.to_string())?;
@@ -116,7 +115,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
     let pixbuf = match _inner_stop_load(&ctx) {
         Ok(r) => r,
         Err(e) => {
-            if error != null_mut() {
+            if !error.is_null() {
                 let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e);
                 *error = gerr.to_glib_full() as *mut GError;
             }
@@ -136,7 +135,7 @@ unsafe extern "C" fn stop_load(user_data: glib_sys::gpointer, error: *mut *mut G
     }
 
     // The module loader increases a ref so we drop the pixbuf here
-    gobject_sys::g_object_unref(pixbuf as *mut GObject);
+    glib::gobject_ffi::g_object_unref(pixbuf as *mut GObject);
 
     true.into_glib()
 }
@@ -196,7 +195,7 @@ extern "C" fn fill_info(info: &mut GdkPixbufFormat) {
 
 #[cfg(test)]
 mod tests {
-    use gdk_pixbuf_sys::{
+    use gdk_pixbuf::ffi::{
         GdkPixbufFormat, GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE,
     };
     use glib::translate::IntoGlib;
@@ -313,20 +312,20 @@ mod tests {
     #[test]
     fn minimal_svg() {
         unsafe extern "C" fn prep_cb(
-            pb: *mut gdk_pixbuf_sys::GdkPixbuf,
-            pba: *mut gdk_pixbuf_sys::GdkPixbufAnimation,
+            pb: *mut gdk_pixbuf::ffi::GdkPixbuf,
+            pba: *mut gdk_pixbuf::ffi::GdkPixbufAnimation,
             user_data: *mut libc::c_void,
         ) {
             assert_eq!(user_data, null_mut());
             assert_eq!(pba, null_mut());
 
-            let w = gdk_pixbuf_sys::gdk_pixbuf_get_width(pb);
-            let h = gdk_pixbuf_sys::gdk_pixbuf_get_height(pb);
-            let stride = gdk_pixbuf_sys::gdk_pixbuf_get_rowstride(pb);
+            let w = gdk_pixbuf::ffi::gdk_pixbuf_get_width(pb);
+            let h = gdk_pixbuf::ffi::gdk_pixbuf_get_height(pb);
+            let stride = gdk_pixbuf::ffi::gdk_pixbuf_get_rowstride(pb);
             assert_eq!(w, 100);
             assert_eq!(h, 150);
 
-            let pixels = gdk_pixbuf_sys::gdk_pixbuf_get_pixels(pb);
+            let pixels = gdk_pixbuf::ffi::gdk_pixbuf_get_pixels(pb);
 
             // Upper left pixel #aa1144ff
             assert_eq!(*pixels, 0xaa);

@@ -30,7 +30,7 @@ use super::handle::CairoRectangleExt;
 pub trait LegacySize {
     fn legacy_document_size(&self) -> Result<(f64, f64), RenderingError> {
         let (ink_r, _) = self.legacy_layer_geometry(None)?;
-        Ok((ink_r.width, ink_r.height))
+        Ok((ink_r.width(), ink_r.height()))
     }
 
     fn legacy_layer_geometry(
@@ -103,14 +103,14 @@ fn size_in_pixels_from_percentage_width_and_height(
 
     // Avoid division by zero below.  If the viewBox is zero-sized, there's
     // not much we can do.
-    if approx_eq!(f64, vbox.width, 0.0) || approx_eq!(f64, vbox.height, 0.0) {
+    if approx_eq!(f64, vbox.width(), 0.0) || approx_eq!(f64, vbox.height(), 0.0) {
         return Some((0.0, 0.0));
     }
 
     match (width.unit, height.unit) {
-        (Percent, Percent) => Some((vbox.width, vbox.height)),
-        (_, Percent) => Some((w, w * vbox.height / vbox.width)),
-        (Percent, _) => Some((h * vbox.width / vbox.height, h)),
+        (Percent, Percent) => Some((vbox.width(), vbox.height())),
+        (_, Percent) => Some((w, w * vbox.height() / vbox.width())),
+        (Percent, _) => Some((h * vbox.width() / vbox.height(), h)),
         (_, _) => unreachable!("should have been called with percentage units"),
     }
 }

@@ -266,30 +266,23 @@ pub struct RsvgRectangle {
 impl From<cairo::Rectangle> for RsvgRectangle {
     fn from(r: cairo::Rectangle) -> RsvgRectangle {
         RsvgRectangle {
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
+            x: r.x(),
+            y: r.y(),
+            width: r.width(),
+            height: r.height(),
         }
     }
 }
 
 impl From<RsvgRectangle> for cairo::Rectangle {
     fn from(r: RsvgRectangle) -> cairo::Rectangle {
-        cairo::Rectangle {
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
-        }
+        cairo::Rectangle::new(r.x, r.y, r.width, r.height)
     }
 }
 
 mod imp {
     use super::*;
-    use glib::{
-        ParamFlags, ParamSpec, ParamSpecDouble, ParamSpecFlags, ParamSpecInt, ParamSpecString,
-    };
+    use glib::{ParamSpec, ParamSpecDouble, ParamSpecFlags, ParamSpecInt, ParamSpecString};
     use once_cell::sync::Lazy;
 
     /// Contains all the interior mutability for a RsvgHandle to be called
@@ -324,51 +317,26 @@ mod imp {
         fn properties() -> &'static [ParamSpec] {
             static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
                 vec![
-                    ParamSpecFlags::builder("flags", HandleFlags::static_type())
-                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT_ONLY)
+                    ParamSpecFlags::builder::<HandleFlags>("flags")
+                        .construct_only()
                         .build(),
-                    ParamSpecDouble::builder("dpi-x")
-                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
-                        .build(),
-                    ParamSpecDouble::builder("dpi-y")
-                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
-                        .build(),
-                    ParamSpecString::builder("base-uri")
-                        .flags(ParamFlags::READWRITE | ParamFlags::CONSTRUCT)
-                        .build(),
-                    ParamSpecInt::builder("width")
-                        .flags(ParamFlags::READABLE)
-                        .build(),
-                    ParamSpecInt::builder("height")
-                        .flags(ParamFlags::READABLE)
-                        .build(),
-                    ParamSpecDouble::builder("em")
-                        .flags(ParamFlags::READABLE)
-                        .build(),
-                    ParamSpecDouble::builder("ex")
-                        .flags(ParamFlags::READABLE)
-                        .build(),
-                    ParamSpecString::builder("title")
-                        .flags(ParamFlags::READABLE)
-                        .build(),
-                    ParamSpecString::builder("desc")
-                        .flags(ParamFlags::READABLE)
-                        .build(),
-                    ParamSpecString::builder("metadata")
-                        .flags(ParamFlags::READABLE)
-                        .build(),
+                    ParamSpecDouble::builder("dpi-x").construct().build(),
+                    ParamSpecDouble::builder("dpi-y").construct().build(),
+                    ParamSpecString::builder("base-uri").construct().build(),
+                    ParamSpecInt::builder("width").read_only().build(),
+                    ParamSpecInt::builder("height").read_only().build(),
+                    ParamSpecDouble::builder("em").read_only().build(),
+                    ParamSpecDouble::builder("ex").read_only().build(),
+                    ParamSpecString::builder("title").read_only().build(),
+                    ParamSpecString::builder("desc").read_only().build(),
+                    ParamSpecString::builder("metadata").read_only().build(),
                 ]
             });
             PROPERTIES.as_ref()
         }
 
-        fn set_property(
-            &self,
-            obj: &Self::Type,
-            id: usize,
-            value: &glib::Value,
-            pspec: &ParamSpec,
-        ) {
+        fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
+            let obj = self.instance();
             match pspec.name() {
                 "flags" => {
                     let v: HandleFlags = value.get().expect("flags value has incorrect type");
@@ -401,7 +369,8 @@ mod imp {
             }
         }
 
-        fn property(&self, obj: &Self::Type, id: usize, pspec: &ParamSpec) -> glib::Value {
+        fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
+            let obj = self.instance();
             match pspec.name() {
                 "flags" => obj.get_flags().to_value(),
                 "dpi-x" => obj.get_dpi_x().to_value(),
@@ -549,12 +518,7 @@ pub trait CairoRectangleExt {
 
 impl CairoRectangleExt for cairo::Rectangle {
     fn from_size(width: f64, height: f64) -> Self {
-        Self {
-            x: 0.0,
-            y: 0.0,
-            width,
-            height,
-        }
+        Self::new(0.0, 0.0, width, height)
     }
 }
 
@@ -805,8 +769,8 @@ impl CHandle {
             .get_geometry_sub(id)
             .and_then(|(ink_r, _)| {
                 // Keep these in sync with tests/src/reference.rs
-                let width = checked_i32(ink_r.width.round())?;
-                let height = checked_i32(ink_r.height.round())?;
+                let width = checked_i32(ink_r.width().round())?;
+                let height = checked_i32(ink_r.height().round())?;
 
                 Ok((ink_r, width, height))
             })
@@ -816,8 +780,8 @@ impl CHandle {
                 RsvgDimensionData {
                     width: w,
                     height: h,
-                    em: ink_r.width,
-                    ex: ink_r.height,
+                    em: ink_r.width(),
+                    ex: ink_r.height(),
                 }
             });
 
@@ -835,8 +799,8 @@ impl CHandle {
 
         self.get_geometry_sub(id)
             .and_then(|(ink_r, _)| {
-                let width = checked_i32(ink_r.width.round())?;
-                let height = checked_i32(ink_r.height.round())?;
+                let width = checked_i32(ink_r.width().round())?;
+                let height = checked_i32(ink_r.height().round())?;
 
                 Ok((ink_r, width, height))
             })
@@ -844,8 +808,8 @@ impl CHandle {
                 inner.size_callback.call(width, height);
 
                 Ok(RsvgPositionData {
-                    x: checked_i32(ink_r.x)?,
-                    y: checked_i32(ink_r.y)?,
+                    x: checked_i32(ink_r.x())?,
+                    y: checked_i32(ink_r.y())?,
                 })
             })
     }
@@ -893,12 +857,12 @@ impl CHandle {
             return Ok(());
         }
 
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: f64::from(dimensions.width),
-            height: f64::from(dimensions.height),
-        };
+        let viewport = cairo::Rectangle::new(
+            0.0,
+            0.0,
+            f64::from(dimensions.width),
+            f64::from(dimensions.height),
+        );
 
         self.render_layer(cr, id, &viewport)
     }
@@ -1032,7 +996,7 @@ fn is_cancellable(obj: *mut gio::ffi::GCancellable) -> bool {
 
 fn get_rust_handle(handle: *const RsvgHandle) -> CHandle {
     let handle = unsafe { &*handle };
-    handle.imp().instance()
+    handle.imp().instance().to_owned()
 }
 
 #[no_mangle]
@@ -1451,15 +1415,14 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
-    let obj = glib::Object::new::<CHandle>(&[]).unwrap();
+    let obj = glib::Object::new::<CHandle>(&[]);
 
     obj.to_glib_full()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj = glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))])
-        .unwrap();
+    let obj = glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))]);
 
     obj.to_glib_full()
 }

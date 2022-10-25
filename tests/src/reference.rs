@@ -71,12 +71,7 @@ fn reference_test(path: &str) {
         renderer
             .render_document(
                 &cr,
-                &cairo::Rectangle {
-                    x: 0.0,
-                    y: 0.0,
-                    width: f64::from(width),
-                    height: f64::from(height),
-                },
+                &cairo::Rectangle::new(0.0, 0.0, f64::from(width), f64::from(height)),
             )
             .unwrap();
     }
@@ -141,7 +136,7 @@ fn image_size(dim: IntrinsicDimensions, dpi: f64) -> (i32, i32) {
         (Length { length: w, unit: Percent },
          Length { length: h, unit: Percent }, vbox) if w == 1.0 && h == 1.0 => {
             if let Some(vbox) = vbox {
-                (vbox.width, vbox.height)
+                (vbox.width(), vbox.height())
             } else {
                 panic!("SVG with percentage width/height must have a viewBox");
             }

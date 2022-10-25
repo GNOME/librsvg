@@ -133,12 +133,7 @@ pub fn render_to_pixbuf_at_size(
             desired_height / document_height,
         );
 
-        let viewport = cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: document_width,
-            height: document_height,
-        };
+        let viewport = cairo::Rectangle::new(0.0, 0.0, document_width, document_height);
 
         // We do it with a cr transform so we can scale non-proportionally.
         renderer.render_document(&cr, &viewport)?;

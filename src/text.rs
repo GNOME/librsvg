@@ -446,7 +446,7 @@ impl PositionedSpan {
 
         let stroke = Stroke::new(&self.values, &params);
 
-        let gravity = layout.context().unwrap().gravity();
+        let gravity = layout.context().gravity();
 
         let bbox = compute_text_box(&layout, x, y, layout_context.transform, gravity);
 
@@ -1206,7 +1206,7 @@ fn create_pango_layout(
         create_pango_context(&layout_context.font_options, &layout_context.transform);
 
     if let XmlLang(Some(ref lang)) = props.xml_lang {
-        pango_context.set_language(&pango::Language::from_string(lang.as_str()));
+        pango_context.set_language(Some(&pango::Language::from_string(lang.as_str())));
     }
 
     pango_context.set_base_gravity(pango::Gravity::from(layout_context.writing_mode));

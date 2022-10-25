@@ -9,7 +9,7 @@ homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 build = "build.rs"
 edition = "2021"
-rust-version = "1.58"
+rust-version = "1.63"
 
 [package.metadata.system-deps]
 cairo-pdf = { version = "1.16", optional = true }
@@ -48,7 +48,7 @@ crate-type = [ "staticlib", "rlib" ]
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
 byteorder = "1.4"
-cairo-rs = { version = "0.15", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cairo-rs = { version = "0.16", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 chrono = "0.4.0" # rsvg-convert
 clap = { version = "3.2.22", features = ["cargo", "derive"] } # rsvg-convert
@@ -56,9 +56,9 @@ cssparser = "0.28.0"
 data-url = "0.1"
 encoding = "0.2.33"
 float-cmp = "0.9.0"
-gdk-pixbuf = "0.15"
-gio = { version = "0.15", features = ["v2_50"] } # per configure.ac
-glib = { version = "0.15", features = ["v2_50"] }
+gdk-pixbuf = "0.16"
+gio = "0.16"
+glib = "0.16"
 itertools = "0.10.3"
 language-tags = "0.3.1"
 libc = "0.2"
@@ -67,8 +67,8 @@ markup5ever = "0.10"
 nalgebra = "0.30.1"
 num-traits = "0.2"
 once_cell = "1.2.0"
-pango = { version = "0.15", features = ["v1_46"] }
-pangocairo = "0.15"
+pango = { version = "0.16", features = ["v1_46"] }
+pangocairo = "0.16"
 rayon = "1"
 rctree = "0.4.0"
 regex = "1"
@@ -82,16 +82,16 @@ xml5ever = "0.16.1"
 [dev-dependencies]
 anyhow = "1.0"
 assert_cmd = "2.0.2"
-cairo-rs = { version = "0.15", features = ["png"] }
+cairo-rs = { version = "0.16", features = ["png"] }
 cast = "0.3.0"
 chrono = "0.4.0"
 criterion = "0.3"
-glib = "0.15"
+glib = "0.16"
 libc = "0.2"
 lopdf = "0.26.0"
 matches = "0.1"
-pango = "0.15"
-pangocairo = "0.15"
+pango = "0.16"
+pangocairo = "0.16"
 png = "0.17.2"
 predicates = "2.0.0"
 proptest = "1.0.0"

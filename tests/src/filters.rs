@@ -26,12 +26,7 @@ fn invalid_filter_reference_cancels_filter_chain() {
         &svg,
         SurfaceSize(400, 400),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 400.0,
-            height: 400.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 400.0, 400.0),
     )
     .unwrap();
 
@@ -76,12 +71,7 @@ fn non_filter_reference_cancels_filter_chain() {
         &svg,
         SurfaceSize(400, 400),
         |_| (),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 400.0,
-            height: 400.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 400.0, 400.0),
     )
     .unwrap();
 

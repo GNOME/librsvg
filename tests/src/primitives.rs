@@ -21,12 +21,7 @@ fn simple_opacity_with_transform() {
         &svg,
         SurfaceSize(150, 150),
         |cr| cr.translate(50.0, 50.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 50.0,
-            height: 50.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 50.0, 50.0),
     )
     .unwrap();
 
@@ -63,12 +58,7 @@ fn simple_opacity_with_offset_viewport() {
         &svg,
         SurfaceSize(150, 150),
         |_cr| (),
-        cairo::Rectangle {
-            x: 50.0,
-            y: 50.0,
-            width: 50.0,
-            height: 50.0,
-        },
+        cairo::Rectangle::new(50.0, 50.0, 50.0, 50.0),
     )
     .unwrap();
 
@@ -109,12 +99,7 @@ fn simple_opacity_with_scale() {
             cr.translate(50.0, 50.0);
             cr.scale(8.0, 8.0);
         },
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 50.0,
-            height: 50.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 50.0, 50.0),
     )
     .unwrap();
 
@@ -158,12 +143,7 @@ fn markers_with_scale() {
         |cr| {
             cr.scale(4.0, 4.0);
         },
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 200.0,
-            height: 200.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 200.0, 200.0),
     )
     .unwrap();
 
@@ -211,12 +191,7 @@ fn opacity_inside_transformed_group() {
         &svg,
         SurfaceSize(140, 140),
         |cr| cr.translate(20.0, 20.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 100.0,
-            height: 100.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0),
     )
     .unwrap();
 
@@ -258,12 +233,7 @@ fn compound_opacity() {
         &svg,
         SurfaceSize(500, 380),
         |cr| cr.translate(10.0, 10.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 480.0,
-            height: 360.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 480.0, 360.0),
     )
     .unwrap();
 
@@ -328,12 +298,7 @@ fn nested_masks() {
         &svg,
         SurfaceSize(321 + 20, 27 + 20),
         |cr| cr.translate(10.0, 10.0),
-        cairo::Rectangle {
-            x: 0.0,
-            y: 0.0,
-            width: 321.0,
-            height: 27.0,
-        },
+        cairo::Rectangle::new(0.0, 0.0, 321.0, 27.0),
     )
     .unwrap();
 

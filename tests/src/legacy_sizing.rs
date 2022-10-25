@@ -18,18 +18,8 @@ fn just_viewbox_uses_viewbox_size() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 100.0,
-                height: 200.0,
-            },
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 100.0,
-                height: 200.0,
-            }
+            cairo::Rectangle::new(0.0, 0.0, 100.0, 200.0),
+            cairo::Rectangle::new(0.0, 0.0, 100.0, 200.0),
         )
     );
 }
@@ -50,18 +40,8 @@ fn no_intrinsic_size_uses_element_geometries() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 10.0,
-                y: 20.0,
-                width: 30.0,
-                height: 40.0,
-            },
-            cairo::Rectangle {
-                x: 10.0,
-                y: 20.0,
-                width: 30.0,
-                height: 40.0,
-            }
+            cairo::Rectangle::new(10.0, 20.0, 30.0, 40.0),
+            cairo::Rectangle::new(10.0, 20.0, 30.0, 40.0),
         )
     );
 }
@@ -80,18 +60,8 @@ fn hundred_percent_width_height_uses_viewbox() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 100.0,
-                height: 200.0,
-            },
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 100.0,
-                height: 200.0,
-            }
+            cairo::Rectangle::new(0.0, 0.0, 100.0, 200.0),
+            cairo::Rectangle::new(0.0, 0.0, 100.0, 200.0),
         )
     );
 }
@@ -112,18 +82,8 @@ fn hundred_percent_width_height_no_viewbox_uses_element_geometries() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 10.0,
-                y: 20.0,
-                width: 30.0,
-                height: 40.0,
-            },
-            cairo::Rectangle {
-                x: 10.0,
-                y: 20.0,
-                width: 30.0,
-                height: 40.0,
-            }
+            cairo::Rectangle::new(10.0, 20.0, 30.0, 40.0),
+            cairo::Rectangle::new(10.0, 20.0, 30.0, 40.0),
         )
     );
 }
@@ -153,18 +113,8 @@ fn width_and_viewbox_preserves_aspect_ratio() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 60.0,
-                height: 80.0,
-            },
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 60.0,
-                height: 80.0,
-            }
+            cairo::Rectangle::new(0.0, 0.0, 60.0, 80.0),
+            cairo::Rectangle::new(0.0, 0.0, 60.0, 80.0),
         )
     );
 }
@@ -188,18 +138,8 @@ fn height_and_viewbox_preserves_aspect_ratio() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 60.0,
-                height: 80.0,
-            },
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 60.0,
-                height: 80.0,
-            }
+            cairo::Rectangle::new(0.0, 0.0, 60.0, 80.0),
+            cairo::Rectangle::new(0.0, 0.0, 60.0, 80.0),
         )
     );
 }
@@ -220,18 +160,8 @@ fn zero_width_vbox() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
-            },
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
-            }
+            cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0),
+            cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0)
         )
     );
 }
@@ -252,18 +182,8 @@ fn zero_height_vbox() {
             .legacy_layer_geometry(None)
             .unwrap(),
         (
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
-            },
-            cairo::Rectangle {
-                x: 0.0,
-                y: 0.0,
-                width: 0.0,
-                height: 0.0,
-            }
+            cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0),
+            cairo::Rectangle::new(0.0, 0.0, 0.0, 0.0)
         )
     );
 }

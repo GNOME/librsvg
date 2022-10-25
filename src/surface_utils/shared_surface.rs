@@ -410,7 +410,7 @@ impl ImageSurface<Shared> {
 
         let cr = cairo::Context::new(&output_surface)?;
         let r = cairo::Rectangle::from(bounds);
-        cr.rectangle(r.x, r.y, r.width, r.height);
+        cr.rectangle(r.x(), r.y(), r.width(), r.height());
         cr.clip();
 
         cr.set_source_surface(&self.surface, 0f64, 0f64)?;
@@ -434,7 +434,7 @@ impl ImageSurface<Shared> {
         {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
             cr.scale(x, y);
@@ -994,7 +994,7 @@ impl ImageSurface<Shared> {
         if color.alpha > 0 {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
             cr.set_source_rgba(
@@ -1028,7 +1028,7 @@ impl ImageSurface<Shared> {
         {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(output_bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
             self.set_as_source_surface(&cr, dx, dy)?;
@@ -1053,7 +1053,7 @@ impl ImageSurface<Shared> {
         if rect.is_none() || !rect.unwrap().is_empty() {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
             image.set_as_source_surface(&cr, 0f64, 0f64)?;
@@ -1116,7 +1116,7 @@ impl ImageSurface<Shared> {
             ptn.set_matrix(mat);
 
             let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
             cr.set_source(&ptn)?;
@@ -1143,7 +1143,7 @@ impl ImageSurface<Shared> {
         {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
-            cr.rectangle(r.x, r.y, r.width, r.height);
+            cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
             self.set_as_source_surface(&cr, 0.0, 0.0)?;

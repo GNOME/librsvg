@@ -83,21 +83,16 @@ test_svg_reference!(
 );
 
 fn rect(x: f64, y: f64, width: f64, height: f64) -> cairo::Rectangle {
-    cairo::Rectangle {
-        x,
-        y,
-        width,
-        height,
-    }
+    cairo::Rectangle::new(x, y, width, height)
 }
 
 fn rectangle_approx_eq(a: &cairo::Rectangle, b: &cairo::Rectangle) -> bool {
     // FIXME: this is super fishy; shouldn't we be using 2x the epsilon against the width/height
     // instead of the raw coordinates?
-    approx_eq!(f64, a.x, b.x)
-        && approx_eq!(f64, a.y, b.y)
-        && approx_eq!(f64, a.width, b.width)
-        && approx_eq!(f64, a.height, b.height)
+    approx_eq!(f64, a.x(), b.x())
+        && approx_eq!(f64, a.y(), b.y())
+        && approx_eq!(f64, a.width(), b.width())
+        && approx_eq!(f64, a.height(), b.height())
 }
 
 // Test that the computed geometry of text layers is as expected.
