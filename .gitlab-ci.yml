@@ -367,6 +367,7 @@ cargo_bench:
     for BENCH in "${BENCHES[@]}"
     do
       cargo bench --bench $BENCH -- --noplot --baseline main
+      cargo bench --profile overflow --bench $BENCH -- --noplot --baseline main
     done
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'

@@ -11,6 +11,10 @@ build = "build.rs"
 edition = "2021"
 rust-version = "1.63"
 
+[profile.overflow]
+inherits = "release"
+overflow-checks = true
+
 [package.metadata.system-deps]
 cairo-pdf = { version = "1.16", optional = true }
 cairo-ps = { version = "1.16", optional = true }
