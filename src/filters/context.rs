@@ -280,6 +280,20 @@ impl FilterContext {
         self.effects_region
     }
 
+    /// Get a filter primitive's default input as if its `in=\"...\"` were not specified.
+    ///
+    /// Per https://drafts.fxtf.org/filter-effects/#element-attrdef-filter-primitive-in,
+    /// "References to non-existent results will be treated as if no result was
+    /// specified".  That is, fall back to the last result in the filter chain, or if this
+    /// is the first in the chain, just use SourceGraphic.
+    fn get_unspecified_input(&self) -> FilterInput {
+        if let Some(output) = self.last_result.as_ref() {
+            FilterInput::PrimitiveOutput(output.clone())
+        } else {
+            FilterInput::StandardInput(self.source_graphic().clone())
+        }
+    }
+
     /// Retrieves the filter input surface according to the SVG rules.
     fn get_input_raw(
         &self,
@@ -288,16 +302,7 @@ impl FilterContext {
         in_: &Input,
     ) -> Result<FilterInput, FilterError> {
         match *in_ {
-            Input::Unspecified => {
-                // No value => use the last result.
-                // As per the SVG spec, if the filter primitive is the first in the chain, return the
-                // source graphic.
-                if let Some(output) = self.last_result.as_ref() {
-                    Ok(FilterInput::PrimitiveOutput(output.clone()))
-                } else {
-                    Ok(FilterInput::StandardInput(self.source_graphic().clone()))
-                }
-            }
+            Input::Unspecified => Ok(self.get_unspecified_input()),
 
             Input::SourceGraphic => Ok(FilterInput::StandardInput(self.source_graphic().clone())),
 
@@ -328,12 +333,25 @@ impl FilterContext {
                 .stroke_paint_image(acquired_nodes, draw_ctx)
                 .map(FilterInput::StandardInput),
 
-            Input::FilterOutput(ref name) => self
-                .previous_results
-                .get(name)
-                .cloned()
-                .map(FilterInput::PrimitiveOutput)
-                .ok_or(FilterError::InvalidInput),
+            Input::FilterOutput(ref name) => {
+                let input = match self.previous_results.get(name).cloned() {
+                    Some(filter_output) => {
+                        // Happy path: we found a previous primitive's named output, so pass it on.
+                        FilterInput::PrimitiveOutput(filter_output)
+                    }
+
+                    None => {
+                        // Fallback path: we didn't find a primitive's output by the
+                        // specified name, so fall back to using an unspecified output.
+                        // Per the spec, "References to non-existent results will be
+                        // treated as if no result was specified." -
+                        // https://drafts.fxtf.org/filter-effects/#element-attrdef-filter-primitive-in
+                        self.get_unspecified_input()
+                    }
+                };
+
+                Ok(input)
+            }
         }
     }
 

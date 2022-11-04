@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
 use crate::parsers::{Parse, ParseValue};
@@ -54,23 +54,31 @@ pub struct Composite {
 }
 
 impl SetAttributes for FeComposite {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        let (in1, in2) = self.base.parse_two_inputs(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        let (in1, in2) = self.base.parse_two_inputs(attrs, session);
         self.params.in1 = in1;
         self.params.in2 = in2;
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "operator") => self.params.operator = attr.parse(value)?,
-                expanded_name!("", "k1") => self.params.k1 = attr.parse(value)?,
-                expanded_name!("", "k2") => self.params.k2 = attr.parse(value)?,
-                expanded_name!("", "k3") => self.params.k3 = attr.parse(value)?,
-                expanded_name!("", "k4") => self.params.k4 = attr.parse(value)?,
+                expanded_name!("", "operator") => {
+                    set_attribute(&mut self.params.operator, attr.parse(value), session)
+                }
+                expanded_name!("", "k1") => {
+                    set_attribute(&mut self.params.k1, attr.parse(value), session)
+                }
+                expanded_name!("", "k2") => {
+                    set_attribute(&mut self.params.k2, attr.parse(value), session)
+                }
+                expanded_name!("", "k3") => {
+                    set_attribute(&mut self.params.k3, attr.parse(value), session)
+                }
+                expanded_name!("", "k4") => {
+                    set_attribute(&mut self.params.k4, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 

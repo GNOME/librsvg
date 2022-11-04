@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::StackingContext;
@@ -101,7 +101,7 @@ impl Draw for Switch {
             &mut |an, dc, _transform| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
-                    elt.get_cond(dc.user_language()) && !elt.is_in_error()
+                    elt.get_cond(dc.user_language())
                 }) {
                     child.draw(
                         an,
@@ -274,18 +274,18 @@ impl Svg {
 }
 
 impl SetAttributes for Svg {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
-                    self.preserve_aspect_ratio = attr.parse(value)?
+                    set_attribute(&mut self.preserve_aspect_ratio, attr.parse(value), session)
                 }
-                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
+                expanded_name!("", "viewBox") => {
+                    set_attribute(&mut self.vbox, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -355,23 +355,29 @@ impl Default for Use {
 }
 
 impl SetAttributes for Use {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                ref a if is_href(a) => set_href(
-                    a,
-                    &mut self.link,
-                    NodeId::parse(value).attribute(attr.clone())?,
-                ),
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.height = attr.parse(value)?,
+                ref a if is_href(a) => {
+                    let mut href = None;
+                    set_attribute(
+                        &mut href,
+                        NodeId::parse(value).map(Some).attribute(attr.clone()),
+                        session,
+                    );
+                    set_href(a, &mut self.link, href);
+                }
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "width") => {
+                    set_attribute(&mut self.width, attr.parse(value), session)
+                }
+                expanded_name!("", "height") => {
+                    set_attribute(&mut self.height, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -441,18 +447,18 @@ impl Symbol {
 }
 
 impl SetAttributes for Symbol {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "preserveAspectRatio") => {
-                    self.preserve_aspect_ratio = attr.parse(value)?
+                    set_attribute(&mut self.preserve_aspect_ratio, attr.parse(value), session)
                 }
-                expanded_name!("", "viewBox") => self.vbox = attr.parse(value)?,
+                expanded_name!("", "viewBox") => {
+                    set_attribute(&mut self.vbox, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -472,16 +478,12 @@ impl ClipPath {
 }
 
 impl SetAttributes for ClipPath {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        let result = attrs
-            .iter()
-            .find(|(attr, _)| attr.expanded() == expanded_name!("", "clipPathUnits"))
-            .and_then(|(attr, value)| attr.parse(value).ok());
-        if let Some(units) = result {
-            self.units = units
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        for (attr, value) in attrs.iter() {
+            if attr.expanded() == expanded_name!("", "clipPathUnits") {
+                set_attribute(&mut self.units, attr.parse(value), session);
+            }
         }
-
-        Ok(())
     }
 }
 
@@ -535,20 +537,26 @@ impl Mask {
 }
 
 impl SetAttributes for Mask {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.height = attr.parse(value)?,
-                expanded_name!("", "maskUnits") => self.units = attr.parse(value)?,
-                expanded_name!("", "maskContentUnits") => self.content_units = attr.parse(value)?,
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "width") => {
+                    set_attribute(&mut self.width, attr.parse(value), session)
+                }
+                expanded_name!("", "height") => {
+                    set_attribute(&mut self.height, attr.parse(value), session)
+                }
+                expanded_name!("", "maskUnits") => {
+                    set_attribute(&mut self.units, attr.parse(value), session)
+                }
+                expanded_name!("", "maskContentUnits") => {
+                    set_attribute(&mut self.content_units, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -560,15 +568,13 @@ pub struct Link {
 }
 
 impl SetAttributes for Link {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) {
         for (attr, value) in attrs.iter() {
-            match attr.expanded() {
-                ref a if is_href(a) => set_href(a, &mut self.link, value.to_owned()),
-                _ => (),
+            let expanded = attr.expanded();
+            if is_href(&expanded) {
+                set_href(&expanded, &mut self.link, Some(value.to_owned()));
             }
         }
-
-        Ok(())
     }
 }
 

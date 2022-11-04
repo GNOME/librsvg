@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, Parse, ParseValue};
@@ -41,9 +41,8 @@ pub struct ComponentTransfer {
 }
 
 impl SetAttributes for FeComponentTransfer {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
-        Ok(())
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.params.in1 = self.base.parse_one_input(attrs, session);
     }
 }
 
@@ -215,20 +214,33 @@ macro_rules! func_x {
 
         impl SetAttributes for $func_name {
             #[inline]
-            fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+            fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
                 for (attr, value) in attrs.iter() {
                     match attr.expanded() {
-                        expanded_name!("", "type") => self.function_type = attr.parse(value)?,
+                        expanded_name!("", "type") => {
+                            set_attribute(&mut self.function_type, attr.parse(value), session)
+                        }
                         expanded_name!("", "tableValues") => {
                             // #691: Limit list to 256 to mitigate malicious SVGs
-                            let NumberList::<0, 256>(v) = attr.parse(value)?;
-                            self.table_values = v;
+                            let mut number_list = NumberList::<0, 256>(Vec::new());
+                            set_attribute(&mut number_list, attr.parse(value), session);
+                            self.table_values = number_list.0;
                         }
-                        expanded_name!("", "slope") => self.slope = attr.parse(value)?,
-                        expanded_name!("", "intercept") => self.intercept = attr.parse(value)?,
-                        expanded_name!("", "amplitude") => self.amplitude = attr.parse(value)?,
-                        expanded_name!("", "exponent") => self.exponent = attr.parse(value)?,
-                        expanded_name!("", "offset") => self.offset = attr.parse(value)?,
+                        expanded_name!("", "slope") => {
+                            set_attribute(&mut self.slope, attr.parse(value), session)
+                        }
+                        expanded_name!("", "intercept") => {
+                            set_attribute(&mut self.intercept, attr.parse(value), session)
+                        }
+                        expanded_name!("", "amplitude") => {
+                            set_attribute(&mut self.amplitude, attr.parse(value), session)
+                        }
+                        expanded_name!("", "exponent") => {
+                            set_attribute(&mut self.exponent, attr.parse(value), session)
+                        }
+                        expanded_name!("", "offset") => {
+                            set_attribute(&mut self.offset, attr.parse(value), session)
+                        }
 
                         _ => (),
                     }
@@ -244,8 +256,6 @@ macro_rules! func_x {
                     }
                     _ => (),
                 }
-
-                Ok(())
             }
         }
 
@@ -396,15 +406,6 @@ fn get_functions(node: &Node) -> Result<Functions, FilterResolveError> {
     let func_g_node = get_func_x_node!(node, FeFuncG, Channel::G);
     let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
     let func_a_node = get_func_x_node!(node, FeFuncA, Channel::A);
-
-    for node in [&func_r_node, &func_g_node, &func_b_node, &func_a_node]
-        .iter()
-        .filter_map(|x| x.as_ref())
-    {
-        if node.borrow_element().is_in_error() {
-            return Err(FilterResolveError::ChildNodeInError);
-        }
-    }
 
     let r = func_or_default!(func_r_node, FeFuncR);
     let g = func_or_default!(func_g_node, FeFuncG);

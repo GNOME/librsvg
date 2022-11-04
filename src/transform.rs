@@ -45,7 +45,7 @@ pub enum TransformProperty {
 /// The `transform` attribute from SVG1.1
 ///
 /// SVG1.1: <https://www.w3.org/TR/SVG11/coords.html#TransformAttribute>
-#[derive(Default, Debug, Clone, PartialEq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct TransformAttribute(Transform);
 
 impl Default for TransformProperty {
@@ -535,7 +535,7 @@ impl Default for Transform {
 }
 
 impl TransformAttribute {
-    pub fn to_transform(&self) -> Transform {
+    pub fn to_transform(self) -> Transform {
         self.0
     }
 }

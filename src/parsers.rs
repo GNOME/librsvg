@@ -157,7 +157,7 @@ impl Parse for u32 {
 }
 
 /// Number lists with bounds for the required and maximum number of items.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NumberList<const REQUIRED: usize, const MAX: usize>(pub Vec<f64>);
 
 impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX> {

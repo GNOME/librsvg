@@ -5,10 +5,10 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, SetAttributes};
 use crate::error::*;
 use crate::node::Node;
-use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -43,29 +43,39 @@ pub struct FeMorphology {
 }
 
 /// Resolved `feMorphology` primitive for rendering.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Morphology {
     in1: Input,
     operator: Operator,
-    radius: (f64, f64),
+    radius: NumberOptionalNumber<f64>,
+}
+
+// We need this because NumberOptionalNumber doesn't impl Default
+impl Default for Morphology {
+    fn default() -> Morphology {
+        Morphology {
+            in1: Default::default(),
+            operator: Default::default(),
+            radius: NumberOptionalNumber(0.0, 0.0),
+        }
+    }
 }
 
 impl SetAttributes for FeMorphology {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "operator") => self.params.operator = attr.parse(value)?,
+                expanded_name!("", "operator") => {
+                    set_attribute(&mut self.params.operator, attr.parse(value), session);
+                }
                 expanded_name!("", "radius") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.radius = (x, y);
+                    set_attribute(&mut self.params.radius, attr.parse(value), session);
                 }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -97,7 +107,15 @@ impl Morphology {
             .clipped
             .into();
 
-        let (rx, ry) = self.radius;
+        let NumberOptionalNumber(rx, ry) = self.radius;
+
+        if rx <= 0.0 && ry <= 0.0 {
+            return Ok(FilterOutput {
+                surface: input_1.surface().clone(),
+                bounds,
+            });
+        }
+
         let (rx, ry) = ctx.paffine().transform_distance(rx, ry);
 
         // The radii can become negative here due to the transform.

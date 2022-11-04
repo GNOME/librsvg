@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::properties::ColorInterpolationFilters;
@@ -52,21 +52,19 @@ impl Default for FeMerge {
 }
 
 impl SetAttributes for FeMerge {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.base.parse_no_inputs(attrs)
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.base.parse_no_inputs(attrs, session);
     }
 }
 
 impl SetAttributes for FeMergeNode {
     #[inline]
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "in") = attr.expanded() {
-                self.in1 = attr.parse(value)?;
+                set_attribute(&mut self.in1, attr.parse(value), session);
             }
         }
-
-        Ok(())
     }
 }
 
@@ -163,10 +161,6 @@ fn resolve_merge_nodes(node: &Node) -> Result<Vec<MergeNode>, FilterResolveError
 
     for child in node.children().filter(|c| c.is_element()) {
         let elt = child.borrow_element();
-
-        if elt.is_in_error() {
-            return Err(FilterResolveError::ChildNodeInError);
-        }
 
         let cascaded = CascadedValues::new_from_node(&child);
         let values = cascaded.get();

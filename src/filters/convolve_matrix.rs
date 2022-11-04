@@ -1,13 +1,13 @@
 use cssparser::Parser;
-use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
+use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NonNegative, NumberList, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NumberList, NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -37,8 +37,8 @@ pub struct FeConvolveMatrix {
 #[derive(Clone)]
 pub struct ConvolveMatrix {
     in1: Input,
-    order: (u32, u32),
-    kernel_matrix: Option<DMatrix<f64>>,
+    order: NumberOptionalNumber<u32>,
+    kernel_matrix: NumberList<0, 400>, // #691: Limit list to 400 (20x20) to mitigate malicious SVGs
     divisor: f64,
     bias: f64,
     target_x: Option<u32>,
@@ -55,8 +55,8 @@ impl Default for ConvolveMatrix {
     fn default() -> ConvolveMatrix {
         ConvolveMatrix {
             in1: Default::default(),
-            order: (3, 3),
-            kernel_matrix: None,
+            order: NumberOptionalNumber(3, 3),
+            kernel_matrix: NumberList(Vec::new()),
             divisor: 0.0,
             bias: 0.0,
             target_x: None,
@@ -70,70 +70,51 @@ impl Default for ConvolveMatrix {
 }
 
 impl SetAttributes for FeConvolveMatrix {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "order") => {
-                    let NumberOptionalNumber(x, y) = attr.parse(value)?;
-                    self.params.order = (x, y);
+                    set_attribute(&mut self.params.order, attr.parse(value), session)
                 }
-                expanded_name!("", "divisor") => self.params.divisor = attr.parse(value)?,
-                expanded_name!("", "bias") => self.params.bias = attr.parse(value)?,
-                expanded_name!("", "targetX") => self.params.target_x = attr.parse(value)?,
-                expanded_name!("", "targetY") => self.params.target_y = attr.parse(value)?,
-                expanded_name!("", "edgeMode") => self.params.edge_mode = attr.parse(value)?,
+                expanded_name!("", "kernelMatrix") => {
+                    set_attribute(&mut self.params.kernel_matrix, attr.parse(value), session)
+                }
+                expanded_name!("", "divisor") => {
+                    set_attribute(&mut self.params.divisor, attr.parse(value), session)
+                }
+                expanded_name!("", "bias") => {
+                    set_attribute(&mut self.params.bias, attr.parse(value), session)
+                }
+                expanded_name!("", "targetX") => {
+                    set_attribute(&mut self.params.target_x, attr.parse(value), session)
+                }
+                expanded_name!("", "targetY") => {
+                    set_attribute(&mut self.params.target_y, attr.parse(value), session)
+                }
+                expanded_name!("", "edgeMode") => {
+                    set_attribute(&mut self.params.edge_mode, attr.parse(value), session)
+                }
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.kernel_unit_length = Some((x, y))
+                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
+                    match v {
+                        Ok(NumberOptionalNumber(x, y)) => {
+                            self.params.kernel_unit_length = Some((x, y));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
                 expanded_name!("", "preserveAlpha") => {
-                    self.params.preserve_alpha = attr.parse(value)?
+                    set_attribute(&mut self.params.preserve_alpha, attr.parse(value), session);
                 }
 
                 _ => (),
             }
         }
-
-        // Finally, parse the kernel matrix.
-        for (attr, value) in attrs
-            .iter()
-            .filter(|(attr, _)| attr.expanded() == expanded_name!("", "kernelMatrix"))
-        {
-            self.params.kernel_matrix = Some({
-                let number_of_elements =
-                    self.params.order.0 as usize * self.params.order.1 as usize;
-
-                // #352: Parse as an unbounded list rather than exact length to prevent aborts due
-                //       to huge allocation attempts by underlying Vec::with_capacity().
-                // #691: Limit list to 400 (20x20) to mitigate malicious SVGs
-                let NumberList::<0, 400>(v) = attr.parse(value)?;
-                // #691: Update check as v.len can be different than number of elements because
-                //       of the above limit (and will = 400 if that happens)
-                if v.len() != number_of_elements && v.len() != 400 {
-                    return Err(ValueErrorKind::value_error(&format!(
-                        "incorrect number of elements: expected {}",
-                        number_of_elements
-                    )))
-                    .attribute(attr);
-                }
-
-                DMatrix::from_data(VecStorage::new(
-                    Dynamic::new(self.params.order.1 as usize),
-                    Dynamic::new(self.params.order.0 as usize),
-                    v,
-                ))
-            });
-        }
-
-        // kernel_matrix must have been specified.
-        if self.params.kernel_matrix.is_none() {
-            return Err(ValueErrorKind::value_error("the value must be set"))
-                .attribute(QualName::new(None, ns!(svg), local_name!("kernelMatrix")));
-        }
-
-        Ok(())
     }
 }
 
@@ -189,6 +170,13 @@ impl ConvolveMatrix {
 
         let scale = self
             .kernel_unit_length
+            .and_then(|(x, y)| {
+                if x <= 0.0 || y <= 0.0 {
+                    None
+                } else {
+                    Some((x, y))
+                }
+            })
             .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
         if let Some((ox, oy)) = scale {
@@ -199,7 +187,33 @@ impl ConvolveMatrix {
             bounds = new_bounds;
         }
 
-        let matrix = self.kernel_matrix.as_ref().unwrap();
+        let cols = self.order.0 as usize;
+        let rows = self.order.1 as usize;
+        let number_of_elements = cols * rows;
+        let numbers = self.kernel_matrix.0.clone();
+
+        if numbers.len() != number_of_elements && numbers.len() != 400 {
+            // "If the result of orderX * orderY is not equal to the the number of entries
+            // in the value list, the filter primitive acts as a pass through filter."
+            //
+            // https://drafts.fxtf.org/filter-effects/#element-attrdef-feconvolvematrix-kernelmatrix
+            rsvg_log!(
+                draw_ctx.session(),
+                "feConvolveMatrix got {} elements when it expected {}; ignoring it",
+                numbers.len(),
+                number_of_elements
+            );
+            return Ok(FilterOutput {
+                surface: input_1.surface().clone(),
+                bounds: original_bounds,
+            });
+        }
+
+        let matrix = DMatrix::from_data(VecStorage::new(
+            Dynamic::new(rows),
+            Dynamic::new(cols),
+            numbers,
+        ));
 
         let divisor = if self.divisor != 0.0 {
             self.divisor

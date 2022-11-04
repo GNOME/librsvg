@@ -25,11 +25,11 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, ExpandedName};
 ///     LocalName::from("href"),
 /// );
 ///
-/// let value = expanded_name!("", "path");
-/// let mut foo = Some(value);
+/// let value = "some_url";
+/// let mut my_field: Option<String> = None;
 ///
 /// match qual_name.expanded() {
-///     ref name if is_href(name) => set_href(name, &mut foo, value),
+///     ref name if is_href(name) => set_href(name, &mut my_field, Some(value.to_string())),
 ///     _ => unreachable!(),
 /// }
 /// ```
@@ -43,8 +43,8 @@ pub fn is_href(name: &ExpandedName<'_>) -> bool {
 /// Sets an `href` attribute in preference over an `xlink:href` one.
 ///
 /// See [`is_href`] for example usage.
-pub fn set_href<T>(name: &ExpandedName<'_>, dest: &mut Option<T>, href: T) {
+pub fn set_href<T>(name: &ExpandedName<'_>, dest: &mut Option<T>, href: Option<T>) {
     if dest.is_none() || *name != expanded_name!(xlink "href") {
-        *dest = Some(href);
+        *dest = href;
     }
 }

@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -33,7 +33,7 @@ struct Common {
     // In that case, the fully resolved pattern will have a .vbox=Some(None) value.
     vbox: Option<Option<ViewBox>>,
     preserve_aspect_ratio: Option<AspectRatio>,
-    transform: Option<Transform>,
+    transform: Option<TransformAttribute>,
     x: Option<Length<Horizontal>>,
     y: Option<Length<Vertical>>,
     width: Option<ULength<Horizontal>>,
@@ -93,7 +93,7 @@ pub struct ResolvedPattern {
     content_units: PatternContentUnits,
     vbox: Option<ViewBox>,
     preserve_aspect_ratio: AspectRatio,
-    transform: Transform,
+    transform: TransformAttribute,
     x: Length<Horizontal>,
     y: Length<Vertical>,
     width: ULength<Horizontal>,
@@ -124,37 +124,52 @@ pub struct Pattern {
 }
 
 impl SetAttributes for Pattern {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "patternUnits") => self.common.units = attr.parse(value)?,
+                expanded_name!("", "patternUnits") => {
+                    set_attribute(&mut self.common.units, attr.parse(value), session)
+                }
                 expanded_name!("", "patternContentUnits") => {
-                    self.common.content_units = attr.parse(value)?
+                    set_attribute(&mut self.common.content_units, attr.parse(value), session);
                 }
-                expanded_name!("", "viewBox") => self.common.vbox = attr.parse(value)?,
+                expanded_name!("", "viewBox") => {
+                    set_attribute(&mut self.common.vbox, attr.parse(value), session)
+                }
                 expanded_name!("", "preserveAspectRatio") => {
-                    self.common.preserve_aspect_ratio = attr.parse(value)?
-                }
-                expanded_name!("", "patternTransform") => {
-                    let transform_attr: TransformAttribute = attr.parse(value)?;
-                    self.common.transform = Some(transform_attr.to_transform());
-                }
-                ref a if is_href(a) => {
-                    set_href(
-                        a,
-                        &mut self.fallback,
-                        NodeId::parse(value).attribute(attr.clone())?,
+                    set_attribute(
+                        &mut self.common.preserve_aspect_ratio,
+                        attr.parse(value),
+                        session,
                     );
                 }
-                expanded_name!("", "x") => self.common.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.common.y = attr.parse(value)?,
-                expanded_name!("", "width") => self.common.width = attr.parse(value)?,
-                expanded_name!("", "height") => self.common.height = attr.parse(value)?,
+                expanded_name!("", "patternTransform") => {
+                    set_attribute(&mut self.common.transform, attr.parse(value), session);
+                }
+                ref a if is_href(a) => {
+                    let mut href = None;
+                    set_attribute(
+                        &mut href,
+                        NodeId::parse(value).map(Some).attribute(attr.clone()),
+                        session,
+                    );
+                    set_href(a, &mut self.fallback, href);
+                }
+                expanded_name!("", "x") => {
+                    set_attribute(&mut self.common.x, attr.parse(value), session)
+                }
+                expanded_name!("", "y") => {
+                    set_attribute(&mut self.common.y, attr.parse(value), session)
+                }
+                expanded_name!("", "width") => {
+                    set_attribute(&mut self.common.width, attr.parse(value), session)
+                }
+                expanded_name!("", "height") => {
+                    set_attribute(&mut self.common.height, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -235,7 +250,10 @@ impl UnresolvedPattern {
             .common
             .preserve_aspect_ratio
             .or_else(|| Some(AspectRatio::default()));
-        let transform = self.common.transform.or_else(|| Some(Transform::default()));
+        let transform = self
+            .common
+            .transform
+            .or_else(|| Some(TransformAttribute::default()));
         let x = self.common.x.or_else(|| Some(Default::default()));
         let y = self.common.y.or_else(|| Some(Default::default()));
         let width = self.common.width.or_else(|| Some(Default::default()));
@@ -368,7 +386,9 @@ impl ResolvedPattern {
             ),
         };
 
-        let coord_transform = coord_transform.post_transform(&self.transform);
+        let pattern_transform = self.transform.to_transform();
+
+        let coord_transform = coord_transform.post_transform(&pattern_transform);
 
         // Create the pattern contents coordinate system
         let content_transform = if let Some(vbox) = self.vbox {
@@ -396,7 +416,7 @@ impl ResolvedPattern {
         Some(UserSpacePattern {
             width,
             height,
-            transform: self.transform,
+            transform: pattern_transform,
             coord_transform,
             content_transform,
             opacity: self.opacity,

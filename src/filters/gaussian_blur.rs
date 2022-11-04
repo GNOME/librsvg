@@ -6,9 +6,9 @@ use nalgebra::{DMatrix, Dynamic, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, SetAttributes};
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
+use crate::parsers::{NumberOptionalNumber, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -38,25 +38,33 @@ pub struct FeGaussianBlur {
 }
 
 /// Resolved `feGaussianBlur` primitive for rendering.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct GaussianBlur {
     pub in1: Input,
-    pub std_deviation: (f64, f64),
+    pub std_deviation: NumberOptionalNumber<f64>,
     pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
+// We need this because NumberOptionalNumber doesn't impl Default
+impl Default for GaussianBlur {
+    fn default() -> GaussianBlur {
+        GaussianBlur {
+            in1: Default::default(),
+            std_deviation: NumberOptionalNumber(0.0, 0.0),
+            color_interpolation_filters: Default::default(),
+        }
+    }
+}
+
 impl SetAttributes for FeGaussianBlur {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             if let expanded_name!("", "stdDeviation") = attr.expanded() {
-                let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                self.params.std_deviation = (x, y);
+                set_attribute(&mut self.params.std_deviation, attr.parse(value), session);
             }
         }
-
-        Ok(())
     }
 }
 
@@ -209,7 +217,18 @@ impl GaussianBlur {
             .clipped
             .into();
 
-        let (std_x, std_y) = self.std_deviation;
+        let NumberOptionalNumber(std_x, std_y) = self.std_deviation;
+
+        // "A negative value or a value of zero disables the effect of
+        // the given filter primitive (i.e., the result is the filter
+        // input image)."
+        if std_x <= 0.0 && std_y <= 0.0 {
+            return Ok(FilterOutput {
+                surface: input_1.surface().clone(),
+                bounds,
+            });
+        }
+
         let (std_x, std_y) = ctx.paffine().transform_distance(std_x, std_y);
 
         // The deviation can become negative here due to the transform.

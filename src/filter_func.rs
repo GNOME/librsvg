@@ -28,7 +28,7 @@ use crate::filters::{
 };
 use crate::length::*;
 use crate::paint_server::resolve_color;
-use crate::parsers::{CustomIdent, NumberOrPercentage, Parse};
+use crate::parsers::{CustomIdent, NumberOptionalNumber, NumberOrPercentage, Parse};
 use crate::unit_interval::UnitInterval;
 
 /// CSS Filter functions from the Filter Effects Module Level 1
@@ -271,7 +271,7 @@ impl Blur {
         let gaussian_blur = ResolvedPrimitive {
             primitive: Primitive::default(),
             params: PrimitiveParams::GaussianBlur(GaussianBlur {
-                std_deviation: (std_dev, std_dev),
+                std_deviation: NumberOptionalNumber(std_dev, std_dev),
                 ..GaussianBlur::default()
             }),
         }
@@ -385,7 +385,7 @@ impl DropShadow {
             primitive: Primitive::default(),
             params: PrimitiveParams::GaussianBlur(GaussianBlur {
                 in1: Input::SourceAlpha,
-                std_deviation: (std_dev, std_dev),
+                std_deviation: NumberOptionalNumber(std_dev, std_dev),
                 ..GaussianBlur::default()
             }),
         }

@@ -9,7 +9,7 @@ use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{Draw, Element, ElementResult, SetAttributes};
+use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::filters::{
     bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
@@ -43,7 +43,7 @@ pub struct DiffuseLightingParams {
     in1: Input,
     surface_scale: f64,
     kernel_unit_length: Option<(f64, f64)>,
-    diffuse_constant: f64,
+    diffuse_constant: NonNegative,
 }
 
 impl Default for DiffuseLightingParams {
@@ -52,7 +52,7 @@ impl Default for DiffuseLightingParams {
             in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,
-            diffuse_constant: 1.0,
+            diffuse_constant: NonNegative(1.0),
         }
     }
 }
@@ -69,7 +69,7 @@ pub struct SpecularLightingParams {
     in1: Input,
     surface_scale: f64,
     kernel_unit_length: Option<(f64, f64)>,
-    specular_constant: f64,
+    specular_constant: NonNegative,
     specular_exponent: f64,
 }
 
@@ -79,7 +79,7 @@ impl Default for SpecularLightingParams {
             in1: Default::default(),
             surface_scale: 1.0,
             kernel_unit_length: None,
-            specular_constant: 1.0,
+            specular_constant: NonNegative(1.0),
             specular_exponent: 1.0,
         }
     }
@@ -214,16 +214,18 @@ impl FeDistantLight {
 }
 
 impl SetAttributes for FeDistantLight {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "azimuth") => self.azimuth = attr.parse(value)?,
-                expanded_name!("", "elevation") => self.elevation = attr.parse(value)?,
+                expanded_name!("", "azimuth") => {
+                    set_attribute(&mut self.azimuth, attr.parse(value), session)
+                }
+                expanded_name!("", "elevation") => {
+                    set_attribute(&mut self.elevation, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -248,23 +250,21 @@ impl FePointLight {
 }
 
 impl SetAttributes for FePointLight {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "z") => self.z = attr.parse(value)?,
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "z") => set_attribute(&mut self.z, attr.parse(value), session),
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
 impl Draw for FePointLight {}
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FeSpotLight {
     x: f64,
     y: f64,
@@ -274,6 +274,23 @@ pub struct FeSpotLight {
     points_at_z: f64,
     specular_exponent: f64,
     limiting_cone_angle: Option<f64>,
+}
+
+// We need this because, per the spec, the initial values for all fields are 0.0
+// except for specular_exponent, which is 1.
+impl Default for FeSpotLight {
+    fn default() -> FeSpotLight {
+        FeSpotLight {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+            points_at_x: 0.0,
+            points_at_y: 0.0,
+            points_at_z: 0.0,
+            specular_exponent: 1.0,
+            limiting_cone_angle: None,
+        }
+    }
 }
 
 impl FeSpotLight {
@@ -298,29 +315,33 @@ impl FeSpotLight {
 }
 
 impl SetAttributes for FeSpotLight {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
-                expanded_name!("", "x") => self.x = attr.parse(value)?,
-                expanded_name!("", "y") => self.y = attr.parse(value)?,
-                expanded_name!("", "z") => self.z = attr.parse(value)?,
-                expanded_name!("", "pointsAtX") => self.points_at_x = attr.parse(value)?,
-                expanded_name!("", "pointsAtY") => self.points_at_y = attr.parse(value)?,
-                expanded_name!("", "pointsAtZ") => self.points_at_z = attr.parse(value)?,
+                expanded_name!("", "x") => set_attribute(&mut self.x, attr.parse(value), session),
+                expanded_name!("", "y") => set_attribute(&mut self.y, attr.parse(value), session),
+                expanded_name!("", "z") => set_attribute(&mut self.z, attr.parse(value), session),
+                expanded_name!("", "pointsAtX") => {
+                    set_attribute(&mut self.points_at_x, attr.parse(value), session)
+                }
+                expanded_name!("", "pointsAtY") => {
+                    set_attribute(&mut self.points_at_y, attr.parse(value), session)
+                }
+                expanded_name!("", "pointsAtZ") => {
+                    set_attribute(&mut self.points_at_z, attr.parse(value), session)
+                }
 
                 expanded_name!("", "specularExponent") => {
-                    self.specular_exponent = attr.parse(value)?
+                    set_attribute(&mut self.specular_exponent, attr.parse(value), session);
                 }
 
                 expanded_name!("", "limitingConeAngle") => {
-                    self.limiting_cone_angle = attr.parse(value)?
+                    set_attribute(&mut self.limiting_cone_angle, attr.parse(value), session);
                 }
 
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -333,27 +354,36 @@ fn transform_dist(t: Transform, d: f64) -> f64 {
 }
 
 impl SetAttributes for FeDiffuseLighting {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "surfaceScale") => {
-                    self.params.surface_scale = attr.parse(value)?
+                    set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.kernel_unit_length = Some((x, y));
+                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
+                    match v {
+                        Ok(NumberOptionalNumber(x, y)) => {
+                            self.params.kernel_unit_length = Some((x, y));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
                 expanded_name!("", "diffuseConstant") => {
-                    let NonNegative(c) = attr.parse(value)?;
-                    self.params.diffuse_constant = c;
+                    set_attribute(
+                        &mut self.params.diffuse_constant,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -373,35 +403,48 @@ impl DiffuseLighting {
             normal.dot(&light_vector) / normal.norm()
         };
 
-        self.params.diffuse_constant * k
+        self.params.diffuse_constant.0 * k
     }
 }
 
 impl SetAttributes for FeSpecularLighting {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.params.in1 = self.base.parse_one_input(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "surfaceScale") => {
-                    self.params.surface_scale = attr.parse(value)?
+                    set_attribute(&mut self.params.surface_scale, attr.parse(value), session);
                 }
                 expanded_name!("", "kernelUnitLength") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.kernel_unit_length = Some((x, y));
+                    let v: Result<NumberOptionalNumber<f64>, _> = attr.parse(value);
+                    match v {
+                        Ok(NumberOptionalNumber(x, y)) => {
+                            self.params.kernel_unit_length = Some((x, y));
+                        }
+
+                        Err(e) => {
+                            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+                        }
+                    }
                 }
                 expanded_name!("", "specularConstant") => {
-                    let NonNegative(c) = attr.parse(value)?;
-                    self.params.specular_constant = c;
+                    set_attribute(
+                        &mut self.params.specular_constant,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 expanded_name!("", "specularExponent") => {
-                    self.params.specular_exponent = attr.parse(value)?;
+                    set_attribute(
+                        &mut self.params.specular_exponent,
+                        attr.parse(value),
+                        session,
+                    );
                 }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -428,9 +471,9 @@ impl SpecularLighting {
         };
 
         if approx_eq!(f64, self.params.specular_exponent, 1.0) {
-            self.params.specular_constant * n_dot_h
+            self.params.specular_constant.0 * n_dot_h
         } else {
-            self.params.specular_constant * n_dot_h.powf(self.params.specular_exponent)
+            self.params.specular_constant.0 * n_dot_h.powf(self.params.specular_exponent)
         }
     }
 }
@@ -461,6 +504,13 @@ macro_rules! impl_lighting_filter {
                 let scale = self
                     .params
                     .kernel_unit_length
+                    .and_then(|(x, y)| {
+                        if x <= 0.0 || y <= 0.0 {
+                            None
+                        } else {
+                            Some((x, y))
+                        }
+                    })
                     .map(|(dx, dy)| ctx.paffine().transform_distance(dx, dy));
 
                 let mut input_surface = input_1.surface().clone();
@@ -673,10 +723,6 @@ macro_rules! impl_lighting_filter {
 
                 let source_node = source_node.unwrap();
                 let elt = source_node.borrow_element();
-
-                if elt.is_in_error() {
-                    return Err(FilterResolveError::ChildNodeInError);
-                }
 
                 let source = match *elt {
                     Element::FeDistantLight(ref l) => {

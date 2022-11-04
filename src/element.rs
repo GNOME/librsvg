@@ -45,34 +45,37 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 use crate::xml::Attributes;
 
-// After creating/parsing a Element, it will be in a success or an error state.
-// We represent this with a Result, aliased as a ElementResult.  There is no
-// extra information for the Ok case; all the interesting stuff is in the
-// Err case.
-//
-// https://www.w3.org/TR/SVG/implnote.html#ErrorProcessing
-//
-// When an element has an error during parsing, the SVG spec calls the element
-// to be "in error".  We skip rendering of elements that are in error.
-//
-// When we parse an element's attributes, we stop as soon as we
-// encounter the first error:  a parse error, or an invalid value,
-// etc.  No further attributes will be processed, although note that
-// the order in which an element's attributes are processed is not
-// defined.
-//
-// Alternatively, we could try to parse/validate all the attributes
-// that come in an element and build up a Vec<ElementError>.  However, we
-// don't do this now.  Doing that may be more useful for an SVG
-// validator, not a renderer like librsvg is.
-pub type ElementResult = Result<(), ElementError>;
-
 pub trait SetAttributes {
     /// Sets per-element attributes.
     ///
     /// Each element is supposed to iterate the `attributes`, and parse any ones it needs.
-    fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) -> ElementResult {
-        Ok(())
+    /// SVG specifies that unknown attributes should be ignored, and known attributes with invalid
+    /// values should be ignored so that the attribute ends up with its "initial value".
+    ///
+    /// You can use the [`set_attribute`] function to do that.
+    fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) {}
+}
+
+/// Sets `dest` if `parse_result` is `Ok()`, otherwise just logs the error.
+///
+/// Implementations of the [`SetAttributes`] trait generally scan a list of attributes
+/// for the ones they can handle, and parse their string values.  Per the SVG spec, an attribute
+/// with an invalid value should be ignored, and it should fall back to the default value.
+///
+/// In librsvg, those default values are set in each element's implementation of the [`Default`] trait:
+/// at element creation time, each element gets initialized to its `Default`, and then each attribute
+/// gets parsed.  This function will set that attribute's value only if parsing was successful.
+///
+/// In case the `parse_result` is an error, this function will log an appropriate notice
+/// via the [`Session`].
+pub fn set_attribute<T>(dest: &mut T, parse_result: Result<T, ElementError>, session: &Session) {
+    match parse_result {
+        Ok(v) => *dest = v,
+        Err(e) => {
+            // FIXME: this does not provide a clue of what was the problematic element.
+            // We need tracking of the current parsing position to do that.
+            rsvg_log!(session, "ignoring attribute with invalid value: {}", e);
+        }
     }
 }
 
@@ -98,7 +101,6 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     attributes: Attributes,
     specified_values: SpecifiedValues,
     important_styles: HashSet<QualName>,
-    is_in_error: bool,
     values: ComputedValues,
     required_extensions: Option<RequiredExtensions>,
     required_features: Option<RequiredFeatures>,
@@ -111,7 +113,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         session: &Session,
         element_name: QualName,
         attributes: Attributes,
-        is_in_error: bool,
         element_impl: T,
     ) -> ElementInner<T> {
         let mut e = Self {
@@ -119,7 +120,6 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
-            is_in_error,
             values: Default::default(),
             required_extensions: Default::default(),
             required_features: Default::default(),
@@ -127,15 +127,8 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             element_impl,
         };
 
-        let mut set_attributes = || -> Result<(), ElementError> {
-            e.set_conditional_processing_attributes()?;
-            e.set_presentation_attributes(session)?;
-            Ok(())
-        };
-
-        if let Err(error) = set_attributes() {
-            e.set_error(error, session);
-        }
+        e.set_conditional_processing_attributes(session);
+        e.set_presentation_attributes(session);
 
         e
     }
@@ -190,36 +183,30 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
                 .unwrap_or(true)
     }
 
-    fn set_conditional_processing_attributes(&mut self) -> Result<(), ElementError> {
+    fn set_conditional_processing_attributes(&mut self, session: &Session) {
         for (attr, value) in self.attributes.iter() {
             match attr.expanded() {
                 expanded_name!("", "requiredExtensions") => {
-                    self.required_extensions =
-                        Some(RequiredExtensions::from_attribute(value).attribute(attr)?);
+                    self.required_extensions = Some(RequiredExtensions::from_attribute(value));
                 }
 
                 expanded_name!("", "requiredFeatures") => {
-                    self.required_features =
-                        Some(RequiredFeatures::from_attribute(value).attribute(attr)?);
+                    self.required_features = Some(RequiredFeatures::from_attribute(value));
                 }
 
                 expanded_name!("", "systemLanguage") => {
-                    self.system_language =
-                        Some(SystemLanguage::from_attribute(value).attribute(attr)?);
+                    self.system_language = Some(SystemLanguage::from_attribute(value, session));
                 }
 
                 _ => {}
             }
         }
-
-        Ok(())
     }
 
     /// Hands the `attrs` to the node's state, to apply the presentation attributes.
-    #[allow(clippy::unnecessary_wraps)]
-    fn set_presentation_attributes(&mut self, session: &Session) -> Result<(), ElementError> {
+    fn set_presentation_attributes(&mut self, session: &Session) {
         self.specified_values
-            .parse_presentation_attributes(session, &self.attributes)
+            .parse_presentation_attributes(session, &self.attributes);
     }
 
     // Applies a style declaration to the node's specified_values
@@ -240,24 +227,13 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             .map(|(_, value)| value);
 
         if let Some(style) = style {
-            if let Err(e) = self.specified_values.parse_style_declarations(
+            self.specified_values.parse_style_declarations(
                 style,
                 Origin::Author,
                 &mut self.important_styles,
                 session,
-            ) {
-                self.set_error(e, session);
-            }
+            );
         }
-    }
-
-    fn set_error(&mut self, error: ElementError, session: &Session) {
-        rsvg_log!(session, "setting node {} in error: {}", self, error);
-        self.is_in_error = true;
-    }
-
-    fn is_in_error(&self) -> bool {
-        self.is_in_error
     }
 }
 
@@ -270,22 +246,11 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        if !self.is_in_error() {
-            let values = cascaded.get();
-            if values.is_displayed() {
-                self.element_impl
-                    .draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
-            } else {
-                Ok(draw_ctx.empty_bbox())
-            }
+        let values = cascaded.get();
+        if values.is_displayed() {
+            self.element_impl
+                .draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
         } else {
-            rsvg_log!(
-                draw_ctx.session(),
-                "(not rendering element {} because it is in error)",
-                self
-            );
-
-            // maybe we should actually return a RenderingError::ElementIsInError here?
             Ok(draw_ctx.empty_bbox())
         }
     }
@@ -520,10 +485,6 @@ impl Element {
         call_inner!(self, set_style_attribute, session);
     }
 
-    pub fn is_in_error(&self) -> bool {
-        call_inner!(self, is_in_error)
-    }
-
     pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
         match self {
             Element::FeBlend(ref fe) => Some(&fe.element_impl),
@@ -598,21 +559,12 @@ macro_rules! e {
             attributes: Attributes,
         ) -> Element {
             let mut element_impl = <$element_type>::default();
-
-            let is_in_error = if let Err(e) = element_impl.set_attributes(&attributes, session) {
-                // FIXME: this does not provide a clue of what was the problematic attribute, or the
-                // problematic element.  We need tracking of the current parsing position to do that.
-                rsvg_log!(session, "setting element in error: {}", e);
-                true
-            } else {
-                false
-            };
+            element_impl.set_attributes(&attributes, session);
 
             let element = Element::$element_type(Box::new(ElementInner::new(
                 session,
                 element_name.clone(),
                 attributes,
-                is_in_error,
                 element_impl,
             )));
 

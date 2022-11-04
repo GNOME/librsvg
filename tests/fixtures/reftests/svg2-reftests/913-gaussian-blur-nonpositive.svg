@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="400" height="400">
+  <filter id="filter" filterUnits="objectBoundingBox" x="-10%" y="-10%" width="120%" height="120%">
+    <!-- First, swap the red and green channels (turn the red rectangle into green) -->
+    <feColorMatrix type="matrix"
+                   values="0 1 0 0 0
+                           1 0 0 0 0
+                           0 0 1 0 0
+                           0 0 0 1 0"/>
+
+    <!-- Second, no-op blur because stdDeviation is negative-->
+    <feGaussianBlur stdDeviation="-1 -1"/>
+  </filter>
+
+  <g filter="url(#filter)">
+    <rect x="100" y="100" width="50" height="50" fill="red"/>
+    <rect x="200" y="100" width="50" height="50" fill="red"/>
+  </g>
+</svg>

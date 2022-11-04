@@ -3,10 +3,10 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{ElementResult, SetAttributes};
+use crate::element::{set_attribute, SetAttributes};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
-use crate::parsers::{NonNegative, NumberOptionalNumber, Parse, ParseValue};
+use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
 use crate::session::Session;
@@ -51,9 +51,9 @@ pub struct FeTurbulence {
 /// Resolved `feTurbulence` primitive for rendering.
 #[derive(Clone)]
 pub struct Turbulence {
-    base_frequency: (f64, f64),
+    base_frequency: NumberOptionalNumber<f64>,
     num_octaves: i32,
-    seed: i32,
+    seed: f64,
     stitch_tiles: StitchTiles,
     type_: NoiseType,
     color_interpolation_filters: ColorInterpolationFilters,
@@ -64,9 +64,9 @@ impl Default for Turbulence {
     #[inline]
     fn default() -> Turbulence {
         Turbulence {
-            base_frequency: (0.0, 0.0),
+            base_frequency: NumberOptionalNumber(0.0, 0.0),
             num_octaves: 1,
-            seed: 0,
+            seed: 0.0,
             stitch_tiles: Default::default(),
             type_: Default::default(),
             color_interpolation_filters: Default::default(),
@@ -75,36 +75,30 @@ impl Default for Turbulence {
 }
 
 impl SetAttributes for FeTurbulence {
-    fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) -> ElementResult {
-        self.base.parse_no_inputs(attrs)?;
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        self.base.parse_no_inputs(attrs, session);
 
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
                 expanded_name!("", "baseFrequency") => {
-                    let NumberOptionalNumber(NonNegative(x), NonNegative(y)) = attr.parse(value)?;
-                    self.params.base_frequency = (x, y);
+                    set_attribute(&mut self.params.base_frequency, attr.parse(value), session);
                 }
                 expanded_name!("", "numOctaves") => {
-                    self.params.num_octaves = attr.parse(value)?;
+                    set_attribute(&mut self.params.num_octaves, attr.parse(value), session);
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!("", "seed") => {
-                    let v: f64 = attr.parse(value)?;
-                    self.params.seed = clamp(
-                        v.trunc(),
-                        f64::from(i32::min_value()),
-                        f64::from(i32::max_value()),
-                    ) as i32;
+                    set_attribute(&mut self.params.seed, attr.parse(value), session);
                 }
                 expanded_name!("", "stitchTiles") => {
-                    self.params.stitch_tiles = attr.parse(value)?
+                    set_attribute(&mut self.params.stitch_tiles, attr.parse(value), session);
                 }
-                expanded_name!("", "type") => self.params.type_ = attr.parse(value)?,
+                expanded_name!("", "type") => {
+                    set_attribute(&mut self.params.type_, attr.parse(value), session)
+                }
                 _ => (),
             }
         }
-
-        Ok(())
     }
 }
 
@@ -355,9 +349,25 @@ impl Turbulence {
 
         let affine = ctx.paffine().invert().unwrap();
 
+        let seed = clamp(
+            self.seed.trunc(), // per the spec, round towards zero
+            f64::from(i32::min_value()),
+            f64::from(i32::max_value()),
+        ) as i32;
+
+        // "Negative values are unsupported" -> set to the initial value which is 0.0
+        //
+        // https://drafts.fxtf.org/filter-effects/#element-attrdef-feturbulence-basefrequency
+        let base_frequency = {
+            let NumberOptionalNumber(base_freq_x, base_freq_y) = self.base_frequency;
+            let x = base_freq_x.max(0.0);
+            let y = base_freq_y.max(0.0);
+            (x, y)
+        };
+
         let noise_generator = NoiseGenerator::new(
-            self.seed,
-            self.base_frequency,
+            seed,
+            base_frequency,
             self.num_octaves,
             self.type_,
             self.stitch_tiles,
