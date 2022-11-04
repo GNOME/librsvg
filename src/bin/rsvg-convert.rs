@@ -786,193 +786,232 @@ fn parse_args() -> Result<Converter, Error> {
     let app = clap::Command::new("rsvg-convert")
         .version(concat!("version ", crate_version!()))
         .about("Convert SVG files to other image formats")
-        .help_short('?')
-        .version_short('v')
+        .disable_version_flag(true)
+        .disable_help_flag(true)
         .arg(
-            clap::Arg::with_name("res_x")
+            clap::Arg::new("help")
+                .short('?')
+                .long("help")
+                .help("Display the help")
+                .action(clap::ArgAction::Help)
+        )
+        .arg(
+            clap::Arg::new("version")
+                .short('v')
+                .long("version")
+                .help("Display the version information")
+                .action(clap::ArgAction::Version)
+        )
+        .arg(
+            clap::Arg::new("res_x")
                 .short('d')
                 .long("dpi-x")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .default_value("96")
                 .value_parser(parse_resolution)
-                .help("Pixels per inch"),
+                .help("Pixels per inch")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("res_y")
+            clap::Arg::new("res_y")
                 .short('p')
                 .long("dpi-y")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .default_value("96")
                 .value_parser(parse_resolution)
-                .help("Pixels per inch"),
+                .help("Pixels per inch")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("zoom_x")
+            clap::Arg::new("zoom_x")
                 .short('x')
                 .long("x-zoom")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .conflicts_with("zoom")
                 .value_parser(parse_zoom_factor)
-                .help("Horizontal zoom factor"),
+                .help("Horizontal zoom factor")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("zoom_y")
+            clap::Arg::new("zoom_y")
                 .short('y')
                 .long("y-zoom")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .conflicts_with("zoom")
                 .value_parser(parse_zoom_factor)
-                .help("Vertical zoom factor"),
+                .help("Vertical zoom factor")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("zoom")
+            clap::Arg::new("zoom")
                 .short('z')
                 .long("zoom")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("number")
                 .value_parser(parse_zoom_factor)
-                .help("Zoom factor"),
+                .help("Zoom factor")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("size_x")
+            clap::Arg::new("size_x")
                 .short('w')
                 .long("width")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
                 .value_parser(parse_length::<Horizontal, Unsigned>)
-                .help("Width [defaults to the width of the SVG]"),
+                .help("Width [defaults to the width of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("size_y")
+            clap::Arg::new("size_y")
                 .short('h')
                 .long("height")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
                 .value_parser(parse_length::<Vertical, Unsigned>)
-                .help("Height [defaults to the height of the SVG]"),
+                .help("Height [defaults to the height of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("top")
+            clap::Arg::new("top")
                 .long("top")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
                 .value_parser(parse_length::<Vertical, Signed>)
-                .help("Distance between top edge of page and the image [defaults to 0]"),
+                .help("Distance between top edge of page and the image [defaults to 0]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("left")
+            clap::Arg::new("left")
                 .long("left")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
                 .value_parser(parse_length::<Horizontal, Signed>)
-                .help("Distance between left edge of page and the image [defaults to 0]"),
+                .help("Distance between left edge of page and the image [defaults to 0]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("page_width")
+            clap::Arg::new("page_width")
                 .long("page-width")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
                 .value_parser(parse_length::<Horizontal, Unsigned>)
-                .help("Width of output media [defaults to the width of the SVG]"),
+                .help("Width of output media [defaults to the width of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("page_height")
+            clap::Arg::new("page_height")
                 .long("page-height")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("length")
                 .value_parser(parse_length::<Vertical, Unsigned>)
-                .help("Height of output media [defaults to the height of the SVG]"),
+                .help("Height of output media [defaults to the height of the SVG]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("format")
+            clap::Arg::new("format")
                 .short('f')
                 .long("format")
-                .takes_value(true)
-                .possible_values(supported_formats.as_slice())
+                .num_args(1)
+                .value_parser(clap::builder::PossibleValuesParser::new(supported_formats.as_slice()))
                 .ignore_case(true)
                 .default_value("png")
-                .help("Output format"),
+                .help("Output format")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("output")
+            clap::Arg::new("output")
                 .short('o')
                 .long("output")
-                .takes_value(true)
+                .num_args(1)
                 .value_parser(clap::value_parser!(PathBuf))
-                .help("Output filename [defaults to stdout]"),
+                .help("Output filename [defaults to stdout]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("export_id")
+            clap::Arg::new("export_id")
                 .short('i')
                 .long("export-id")
-                .empty_values(false)
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .value_name("object id")
-                .help("SVG id of object to export [default is to export all objects]"),
+                .help("SVG id of object to export [default is to export all objects]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("accept-language")
+            clap::Arg::new("accept-language")
                 .short('l')
                 .long("accept-language")
-                .empty_values(false)
+                .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .value_name("languages")
-                .help("Languages to accept, for example \"es-MX,de,en\" [default uses language from the environment]"),
+                .help("Languages to accept, for example \"es-MX,de,en\" [default uses language from the environment]")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("keep_aspect")
+            clap::Arg::new("keep_aspect")
                 .short('a')
                 .long("keep-aspect-ratio")
-                .help("Preserve the aspect ratio"),
+                .help("Preserve the aspect ratio")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("background")
+            clap::Arg::new("background")
                 .short('b')
                 .long("background-color")
-                .takes_value(true)
+                .num_args(1)
                 .value_name("color")
                 .value_parser(clap::builder::NonEmptyStringValueParser::new())
                 .default_value("none")
-                .help("Set the background color using a CSS color spec"),
+                .help("Set the background color using a CSS color spec")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("stylesheet")
+            clap::Arg::new("stylesheet")
                 .short('s')
                 .long("stylesheet")
-                .takes_value(true)
+            .num_args(1)
                 .value_parser(clap::value_parser!(PathBuf))
                 .value_name("filename.css")
-                .help("Filename of CSS stylesheet to apply"),
+                .help("Filename of CSS stylesheet to apply")
+                .action(clap::ArgAction::Set),
         )
         .arg(
-            clap::Arg::with_name("unlimited")
+            clap::Arg::new("unlimited")
                 .short('u')
                 .long("unlimited")
-                .help("Allow huge SVG files"),
+                .help("Allow huge SVG files")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("keep_image_data")
+            clap::Arg::new("keep_image_data")
                 .long("keep-image-data")
-                .help("Keep image data"),
+                .help("Keep image data")
+                .conflicts_with("no_keep_image_data")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("no_keep_image_data")
+            clap::Arg::new("no_keep_image_data")
                 .long("no-keep-image-data")
-                .help("Do not keep image data"),
+                .help("Do not keep image data")
+                .conflicts_with("keep_image_data")
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("testing")
+            clap::Arg::new("testing")
                 .long("testing")
                 .help("Render images for librsvg's test suite")
-                .hidden(true),
+                .hide(true)
+                .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            clap::Arg::with_name("FILE")
+            clap::Arg::new("FILE")
                 .value_parser(clap::value_parser!(OsString))
                 .help("The input file(s) to convert")
-                .multiple(true),
+                .num_args(1..)
+                .action(clap::ArgAction::Append),
         );
 
     let matches = app.get_matches();
@@ -992,8 +1031,8 @@ fn parse_args() -> Result<Converter, Error> {
     };
 
     let keep_image_data = match format {
-        Format::Ps | Format::Eps | Format::Pdf => !matches.contains_id("no_keep_image_data"),
-        _ => matches.contains_id("keep_image_data"),
+        Format::Ps | Format::Eps | Format::Pdf => !matches.get_flag("no_keep_image_data"),
+        _ => matches.get_flag("keep_image_data"),
     };
 
     let language = match matches.get_one::<String>("accept-language") {
@@ -1002,7 +1041,7 @@ fn parse_args() -> Result<Converter, Error> {
             .map(Language::AcceptLanguage)
             .map_err(|e| {
                 let desc = format!("{}", e);
-                clap::Error::with_description(desc, clap::ErrorKind::InvalidValue)
+                clap::Error::raw(clap::error::ErrorKind::InvalidValue, desc)
             })?,
     };
 
@@ -1010,7 +1049,7 @@ fn parse_args() -> Result<Converter, Error> {
         .get_one("background")
         .expect("already provided default_value");
     let background_color: Option<Color> = parse_background_color(&**background_str)
-        .map_err(|e| clap::Error::with_description(e, clap::ErrorKind::InvalidValue))?;
+        .map_err(|e| clap::Error::raw(clap::error::ErrorKind::InvalidValue, e))?;
 
     // librsvg expects ids starting with '#', so it can lookup ids in externs like "subfile.svg#subid".
     // For the user's convenience, we prepend '#' automatically; we only support specifying ids from
@@ -1053,7 +1092,7 @@ fn parse_args() -> Result<Converter, Error> {
     let zoom_x: Option<ZoomFactor> = matches.get_one("zoom_x").copied();
     let zoom_y: Option<ZoomFactor> = matches.get_one("zoom_y").copied();
 
-    let input = match matches.values_of_os("FILE") {
+    let input = match matches.get_many::<std::ffi::OsString>("FILE") {
         Some(values) => values
             .map(|f| PathOrUrl::from_os_str(f).map_err(Error))
             .map(|r| r.map(Input::Named))
@@ -1089,15 +1128,15 @@ fn parse_args() -> Result<Converter, Error> {
         page_size,
         format,
         export_id,
-        keep_aspect_ratio: matches.contains_id("keep_aspect"),
+        keep_aspect_ratio: matches.get_flag("keep_aspect"),
         background_color,
         stylesheet: matches.get_one("stylesheet").cloned(),
-        unlimited: matches.contains_id("unlimited"),
+        unlimited: matches.get_flag("unlimited"),
         keep_image_data,
         language,
         input,
         output,
-        testing: matches.is_present("testing"),
+        testing: matches.get_flag("testing"),
     })
 }
 
@@ -1141,8 +1180,8 @@ impl<T> NotFound for Result<T, clap::Error> {
     /// arguments.
     fn or_none(self) -> Result<Option<T>, clap::Error> {
         self.map_or_else(
-            |e| match e.kind {
-                clap::ErrorKind::ArgumentNotFound => Ok(None),
+            |e| match e.kind() {
+                clap::error::ErrorKind::UnknownArgument => Ok(None),
                 _ => Err(e),
             },
             |v| Ok(Some(v)),
