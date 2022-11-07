@@ -82,7 +82,7 @@ impl UrlResolver {
         let url_canon =
             canonicalize(&url_path).map_err(|_| AllowedUrlError::CanonicalizationError)?;
         let parent_canon =
-            canonicalize(&base_parent).map_err(|_| AllowedUrlError::CanonicalizationError)?;
+            canonicalize(base_parent).map_err(|_| AllowedUrlError::CanonicalizationError)?;
 
         if url_canon.starts_with(parent_canon) {
             Ok(AllowedUrl(url))

@@ -655,7 +655,7 @@ impl Chars {
         depth: usize,
         link_target: Option<String>,
     ) -> Span {
-        self.ensure_normalized_string(node, &*values);
+        self.ensure_normalized_string(node, &values);
 
         Span::new(
             self.space_normalized.borrow().as_ref().unwrap(),
