@@ -1048,7 +1048,7 @@ fn parse_args() -> Result<Converter, Error> {
     let background_str: &String = matches
         .get_one("background")
         .expect("already provided default_value");
-    let background_color: Option<Color> = parse_background_color(&**background_str)
+    let background_color: Option<Color> = parse_background_color(background_str)
         .map_err(|e| clap::Error::raw(clap::error::ErrorKind::InvalidValue, e))?;
 
     // librsvg expects ids starting with '#', so it can lookup ids in externs like "subfile.svg#subid".
