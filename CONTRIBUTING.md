@@ -218,7 +218,7 @@ suite is documented in [`tests/README.md`][tests-readme].
 ### Creating a merge request
 
 You may create a forked version of librsvg in [GNOME's Gitlab
-instance][gitlab], or any other publically-accesible Git hosting
+instance][gitlab], or any other publically-accessible Git hosting
 service.  You can register an account there, or log in with your
 account from other OAuth services.
 
