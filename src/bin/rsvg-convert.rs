@@ -395,7 +395,7 @@ mod metadata {
         match env::var("SOURCE_DATE_EPOCH") {
             Ok(epoch) => match i64::from_str(&epoch) {
                 Ok(seconds) => {
-                    let datetime = Utc.timestamp(seconds, 0);
+                    let datetime = Utc.timestamp_opt(seconds, 0).unwrap();
                     Ok(Some(datetime.to_rfc3339()))
                 }
                 Err(e) => Err(error!("Environment variable $SOURCE_DATE_EPOCH: {}", e)),
