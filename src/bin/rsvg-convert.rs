@@ -1,4 +1,5 @@
 use clap::crate_version;
+use clap_complete::{Generator, Shell};
 
 use gio::prelude::*;
 use gio::{Cancellable, FileCreateFlags, InputStream, OutputStream};
@@ -27,6 +28,7 @@ use librsvg::rsvg_convert_only::{
 use librsvg::{AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, RenderingError};
 
 use std::ffi::OsString;
+use std::io;
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -770,7 +772,7 @@ fn natural_geometry(
     })
 }
 
-fn parse_args() -> Result<Converter, Error> {
+fn build_cli() -> clap::Command {
     let supported_formats = vec![
         "png",
         #[cfg(system_deps_have_cairo_pdf)]
@@ -783,7 +785,7 @@ fn parse_args() -> Result<Converter, Error> {
         "svg",
     ];
 
-    let app = clap::Command::new("rsvg-convert")
+    clap::Command::new("rsvg-convert")
         .version(concat!("version ", crate_version!()))
         .about("Convert SVG files to other image formats")
         .disable_version_flag(true)
@@ -1007,14 +1009,36 @@ fn parse_args() -> Result<Converter, Error> {
                 .action(clap::ArgAction::SetTrue),
         )
         .arg(
+            clap::Arg::new("completion")
+                .long("completion")
+                .help("Output shell completion for the given shell")
+                .num_args(1)
+                .action(clap::ArgAction::Set)
+                .value_parser(clap::value_parser!(Shell)),
+        )
+        .arg(
             clap::Arg::new("FILE")
                 .value_parser(clap::value_parser!(OsString))
                 .help("The input file(s) to convert")
                 .num_args(1..)
                 .action(clap::ArgAction::Append),
-        );
+        )
+}
 
-    let matches = app.get_matches();
+fn print_completions<G: Generator>(gen: G, cmd: &mut clap::Command) {
+    clap_complete::generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
+}
+
+fn parse_args() -> Result<Converter, Error> {
+    let cli = build_cli();
+    let matches = cli.get_matches();
+
+    if let Some(shell) = matches.get_one::<Shell>("completion").copied() {
+        let mut cmd = build_cli();
+        eprintln!("Generating completion file for {}", shell);
+        print_completions(shell, &mut cmd);
+        std::process::exit(0);
+    }
 
     let format_str: &String = matches
         .get_one("format")
