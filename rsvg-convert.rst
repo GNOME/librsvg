@@ -472,6 +472,12 @@ MISCELLANEOUS
 ``--testing``
    For developers only: render images for librsvg's test suite.
 
+``--completion`` *shell-name*
+  Generate a script for a shell's Tab completion.  You can use ``bash``,
+  ``elvish``, ``fish``, ``powershell``, and ``zsh`` for the shell's
+  name.  Rsvg-convert will then write a suitable script to standard
+  output.
+
 
 ENVIRONMENT VARIABLES
 =====================
