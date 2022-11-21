@@ -1,3 +1,11 @@
+Version 2.55.1
+==============
+
+- #878 - rsvg-convert now supports shell completion for bash, elvish,
+  fish, powershell, and zsh.  Please run "rsvg-convert --completion
+  bash" to generate the completion file.  You can use the other
+  shells' names as an argument to the --completion option. (Marcos Simental)
+
 Version 2.55.0-alpha
 ====================
 
