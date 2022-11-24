@@ -21,8 +21,8 @@ impl PdfPredicate {
     pub fn with_page_size(
         self: Self,
         idx: usize,
-        width_in_points: f64,
-        height_in_points: f64,
+        width_in_points: f32,
+        height_in_points: f32,
     ) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
@@ -101,13 +101,13 @@ enum Detail {
 /// Note that `w` and `h` given in `UserUnit`, which is by default 1.0 = 1/72 inch.
 #[derive(Debug)]
 struct Dimensions {
-    w: f64,
-    h: f64,
-    unit: f64, // UserUnit, in points (1/72 of an inch)
+    w: f32,
+    h: f32,
+    unit: f32, // UserUnit, in points (1/72 of an inch)
 }
 
 impl Dimensions {
-    pub fn from_media_box(obj: &lopdf::Object, unit: Option<f64>) -> lopdf::Result<Dimensions> {
+    pub fn from_media_box(obj: &lopdf::Object, unit: Option<f32>) -> lopdf::Result<Dimensions> {
         let a = obj.as_array()?;
         Ok(Dimensions {
             w: a[2].as_float()?,
@@ -116,11 +116,11 @@ impl Dimensions {
         })
     }
 
-    pub fn width_in_pt(self: &Self) -> f64 {
+    pub fn width_in_pt(self: &Self) -> f32 {
         self.w * self.unit
     }
 
-    pub fn height_in_pt(self: &Self) -> f64 {
+    pub fn height_in_pt(self: &Self) -> f32 {
         self.h * self.unit
     }
 }
@@ -134,15 +134,15 @@ impl fmt::Display for Dimensions {
 impl cmp::PartialEq for Dimensions {
     fn eq(&self, other: &Self) -> bool {
         approx_eq!(
-            f64,
+            f32,
             self.width_in_pt(),
             other.width_in_pt(),
-            epsilon = 0.000_001
+            epsilon = 0.0001
         ) && approx_eq!(
-            f64,
+            f32,
             self.height_in_pt(),
             other.height_in_pt(),
-            epsilon = 0.000_001
+            epsilon = 0.0001
         )
     }
 }
@@ -212,14 +212,14 @@ impl DetailPredicate<PdfPredicate> {
 // Extensions to lopdf::Object; can be removed after lopdf 0.26
 trait ObjExt {
     /// Get the object value as a float.
-    /// Unlike as_f64() this will also cast an Integer to a Real.
-    fn as_float(&self) -> lopdf::Result<f64>;
+    /// Unlike as_f32() this will also cast an Integer to a Real.
+    fn as_float(&self) -> lopdf::Result<f32>;
 }
 
 impl ObjExt for lopdf::Object {
-    fn as_float(&self) -> lopdf::Result<f64> {
+    fn as_float(&self) -> lopdf::Result<f32> {
         match *self {
-            lopdf::Object::Integer(ref value) => Ok(*value as f64),
+            lopdf::Object::Integer(ref value) => Ok(*value as f32),
             lopdf::Object::Real(ref value) => Ok(*value),
             _ => Err(lopdf::Error::Type),
         }
