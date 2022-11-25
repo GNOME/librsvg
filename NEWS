@@ -1,10 +1,55 @@
-Version 2.55.1
-==============
+Version 2.55.90
+===============
 
-- #878 - rsvg-convert now supports shell completion for bash, elvish,
-  fish, powershell, and zsh.  Please run "rsvg-convert --completion
-  bash" to generate the completion file.  You can use the other
-  shells' names as an argument to the --completion option. (Marcos Simental)
+The minimum supported Rust version (MSRV) is 1.63.
+
+- #878 - rsvg-convert now supports Tab completion for bash, elvish,
+  fish, powershell, and zsh.  Please run "rsvg-convert --completion bash"
+  to generate the completion file.  You can use the other shells' names
+  as an argument to the --completion option. (Marcos Simental)
+
+- #885 - Support vector-effect="non-scaling-stroke" for paths (Michael Howell).
+
+- #875 - Apply width, height when `<use>`ing an `<svg>` (Michael Howell).
+
+- There is a new development guide for librsvg, for people who want to
+  help in its development.  I hope this will be especially useful to
+  Outreachy and Summer of Code interns:
+  https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
+
+- #92 - In the use element, honor the overflow:hidden property of a
+  referenced symbol.
+
+- #737 - Treat property and attribute parse errors / invalid values as
+  if they were not present, per the specs.  Previously this would
+  cause the offending element's subtree to not be rendered.
+
+- #913 - Make feGaussianBlur work as a pass-through filter if the stdDeviation is invalid.
+
+- Define missing crate metadata for Cargo.toml (Guillaume Desmottes).
+
+- Add some tests that were missing for the C API.
+
+- Fix the basic test suite in Windows.
+
+- Miscellaneous fixes for the build and CI (Jürg Billeter).
+
+- Plenty of internal refactoring to enable more consistent logging.
+
+- Slight reductions in memory consumption for elements with
+  context-stroke and context-fill.
+
+- Experimental gdk-pixbuf loader in Rust (Alberto Ruiz).  This is not
+  installed yet.
+
+- Update the gtk-rs crates to 0.16.0 (Bilal Elmoussaoui).
+
+- Port rsvg-convert's argument parsing to the clap4 crate (Lukáš Tyrychtr).
+
+- Updates to the dependencies (Kalev Lember, Christoph Reiter, Jordan Petridis).
+
+- The CI now has a cargo-deny step, which should help us notice when
+  there are security advisories for dependencies (Neetu Mehta).
 
 Version 2.55.0-alpha
 ====================
