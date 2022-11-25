@@ -346,6 +346,7 @@ which properties are not available as presentation attributes.
 | text-rendering              |                                                        |
 | transform                   | SVG2; different syntax from the `transform` attribute. |
 | unicode-bidi                |                                                        |
+| vector-effect               | Only `non-scaling-stroke` is supported for paths.      |
 | visibility                  |                                                        |
 | writing-mode                |                                                        |
 
