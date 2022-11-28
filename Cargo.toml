@@ -90,7 +90,7 @@ assert_cmd = "2.0.2"
 cairo-rs = { version = "0.16", features = ["png"] }
 cast = "0.3.0"
 chrono = "0.4.0"
-criterion = "0.3"
+criterion = "0.4"
 glib = "0.16"
 libc = "0.2"
 lopdf = "0.29.0"
