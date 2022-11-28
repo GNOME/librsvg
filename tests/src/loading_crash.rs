@@ -16,14 +16,13 @@ fn loading_crash(filename: &str) {
     let _ = Loader::new().read_path(&full_filename);
 }
 
-
 macro_rules! t {
     ($test_name:ident, $filename:expr) => {
         #[test]
         fn $test_name() {
             loading_crash($filename);
         }
-    }
+    };
 }
 
 #[rustfmt::skip]

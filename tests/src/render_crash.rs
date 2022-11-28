@@ -31,7 +31,7 @@ macro_rules! t {
         fn $test_name() {
             render_crash($filename);
         }
-    }
+    };
 }
 
 #[rustfmt::skip]

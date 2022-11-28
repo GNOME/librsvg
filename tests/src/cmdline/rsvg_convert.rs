@@ -913,8 +913,9 @@ fn export_id_with_zero_stroke_width() {
         .assert()
         .success()
         .stdout(
-            file::is_png()
-                .with_contents("tests/fixtures/cmdline/bug601-zero-stroke-width-render-only-foo.png"),
+            file::is_png().with_contents(
+                "tests/fixtures/cmdline/bug601-zero-stroke-width-render-only-foo.png",
+            ),
         );
 }
 
