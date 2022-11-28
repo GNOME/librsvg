@@ -820,7 +820,7 @@ fn missing_page_size_yields_error() {
 
 #[test]
 fn does_not_clip_partial_coverage_pixels() {
-    RsvgConvert::new_with_input("tests/fixtures/cmdline/677-partial-pixel.svg")
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/bug677-partial-pixel.svg")
         .assert()
         .success()
         .stdout(file::is_png().with_size(2, 2));
@@ -908,13 +908,13 @@ fn export_id_with_zero_stroke_width() {
     // spanned the origin to the actual visible bounds of the rendered object.
     //
     // We can probably test this more cleanly once we have a render tree.
-    RsvgConvert::new_with_input("tests/fixtures/cmdline/601-zero-stroke-width.svg")
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/bug601-zero-stroke-width.svg")
         .arg("--export-id=foo")
         .assert()
         .success()
         .stdout(
             file::is_png()
-                .with_contents("tests/fixtures/cmdline/601-zero-stroke-width-render-only-foo.png"),
+                .with_contents("tests/fixtures/cmdline/bug601-zero-stroke-width-render-only-foo.png"),
         );
 }
 
