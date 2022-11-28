@@ -32,8 +32,8 @@ test_compare_render_output!(
 
 test_svg_reference!(
     text_anchor_chunk_806,
-    "tests/fixtures/text/806-text-anchor-chunk.svg",
-    "tests/fixtures/text/806-text-anchor-chunk-ref.svg"
+    "tests/fixtures/text/bug806-text-anchor-chunk.svg",
+    "tests/fixtures/text/bug806-text-anchor-chunk-ref.svg"
 );
 
 test_svg_reference!(
@@ -47,8 +47,8 @@ test_svg_reference!(
 //
 // test_svg_reference!(
 //     tspan_direction_change_804,
-//     "tests/fixtures/text/804-tspan-direction-change.svg",
-//     "tests/fixtures/text/804-tspan-direction-change-ref.svg"
+//     "tests/fixtures/text/bug804-tspan-direction-change.svg",
+//     "tests/fixtures/text/bug804-tspan-direction-change-ref.svg"
 // );
 
 test_svg_reference!(
