@@ -995,7 +995,7 @@ fn keep_aspect_ratio_short_option() {
 
 #[test]
 fn overflowing_size_is_detected() {
-    RsvgConvert::new_with_input("tests/fixtures/render-crash/591-vbox-overflow.svg")
+    RsvgConvert::new_with_input("tests/fixtures/render-crash/bug591-vbox-overflow.svg")
         .assert()
         .failure()
         .stderr(starts_with(
