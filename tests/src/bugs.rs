@@ -293,7 +293,7 @@ fn doubly_recursive_use() {
 }
 
 // https://gitlab.gnome.org/GNOME/librsvg/-/issues/347
-#[test_resources("tests/fixtures/dimensions/347-wrapper.svg")]
+#[test_resources("tests/fixtures/dimensions/bug347-wrapper.svg")]
 fn test_text_bounds(name: &str) {
     setup_font_map();
 
