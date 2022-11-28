@@ -1,6 +1,3 @@
-#![cfg(test)]
-use test_generator::test_resources;
-
 use cairo;
 use librsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 use matches::matches;
@@ -293,12 +290,12 @@ fn doubly_recursive_use() {
 }
 
 // https://gitlab.gnome.org/GNOME/librsvg/-/issues/347
-#[test_resources("tests/fixtures/dimensions/bug347-wrapper.svg")]
-fn test_text_bounds(name: &str) {
+#[test]
+fn test_text_bounds() {
     setup_font_map();
 
     let handle = Loader::new()
-        .read_path(name)
+        .read_path("tests/fixtures/dimensions/bug347-wrapper.svg")
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
     let renderer = CairoRenderer::new(&handle).test_mode(true);
