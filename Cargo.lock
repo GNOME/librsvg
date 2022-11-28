@@ -403,7 +403,7 @@ dependencies = [
  "dtoa-short",
  "itoa 0.4.8",
  "matches",
- "phf",
+ "phf 0.8.0",
  "proc-macro2",
  "quote",
  "smallvec",
@@ -990,9 +990,9 @@ dependencies = [
 
 [[package]]
 name = "is-terminal"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aae5bc6e2eb41c9def29a3e0f1306382807764b9b53112030eff57435667352d"
+checksum = "927609f78c2913a6f6ac3c27a4fe87f43e2a35367c0c4b0f8265e8f49a104330"
 dependencies = [
  "hermit-abi 0.2.6",
  "io-lifetimes",
@@ -1196,13 +1196,13 @@ dependencies = [
 
 [[package]]
 name = "markup5ever"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a24f40fb03852d1cdd84330cddcaf98e9ec08a7b7768e952fad3b4cf048ec8fd"
+checksum = "7a2629bb1404f3d34c2e921f21fd34ba00b206124c81f65c50b43b6aaefeb016"
 dependencies = [
  "log",
- "phf",
- "phf_codegen",
+ "phf 0.10.1",
+ "phf_codegen 0.10.0",
  "string_cache",
  "string_cache_codegen",
  "tendril",
@@ -1488,6 +1488,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "phf"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fabbf1ead8a5bcbc20f5f8b939ee3f5b0f6f281b6ad3468b84656b658b455259"
+dependencies = [
+ "phf_shared 0.10.0",
+]
+
+[[package]]
 name = "phf_codegen"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1495,6 +1504,16 @@ checksum = "cbffee61585b0411840d3ece935cce9cb6321f01c45477d30066498cd5e1a815"
 dependencies = [
  "phf_generator 0.8.0",
  "phf_shared 0.8.0",
+]
+
+[[package]]
+name = "phf_codegen"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fb1c3a8bc4dd4e5cfce29b44ffc14bedd2ee294559a294e2a4d4c9e9a6a13cd"
+dependencies = [
+ "phf_generator 0.10.0",
+ "phf_shared 0.10.0",
 ]
 
 [[package]]
@@ -1941,9 +1960,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.36.3"
+version = "0.36.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b1fbb4dfc4eb1d390c02df47760bb19a84bb80b301ecc947ab5406394d8223e"
+checksum = "cb93e85278e08bb5788653183213d3a60fc242b10cb9be96586f5a73dcb67c23"
 dependencies = [
  "bitflags",
  "errno",
@@ -2012,8 +2031,8 @@ dependencies = [
  "derive_more",
  "fxhash",
  "log",
- "phf",
- "phf_codegen",
+ "phf 0.8.0",
+ "phf_codegen 0.8.0",
  "precomputed-hash",
  "servo_arc",
  "smallvec",
@@ -2682,14 +2701,13 @@ checksum = "f40009d85759725a34da6d89a94e63d7bdc50a862acf0dbc7c8e488f1edcb6f5"
 
 [[package]]
 name = "xml5ever"
-version = "0.16.2"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9234163818fd8e2418fcde330655e757900d4236acd8cc70fef345ef91f6d865"
+checksum = "4034e1d05af98b51ad7214527730626f019682d797ba38b51689212118d8e650"
 dependencies = [
  "log",
  "mac",
  "markup5ever",
- "time 0.1.45",
 ]
 
 [[package]]
