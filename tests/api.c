@@ -882,7 +882,7 @@ can_draw_to_non_image_surface (void)
 static void
 render_cairo_sub (void)
 {
-    RsvgHandle *handle = load_test_document ("334-element-positions.svg");
+    RsvgHandle *handle = load_test_document ("bug334-element-positions.svg");
 
     cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 200, 200);
     cairo_t *cr = cairo_create (surf);
