@@ -1,7 +1,6 @@
 use cairo;
 use float_cmp::approx_eq;
 use librsvg::{CairoRenderer, Loader};
-use test_generator::test_resources;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{load_svg, render_document, setup_font_map, SurfaceSize};
@@ -33,8 +32,8 @@ test_compare_render_output!(
 
 test_svg_reference!(
     text_anchor_chunk_806,
-    "tests/fixtures/text/806-text-anchor-chunk.svg",
-    "tests/fixtures/text/806-text-anchor-chunk-ref.svg"
+    "tests/fixtures/text/bug806-text-anchor-chunk.svg",
+    "tests/fixtures/text/bug806-text-anchor-chunk-ref.svg"
 );
 
 test_svg_reference!(
@@ -48,8 +47,8 @@ test_svg_reference!(
 //
 // test_svg_reference!(
 //     tspan_direction_change_804,
-//     "tests/fixtures/text/804-tspan-direction-change.svg",
-//     "tests/fixtures/text/804-tspan-direction-change-ref.svg"
+//     "tests/fixtures/text/bug804-tspan-direction-change.svg",
+//     "tests/fixtures/text/bug804-tspan-direction-change-ref.svg"
 // );
 
 test_svg_reference!(
@@ -96,12 +95,12 @@ fn rectangle_approx_eq(a: &cairo::Rectangle, b: &cairo::Rectangle) -> bool {
 }
 
 // Test that the computed geometry of text layers is as expected.
-#[test_resources("tests/fixtures/text/bounds.svg")]
-fn text_layer_geometry(name: &str) {
+#[test]
+fn test_text_layer_geometry() {
     setup_font_map();
 
     let handle = Loader::new()
-        .read_path(name)
+        .read_path("tests/fixtures/text/bounds.svg")
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
     let renderer = CairoRenderer::new(&handle).test_mode(true);

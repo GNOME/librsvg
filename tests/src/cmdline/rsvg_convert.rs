@@ -69,7 +69,7 @@ impl RsvgConvert {
 
 #[test]
 fn converts_svg_from_stdin_to_png() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .assert()
         .success()
         .stdout(file::is_png());
@@ -77,7 +77,7 @@ fn converts_svg_from_stdin_to_png() {
 
 #[test]
 fn argument_is_input_filename() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let input = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     RsvgConvert::new()
         .arg(input)
         .assert()
@@ -87,7 +87,7 @@ fn argument_is_input_filename() {
 
 #[test]
 fn argument_is_url() {
-    let path = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg")
+    let path = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .canonicalize()
         .unwrap();
     let url = Url::from_file_path(path).unwrap();
@@ -103,7 +103,7 @@ fn argument_is_url() {
 
 #[test]
 fn output_format_png() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--format=png")
         .assert()
         .success()
@@ -113,7 +113,7 @@ fn output_format_png() {
 #[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn output_format_ps() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--format=ps")
         .assert()
         .success()
@@ -123,7 +123,7 @@ fn output_format_ps() {
 #[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn output_format_eps() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--format=eps")
         .assert()
         .success()
@@ -133,7 +133,7 @@ fn output_format_eps() {
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn output_format_pdf() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--format=pdf")
         .assert()
         .success()
@@ -143,7 +143,7 @@ fn output_format_pdf() {
 #[cfg(system_deps_have_cairo_svg)]
 #[test]
 fn output_format_svg_short_option() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("-f")
         .arg("svg")
         .assert()
@@ -154,7 +154,7 @@ fn output_format_svg_short_option() {
 #[cfg(system_deps_have_cairo_svg)]
 #[test]
 fn user_specified_width_and_height() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--format")
         .arg("svg")
         .arg("--width")
@@ -172,7 +172,7 @@ fn user_specified_width_and_height() {
 #[cfg(system_deps_have_cairo_svg)]
 #[test]
 fn user_specified_width_and_height_px_output() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--format")
         .arg("svg")
         .arg("--width")
@@ -190,7 +190,7 @@ fn user_specified_width_and_height_px_output() {
 #[cfg(system_deps_have_cairo_svg)]
 #[test]
 fn user_specified_width_and_height_a4() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--format")
         .arg("svg")
         .arg("--page-width")
@@ -221,7 +221,7 @@ fn output_file_option() {
     };
     assert!(predicates::path::is_file().not().eval(&output));
 
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg(format!("--output={}", output.display()))
         .assert()
         .success()
@@ -239,7 +239,7 @@ fn output_file_short_option() {
     };
     assert!(predicates::path::is_file().not().eval(&output));
 
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("-o")
         .arg(format!("{}", output.display()))
         .assert()
@@ -259,7 +259,7 @@ fn overwrites_existing_output_file() {
     assert!(predicates::path::is_file().not().eval(&output));
 
     for _ in 0..2 {
-        RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+        RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
             .arg(format!("--output={}", output.display()))
             .assert()
             .success()
@@ -291,7 +291,7 @@ fn empty_svg_yields_error() {
 
 #[test]
 fn multiple_input_files_not_allowed_for_png_output() {
-    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let one = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
     RsvgConvert::new()
         .arg(one)
@@ -306,7 +306,7 @@ fn multiple_input_files_not_allowed_for_png_output() {
 #[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn multiple_input_files_accepted_for_eps_output() {
-    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let one = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
     RsvgConvert::new()
         .arg("--format=eps")
@@ -320,7 +320,7 @@ fn multiple_input_files_accepted_for_eps_output() {
 #[cfg(system_deps_have_cairo_ps)]
 #[test]
 fn multiple_input_files_accepted_for_ps_output() {
-    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let one = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
     RsvgConvert::new()
         .arg("--format=ps")
@@ -334,7 +334,7 @@ fn multiple_input_files_accepted_for_ps_output() {
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn multiple_input_files_create_multi_page_pdf_output() {
-    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let one = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
     let three = Path::new("tests/fixtures/api/example.svg");
     RsvgConvert::new()
@@ -356,7 +356,7 @@ fn multiple_input_files_create_multi_page_pdf_output() {
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn multiple_input_files_create_multi_page_pdf_output_fixed_size() {
-    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let one = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
     let three = Path::new("tests/fixtures/api/example.svg");
     RsvgConvert::new()
@@ -430,7 +430,7 @@ fn pdf_has_text() {
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn env_source_data_epoch_controls_pdf_creation_date() {
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let input = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     let date = 1581411039; // seconds since epoch
     RsvgConvert::new()
         .env("SOURCE_DATE_EPOCH", format!("{}", date))
@@ -445,7 +445,7 @@ fn env_source_data_epoch_controls_pdf_creation_date() {
 #[test]
 fn env_source_data_epoch_no_digits() {
     // intentionally not testing for the full error string here
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let input = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     RsvgConvert::new()
         .env("SOURCE_DATE_EPOCH", "foobar")
         .arg("--format=pdf")
@@ -459,7 +459,7 @@ fn env_source_data_epoch_no_digits() {
 #[test]
 fn env_source_data_epoch_trailing_garbage() {
     // intentionally not testing for the full error string here
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let input = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     RsvgConvert::new()
         .arg("--format=pdf")
         .env("SOURCE_DATE_EPOCH", "1234556+")
@@ -473,7 +473,7 @@ fn env_source_data_epoch_trailing_garbage() {
 #[test]
 fn env_source_data_epoch_empty() {
     // intentionally not testing for the full error string here
-    let input = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let input = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     RsvgConvert::new()
         .arg("--format=pdf")
         .env("SOURCE_DATE_EPOCH", "")
@@ -485,7 +485,7 @@ fn env_source_data_epoch_empty() {
 
 #[test]
 fn width_option() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--width=300")
         .assert()
         .success()
@@ -494,7 +494,7 @@ fn width_option() {
 
 #[test]
 fn height_option() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--height=200")
         .assert()
         .success()
@@ -503,7 +503,7 @@ fn height_option() {
 
 #[test]
 fn width_and_height_options() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--width=300")
         .arg("--height=200")
         .assert()
@@ -513,7 +513,7 @@ fn width_and_height_options() {
 
 #[test]
 fn unsupported_unit_in_width_and_height() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--height=200ex")
         .assert()
         .failure()
@@ -522,7 +522,7 @@ fn unsupported_unit_in_width_and_height() {
 
 #[test]
 fn invalid_length() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--page-width=foo")
         .assert()
         .failure()
@@ -531,7 +531,7 @@ fn invalid_length() {
 
 #[test]
 fn zoom_factor() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--zoom=0.8")
         .assert()
         .success()
@@ -540,7 +540,7 @@ fn zoom_factor() {
 
 #[test]
 fn zoom_factor_and_larger_size() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--width=400")
         .arg("--height=200")
         .arg("--zoom=1.5")
@@ -551,7 +551,7 @@ fn zoom_factor_and_larger_size() {
 
 #[test]
 fn zoom_factor_and_smaller_size() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--width=400")
         .arg("--height=200")
         .arg("--zoom=3.5")
@@ -562,7 +562,7 @@ fn zoom_factor_and_smaller_size() {
 
 #[test]
 fn x_zoom_option() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--x-zoom=2")
         .assert()
         .success()
@@ -571,7 +571,7 @@ fn x_zoom_option() {
 
 #[test]
 fn x_short_option() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("-x")
         .arg("2.0")
         .assert()
@@ -581,7 +581,7 @@ fn x_short_option() {
 
 #[test]
 fn y_zoom_option() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--y-zoom=2.0")
         .assert()
         .success()
@@ -590,7 +590,7 @@ fn y_zoom_option() {
 
 #[test]
 fn y_short_option() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("-y")
         .arg("2")
         .assert()
@@ -600,7 +600,7 @@ fn y_short_option() {
 
 #[test]
 fn huge_zoom_factor_yields_error() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--zoom=1000")
         .assert()
         .failure()
@@ -611,7 +611,7 @@ fn huge_zoom_factor_yields_error() {
 
 #[test]
 fn negative_zoom_factor_yields_error() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--zoom=-2")
         .assert()
         .failure()
@@ -620,7 +620,7 @@ fn negative_zoom_factor_yields_error() {
 
 #[test]
 fn invalid_zoom_factor_yields_error() {
-    RsvgConvert::new_with_input("tests/fixtures/dimensions/521-with-viewbox.svg")
+    RsvgConvert::new_with_input("tests/fixtures/dimensions/bug521-with-viewbox.svg")
         .arg("--zoom=foo")
         .assert()
         .failure()
@@ -779,7 +779,7 @@ fn pdf_page_size() {
 #[cfg(system_deps_have_cairo_pdf)]
 #[test]
 fn multiple_input_files_create_multi_page_pdf_size_override() {
-    let one = Path::new("tests/fixtures/dimensions/521-with-viewbox.svg");
+    let one = Path::new("tests/fixtures/dimensions/bug521-with-viewbox.svg");
     let two = Path::new("tests/fixtures/dimensions/sub-rect-no-unit.svg");
     let three = Path::new("tests/fixtures/api/example.svg");
     RsvgConvert::new()
@@ -820,7 +820,7 @@ fn missing_page_size_yields_error() {
 
 #[test]
 fn does_not_clip_partial_coverage_pixels() {
-    RsvgConvert::new_with_input("tests/fixtures/cmdline/677-partial-pixel.svg")
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/bug677-partial-pixel.svg")
         .assert()
         .success()
         .stdout(file::is_png().with_size(2, 2));
@@ -908,13 +908,14 @@ fn export_id_with_zero_stroke_width() {
     // spanned the origin to the actual visible bounds of the rendered object.
     //
     // We can probably test this more cleanly once we have a render tree.
-    RsvgConvert::new_with_input("tests/fixtures/cmdline/601-zero-stroke-width.svg")
+    RsvgConvert::new_with_input("tests/fixtures/cmdline/bug601-zero-stroke-width.svg")
         .arg("--export-id=foo")
         .assert()
         .success()
         .stdout(
-            file::is_png()
-                .with_contents("tests/fixtures/cmdline/601-zero-stroke-width-render-only-foo.png"),
+            file::is_png().with_contents(
+                "tests/fixtures/cmdline/bug601-zero-stroke-width-render-only-foo.png",
+            ),
         );
 }
 
@@ -995,7 +996,7 @@ fn keep_aspect_ratio_short_option() {
 
 #[test]
 fn overflowing_size_is_detected() {
-    RsvgConvert::new_with_input("tests/fixtures/render-crash/591-vbox-overflow.svg")
+    RsvgConvert::new_with_input("tests/fixtures/render-crash/bug591-vbox-overflow.svg")
         .assert()
         .failure()
         .stderr(starts_with(

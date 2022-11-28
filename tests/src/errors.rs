@@ -16,7 +16,7 @@ use librsvg::{CairoRenderer, ImplementationLimit, Loader, LoadingError, Renderin
 #[ignore]
 #[test]
 fn too_many_elements() {
-    let name = "tests/fixtures/errors/515-too-many-elements.svgz";
+    let name = "tests/fixtures/errors/bug515-too-many-elements.svgz";
 
     assert!(matches!(
         Loader::new().read_path(name),
@@ -49,11 +49,11 @@ fn rendering_instancing_limit(name: &str) {
 #[ignore]
 #[test]
 fn instancing_limit1() {
-    rendering_instancing_limit("tests/fixtures/errors/323-nested-use.svg");
+    rendering_instancing_limit("tests/fixtures/errors/bug323-nested-use.svg");
 }
 
 #[ignore]
 #[test]
 fn instancing_limit2() {
-    rendering_instancing_limit("tests/fixtures/errors/515-pattern-billion-laughs.svg");
+    rendering_instancing_limit("tests/fixtures/errors/bug515-pattern-billion-laughs.svg");
 }

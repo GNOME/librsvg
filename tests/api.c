@@ -882,7 +882,7 @@ can_draw_to_non_image_surface (void)
 static void
 render_cairo_sub (void)
 {
-    RsvgHandle *handle = load_test_document ("334-element-positions.svg");
+    RsvgHandle *handle = load_test_document ("bug334-element-positions.svg");
 
     cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 200, 200);
     cairo_t *cr = cairo_create (surf);
@@ -1534,14 +1534,14 @@ static DimensionsFixtureData dimensions_fixtures[] =
     },
     {
         "/dimensions/with_viewbox",
-        "dimensions/521-with-viewbox.svg",
+        "dimensions/bug521-with-viewbox.svg",
         "#foo",
         50.0, 60.0, 70.0, 80.0,
         TRUE, TRUE
     },
     {
         "/dimensions/sub/823",
-        "dimensions/823-position-sub.svg",
+        "dimensions/bug823-position-sub.svg",
         "#pad_width",
         444.0, 139.0, 0.0, 0.0,
         TRUE, FALSE
