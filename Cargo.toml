@@ -57,7 +57,7 @@ cast = "0.3.0"
 chrono = "0.4.0" # rsvg-convert
 clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
 clap_complete = "4.0.5" # rsvg-convert
-cssparser = "0.28.0"
+cssparser = "0.29.6"
 data-url = "0.1"
 encoding = "0.2.33"
 float-cmp = "0.9.0"
