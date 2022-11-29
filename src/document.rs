@@ -566,7 +566,7 @@ impl DocumentBuilder {
                 .or_insert_with(|| node.clone());
         }
 
-        if let Some(mut parent) = parent {
+        if let Some(parent) = parent {
             parent.append(node.clone());
         } else if self.tree.is_none() {
             self.tree = Some(node.clone());
