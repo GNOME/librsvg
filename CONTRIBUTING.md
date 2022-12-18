@@ -289,7 +289,7 @@ interesting options to generate plots and such.  You can see the
 [bugs-browse]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [maintainer]: README.md#maintainers
 [tests-readme]: tests/README.md
-[blog]: https://people.gnome.org/~federico/blog/librsvg-build-infrastructure.html
+[blog]: https://viruta.org/librsvgs-build-infrastructure-autotools-and-rust.html
 [toplevel-makefile]: Makefile.am
 [tests-readme]: tests/README.md
 [rsvg-bench]: https://gitlab.gnome.org/federico/rsvg-bench
