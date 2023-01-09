@@ -5,6 +5,8 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
+use float_cmp::approx_eq;
+
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -53,6 +55,16 @@ pub struct StackingContext {
 
     /// Target from an <a> element
     pub link_target: Option<String>,
+}
+
+/// The item being rendered inside a stacking context.
+pub struct Layer {
+    pub kind: LayerKind,
+    pub stacking_ctx: StackingContext,
+}
+pub enum LayerKind {
+    Shape(Box<Shape>),
+    Text(Box<Text>),
 }
 
 /// Stroke parameters in user-space coordinates.
@@ -240,6 +252,21 @@ impl StackingContext {
         let mut ctx = Self::new(session, acquired_nodes, element, transform, values);
         ctx.link_target = link_target;
         ctx
+    }
+
+    pub fn should_isolate(&self) -> bool {
+        let Opacity(UnitInterval(opacity)) = self.opacity;
+        match self.isolation {
+            Isolation::Auto => {
+                let is_opaque = approx_eq!(f64, opacity, 1.0);
+                !(is_opaque
+                    && self.filter == Filter::None
+                    && self.mask.is_none()
+                    && self.mix_blend_mode == MixBlendMode::Normal
+                    && self.clip_in_object_space.is_none())
+            }
+            Isolation::Isolate => true,
+        }
     }
 }
 

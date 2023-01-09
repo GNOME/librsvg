@@ -26,7 +26,7 @@ use crate::filter::FilterValueList;
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{Image, Shape, StackingContext, Stroke, Text, TextSpan};
+use crate::layout::{Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -34,8 +34,8 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, Filter, Isolation, MaskType, MixBlendMode, Opacity,
-    Overflow, PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, ComputedValues, FillRule, Filter, MaskType, MixBlendMode, Opacity, Overflow,
+    PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
@@ -358,11 +358,15 @@ impl DrawingCtx {
         *self.initial_viewport.vbox
     }
 
+    pub fn toplevel_transform(&self) -> Transform {
+        self.initial_viewport.transform.clone()
+    }
+
     pub fn is_measuring(&self) -> bool {
         self.measuring
     }
 
-    fn get_transform(&self) -> ValidTransform {
+    pub fn get_transform(&self) -> ValidTransform {
         let t = Transform::from(self.cr.matrix());
         ValidTransform::try_from(t)
             .expect("Cairo should already have checked that its current transform is valid")
@@ -731,17 +735,7 @@ impl DrawingCtx {
                     &self.empty_bbox(),
                 )?;
 
-                let should_isolate = match stacking_ctx.isolation {
-                    Isolation::Auto => {
-                        let is_opaque = approx_eq!(f64, opacity, 1.0);
-                        !(is_opaque
-                            && stacking_ctx.filter == Filter::None
-                            && stacking_ctx.mask.is_none()
-                            && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
-                            && stacking_ctx.clip_in_object_space.is_none())
-                    }
-                    Isolation::Isolate => true,
-                };
+                let should_isolate = stacking_ctx.should_isolate();
 
                 let res = if should_isolate {
                     // Compute our assortment of affines
@@ -1278,6 +1272,27 @@ impl DrawingCtx {
         Ok(Some(Rect::new(x0, y0, x1, y1)))
     }
 
+    pub fn draw_layer(
+        &mut self,
+        layer: &Layer,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        values: &ComputedValues,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        match &layer.kind {
+            LayerKind::Shape(shape) => self.draw_shape(
+                &shape,
+                &layer.stacking_ctx,
+                acquired_nodes,
+                values,
+                clipping,
+            ),
+            LayerKind::Text(text) => {
+                self.draw_text(&text, &layer.stacking_ctx, acquired_nodes, values, clipping)
+            }
+        }
+    }
+
     pub fn draw_shape(
         &mut self,
         shape: &Shape,
@@ -1545,17 +1560,28 @@ impl DrawingCtx {
     pub fn draw_text(
         &mut self,
         text: &Text,
+        stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let mut bbox = self.empty_bbox();
+        self.with_discrete_layer(
+            stacking_ctx,
+            acquired_nodes,
+            values,
+            clipping,
+            None,
+            &mut |an, dc, _transform| {
+                let mut bbox = dc.empty_bbox();
 
-        for span in &text.spans {
-            let span_bbox = self.draw_text_span(span, acquired_nodes, clipping)?;
-            bbox.insert(&span_bbox);
-        }
+                for span in &text.spans {
+                    let span_bbox = dc.draw_text_span(span, an, clipping)?;
+                    bbox.insert(&span_bbox);
+                }
 
-        Ok(bbox)
+                Ok(bbox)
+            },
+        )
     }
 
     pub fn get_snapshot(
