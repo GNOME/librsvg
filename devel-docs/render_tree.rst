@@ -223,13 +223,14 @@ SVG depends on the ``objectBoundingBox`` of an element in many places:
 to resolve a gradient's or pattern's units, to determine the size of
 masks and clips, to determine the size of the filter region.
 
-The current big bug to solve is #778, which requires knowing the
-``objectBoundingBox`` of an element **before** rendering it, so that a
-temporary surface of the appropriate size can be created for rendering
-the element if it has isolated opacity or masks/filters.  Currently
-librsvg creates a temporary surface with the size and position of the
-toplevel viewport, and this is wrong for shapes that fall outside the
-viewport.
+The current big bug to solve is `#778
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/>`_, which requires
+knowing the ``objectBoundingBox`` of an element **before** rendering
+it, so that a temporary surface of the appropriate size can be created
+for rendering the element if it has isolated opacity or masks/filters.
+Currently librsvg creates a temporary surface with the size and
+position of the toplevel viewport, and this is wrong for shapes that
+fall outside the viewport.
 
 The problem is that librsvg computes bounding boxes at the time of
 rendering, not before that.  However, now ``layout::Shape`` and
@@ -239,3 +240,16 @@ that primitive ends up being called (by taking the union of its
 children's bounding boxes, so e.g. that a group with a filter can
 create a temporary surface to be able to render all of its children
 and then filter the surface).
+
+Being able to compute the ``objectBoundingBox`` of an element before
+rendering it would open the door to fixing bug `#1
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_ (yeah, really):
+currently, the temporary surface used for filtering has the size of
+the toplevel viewport, but this doesn't work well when one tries to
+Gaussian-blur an element that lies partially outside that viewport.
+The filter should apply to the element's extents plus the filter
+region, which takes into account the extra space needed for a Gaussian
+blur to work around a shape.  Since librsvg cannot render the full
+shape if it lies partially outside of the toplevel viewport, the
+blurred result shows up with a halo near the image's edge, since
+transparent pixels get "blurred in" with the shape's pixels.
