@@ -125,14 +125,23 @@ That is where much of the complexity of librsvg's code flow comes from:
 Summary of the SVG rendering model
 ----------------------------------
 
-FIXME:
+In the SVG2 spec, this has been offloaded to the "`Order of graphical
+operations
+<https://www.w3.org/TR/compositing/#compositingandblendingorder>`_"
+section of the Compositing and Blending Level 1 spec.  Once the render
+tree is resolved, each node is painted like this, conceptually to a
+transparent, temporary surface:
 
-paint
-clip
-mask
-filter
-composite
+- Paint the shape/text/etc.
+- Filters.
+- Clip paths.
+- Masks.
+- Blend/composite the temporary surface onto the result.
 
+The most critical function in librsvg is probably
+`DrawingCtx::with_discrete_layer
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/drawing_ctx/struct.DrawingCtx.html#method.with_discrete_layer>`_;
+it implements this drawing model.
 
 Current state
 -------------
@@ -143,7 +152,9 @@ Current state
 
 - A primitive for text.
 
-- A stacking context, which indicates each layer's opacity/clip/mask/filters.
+- A `stacking context
+  <https://www.w3.org/TR/SVG2/render.html#EstablishingStackingContex>`_,
+  which indicates each layer's opacity/clip/mask/filters.
 
 - Various ancillary structures that try to have only user-space
   coordinates (e.g. a number of CSS pixels instead of ``5cm``) and no
@@ -180,7 +191,10 @@ yet).
 
 Elements that establish a viewport (``svg``, ``symbol``, ``image``,
 ``marker``, ``pattern``) need to carry information about this
-viewport, which is a ``viewBox`` plus ``preserveAspectRatio``.  See #298.
+viewport, which is a ``viewBox`` plus ``preserveAspectRatio``.  See
+`#298 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/298>`_ for a
+somewhat obsolete description of the refactoring work needed to unify
+this logic.
 
 The ``layout::StackingContext`` struct should contain another field,
 probably called ``layer``, with something like this:
