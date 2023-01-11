@@ -19,7 +19,7 @@
 -->
 ## Librsvg Version
 <!--
-  run `rsvg-convert` -v in your terminal to see the current version  
+  run `rsvg-convert -v` in your terminal to see the current version  
 -->
 ## Platform
 <!--
