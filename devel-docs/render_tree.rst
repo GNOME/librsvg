@@ -171,7 +171,7 @@ would be rendered for them.  However...
 
 There is no primitive for groups yet.  Every SVG element that allows
 renderable children must produce a group primitive of some sort:
-``svg``, ``g``, ``use``, ``marker``, etc.  Among those, ``use` and
+``svg``, ``g``, ``use``, ``marker``, etc.  Among those, ``use`` and
 ``marker`` are especially interesting since they must explode their
 referenced subtree into a shadow DOM, which librsvg doesn't support
 yet for CSS cascading purposes (the reference subtree gets rendered
