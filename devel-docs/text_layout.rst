@@ -139,6 +139,55 @@ A common theme over the next subsections is, "we need a single
 ``pango::Layout`` per ``<text>`` element".  Keep that in mind as the
 main goal of initial refactoring.
 
+Chunks and spans
+~~~~~~~~~~~~~~~~
+
+Librsvg implements a limited subset the `text layout as per SVG1.1
+<https://www.w3.org/TR/SVG11/text.html>`_, which was feasible to
+implement in terms of *chunks* and *spans*.
+
+A *span* is an ``<tspan>`` element, or some character content inside ``<text>``.
+
+When a ``tspan`` explicitly lists ``x`` or ``y`` attributes, it
+creates a new *chunk*.  A text chunk defines an absolutely-positioned
+sequence of spans.
+
+This is why you'll see that the code does this; start at ``Text::draw``:
+
+- Start with an empty list of chunks (`Text::make_chunks
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/struct.Text.html#method.make_chunks>`_).
+  Push an empty initial chunk defined by the ``x`` and ``y``
+  coordinates of the ``<text>`` element.
+
+- Recursively call `children_to_chunks
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/fn.children_to_chunks.html>`_
+  on the children of the ``<text>`` element, to create chunks and
+  spans for them.
+
+- `TSpan::to_chunks
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/struct.TSpan.html#method.to_chunks>`_
+  sees if the span has ``x`` or ``y`` attributes; if so, it pushes a
+  new empty chunk with those coordinates.  Then it recursively calls
+  ``children_to_chunks`` to grab its character content and children.
+
+- Later, ``Text::draw`` takes the list of chunks and their spans, and
+  converts them into a list of ``MeasuredChunk`.  This process turns
+  each span into a ``MeasuredSpan``.  The key element here is to
+  create a ``pango::Layout`` for each span, and ask it for its size.
+
+- Then, ``Text::draw`` takes the list of ``MeasuredChunk`` and turns
+  them into a list of ``PositionedChunk``.  Each of those builds a
+  list of ``PositionedSpan`` based on the span's own text advance,
+  plus the span's ``dx``/``dy`` attributes.
+
+**Note about SVG2:** The `text layout algorithm for SVG2
+ <https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm>`_ is very
+ different from the above.  It mostly dispenses with explicit
+ computation of chunks with spans, and instead, for each glyph it
+ stores a flag that says whether the glyph is at the beginning of a
+ chunk.
+
+
 Layouts and spans
 ~~~~~~~~~~~~~~~~~
 
@@ -188,8 +237,13 @@ with the whole layout right now.
 gather all the character content inside a ``<text>`` into a single
 string, while keeping track of the offsets of each span.  Make the
 ``pango::AttrList`` taking those offsets into account.  Then, feed
-that single string to a ``pango::Layout``, with the attributes.  Paint
-that layout and be done with it.
+that single string to a ``pango::Layout``, with the attributes.  Due
+to the current code's use of ``Chunk``, ``MeasuredChunk``, etc., it
+may be better to create a ``pango::Layout`` for each chunk, instead of
+the whole ``<text>`` (i.e. one layout for each absolutely-positioned
+sequence of spans).  The SVG2 text layout algorithm will compute
+chunks completely differently, but it will still require per-span
+offsets and cross-span shaping.
 
 **Further work:** Don't just paint the layout, but iterate it / break
 it up into individual ``pango::GlyphString``, so librsvg can lay out
@@ -197,6 +251,7 @@ each individual glyph itself using the SVG2 layout algorithm.
 
 Be careful with PDF output when handling individual glyphs: grep for
 ``can_use_text_as_path`` in ``drawing_ctx.rs``.
+
 
 Bidi handling
 ~~~~~~~~~~~~~
