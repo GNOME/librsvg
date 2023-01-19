@@ -1,12 +1,15 @@
 SVG and CSS features that librsvg supports
 ==========================================
 
-Librsvg tries to be a mostly complete renderer for SVG1.1 and SVG2.
+Librsvg tries to be a mostly complete renderer for `SVG1.1
+<https://www.w3.org/TR/SVG11/>`_ and `SVG2
+<https://www.w3.org/TR/SVG2/>`_.
 
-In terms of processing external references, librsvg is a bit more strict
-than SVG’s “static mode” and a bit more lenient than “secure static
-mode”. See “Security and locations of referenced files” in the reference
-documentation for details.
+In terms of processing external references, librsvg is a bit more
+strict than SVG’s “static mode” and a bit more lenient than “secure
+static mode”. See "`Security and locations of referenced files
+<https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/class.Handle.html#security-and-locations-of-referenced-files>`_"
+in the reference documentation for details.
 
 Animation, interactivity, and scripting are not supported.
 
@@ -785,7 +788,7 @@ FIXME: ``xml:space`` attribute
 Explicitly Unsupported features
 -------------------------------
 
--  ``flowRoot`` element and its children - Inkscape, SVG 1.2 only., #13
+-  ``flowRoot`` element and its children - Inkscape, SVG 1.2 only.
 
 -  ``glyph-orientation-horizontal`` property - SVG1.1 only, removed in
    SVG2
