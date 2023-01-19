@@ -95,3 +95,7 @@ Other artifacts
   <https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html>`_,
   published online.  This is not built from the normal `make` process,
   but independently as part of the :doc:`ci` pipeline.
+
+- The rendered HTML version of this development guide.  This is not
+  built from the normal `make` process, but independently as part of
+  the :doc:`ci` pipeline.

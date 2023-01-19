@@ -2,21 +2,45 @@ Development guide for librsvg
 =============================
 
 .. toctree::
+   :caption: For Distributors and End Users
+   :maxdepth: 1
+
    product
+   features
    roadmap
+   compiling
+   security
+
+.. toctree::
+   :caption: Getting Started as a Contributor
+   :maxdepth: 1
+
    devel_environment
+   contributing
+
+.. toctree::
+   :caption: Understand the Code
+   :maxdepth: 1
+
    architecture
    adding_a_property
    memory_leaks
-   contributing
-   ci
+
+.. toctree::
+   :caption: Design Documents
+   :maxdepth: 1
+
    text_layout
    render_tree
    api_observability
    performance_tracking
-   releasing
+
+.. toctree::
+   :caption: Info for Maintainers
    :maxdepth: 1
-   :caption: Contents:
+
+   releasing
+   Continuous Integration <ci>
 
 Welcome to the developer's guide for librsvg.  This is for people who
 want to work on the development of librsvg itself, not for users of
@@ -34,8 +58,12 @@ icons and other graphical assets on the desktop.  Since then, it has
 evolved into a few different tools.
 
 - :doc:`product` - What comes out of this repository once it is compiled?
+- :doc:`features` - Supported elements, attributes, and properties.
 - :doc:`roadmap` - Ever-changing list of priorities for the
   maintainers; check this often!
+- :doc:`compiling` - Cross compilation, debug/release builds, special options.
+- :doc:`security` - Reporting security bugs, releases with security
+  fixes, security of dependencies.
 
 Getting started
 ---------------
@@ -48,8 +76,6 @@ Add basic info on cloning the repo, getting a gitlab account, forking.
 
 Understand the code
 -------------------
-
-Tour of the code - load a file, render it.
 
 Test suite - move tests/readme here?
 
@@ -80,6 +106,7 @@ Information for maintainers
 ---------------------------
 
 - :doc:`releasing`
+- :doc:`ci`
 
 Overview of the maintainer's workflow.
 

@@ -9,7 +9,9 @@ generate output for printing.
 Do you want to render non-animated SVGs to a Cairo surface with a
 minimal API?  Librsvg may be adequate for you.
 
-**Supported SVG/CSS features:** Please see the [FEATURES.md](FEATURES.md) file.
+**Supported SVG/CSS features:** Please see the chapter for [supported
+features](https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html)
+in the development guide.
 
 ***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.***  We use
 [`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
@@ -47,7 +49,7 @@ may run into some peculiarities due to the Rust internals library if
 you are **cross-compiling** or if you are in a **build system with no
 network access**, or if you are **building binary packages from a
 librsvg tarball**.  In those cases, please refer to the
-[`COMPILING.md`][compiling] file.
+[Detailed compilation instructions][compiling] in the development guide.
 
 **Documentation:** You can read the documentation for librsvg's [C
 API][c-docs] or the [Rust API][rust-docs].  Please [file an
@@ -67,6 +69,11 @@ Introspection][gi].  This way, it is available in many programming
 languages other than C.  Please see your language binding's
 documentation for information on how to load the `Rsvg` namespace.
 
+**Security:** For a list of releases with security issues,
+instructions on reporting security-related bugs, and the security
+considerations for librsvg's dependencies, see the [Security
+chapter][security] in the development guide.
+
 [c-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
 
@@ -75,10 +82,9 @@ documentation for information on how to load the `Rsvg` namespace.
 There is a code of conduct for contributors to librsvg; please see the
 file [`code-of-conduct.md`][coc].
 
-Please see the [Development guide for
-librsvg](https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html)
-on how to contribute to librsvg, how set up your development
-environment, and for a description of librsvg's architecture.
+Please see the [Development guide for librsvg][devel-guide] on how to
+contribute to librsvg, how set up your development environment, and
+for a description of librsvg's architecture.
 
 For information on how to report bugs, or how to contribute to librsvg
 in general, please see the file [`CONTRIBUTING.md`][contributing].
@@ -179,18 +185,19 @@ ways:
 
 * [Mail me][mail] at federico@gnome.org.
 
-* IRC: I am `federico` on `irc.gnome.org` in the `#rust` or
-  `#gnome-hackers` channels.  I'm there most weekdays (Mon-Fri)
-  starting at about UTC 14:00 (that's 08:00 my time; I am in the UTC-6
-  timezone).  If this is not a convenient time for you, feel free to
-  [mail me][mail] and we can arrange a time.
+* Matrix: I am `@federico` on the [GNOME Hackers][gnome-hackers] and
+  [Rust ❤️ GNOME][gnome-rust] channels on gnome.org's Matrix.  I'm
+  there most weekdays (Mon-Fri) starting at about UTC 14:00 (that's
+  08:00 my time; I am in the UTC-6 timezone).  If this is not a
+  convenient time for you, feel free to [mail me][mail] and we can
+  arrange a time.
 
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
 [coc]: code-of-conduct.md
 [autotools]: https://autotools.io/index.html
-[compiling]: COMPILING.md
+[compiling]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/compiling.html
 [mail]: mailto:federico@gnome.org
 [bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
@@ -201,3 +208,7 @@ ways:
 [platform]: https://developer.gnome.org/
 [guadec-presentation-1]: https://viruta.org/docs/fmq-porting-c-to-rust.pdf
 [guadec-presentation-2]: https://viruta.org/docs/fmq-refactoring-c-to-rust.pdf
+[gnome-hackers]: https://matrix.to/#/#gnome-hackers:gnome.org
+[gnome-rust]: https://matrix.to/#/#rust:gnome.org
+[devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
+[security]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html
