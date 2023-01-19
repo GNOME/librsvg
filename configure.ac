@@ -106,7 +106,7 @@ AS_IF(test x$RUSTC = xno,
 )
 
 dnl MSRV - Minimum Supported Rust Version
-dnl If you change this, please update COMPILING.md
+dnl If you change this, please update the "_manual_setup" section of devel-docs/devel_environment.rst
 MINIMUM_RUST_VER=1.63
 rust_version=`$RUSTC --version | sed -e 's/^rustc //g'`
 AX_COMPARE_VERSION([$rust_version],[lt],[$MINIMUM_RUST_VER], [

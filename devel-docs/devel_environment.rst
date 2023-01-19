@@ -13,7 +13,7 @@ System requirements
 
 - Around 10 GB free of hard disk space.
 
-- You can either use `podman`_ to work in a
+- You can either use `podman <https://podman.io/>`_ to work in a
   containerized setup (this chapter will show you how), or you can
   install librsvg's dependencies by hand.
 
@@ -34,9 +34,10 @@ Downloading the source code
 Setting up with podman
 ----------------------
 
-An easy way to set up a development environment is to use `podman`_ to
-download and run a container image.  This is similar to having a
-``chroot`` with all of librsvg's dependencies already set up.
+An easy way to set up a development environment is to use `podman
+<https://podman.io/>`_ to download and run a container image.  This is
+similar to having a ``chroot`` with all of librsvg's dependencies
+already set up.
 
 Install ``podman`` on your distro, and then:
 
@@ -96,7 +97,84 @@ You can now skip to :ref:`build`.
 Setting up dependencies manually
 --------------------------------
 
-FIXME.
+To compile librsvg, you need the following packages installed.  The
+minimum version is listed here; you may use a newer version instead.
+
+**Compilers and build tools:**
+
+* a C compiler and `make` tool; we recommend GNU `make`.
+* rust 1.63 or later
+* cargo
+* autoconf, automake, libtool, itstool
+* vala (optional)
+
+**Mandatory dependencies:**
+
+* Cairo 1.16.0 with PNG support
+* Freetype2 2.8.0
+* Gdk-pixbuf 2.20.0
+* GIO 2.24.0
+* GObject-Introspection 0.10.8
+* gi-docgen
+* python3-docutils
+* Libxml2 2.9.0
+* Pango 1.46.0
+
+The following sections describe how to install these dependencies on
+several systems.
+
+Debian based systems
+~~~~~~~~~~~~~~~~~~~~
+
+As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
+`ubuntu 18.04`, as they have packages that are too old.
+
+**Build dependencies on Debian Testing or Ubuntu 18.10:**
+
+.. code-block:: sh
+
+   apt-get install -y gcc make rustc cargo \
+   automake autoconf libtool gi-docgen python3-docutils git \
+   libgdk-pixbuf2.0-dev libgirepository1.0-dev \
+   libxml2-dev libcairo2-dev libpango1.0-dev
+
+Additionally, as of September 2018 you need to add `gdk-pixbuf`
+utilities to your path, see `#331
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/331>`_ for details:
+
+.. code-block:: sh
+
+   PATH="$PATH:/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0"
+
+Fedora based systems
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sh
+
+   dnf install -y gcc rust rust-std-static cargo make \
+   automake autoconf libtool gi-docgen python3-docutils git redhat-rpm-config \
+   gdk-pixbuf2-devel gobject-introspection-devel \
+   libxml2-devel cairo-devel cairo-gobject-devel pango-devel
+
+openSUSE based systems
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: sh
+
+   zypper install -y gcc rust rust-std cargo make \
+   automake autoconf libtool python3-gi-docgen python38-docutils git \
+   gdk-pixbuf-devel gobject-introspection-devel \
+   libxml2-devel cairo-devel pango-devel
+
+macOS systems
+~~~~~~~~~~~~~
+
+Dependencies may be installed using `Homebrew <https://brew.sh>`_ or another
+package manager.
+
+.. code-block:: sh
+
+   brew install automake gi-docgen pkgconfig libtool gobject-introspection gdk-pixbuf pango
 
 .. _build:
 
