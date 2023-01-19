@@ -72,8 +72,6 @@ Add basic info on cloning the repo, getting a gitlab account, forking.
 Understand the code
 -------------------
 
-Tour of the code - load a file, render it.
-
 Test suite - move tests/readme here?
 
 - `Documentation of the library's internals <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html>`_
