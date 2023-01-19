@@ -8,6 +8,7 @@ Development guide for librsvg
    product
    features
    roadmap
+   compiling
 
 .. toctree::
    :caption: Getting Started as a Contributor
@@ -59,6 +60,7 @@ evolved into a few different tools.
 - :doc:`features` - Supported elements, attributes, and properties.
 - :doc:`roadmap` - Ever-changing list of priorities for the
   maintainers; check this often!
+- :doc:`compiling` - cross compilation, debug/release builds, special options.
 
 Getting started
 ---------------

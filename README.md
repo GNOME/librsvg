@@ -49,7 +49,7 @@ may run into some peculiarities due to the Rust internals library if
 you are **cross-compiling** or if you are in a **build system with no
 network access**, or if you are **building binary packages from a
 librsvg tarball**.  In those cases, please refer to the
-[`COMPILING.md`][compiling] file.
+[Detailed compilation instructions][compiling] in the development guide.
 
 **Documentation:** You can read the documentation for librsvg's [C
 API][c-docs] or the [Rust API][rust-docs].  Please [file an
@@ -77,10 +77,9 @@ documentation for information on how to load the `Rsvg` namespace.
 There is a code of conduct for contributors to librsvg; please see the
 file [`code-of-conduct.md`][coc].
 
-Please see the [Development guide for
-librsvg](https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html)
-on how to contribute to librsvg, how set up your development
-environment, and for a description of librsvg's architecture.
+Please see the [Development guide for librsvg][devel-guide] on how to
+contribute to librsvg, how set up your development environment, and
+for a description of librsvg's architecture.
 
 For information on how to report bugs, or how to contribute to librsvg
 in general, please see the file [`CONTRIBUTING.md`][contributing].
@@ -193,7 +192,7 @@ ways:
 [cairo]: https://www.cairographics.org/
 [coc]: code-of-conduct.md
 [autotools]: https://autotools.io/index.html
-[compiling]: COMPILING.md
+[compiling]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/compiling.html
 [mail]: mailto:federico@gnome.org
 [bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
@@ -206,3 +205,4 @@ ways:
 [guadec-presentation-2]: https://viruta.org/docs/fmq-refactoring-c-to-rust.pdf
 [gnome-hackers]: https://matrix.to/#/#gnome-hackers:gnome.org
 [gnome-rust]: https://matrix.to/#/#rust:gnome.org
+[devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
