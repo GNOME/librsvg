@@ -2,21 +2,42 @@ Development guide for librsvg
 =============================
 
 .. toctree::
+   :caption: For Distributors and end users
+   :maxdepth: 1
+
    product
    roadmap
+
+.. toctree::
+   :caption: Getting started as a Contributor
+   :maxdepth: 1
+
    devel_environment
+   contributing
+
+.. toctree::
+   :caption: Understand the code
+   :maxdepth: 1
+
    architecture
    adding_a_property
    memory_leaks
-   contributing
-   ci
+
+.. toctree::
+   :caption: Design documents
+   :maxdepth: 1
+
    text_layout
    render_tree
    api_observability
    performance_tracking
-   releasing
+
+.. toctree::
+   :caption: Info for Maintainers
    :maxdepth: 1
-   :caption: Contents:
+
+   releasing
+   Continuous Integration <ci>
 
 Welcome to the developer's guide for librsvg.  This is for people who
 want to work on the development of librsvg itself, not for users of
@@ -80,6 +101,7 @@ Information for maintainers
 ---------------------------
 
 - :doc:`releasing`
+- :doc:`ci`
 
 Overview of the maintainer's workflow.
 
