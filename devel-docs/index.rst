@@ -6,6 +6,7 @@ Development guide for librsvg
    :maxdepth: 1
 
    product
+   features
    roadmap
 
 .. toctree::
@@ -55,6 +56,7 @@ icons and other graphical assets on the desktop.  Since then, it has
 evolved into a few different tools.
 
 - :doc:`product` - What comes out of this repository once it is compiled?
+- :doc:`features` - Supported elements, attributes, and properties.
 - :doc:`roadmap` - Ever-changing list of priorities for the
   maintainers; check this often!
 
