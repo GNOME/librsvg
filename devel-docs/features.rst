@@ -726,10 +726,10 @@ offset
 =========== =====
 
 CSS features
-============
+------------
 
 Pseudo-classes
---------------
+~~~~~~~~~~~~~~
 
 +-----------------------------------+-----------------------------------+
 | Pseudo-class                      | Notes                             |
@@ -772,7 +772,7 @@ Pseudo-classes
 FIXME: which selectors, combinators, at-rules.
 
 XML features
-============
+------------
 
 FIXME: ``<xi:include href= parse= encoding=>``
 
@@ -783,7 +783,7 @@ FIXME: ``xml:lang`` attribute
 FIXME: ``xml:space`` attribute
 
 Explicitly Unsupported features
-===============================
+-------------------------------
 
 -  ``flowRoot`` element and its children - Inkscape, SVG 1.2 only., #13
 
@@ -794,7 +794,7 @@ Explicitly Unsupported features
    Level 4, which is still a working draft.
 
 Footnotes
-=========
+---------
 
 .. [1]
    These structural pseudo-classes are implemented in rust-selectors,
