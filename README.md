@@ -69,6 +69,11 @@ Introspection][gi].  This way, it is available in many programming
 languages other than C.  Please see your language binding's
 documentation for information on how to load the `Rsvg` namespace.
 
+**Security:** For a list of releases with security issues,
+instructions on reporting security-related bugs, and the security
+considerations for librsvg's dependencies, see the [Security
+chapter][security] in the development guide.
+
 [c-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
 
@@ -206,3 +211,4 @@ ways:
 [gnome-hackers]: https://matrix.to/#/#gnome-hackers:gnome.org
 [gnome-rust]: https://matrix.to/#/#rust:gnome.org
 [devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
+[security]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html

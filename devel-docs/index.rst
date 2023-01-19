@@ -9,6 +9,7 @@ Development guide for librsvg
    features
    roadmap
    compiling
+   security
 
 .. toctree::
    :caption: Getting Started as a Contributor
@@ -60,7 +61,9 @@ evolved into a few different tools.
 - :doc:`features` - Supported elements, attributes, and properties.
 - :doc:`roadmap` - Ever-changing list of priorities for the
   maintainers; check this often!
-- :doc:`compiling` - cross compilation, debug/release builds, special options.
+- :doc:`compiling` - Cross compilation, debug/release builds, special options.
+- :doc:`security` - Reporting security bugs, releases with security
+  fixes, security of dependencies.
 
 Getting started
 ---------------
