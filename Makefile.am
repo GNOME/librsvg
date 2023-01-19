@@ -243,7 +243,6 @@ CLEANFILES += rsvg-convert.1
 endif
 
 dist_doc_DATA =				\
-	COMPILING.md			\
 	CONTRIBUTING.md			\
 	README.md			\
 	code-of-conduct.md
@@ -255,7 +254,6 @@ EXTRA_DIST =				\
 	AUTHORS				\
 	COPYING.LIB 			\
 	NEWS				\
-	SECURITY.md			\
 	Rsvg-2.0-custom.vala		\
 	Rsvg-2.0.metadata		\
 	glib-tap.mk			\
