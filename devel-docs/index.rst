@@ -2,7 +2,7 @@ Development guide for librsvg
 =============================
 
 .. toctree::
-   :caption: For Distributors and end users
+   :caption: For Distributors and End Users
    :maxdepth: 1
 
    product
@@ -10,14 +10,14 @@ Development guide for librsvg
    roadmap
 
 .. toctree::
-   :caption: Getting started as a Contributor
+   :caption: Getting Started as a Contributor
    :maxdepth: 1
 
    devel_environment
    contributing
 
 .. toctree::
-   :caption: Understand the code
+   :caption: Understand the Code
    :maxdepth: 1
 
    architecture
@@ -25,7 +25,7 @@ Development guide for librsvg
    memory_leaks
 
 .. toctree::
-   :caption: Design documents
+   :caption: Design Documents
    :maxdepth: 1
 
    text_layout
