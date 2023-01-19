@@ -190,6 +190,14 @@ time during regular development.  If you are using the podman
 container as per above, you should do this in the ``/srv/project``
 directory most of the time.
 
+To casually test rendering, for example, for a feature you are
+developing, you can run `target/debug/rsvg-convert -o output.png
+my_test_file.svg`.
+
+If you do a release build with `carto build --release`, which includes
+optimizations, the binary will be in `target/release/rsvg-convert`.
+This version is *much* faster than the debug version.
+
 **Doing a full build:** You can use the following:
 
 .. code-block:: sh
@@ -203,5 +211,7 @@ directory most of the time.
 You should only have to do that if you need to run the full test
 suite, for the C API tests and the tests for limiting memory
 consumption.
+
+
 
 .. _podman: https://podman.io/

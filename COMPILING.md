@@ -1,28 +1,6 @@
 Compiling librsvg
 =================
 
-**For the impatient:**
-
-First, install librsvg's dependencies; see ["Installing dependencies for
-building"](#installing-dependencies-for-building) below for
-instructions for various operating systems.
-
-For everyday hacking, librsvg looks like a regular Rust project.  You
-can `cargo build` to compile the main user-visible artifact for the
-`rsvg-convert` program:
-
-* `cargo build --release` - will compile `rsvg-convert` and put it in
-  `./target/release/rsvg-convert`.  You can use that binary directly.
-  If you need a debug build, use `cargo build --debug` instead; note
-  that debug binaries run *much* slower!
-
-* `cargo test` - this runs almost all of librsvg's test suite, which
-  includes the Rust API and `rsvg-convert`, and is enough for regular
-  hacking.  The full test suite includes tests for the C API; see the
-  section "Compiling the C API" below.
-
-* `cargo doc` - will produce the documentation for the Rust crate.
-
 # Detailed compilation instructions
 
 A full build of librsvg requires [autotools].  A full build will produce these:
