@@ -181,11 +181,12 @@ ways:
 
 * [Mail me][mail] at federico@gnome.org.
 
-* IRC: I am `federico` on `irc.gnome.org` in the `#rust` or
-  `#gnome-hackers` channels.  I'm there most weekdays (Mon-Fri)
-  starting at about UTC 14:00 (that's 08:00 my time; I am in the UTC-6
-  timezone).  If this is not a convenient time for you, feel free to
-  [mail me][mail] and we can arrange a time.
+* Matrix: I am `@federico` on the [GNOME Hackers][gnome-hackers] and
+  [Rust ❤️ GNOME][gnome-rust] channels on gnome.org's Matrix.  I'm
+  there most weekdays (Mon-Fri) starting at about UTC 14:00 (that's
+  08:00 my time; I am in the UTC-6 timezone).  If this is not a
+  convenient time for you, feel free to [mail me][mail] and we can
+  arrange a time.
 
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
@@ -203,3 +204,5 @@ ways:
 [platform]: https://developer.gnome.org/
 [guadec-presentation-1]: https://viruta.org/docs/fmq-porting-c-to-rust.pdf
 [guadec-presentation-2]: https://viruta.org/docs/fmq-refactoring-c-to-rust.pdf
+[gnome-hackers]: https://matrix.to/#/#gnome-hackers:gnome.org
+[gnome-rust]: https://matrix.to/#/#rust:gnome.org
