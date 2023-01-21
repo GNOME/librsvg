@@ -10,6 +10,7 @@ Development guide for librsvg
    roadmap
    compiling
    security
+   bugs
 
 .. toctree::
    :caption: Getting Started as a Contributor
@@ -64,6 +65,7 @@ evolved into a few different tools.
 - :doc:`compiling` - Cross compilation, debug/release builds, special options.
 - :doc:`security` - Reporting security bugs, releases with security
   fixes, security of dependencies.
+- :doc:`bugs`
 
 Getting started
 ---------------
