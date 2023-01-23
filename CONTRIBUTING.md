@@ -5,7 +5,6 @@ Thank you for looking in this file!  There are different ways of
 contributing to librsvg, and we appreciate all of them.
 
 * [Source repository](#source-repository)
-* [Reporting bugs](#reporting-bugs)
 * [Feature requests](#feature-requests)
 * [Hacking on librsvg](#hacking-on-librsvg)
 
@@ -36,62 +35,19 @@ makes things easier for the maintainers of librsvg.
 To work on the source code, you may find the "[Hacking on
 librsvg](#hacking-on-librsvg)" section helpful.
 
-## Reporting bugs
-
-Please report bugs at https://gitlab.gnome.org/GNOME/librsvg/issues
-
-If you want to report a rendering bug, or a missing SVG feature,
-please provide an example SVG file as an attachment to your bug
-report.  It really helps if you can minimize the SVG to only the
-elements required to reproduce the bug or see the missing feature, but
-it is not absolutely required.  **Please be careful** of publishing
-SVG images that you don't want other people to see, or images whose
-copyright does not allow redistribution; the bug tracker is a public
-resource and attachments are visible to everyone.
-
-You can also [browse the existing bugs][bugs-browse].
-
-### Obtaining debug logs
-
-Librsvg can be asked to output debug logs.  Set the `RSVG_LOG`
-environment variable, and then librsvg will print some 
-information to stdout:
-
-```
-$ RSVG_LOG=1 some-program-that-uses-librsvg
-... debug output goes here ...
-```
-
-As of librsvg 2.43.5, there are no options you can set in the
-`RSVG_LOG` variable; the library just checks whether that environment
-variable is present or not.
-
-## Feature requests
-
-Librsvg aims to be a small and relatively simple SVG rendering
-library.  Currently we do not plan to support scripting, animation, or
-interactive features like mouse events on SVG elements.
-
-However, we *do* aim go provide good support for SVG's graphical
-features.  Please see the "[reporting bugs](#reporting-bugs)" section for
-information about our bug tracking system; feature requests should be
-directed there.
-
-It is especially helpful if you file bug for a feature request along
-with a sample SVG file.
-
 ## Hacking on librsvg
+
+Please see the [Development guide for librsvg][devel-guide].  It has a
+tour of the code, and a tutorial for common tasks like adding support
+for a new CSS property.
 
 The library's internals are being documented at
 https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html
 
-Please see that documentation for common tasks like adding support for
-a new CSS property.
-
 What can you hack on?
 
 * [Bugs for newcomers](https://gitlab.gnome.org/GNOME/librsvg/-/issues?label_name%5B%5D=4.+Newcomers)
-* Pick something from the [development roadmap](devel-docs/README.md)! FIXME: relink
+* Pick something from the [development roadmap][roadmap], or the [contribution guide][contributing]!
 
 ### Working on the source
 
@@ -299,3 +255,6 @@ interesting options to generate plots and such.  You can see the
 [Criterion]: https://crates.io/crates/criterion
 [criterion-options]: https://japaric.github.io/criterion.rs/book/user_guide/command_line_options.html
 [docker-tests-readme]: tools/docker/README.md
+[devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
+[roadmap]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/roadmap.html
+[contributing]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/contributing.html
