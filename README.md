@@ -80,8 +80,8 @@ chapter][security] in the development guide.
 # Contributing to librsvg's development
 
 There is a code of conduct for contributors to librsvg; please see the
-[GNOME Code of Conduct][conduct], which is duplicated in the file
-[`code-of-conduct.md`][coc].
+[GNOME Code of Conduct][coc], which is duplicated in the file
+[`code-of-conduct.md`][coc-local].
 
 Please see the [Development guide for librsvg][devel-guide] on how to
 contribute to librsvg, how to report bugs, how set up your development
