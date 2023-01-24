@@ -83,7 +83,7 @@ There is a code of conduct for contributors to librsvg; please see the
 [GNOME Code of Conduct][coc], which is duplicated in the file
 [`code-of-conduct.md`][coc-local].
 
-Please see the [Development guide for librsvg][devel-guide] on how to
+Please see the [Development Guide for librsvg][devel-guide] on how to
 contribute to librsvg, how to report bugs, how set up your development
 environment, and for a description of librsvg's architecture.
 
@@ -101,8 +101,8 @@ API" kind of library.
 
 Feature additions will be considered on a case-by-case basis.
 
-You can read about librsvg's supported SVG and CSS features in the
-[FEATURES.md](FEATURES.md) file.
+You can read about librsvg's [supported SVG and CSS features][features] in the
+development guide.
 
 # Non-goals of librsvg
 
@@ -190,6 +190,10 @@ ways:
   convenient time for you, feel free to [mail me][mail] and we can
   arrange a time.
 
+* I frequently [blog about librsvg][blog].  You may be interested in
+  the articles about porting librsvg from C to Rust, which happened
+  between 2016 and 2020.
+
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
@@ -212,3 +216,5 @@ ways:
 [gnome-rust]: https://matrix.to/#/#rust:gnome.org
 [devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
 [security]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html
+[features]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html
+[blog]: https://viruta.org/tag/librsvg.html
