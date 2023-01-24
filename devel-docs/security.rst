@@ -11,13 +11,19 @@ mail.
 Librsvg releases with security fixes
 ------------------------------------
 
-Librsvg releases have a version number like major.minor.micro. Note that
-releases with an odd minor number (e.g. 2.47.x since 47 is odd) are
-considered development releases and should not be used in production
-systems.
+Librsvg releases have a version number like major.minor.micro.
 
-The following list is only for stable release streams, where the minor
-number is even (e.g. 2.50.x).
+Before version 2.55.x, librsvg's versioning scheme was such that a
+release with an *even* minor number was considered a stable release
+suitable for production use (e.g. 2.54.x), and an *odd* minor number
+was a development release only.
+
+Starting with 2.55.x, all minor numbers are considered stable.
+Development and beta versions have a micro version starting at 90
+(e.g. 2.55.90), per `GNOME's release versioning as of 2022/September
+<https://discourse.gnome.org/t/even-odd-versioning-is-confusing-lets-stop-doing-it/10391>`_.
+
+The following list is only for stable release streams.
 
 2.50.4
 ~~~~~~
