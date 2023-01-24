@@ -71,10 +71,7 @@ Getting started
 ---------------
 
 - :doc:`devel_environment`
-
-FIXME: link to doc with stuff from CONTRIBUTING.md's "Hacking on librsvg"
-
-Add basic info on cloning the repo, getting a gitlab account, forking.
+- :doc:`contributing`
 
 Understand the code
 -------------------
