@@ -177,7 +177,7 @@ Gdk-pixbuf depends on **libpng**, **libjpeg**, and other libraries for
 different image formats.
 
 Security considerations for librsvg
-===================================
+-----------------------------------
 
 **Built-in limits:** Librsvg has built-in limits for the following:
 

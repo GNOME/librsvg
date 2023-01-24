@@ -1,107 +1,185 @@
-*********************************
-How you can contribute to librsvg
-*********************************
+Contributing to librsvg
+=======================
 
-Here are some projects that you can choose to contribute to librsvg.
+Thank you for looking in this document! There are different ways of
+contributing to librsvg, and we appreciate all of them.
 
-Major features
-==============
+-  `Source repository <#source-repository>`__
+-  `Feature requests <#feature-requests>`__
+-  `Hacking on librsvg <#hacking-on-librsvg>`__
 
-These are big features that may take you a few months to implement.
-Fame and glory await! :)
+All librsvg contributors are expected to follow `GNOME's Code of
+Conduct <https://conduct.gnome.org>`_.
 
-Support CSS var()
+Source repository
 -----------------
 
-This project is suitable for a few months of work, like an Outreachy
-or Summer of Code internship.  Some familiarity with CSS will be
-useful; you don't need to be an expert in it.  You need to be able to
-write Rust relatively fluently.
+Librsvg’s main source repository is at gitlab.gnome.org. You can view
+the web interface here:
 
-This is https://gitlab.gnome.org/GNOME/librsvg/-/issues/459 - In
-summary, support for var() lets CSS styles reference values defined
-elsewhere, instead of hard-coding an actual value in every place it is
-used.  For example, define a ``button-color`` variable instead of
-hard-coding ``#aabbcc`` everywhere.
+https://gitlab.gnome.org/GNOME/librsvg
 
-.. code-block:: css
+Development happens in the ``main`` branch. There are also branches for
+stable releases.
 
-   /* Define two variables */
-   :root {
-     --main-color: #06c;
-     --accent-color: #006;
-   }
+Alternatively, you can use the mirror at GitHub:
 
-   /* The rest of the CSS file */
-   #foo h1 {
-     fill: var(--main-color);
-   }
+https://github.com/GNOME/librsvg
 
-In the context of librsvg, this would be useful in several situations:
+Note that we don’t do bug tracking in the GitHub mirror; see the next
+section.
 
-- Allow toolkits to specify a user stylesheet while rendering a
-  document, to recolor items in SVGs for icons.  They can already do
-  this by using CSS selectors (e.g. change the fill color in elements
-  that have the ``button`` class), but CSS ``var()`` would be nice for
-  flexibility.
+If you need to publish a branch, feel free to do it at any
+publically-accessible Git hosting service, although gitlab.gnome.org
+makes things easier for the maintainers of librsvg.
 
-- Part of supporting `SVG Native`_ involves adding support for
-  ``var()``.  This is useful for emoji fonts which include glyphs in
-  SVG format.
-
-There is a pretty complete in `implementation in Servo`_.  You can use
-it for inspiration, or cut&paste it into librsvg; it will need some
-changes, and probably also some additions to librsvg's existing
-machinery for CSS.
-
-One particularly interesting bit in Servo's implementation is that it guards against exponential expansion of malicious variables.
-
-.. code-block:: css
-
-   :root {
-     --prop1: lol;
-     --prop2: var(--prop1) var(--prop1);
-     --prop3: var(--prop2) var(--prop2);
-     --prop4: var(--prop3) var(--prop3);
-     /* expand to --prop30 */
-   }
-
-A naive implementation would make the consume a few gigabytes of
-memory; grep for "exponentially" in Servo's code to see how it guards
-against that.
-
-.. _SVG Native: https://gitlab.gnome.org/GNOME/librsvg/-/issues/689
-
-.. _implementation in Servo: https://github.com/servo/servo/blob/master/components/style/custom_properties.rs
-
-Support CSS calc()
+Hacking on librsvg
 ------------------
 
-This project is suitable for a few months of work, like an Outreachy
-or Summer of Code internship.
+See the rest of this development guide, especially the chapter on
+:doc:`architecture`, and the tutorial on :doc:`adding_a_property`.
 
-Some familiarity with CSS will be useful; you don't need to be an
-expert in it.  You need to be able to write Rust relatively fluently.
-It will be very useful to have some familiarity with implementing
-simple interpreters or evaluators - for example, parsing and computing
-an expression like ``5 + 3 * (2 - 4)``; if you have already written a
-parser and Abstract Syntax Tree for that kind of thing, this project
-will be a lot easier.
+The library’s internals are being documented at
+https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html
 
-This is https://gitlab.gnome.org/GNOME/librsvg/-/issues/843 - support
-calc() expressions in CSS.  For example, parameterize an element's
-width by using ``width="calc(100% - 40px)"`` (this would use the
-viewport's width of 100%, and subtract 40 pixels).
+What can you hack on?
 
-The issue linked in the previous paragraph has plenty of
-implementation advice.  It requires some substantial preliminary work,
-like completing the separation between specified values and computed
-values in librsvg's CSS implementation.  Please ask the maintainer to
-prioritize this work if you intend to implement CSS calc().
+- `Bugs for
+  newcomers <https://gitlab.gnome.org/GNOME/librsvg/-/issues?label_name%5B%5D=4.+Newcomers>`__
+- Pick something from the `development
+  roadmap <https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/roadmap.html>`__.
+- Tackle one of the `bigger projects
+  <https://gitlab.gnome.org/GNOME/librsvg/-/issues/?label_name%5B%5D=project>`_.
 
-Performance tracking
---------------------
+Working on the source
+~~~~~~~~~~~~~~~~~~~~~
 
-See the - :doc:`performance_tracking` document.  This does not involve
-hacking on librsvg itself, but rather creating an infrastructure to
-track performance metrics.
+Librsvg uses an autotools setup, which is described in detail `in this
+blog
+post <https://viruta.org/librsvgs-build-infrastructure-autotools-and-rust.html>`__.
+
+If you need to **add a new source file**, you need to do it in the
+toplevel ``Makefile.am``. *Note that this is for both
+C and Rust sources*, since ``make(1)`` needs to know when a Rust file
+changed so it can call ``cargo`` as appropriate.
+
+It is perfectly fine to ask the maintainer if you have questions about
+the Autotools setup; it’s a tricky bit of machinery, and we are glad
+to help.
+
+Continuous Integration
+~~~~~~~~~~~~~~~~~~~~~~
+
+If you fork librsvg in ``gitlab.gnome.org`` and push commits to your
+forked version, the Continuous Integration machinery (CI) will run
+automatically.
+
+The CI infrastructure is documented in the :doc:`ci` chapter.
+
+When you create a merge request, or push to a branch in a fork of
+librsvg, GitLab's CI will run a *pipeline* on the contents of your
+push: it will run the test suite, linters, try to build the
+documentation, and generally see if everything that makes
+:doc:`product` is working as intended.  If any tests fail, the
+pipeline will fail and you can then examine the build artifacts of
+failed jobs to fix things.
+
+**Automating the code formatting:** You may want to enable a
+`client-side git
+hook <https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks>`__ to
+run ``rustfmt`` before you can commit something; otherwise the ``lint``
+stage of CI pipelines will fail:
+
+1. ``cd librsvg``
+
+2. ``mv .git/hooks/pre-commit.sample .git/hooks/pre-commit``
+
+3. Edit ``.git/hooks/pre-commit`` and put in one of the following
+   commands:
+
+-  If you want code reformatted automatically, no questions asked:
+   ``cargo fmt`` **Note:** if this actually reformats your code while
+   committing, you’ll have to re-stage the new changes and
+   ``git commit --amend``. Be careful if you had unstaged changes that
+   got reformatted!
+
+-  If you want to examine errors if rustfmt doesn’t like your
+   indentation, but don’t want it to make changes on its own:
+   ``cargo fmt --all -- --check``
+
+Test suite
+~~~~~~~~~~
+
+All new features need to have corresponding tests.  Please see the
+file ``tests/README.md`` to see how to add new tests to the test suite.  In short:
+
+- Add unit tests in the ``src/*.rs`` files for internal things like
+  parsers or algorithms.
+
+- Add rendering tests in ``tests/src/*.rs`` for SVG or CSS features.
+  See ``tests/README.md`` for details on how to do this.
+
+In either case, you can run ``cargo test`` if you set up your
+development environment as instructed in the :doc:`devel_environment`
+chapter.  Alternatively, push your changes to a branch, and watch the
+results of its CI pipeline.
+
+Creating a merge request
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+You may create a forked version of librsvg in `GNOME’s Gitlab instance
+<https://gitlab.gnome.org/GNOME/librsvg>`__,. You can register an
+account there, or log in with your account from other OAuth services.
+
+For technical reasons, the maintainers of librsvg do not get
+automatically notified if you submit a pull request through the GNOME
+mirror in GitHub.  In that case, please create a merge request at
+``gitlab.gnome.org`` instead; you can ask the maintainer for assistance.
+
+Formatting commit messages
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If a commit fixes a bug, please format its commit message like this:
+
+::
+
+   (#123): Don't crash when foo is bar
+
+   Explanation for why the crash happened, or anything that is not
+   obvious from looking at the diff.
+
+   Fixes https://gitlab.gnome.org/GNOME/librsvg/issues/123
+
+Note the ``(#123)`` in the first line. This is the line that shows up in
+single-line git logs, and having the bug number there makes it easier to
+write the release notes later — one does not have to read all the commit
+messages to find the ids of fixed bugs.
+
+Also, please paste the complete URL to the bug report somewhere in the
+commit message, so that it’s easier to visit when reading the commit
+logs.
+
+Generally, commit messages should summarize *what* you did, and *why*.
+Think of someone doing ``git blame`` in the future when trying to figure
+out how some code works: they will want to see *why* a certain line of
+source code is there. The commit where that line was introduced should
+explain it.
+
+Testing performance-related changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can use the
+`rsvg-bench <https://gitlab.gnome.org/federico/rsvg-bench>`__ tool to
+benchmark librsvg.  For example, you can ask rsvg-bench
+to render one or more SVGs hundreds of times in a row, so you can take
+accurate timings or run a sampling profiler and get enough samples.
+
+Included benchmarks
+~~~~~~~~~~~~~~~~~~~
+
+The ``benches/`` directory has a couple of benchmarks for functions
+related to SVG filter effects.  You can run them with ``cargo bench``.
+
+These benchmarks use the
+`Criterion <https://crates.io/crates/criterion>`__ crate, which supports
+some interesting options to generate plots and such.

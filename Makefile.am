@@ -243,7 +243,6 @@ CLEANFILES += rsvg-convert.1
 endif
 
 dist_doc_DATA =				\
-	CONTRIBUTING.md			\
 	README.md			\
 	code-of-conduct.md
 

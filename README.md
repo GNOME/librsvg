@@ -15,7 +15,7 @@ in the development guide.
 
 ***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.***  We use
 [`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
-Please see [`CONTRIBUTING.md`][contributing] for details.
+Please see [Contributing to librsvg][contributing] for details.
 
 Table of contents:
 
@@ -58,8 +58,7 @@ need.
 
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
-section in the file [CONTRIBUTING.md][contributing] to see how to
-provide a good bug report.
+page in the development guide to see how to provide a good bug report.
 
 **Asking questions:** Feel free to ask questions about using librsvg
 in the [desktop-devel-list][d-d-l] mailing list.
@@ -80,14 +79,12 @@ chapter][security] in the development guide.
 # Contributing to librsvg's development
 
 There is a code of conduct for contributors to librsvg; please see the
-file [`code-of-conduct.md`][coc].
+[GNOME Code of Conduct][conduct], which is duplicated in the file
+[`code-of-conduct.md`][coc].
 
 Please see the [Development guide for librsvg][devel-guide] on how to
-contribute to librsvg, how set up your development environment, and
-for a description of librsvg's architecture.
-
-For information on how to report bugs, or how to contribute to librsvg
-in general, please see the file [`CONTRIBUTING.md`][contributing].
+contribute to librsvg, how to report bugs, how set up your development
+environment, and for a description of librsvg's architecture.
 
 # Goals of librsvg
 
@@ -195,14 +192,15 @@ ways:
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
-[coc]: code-of-conduct.md
+[coc]: https://conduct.gnome.org
+[coc-local]: code-of-conduct.md
 [autotools]: https://autotools.io/index.html
 [compiling]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/compiling.html
 [mail]: mailto:federico@gnome.org
 [bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
-[contributing]: CONTRIBUTING.md
-[reporting-bugs]: CONTRIBUTING.md#reporting-bugs
+[contributing]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/contributing.html
+[reporting-bugs]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/bugs.html
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
 [federico]: https://viruta.org/
 [platform]: https://developer.gnome.org/
