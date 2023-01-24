@@ -1,5 +1,5 @@
-Memory leaks in librsvg
-=======================
+Apparent memory leaks
+=====================
 
 If you run Valgrind or another memory checker on a program that uses librsvg, or
 ``rsvg-convert``, you may get false positives.  This chapter explains why these occur by

@@ -1,5 +1,5 @@
-Contributing to librsvg
-=======================
+How to contribute
+=================
 
 Thank you for looking in this document! There are different ways of
 contributing to librsvg, and we appreciate all of them.

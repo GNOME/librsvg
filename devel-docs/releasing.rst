@@ -1,5 +1,5 @@
-Release process checklist for librsvg
-=====================================
+Release process checklist
+=========================
 
 Feel free to print this document or copy it to a text editor to check
 off items while making a release.

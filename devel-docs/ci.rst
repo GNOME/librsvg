@@ -1,5 +1,7 @@
-Continuous Integration - When robots are eager to help
-======================================================
+Continuous Integration
+======================
+
+Or, when robots are eager to help.
 
 Librsvg's repository on gitlab.gnome.org is configured to use a
 Continuous Integration (CI) pipeline, so that it compiles the code and

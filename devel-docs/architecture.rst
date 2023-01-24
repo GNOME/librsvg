@@ -1,5 +1,5 @@
-Architecture of librsvg
-=======================
+Architecture
+============
 
 This document roughly describes the architecture of librsvg, and future
 plans for it. The code is continually evolving, so don’t consider this

@@ -41,7 +41,7 @@ Development guide for librsvg
    :maxdepth: 1
 
    releasing
-   Continuous Integration <ci>
+   ci
 
 Welcome to the developer's guide for librsvg.  This is for people who
 want to work on the development of librsvg itself, not for users of

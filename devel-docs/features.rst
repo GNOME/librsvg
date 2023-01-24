@@ -1,5 +1,5 @@
-SVG and CSS features that librsvg supports
-==========================================
+Supported SVG and CSS features
+==============================
 
 Librsvg tries to be a mostly complete renderer for `SVG1.1
 <https://www.w3.org/TR/SVG11/>`_ and `SVG2
