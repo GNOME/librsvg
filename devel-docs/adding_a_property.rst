@@ -1,5 +1,5 @@
-Adding a new CSS property to librsvg
-====================================
+How to add a new CSS property
+=============================
 
 This document is a little tour on how to add support for a CSS property
 to librsvg. We will implement the ```mask-type``

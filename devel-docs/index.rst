@@ -41,7 +41,7 @@ Development guide for librsvg
    :maxdepth: 1
 
    releasing
-   Continuous Integration <ci>
+   ci
 
 Welcome to the developer's guide for librsvg.  This is for people who
 want to work on the development of librsvg itself, not for users of
@@ -71,10 +71,7 @@ Getting started
 ---------------
 
 - :doc:`devel_environment`
-
-FIXME: link to doc with stuff from CONTRIBUTING.md's "Hacking on librsvg"
-
-Add basic info on cloning the repo, getting a gitlab account, forking.
+- :doc:`contributing`
 
 Understand the code
 -------------------

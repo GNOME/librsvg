@@ -1,5 +1,5 @@
-Text layout in librsvg
-======================
+Text layout
+===========
 
 This document describes the state of text layout in librsvg as of
 version 2.55.90, and how I want to overhaul it completely for SVG2.
