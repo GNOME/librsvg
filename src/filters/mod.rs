@@ -272,6 +272,8 @@ pub fn render(
         node_bbox,
     )
     .and_then(|mut filter_ctx| {
+        // the message has an unclosed parenthesis; we'll close it below.
+        rsvg_log!(session, "(rendering filter with effects_region={:?}", filter_ctx.effects_region());
         for user_space_primitive in &filter.primitives {
             let start = Instant::now();
 
@@ -299,6 +301,9 @@ pub fn render(
                         err
                     );
 
+                    // close the opening parenthesis from the message at the start of this function
+                    rsvg_log!(session, ")");
+
                     // Exit early on Cairo errors. Continue rendering otherwise.
                     if let FilterError::CairoError(status) = err {
                         return Err(FilterError::CairoError(status));
@@ -306,6 +311,9 @@ pub fn render(
                 }
             }
         }
+
+        // close the opening parenthesis from the message at the start of this function
+        rsvg_log!(session, ")");
 
         Ok(filter_ctx.into_output()?)
     })
