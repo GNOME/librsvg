@@ -1079,8 +1079,16 @@ impl ImageSurface<Shared> {
     }
 
     /// Creates a new surface with the size and content specified in `bounds`
+    ///
+    /// # Panics
+    /// Panics if `bounds` is an empty rectangle, since `SharedImageSurface` cannot
+    /// represent zero-sized images.
     #[inline]
     pub fn tile(&self, bounds: IRect) -> Result<SharedImageSurface, cairo::Error> {
+        // Cairo lets us create zero-sized surfaces, but the call to SharedImageSurface::wrap()
+        // below will panic in that case.  So, disallow requesting a zero-sized subregion.
+        assert!(!bounds.is_empty());
+
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, bounds.width(), bounds.height())?;
 
