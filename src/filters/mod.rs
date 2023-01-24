@@ -273,7 +273,11 @@ pub fn render(
     )
     .and_then(|mut filter_ctx| {
         // the message has an unclosed parenthesis; we'll close it below.
-        rsvg_log!(session, "(rendering filter with effects_region={:?}", filter_ctx.effects_region());
+        rsvg_log!(
+            session,
+            "(rendering filter with effects_region={:?}",
+            filter_ctx.effects_region()
+        );
         for user_space_primitive in &filter.primitives {
             let start = Instant::now();
 

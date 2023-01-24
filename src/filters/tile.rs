@@ -64,14 +64,30 @@ impl Tile {
                 surface: input_surface,
                 bounds: input_bounds,
             }) => {
-                let tile_surface = input_surface.tile(input_bounds)?;
+                if input_bounds.is_empty() {
+                    rsvg_log!(
+                        draw_ctx.session(),
+                        "(feTile with empty input_bounds; returning just the input surface)"
+                    );
 
-                ctx.source_graphic().paint_image_tiled(
-                    bounds,
-                    &tile_surface,
-                    input_bounds.x0,
-                    input_bounds.y0,
-                )?
+                    input_surface
+                } else {
+                    rsvg_log!(
+                        draw_ctx.session(),
+                        "(feTile bounds={:?}, input_bounds={:?})",
+                        bounds,
+                        input_bounds
+                    );
+
+                    let tile_surface = input_surface.tile(input_bounds)?;
+
+                    ctx.source_graphic().paint_image_tiled(
+                        bounds,
+                        &tile_surface,
+                        input_bounds.x0,
+                        input_bounds.y0,
+                    )?
+                }
             }
         };
 
