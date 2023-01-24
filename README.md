@@ -61,7 +61,8 @@ tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
 page in the development guide to see how to provide a good bug report.
 
 **Asking questions:** Feel free to ask questions about using librsvg
-in the [desktop-devel-list][d-d-l] mailing list.
+in the "Platform" category of [GNOME's Discourse][discourse].  You can
+also ask via chat in the Matrix room for [GNOME Rust][gnome-rust].
 
 **Programming languages:** Librsvg exports its API through [GObject
 Introspection][gi].  This way, it is available in many programming
@@ -201,6 +202,7 @@ ways:
 [gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
 [contributing]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/contributing.html
 [reporting-bugs]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/bugs.html
+[discourse]: https://discourse.gnome.org/c/platform/5
 [d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
 [federico]: https://viruta.org/
 [platform]: https://developer.gnome.org/
