@@ -199,7 +199,7 @@ ways:
 [compiling]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/compiling.html
 [mail]: mailto:federico@gnome.org
 [bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
-[gi]: https://wiki.gnome.org/Projects/GObjectIntrospection
+[gi]: https://gi.readthedocs.io/en/latest/
 [contributing]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/contributing.html
 [reporting-bugs]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/bugs.html
 [discourse]: https://discourse.gnome.org/c/platform/5
