@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <filter id="filter">
+    <!-- We want to test that feTile gets an empty input region, since
+         the feFlood's bounds are outside the default filter effects
+         region.
+    -->
+    <feFlood flood-color="lime" x="50" y="50" width="10" height="10"/>
+    <feTile/>
+  </filter>
+
+  <rect x="10" y="10" width="10" height="10" filter="url(#filter)"/>
+</svg>

@@ -76,6 +76,7 @@ impl Offset {
             .compute(ctx)
             .clipped
             .into();
+        rsvg_log!(draw_ctx.session(), "(feOffset bounds={:?}", bounds);
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
