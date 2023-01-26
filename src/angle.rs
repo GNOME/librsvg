@@ -89,6 +89,7 @@ impl Parse for Angle {
                         "deg" => Angle::from_degrees(value),
                         "grad" => Angle::from_degrees(value * 360.0 / 400.0),
                         "rad" => Angle::new(value),
+                        "turn" => Angle::from_degrees(value * 360.0),
                         _ => {
                             return Err(loc.new_unexpected_token_error(token.clone()));
                         }
@@ -119,6 +120,10 @@ mod tests {
         assert_eq!(
             Angle::parse_str("-400grad").unwrap(),
             Angle::from_degrees(-360.0)
+        );
+        assert_eq!(
+            Angle::parse_str("0.25turn").unwrap(),
+            Angle::from_degrees(90.0)        
         );
 
         assert!(Angle::parse_str("").is_err());
