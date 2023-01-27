@@ -123,7 +123,7 @@ mod tests {
         );
         assert_eq!(
             Angle::parse_str("0.25turn").unwrap(),
-            Angle::from_degrees(90.0)        
+            Angle::from_degrees(90.0)
         );
 
         assert!(Angle::parse_str("").is_err());
