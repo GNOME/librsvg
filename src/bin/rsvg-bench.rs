@@ -53,15 +53,15 @@ enum LoadingError {
 #[derive(Debug, Fail)]
 enum ProcessingError {
     #[fail(display = "Cairo error: {:?}", status)]
-    CairoError { status: cairo::Status },
+    CairoError { error: cairo::Error },
 
     #[fail(display = "Rendering error")]
     RenderingError,
 }
 
-impl From<cairo::Status> for ProcessingError {
-    fn from(status: cairo::Status) -> ProcessingError {
-        ProcessingError::CairoError { status: status }
+impl From<cairo::Error> for ProcessingError {
+    fn from(error: cairo::Error) -> ProcessingError {
+        ProcessingError::CairoError { error }
     }
 }
 
@@ -139,14 +139,9 @@ fn render_to_cairo(opt: &Opt, handle: &librsvg::SvgHandle) -> Result<(), Process
     let renderer = librsvg::CairoRenderer::new(handle);
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100)?;
-    let cr = cairo::Context::new(&surface);
+    let cr = cairo::Context::new(&surface)?;
 
-    let viewport = cairo::Rectangle {
-        x: 0.0,
-        y: 0.0,
-        width: 100.0,
-        height: 100.0,
-    };
+    let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
 
     match (opt.hard_failures, renderer.render_document(&cr, &viewport)) {
         (_, Ok(_)) => Ok(()),
