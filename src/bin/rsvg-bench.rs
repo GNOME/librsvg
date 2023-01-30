@@ -5,7 +5,7 @@
 use cairo;
 use librsvg;
 
-use failure::{self, Error, Fail};
+use anyhow::Result;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -13,6 +13,7 @@ use std::process;
 use std::thread;
 use std::time::Duration;
 use structopt::{self, StructOpt};
+use thiserror::Error;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(StructOpt, Debug)]
@@ -44,18 +45,18 @@ struct Opt {
     hard_failures: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 enum LoadingError {
     Skipped,
     Rsvg(librsvg::LoadingError),
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 enum ProcessingError {
-    #[fail(display = "Cairo error: {:?}", status)]
+    #[error("Cairo error: {error:?}")]
     CairoError { error: cairo::Error },
 
-    #[fail(display = "Rendering error")]
+    #[error("Rendering error")]
     RenderingError,
 }
 
@@ -71,7 +72,7 @@ impl From<librsvg::RenderingError> for ProcessingError {
     }
 }
 
-fn process_path<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<(), Error> {
+fn process_path<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
     let meta = fs::metadata(&path)?;
 
     if meta.is_dir() {
@@ -85,7 +86,7 @@ fn process_path<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<(), Error> {
     Ok(())
 }
 
-fn process_directory<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<(), Error> {
+fn process_directory<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
     println!("Processing {:?}", path.as_ref());
 
     for entry in fs::read_dir(path)? {
@@ -107,7 +108,7 @@ fn read_svg(opt: &Opt, path: &Path) -> Result<librsvg::SvgHandle, LoadingError> 
     }
 }
 
-fn process_file<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<(), Error> {
+fn process_file<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
     println!("Processing {:?}", path.as_ref());
 
     assert!(opt.num_parse > 0);
@@ -167,7 +168,7 @@ fn print_options(opt: &Opt) {
              opt.sleep_secs);
 }
 
-fn run(opt: &Opt) -> Result<(), Error> {
+fn run(opt: &Opt) -> Result<()> {
     print_options(opt);
 
     sleep(opt.sleep_secs);
