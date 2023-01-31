@@ -51,6 +51,7 @@ crate-type = [ "staticlib", "rlib" ]
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
+anyhow = "1.0"
 byteorder = "1.4"
 cairo-rs = { version = "0.16", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
@@ -80,6 +81,7 @@ regex = "1"
 rgb = { version="0.8", features=["argb"] }
 selectors = "0.23.0"
 string_cache = "0.8.0"
+thiserror = "1.0"
 tinyvec = { version = "1.2.0", features = ["alloc"] }
 url = "2"
 xml5ever = "0.17.0"

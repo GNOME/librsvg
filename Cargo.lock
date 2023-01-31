@@ -1125,6 +1125,7 @@ dependencies = [
  "string_cache",
  "system-deps",
  "tempfile",
+ "thiserror",
  "tinyvec",
  "url",
  "xml5ever",
