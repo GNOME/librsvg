@@ -6,46 +6,34 @@ use cairo;
 use librsvg;
 
 use anyhow::Result;
+use clap::{crate_version, value_parser};
 use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::thread;
 use std::time::Duration;
-use structopt::{self, StructOpt};
 use thiserror::Error;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(StructOpt, Debug)]
-#[structopt(name = "rsvg-bench", about = "Benchmarking utility for librsvg.")]
+#[derive(Debug)]
+/// Command-line options for `rsvg-bench`.
 struct Opt {
-    #[structopt(short = "s",
-                long = "sleep",
-                help = "Number of seconds to sleep before starting to process SVGs",
-                default_value = "0")]
+    /// Number of seconds to sleep before starting to process SVGs.
     sleep_secs: usize,
 
-    #[structopt(short = "p",
-                long = "num-parse",
-                help = "Number of times to parse each file",
-                default_value = "100")]
+    /// Number of times to parse each file.
     num_parse: usize,
 
-    #[structopt(short = "r",
-                long = "num-render",
-                help = "Number of times to render each file",
-                default_value = "100")]
+    /// Number of times to render each file.
     num_render: usize,
 
-    #[structopt(help = "Input files or directories", parse(from_os_str))]
-    inputs: Vec<PathBuf>,
-
-    #[structopt(long = "hard-failures",
-                help = "Whether to stop all processing when a file cannot be rendered")]
+    /// Whether to stop all processing when a file cannot be rendered.
     hard_failures: bool,
+
+    /// Input files or directories.
+    inputs: Vec<PathBuf>,
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 enum LoadingError {
     Skipped,
     Rsvg(librsvg::LoadingError),
@@ -181,18 +169,70 @@ fn run(opt: &Opt) -> Result<()> {
     Ok(())
 }
 
+fn build_cli() -> clap::Command {
+    clap::Command::new("rsvg-bench")
+        .version(concat!("version ", crate_version!()))
+        .about("Benchmarking utility for librsvg.")
+        .arg(
+            clap::Arg::new("sleep")
+                .long("sleep")
+                .help("Number of seconds to sleep before starting to process SVGs")
+                .default_value("0")
+                .value_parser(str::parse::<usize>),
+        )
+        .arg(
+            clap::Arg::new("num-parse")
+                .long("num-parse")
+                .help("Number of times to parse each file")
+                .default_value("1")
+                .value_parser(str::parse::<usize>),
+        )
+        .arg(
+            clap::Arg::new("num-render")
+                .long("num-render")
+                .help("Number of times to render each file")
+                .default_value("1")
+                .value_parser(str::parse::<usize>),
+        )
+        .arg(
+            clap::Arg::new("hard-failures")
+                .long("hard-failures")
+                .help("Stop all processing when a file cannot be rendered")
+                .action(clap::ArgAction::SetTrue),
+        )
+        .arg(
+            clap::Arg::new("inputs")
+                .help("Input files or directories")
+                .value_parser(value_parser!(PathBuf))
+                .action(clap::ArgAction::Append),
+        )
+
+}
+
 fn main() {
-    let opt = Opt::from_args();
+    let cli = build_cli();
 
-    if opt.inputs.is_empty() {
-        eprintln!("No input files or directories specified\n");
+    let matches = cli.get_matches();
 
-        let app = Opt::clap();
-        let mut out = io::stderr();
-        app.write_help(&mut out).expect("failed to write to stderr");
-        eprintln!("");
+    let sleep_secs = matches.get_one("sleep").copied().expect("already provided default_value");
+    let num_parse = matches.get_one("num-parse").copied().expect("already provided default_value");
+    let num_render = matches.get_one("num-render").copied().expect("already provided default_value");
+    let hard_failures = matches.get_flag("hard-failures");
+
+    let inputs = if let Some(inputs) = matches.get_many("inputs") {
+        inputs.cloned().collect()
+    } else {
+        eprintln!("Must specify at least one SVG file or directory to process\n");
         process::exit(1);
-    }
+    };
+
+    let opt = Opt {
+        sleep_secs,
+        num_parse,
+        num_render,
+        hard_failures,
+        inputs,
+    };
 
     if opt.num_parse < 1 {
         eprintln!("Must parse files at least 1 time; please specify a higher number\n");
