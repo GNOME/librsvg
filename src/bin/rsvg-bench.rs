@@ -2,9 +2,6 @@
 #![deny(clippy)]
 #![warn(unused)]
 
-use cairo;
-use librsvg;
-
 use anyhow::Result;
 use clap::{crate_version, value_parser};
 use std::fs;
@@ -108,14 +105,14 @@ fn process_file<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
     let path = path.as_ref();
 
     for _ in 0..opt.num_parse - 1 {
-        match read_svg(opt, path.as_ref()) {
+        match read_svg(opt, path) {
             Ok(_) => (),
             Err(LoadingError::Skipped) => return Ok(()),
             Err(LoadingError::Rsvg(e)) => return Err(e.into()),
         }
     }
 
-    let handle = match read_svg(opt, path.as_ref()) {
+    let handle = match read_svg(opt, path) {
         Ok(h) => h,
         Err(LoadingError::Skipped) => return Ok(()),
         Err(LoadingError::Rsvg(e)) => return Err(e.into()),
