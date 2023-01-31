@@ -89,9 +89,13 @@ fn read_svg(opt: &Opt, path: &Path) -> Result<librsvg::SvgHandle, LoadingError> 
     match (opt.hard_failures, librsvg::Loader::new().read_path(path)) {
         (_, Ok(h)) => Ok(h),
         (false, Err(e)) => {
-            println!("skipping {} due to error when loading: {}", path.to_string_lossy(), e);
+            println!(
+                "skipping {} due to error when loading: {}",
+                path.to_string_lossy(),
+                e
+            );
             Err(LoadingError::Skipped)
-        },
+        }
         (true, Err(e)) => Err(LoadingError::Rsvg(e)),
     }
 }
@@ -137,7 +141,7 @@ fn render_to_cairo(opt: &Opt, handle: &librsvg::SvgHandle) -> Result<(), Process
         (false, Err(e)) => {
             println!("could not render: {}", e);
             Ok(())
-        },
+        }
         (true, Err(e)) => Err(e.into()),
     }
 }
@@ -152,8 +156,10 @@ fn print_options(opt: &Opt) {
     if opt.num_render > 0 {
         println!("Rendering to Cairo image surface");
     }
-    println!("Sleeping for {} seconds before processing SVGs...",
-             opt.sleep_secs);
+    println!(
+        "Sleeping for {} seconds before processing SVGs...",
+        opt.sleep_secs
+    );
 }
 
 fn run(opt: &Opt) -> Result<()> {
@@ -206,7 +212,6 @@ fn build_cli() -> clap::Command {
                 .value_parser(value_parser!(PathBuf))
                 .action(clap::ArgAction::Append),
         )
-
 }
 
 fn main() {
@@ -214,9 +219,18 @@ fn main() {
 
     let matches = cli.get_matches();
 
-    let sleep_secs = matches.get_one("sleep").copied().expect("already provided default_value");
-    let num_parse = matches.get_one("num-parse").copied().expect("already provided default_value");
-    let num_render = matches.get_one("num-render").copied().expect("already provided default_value");
+    let sleep_secs = matches
+        .get_one("sleep")
+        .copied()
+        .expect("already provided default_value");
+    let num_parse = matches
+        .get_one("num-parse")
+        .copied()
+        .expect("already provided default_value");
+    let num_render = matches
+        .get_one("num-render")
+        .copied()
+        .expect("already provided default_value");
     let hard_failures = matches.get_flag("hard-failures");
 
     let inputs = if let Some(inputs) = matches.get_many("inputs") {
