@@ -336,7 +336,7 @@ mod imp {
         }
 
         fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-            let obj = self.instance();
+            let obj = self.obj();
             match pspec.name() {
                 "flags" => {
                     let v: HandleFlags = value.get().expect("flags value has incorrect type");
@@ -370,7 +370,7 @@ mod imp {
         }
 
         fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
-            let obj = self.instance();
+            let obj = self.obj();
             match pspec.name() {
                 "flags" => obj.get_flags().to_value(),
                 "dpi-x" => obj.get_dpi_x().to_value(),
@@ -996,7 +996,7 @@ fn is_cancellable(obj: *mut gio::ffi::GCancellable) -> bool {
 
 fn get_rust_handle(handle: *const RsvgHandle) -> CHandle {
     let handle = unsafe { &*handle };
-    handle.imp().instance().to_owned()
+    handle.imp().obj().to_owned()
 }
 
 #[no_mangle]
@@ -1415,14 +1415,16 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
-    let obj = glib::Object::new::<CHandle>(&[]);
+    let obj = glib::Object::new::<CHandle>();
 
     obj.to_glib_full()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj = glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))]);
+    let obj = glib::Object::builder::<CHandle>()
+        .property("flags", &HandleFlags::from_bits_truncate(flags))
+        .build();
 
     obj.to_glib_full()
 }

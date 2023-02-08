@@ -9,7 +9,7 @@ use gdk_pixbuf::ffi::{
 use libc::{c_char, c_int, c_uint};
 
 use glib::ffi::{gboolean, gpointer, GError};
-use glib::translate::{IntoGlib, ToGlibPtr};
+use glib::translate::*;
 use glib::Bytes;
 
 use gio::prelude::MemoryInputStreamExt;
@@ -117,7 +117,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
         Err(e) => {
             if !error.is_null() {
                 let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e);
-                *error = gerr.to_glib_full() as *mut GError;
+                *error = gerr.into_glib_ptr();
             }
             return false.into_glib();
         }
