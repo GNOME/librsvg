@@ -9,7 +9,7 @@ homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 build = "build.rs"
 edition = "2021"
-rust-version = "1.63"
+rust-version = "1.64"
 
 [profile.overflow]
 inherits = "release"
