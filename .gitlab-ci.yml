@@ -314,6 +314,14 @@ deny:
   script:
     - cargo deny check
 
+check_rust_versions:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+  stage: lint
+  script:
+    - python3 ci/check_rust_versions.py
+
 coverage:
   extends:
     - '.container.opensuse@x86_64.stable'
