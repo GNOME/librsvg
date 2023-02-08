@@ -268,24 +268,25 @@ mod tests {
     #[test]
     fn signature() {
         let info = pb_format_new();
-
-        for i in 0..2 {
-            let ptr = unsafe { info.signature.offset(i) };
-            if i == 2 {
-                assert_eq!(unsafe { (*ptr).prefix }, null_mut());
-                continue;
-            } else {
-                assert_ne!(unsafe { (*ptr).prefix }, null_mut());
-                if unsafe { (*ptr).mask } != null_mut() {
-                    // Mask can be null
-                    assert_eq!(
-                        unsafe { libc::strlen((*ptr).prefix as *mut c_char) },
-                        unsafe { libc::strlen((*ptr).mask as *mut c_char) }
-                    );
+        unsafe {
+            for i in 0..2 {
+                let ptr = info.signature.offset(i);
+                if i == 2 {
+                    assert_eq!((*ptr).prefix, null_mut());
+                    continue;
+                } else {
+                    assert_ne!((*ptr).prefix, null_mut());
+                    if (*ptr).mask != null_mut() {
+                        // Mask can be null
+                        assert_eq!(
+                            libc::strlen((*ptr).prefix as *mut c_char),
+                            libc::strlen((*ptr).mask as *mut c_char)
+                        );
+                    }
+                    // Relevance must be 0 to 100
+                    assert!((*ptr).relevance >= 0);
+                    assert!((*ptr).relevance <= 100);
                 }
-                // Relevance must be 0 to 100
-                assert!(unsafe { (*ptr).relevance } >= 0);
-                assert!(unsafe { (*ptr).relevance } <= 100);
             }
         }
     }
@@ -357,15 +358,15 @@ mod tests {
                 0xff
             );
         }
+        unsafe {
+            let ctx = crate::begin_load(None, Some(prep_cb), None, null_mut(), null_mut());
+            assert_ne!(ctx, null_mut());
 
-        let ctx = unsafe { crate::begin_load(None, Some(prep_cb), None, null_mut(), null_mut()) };
-        assert_ne!(ctx, null_mut());
+            let inc =
+                crate::load_increment(ctx, SVG_DATA.as_ptr(), SVG_DATA.len() as u32, null_mut());
+            assert_ne!(inc, 0);
 
-        let inc = unsafe {
-            crate::load_increment(ctx, SVG_DATA.as_ptr(), SVG_DATA.len() as u32, null_mut())
-        };
-        assert_ne!(inc, 0);
-
-        unsafe { crate::stop_load(ctx, null_mut()) };
+            crate::stop_load(ctx, null_mut());
+        }
     }
 }
