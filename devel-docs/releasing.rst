@@ -100,11 +100,11 @@ Rust that is too old — instead of getting an obscure error message from
 ``rustc`` in the middle of the build when it finds an unsupported
 language construct.
 
-Please update all of these when increasing the MSRV:
+Please update all of these values when increasing the MSRV:
 
-- The ``MININUM_RUST_MAJOR`` and ``MINIMUM_RUST_MINOR`` values in ``configure.ac``.
+- ``MININUM_RUST_VER`` in ``configure.ac``.
 
-- The ``rust-version`` value in ``Cargo.toml``.
+- ``rust-version`` in ``Cargo.toml``.
 
 - ``RUST_MINIMUM`` in ``ci/container_builds.yml``.
 
