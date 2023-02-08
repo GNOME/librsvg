@@ -202,7 +202,7 @@ mod tests {
 
     use crate::{EXTENSIONS, MIME_TYPES};
     use libc::c_char;
-    use std::ptr::{null, null_mut};
+    use std::ptr::null_mut;
 
     fn pb_format_new() -> GdkPixbufFormat {
         let mut info = super::GdkPixbufFormat {
@@ -240,9 +240,9 @@ mod tests {
     fn check_null_terminated_arr_cstrings(arr: &[*const c_char]) {
         let n_strings = arr
             .iter()
-            .filter(|e| e != &&null())
+            .filter(|e| !e.is_null())
             .map(|e| {
-                if e != &null() {
+                if !e.is_null() {
                     // We use strlen in all of them to ensure some safety
                     // We could use CStr instead but it'd be a bit more cumbersome
                     assert!(unsafe { libc::strlen(*e as *const c_char) } > 0)
@@ -252,7 +252,7 @@ mod tests {
 
         // Ensure last item is null and is the only null item
         assert_eq!(n_strings, arr.len() - 1);
-        assert!(arr.last().unwrap() == &null());
+        assert!(arr.last().unwrap().is_null());
     }
 
     #[test]
@@ -272,10 +272,10 @@ mod tests {
             for i in 0..2 {
                 let ptr = info.signature.offset(i);
                 if i == 2 {
-                    assert_eq!((*ptr).prefix, null_mut());
+                    assert!((*ptr).prefix.is_null());
                     continue;
                 } else {
-                    assert_ne!((*ptr).prefix, null_mut());
+                    assert!(!(*ptr).prefix.is_null());
                     if (*ptr).mask != null_mut() {
                         // Mask can be null
                         assert_eq!(
