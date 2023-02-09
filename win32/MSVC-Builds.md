@@ -167,3 +167,8 @@ Where:
        additionally require Pango built with FreeType support, meaning
        that HarfBuzz, FontConfig and FreeType will also be required for
        the test programs to run.
+    *  `VERBOSE`: Use verbose mode when building the Rust code.
+    *  `USE_NIGHTLY_TOOLCHAIN`: Use a nightly/unstable Rust toolchain
+       instead of the default stable toolchain.  Useful for testing
+       the librsvg code against an unstable toolchain or the unstable
+       toolchain itself.

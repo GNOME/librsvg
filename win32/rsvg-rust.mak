@@ -13,6 +13,17 @@ CARGO = cargo
 RUSTUP = rustup
 !endif
 
+# For those who wish to use the nightly toolchain to build librsvg
+!ifdef USE_NIGHTLY_TOOLCHAIN
+TOOLCHAIN_TYPE = nightly
+!else
+TOOLCHAIN_TYPE = stable
+!endif
+
+!ifdef VERBOSE
+RUST_VERBOSE_FLAG = --verbose
+!endif
+
 # Use Rust's cross compiling capabilities?
 !ifndef FORCE_CROSS
 FORCE_CROSS = 0
@@ -38,14 +49,25 @@ BUILD_RUST = 0
 
 !if "$(BUILD_RUST)" == "1"
 
-CARGO_TARGET = --target $(RUST_TARGET)-pc-windows-msvc
-DEFAULT_TARGET = stable-$(RUST_TARGET)-pc-windows-msvc
+CARGO_TARGET = $(RUST_TARGET)-pc-windows-msvc
+CARGO_TARGET_CMD = --target $(CARGO_TARGET)
+CARGO_TARGET_TOOLCHAIN = $(TOOLCHAIN_TYPE)-$(CARGO_TARGET)
 RUSTUP_CMD = $(RUSTUP) default $(DEFAULT_TARGET)
+CARGO_TARGET_DIR = vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
+CARGO_TARGET_DIR_FLAG = --target-dir=$(CARGO_TARGET_DIR)
 
-!if "$(CFG)" == "release" || "$(CFG)" == "Release"
-CARGO_CMD = $(CARGO) --locked build $(CARGO_TARGET) --release
+MANIFEST_PATH_FLAG = --manifest-path=..\Cargo.toml
+!if $(FORCE_CROSS) > 0
+CARGO_CMD = $(CARGO) --locked build $(CARGO_TARGET_CMD) $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+CARGO_CLEAN_CMD = $(CARGO) clean $(CARGO_TARGET_CMD) $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+CARGO_TARGET_OUTPUT_DIR = $(CARGO_TARGET_DIR)\$(CARGO_TARGET)\$(CFG)
 !else
-CARGO_CMD = $(CARGO) --locked build $(CARGO_TARGET)
+CARGO_CMD = $(CARGO) +$(CARGO_TARGET_TOOLCHAIN) --locked build $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+CARGO_CLEAN_CMD = $(CARGO) +$(CARGO_TARGET_TOOLCHAIN) clean $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+CARGO_TARGET_OUTPUT_DIR = $(CARGO_TARGET_DIR)\$(CFG)
+!endif
+!if "$(CFG)" == "release" || "$(CFG)" == "Release"
+CARGO_CMD = $(CARGO_CMD) --release
 !endif
 
 # For building the Rust bits for ARM64 Windows, or when we are building on
@@ -91,26 +113,24 @@ build-$(PLAT)-$(CFG).pre.bat:
 	@echo set __VSCMD_script_err_count=>>$@
 	@echo if not "$(__VSCMD_PREINIT_PATH)" == "" set PATH=$(__VSCMD_PREINIT_PATH);%HOMEPATH%\.cargo\bin>>$@
 	@echo if "$(__VSCMD_PREINIT_PATH)" == "" set PATH=c:\Windows\system;c:\Windows;c:\Windows\system32\wbem;%HOMEPATH%\.cargo\bin>>$@
-	@echo set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api>>$@
 	@echo set GTK_LIB_DIR=$(LIBDIR)>>$@
 	@echo set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)>>$@
 	@if not "$(PKG_CONFIG_PATH)" == "" echo set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)>>$@
 	@if not "$(PKG_CONFIG)" == "" echo set PKG_CONFIG=$(PKG_CONFIG)>>$@
-	@echo cd ..>>$@
 
 build-$(PLAT)-$(CFG)-lib.bat: build-$(PLAT)-$(CFG).pre.bat
 	@type $**>$@
-	@echo $(CARGO_CMD) --verbose --lib>>$@
+	@echo $(CARGO_CMD) $(RUST_VERBOSE_FLAG) --lib>>$@
 
 build-$(PLAT)-$(CFG)-bin.bat: build-$(PLAT)-$(CFG).pre.bat
 	@type $**>$@
-	@echo $(CARGO_CMD) --verbose --bin rsvg-convert>>$@
+	@echo $(CARGO_CMD) $(RUST_VERBOSE_FLAG) --bin rsvg-convert>>$@
 
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\librsvg.lib: build-$(PLAT)-$(CFG)-lib.bat
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe: build-$(PLAT)-$(CFG)-bin.bat
+$(CARGO_TARGET_OUTPUT_DIR)\librsvg.lib: build-$(PLAT)-$(CFG)-lib.bat
+$(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe: build-$(PLAT)-$(CFG)-bin.bat
 
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\librsvg.lib	\
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe:
+$(CARGO_TARGET_OUTPUT_DIR)\librsvg.lib	\
+$(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 	@echo Please do not manually close the command window that pops up...
 	@echo.
 	@echo If this fails due to LNK1112 or a linker executable cannot be found, run
@@ -120,43 +140,29 @@ vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\r
 	@start "Building the Rust bits for $(PLAT) Windows MSVC Build, please do not close this console window..." /wait /i cmd /c $**
 
 !else
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\librsvg.lib:
+$(CARGO_TARGET_OUTPUT_DIR)\librsvg.lib:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
-	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)
-	$(RUSTUP_CMD)
-	@cd ..
-	$(CARGO_CMD) --verbose --lib
-	@cd win32
+	$(CARGO_CMD) $(RUST_VERBOSE_FLAG) --lib
 	@set GTK_LIB_DIR=
-	@set CARGO_TARGET_DIR=
 
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe:
+$(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
-	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)
-	$(RUSTUP_CMD)
-	@cd ..
-	$(CARGO_CMD) --verbose --bin $(@B)
-	@cd win32
+	$(CARGO_CMD) $(RUST_VERBOSE_FLAG) --bin $(@B)
 	@set GTK_LIB_DIR=
-	@set CARGO_TARGET_DIR=
 !endif
 
 cargo-clean:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
-	@set CARGO_TARGET_DIR=win32\vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
 	@if exist build-$(PLAT)-$(CFG).bat del /f/q build-$(PLAT)-$(CFG).bat
-	@cd ..
-	@$(CARGO) clean
-	@cd win32
-	@set CARGO_TARGET_DIR=
+	@$(CARGO_CLEAN_CMD)
 	
 !else
 !if "$(VALID_CFGSET)" == "FALSE"

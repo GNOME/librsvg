@@ -64,9 +64,9 @@ $(OUTDIR)\rsvg-gdk-pixbuf-loader\io-svg.obj
 # <<
 # 	@-if exist $@.manifest mt /manifest $@.manifest /outputresource:$@;1
 $(OUTDIR)\rsvg-convert.exe:	\
-vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api\$(RUST_TARGET)-pc-windows-msvc\$(CFG)\rsvg-convert.exe
-	@copy /b $** $@
-	@if exist $(**D)\rsvg_convert.pdb copy /b $(**D)\rsvg_convert.pdb $(@D)
+$(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe
+	copy /b $** $@
+	if exist $(**D)\rsvg_convert.pdb copy /b $(**D)\rsvg_convert.pdb $(@D)
 
 # Include the rules for the test programs
 !include rsvg_tests_rules.mak
