@@ -388,8 +388,7 @@ impl DropShadow {
                 std_deviation: NumberOptionalNumber(std_dev, std_dev),
                 ..GaussianBlur::default()
             }),
-        }
-        .into_user_space(params);
+        };
 
         let offset = ResolvedPrimitive {
             primitive: Primitive {
@@ -401,14 +400,12 @@ impl DropShadow {
                 dx,
                 dy,
             }),
-        }
-        .into_user_space(params);
+        };
 
         let flood = ResolvedPrimitive {
             primitive: Primitive::default(),
             params: PrimitiveParams::Flood(Flood { color }),
-        }
-        .into_user_space(params);
+        };
 
         let composite = ResolvedPrimitive {
             primitive: Primitive::default(),
@@ -417,8 +414,7 @@ impl DropShadow {
                 operator: Operator::In,
                 ..Composite::default()
             }),
-        }
-        .into_user_space(params);
+        };
 
         let merge = ResolvedPrimitive {
             primitive: Primitive::default(),
@@ -431,12 +427,17 @@ impl DropShadow {
                     },
                 ],
             }),
-        }
-        .into_user_space(params);
+        };
+
+        let resolved_primitives = vec![gaussian_blur, offset, flood, composite, merge];
+        let primitives = resolved_primitives
+            .into_iter()
+            .map(|p| p.into_user_space(params))
+            .collect();
 
         FilterSpec {
             user_space_filter,
-            primitives: vec![gaussian_blur, offset, flood, composite, merge],
+            primitives,
         }
     }
 }
