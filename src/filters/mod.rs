@@ -49,6 +49,7 @@ pub mod component_transfer;
 pub mod composite;
 pub mod convolve_matrix;
 pub mod displacement_map;
+pub mod drop_shadow;
 pub mod flood;
 pub mod gaussian_blur;
 pub mod image;
@@ -348,6 +349,10 @@ fn render_primitive(
     use PrimitiveParams::*;
 
     let bounds_builder = primitive.get_bounds(ctx);
+
+    // Note that feDropShadow is not handled here.  When its FilterElement::resolve() is called,
+    // it returns a series of lower-level primitives (flood, blur, offset, etc.) that make up
+    // the drop-shadow effect.
 
     match primitive.params {
         Blend(ref p)             => p.render(bounds_builder, ctx, acquired_nodes, draw_ctx),

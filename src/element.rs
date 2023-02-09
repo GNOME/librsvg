@@ -21,6 +21,7 @@ use crate::filters::{
     composite::FeComposite,
     convolve_matrix::FeConvolveMatrix,
     displacement_map::FeDisplacementMap,
+    drop_shadow::FeDropShadow,
     flood::FeFlood,
     gaussian_blur::FeGaussianBlur,
     image::FeImage,
@@ -315,6 +316,7 @@ pub enum Element {
     FeDiffuseLighting(Box<ElementInner<FeDiffuseLighting>>),
     FeDisplacementMap(Box<ElementInner<FeDisplacementMap>>),
     FeDistantLight(Box<ElementInner<FeDistantLight>>),
+    FeDropShadow(Box<ElementInner<FeDropShadow>>),
     FeFlood(Box<ElementInner<FeFlood>>),
     FeFuncA(Box<ElementInner<FeFuncA>>),
     FeFuncB(Box<ElementInner<FeFuncB>>),
@@ -372,6 +374,7 @@ macro_rules! call_inner {
             Element::FeDiffuseLighting(i) => i.$method($($args),*),
             Element::FeDisplacementMap(i) => i.$method($($args),*),
             Element::FeDistantLight(i) => i.$method($($args),*),
+            Element::FeDropShadow(i) => i.$method($($args),*),
             Element::FeFlood(i) => i.$method($($args),*),
             Element::FeFuncA(i) => i.$method($($args),*),
             Element::FeFuncB(i) => i.$method($($args),*),
@@ -494,6 +497,7 @@ impl Element {
             Element::FeConvolveMatrix(ref fe) => Some(&fe.element_impl),
             Element::FeDiffuseLighting(ref fe) => Some(&fe.element_impl),
             Element::FeDisplacementMap(ref fe) => Some(&fe.element_impl),
+            Element::FeDropShadow(ref fe) => Some(&fe.element_impl),
             Element::FeFlood(ref fe) => Some(&fe.element_impl),
             Element::FeGaussianBlur(ref fe) => Some(&fe.element_impl),
             Element::FeImage(ref fe) => Some(&fe.element_impl),
@@ -591,8 +595,9 @@ mod creators {
     e!(create_fe_composite,             FeComposite);
     e!(create_fe_convolve_matrix,       FeConvolveMatrix);
     e!(create_fe_diffuse_lighting,      FeDiffuseLighting);
-    e!(create_fe_distant_light,         FeDistantLight);
     e!(create_fe_displacement_map,      FeDisplacementMap);
+    e!(create_fe_distant_light,         FeDistantLight);
+    e!(create_fe_drop_shadow,           FeDropShadow);
     e!(create_fe_flood,                 FeFlood);
     e!(create_fe_gaussian_blur,         FeGaussianBlur);
     e!(create_fe_image,                 FeImage);
@@ -685,6 +690,7 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
         ("feDiffuseLighting",   create_fe_diffuse_lighting,   Default),
         ("feDisplacementMap",   create_fe_displacement_map,   Default),
         ("feDistantLight",      create_fe_distant_light,      IgnoreClass),
+        ("feDropShadow",        create_fe_drop_shadow,        Default),
         ("feFuncA",             create_fe_func_a,             IgnoreClass),
         ("feFuncB",             create_fe_func_b,             IgnoreClass),
         ("feFuncG",             create_fe_func_g,             IgnoreClass),
@@ -788,6 +794,7 @@ mod sizes {
         print_size!(FeDiffuseLighting);
         print_size!(FeDistantLight);
         print_size!(FeDisplacementMap);
+        print_size!(FeDropShadow);
         print_size!(FeFlood);
         print_size!(FeGaussianBlur);
         print_size!(FeImage);

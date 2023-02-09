@@ -1,8 +1,8 @@
 use cairo;
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::test_compare_render_output;
 use crate::utils::{load_svg, render_document, SurfaceSize};
+use crate::{test_compare_render_output, test_svg_reference};
 
 #[test]
 fn invalid_filter_reference_cancels_filter_chain() {
@@ -362,4 +362,10 @@ test_compare_render_output!(
   <rect x="110" y="10" width="80" height="80" fill="green"/>
 </svg>
 "##,
+);
+
+test_svg_reference!(
+    bug_743_fe_drop_shadow,
+    "tests/fixtures/reftests/svg2/bug743-fe-drop-shadow.svg",
+    "tests/fixtures/reftests/svg2/bug743-fe-drop-shadow-ref.svg"
 );
