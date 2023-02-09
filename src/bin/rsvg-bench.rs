@@ -166,7 +166,7 @@ fn run(opt: &Opt) -> Result<()> {
     println!("Processing files!");
 
     for path in &opt.inputs {
-        process_path(opt, &path)?;
+        process_path(opt, path)?;
     }
 
     Ok(())
