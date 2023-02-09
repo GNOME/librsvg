@@ -68,7 +68,7 @@ impl fmt::Display for AcceptLanguageError {
         match self {
             Self::NoElements => write!(f, "no language tags in list"),
             Self::InvalidCharacters => write!(f, "invalid characters in language list"),
-            Self::InvalidLanguageTag(e) => write!(f, "invalid language tag: {}", e),
+            Self::InvalidLanguageTag(e) => write!(f, "invalid language tag: {e}"),
             Self::InvalidWeight => write!(f, "invalid q= weight"),
         }
     }
@@ -188,16 +188,12 @@ impl LanguageTags {
             let str_locale_range = locale_range.as_ref();
 
             let locale_tag = LanguageTag::from_str(str_locale_range).map_err(|e| {
-                format!(
-                    "invalid language tag \"{}\" in locale: {}",
-                    str_locale_range, e
-                )
+                format!("invalid language tag \"{str_locale_range}\" in locale: {e}")
             })?;
 
             if !locale_tag.is_language_range() {
                 return Err(format!(
-                    "language tag \"{}\" is not a language range",
-                    locale_tag
+                    "language tag \"{locale_tag}\" is not a language range"
                 ));
             }
 

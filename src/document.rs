@@ -64,8 +64,8 @@ impl NodeId {
 impl fmt::Display for NodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NodeId::Internal(id) => write!(f, "#{}", id),
-            NodeId::External(url, id) => write!(f, "{}#{}", url, id),
+            NodeId::Internal(id) => write!(f, "#{id}"),
+            NodeId::External(url, id) => write!(f, "{url}#{id}"),
         }
     }
 }
@@ -330,9 +330,9 @@ fn image_loading_error_from_cairo(status: cairo::Error, aurl: &AllowedUrl) -> Lo
     let url = human_readable_url(aurl);
 
     match status {
-        cairo::Error::NoMemory => LoadingError::OutOfMemory(format!("loading image: {}", url)),
-        cairo::Error::InvalidSize => LoadingError::Other(format!("image too big: {}", url)),
-        _ => LoadingError::Other(format!("cairo error: {}", status)),
+        cairo::Error::NoMemory => LoadingError::OutOfMemory(format!("loading image: {url}")),
+        cairo::Error::InvalidSize => LoadingError::Other(format!("image too big: {url}")),
+        _ => LoadingError::Other(format!("cairo error: {status}")),
     }
 }
 

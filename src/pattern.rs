@@ -297,8 +297,8 @@ impl UnresolvedChildren {
 
         match (self, fallback) {
             (&Unresolved, &Unresolved) => Unresolved,
-            (&WithChildren(ref wc), _) => WithChildren(wc.clone()),
-            (_, &WithChildren(ref wc)) => WithChildren(wc.clone()),
+            (WithChildren(wc), _) => WithChildren(wc.clone()),
+            (_, WithChildren(wc)) => WithChildren(wc.clone()),
             (_, _) => unreachable!(),
         }
     }

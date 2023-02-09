@@ -188,7 +188,7 @@ fn extract_filter_from_filter_node(
             let elt = primitive_node.borrow_element();
             let effect = elt.as_filter_effect().unwrap();
 
-            let primitive_name = format!("{}", primitive_node);
+            let primitive_name = format!("{primitive_node}");
 
             let primitive_values = elt.get_computed_values();
             let params = NormalizeParams::new(primitive_values, primitive_view_params);

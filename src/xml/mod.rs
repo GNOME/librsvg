@@ -534,8 +534,7 @@ impl XmlState {
                 Some("text") => self.acquire_text(&aurl, encoding),
 
                 Some(v) => Err(AcquireError::FatalError(format!(
-                    "unknown 'parse' attribute value: \"{}\"",
-                    v
+                    "unknown 'parse' attribute value: \"{v}\""
                 ))),
             }
         } else {
@@ -557,19 +556,13 @@ impl XmlState {
         let encoding = encoding.unwrap_or("utf-8");
 
         let encoder = encoding_from_whatwg_label(encoding).ok_or_else(|| {
-            AcquireError::FatalError(format!(
-                "unknown encoding \"{}\" for \"{}\"",
-                encoding, aurl
-            ))
+            AcquireError::FatalError(format!("unknown encoding \"{encoding}\" for \"{aurl}\""))
         })?;
 
         let utf8_data = encoder
             .decode(&binary.data, DecoderTrap::Strict)
             .map_err(|e| {
-                AcquireError::FatalError(format!(
-                    "could not convert contents of \"{}\" from character encoding \"{}\": {}",
-                    aurl, encoding, e
-                ))
+                AcquireError::FatalError(format!("could not convert contents of \"{aurl}\" from character encoding \"{encoding}\": {e}"))
             })?;
 
         self.element_creation_characters(&utf8_data);

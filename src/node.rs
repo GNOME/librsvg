@@ -80,7 +80,7 @@ impl fmt::Display for NodeData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             NodeData::Element(ref e) => {
-                write!(f, "{}", e)?;
+                write!(f, "{e}")?;
             }
             NodeData::Text(_) => {
                 write!(f, "Chars")?;

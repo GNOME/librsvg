@@ -9,9 +9,9 @@ crate-type = ["cdylib"]
 
 [dependencies]
 librsvg = { path = ".." }
-gdk-pixbuf = "0.16"
+gdk-pixbuf = "0.17"
 libc = "0.2"
-glib = "0.16"
-gio = "0.16"
-cairo-rs = "0.16"
+glib = "0.17"
+gio = "0.17"
+cairo-rs = "0.17"
 cstr = "0.2"

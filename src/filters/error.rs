@@ -37,12 +37,12 @@ impl fmt::Display for FilterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             FilterError::InvalidInput => write!(f, "invalid value of the `in` attribute"),
-            FilterError::InvalidParameter(ref s) => write!(f, "invalid parameter value: {}", s),
+            FilterError::InvalidParameter(ref s) => write!(f, "invalid parameter value: {s}"),
             FilterError::BadInputSurfaceStatus(ref status) => {
-                write!(f, "invalid status of the input surface: {}", status)
+                write!(f, "invalid status of the input surface: {status}")
             }
-            FilterError::CairoError(ref status) => write!(f, "Cairo error: {}", status),
-            FilterError::Rendering(ref e) => write!(f, "Rendering error: {}", e),
+            FilterError::CairoError(ref status) => write!(f, "Cairo error: {status}"),
+            FilterError::Rendering(ref e) => write!(f, "Rendering error: {e}"),
             FilterError::LightingInputTooSmall => write!(
                 f,
                 "lighting filter input surface is too small (less than 2×2 pixels)"

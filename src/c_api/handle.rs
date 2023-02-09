@@ -336,7 +336,7 @@ mod imp {
         }
 
         fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-            let obj = self.instance();
+            let obj = self.obj();
             match pspec.name() {
                 "flags" => {
                     let v: HandleFlags = value.get().expect("flags value has incorrect type");
@@ -370,7 +370,7 @@ mod imp {
         }
 
         fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
-            let obj = self.instance();
+            let obj = self.obj();
             match pspec.name() {
                 "flags" => obj.get_flags().to_value(),
                 "dpi-x" => obj.get_dpi_x().to_value(),
@@ -996,7 +996,7 @@ fn is_cancellable(obj: *mut gio::ffi::GCancellable) -> bool {
 
 fn get_rust_handle(handle: *const RsvgHandle) -> CHandle {
     let handle = unsafe { &*handle };
-    handle.imp().instance().to_owned()
+    handle.imp().obj().to_owned()
 }
 
 #[no_mangle]
@@ -1153,7 +1153,7 @@ impl<E: fmt::Display> IntoGError for Result<(), E> {
             Ok(()) => true.into_glib(),
 
             Err(e) => {
-                set_gerror(session, error, 0, &format!("{}", e));
+                set_gerror(session, error, 0, &format!("{e}"));
                 false.into_glib()
             }
         }
@@ -1415,14 +1415,16 @@ pub unsafe extern "C" fn rsvg_handle_get_position_sub(
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
-    let obj = glib::Object::new::<CHandle>(&[]);
+    let obj = glib::Object::new::<CHandle>();
 
     obj.to_glib_full()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
-    let obj = glib::Object::new::<CHandle>(&[("flags", &HandleFlags::from_bits_truncate(flags))]);
+    let obj = glib::Object::builder::<CHandle>()
+        .property("flags", &HandleFlags::from_bits_truncate(flags))
+        .build();
 
     obj.to_glib_full()
 }
@@ -1490,7 +1492,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
         Ok(()) => raw_handle,
 
         Err(e) => {
-            set_gerror(&session, error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{e}"));
             gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
@@ -1531,7 +1533,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
         Ok(()) => raw_handle,
 
         Err(e) => {
-            set_gerror(&session, error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{e}"));
             gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
@@ -1629,12 +1631,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
             match str::from_utf8(s) {
                 Ok(s) => s,
                 Err(e) => {
-                    set_gerror(
-                        &session,
-                        error,
-                        0,
-                        &format!("CSS is not valid UTF-8: {}", e),
-                    );
+                    set_gerror(&session, error, 0, &format!("CSS is not valid UTF-8: {e}"));
                     return false.into_glib();
                 }
             }
@@ -1977,10 +1974,7 @@ fn check_cairo_context(cr: *mut cairo::ffi::cairo_t) -> Result<cairo::Context, R
     } else {
         let status: cairo::Error = status.into();
 
-        let msg = format!(
-            "cannot render on a cairo_t with a failure status (status={:?})",
-            status,
-        );
+        let msg = format!("cannot render on a cairo_t with a failure status (status={status:?})");
 
         rsvg_g_warning(&msg);
 

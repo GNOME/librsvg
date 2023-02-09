@@ -624,7 +624,7 @@ fn invalid_zoom_factor_yields_error() {
         .arg("--zoom=foo")
         .assert()
         .failure()
-        .stderr(contains("Invalid value"));
+        .stderr(contains("invalid value"));
 }
 
 #[test]

@@ -526,7 +526,7 @@ impl fmt::Display for LengthUnit {
             LengthUnit::Pc => "pc",
         };
 
-        write!(f, "{}", unit)
+        write!(f, "{unit}")
     }
 }
 

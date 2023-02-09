@@ -8,7 +8,7 @@ use std::process;
 
 fn main() {
     if let Err(e) = system_deps::Config::new().probe() {
-        eprintln!("{}", e);
+        eprintln!("{e}");
         process::exit(1);
     }
 
@@ -45,12 +45,12 @@ where
     W: Write,
     F: Fn(f64) -> f64,
 {
-    writeln!(w, "const {}: [u8; {}] = [", name, len).unwrap();
+    writeln!(w, "const {name}: [u8; {len}] = [").unwrap();
 
     for i in 0..len {
         let x = f(i as f64 / 255.0);
         let v = (x * 255.0).round() as u8;
-        writeln!(w, "    {},", v).unwrap();
+        writeln!(w, "    {v},").unwrap();
     }
 
     writeln!(w, "];").unwrap();
@@ -58,7 +58,7 @@ where
 
 fn generate_srgb_tables() {
     let path = Path::new(&env::var("OUT_DIR").unwrap()).join("srgb-codegen.rs");
-    let mut file = BufWriter::new(File::create(&path).unwrap());
+    let mut file = BufWriter::new(File::create(path).unwrap());
 
     print_table(&mut file, "LINEARIZE", linearize, 256);
     print_table(&mut file, "UNLINEARIZE", unlinearize, 256);
@@ -95,7 +95,7 @@ fn write_version() {
                     }
                 }
 
-                Err(e) => panic!("could not parse version from configure.ac: {}", e),
+                Err(e) => panic!("could not parse version from configure.ac: {e}"),
             }
         }
     }

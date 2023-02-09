@@ -9,7 +9,7 @@ use gdk_pixbuf::ffi::{
 use libc::{c_char, c_int, c_uint};
 
 use glib::ffi::{gboolean, gpointer, GError};
-use glib::translate::{IntoGlib, ToGlibPtr};
+use glib::translate::*;
 use glib::Bytes;
 
 use gio::prelude::MemoryInputStreamExt;
@@ -117,7 +117,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
         Err(e) => {
             if !error.is_null() {
                 let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e);
-                *error = gerr.to_glib_full() as *mut GError;
+                *error = gerr.into_glib_ptr();
             }
             return false.into_glib();
         }
@@ -202,7 +202,7 @@ mod tests {
 
     use crate::{EXTENSIONS, MIME_TYPES};
     use libc::c_char;
-    use std::ptr::{null, null_mut};
+    use std::ptr::null_mut;
 
     fn pb_format_new() -> GdkPixbufFormat {
         let mut info = super::GdkPixbufFormat {
@@ -240,9 +240,9 @@ mod tests {
     fn check_null_terminated_arr_cstrings(arr: &[*const c_char]) {
         let n_strings = arr
             .iter()
-            .filter(|e| e != &&null())
+            .filter(|e| !e.is_null())
             .map(|e| {
-                if e != &null() {
+                if !e.is_null() {
                     // We use strlen in all of them to ensure some safety
                     // We could use CStr instead but it'd be a bit more cumbersome
                     assert!(unsafe { libc::strlen(*e as *const c_char) } > 0)
@@ -252,7 +252,7 @@ mod tests {
 
         // Ensure last item is null and is the only null item
         assert_eq!(n_strings, arr.len() - 1);
-        assert!(arr.last().unwrap() == &null());
+        assert!(arr.last().unwrap().is_null());
     }
 
     #[test]
@@ -268,24 +268,25 @@ mod tests {
     #[test]
     fn signature() {
         let info = pb_format_new();
-
-        for i in 0..2 {
-            let ptr = unsafe { info.signature.offset(i) };
-            if i == 2 {
-                assert_eq!(unsafe { (*ptr).prefix }, null_mut());
-                continue;
-            } else {
-                assert_ne!(unsafe { (*ptr).prefix }, null_mut());
-                if unsafe { (*ptr).mask } != null_mut() {
-                    // Mask can be null
-                    assert_eq!(
-                        unsafe { libc::strlen((*ptr).prefix as *mut c_char) },
-                        unsafe { libc::strlen((*ptr).mask as *mut c_char) }
-                    );
+        unsafe {
+            for i in 0..2 {
+                let ptr = info.signature.offset(i);
+                if i == 2 {
+                    assert!((*ptr).prefix.is_null());
+                    continue;
+                } else {
+                    assert!(!(*ptr).prefix.is_null());
+                    if (*ptr).mask != null_mut() {
+                        // Mask can be null
+                        assert_eq!(
+                            libc::strlen((*ptr).prefix as *mut c_char),
+                            libc::strlen((*ptr).mask as *mut c_char)
+                        );
+                    }
+                    // Relevance must be 0 to 100
+                    assert!((*ptr).relevance >= 0);
+                    assert!((*ptr).relevance <= 100);
                 }
-                // Relevance must be 0 to 100
-                assert!(unsafe { (*ptr).relevance } >= 0);
-                assert!(unsafe { (*ptr).relevance } <= 100);
             }
         }
     }
@@ -357,15 +358,15 @@ mod tests {
                 0xff
             );
         }
+        unsafe {
+            let ctx = crate::begin_load(None, Some(prep_cb), None, null_mut(), null_mut());
+            assert_ne!(ctx, null_mut());
 
-        let ctx = unsafe { crate::begin_load(None, Some(prep_cb), None, null_mut(), null_mut()) };
-        assert_ne!(ctx, null_mut());
+            let inc =
+                crate::load_increment(ctx, SVG_DATA.as_ptr(), SVG_DATA.len() as u32, null_mut());
+            assert_ne!(inc, 0);
 
-        let inc = unsafe {
-            crate::load_increment(ctx, SVG_DATA.as_ptr(), SVG_DATA.len() as u32, null_mut())
-        };
-        assert_ne!(inc, 0);
-
-        unsafe { crate::stop_load(ctx, null_mut()) };
+            crate::stop_load(ctx, null_mut());
+        }
     }
 }

@@ -125,6 +125,14 @@ There is a job for ``cargo fmt``.  Librsvg uses the default formatting
 for Rust code.  For portions of code that are more legible if
 indented/aligned by hand, please use ``#[rustfmt::skip]``.
 
+One job runs `cargo deny`, which checks if there are dependencies with
+vulnerabilities.
+
+Another job runs a script to check that the Rust versions mentioned in
+various parts of the source code all match (e.g. `Cargo.toml` and
+`configure.ac` must have check for the same Minimum Supported Rust
+Version (MSRV)).
+
 
 Test coverage report
 --------------------
