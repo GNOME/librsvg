@@ -373,6 +373,7 @@ impl DropShadow {
         let dx = self.dx.map(|l| l.to_user(params)).unwrap_or(0.0);
         let dy = self.dy.map(|l| l.to_user(params)).unwrap_or(0.0);
         let std_dev = self.std_deviation.map(|l| l.to_user(params)).unwrap_or(0.0);
+        let std_deviation = NumberOptionalNumber(std_dev, std_dev);
         let color = self
             .color
             .as_ref()
@@ -385,7 +386,7 @@ impl DropShadow {
             primitive: Primitive::default(),
             params: PrimitiveParams::GaussianBlur(GaussianBlur {
                 in1: Input::SourceAlpha,
-                std_deviation: NumberOptionalNumber(std_dev, std_dev),
+                std_deviation,
                 ..GaussianBlur::default()
             }),
         };
