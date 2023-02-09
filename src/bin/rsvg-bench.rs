@@ -136,7 +136,7 @@ fn render_to_cairo(opt: &Opt, handle: &librsvg::SvgHandle) -> Result<(), Process
     match (opt.hard_failures, renderer.render_document(&cr, &viewport)) {
         (_, Ok(_)) => Ok(()),
         (false, Err(e)) => {
-            println!("could not render: {}", e);
+            println!("could not render: {e}");
             Ok(())
         }
         (true, Err(e)) => Err(e.into()),
@@ -255,7 +255,7 @@ fn main() {
     match run(&opt) {
         Ok(_) => (),
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             process::exit(1);
         }
     }

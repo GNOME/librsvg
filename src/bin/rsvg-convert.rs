@@ -49,7 +49,7 @@ impl From<cairo::Error> for Error {
                  Librsvg currently cannot render to images bigger than that.\n\
                  Please specify a smaller size.",
             )),
-            e => Self(format!("{}", e)),
+            e => Self(format!("{e}")),
         }
     }
 }
@@ -58,7 +58,7 @@ macro_rules! impl_error_from {
     ($err:ty) => {
         impl From<$err> for Error {
             fn from(e: $err) -> Self {
-                Self(format!("{}", e))
+                Self(format!("{e}"))
             }
         }
     };
@@ -1035,7 +1035,7 @@ fn parse_args() -> Result<Converter, Error> {
 
     if let Some(shell) = matches.get_one::<Shell>("completion").copied() {
         let mut cmd = build_cli();
-        eprintln!("Generating completion file for {}", shell);
+        eprintln!("Generating completion file for {shell}");
         print_completions(shell, &mut cmd);
         std::process::exit(0);
     }
@@ -1064,7 +1064,7 @@ fn parse_args() -> Result<Converter, Error> {
         Some(s) => AcceptLanguage::parse(s)
             .map(Language::AcceptLanguage)
             .map_err(|e| {
-                let desc = format!("{}", e);
+                let desc = format!("{e}");
                 clap::Error::raw(clap::error::ErrorKind::InvalidValue, desc)
             })?,
     };
@@ -1082,7 +1082,7 @@ fn parse_args() -> Result<Converter, Error> {
         if id.starts_with('#') {
             id.clone()
         } else {
-            format!("#{}", id)
+            format!("#{id}")
         }
     };
 
@@ -1171,7 +1171,7 @@ fn parse_resolution(v: &str) -> Result<Resolution, String> {
     match v.parse::<f64>() {
         Ok(res) if res > 0.0 => Ok(Resolution(res)),
         Ok(_) => Err(String::from("Invalid resolution")),
-        Err(e) => Err(format!("{}", e)),
+        Err(e) => Err(format!("{e}")),
     }
 }
 
@@ -1182,7 +1182,7 @@ fn parse_zoom_factor(v: &str) -> Result<ZoomFactor, String> {
     match v.parse::<f64>() {
         Ok(res) if res > 0.0 => Ok(ZoomFactor(res)),
         Ok(_) => Err(String::from("Invalid zoom factor")),
-        Err(e) => Err(format!("{}", e)),
+        Err(e) => Err(format!("{e}")),
     }
 }
 
@@ -1217,10 +1217,7 @@ fn parse_background_color(s: &str) -> Result<Option<Color>, String> {
     match s {
         "none" | "None" => Ok(None),
         _ => <Color as Parse>::parse_str(s).map(Some).map_err(|_| {
-            format!(
-                "Invalid value: The argument '{}' can not be parsed as a CSS color value",
-                s
-            )
+            format!("Invalid value: The argument '{s}' can not be parsed as a CSS color value")
         }),
     }
 }
@@ -1236,19 +1233,13 @@ fn is_absolute_unit(u: LengthUnit) -> bool {
 
 fn parse_length<N: Normalize, V: Validate>(s: &str) -> Result<CssLength<N, V>, String> {
     <CssLength<N, V> as Parse>::parse_str(s)
-        .map_err(|_| {
-            format!(
-                "Invalid value: The argument '{}' can not be parsed as a length",
-                s
-            )
-        })
+        .map_err(|_| format!("Invalid value: The argument '{s}' can not be parsed as a length"))
         .and_then(|l| {
             if is_absolute_unit(l.unit) {
                 Ok(l)
             } else {
                 Err(format!(
-                    "Invalid value '{}': supported units are px, in, cm, mm, pt, pc",
-                    s
+                    "Invalid value '{s}': supported units are px, in, cm, mm, pt, pc"
                 ))
             }
         })
@@ -1256,7 +1247,7 @@ fn parse_length<N: Normalize, V: Validate>(s: &str) -> Result<CssLength<N, V>, S
 
 fn main() {
     if let Err(e) = parse_args().and_then(|converter| converter.convert()) {
-        std::eprintln!("{}", e);
+        std::eprintln!("{e}");
         std::process::exit(1);
     }
 }

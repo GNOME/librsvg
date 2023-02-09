@@ -1153,7 +1153,7 @@ impl<E: fmt::Display> IntoGError for Result<(), E> {
             Ok(()) => true.into_glib(),
 
             Err(e) => {
-                set_gerror(session, error, 0, &format!("{}", e));
+                set_gerror(session, error, 0, &format!("{e}"));
                 false.into_glib()
             }
         }
@@ -1492,7 +1492,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_gfile_sync(
         Ok(()) => raw_handle,
 
         Err(e) => {
-            set_gerror(&session, error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{e}"));
             gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
@@ -1533,7 +1533,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_stream_sync(
         Ok(()) => raw_handle,
 
         Err(e) => {
-            set_gerror(&session, error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{e}"));
             gobject_ffi::g_object_unref(raw_handle as *mut _);
             ptr::null_mut()
         }
@@ -1631,12 +1631,7 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
             match str::from_utf8(s) {
                 Ok(s) => s,
                 Err(e) => {
-                    set_gerror(
-                        &session,
-                        error,
-                        0,
-                        &format!("CSS is not valid UTF-8: {}", e),
-                    );
+                    set_gerror(&session, error, 0, &format!("CSS is not valid UTF-8: {e}"));
                     return false.into_glib();
                 }
             }
@@ -1979,10 +1974,7 @@ fn check_cairo_context(cr: *mut cairo::ffi::cairo_t) -> Result<cairo::Context, R
     } else {
         let status: cairo::Error = status.into();
 
-        let msg = format!(
-            "cannot render on a cairo_t with a failure status (status={:?})",
-            status,
-        );
+        let msg = format!("cannot render on a cairo_t with a failure status (status={status:?})");
 
         rsvg_g_warning(&msg);
 

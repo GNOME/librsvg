@@ -156,7 +156,7 @@ unsafe fn pixbuf_from_file_with_size_mode(
     let handle = match Loader::new_with_session(session.clone()).read_path(path) {
         Ok(handle) => handle,
         Err(e) => {
-            set_gerror(&session, error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{e}"));
             return ptr::null_mut();
         }
     };
@@ -167,7 +167,7 @@ unsafe fn pixbuf_from_file_with_size_mode(
     let (document_width, document_height) = match renderer.legacy_document_size() {
         Ok(dim) => dim,
         Err(e) => {
-            set_gerror(&session, error, 0, &format!("{}", e));
+            set_gerror(&session, error, 0, &format!("{e}"));
             return ptr::null_mut();
         }
     };
@@ -184,7 +184,7 @@ unsafe fn pixbuf_from_file_with_size_mode(
     )
     .map(|pixbuf| pixbuf.to_glib_full())
     .unwrap_or_else(|e| {
-        set_gerror(&session, error, 0, &format!("{}", e));
+        set_gerror(&session, error, 0, &format!("{e}"));
         ptr::null_mut()
     })
 }

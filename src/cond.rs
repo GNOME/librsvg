@@ -113,7 +113,7 @@ impl SystemLanguage {
             .map(str::trim)
             .map(|s| {
                 LanguageTag::from_str(s).map_err(|e| {
-                    ValueErrorKind::parse_error(&format!("invalid language tag: \"{}\"", e))
+                    ValueErrorKind::parse_error(&format!("invalid language tag \"{s}\": {e}"))
                 })
             })
             .collect::<Result<Vec<LanguageTag>, _>>();

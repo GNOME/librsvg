@@ -143,7 +143,7 @@ impl StackingContext {
         transform: Transform,
         values: &ComputedValues,
     ) -> StackingContext {
-        let element_name = format!("{}", element);
+        let element_name = format!("{element}");
 
         let opacity;
         let filter;

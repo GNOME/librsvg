@@ -50,9 +50,9 @@ impl fmt::Display for ValueErrorKind {
         match *self {
             ValueErrorKind::UnknownProperty => write!(f, "unknown property name"),
 
-            ValueErrorKind::Parse(ref s) => write!(f, "parse error: {}", s),
+            ValueErrorKind::Parse(ref s) => write!(f, "parse error: {s}"),
 
-            ValueErrorKind::Value(ref s) => write!(f, "invalid value: {}", s),
+            ValueErrorKind::Value(ref s) => write!(f, "invalid value: {s}"),
         }
     }
 }
@@ -142,7 +142,7 @@ impl From<DefsLookupErrorKind> for RenderingError {
     fn from(e: DefsLookupErrorKind) -> RenderingError {
         match e {
             DefsLookupErrorKind::NotFound => RenderingError::IdNotFound,
-            _ => RenderingError::InvalidId(format!("{}", e)),
+            _ => RenderingError::InvalidId(format!("{e}")),
         }
     }
 }
@@ -152,18 +152,18 @@ impl error::Error for RenderingError {}
 impl fmt::Display for RenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            RenderingError::Rendering(ref s) => write!(f, "rendering error: {}", s),
-            RenderingError::LimitExceeded(ref l) => write!(f, "{}", l),
+            RenderingError::Rendering(ref s) => write!(f, "rendering error: {s}"),
+            RenderingError::LimitExceeded(ref l) => write!(f, "{l}"),
             RenderingError::IdNotFound => write!(f, "element id not found"),
-            RenderingError::InvalidId(ref s) => write!(f, "invalid id: {:?}", s),
-            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
+            RenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
+            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
         }
     }
 }
 
 impl From<cairo::Error> for RenderingError {
     fn from(e: cairo::Error) -> RenderingError {
-        RenderingError::Rendering(format!("{:?}", e))
+        RenderingError::Rendering(format!("{e:?}"))
     }
 }
 
@@ -197,14 +197,14 @@ pub enum AcquireError {
 impl fmt::Display for AcquireError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            AcquireError::LinkNotFound(ref frag) => write!(f, "link not found: {}", frag),
+            AcquireError::LinkNotFound(ref frag) => write!(f, "link not found: {frag}"),
 
             AcquireError::InvalidLinkType(ref frag) => {
-                write!(f, "link {} is to object of invalid type", frag)
+                write!(f, "link \"{frag}\" is to object of invalid type")
             }
 
             AcquireError::CircularReference(ref node) => {
-                write!(f, "circular reference in node {}", node)
+                write!(f, "circular reference in node {node}")
             }
 
             AcquireError::MaxReferencesExceeded => {
@@ -326,7 +326,7 @@ pub enum AllowedUrlError {
 impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            AllowedUrlError::UrlParseError(e) => write!(f, "URL parse error: {}", e),
+            AllowedUrlError::UrlParseError(e) => write!(f, "URL parse error: {e}"),
             AllowedUrlError::BaseRequired => write!(f, "base required"),
             AllowedUrlError::DifferentUriSchemes => write!(f, "different URI schemes"),
             AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
@@ -452,14 +452,14 @@ impl error::Error for LoadingError {}
 impl fmt::Display for LoadingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {}", s),
-            LoadingError::OutOfMemory(ref s) => write!(f, "out of memory: {}", s),
+            LoadingError::XmlParseError(ref s) => write!(f, "XML parse error: {s}"),
+            LoadingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
             LoadingError::BadUrl => write!(f, "invalid URL"),
             LoadingError::BadCss => write!(f, "invalid CSS"),
             LoadingError::NoSvgRoot => write!(f, "XML does not have <svg> root"),
-            LoadingError::Io(ref s) => write!(f, "I/O error: {}", s),
-            LoadingError::LimitExceeded(ref l) => write!(f, "{}", l),
-            LoadingError::Other(ref s) => write!(f, "{}", s),
+            LoadingError::Io(ref s) => write!(f, "I/O error: {s}"),
+            LoadingError::LimitExceeded(ref l) => write!(f, "{l}"),
+            LoadingError::Other(ref s) => write!(f, "{s}"),
         }
     }
 }
@@ -468,7 +468,7 @@ impl From<glib::Error> for LoadingError {
     fn from(e: glib::Error) -> LoadingError {
         // FIXME: this is somewhat fishy; not all GError are I/O errors, but in librsvg
         // most GError do come from gio.  Some come from GdkPixbufLoader, though.
-        LoadingError::Io(format!("{}", e))
+        LoadingError::Io(format!("{e}"))
     }
 }
 
@@ -476,7 +476,7 @@ impl From<IoError> for LoadingError {
     fn from(e: IoError) -> LoadingError {
         match e {
             IoError::BadDataUrl => LoadingError::BadUrl,
-            IoError::Glib(e) => LoadingError::Io(format!("{}", e)),
+            IoError::Glib(e) => LoadingError::Io(format!("{e}")),
         }
     }
 }
