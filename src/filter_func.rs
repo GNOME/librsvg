@@ -133,7 +133,7 @@ pub struct Sepia {
 
 /// Reads an optional number or percentage from the parser.
 /// Negative numbers are not allowed.
-fn parse_num_or_percentage<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+fn parse_num_or_percentage(parser: &mut Parser<'_, '_>) -> Option<f64> {
     match parser.try_parse(|p| NumberOrPercentage::parse(p)) {
         Ok(NumberOrPercentage { value }) if value < 0.0 => None,
         Ok(NumberOrPercentage { value }) => Some(value),
@@ -143,7 +143,7 @@ fn parse_num_or_percentage<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
 
 /// Reads an optional number or percentage from the parser, returning a value clamped to [0, 1].
 /// Negative numbers are not allowed.
-fn parse_num_or_percentage_clamped<'i>(parser: &mut Parser<'i, '_>) -> Option<f64> {
+fn parse_num_or_percentage_clamped(parser: &mut Parser<'_, '_>) -> Option<f64> {
     parse_num_or_percentage(parser).map(|value| value.clamp(0.0, 1.0))
 }
 
