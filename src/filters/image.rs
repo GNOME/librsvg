@@ -180,7 +180,7 @@ impl FilterEffect for FeImage {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
-    ) -> Result<ResolvedPrimitive, FilterResolveError> {
+    ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let feimage_values = cascaded.get().clone();
 
@@ -199,13 +199,13 @@ impl FilterEffect for FeImage {
             }
         };
 
-        Ok(ResolvedPrimitive {
+        Ok(vec![ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Image(Image {
                 aspect: self.params.aspect,
                 source,
                 feimage_values: Box::new(feimage_values),
             }),
-        })
+        }])
     }
 }

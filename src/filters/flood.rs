@@ -52,11 +52,11 @@ impl FilterEffect for FeFlood {
         &self,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
-    ) -> Result<ResolvedPrimitive, FilterResolveError> {
+    ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
-        Ok(ResolvedPrimitive {
+        Ok(vec![ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Flood(Flood {
                 color: resolve_color(
@@ -65,6 +65,6 @@ impl FilterEffect for FeFlood {
                     values.color().0,
                 ),
             }),
-        })
+        }])
     }
 }

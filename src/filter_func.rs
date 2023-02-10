@@ -364,6 +364,70 @@ impl Contrast {
     }
 }
 
+/// Creates the filter primitives required for a `feDropShadow` effect.
+///
+/// Both the `drop-shadow()` filter function and the `feDropShadow` element need to create
+/// a sequence of filter primitives (blur, offset, etc.) to build the drop shadow.  This
+/// function builds that sequence.
+pub fn drop_shadow_primitives(
+    dx: f64,
+    dy: f64,
+    std_deviation: NumberOptionalNumber<f64>,
+    color: RGBA,
+) -> Vec<ResolvedPrimitive> {
+    let offsetblur = CustomIdent("offsetblur".to_string());
+
+    let gaussian_blur = ResolvedPrimitive {
+        primitive: Primitive::default(),
+        params: PrimitiveParams::GaussianBlur(GaussianBlur {
+            in1: Input::SourceAlpha,
+            std_deviation,
+            ..GaussianBlur::default()
+        }),
+    };
+
+    let offset = ResolvedPrimitive {
+        primitive: Primitive {
+            result: Some(offsetblur.clone()),
+            ..Primitive::default()
+        },
+        params: PrimitiveParams::Offset(Offset {
+            in1: Input::default(),
+            dx,
+            dy,
+        }),
+    };
+
+    let flood = ResolvedPrimitive {
+        primitive: Primitive::default(),
+        params: PrimitiveParams::Flood(Flood { color }),
+    };
+
+    let composite = ResolvedPrimitive {
+        primitive: Primitive::default(),
+        params: PrimitiveParams::Composite(Composite {
+            in2: Input::FilterOutput(offsetblur),
+            operator: Operator::In,
+            ..Composite::default()
+        }),
+    };
+
+    let merge = ResolvedPrimitive {
+        primitive: Primitive::default(),
+        params: PrimitiveParams::Merge(Merge {
+            merge_nodes: vec![
+                MergeNode::default(),
+                MergeNode {
+                    in1: Input::SourceGraphic,
+                    ..MergeNode::default()
+                },
+            ],
+        }),
+    };
+
+    vec![gaussian_blur, offset, flood, composite, merge]
+}
+
 impl DropShadow {
     /// Converts a DropShadow into the set of filter element primitives.
     ///
@@ -373,70 +437,23 @@ impl DropShadow {
         let dx = self.dx.map(|l| l.to_user(params)).unwrap_or(0.0);
         let dy = self.dy.map(|l| l.to_user(params)).unwrap_or(0.0);
         let std_dev = self.std_deviation.map(|l| l.to_user(params)).unwrap_or(0.0);
+        let std_deviation = NumberOptionalNumber(std_dev, std_dev);
         let color = self
             .color
             .as_ref()
             .map(|c| resolve_color(c, UnitInterval::clamp(1.0), default_color))
             .unwrap_or(default_color);
 
-        let offsetblur = CustomIdent("offsetblur".to_string());
+        let resolved_primitives = drop_shadow_primitives(dx, dy, std_deviation, color);
 
-        let gaussian_blur = ResolvedPrimitive {
-            primitive: Primitive::default(),
-            params: PrimitiveParams::GaussianBlur(GaussianBlur {
-                in1: Input::SourceAlpha,
-                std_deviation: NumberOptionalNumber(std_dev, std_dev),
-                ..GaussianBlur::default()
-            }),
-        }
-        .into_user_space(params);
-
-        let offset = ResolvedPrimitive {
-            primitive: Primitive {
-                result: Some(offsetblur.clone()),
-                ..Primitive::default()
-            },
-            params: PrimitiveParams::Offset(Offset {
-                in1: Input::default(),
-                dx,
-                dy,
-            }),
-        }
-        .into_user_space(params);
-
-        let flood = ResolvedPrimitive {
-            primitive: Primitive::default(),
-            params: PrimitiveParams::Flood(Flood { color }),
-        }
-        .into_user_space(params);
-
-        let composite = ResolvedPrimitive {
-            primitive: Primitive::default(),
-            params: PrimitiveParams::Composite(Composite {
-                in2: Input::FilterOutput(offsetblur),
-                operator: Operator::In,
-                ..Composite::default()
-            }),
-        }
-        .into_user_space(params);
-
-        let merge = ResolvedPrimitive {
-            primitive: Primitive::default(),
-            params: PrimitiveParams::Merge(Merge {
-                merge_nodes: vec![
-                    MergeNode::default(),
-                    MergeNode {
-                        in1: Input::SourceGraphic,
-                        ..MergeNode::default()
-                    },
-                ],
-            }),
-        }
-        .into_user_space(params);
+        let primitives = resolved_primitives
+            .into_iter()
+            .map(|p| p.into_user_space(params))
+            .collect();
 
         FilterSpec {
             user_space_filter,
-            primitives: vec![gaussian_blur, offset, flood, composite, merge],
+            primitives,
         }
     }
 }

@@ -385,7 +385,7 @@ impl FilterEffect for FeComponentTransfer {
         &self,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
-    ) -> Result<ResolvedPrimitive, FilterResolveError> {
+    ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError> {
         let cascaded = CascadedValues::new_from_node(node);
         let values = cascaded.get();
 
@@ -393,10 +393,10 @@ impl FilterEffect for FeComponentTransfer {
         params.functions = get_functions(node)?;
         params.color_interpolation_filters = values.color_interpolation_filters();
 
-        Ok(ResolvedPrimitive {
+        Ok(vec![ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::ComponentTransfer(params),
-        })
+        }])
     }
 }
 

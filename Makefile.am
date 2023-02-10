@@ -63,6 +63,7 @@ LIBRSVG_SRC =					\
 	src/filters/context.rs			\
 	src/filters/convolve_matrix.rs		\
 	src/filters/displacement_map.rs		\
+	src/filters/drop_shadow.rs		\
 	src/filters/error.rs			\
 	src/filters/flood.rs			\
 	src/filters/gaussian_blur.rs		\

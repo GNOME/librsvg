@@ -10,7 +10,7 @@ use crate::drawing_ctx::{DrawingCtx, ViewParams};
 use crate::element::{set_attribute, Draw, Element, SetAttributes};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
-use crate::filters::{FilterResolveError, FilterSpec, UserSpacePrimitive};
+use crate::filters::{FilterResolveError, FilterSpec};
 use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
@@ -179,38 +179,44 @@ fn extract_filter_from_filter_node(
 
     let primitive_view_params = filter_view_params.get(user_space_filter.primitive_units);
 
-    let primitives = filter_node
+    let primitive_nodes = filter_node
         .children()
         .filter(|c| c.is_element())
         // Keep only filter primitives (those that implement the Filter trait)
-        .filter(|c| c.borrow_element().as_filter_effect().is_some())
-        .map(|primitive_node| {
-            let elt = primitive_node.borrow_element();
-            let effect = elt.as_filter_effect().unwrap();
+        .filter(|c| c.borrow_element().as_filter_effect().is_some());
 
-            let primitive_name = format!("{primitive_node}");
+    let mut user_space_primitives = Vec::new();
 
-            let primitive_values = elt.get_computed_values();
-            let params = NormalizeParams::new(primitive_values, primitive_view_params);
+    for primitive_node in primitive_nodes {
+        let elt = primitive_node.borrow_element();
+        let effect = elt.as_filter_effect().unwrap();
 
-            effect
-                .resolve(acquired_nodes, &primitive_node)
-                .map_err(|e| {
-                    rsvg_log!(
-                        session,
-                        "(filter primitive {} returned an error: {})",
-                        primitive_name,
-                        e
-                    );
+        let primitive_name = format!("{primitive_node}");
+
+        let primitive_values = elt.get_computed_values();
+        let params = NormalizeParams::new(primitive_values, primitive_view_params);
+
+        let primitives = match effect.resolve(acquired_nodes, &primitive_node) {
+            Ok(primitives) => primitives,
+            Err(e) => {
+                rsvg_log!(
+                    session,
+                    "(filter primitive {} returned an error: {})",
+                    primitive_name,
                     e
-                })
-                .map(|primitive| primitive.into_user_space(&params))
-        })
-        .collect::<Result<Vec<UserSpacePrimitive>, FilterResolveError>>()?;
+                );
+                return Err(e);
+            }
+        };
+
+        for p in primitives {
+            user_space_primitives.push(p.into_user_space(&params));
+        }
+    }
 
     Ok(FilterSpec {
         user_space_filter,
-        primitives,
+        primitives: user_space_primitives,
     })
 }
 

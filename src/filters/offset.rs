@@ -91,10 +91,10 @@ impl FilterEffect for FeOffset {
         &self,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _node: &Node,
-    ) -> Result<ResolvedPrimitive, FilterResolveError> {
-        Ok(ResolvedPrimitive {
+    ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError> {
+        Ok(vec![ResolvedPrimitive {
             primitive: self.base.clone(),
             params: PrimitiveParams::Offset(self.params.clone()),
-        })
+        }])
     }
 }
