@@ -1,3 +1,29 @@
+Version 2.55.91
+===============
+
+The minimum supported Rust version (MSRV) is 1.64, because of the gtk-rs update.
+
+- #929 - Support "turn" unit for CSS <angle> values (Khadija Kamran).
+
+- #743 - Support the feDropShadow element (John Ledbetter, Federico Mena).
+
+- #928 - Fix panic when a feTile filter gets an empty source region.
+
+- Update to gtk-rs 0.17.0 (Bilal Elmoussaoui).
+
+- Simplify the NMake Makefiles for Windows; see win32/MSVC-Builds.md
+  for details (Chun-wei Fan).
+
+- Documentation and infrastructure updates (Andre Klapper, Violet Holland).
+
+- Consolidate the scattered .md documents into the Development Guide.
+  Updated links throughout.
+  (https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html)
+
+- Internal refactoring of the test suite.
+
+- Updated dependencies to avoid duplicated crates.
+
 Version 2.55.90
 ===============
 

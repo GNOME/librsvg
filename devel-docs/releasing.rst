@@ -15,15 +15,12 @@ off items while making a release.
 -  ☐ Tweak the library version number in ``configure.ac`` if the API
    changed; follow the steps there.
 -  ☐ Update ``NEWS``, see below for the preferred format.
--  ☐ Commit the changes above.
--  ☐ Make a tarball with
-   ``./autogen.sh --enable-vala && make distcheck DESTDIR=/tmp/foo`` -
-   fix things until it passes.
--  ☐ Create a signed tag - ``git tag -s x.y.z`` with the version number.
--  ☐ ``git push`` to the appropriate branch to
-   gitlab.gnome.org/GNOME/librsvg
+-  ☐ Commit the changes above; push a branch.
+-  ☐ Create a merge request; fix it until it passes the CI.  Merge it.
+-  ☐ Create a signed tag for the merge commit - ``git tag -s x.y.z`` with the version number.
 -  ☐ ``git push`` the signed tag to gitlab.gnome.org/GNOME/librsvg
--  ☐ ``scp librsvg-x.y.z.tar.xz master.gnome.org:``
+-  ☐ Go to the merge request's pipeline, and look for the ``distcheck`` job.  That one has the release tarball; download it.
+-  ☐ Copy that tarball to the FTP staging server: ``scp librsvg-x.y.z.tar.xz master.gnome.org:``
 -  ☐ ``ssh master.gnome.org`` and then
    ``ftpadmin install librsvg-x.y.z.tar.xz``
 -  ☐ Create a `release in Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
