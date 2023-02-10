@@ -793,13 +793,79 @@ FIXME: which selectors, combinators, at-rules.
 XML features
 ------------
 
-FIXME: ``<xi:include href= parse= encoding=>``
+XInclude
+~~~~~~~~
 
-FIXME: ``<xi:fallback>``
+Librsvg supports the following subset of `XML Inclusions (XInclude) <https://www.w3.org/TR/xinclude-11/>`_.
 
-FIXME: ``xml:lang`` attribute
+A document or element may declare the namespace for
+``http://www.w3.org/2001/XInclude``, conventionally as an attribute
+``xmlns:xi="http://www.w3.org/2001/XInclude"``.
 
-FIXME: ``xml:space`` attribute
+The following discussion assumes an ``xi:`` shorthand; your namespace
+declaration may use a different one, but ``xi:`` is conventional for
+XInclude.
+
+The following are examples of valid inclusions:
+
+.. code-block:: xml
+
+  <xi:include href="foo.xml" parse="xml"/>
+  <!-- If foo.xml cannot be read, parsing stops with an error -->
+
+  <xi:include href="foo.xml" parse="xml">
+    <xi:fallback>
+      <some_fallback_element/>
+      <another_fallback_element/>
+    </xi:fallback>
+  </xi:include>
+  <!-- If foo.xml cannot be read, the elements inside xi:fallback are used instead.
+       If foo.xml has a syntax error, parsing stops with an error. -->
+
+  <xi:include href="foo.txt" parse="text" encoding="utf-8">
+    <xi:fallback>
+      Text to be included if foo.txt cannot be read.
+    </xi:fallback>
+  </xi:include>
+
+For the ``xi:include`` element, the ``href`` attribute is mandatory,
+and ``parse`` and ``encoding`` are optional:
+
+* ``href`` - mandatory for librsvg.  This is **different from the
+  XInclude specification**: the attribute is mandatory in librsvg,
+  while the spec assumes that if it is not present, then an
+  ``xpointer`` or ``fragid`` attributes are used instead.  Librsvg
+  does not support those.  If there is no ``href`` attribute, librsvg
+  will ignore the whole ``xi:include`` element.
+
+* ``parse`` - optional; supported values are ``xml`` and ``text``; the
+  default is ``xml``.
+
+* ``encoding`` - optional; only used for including text files with
+  ``parse="text"``.  The value should be a `WHATWG label for an
+  encoding <https://encoding.spec.whatwg.org/#concept-encoding-get>`_,
+  for example, ``utf-8`` or ``koi8-r``.
+
+Inside ``<xi:include>``, there can be an ``<xi:fallback>`` element to
+specify what should be included if the ``href`` cannot be read.
+
+``xml:lang`` and ``xml:space``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Individual elements can specify an `xml:lang attribute
+<https://www.w3.org/TR/xml/#sec-lang-tag>`_ to specify their language.
+This can be used in a ``<text>`` element for the main language of its
+content, or generally for the purposes of CSS selector matching.  Note
+that this is different from the use of ``systemLanguage`` in children
+of the ``<switch>`` element, which is used to `render different
+elements depending on the system's language
+<https://www.w3.org/TR/SVG2/struct.html#SwitchElement>`_.
+
+Librsvg supports the `xml:space attribute
+<https://www.w3.org/TR/xml/#sec-white-space>`_ and its handling per
+SVG1.1.  Note that this has been superseded in SVG2 with CSS
+whitespace handling; librsvg does not support this yet as of
+2013/Feb/10.
 
 Explicitly Unsupported features
 -------------------------------
