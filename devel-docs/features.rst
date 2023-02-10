@@ -694,6 +694,7 @@ The following elements are filter effects:
 - feConvolveMatrix
 - feDiffuseLighting
 - feDisplacementMap
+- feDropShadow
 - feFlood
 - feGaussianBlur
 - feImage
