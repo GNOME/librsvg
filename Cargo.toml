@@ -77,7 +77,7 @@ pango = { version = "0.17", features = ["v1_46"] }
 pangocairo = "0.17"
 rayon = "1"
 rctree = "0.5.0"
-regex = "1"
+regex = "1.7.1"
 rgb = { version="0.8", features=["argb"] }
 selectors = "0.23.0"
 string_cache = "0.8.0"
