@@ -1,6 +1,6 @@
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use nalgebra::{DMatrix, Dynamic, VecStorage};
+use nalgebra::{DMatrix, Dyn, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -209,11 +209,7 @@ impl ConvolveMatrix {
             });
         }
 
-        let matrix = DMatrix::from_data(VecStorage::new(
-            Dynamic::new(rows),
-            Dynamic::new(cols),
-            numbers,
-        ));
+        let matrix = DMatrix::from_data(VecStorage::new(Dyn(rows), Dyn(cols), numbers));
 
         let divisor = if self.divisor != 0.0 {
             self.divisor

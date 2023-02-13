@@ -2,7 +2,7 @@ use std::cmp::min;
 use std::f64;
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
-use nalgebra::{DMatrix, Dynamic, VecStorage};
+use nalgebra::{DMatrix, Dyn, VecStorage};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
@@ -183,11 +183,7 @@ fn gaussian_blur(
     } else {
         (1, kernel.len())
     };
-    let kernel = DMatrix::from_data(VecStorage::new(
-        Dynamic::new(rows),
-        Dynamic::new(cols),
-        kernel,
-    ));
+    let kernel = DMatrix::from_data(VecStorage::new(Dyn(rows), Dyn(cols), kernel));
 
     Ok(input_surface.convolve(
         bounds,
