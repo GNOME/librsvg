@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg height="128px" viewBox="0 0 128 128" width="128px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <linearGradient id="a" gradientUnits="userSpaceOnUse" x1="4.909418" x2="122" y1="106.960602" y2="106.960602">
+        <stop offset="0" stop-color="#ffffff"/>
+        <stop offset="0.151397" stop-color="#deddda"/>
+        <stop offset="0.504657" stop-color="#deddda"/>
+        <stop offset="0.507623" stop-color="#c0bfbc"/>
+        <stop offset="0.760869" stop-color="#c0bfbc"/>
+        <stop offset="0.932697" stop-color="#deddda"/>
+        <stop offset="1" stop-color="#c0bfbc"/>
+    </linearGradient>
+    <linearGradient id="b" gradientUnits="userSpaceOnUse" x1="-177.754059" x2="-228.552979" y1="691.488464" y2="691.488464">
+        <stop offset="0" stop-color="#ed333b"/>
+        <stop offset="1" stop-color="#ed333b" stop-opacity="0"/>
+    </linearGradient>
+    <path d="m 38.976562 23.472656 c -18.554687 0.167969 -33.507812 15.257813 -33.507812 33.8125 c 0 12.082032 3.804688 21.816406 14.5625 31.429688 l 43.96875 39.285156 l 43.664062 -38.695312 c 11.8125 -9.652344 14.613282 -20.382813 14.867188 -32.019532 c 0 -18.675781 -15.136719 -33.8125 -33.8125 -33.8125 c -9.371094 0 -18.324219 3.890625 -24.71875 10.738282 c -6.394531 -6.847657 -15.347656 -10.738282 -24.71875 -10.738282 c -0.101562 0 -0.203125 0 -0.304688 0 z m 0 0" fill="url(#a)"/>
+    <path d="m 38.976562 19.472656 c -18.554687 0.167969 -33.507812 15.257813 -33.507812 33.8125 c 0 8.050782 2.148438 15.890625 7.511719 21.25 l 51.019531 44.96875 l 50.058594 -43.832031 c 5.515625 -5.515625 8.472656 -13.800781 8.472656 -22.386719 c 0 -18.675781 -15.136719 -33.8125 -33.8125 -33.8125 c -9.371094 0 -18.324219 3.890625 -24.71875 10.742188 c -6.394531 -6.851563 -15.347656 -10.742188 -24.71875 -10.742188 c -0.101562 0 -0.203125 0 -0.304688 0 z m 0 0" fill="#f6f5f4"/>
+    <path d="m -228.096527 706.132812 h 26 l 10 -23 l 6 39 l 8 -16 h 6" fill="none" stroke="url(#b)" stroke-linecap="round" stroke-miterlimit="10" stroke-width="4" transform="matrix(1 0 0 1 255.096527 -636.132812)"/>
+</svg>
