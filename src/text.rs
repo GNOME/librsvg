@@ -144,7 +144,7 @@ impl MeasuredChunk {
         let mut measured_spans: Vec<MeasuredSpan> = chunk
             .spans
             .iter()
-            .map(|span| MeasuredSpan::from_span(layout_context, span))
+            .filter_map(|span| MeasuredSpan::from_span(layout_context, span))
             .collect();
 
         // The first span contains the (dx, dy) that will be applied to the whole chunk.
@@ -340,8 +340,23 @@ impl Span {
     }
 }
 
+/// Use as `PangoUnits::from_pixels()` so that we can check for overflow.
+struct PangoUnits(i32);
+
+impl PangoUnits {
+    fn from_pixels(v: f64) -> Option<Self> {
+        // We want (v * f64::from(pango::SCALE) + 0.5) as i32
+        //
+        // But check for overflow.
+
+        cast::i32(v * f64::from(pango::SCALE) + 0.5)
+            .ok()
+            .map(PangoUnits)
+    }
+}
+
 impl MeasuredSpan {
-    fn from_span(layout_context: &LayoutContext, span: &Span) -> MeasuredSpan {
+    fn from_span(layout_context: &LayoutContext, span: &Span) -> Option<MeasuredSpan> {
         let values = span.values.clone();
 
         let params = NormalizeParams::new(&values, &layout_context.view_params);
@@ -354,30 +369,31 @@ impl MeasuredSpan {
         );
 
         let with_control_chars = wrap_with_direction_control_chars(&span.text, &bidi_control);
-        let layout = create_pango_layout(layout_context, &properties, &with_control_chars);
-        let (w, h) = layout.size();
 
-        let w = f64::from(w) / f64::from(pango::SCALE);
-        let h = f64::from(h) / f64::from(pango::SCALE);
+        if let Some(layout) = create_pango_layout(layout_context, &properties, &with_control_chars)
+        {
+            let (w, h) = layout.size();
 
-        // This is the logical size of the layout, regardless of text direction, so it's always positive.
-        assert!(w >= 0.0);
-        assert!(h >= 0.0);
+            let w = f64::from(w) / f64::from(pango::SCALE);
+            let h = f64::from(h) / f64::from(pango::SCALE);
 
-        let advance = if layout_context.writing_mode.is_horizontal() {
-            (w, 0.0)
+            let advance = if layout_context.writing_mode.is_horizontal() {
+                (w, 0.0)
+            } else {
+                (0.0, w)
+            };
+
+            Some(MeasuredSpan {
+                values,
+                layout,
+                layout_size: (w, h),
+                advance,
+                dx: span.dx,
+                dy: span.dy,
+                link_target: span.link_target.clone(),
+            })
         } else {
-            (0.0, w)
-        };
-
-        MeasuredSpan {
-            values,
-            layout,
-            layout_size: (w, h),
-            advance,
-            dx: span.dx,
-            dy: span.dy,
-            link_target: span.link_target.clone(),
+            None
         }
     }
 }
@@ -1005,10 +1021,6 @@ impl SetAttributes for TSpan {
 
 impl Draw for TSpan {}
 
-fn to_pango_units(v: f64) -> i32 {
-    (v * f64::from(pango::SCALE) + 0.5) as i32
-}
-
 impl From<FontStyle> for pango::Style {
     fn from(s: FontStyle) -> pango::Style {
         match s {
@@ -1191,11 +1203,12 @@ fn wrap_with_direction_control_chars(s: &str, bidi_control: &BidiControl) -> Str
     res
 }
 
+/// Returns `None` if the layout would be invalid due to, for example, out-of-bounds font sizes.
 fn create_pango_layout(
     layout_context: &LayoutContext,
     props: &FontProperties,
     text: &str,
-) -> pango::Layout {
+) -> Option<pango::Layout> {
     let pango_context =
         create_pango_context(&layout_context.font_options, &layout_context.transform);
 
@@ -1221,14 +1234,37 @@ fn create_pango_layout(
 
     let layout = pango::Layout::new(&pango_context);
 
-    let attr_list = pango::AttrList::new();
-    add_pango_attributes(&attr_list, props, 0, text.len());
+    let font_size = PangoUnits::from_pixels(props.font_size);
+    let letter_spacing = PangoUnits::from_pixels(props.letter_spacing);
 
-    layout.set_attributes(Some(&attr_list));
-    layout.set_text(text);
-    layout.set_auto_dir(false);
+    if font_size.is_none() {
+        rsvg_log!(
+            &layout_context.session,
+            "font-size {} is out of bounds; ignoring span",
+            props.font_size
+        );
+    }
 
-    layout
+    if letter_spacing.is_none() {
+        rsvg_log!(
+            &layout_context.session,
+            "letter-spacing {} is out of bounds; ignoring span",
+            props.letter_spacing
+        );
+    }
+
+    if let (Some(font_size), Some(letter_spacing)) = (font_size, letter_spacing) {
+        let attr_list = pango::AttrList::new();
+        add_pango_attributes(&attr_list, props, 0, text.len(), font_size, letter_spacing);
+
+        layout.set_attributes(Some(&attr_list));
+        layout.set_text(text);
+        layout.set_auto_dir(false);
+
+        Some(layout)
+    } else {
+        None
+    }
 }
 
 /// Adds Pango attributes, suitable for a span of text, to an `AttrList`.
@@ -1237,6 +1273,8 @@ fn add_pango_attributes(
     props: &FontProperties,
     start_index: usize,
     end_index: usize,
+    font_size: PangoUnits,
+    letter_spacing: PangoUnits,
 ) {
     let start_index = u32::try_from(start_index).expect("Pango attribute index must fit in u32");
     let end_index = u32::try_from(end_index).expect("Pango attribute index must fit in u32");
@@ -1255,12 +1293,11 @@ fn add_pango_attributes(
     font_desc.set_weight(pango::Weight::from(props.font_weight));
     font_desc.set_stretch(pango::Stretch::from(props.font_stretch));
 
-    font_desc.set_size(to_pango_units(props.font_size));
+    font_desc.set_size(font_size.0);
 
     attributes.push(pango::AttrFontDesc::new(&font_desc).upcast());
 
-    attributes
-        .push(pango::AttrInt::new_letter_spacing(to_pango_units(props.letter_spacing)).upcast());
+    attributes.push(pango::AttrInt::new_letter_spacing(letter_spacing.0).upcast());
 
     if props.text_decoration.overline {
         attributes.push(pango::AttrInt::new_overline(pango::Overline::Single).upcast());
@@ -1409,5 +1446,15 @@ mod tests {
             text_anchor_offset(End, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, -4.0)
         );
+    }
+
+    #[test]
+    fn pango_units_works() {
+        assert_eq!(PangoUnits::from_pixels(10.0).unwrap().0, pango::SCALE * 10);
+    }
+
+    #[test]
+    fn pango_units_detects_overflow() {
+        assert!(PangoUnits::from_pixels(1e7).is_none());
     }
 }
