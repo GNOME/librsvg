@@ -377,10 +377,6 @@ impl MeasuredSpan {
             let w = f64::from(w) / f64::from(pango::SCALE);
             let h = f64::from(h) / f64::from(pango::SCALE);
 
-            // This is the logical size of the layout, regardless of text direction, so it's always positive.
-            assert!(w >= 0.0);
-            assert!(h >= 0.0);
-
             let advance = if layout_context.writing_mode.is_horizontal() {
                 (w, 0.0)
             } else {
