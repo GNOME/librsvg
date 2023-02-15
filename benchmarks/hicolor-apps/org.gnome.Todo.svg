@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg height="128px" viewBox="0 0 128 128" width="128px" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <linearGradient id="a" gradientUnits="userSpaceOnUse" x1="19.999998" x2="112.778587" y1="29.118027" y2="97.447845">
+        <stop offset="0" stop-color="#62a0ea"/>
+        <stop offset="0.563959" stop-color="#9141ac"/>
+        <stop offset="1" stop-color="#ed333b"/>
+    </linearGradient>
+    <path d="m 28.722656 16 h 70.554688 c 4.816406 0 8.722656 4.0625 8.722656 9.078125 v 85.84375 c 0 5.015625 -3.90625 9.078125 -8.722656 9.078125 h -70.554688 c -4.816406 0 -8.722656 -4.0625 -8.722656 -9.078125 v -85.84375 c 0 -5.015625 3.90625 -9.078125 8.722656 -9.078125 z m 0 0" fill="url(#a)"/>
+    <path d="m 20 106.921875 v 4.359375 c 0 4.828125 3.890625 8.71875 8.71875 8.71875 h 70.5625 c 4.828125 0 8.71875 -3.890625 8.71875 -8.71875 v -4.359375 c 0 5.027344 -3.890625 9.078125 -8.71875 9.078125 h -70.5625 c -4.828125 0 -8.71875 -4.050781 -8.71875 -9.078125 z m 0 0" fill-opacity="0.34902"/>
+    <path d="m 32 78 h 64 c 2.210938 0 4 1.789062 4 4 v 22 c 0 2.210938 -1.789062 4 -4 4 h -64 c -2.210938 0 -4 -1.789062 -4 -4 v -22 c 0 -2.210938 1.789062 -4 4 -4 z m 0 0" fill="#deddda"/>
+    <path d="m 32 24 h 64 c 2.210938 0 4 1.789062 4 4 v 70 c 0 2.210938 -1.789062 4 -4 4 h -64 c -2.210938 0 -4 -1.789062 -4 -4 v -70 c 0 -2.210938 1.789062 -4 4 -4 z m 0 0" fill="#ffffff"/>
+    <path d="m 44 12 c -2.214844 0 -4 1.785156 -4 4 v 14 h 48 v -14 c 0 -2.214844 -1.804688 -4.3125 -4 -4 h -14 l -6 7 l -6 -7 z m 0 0" fill="#c0bfbc"/>
+    <path d="m 70 12 c 0 3.3125 -2.6875 6 -6 6 s -6 -2.6875 -6 -6 s 2.6875 -6 6 -6 s 6 2.6875 6 6 z m 0 0" fill="none" stroke="#c0bfbc" stroke-linejoin="round" stroke-width="4"/>
+    <path d="m 40 28 h 48 v 4 h -48 z m 0 0" fill="#9a9996"/>
+    <path d="m 40 65 l 5 5 l 9 -9" fill="none" stroke="#77767b" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+    <path d="m 64 44 h 22 v 4 h -22 z m 0 0" fill="#c0bfbc"/>
+    <path d="m 40 45 l 5 5 l 9 -9" fill="none" stroke="#77767b" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+    <path d="m 40 85 l 5 5 l 9 -9" fill="none" stroke="#77767b" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+    <g fill="#c0bfbc">
+        <path d="m 64 64 h 26 v 4 h -26 z m 0 0"/>
+        <path d="m 64 84 h 18 v 4 h -18 z m 0 0"/>
+    </g>
+</svg>
