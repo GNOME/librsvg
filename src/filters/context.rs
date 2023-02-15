@@ -189,7 +189,7 @@ impl FilterContext {
         let res = self.background_surface.get_or_init(|| {
             draw_ctx
                 .get_snapshot(self.source_surface.width(), self.source_surface.height())
-                .map_err(FilterError::CairoError)
+                .map_err(FilterError::Rendering)
         });
 
         res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())

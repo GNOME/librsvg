@@ -8,6 +8,7 @@ use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
 use rgb::FromSlice;
 
+use crate::error::*;
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
 use crate::util::clamp;
@@ -1375,10 +1376,10 @@ impl ImageSurface<Exclusive> {
 
     /// Draw on the surface using cairo
     #[inline]
-    pub fn draw<E: From<cairo::Error>>(
+    pub fn draw(
         &mut self,
-        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), E>,
-    ) -> Result<(), E> {
+        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), RenderingError>,
+    ) -> Result<(), RenderingError> {
         let cr = cairo::Context::new(&self.surface)?;
         draw_fn(cr)
     }

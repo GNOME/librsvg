@@ -43,7 +43,7 @@ use crate::surface_utils::{
     shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
     shared_surface::SurfaceType,
 };
-use crate::transform::Transform;
+use crate::transform::{Transform, ValidTransform};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
@@ -117,7 +117,7 @@ pub enum ClipMode {
 /// so that it isn't recalculated every so often.
 struct PathHelper<'a> {
     cr: &'a cairo::Context,
-    transform: Transform,
+    transform: ValidTransform,
     path: &'a Path,
     is_square_linecap: bool,
     has_path: Option<bool>,
@@ -126,7 +126,7 @@ struct PathHelper<'a> {
 impl<'a> PathHelper<'a> {
     pub fn new(
         cr: &'a cairo::Context,
-        transform: Transform,
+        transform: ValidTransform,
         path: &'a Path,
         linecap: StrokeLinecap,
     ) -> Self {
@@ -238,7 +238,12 @@ pub fn draw_tree(
 
     // Translate so (0, 0) is at the viewport's upper-left corner.
     let transform = user_transform.pre_translate(viewport.x0, viewport.y0);
-    cr.set_matrix(transform.into());
+
+    // Here we exit immediately if the transform is not valid, since we are in the
+    // toplevel drawing function.  Downstream cases would simply not render the current
+    // element and ignore the error.
+    let valid_transform = ValidTransform::try_from(transform)?;
+    cr.set_matrix(valid_transform.into());
 
     // Per the spec, so the viewport has (0, 0) as upper-left.
     let viewport = viewport.translate((-viewport.x0, -viewport.y0));
@@ -357,12 +362,14 @@ impl DrawingCtx {
         self.measuring
     }
 
-    fn get_transform(&self) -> Transform {
-        Transform::from(self.cr.matrix())
+    fn get_transform(&self) -> ValidTransform {
+        let t = Transform::from(self.cr.matrix());
+        ValidTransform::try_from(t)
+            .expect("Cairo should already have checked that its current transform is valid")
     }
 
     pub fn empty_bbox(&self) -> BoundingBox {
-        BoundingBox::new().with_transform(self.get_transform())
+        BoundingBox::new().with_transform(*self.get_transform())
     }
 
     fn size_for_temporary_surface(&self) -> (i32, i32) {
@@ -543,9 +550,10 @@ impl DrawingCtx {
             let values = cascaded.get();
 
             let node_transform = values.transform().post_transform(&transform);
+            let transform_for_clip = ValidTransform::try_from(node_transform)?;
 
             let orig_transform = self.get_transform();
-            self.cr.transform(node_transform.into());
+            self.cr.transform(transform_for_clip.into());
 
             for child in node.children().filter(|c| {
                 c.is_element() && element_can_be_used_inside_clip_path(&c.borrow_element())
@@ -607,6 +615,7 @@ impl DrawingCtx {
         let mask_element = mask_node.borrow_element();
 
         let mask_transform = values.transform().post_transform(&transform);
+        let transform_for_mask = ValidTransform::try_from(mask_transform)?;
 
         let mask_content_surface = self.create_surface_for_toplevel_viewport()?;
 
@@ -614,7 +623,7 @@ impl DrawingCtx {
         // reference to the surface before we access the pixels
         {
             let mask_cr = cairo::Context::new(&mask_content_surface)?;
-            mask_cr.set_matrix(mask_transform.into());
+            mask_cr.set_matrix(transform_for_mask.into());
 
             let bbtransform = Transform::new_unchecked(
                 bbox_rect.width(),
@@ -637,8 +646,7 @@ impl DrawingCtx {
                 if bbox_rect.is_empty() {
                     return Ok(None);
                 }
-                assert!(bbtransform.is_invertible());
-                mask_cr.transform(bbtransform.into());
+                mask_cr.transform(ValidTransform::try_from(bbtransform)?.into());
             }
 
             // TODO: this is the last place where push_coord_units() is called.  The call to
@@ -691,20 +699,13 @@ impl DrawingCtx {
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
-            &Transform,
+            &ValidTransform,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
-        if !stacking_ctx.transform.is_invertible() {
-            // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
-            //
-            // "If a transform function causes the current transformation matrix of an
-            // object to be non-invertible, the object and its content do not get
-            // displayed."
-            return Ok(self.empty_bbox());
-        }
+        let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
         let orig_transform = self.get_transform();
-        self.cr.transform(stacking_ctx.transform.into());
+        self.cr.transform(stacking_ctx_transform.into());
 
         let res = if clipping {
             let current_transform = self.get_transform();
@@ -746,7 +747,7 @@ impl DrawingCtx {
                     // Compute our assortment of affines
 
                     let affines = CompositingAffines::new(
-                        affine_at_start,
+                        *affine_at_start,
                         self.initial_viewport.transform,
                         self.cr_stack.borrow().len(),
                     );
@@ -763,7 +764,7 @@ impl DrawingCtx {
                         }
                     };
 
-                    cr.set_matrix(affines.for_temporary_surface.into());
+                    cr.set_matrix(ValidTransform::try_from(affines.for_temporary_surface)?.into());
 
                     let (source_surface, mut res, bbox) = {
                         let mut temporary_draw_ctx = self.nested(cr);
@@ -859,12 +860,15 @@ impl DrawingCtx {
 
                     // Set temporary surface as source
 
-                    self.cr.set_matrix(affines.compositing.into());
+                    self.cr
+                        .set_matrix(ValidTransform::try_from(affines.compositing)?.into());
                     self.cr.set_source_surface(&source_surface, 0.0, 0.0)?;
 
                     // Clip
 
-                    self.cr.set_matrix(affines.outside_temporary_surface.into());
+                    self.cr.set_matrix(
+                        ValidTransform::try_from(affines.outside_temporary_surface)?.into(),
+                    );
                     self.clip_to_node(&stacking_ctx.clip_in_object_space, acquired_nodes, &bbox)?;
 
                     // Mask
@@ -881,7 +885,9 @@ impl DrawingCtx {
                                 if let Some(surf) = mask_surf {
                                     self.cr.push_group();
 
-                                    self.cr.set_matrix(affines.compositing.into());
+                                    self.cr.set_matrix(
+                                        ValidTransform::try_from(affines.compositing)?.into(),
+                                    );
                                     self.cr.mask_surface(&surf, 0.0, 0.0)?;
 
                                     Ok(self.cr.pop_group_to_source()?)
@@ -896,7 +902,8 @@ impl DrawingCtx {
                     {
                         // Composite the temporary surface
 
-                        self.cr.set_matrix(affines.compositing.into());
+                        self.cr
+                            .set_matrix(ValidTransform::try_from(affines.compositing)?.into());
                         self.cr.set_operator(stacking_ctx.mix_blend_mode.into());
 
                         if opacity < 1.0 {
@@ -1003,7 +1010,7 @@ impl DrawingCtx {
                         surface,
                         acquired_nodes,
                         self,
-                        self.get_transform(),
+                        *self.get_transform(),
                         node_bbox,
                     )
                 })
@@ -1022,7 +1029,7 @@ impl DrawingCtx {
         }
     }
 
-    fn set_gradient(&mut self, gradient: &UserSpaceGradient) -> Result<(), cairo::Error> {
+    fn set_gradient(&mut self, gradient: &UserSpaceGradient) -> Result<(), RenderingError> {
         let g = match gradient.variant {
             GradientVariant::Linear { x1, y1, x2, y2 } => {
                 cairo::Gradient::clone(&cairo::LinearGradient::new(x1, y1, x2, y2))
@@ -1038,7 +1045,7 @@ impl DrawingCtx {
             } => cairo::Gradient::clone(&cairo::RadialGradient::new(fx, fy, fr, cx, cy, r)),
         };
 
-        g.set_matrix(gradient.transform.into());
+        g.set_matrix(ValidTransform::try_from(gradient.transform)?.into());
         g.set_extend(cairo::Extend::from(gradient.spread));
 
         for stop in &gradient.stops {
@@ -1053,7 +1060,7 @@ impl DrawingCtx {
             );
         }
 
-        self.cr.set_source(&g)
+        Ok(self.cr.set_source(&g)?)
     }
 
     fn set_pattern(
@@ -1116,7 +1123,7 @@ impl DrawingCtx {
         let cr_pattern = cairo::Context::new(&surface)?;
 
         // Set up transformations to be determined by the contents units
-        cr_pattern.set_matrix(caffine.into());
+        cr_pattern.set_matrix(ValidTransform::try_from(caffine)?.into());
 
         // Draw everything
 
@@ -1156,11 +1163,11 @@ impl DrawingCtx {
         let pattern = cairo::SurfacePattern::create(&surface);
 
         if let Some(m) = affine.invert() {
-            pattern.set_matrix(m.into())
+            pattern.set_matrix(ValidTransform::try_from(m)?.into());
+            pattern.set_extend(cairo::Extend::Repeat);
+            pattern.set_filter(cairo::Filter::Best);
+            self.cr.set_source(&pattern)?;
         }
-        pattern.set_extend(cairo::Extend::Repeat);
-        pattern.set_filter(cairo::Filter::Best);
-        self.cr.set_source(&pattern)?;
 
         Ok(true)
     }
@@ -1212,7 +1219,7 @@ impl DrawingCtx {
     ) -> Result<SharedImageSurface, RenderingError> {
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        surface.draw::<RenderingError>(&mut |cr| {
+        surface.draw(&mut |cr| {
             let mut temporary_draw_ctx = self.nested(cr);
 
             // FIXME: we are ignoring any error
@@ -1330,7 +1337,10 @@ impl DrawingCtx {
                                 path_helper.set()?;
                                 let backup_matrix = if shape.stroke.non_scaling {
                                     let matrix = cr.matrix();
-                                    cr.set_matrix(dc.initial_viewport.transform.into());
+                                    cr.set_matrix(
+                                        ValidTransform::try_from(dc.initial_viewport.transform)?
+                                            .into(),
+                                    );
                                     Some(matrix)
                                 } else {
                                     None
@@ -1552,7 +1562,7 @@ impl DrawingCtx {
         &self,
         width: i32,
         height: i32,
-    ) -> Result<SharedImageSurface, cairo::Error> {
+    ) -> Result<SharedImageSurface, RenderingError> {
         // TODO: as far as I can tell this should not render elements past the last (topmost) one
         // with enable-background: new (because technically we shouldn't have been caching them).
         // Right now there are no enable-background checks whatsoever.
@@ -1570,7 +1580,7 @@ impl DrawingCtx {
         //   https://www.w3.org/TR/compositing-1/#isolation
         let mut surface = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
 
-        surface.draw::<cairo::Error>(&mut |cr| {
+        surface.draw(&mut |cr| {
             // TODO: apparently DrawingCtx.cr_stack is just a way to store pairs of
             // (surface, transform).  Can we turn it into a DrawingCtx.surface_stack
             // instead?  See what CSS isolation would like to call that; are the pairs just
@@ -1582,7 +1592,7 @@ impl DrawingCtx {
                     depth,
                 );
 
-                cr.set_matrix(affines.for_snapshot.into());
+                cr.set_matrix(ValidTransform::try_from(affines.for_snapshot)?.into());
                 cr.set_source_surface(&draw.target(), 0.0, 0.0)?;
                 cr.paint()?;
             }
@@ -1590,7 +1600,7 @@ impl DrawingCtx {
             Ok(())
         })?;
 
-        surface.share()
+        Ok(surface.share()?)
     }
 
     pub fn draw_node_to_surface(
@@ -1609,7 +1619,7 @@ impl DrawingCtx {
 
         {
             let cr = cairo::Context::new(&surface)?;
-            cr.set_matrix(affine.into());
+            cr.set_matrix(ValidTransform::try_from(affine)?.into());
 
             self.cr = cr;
             self.initial_viewport = Viewport {
@@ -1724,7 +1734,8 @@ impl DrawingCtx {
 
         let orig_transform = self.get_transform();
 
-        self.cr.transform(values.transform().into());
+        self.cr
+            .transform(ValidTransform::try_from(values.transform())?.into());
 
         let use_element = node.borrow_element();
 
@@ -1821,7 +1832,7 @@ impl DrawingCtx {
         self.cr.set_matrix(orig_transform.into());
 
         if let Ok(bbox) = res {
-            let mut res_bbox = BoundingBox::new().with_transform(orig_transform);
+            let mut res_bbox = BoundingBox::new().with_transform(*orig_transform);
             res_bbox.insert(&bbox);
             Ok(res_bbox)
         } else {
@@ -2053,7 +2064,7 @@ fn compute_stroke_and_fill_extents(
     {
         let backup_matrix = if stroke.non_scaling {
             let matrix = cr.matrix();
-            cr.set_matrix(initial_viewport.transform.into());
+            cr.set_matrix(ValidTransform::try_from(initial_viewport.transform)?.into());
             Some(matrix)
         } else {
             None
@@ -2245,10 +2256,10 @@ impl From<cairo::Matrix> for Transform {
     }
 }
 
-impl From<Transform> for cairo::Matrix {
+impl From<ValidTransform> for cairo::Matrix {
     #[inline]
-    fn from(t: Transform) -> Self {
-        Self::new(t.xx, t.yx, t.xy, t.yy, t.x0, t.y0)
+    fn from(t: ValidTransform) -> cairo::Matrix {
+        cairo::Matrix::new(t.xx, t.yx, t.xy, t.yy, t.x0, t.y0)
     }
 }
 
