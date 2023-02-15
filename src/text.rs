@@ -340,6 +340,21 @@ impl Span {
     }
 }
 
+/// Use as `PangoUnits::from_pixels()` so that we can check for overflow.
+struct PangoUnits(i32);
+
+impl PangoUnits {
+    fn from_pixels(v: f64) -> Option<Self> {
+        // We want (v * f64::from(pango::SCALE) + 0.5) as i32
+        //
+        // But check for overflow.
+
+        cast::i32(v * f64::from(pango::SCALE) + 0.5)
+            .ok()
+            .map(PangoUnits)
+    }
+}
+
 impl MeasuredSpan {
     fn from_span(layout_context: &LayoutContext, span: &Span) -> MeasuredSpan {
         let values = span.values.clone();
@@ -1409,5 +1424,15 @@ mod tests {
             text_anchor_offset(End, Ltr, WritingMode::Tb, Rect::from_size(2.0, 4.0)),
             (0.0, -4.0)
         );
+    }
+
+    #[test]
+    fn pango_units_works() {
+        assert_eq!(PangoUnits::from_pixels(10.0).unwrap().0, pango::SCALE * 10);
+    }
+
+    #[test]
+    fn pango_units_detects_overflow() {
+        assert!(PangoUnits::from_pixels(1e7).is_none());
     }
 }
