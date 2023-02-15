@@ -63,6 +63,7 @@ mod tests {
     t!(bug721_pattern_cycle_from_other_child_svg,       "bug721-pattern-cycle-from-other-child.svg");
     t!(bug777155_zero_sized_pattern_svg,                "bug777155-zero-sized-pattern.svg");
     t!(bug928_empty_fetile_bounds_svg,                  "bug928-empty-feTile-bounds.svg");
+    t!(bug932_too_big_font_size,                        "bug932-too-big-font-size.svg");
     t!(femerge_color_interpolation_srgb_svg,            "feMerge-color-interpolation-srgb.svg");
     t!(filters_non_invertible_paffine_svg,              "filters-non-invertible-paffine.svg");
     t!(gradient_with_empty_bbox_svg,                    "gradient-with-empty-bbox.svg");
