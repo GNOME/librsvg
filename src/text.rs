@@ -1025,10 +1025,6 @@ impl SetAttributes for TSpan {
 
 impl Draw for TSpan {}
 
-fn to_pango_units(v: f64) -> i32 {
-    (v * f64::from(pango::SCALE) + 0.5) as i32
-}
-
 impl From<FontStyle> for pango::Style {
     fn from(s: FontStyle) -> pango::Style {
         match s {
