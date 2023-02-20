@@ -74,8 +74,8 @@
 //! matches by specificity and apply the result to each element.
 
 use cssparser::{
-    self, match_ignore_ascii_case, parse_important, AtRuleParser, AtRuleType, BasicParseErrorKind,
-    CowRcStr, DeclarationListParser, DeclarationParser, Parser, ParserInput, ParserState,
+    self, match_ignore_ascii_case, parse_important, AtRuleParser, BasicParseErrorKind, CowRcStr,
+    DeclarationListParser, DeclarationParser, Parser, ParserInput, ParserState,
     QualifiedRuleParser, RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
 };
 use data_url::mime::Mime;
@@ -142,8 +142,7 @@ impl<'i> DeclarationParser<'i> for DeclParser {
 // implementation in the future, although this may require keeping track of the
 // CSS parsing state like Servo does.
 impl<'i> AtRuleParser<'i> for DeclParser {
-    type PreludeBlock = ();
-    type PreludeNoBlock = ();
+    type Prelude = ();
     type AtRule = Declaration;
     type Error = ValueErrorKind;
 }
@@ -302,8 +301,7 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
 //
 // This only handles the `@import` at-rule.
 impl<'i> AtRuleParser<'i> for RuleParser {
-    type PreludeBlock = ();
-    type PreludeNoBlock = AtRulePrelude;
+    type Prelude = AtRulePrelude;
     type AtRule = Rule;
     type Error = ParseErrorKind<'i>;
 
@@ -312,15 +310,15 @@ impl<'i> AtRuleParser<'i> for RuleParser {
         &mut self,
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
-    ) -> Result<
-        AtRuleType<Self::PreludeNoBlock, Self::PreludeBlock>,
-        cssparser::ParseError<'i, Self::Error>,
-    > {
-        match_ignore_ascii_case! { &name,
+    ) -> Result<Self::Prelude, cssparser::ParseError<'i, Self::Error>> {
+        match_ignore_ascii_case! {
+            &name,
+
+            // FIXME: at the moment we ignore media queries
+
             "import" => {
-                // FIXME: at the moment we ignore media queries
                 let url = input.expect_url_or_string()?.as_ref().to_owned();
-                Ok(AtRuleType::WithoutBlock(AtRulePrelude::Import(url)))
+                Ok(AtRulePrelude::Import(url))
             },
 
             _ => Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name))),
@@ -329,12 +327,14 @@ impl<'i> AtRuleParser<'i> for RuleParser {
 
     fn rule_without_block(
         &mut self,
-        prelude: Self::PreludeNoBlock,
+        prelude: Self::Prelude,
         _start: &ParserState,
-    ) -> Self::AtRule {
+    ) -> Result<Self::AtRule, ()> {
         let AtRulePrelude::Import(url) = prelude;
-        Rule::AtRule(AtRule::Import(url))
+        Ok(Rule::AtRule(AtRule::Import(url)))
     }
+
+    // When we implement at-rules with blocks, implement the trait's parse_block() method here.
 }
 
 /// Dummy type required by the SelectorImpl trait.
