@@ -1,3 +1,11 @@
+Version 2.55.92
+===============
+
+- #925 - Update to cssparser 0.29.6; this adds support for hwb() color
+  syntax, from the CSS Color Module Level 4 spec
+  (https://drafts.csswg.org/css-color-4/#changes).  Note that values
+  inside hwb() are *not* comma-separated, just whitespace.
+
 Version 2.55.91
 ===============
 

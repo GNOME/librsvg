@@ -58,7 +58,7 @@ cast = "0.3.0"
 chrono = "0.4.0" # rsvg-convert
 clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
 clap_complete = "4.0.5" # rsvg-convert
-cssparser = "0.28.0"
+cssparser = "0.29.0"
 data-url = "0.2.0"
 encoding = "0.2.33"
 float-cmp = "0.9.0"
@@ -79,7 +79,7 @@ rayon = "1"
 rctree = "0.5.0"
 regex = "1.7.1"
 rgb = { version="0.8", features=["argb"] }
-selectors = "0.23.0"
+selectors = "0.24.0"
 string_cache = "0.8.0"
 thiserror = "1.0"
 tinyvec = { version = "1.2.0", features = ["alloc"] }
