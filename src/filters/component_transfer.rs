@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, Element, SetAttributes};
+use crate::element::{set_attribute, Element, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, Parse, ParseValue};
@@ -40,7 +40,7 @@ pub struct ComponentTransfer {
     pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl SetAttributes for FeComponentTransfer {
+impl ElementTrait for FeComponentTransfer {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
     }
@@ -171,13 +171,11 @@ macro_rules! impl_func {
         #[derive(Clone, Debug, Default, PartialEq)]
         pub struct $name(pub FeFuncCommon);
 
-        impl SetAttributes for $name {
+        impl ElementTrait for $name {
             fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
                 self.0.set_attributes(attrs, session);
             }
         }
-
-        impl Draw for $name {}
     };
 }
 

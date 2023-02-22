@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{set_attribute, Draw, Element, SetAttributes};
+use crate::element::{set_attribute, Element, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -123,7 +123,7 @@ pub struct Pattern {
     fallback: Option<NodeId>,
 }
 
-impl SetAttributes for Pattern {
+impl ElementTrait for Pattern {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -172,8 +172,6 @@ impl SetAttributes for Pattern {
         }
     }
 }
-
-impl Draw for Pattern {}
 
 impl UnresolvedPattern {
     fn into_resolved(self, opacity: UnitInterval) -> ResolvedPattern {

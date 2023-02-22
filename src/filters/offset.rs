@@ -2,7 +2,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, SetAttributes};
+use crate::element::{set_attribute, ElementTrait};
 use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::properties::ColorInterpolationFilters;
@@ -32,7 +32,7 @@ pub struct Offset {
     pub dy: f64,
 }
 
-impl SetAttributes for FeOffset {
+impl ElementTrait for FeOffset {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 

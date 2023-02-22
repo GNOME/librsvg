@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, SetAttributes};
+use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::Node;
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
@@ -61,7 +61,7 @@ impl Default for Morphology {
     }
 }
 
-impl SetAttributes for FeMorphology {
+impl ElementTrait for FeMorphology {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 

@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::{set_attribute, Draw, Element, SetAttributes};
+use crate::element::{set_attribute, Element, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::StackingContext;
@@ -23,9 +23,7 @@ use crate::xml::Attributes;
 #[derive(Default)]
 pub struct Group();
 
-impl SetAttributes for Group {}
-
-impl Draw for Group {
+impl ElementTrait for Group {
     fn draw(
         &self,
         node: &Node,
@@ -63,16 +61,13 @@ impl Draw for Group {
 #[derive(Default)]
 pub struct NonRendering;
 
-impl SetAttributes for NonRendering {}
+impl ElementTrait for NonRendering {}
 
-impl Draw for NonRendering {}
-
+/// The `<switch>` element.
 #[derive(Default)]
 pub struct Switch();
 
-impl SetAttributes for Switch {}
-
-impl Draw for Switch {
+impl ElementTrait for Switch {
     fn draw(
         &self,
         node: &Node,
@@ -273,7 +268,7 @@ impl Svg {
     }
 }
 
-impl SetAttributes for Svg {
+impl ElementTrait for Svg {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -287,9 +282,7 @@ impl SetAttributes for Svg {
             }
         }
     }
-}
 
-impl Draw for Svg {
     fn draw(
         &self,
         node: &Node,
@@ -323,6 +316,7 @@ impl Draw for Svg {
     }
 }
 
+/// The `<use>` element.
 pub struct Use {
     link: Option<NodeId>,
     x: Length<Horizontal>,
@@ -354,7 +348,7 @@ impl Default for Use {
     }
 }
 
-impl SetAttributes for Use {
+impl ElementTrait for Use {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -379,9 +373,7 @@ impl SetAttributes for Use {
             }
         }
     }
-}
 
-impl Draw for Use {
     fn draw(
         &self,
         node: &Node,
@@ -430,6 +422,7 @@ impl Draw for Use {
     }
 }
 
+/// The `<symbol>` element.
 #[derive(Default)]
 pub struct Symbol {
     preserve_aspect_ratio: AspectRatio,
@@ -446,7 +439,7 @@ impl Symbol {
     }
 }
 
-impl SetAttributes for Symbol {
+impl ElementTrait for Symbol {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -462,10 +455,9 @@ impl SetAttributes for Symbol {
     }
 }
 
-impl Draw for Symbol {}
-
 coord_units!(ClipPathUnits, CoordUnits::UserSpaceOnUse);
 
+/// The `<clipPath>` element.
 #[derive(Default)]
 pub struct ClipPath {
     units: ClipPathUnits,
@@ -477,7 +469,7 @@ impl ClipPath {
     }
 }
 
-impl SetAttributes for ClipPath {
+impl ElementTrait for ClipPath {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "clipPathUnits") {
@@ -487,11 +479,10 @@ impl SetAttributes for ClipPath {
     }
 }
 
-impl Draw for ClipPath {}
-
 coord_units!(MaskUnits, CoordUnits::ObjectBoundingBox);
 coord_units!(MaskContentUnits, CoordUnits::UserSpaceOnUse);
 
+/// The `<mask>` element.
 pub struct Mask {
     x: Length<Horizontal>,
     y: Length<Vertical>,
@@ -536,7 +527,7 @@ impl Mask {
     }
 }
 
-impl SetAttributes for Mask {
+impl ElementTrait for Mask {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -560,14 +551,13 @@ impl SetAttributes for Mask {
     }
 }
 
-impl Draw for Mask {}
-
+/// The `<a>` element.
 #[derive(Default)]
 pub struct Link {
     pub link: Option<String>,
 }
 
-impl SetAttributes for Link {
+impl ElementTrait for Link {
     fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) {
         for (attr, value) in attrs.iter() {
             let expanded = attr.expanded();
@@ -576,9 +566,7 @@ impl SetAttributes for Link {
             }
         }
     }
-}
 
-impl Draw for Link {
     fn draw(
         &self,
         node: &Node,

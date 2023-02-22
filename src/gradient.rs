@@ -8,7 +8,7 @@ use markup5ever::{
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{set_attribute, Draw, Element, SetAttributes};
+use crate::element::{set_attribute, Element, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -65,7 +65,7 @@ pub struct Stop {
      * they go into property_defs.rs */
 }
 
-impl SetAttributes for Stop {
+impl ElementTrait for Stop {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "offset") {
@@ -74,8 +74,6 @@ impl SetAttributes for Stop {
         }
     }
 }
-
-impl Draw for Stop {}
 
 /// Parameters specific to each gradient type, before being resolved.
 /// These will be composed together with UnreseolvedVariant from fallback
@@ -539,7 +537,7 @@ impl Common {
     }
 }
 
-impl SetAttributes for LinearGradient {
+impl ElementTrait for LinearGradient {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.common.set_attributes(attrs, session);
 
@@ -555,8 +553,6 @@ impl SetAttributes for LinearGradient {
         }
     }
 }
-
-impl Draw for LinearGradient {}
 
 macro_rules! impl_gradient {
     ($gradient_type:ident, $other_type:ident) => {
@@ -629,7 +625,7 @@ macro_rules! impl_gradient {
 impl_gradient!(LinearGradient, RadialGradient);
 impl_gradient!(RadialGradient, LinearGradient);
 
-impl SetAttributes for RadialGradient {
+impl ElementTrait for RadialGradient {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.common.set_attributes(attrs, session);
 
@@ -656,8 +652,6 @@ impl SetAttributes for RadialGradient {
         }
     }
 }
-
-impl Draw for RadialGradient {}
 
 impl ResolvedGradient {
     pub fn to_user_space(

@@ -9,7 +9,7 @@ use std::rc::Rc;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, SetAttributes};
+use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
 use crate::layout::{Marker, Shape, StackingContext, Stroke};
@@ -150,18 +150,16 @@ fn draw_basic_shape(
 }
 
 macro_rules! impl_draw {
-    ($name:ident) => {
-        impl Draw for $name {
-            fn draw(
-                &self,
-                node: &Node,
-                acquired_nodes: &mut AcquiredNodes<'_>,
-                cascaded: &CascadedValues<'_>,
-                draw_ctx: &mut DrawingCtx,
-                clipping: bool,
-            ) -> Result<BoundingBox, RenderingError> {
-                draw_basic_shape(self, node, acquired_nodes, cascaded, draw_ctx, clipping)
-            }
+    () => {
+        fn draw(
+            &self,
+            node: &Node,
+            acquired_nodes: &mut AcquiredNodes<'_>,
+            cascaded: &CascadedValues<'_>,
+            draw_ctx: &mut DrawingCtx,
+            clipping: bool,
+        ) -> Result<BoundingBox, RenderingError> {
+            draw_basic_shape(self, node, acquired_nodes, cascaded, draw_ctx, clipping)
         }
     };
 }
@@ -252,9 +250,7 @@ pub struct Path {
     path: Rc<SvgPath>,
 }
 
-impl_draw!(Path);
-
-impl SetAttributes for Path {
+impl ElementTrait for Path {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "d") {
@@ -269,6 +265,8 @@ impl SetAttributes for Path {
             }
         }
     }
+
+    impl_draw!();
 }
 
 impl BasicShape for Path {
@@ -341,9 +339,7 @@ pub struct Polygon {
     points: Points,
 }
 
-impl_draw!(Polygon);
-
-impl SetAttributes for Polygon {
+impl ElementTrait for Polygon {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
@@ -351,6 +347,8 @@ impl SetAttributes for Polygon {
             }
         }
     }
+
+    impl_draw!();
 }
 
 impl BasicShape for Polygon {
@@ -364,9 +362,7 @@ pub struct Polyline {
     points: Points,
 }
 
-impl_draw!(Polyline);
-
-impl SetAttributes for Polyline {
+impl ElementTrait for Polyline {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             if attr.expanded() == expanded_name!("", "points") {
@@ -374,6 +370,8 @@ impl SetAttributes for Polyline {
             }
         }
     }
+
+    impl_draw!();
 }
 
 impl BasicShape for Polyline {
@@ -390,9 +388,7 @@ pub struct Line {
     y2: Length<Vertical>,
 }
 
-impl_draw!(Line);
-
-impl SetAttributes for Line {
+impl ElementTrait for Line {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -404,6 +400,8 @@ impl SetAttributes for Line {
             }
         }
     }
+
+    impl_draw!();
 }
 
 impl BasicShape for Line {
@@ -429,9 +427,9 @@ impl BasicShape for Line {
 #[derive(Default)]
 pub struct Rect {}
 
-impl_draw!(Rect);
-
-impl SetAttributes for Rect {}
+impl ElementTrait for Rect {
+    impl_draw!();
+}
 
 impl BasicShape for Rect {
     #[allow(clippy::many_single_char_names)]
@@ -622,9 +620,9 @@ impl BasicShape for Rect {
 #[derive(Default)]
 pub struct Circle {}
 
-impl_draw!(Circle);
-
-impl SetAttributes for Circle {}
+impl ElementTrait for Circle {
+    impl_draw!();
+}
 
 impl BasicShape for Circle {
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {
@@ -643,9 +641,9 @@ impl BasicShape for Circle {
 #[derive(Default)]
 pub struct Ellipse {}
 
-impl_draw!(Ellipse);
-
-impl SetAttributes for Ellipse {}
+impl ElementTrait for Ellipse {
+    impl_draw!();
+}
 
 impl BasicShape for Ellipse {
     fn make_shape(&self, params: &NormalizeParams, values: &ComputedValues) -> ShapeDef {

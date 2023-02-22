@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
-use crate::element::{set_attribute, Draw, Element, SetAttributes};
+use crate::element::{set_attribute, Element, ElementTrait};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
 use crate::length::*;
@@ -748,7 +748,7 @@ impl Text {
     }
 }
 
-impl SetAttributes for Text {
+impl ElementTrait for Text {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -760,9 +760,7 @@ impl SetAttributes for Text {
             }
         }
     }
-}
 
-impl Draw for Text {
     fn draw(
         &self,
         node: &Node,
@@ -939,7 +937,7 @@ fn extract_chars_children_to_chunks_recursively(
     }
 }
 
-impl SetAttributes for TRef {
+impl ElementTrait for TRef {
     fn set_attributes(&mut self, attrs: &Attributes, _session: &Session) {
         self.link = attrs
             .iter()
@@ -950,8 +948,6 @@ impl SetAttributes for TRef {
             .and_then(|(attr, value)| NodeId::parse(value).attribute(attr).ok());
     }
 }
-
-impl Draw for TRef {}
 
 #[derive(Default)]
 pub struct TSpan {
@@ -1005,7 +1001,7 @@ impl TSpan {
     }
 }
 
-impl SetAttributes for TSpan {
+impl ElementTrait for TSpan {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -1018,8 +1014,6 @@ impl SetAttributes for TSpan {
         }
     }
 }
-
-impl Draw for TSpan {}
 
 impl From<FontStyle> for pango::Style {
     fn from(s: FontStyle) -> pango::Style {

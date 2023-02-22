@@ -46,7 +46,7 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 use crate::xml::Attributes;
 
-pub trait SetAttributes {
+pub trait ElementTrait {
     /// Sets per-element attributes.
     ///
     /// Each element is supposed to iterate the `attributes`, and parse any ones it needs.
@@ -55,11 +55,26 @@ pub trait SetAttributes {
     ///
     /// You can use the [`set_attribute`] function to do that.
     fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) {}
+
+    /// Draw an element.
+    ///
+    /// Each element is supposed to draw itself as needed.
+    fn draw(
+        &self,
+        _node: &Node,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        _cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        _clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        // by default elements don't draw themselves
+        Ok(draw_ctx.empty_bbox())
+    }
 }
 
 /// Sets `dest` if `parse_result` is `Ok()`, otherwise just logs the error.
 ///
-/// Implementations of the [`SetAttributes`] trait generally scan a list of attributes
+/// Implementations of the [`ElementTrait`] trait generally scan a list of attributes
 /// for the ones they can handle, and parse their string values.  Per the SVG spec, an attribute
 /// with an invalid value should be ignored, and it should fall back to the default value.
 ///
@@ -80,24 +95,7 @@ pub fn set_attribute<T>(dest: &mut T, parse_result: Result<T, ElementError>, ses
     }
 }
 
-pub trait Draw {
-    /// Draw an element
-    ///
-    /// Each element is supposed to draw itself as needed.
-    fn draw(
-        &self,
-        _node: &Node,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
-        _cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        // by default elements don't draw themselves
-        Ok(draw_ctx.empty_bbox())
-    }
-}
-
-pub struct ElementInner<T: SetAttributes + Draw> {
+pub struct ElementInner<T: ElementTrait> {
     element_name: QualName,
     attributes: Attributes,
     specified_values: SpecifiedValues,
@@ -109,7 +107,7 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     pub element_impl: T,
 }
 
-impl<T: SetAttributes + Draw> ElementInner<T> {
+impl<T: ElementTrait> ElementInner<T> {
     fn new(
         session: &Session,
         element_name: QualName,
@@ -238,7 +236,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 }
 
-impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
+impl<T: ElementTrait> ElementTrait for ElementInner<T> {
     fn draw(
         &self,
         node: &Node,
@@ -257,7 +255,7 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
     }
 }
 
-impl<T: SetAttributes + Draw> fmt::Display for ElementInner<T> {
+impl<T: ElementTrait> fmt::Display for ElementInner<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.element_name().local)?;
         write!(f, " id={}", self.get_id().unwrap_or("None"))?;
@@ -265,7 +263,7 @@ impl<T: SetAttributes + Draw> fmt::Display for ElementInner<T> {
     }
 }
 
-impl<T: SetAttributes + Draw> Deref for ElementInner<T> {
+impl<T: ElementTrait> Deref for ElementInner<T> {
     type Target = T;
 
     #[inline]
@@ -528,7 +526,7 @@ impl Element {
     }
 }
 
-impl Draw for Element {
+impl ElementTrait for Element {
     fn draw(
         &self,
         node: &Node,
