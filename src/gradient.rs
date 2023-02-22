@@ -511,7 +511,7 @@ impl RadialGradient {
     }
 }
 
-impl SetAttributes for Common {
+impl Common {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
