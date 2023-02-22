@@ -128,6 +128,12 @@ pub enum RenderingError {
     /// A particular implementation-defined limit was exceeded.
     LimitExceeded(ImplementationLimit),
 
+    /// A non-invertible transform was generated.
+    ///
+    /// This should not be a fatal error; we should catch it and just not render
+    /// the problematic element.
+    InvalidTransform,
+
     /// Tried to reference an SVG element that does not exist.
     IdNotFound,
 
@@ -147,6 +153,12 @@ impl From<DefsLookupErrorKind> for RenderingError {
     }
 }
 
+impl From<InvalidTransform> for RenderingError {
+    fn from(_: InvalidTransform) -> RenderingError {
+        RenderingError::InvalidTransform
+    }
+}
+
 impl error::Error for RenderingError {}
 
 impl fmt::Display for RenderingError {
@@ -154,6 +166,7 @@ impl fmt::Display for RenderingError {
         match *self {
             RenderingError::Rendering(ref s) => write!(f, "rendering error: {s}"),
             RenderingError::LimitExceeded(ref l) => write!(f, "{l}"),
+            RenderingError::InvalidTransform => write!(f, "invalid transform"),
             RenderingError::IdNotFound => write!(f, "element id not found"),
             RenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
             RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
@@ -166,6 +179,13 @@ impl From<cairo::Error> for RenderingError {
         RenderingError::Rendering(format!("{e:?}"))
     }
 }
+
+/// Indicates that a transform is not invertible.
+///
+/// This generally represents an error from [`ValidTransform::try_from`], which is what we use
+/// to check affine transforms for validity.
+#[derive(Debug, PartialEq)]
+pub struct InvalidTransform;
 
 /// Errors from [`crate::document::AcquiredNodes`].
 pub enum AcquireError {

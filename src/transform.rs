@@ -13,6 +13,7 @@
 //! [attr]: https://www.w3.org/TR/SVG11/coords.html#TransformAttribute
 
 use cssparser::{Parser, Token};
+use std::ops::Deref;
 
 use crate::angle::Angle;
 use crate::error::*;
@@ -21,6 +22,37 @@ use crate::parsers::{optional_comma, Parse};
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
 use crate::rect::Rect;
+
+/// A transform that has been checked to be invertible.
+///
+/// We need to validate user-supplied transforms before setting them on Cairo,
+/// so we use this type for that.
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct ValidTransform(Transform);
+
+impl TryFrom<Transform> for ValidTransform {
+    type Error = InvalidTransform;
+
+    /// Validates a [`Transform`] before converting it to a [`ValidTransform`].
+    ///
+    /// A transform is valid if it is invertible.  For example, a
+    /// matrix with all-zeros is not invertible, and it is invalid.
+    fn try_from(t: Transform) -> Result<ValidTransform, InvalidTransform> {
+        if t.is_invertible() {
+            Ok(ValidTransform(t))
+        } else {
+            Err(InvalidTransform)
+        }
+    }
+}
+
+impl Deref for ValidTransform {
+    type Target = Transform;
+
+    fn deref(&self) -> &Transform {
+        &self.0
+    }
+}
 
 /// A 2D transformation matrix.
 #[derive(Debug, Copy, Clone, PartialEq)]

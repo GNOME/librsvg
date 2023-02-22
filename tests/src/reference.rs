@@ -1145,3 +1145,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/bugs-reftests/bug885-vector-effect-non-scaling-stroke.svg",
     "tests/fixtures/reftests/bugs-reftests/bug885-vector-effect-non-scaling-stroke-ref.svg"
 );
+
+test_svg_reference!(
+    bug_930_invalid_clip_path_transform,
+    "tests/fixtures/reftests/bugs-reftests/bug930-invalid-clip-path-transform.svg",
+    "tests/fixtures/reftests/bugs-reftests/bug930-invalid-clip-path-transform-ref.svg"
+);

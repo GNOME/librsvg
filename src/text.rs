@@ -24,7 +24,7 @@ use crate::properties::{
 use crate::rect::Rect;
 use crate::session::Session;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
-use crate::transform::Transform;
+use crate::transform::{Transform, ValidTransform};
 use crate::xml::Attributes;
 
 /// The state of a text layout operation.
@@ -33,7 +33,7 @@ struct LayoutContext {
     writing_mode: WritingMode,
 
     /// Current transform in the DrawingCtx.
-    transform: Transform,
+    transform: ValidTransform,
 
     /// Font options from the DrawingCtx.
     font_options: FontOptions,
@@ -464,7 +464,7 @@ impl PositionedSpan {
 
         let gravity = layout.context().gravity();
 
-        let bbox = compute_text_box(&layout, x, y, layout_context.transform, gravity);
+        let bbox = compute_text_box(&layout, x, y, *layout_context.transform, gravity);
 
         let stroke_paint = self.values.stroke().0.resolve(
             acquired_nodes,
@@ -831,7 +831,7 @@ impl Draw for Text {
                     }
                 }
 
-                let empty_bbox = BoundingBox::new().with_transform(*transform);
+                let empty_bbox = BoundingBox::new().with_transform(**transform);
 
                 let text_bbox = layout_spans.iter().fold(empty_bbox, |mut bbox, span| {
                     if let Some(ref span_bbox) = span.bbox {

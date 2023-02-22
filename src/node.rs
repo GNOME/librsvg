@@ -315,7 +315,21 @@ impl NodeDraw for Node {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         match *self.borrow() {
-            NodeData::Element(ref e) => e.draw(self, acquired_nodes, cascaded, draw_ctx, clipping),
+            NodeData::Element(ref e) => {
+                match e.draw(self, acquired_nodes, cascaded, draw_ctx, clipping) {
+                    Ok(bbox) => Ok(bbox),
+
+                    // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
+                    //
+                    // "If a transform function causes the current transformation matrix of an
+                    // object to be non-invertible, the object and its content do not get
+                    // displayed."
+                    Err(RenderingError::InvalidTransform) => Ok(draw_ctx.empty_bbox()),
+
+                    Err(e) => Err(e),
+                }
+            }
+
             _ => Ok(draw_ctx.empty_bbox()),
         }
     }

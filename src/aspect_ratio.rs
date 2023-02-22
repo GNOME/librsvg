@@ -15,13 +15,12 @@
 //! [spec]: https://www.w3.org/TR/SVG/coords.html#PreserveAspectRatioAttribute
 
 use cssparser::{BasicParseError, Parser};
-use std::fmt;
 use std::ops::Deref;
 
 use crate::error::*;
 use crate::parsers::Parse;
 use crate::rect::Rect;
-use crate::transform::Transform;
+use crate::transform::{Transform, ValidTransform};
 use crate::viewbox::ViewBox;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -78,17 +77,6 @@ struct Align {
     y: Y,
     fit: FitMode,
 }
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct NonInvertibleTransform;
-
-impl fmt::Display for NonInvertibleTransform {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Not invertible")
-    }
-}
-
-impl std::error::Error for NonInvertibleTransform {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct AspectRatio {
@@ -159,7 +147,7 @@ impl AspectRatio {
         &self,
         vbox: Option<ViewBox>,
         viewport: &Rect,
-    ) -> Result<Option<Transform>, NonInvertibleTransform> {
+    ) -> Result<Option<ValidTransform>, InvalidTransform> {
         // width or height set to 0 disables rendering of the element
         // https://www.w3.org/TR/SVG/struct.html#SVGElementWidthAttribute
         // https://www.w3.org/TR/SVG/struct.html#UseElementWidthAttribute
@@ -187,11 +175,7 @@ impl AspectRatio {
             Transform::new_translate(viewport.x0, viewport.y0)
         };
 
-        if transform.is_invertible() {
-            Ok(Some(transform))
-        } else {
-            Err(NonInvertibleTransform)
-        }
+        ValidTransform::try_from(transform).map(Some)
     }
 }
 
@@ -412,41 +396,50 @@ mod tests {
     #[test]
     fn empty_viewport() {
         let a = AspectRatio::default();
-        let t = a.viewport_to_viewbox_transform(
-            Some(ViewBox::parse_str("10 10 40 40").unwrap()),
-            &Rect::from_size(0.0, 0.0),
-        );
+        let t = a
+            .viewport_to_viewbox_transform(
+                Some(ViewBox::parse_str("10 10 40 40").unwrap()),
+                &Rect::from_size(0.0, 0.0),
+            )
+            .unwrap();
 
-        assert_eq!(t, Ok(None));
+        assert_eq!(t, None);
     }
 
     #[test]
     fn empty_viewbox() {
         let a = AspectRatio::default();
-        let t = a.viewport_to_viewbox_transform(
-            Some(ViewBox::parse_str("10 10 0 0").unwrap()),
-            &Rect::from_size(10.0, 10.0),
-        );
+        let t = a
+            .viewport_to_viewbox_transform(
+                Some(ViewBox::parse_str("10 10 0 0").unwrap()),
+                &Rect::from_size(10.0, 10.0),
+            )
+            .unwrap();
 
-        assert_eq!(t, Ok(None));
+        assert_eq!(t, None);
     }
 
     #[test]
     fn valid_viewport_and_viewbox() {
         let a = AspectRatio::default();
-        let t = a.viewport_to_viewbox_transform(
-            Some(ViewBox::parse_str("10 10 40 40").unwrap()),
-            &Rect::new(1.0, 1.0, 2.0, 2.0),
-        );
+        let t = a
+            .viewport_to_viewbox_transform(
+                Some(ViewBox::parse_str("10 10 40 40").unwrap()),
+                &Rect::new(1.0, 1.0, 2.0, 2.0),
+            )
+            .unwrap();
 
         assert_eq!(
             t,
-            Ok(Some(
-                Transform::identity()
-                    .pre_translate(1.0, 1.0)
-                    .pre_scale(0.025, 0.025)
-                    .pre_translate(-10.0, -10.0)
-            ))
+            Some(
+                ValidTransform::try_from(
+                    Transform::identity()
+                        .pre_translate(1.0, 1.0)
+                        .pre_scale(0.025, 0.025)
+                        .pre_translate(-10.0, -10.0)
+                )
+                .unwrap()
+            )
         );
     }
 
@@ -458,6 +451,6 @@ mod tests {
             &Rect::new(1.0, 1.0, 2.0, 2.0),
         );
 
-        assert_eq!(t, Err(NonInvertibleTransform));
+        assert_eq!(t, Err(InvalidTransform));
     }
 }
