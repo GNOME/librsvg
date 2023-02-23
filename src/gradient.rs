@@ -8,7 +8,7 @@ use markup5ever::{
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{set_attribute, Element, ElementTrait};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -408,14 +408,12 @@ impl UnresolvedGradient {
     /// and adds their info to the UnresolvedGradient &self.
     fn add_color_stops_from_node(&mut self, node: &Node, opacity: UnitInterval) {
         assert!(matches!(
-            *node.borrow_element(),
-            Element::LinearGradient(_) | Element::RadialGradient(_)
+            *node.borrow_element_data(),
+            ElementData::LinearGradient(_) | ElementData::RadialGradient(_)
         ));
 
         for child in node.children().filter(|c| c.is_element()) {
-            let elt = child.borrow_element();
-
-            if let Element::Stop(ref stop) = *elt {
+            if let ElementData::Stop(ref stop) = &*child.borrow_element_data() {
                 let cascaded = CascadedValues::new_from_node(&child);
                 let values = cascaded.get();
 
@@ -596,11 +594,11 @@ macro_rules! impl_gradient {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        let unresolved = match *acquired_node.borrow_element() {
-                            Element::$gradient_type(ref g) => {
+                        let unresolved = match *acquired_node.borrow_element_data() {
+                            ElementData::$gradient_type(ref g) => {
                                 g.get_unresolved(&acquired_node, opacity)
                             }
-                            Element::$other_type(ref g) => {
+                            ElementData::$other_type(ref g) => {
                                 g.get_unresolved(&acquired_node, opacity)
                             }
                             _ => return Err(AcquireError::InvalidLinkType(node_id.clone())),

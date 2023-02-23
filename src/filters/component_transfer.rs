@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Element, ElementTrait};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{NumberList, Parse, ParseValue};
@@ -269,8 +269,8 @@ impl FeFuncCommon {
 macro_rules! func_or_default {
     ($func_node:ident, $func_type:ident) => {
         match $func_node {
-            Some(ref f) => match *f.borrow_element() {
-                Element::$func_type(ref e) => e.element_impl.clone(),
+            Some(ref f) => match &*f.borrow_element_data() {
+                ElementData::$func_type(e) => (**e).clone(),
                 _ => unreachable!(),
             },
             _ => $func_type::default(),
@@ -284,7 +284,7 @@ macro_rules! get_func_x_node {
             .children()
             .rev()
             .filter(|c| c.is_element())
-            .find(|c| matches!(*c.borrow_element(), Element::$func_type(_)))
+            .find(|c| matches!(*c.borrow_element_data(), ElementData::$func_type(_)))
     };
 }
 

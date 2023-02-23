@@ -675,8 +675,8 @@ impl selectors::Element for RsvgElement {
         // a link, so to avoid nasty surprises, we do the same.
         // Empty href's, however, ARE considered links.
         self.0.is_element()
-            && match &*self.0.borrow_element() {
-                crate::element::Element::Link(link) => link.link.is_some(),
+            && match *self.0.borrow_element_data() {
+                crate::element::ElementData::Link(ref link) => link.link.is_some(),
                 _ => false,
             }
     }

@@ -6,7 +6,7 @@ use cssparser::Parser;
 
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::ViewParams;
-use crate::element::Element;
+use crate::element::ElementData;
 use crate::error::{AcquireError, NodeIdError, ParseError, ValueErrorKind};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
 use crate::node::NodeBorrow;
@@ -145,8 +145,8 @@ impl PaintServer {
                     let node = acquired.get();
                     assert!(node.is_element());
 
-                    match *node.borrow_element() {
-                        Element::LinearGradient(ref g) => {
+                    match *node.borrow_element_data() {
+                        ElementData::LinearGradient(ref g) => {
                             g.resolve(node, acquired_nodes, opacity).map(|g| {
                                 Arc::new(PaintSource::Gradient(
                                     g,
@@ -154,7 +154,7 @@ impl PaintServer {
                                 ))
                             })
                         }
-                        Element::Pattern(ref p) => {
+                        ElementData::Pattern(ref p) => {
                             p.resolve(node, acquired_nodes, opacity, session).map(|p| {
                                 Arc::new(PaintSource::Pattern(
                                     p,
@@ -162,7 +162,7 @@ impl PaintServer {
                                 ))
                             })
                         }
-                        Element::RadialGradient(ref g) => {
+                        ElementData::RadialGradient(ref g) => {
                             g.resolve(node, acquired_nodes, opacity).map(|g| {
                                 Arc::new(PaintSource::Gradient(
                                     g,

@@ -10,7 +10,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
-use crate::element::Element;
+use crate::element::{Element, ElementData};
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
@@ -148,10 +148,10 @@ impl StackingContext {
         let opacity;
         let filter;
 
-        match *element {
+        match element.element_data {
             // "The opacity, filter and display properties do not apply to the mask element"
             // https://drafts.fxtf.org/css-masking-1/#MaskElement
-            Element::Mask(_) => {
+            ElementData::Mask(_) => {
                 opacity = Opacity(UnitInterval::clamp(1.0));
                 filter = Filter::None;
             }
@@ -186,8 +186,8 @@ impl StackingContext {
         let mask = values.mask().0.get().and_then(|mask_id| {
             if let Ok(acquired) = acquired_nodes.acquire(mask_id) {
                 let node = acquired.get();
-                match *node.borrow_element() {
-                    Element::Mask(_) => Some(node.clone()),
+                match *node.borrow_element_data() {
+                    ElementData::Mask(_) => Some(node.clone()),
 
                     _ => {
                         rsvg_log!(

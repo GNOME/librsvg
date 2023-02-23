@@ -7,7 +7,7 @@ use std::slice::Iter;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{set_attribute, Element, ElementTrait};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
 use crate::filters::{FilterResolveError, FilterSpec};
@@ -242,10 +242,9 @@ fn filter_spec_from_filter_node(
         })
         .and_then(|acquired| {
             let node = acquired.get();
-            let element = node.borrow_element();
 
-            match *element {
-                Element::Filter(_) => extract_filter_from_filter_node(
+            match *node.borrow_element_data() {
+                ElementData::Filter(_) => extract_filter_from_filter_node(
                     node,
                     acquired_nodes,
                     &session,

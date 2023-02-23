@@ -9,7 +9,7 @@ use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Element, ElementTrait};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::filters::{
     bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
@@ -703,10 +703,10 @@ macro_rules! impl_lighting_filter {
                 let mut sources = node.children().rev().filter(|c| {
                     c.is_element()
                         && matches!(
-                            *c.borrow_element(),
-                            Element::FeDistantLight(_)
-                                | Element::FePointLight(_)
-                                | Element::FeSpotLight(_)
+                            *c.borrow_element_data(),
+                            ElementData::FeDistantLight(_)
+                                | ElementData::FePointLight(_)
+                                | ElementData::FeSpotLight(_)
                         )
                 });
 
@@ -716,18 +716,13 @@ macro_rules! impl_lighting_filter {
                 }
 
                 let source_node = source_node.unwrap();
-                let elt = source_node.borrow_element();
 
-                let source = match *elt {
-                    Element::FeDistantLight(ref l) => {
-                        UntransformedLightSource::Distant(l.element_impl.clone())
+                let source = match &*source_node.borrow_element_data() {
+                    ElementData::FeDistantLight(l) => {
+                        UntransformedLightSource::Distant((**l).clone())
                     }
-                    Element::FePointLight(ref l) => {
-                        UntransformedLightSource::Point(l.element_impl.clone())
-                    }
-                    Element::FeSpotLight(ref l) => {
-                        UntransformedLightSource::Spot(l.element_impl.clone())
-                    }
+                    ElementData::FePointLight(l) => UntransformedLightSource::Point((**l).clone()),
+                    ElementData::FeSpotLight(l) => UntransformedLightSource::Spot((**l).clone()),
                     _ => unreachable!(),
                 };
 

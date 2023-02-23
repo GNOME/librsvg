@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::ViewParams;
-use crate::element::{set_attribute, Element, ElementTrait};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::length::*;
@@ -473,8 +473,8 @@ impl Pattern {
                             return Err(AcquireError::CircularReference(acquired_node.clone()));
                         }
 
-                        match *acquired_node.borrow_element() {
-                            Element::Pattern(ref p) => {
+                        match *acquired_node.borrow_element_data() {
+                            ElementData::Pattern(ref p) => {
                                 let unresolved = p.get_unresolved(acquired_node);
                                 pattern = pattern.resolve_from_fallback(&unresolved.pattern);
                                 fallback = unresolved.fallback;

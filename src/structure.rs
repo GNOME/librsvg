@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
-use crate::element::{set_attribute, Element, ElementTrait};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
 use crate::layout::StackingContext;
@@ -578,7 +578,7 @@ impl ElementTrait for Link {
         // If this element is inside of <text>, do not draw it.
         // The <text> takes care of it.
         for an in node.ancestors() {
-            if matches!(&*an.borrow_element(), Element::Text(_)) {
+            if matches!(&*an.borrow_element_data(), ElementData::Text(_)) {
                 return Ok(draw_ctx.empty_bbox());
             }
         }

@@ -20,7 +20,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
-use crate::element::Element;
+use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
 use crate::filter::FilterValueList;
 use crate::filters::{self, FilterSpec};
@@ -1946,32 +1946,29 @@ pub fn pango_layout_to_path(
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
 fn element_can_be_used_inside_clip_path(element: &Element) -> bool {
+    use ElementData::*;
+
     matches!(
-        *element,
-        Element::Circle(_)
-            | Element::Ellipse(_)
-            | Element::Line(_)
-            | Element::Path(_)
-            | Element::Polygon(_)
-            | Element::Polyline(_)
-            | Element::Rect(_)
-            | Element::Text(_)
-            | Element::Use(_)
+        element.element_data,
+        Circle(_)
+            | Ellipse(_)
+            | Line(_)
+            | Path(_)
+            | Polygon(_)
+            | Polyline(_)
+            | Rect(_)
+            | Text(_)
+            | Use(_)
     )
 }
 
 // https://www.w3.org/TR/css-masking-1/#ClipPathElement
 fn element_can_be_used_inside_use_inside_clip_path(element: &Element) -> bool {
+    use ElementData::*;
+
     matches!(
-        *element,
-        Element::Circle(_)
-            | Element::Ellipse(_)
-            | Element::Line(_)
-            | Element::Path(_)
-            | Element::Polygon(_)
-            | Element::Polyline(_)
-            | Element::Rect(_)
-            | Element::Text(_)
+        element.element_data,
+        Circle(_) | Ellipse(_) | Line(_) | Path(_) | Polygon(_) | Polyline(_) | Rect(_) | Text(_)
     )
 }
 

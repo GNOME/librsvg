@@ -10,7 +10,7 @@ use std::sync::Arc;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
-use crate::element::{set_attribute, Element, ElementTrait};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
 use crate::length::*;
@@ -537,8 +537,8 @@ fn children_to_chunks(
         } else {
             assert!(child.is_element());
 
-            match *child.borrow_element() {
-                Element::TSpan(ref tspan) => {
+            match *child.borrow_element_data() {
+                ElementData::TSpan(ref tspan) => {
                     let cascaded = CascadedValues::clone_with_node(cascaded, &child);
                     tspan.to_chunks(
                         &child,
@@ -553,7 +553,7 @@ fn children_to_chunks(
                     );
                 }
 
-                Element::Link(ref link) => {
+                ElementData::Link(ref link) => {
                     // TSpan::default sets all offsets to 0,
                     // which is what we want in links.
                     //
@@ -577,7 +577,7 @@ fn children_to_chunks(
                     );
                 }
 
-                Element::TRef(ref tref) => {
+                ElementData::TRef(ref tref) => {
                     let cascaded = CascadedValues::clone_with_node(cascaded, &child);
                     tref.to_chunks(
                         &child,
