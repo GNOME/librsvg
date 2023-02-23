@@ -132,129 +132,141 @@ fn gamma(params: &FunctionParameters, value: f64) -> f64 {
     params.amplitude * value.powf(params.exponent) + params.offset
 }
 
-trait FeComponentTransferFunc {
-    /// Returns the component transfer function.
-    fn function(&self) -> Function;
-
-    /// Returns the component transfer function parameters.
-    fn function_parameters(&self) -> FunctionParameters;
+/// Common values for `feFuncX` elements
+///
+/// The elements `feFuncR`, `feFuncG`, `feFuncB`, `feFuncA` all have the same parameters; this structure
+/// contains them.  Later we define newtypes on this struct as [`FeFuncR`], etc.
+#[derive(Clone, Debug, PartialEq)]
+pub struct FeFuncCommon {
+    pub function_type: FunctionType,
+    pub table_values: Vec<f64>,
+    pub slope: f64,
+    pub intercept: f64,
+    pub amplitude: f64,
+    pub exponent: f64,
+    pub offset: f64,
 }
 
-macro_rules! func_x {
-    ($func_name:ident) => {
-        #[derive(Clone, Debug, PartialEq)]
-        pub struct $func_name {
-            pub function_type: FunctionType,
-            pub table_values: Vec<f64>,
-            pub slope: f64,
-            pub intercept: f64,
-            pub amplitude: f64,
-            pub exponent: f64,
-            pub offset: f64,
+impl Default for FeFuncCommon {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            function_type: FunctionType::Identity,
+            table_values: Vec::new(),
+            slope: 1.0,
+            intercept: 0.0,
+            amplitude: 1.0,
+            exponent: 1.0,
+            offset: 0.0,
         }
+    }
+}
 
-        impl Default for $func_name {
-            #[inline]
-            fn default() -> Self {
-                Self {
-                    function_type: FunctionType::Identity,
-                    table_values: Vec::new(),
-                    slope: 1.0,
-                    intercept: 0.0,
-                    amplitude: 1.0,
-                    exponent: 1.0,
-                    offset: 0.0,
-                }
-            }
-        }
+// All FeFunc* elements are defined here; they just delegate their attributes
+// to the FeFuncCommon inside.
+macro_rules! impl_func {
+    ($(#[$attr:meta])*
+     $name:ident
+    ) => {
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct $name(pub FeFuncCommon);
 
-        impl FeComponentTransferFunc for $func_name {
-            #[inline]
-            fn function_parameters(&self) -> FunctionParameters {
-                FunctionParameters {
-                    table_values: self.table_values.clone(),
-                    slope: self.slope,
-                    intercept: self.intercept,
-                    amplitude: self.amplitude,
-                    exponent: self.exponent,
-                    offset: self.offset,
-                }
-            }
-
-            #[inline]
-            fn function(&self) -> Function {
-                match self.function_type {
-                    FunctionType::Identity => identity,
-                    FunctionType::Table => table,
-                    FunctionType::Discrete => discrete,
-                    FunctionType::Linear => linear,
-                    FunctionType::Gamma => gamma,
-                }
-            }
-        }
-
-        impl SetAttributes for $func_name {
-            #[inline]
+        impl SetAttributes for $name {
             fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
-                for (attr, value) in attrs.iter() {
-                    match attr.expanded() {
-                        expanded_name!("", "type") => {
-                            set_attribute(&mut self.function_type, attr.parse(value), session)
-                        }
-                        expanded_name!("", "tableValues") => {
-                            // #691: Limit list to 256 to mitigate malicious SVGs
-                            let mut number_list = NumberList::<0, 256>(Vec::new());
-                            set_attribute(&mut number_list, attr.parse(value), session);
-                            self.table_values = number_list.0;
-                        }
-                        expanded_name!("", "slope") => {
-                            set_attribute(&mut self.slope, attr.parse(value), session)
-                        }
-                        expanded_name!("", "intercept") => {
-                            set_attribute(&mut self.intercept, attr.parse(value), session)
-                        }
-                        expanded_name!("", "amplitude") => {
-                            set_attribute(&mut self.amplitude, attr.parse(value), session)
-                        }
-                        expanded_name!("", "exponent") => {
-                            set_attribute(&mut self.exponent, attr.parse(value), session)
-                        }
-                        expanded_name!("", "offset") => {
-                            set_attribute(&mut self.offset, attr.parse(value), session)
-                        }
-
-                        _ => (),
-                    }
-                }
-
-                // The table function type with empty table_values is considered
-                // an identity function.
-                match self.function_type {
-                    FunctionType::Table | FunctionType::Discrete => {
-                        if self.table_values.is_empty() {
-                            self.function_type = FunctionType::Identity;
-                        }
-                    }
-                    _ => (),
-                }
+                self.0.set_attributes(attrs, session);
             }
         }
 
-        impl Draw for $func_name {}
+        impl Draw for $name {}
     };
 }
 
-// The `<feFuncR>` element
-func_x!(FeFuncR);
+impl_func!(
+    /// The `feFuncR` element.
+    FeFuncR
+);
 
-// The `<feFuncG>` element
-func_x!(FeFuncG);
+impl_func!(
+    /// The `feFuncG` element.
+    FeFuncG
+);
 
-// The `<feFuncB>` element
-func_x!(FeFuncB);
+impl_func!(
+    /// The `feFuncB` element.
+    FeFuncB
+);
 
-// The `<feFuncA>` element
-func_x!(FeFuncA);
+impl_func!(
+    /// The `feFuncA` element.
+    FeFuncA
+);
+
+impl FeFuncCommon {
+    fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
+        for (attr, value) in attrs.iter() {
+            match attr.expanded() {
+                expanded_name!("", "type") => {
+                    set_attribute(&mut self.function_type, attr.parse(value), session)
+                }
+                expanded_name!("", "tableValues") => {
+                    // #691: Limit list to 256 to mitigate malicious SVGs
+                    let mut number_list = NumberList::<0, 256>(Vec::new());
+                    set_attribute(&mut number_list, attr.parse(value), session);
+                    self.table_values = number_list.0;
+                }
+                expanded_name!("", "slope") => {
+                    set_attribute(&mut self.slope, attr.parse(value), session)
+                }
+                expanded_name!("", "intercept") => {
+                    set_attribute(&mut self.intercept, attr.parse(value), session)
+                }
+                expanded_name!("", "amplitude") => {
+                    set_attribute(&mut self.amplitude, attr.parse(value), session)
+                }
+                expanded_name!("", "exponent") => {
+                    set_attribute(&mut self.exponent, attr.parse(value), session)
+                }
+                expanded_name!("", "offset") => {
+                    set_attribute(&mut self.offset, attr.parse(value), session)
+                }
+
+                _ => (),
+            }
+        }
+
+        // The table function type with empty table_values is considered
+        // an identity function.
+        match self.function_type {
+            FunctionType::Table | FunctionType::Discrete => {
+                if self.table_values.is_empty() {
+                    self.function_type = FunctionType::Identity;
+                }
+            }
+            _ => (),
+        }
+    }
+
+    fn function_parameters(&self) -> FunctionParameters {
+        FunctionParameters {
+            table_values: self.table_values.clone(),
+            slope: self.slope,
+            intercept: self.intercept,
+            amplitude: self.amplitude,
+            exponent: self.exponent,
+            offset: self.offset,
+        }
+    }
+
+    fn function(&self) -> Function {
+        match self.function_type {
+            FunctionType::Identity => identity,
+            FunctionType::Table => table,
+            FunctionType::Discrete => discrete,
+            FunctionType::Linear => linear,
+            FunctionType::Gamma => gamma,
+        }
+    }
+}
 
 macro_rules! func_or_default {
     ($func_node:ident, $func_type:ident) => {
@@ -305,11 +317,7 @@ impl ComponentTransfer {
             input_1.surface().surface_type(),
         )?;
 
-        #[inline]
-        fn compute_func<F>(func: &F) -> impl Fn(u8, f64, f64) -> u8
-        where
-            F: FeComponentTransferFunc,
-        {
+        fn compute_func(func: &FeFuncCommon) -> impl Fn(u8, f64, f64) -> u8 {
             let compute = func.function();
             let params = func.function_parameters();
 
@@ -325,13 +333,13 @@ impl ComponentTransfer {
             }
         }
 
-        let compute_r = compute_func::<FeFuncR>(&self.functions.r);
-        let compute_g = compute_func::<FeFuncG>(&self.functions.g);
-        let compute_b = compute_func::<FeFuncB>(&self.functions.b);
+        let compute_r = compute_func(&self.functions.r.0);
+        let compute_g = compute_func(&self.functions.g.0);
+        let compute_b = compute_func(&self.functions.b.0);
 
         // Alpha gets special handling since everything else depends on it.
-        let compute_a = self.functions.a.function();
-        let params_a = self.functions.a.function_parameters();
+        let compute_a = self.functions.a.0.function();
+        let params_a = self.functions.a.0.function_parameters();
         let compute_a = |alpha| compute_a(&params_a, alpha);
 
         // Do the actual processing.
@@ -428,13 +436,13 @@ mod tests {
             Functions {
                 r: FeFuncR::default(),
 
-                g: FeFuncG {
+                g: FeFuncG(FeFuncCommon {
                     function_type: FunctionType::Table,
                     table_values: vec![0.0, 1.0, 2.0],
-                    ..FeFuncG::default()
-                },
+                    ..FeFuncCommon::default()
+                }),
 
-                b: FeFuncB {
+                b: FeFuncB(FeFuncCommon {
                     function_type: FunctionType::Discrete,
                     table_values: vec![0.0, 1.0],
                     slope: 1.0,
@@ -442,8 +450,8 @@ mod tests {
                     amplitude: 3.0,
                     exponent: 4.0,
                     offset: 5.0,
-                    ..FeFuncB::default()
-                },
+                    ..FeFuncCommon::default()
+                }),
 
                 a: FeFuncA::default(),
             }
