@@ -46,15 +46,6 @@ impl SetAttributes for FeComponentTransfer {
     }
 }
 
-/// Pixel components that can be influenced by `feComponentTransfer`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Channel {
-    R,
-    G,
-    B,
-    A,
-}
-
 /// Component transfer function types.
 #[derive(Clone, Debug, PartialEq)]
 pub enum FunctionType {
@@ -147,16 +138,12 @@ trait FeComponentTransferFunc {
 
     /// Returns the component transfer function parameters.
     fn function_parameters(&self) -> FunctionParameters;
-
-    /// Returns the channel.
-    fn channel(&self) -> Channel;
 }
 
 macro_rules! func_x {
-    ($func_name:ident, $channel:expr) => {
+    ($func_name:ident) => {
         #[derive(Clone, Debug, PartialEq)]
         pub struct $func_name {
-            pub channel: Channel,
             pub function_type: FunctionType,
             pub table_values: Vec<f64>,
             pub slope: f64,
@@ -170,7 +157,6 @@ macro_rules! func_x {
             #[inline]
             fn default() -> Self {
                 Self {
-                    channel: $channel,
                     function_type: FunctionType::Identity,
                     table_values: Vec::new(),
                     slope: 1.0,
@@ -204,11 +190,6 @@ macro_rules! func_x {
                     FunctionType::Linear => linear,
                     FunctionType::Gamma => gamma,
                 }
-            }
-
-            #[inline]
-            fn channel(&self) -> Channel {
-                self.channel
             }
         }
 
@@ -264,16 +245,16 @@ macro_rules! func_x {
 }
 
 // The `<feFuncR>` element
-func_x!(FeFuncR, Channel::R);
+func_x!(FeFuncR);
 
 // The `<feFuncG>` element
-func_x!(FeFuncG, Channel::G);
+func_x!(FeFuncG);
 
 // The `<feFuncB>` element
-func_x!(FeFuncB, Channel::B);
+func_x!(FeFuncB);
 
 // The `<feFuncA>` element
-func_x!(FeFuncA, Channel::A);
+func_x!(FeFuncA);
 
 macro_rules! func_or_default {
     ($func_node:ident, $func_type:ident) => {
@@ -288,15 +269,12 @@ macro_rules! func_or_default {
 }
 
 macro_rules! get_func_x_node {
-    ($func_node:ident, $func_type:ident, $channel:expr) => {
+    ($func_node:ident, $func_type:ident) => {
         $func_node
             .children()
             .rev()
             .filter(|c| c.is_element())
-            .find(|c| match *c.borrow_element() {
-                Element::$func_type(ref f) => f.channel() == $channel,
-                _ => false,
-            })
+            .find(|c| matches!(*c.borrow_element(), Element::$func_type(_)))
     };
 }
 
@@ -402,10 +380,10 @@ impl FilterEffect for FeComponentTransfer {
 
 /// Takes a feComponentTransfer and walks its children to produce the feFuncX arguments.
 fn get_functions(node: &Node) -> Result<Functions, FilterResolveError> {
-    let func_r_node = get_func_x_node!(node, FeFuncR, Channel::R);
-    let func_g_node = get_func_x_node!(node, FeFuncG, Channel::G);
-    let func_b_node = get_func_x_node!(node, FeFuncB, Channel::B);
-    let func_a_node = get_func_x_node!(node, FeFuncA, Channel::A);
+    let func_r_node = get_func_x_node!(node, FeFuncR);
+    let func_g_node = get_func_x_node!(node, FeFuncG);
+    let func_b_node = get_func_x_node!(node, FeFuncB);
+    let func_a_node = get_func_x_node!(node, FeFuncA);
 
     let r = func_or_default!(func_r_node, FeFuncR);
     let g = func_or_default!(func_g_node, FeFuncG);
