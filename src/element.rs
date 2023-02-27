@@ -461,7 +461,7 @@ impl ElementData {
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
         pub fn $name(session: &Session, attributes: &Attributes) -> ElementData {
-            let mut payload = Box::new(<$element_type>::default());
+            let mut payload = Box::<$element_type>::default();
             payload.set_attributes(attributes, session);
 
             ElementData::$element_type(payload)
