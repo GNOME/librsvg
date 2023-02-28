@@ -1,6 +1,6 @@
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::SetAttributes;
+use crate::element::ElementTrait;
 use crate::node::Node;
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
@@ -27,7 +27,7 @@ pub struct Tile {
     in1: Input,
 }
 
-impl SetAttributes for FeTile {
+impl ElementTrait for FeTile {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
     }

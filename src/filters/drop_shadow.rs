@@ -1,7 +1,7 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::document::AcquiredNodes;
-use crate::element::{set_attribute, SetAttributes};
+use crate::element::{set_attribute, ElementTrait};
 use crate::filter_func::drop_shadow_primitives;
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
@@ -39,7 +39,7 @@ impl Default for DropShadow {
     }
 }
 
-impl SetAttributes for FeDropShadow {
+impl ElementTrait for FeDropShadow {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 

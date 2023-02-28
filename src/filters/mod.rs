@@ -8,7 +8,7 @@ use std::time::Instant;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, SetAttributes};
+use crate::element::{set_attribute, ElementTrait};
 use crate::error::{ParseError, RenderingError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
@@ -32,16 +32,13 @@ use self::error::FilterError;
 pub use self::error::FilterResolveError;
 
 /// A filter primitive interface.
-pub trait FilterEffect: SetAttributes + Draw {
+pub trait FilterEffect: ElementTrait {
     fn resolve(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node: &Node,
     ) -> Result<Vec<ResolvedPrimitive>, FilterResolveError>;
 }
-
-// Filter Effects do not need to draw themselves
-impl<T: FilterEffect> Draw for T {}
 
 pub mod blend;
 pub mod color_matrix;

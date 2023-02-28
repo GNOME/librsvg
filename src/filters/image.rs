@@ -3,7 +3,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::aspect_ratio::AspectRatio;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, SetAttributes};
+use crate::element::{set_attribute, ElementTrait};
 use crate::href::{is_href, set_href};
 use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
@@ -115,7 +115,7 @@ impl Image {
     }
 }
 
-impl SetAttributes for FeImage {
+impl ElementTrait for FeImage {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.base.parse_no_inputs(attrs, session);
 

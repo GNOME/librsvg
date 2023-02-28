@@ -4,7 +4,6 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
 use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::ops::Deref;
 
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
@@ -46,7 +45,7 @@ use crate::style::Style;
 use crate::text::{TRef, TSpan, Text};
 use crate::xml::Attributes;
 
-pub trait SetAttributes {
+pub trait ElementTrait {
     /// Sets per-element attributes.
     ///
     /// Each element is supposed to iterate the `attributes`, and parse any ones it needs.
@@ -55,11 +54,26 @@ pub trait SetAttributes {
     ///
     /// You can use the [`set_attribute`] function to do that.
     fn set_attributes(&mut self, _attributes: &Attributes, _session: &Session) {}
+
+    /// Draw an element.
+    ///
+    /// Each element is supposed to draw itself as needed.
+    fn draw(
+        &self,
+        _node: &Node,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        _cascaded: &CascadedValues<'_>,
+        draw_ctx: &mut DrawingCtx,
+        _clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        // by default elements don't draw themselves
+        Ok(draw_ctx.empty_bbox())
+    }
 }
 
 /// Sets `dest` if `parse_result` is `Ok()`, otherwise just logs the error.
 ///
-/// Implementations of the [`SetAttributes`] trait generally scan a list of attributes
+/// Implementations of the [`ElementTrait`] trait generally scan a list of attributes
 /// for the ones they can handle, and parse their string values.  Per the SVG spec, an attribute
 /// with an invalid value should be ignored, and it should fall back to the default value.
 ///
@@ -80,24 +94,7 @@ pub fn set_attribute<T>(dest: &mut T, parse_result: Result<T, ElementError>, ses
     }
 }
 
-pub trait Draw {
-    /// Draw an element
-    ///
-    /// Each element is supposed to draw itself as needed.
-    fn draw(
-        &self,
-        _node: &Node,
-        _acquired_nodes: &mut AcquiredNodes<'_>,
-        _cascaded: &CascadedValues<'_>,
-        draw_ctx: &mut DrawingCtx,
-        _clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
-        // by default elements don't draw themselves
-        Ok(draw_ctx.empty_bbox())
-    }
-}
-
-pub struct ElementInner<T: SetAttributes + Draw> {
+pub struct Element {
     element_name: QualName,
     attributes: Attributes,
     specified_values: SpecifiedValues,
@@ -106,18 +103,106 @@ pub struct ElementInner<T: SetAttributes + Draw> {
     required_extensions: Option<RequiredExtensions>,
     required_features: Option<RequiredFeatures>,
     system_language: Option<SystemLanguage>,
-    pub element_impl: T,
+    pub element_data: ElementData,
 }
 
-impl<T: SetAttributes + Draw> ElementInner<T> {
-    fn new(
-        session: &Session,
-        element_name: QualName,
-        attributes: Attributes,
-        element_impl: T,
-    ) -> ElementInner<T> {
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.element_name().local)?;
+        write!(f, " id={}", self.get_id().unwrap_or("None"))?;
+        Ok(())
+    }
+}
+
+/// Parsed contents of an element node in the DOM.
+///
+/// This enum uses `Box<Foo>` in order to make each variant the size of
+/// a pointer.
+pub enum ElementData {
+    Circle(Box<Circle>),
+    ClipPath(Box<ClipPath>),
+    Ellipse(Box<Ellipse>),
+    Filter(Box<Filter>),
+    Group(Box<Group>),
+    Image(Box<Image>),
+    Line(Box<Line>),
+    LinearGradient(Box<LinearGradient>),
+    Link(Box<Link>),
+    Marker(Box<Marker>),
+    Mask(Box<Mask>),
+    NonRendering(Box<NonRendering>),
+    Path(Box<Path>),
+    Pattern(Box<Pattern>),
+    Polygon(Box<Polygon>),
+    Polyline(Box<Polyline>),
+    RadialGradient(Box<RadialGradient>),
+    Rect(Box<Rect>),
+    Stop(Box<Stop>),
+    Style(Box<Style>),
+    Svg(Box<Svg>),
+    Switch(Box<Switch>),
+    Symbol(Box<Symbol>),
+    Text(Box<Text>),
+    TRef(Box<TRef>),
+    TSpan(Box<TSpan>),
+    Use(Box<Use>),
+
+    // Filter primitives, these start with "Fe" as element names are e.g. "feBlend"
+    FeBlend(Box<FeBlend>),
+    FeColorMatrix(Box<FeColorMatrix>),
+    FeComponentTransfer(Box<FeComponentTransfer>),
+    FeComposite(Box<FeComposite>),
+    FeConvolveMatrix(Box<FeConvolveMatrix>),
+    FeDiffuseLighting(Box<FeDiffuseLighting>),
+    FeDisplacementMap(Box<FeDisplacementMap>),
+    FeDistantLight(Box<FeDistantLight>),
+    FeDropShadow(Box<FeDropShadow>),
+    FeFlood(Box<FeFlood>),
+    FeFuncA(Box<FeFuncA>),
+    FeFuncB(Box<FeFuncB>),
+    FeFuncG(Box<FeFuncG>),
+    FeFuncR(Box<FeFuncR>),
+    FeGaussianBlur(Box<FeGaussianBlur>),
+    FeImage(Box<FeImage>),
+    FeMerge(Box<FeMerge>),
+    FeMergeNode(Box<FeMergeNode>),
+    FeMorphology(Box<FeMorphology>),
+    FeOffset(Box<FeOffset>),
+    FePointLight(Box<FePointLight>),
+    FeSpecularLighting(Box<FeSpecularLighting>),
+    FeSpotLight(Box<FeSpotLight>),
+    FeTile(Box<FeTile>),
+    FeTurbulence(Box<FeTurbulence>),
+}
+
+impl Element {
+    /// Takes an XML element name and consumes a list of attribute/value pairs to create an [`Element`].
+    ///
+    /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
+    /// element.
+    pub fn new(session: &Session, name: &QualName, mut attributes: Attributes) -> Element {
+        let (create_fn, flags): (ElementDataCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
+            match ELEMENT_CREATORS.get(name.local.as_ref()) {
+                // hack in the SVG namespace for supported element names
+                Some(&(create_fn, flags)) => (create_fn, flags),
+
+                // Whenever we encounter a element name we don't understand, represent it as a
+                // non-rendering element.  This is like a group, but it doesn't do any rendering
+                // of children.  The effect is that we will ignore all children of unknown elements.
+                None => (create_non_rendering, ElementCreateFlags::Default),
+            }
+        } else {
+            (create_non_rendering, ElementCreateFlags::Default)
+        };
+
+        if flags == ElementCreateFlags::IgnoreClass {
+            attributes.clear_class();
+        };
+
+        let element_data = create_fn(session, &attributes);
+
         let mut e = Self {
-            element_name,
+            element_name: name.clone(),
             attributes,
             specified_values: Default::default(),
             important_styles: Default::default(),
@@ -125,7 +210,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             required_extensions: Default::default(),
             required_features: Default::default(),
             system_language: Default::default(),
-            element_impl,
+            element_data,
         };
 
         e.set_conditional_processing_attributes(session);
@@ -134,40 +219,40 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
         e
     }
 
-    fn element_name(&self) -> &QualName {
+    pub fn element_name(&self) -> &QualName {
         &self.element_name
     }
 
-    fn get_attributes(&self) -> &Attributes {
+    pub fn get_attributes(&self) -> &Attributes {
         &self.attributes
     }
 
-    fn get_id(&self) -> Option<&str> {
+    pub fn get_id(&self) -> Option<&str> {
         self.attributes.get_id()
     }
 
-    fn get_class(&self) -> Option<&str> {
+    pub fn get_class(&self) -> Option<&str> {
         self.attributes.get_class()
     }
 
-    fn inherit_xml_lang(&mut self, parent: Option<Node>) {
+    pub fn inherit_xml_lang(&mut self, parent: Option<Node>) {
         self.specified_values
             .inherit_xml_lang(&mut self.values, parent);
     }
 
-    fn get_specified_values(&self) -> &SpecifiedValues {
+    pub fn get_specified_values(&self) -> &SpecifiedValues {
         &self.specified_values
     }
 
-    fn get_computed_values(&self) -> &ComputedValues {
+    pub fn get_computed_values(&self) -> &ComputedValues {
         &self.values
     }
 
-    fn set_computed_values(&mut self, values: &ComputedValues) {
+    pub fn set_computed_values(&mut self, values: &ComputedValues) {
         self.values = values.clone();
     }
 
-    fn get_cond(&self, user_language: &UserLanguage) -> bool {
+    pub fn get_cond(&self, user_language: &UserLanguage) -> bool {
         self.required_extensions
             .as_ref()
             .map(|v| v.eval())
@@ -211,7 +296,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     // Applies a style declaration to the node's specified_values
-    fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
+    pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
         self.specified_values.set_property_from_declaration(
             declaration,
             origin,
@@ -220,7 +305,7 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
     }
 
     /// Applies CSS styles from the "style" attribute
-    fn set_style_attribute(&mut self, session: &Session) {
+    pub fn set_style_attribute(&mut self, session: &Session) {
         let style = self
             .attributes
             .iter()
@@ -236,10 +321,53 @@ impl<T: SetAttributes + Draw> ElementInner<T> {
             );
         }
     }
-}
 
-impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
-    fn draw(
+    #[rustfmt::skip]
+    pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
+        use ElementData::*;
+
+        match &self.element_data {
+            FeBlend(fe) =>              Some(&**fe),
+            FeColorMatrix(fe) =>        Some(&**fe),
+            FeComponentTransfer(fe) =>  Some(&**fe),
+            FeComposite(fe) =>          Some(&**fe),
+            FeConvolveMatrix(fe) =>     Some(&**fe),
+            FeDiffuseLighting(fe) =>    Some(&**fe),
+            FeDisplacementMap(fe) =>    Some(&**fe),
+            FeDropShadow(fe) =>         Some(&**fe),
+            FeFlood(fe) =>              Some(&**fe),
+            FeGaussianBlur(fe) =>       Some(&**fe),
+            FeImage(fe) =>              Some(&**fe),
+            FeMerge(fe) =>              Some(&**fe),
+            FeMorphology(fe) =>         Some(&**fe),
+            FeOffset(fe) =>             Some(&**fe),
+            FeSpecularLighting(fe) =>   Some(&**fe),
+            FeTile(fe) =>               Some(&**fe),
+            FeTurbulence(fe) =>         Some(&**fe),
+            _ => None,
+        }
+    }
+
+    /// Returns whether an element of a particular type is only accessed by reference
+    // from other elements' attributes.  The element could in turn cause other nodes
+    // to get referenced, potentially causing reference cycles.
+    pub fn is_accessed_by_reference(&self) -> bool {
+        use ElementData::*;
+
+        matches!(
+            self.element_data,
+            ClipPath(_)
+                | Filter(_)
+                | LinearGradient(_)
+                | Marker(_)
+                | Mask(_)
+                | Pattern(_)
+                | RadialGradient(_)
+        )
+    }
+
+    /// The main drawing function for elements.
+    pub fn draw(
         &self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -249,7 +377,7 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         if values.is_displayed() {
-            self.element_impl
+            self.element_data
                 .draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
         } else {
             Ok(draw_ctx.empty_bbox())
@@ -257,278 +385,9 @@ impl<T: SetAttributes + Draw> Draw for ElementInner<T> {
     }
 }
 
-impl<T: SetAttributes + Draw> fmt::Display for ElementInner<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.element_name().local)?;
-        write!(f, " id={}", self.get_id().unwrap_or("None"))?;
-        Ok(())
-    }
-}
-
-impl<T: SetAttributes + Draw> Deref for ElementInner<T> {
-    type Target = T;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.element_impl
-    }
-}
-
-/// Contents of an element node in the DOM
-/// This enum uses `Box<ElementInner>` in order to make each `Element`
-/// the size of a pointer.
-
-pub enum Element {
-    Circle(Box<ElementInner<Circle>>),
-    ClipPath(Box<ElementInner<ClipPath>>),
-    Ellipse(Box<ElementInner<Ellipse>>),
-    Filter(Box<ElementInner<Filter>>),
-    Group(Box<ElementInner<Group>>),
-    Image(Box<ElementInner<Image>>),
-    Line(Box<ElementInner<Line>>),
-    LinearGradient(Box<ElementInner<LinearGradient>>),
-    Link(Box<ElementInner<Link>>),
-    Marker(Box<ElementInner<Marker>>),
-    Mask(Box<ElementInner<Mask>>),
-    NonRendering(Box<ElementInner<NonRendering>>),
-    Path(Box<ElementInner<Path>>),
-    Pattern(Box<ElementInner<Pattern>>),
-    Polygon(Box<ElementInner<Polygon>>),
-    Polyline(Box<ElementInner<Polyline>>),
-    RadialGradient(Box<ElementInner<RadialGradient>>),
-    Rect(Box<ElementInner<Rect>>),
-    Stop(Box<ElementInner<Stop>>),
-    Style(Box<ElementInner<Style>>),
-    Svg(Box<ElementInner<Svg>>),
-    Switch(Box<ElementInner<Switch>>),
-    Symbol(Box<ElementInner<Symbol>>),
-    Text(Box<ElementInner<Text>>),
-    TRef(Box<ElementInner<TRef>>),
-    TSpan(Box<ElementInner<TSpan>>),
-    Use(Box<ElementInner<Use>>),
-
-    // Filter primitives, these start with "Fe" as element names are e.g. "feBlend"
-    FeBlend(Box<ElementInner<FeBlend>>),
-    FeColorMatrix(Box<ElementInner<FeColorMatrix>>),
-    FeComponentTransfer(Box<ElementInner<FeComponentTransfer>>),
-    FeComposite(Box<ElementInner<FeComposite>>),
-    FeConvolveMatrix(Box<ElementInner<FeConvolveMatrix>>),
-    FeDiffuseLighting(Box<ElementInner<FeDiffuseLighting>>),
-    FeDisplacementMap(Box<ElementInner<FeDisplacementMap>>),
-    FeDistantLight(Box<ElementInner<FeDistantLight>>),
-    FeDropShadow(Box<ElementInner<FeDropShadow>>),
-    FeFlood(Box<ElementInner<FeFlood>>),
-    FeFuncA(Box<ElementInner<FeFuncA>>),
-    FeFuncB(Box<ElementInner<FeFuncB>>),
-    FeFuncG(Box<ElementInner<FeFuncG>>),
-    FeFuncR(Box<ElementInner<FeFuncR>>),
-    FeGaussianBlur(Box<ElementInner<FeGaussianBlur>>),
-    FeImage(Box<ElementInner<FeImage>>),
-    FeMerge(Box<ElementInner<FeMerge>>),
-    FeMergeNode(Box<ElementInner<FeMergeNode>>),
-    FeMorphology(Box<ElementInner<FeMorphology>>),
-    FeOffset(Box<ElementInner<FeOffset>>),
-    FePointLight(Box<ElementInner<FePointLight>>),
-    FeSpecularLighting(Box<ElementInner<FeSpecularLighting>>),
-    FeSpotLight(Box<ElementInner<FeSpotLight>>),
-    FeTile(Box<ElementInner<FeTile>>),
-    FeTurbulence(Box<ElementInner<FeTurbulence>>),
-}
-
-macro_rules! call_inner {
-    // end recursion, call the method
-    ($element:ident, $method:ident [$($args:expr),*]) => {
-        match $element {
-            Element::Circle(i) => i.$method($($args),*),
-            Element::ClipPath(i) => i.$method($($args),*),
-            Element::Ellipse(i) => i.$method($($args),*),
-            Element::Filter(i) => i.$method($($args),*),
-            Element::Group(i) => i.$method($($args),*),
-            Element::Image(i) => i.$method($($args),*),
-            Element::Line(i) => i.$method($($args),*),
-            Element::LinearGradient(i) => i.$method($($args),*),
-            Element::Link(i) => i.$method($($args),*),
-            Element::Marker(i) => i.$method($($args),*),
-            Element::Mask(i) => i.$method($($args),*),
-            Element::NonRendering(i) => i.$method($($args),*),
-            Element::Path(i) => i.$method($($args),*),
-            Element::Pattern(i) => i.$method($($args),*),
-            Element::Polygon(i) => i.$method($($args),*),
-            Element::Polyline(i) => i.$method($($args),*),
-            Element::RadialGradient(i) => i.$method($($args),*),
-            Element::Rect(i) => i.$method($($args),*),
-            Element::Stop(i) => i.$method($($args),*),
-            Element::Style(i) => i.$method($($args),*),
-            Element::Svg(i) => i.$method($($args),*),
-            Element::Switch(i) => i.$method($($args),*),
-            Element::Symbol(i) => i.$method($($args),*),
-            Element::Text(i) => i.$method($($args),*),
-            Element::TRef(i) => i.$method($($args),*),
-            Element::TSpan(i) => i.$method($($args),*),
-            Element::Use(i) => i.$method($($args),*),
-            Element::FeBlend(i) => i.$method($($args),*),
-            Element::FeColorMatrix(i) => i.$method($($args),*),
-            Element::FeComponentTransfer(i) => i.$method($($args),*),
-            Element::FeComposite(i) => i.$method($($args),*),
-            Element::FeConvolveMatrix(i) => i.$method($($args),*),
-            Element::FeDiffuseLighting(i) => i.$method($($args),*),
-            Element::FeDisplacementMap(i) => i.$method($($args),*),
-            Element::FeDistantLight(i) => i.$method($($args),*),
-            Element::FeDropShadow(i) => i.$method($($args),*),
-            Element::FeFlood(i) => i.$method($($args),*),
-            Element::FeFuncA(i) => i.$method($($args),*),
-            Element::FeFuncB(i) => i.$method($($args),*),
-            Element::FeFuncG(i) => i.$method($($args),*),
-            Element::FeFuncR(i) => i.$method($($args),*),
-            Element::FeGaussianBlur(i) => i.$method($($args),*),
-            Element::FeImage(i) => i.$method($($args),*),
-            Element::FeMerge(i) => i.$method($($args),*),
-            Element::FeMergeNode(i) => i.$method($($args),*),
-            Element::FeMorphology(i) => i.$method($($args),*),
-            Element::FeOffset(i) => i.$method($($args),*),
-            Element::FePointLight(i) => i.$method($($args),*),
-            Element::FeSpecularLighting(i) => i.$method($($args),*),
-            Element::FeSpotLight(i) => i.$method($($args),*),
-            Element::FeTile(i) => i.$method($($args),*),
-            Element::FeTurbulence(i) => i.$method($($args),*),
-        }
-    };
-
-    // munch munch
-    ($element:ident, $method:ident [$($args:expr),*] $arg:expr, $($rest:tt)*) => {
-        call_inner!($element, $method [$($args,)*$arg] $($rest)*)
-    };
-
-    // entry point with args
-    ($element:ident, $method:ident, $arg:expr, $($args:expr),*) => {
-        call_inner!($element, $method [$arg] $($args,)*)
-    };
-
-    // entry point with one arg
-    ($element:ident, $method:ident, $arg:expr) => {
-        call_inner!($element, $method [$arg])
-    };
-
-    // entry point without args
-    ($element:ident, $method:ident) => {
-        call_inner!($element, $method [])
-    };
-}
-
-impl Element {
-    /// Takes an XML element name and consumes a list of attribute/value pairs to create an [`Element`].
-    ///
-    /// This operation does not fail.  Unknown element names simply produce a [`NonRendering`]
-    /// element.
-    pub fn new(session: &Session, name: &QualName, mut attrs: Attributes) -> Element {
-        let (create_fn, flags): (ElementCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
-            match ELEMENT_CREATORS.get(name.local.as_ref()) {
-                // hack in the SVG namespace for supported element names
-                Some(&(create_fn, flags)) => (create_fn, flags),
-
-                // Whenever we encounter a element name we don't understand, represent it as a
-                // non-rendering element.  This is like a group, but it doesn't do any rendering
-                // of children.  The effect is that we will ignore all children of unknown elements.
-                None => (create_non_rendering, ElementCreateFlags::Default),
-            }
-        } else {
-            (create_non_rendering, ElementCreateFlags::Default)
-        };
-
-        if flags == ElementCreateFlags::IgnoreClass {
-            attrs.clear_class();
-        };
-
-        //    sizes::print_sizes();
-
-        create_fn(session, name, attrs)
-    }
-
-    pub fn element_name(&self) -> &QualName {
-        call_inner!(self, element_name)
-    }
-
-    pub fn get_attributes(&self) -> &Attributes {
-        call_inner!(self, get_attributes)
-    }
-
-    pub fn get_id(&self) -> Option<&str> {
-        call_inner!(self, get_id)
-    }
-
-    pub fn get_class(&self) -> Option<&str> {
-        call_inner!(self, get_class)
-    }
-
-    pub fn inherit_xml_lang(&mut self, parent: Option<Node>) {
-        call_inner!(self, inherit_xml_lang, parent)
-    }
-
-    pub fn get_specified_values(&self) -> &SpecifiedValues {
-        call_inner!(self, get_specified_values)
-    }
-
-    pub fn get_computed_values(&self) -> &ComputedValues {
-        call_inner!(self, get_computed_values)
-    }
-
-    pub fn set_computed_values(&mut self, values: &ComputedValues) {
-        call_inner!(self, set_computed_values, values);
-    }
-
-    pub fn get_cond(&self, user_language: &UserLanguage) -> bool {
-        call_inner!(self, get_cond, user_language)
-    }
-
-    pub fn apply_style_declaration(&mut self, declaration: &Declaration, origin: Origin) {
-        call_inner!(self, apply_style_declaration, declaration, origin)
-    }
-
-    pub fn set_style_attribute(&mut self, session: &Session) {
-        call_inner!(self, set_style_attribute, session);
-    }
-
-    pub fn as_filter_effect(&self) -> Option<&dyn FilterEffect> {
-        match self {
-            Element::FeBlend(ref fe) => Some(&fe.element_impl),
-            Element::FeColorMatrix(ref fe) => Some(&fe.element_impl),
-            Element::FeComponentTransfer(ref fe) => Some(&fe.element_impl),
-            Element::FeComposite(ref fe) => Some(&fe.element_impl),
-            Element::FeConvolveMatrix(ref fe) => Some(&fe.element_impl),
-            Element::FeDiffuseLighting(ref fe) => Some(&fe.element_impl),
-            Element::FeDisplacementMap(ref fe) => Some(&fe.element_impl),
-            Element::FeDropShadow(ref fe) => Some(&fe.element_impl),
-            Element::FeFlood(ref fe) => Some(&fe.element_impl),
-            Element::FeGaussianBlur(ref fe) => Some(&fe.element_impl),
-            Element::FeImage(ref fe) => Some(&fe.element_impl),
-            Element::FeMerge(ref fe) => Some(&fe.element_impl),
-            Element::FeMorphology(ref fe) => Some(&fe.element_impl),
-            Element::FeOffset(ref fe) => Some(&fe.element_impl),
-            Element::FeSpecularLighting(ref fe) => Some(&fe.element_impl),
-            Element::FeTile(ref fe) => Some(&fe.element_impl),
-            Element::FeTurbulence(ref fe) => Some(&fe.element_impl),
-            _ => None,
-        }
-    }
-
-    /// Returns whether an element of a particular type is only accessed by reference
-    // from other elements' attributes.  The element could in turn cause other nodes
-    // to get referenced, potentially causing reference cycles.
-    pub fn is_accessed_by_reference(&self) -> bool {
-        matches!(
-            self,
-            Element::ClipPath(_)
-                | Element::Filter(_)
-                | Element::LinearGradient(_)
-                | Element::Marker(_)
-                | Element::Mask(_)
-                | Element::Pattern(_)
-                | Element::RadialGradient(_)
-        )
-    }
-}
-
-impl Draw for Element {
+impl ElementData {
+    /// Dispatcher for the draw method of concrete element implementations.
+    #[rustfmt::skip]
     fn draw(
         &self,
         node: &Node,
@@ -537,42 +396,75 @@ impl Draw for Element {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        call_inner!(
-            self,
-            draw,
-            node,
-            acquired_nodes,
-            cascaded,
-            draw_ctx,
-            clipping
-        )
-    }
-}
+        use ElementData::*;
 
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        call_inner!(self, fmt, f)
+        let data: &dyn ElementTrait = match self {
+            Circle(d) =>               &**d,
+            ClipPath(d) =>             &**d,
+            Ellipse(d) =>              &**d,
+            Filter(d) =>               &**d,
+            Group(d) =>                &**d,
+            Image(d) =>                &**d,
+            Line(d) =>                 &**d,
+            LinearGradient(d) =>       &**d,
+            Link(d) =>                 &**d,
+            Marker(d) =>               &**d,
+            Mask(d) =>                 &**d,
+            NonRendering(d) =>         &**d,
+            Path(d) =>                 &**d,
+            Pattern(d) =>              &**d,
+            Polygon(d) =>              &**d,
+            Polyline(d) =>             &**d,
+            RadialGradient(d) =>       &**d,
+            Rect(d) =>                 &**d,
+            Stop(d) =>                 &**d,
+            Style(d) =>                &**d,
+            Svg(d) =>                  &**d,
+            Switch(d) =>               &**d,
+            Symbol(d) =>               &**d,
+            Text(d) =>                 &**d,
+            TRef(d) =>                 &**d,
+            TSpan(d) =>                &**d,
+            Use(d) =>                  &**d,
+
+            FeBlend(d) =>              &**d,
+            FeColorMatrix(d) =>        &**d,
+            FeComponentTransfer(d) =>  &**d,
+            FeComposite(d) =>          &**d,
+            FeConvolveMatrix(d) =>     &**d,
+            FeDiffuseLighting(d) =>    &**d,
+            FeDisplacementMap(d) =>    &**d,
+            FeDistantLight(d) =>       &**d,
+            FeDropShadow(d) =>         &**d,
+            FeFlood(d) =>              &**d,
+            FeFuncA(d) =>              &**d,
+            FeFuncB(d) =>              &**d,
+            FeFuncG(d) =>              &**d,
+            FeFuncR(d) =>              &**d,
+            FeGaussianBlur(d) =>       &**d,
+            FeImage(d) =>              &**d,
+            FeMerge(d) =>              &**d,
+            FeMergeNode(d) =>          &**d,
+            FeMorphology(d) =>         &**d,
+            FeOffset(d) =>             &**d,
+            FePointLight(d) =>         &**d,
+            FeSpecularLighting(d) =>   &**d,
+            FeSpotLight(d) =>          &**d,
+            FeTile(d) =>               &**d,
+            FeTurbulence(d) =>         &**d,
+        };
+
+        data.draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
     }
 }
 
 macro_rules! e {
     ($name:ident, $element_type:ident) => {
-        pub fn $name(
-            session: &Session,
-            element_name: &QualName,
-            attributes: Attributes,
-        ) -> Element {
-            let mut element_impl = <$element_type>::default();
-            element_impl.set_attributes(&attributes, session);
+        pub fn $name(session: &Session, attributes: &Attributes) -> ElementData {
+            let mut payload = Box::<$element_type>::default();
+            payload.set_attributes(attributes, session);
 
-            let element = Element::$element_type(Box::new(ElementInner::new(
-                session,
-                element_name.clone(),
-                attributes,
-                element_impl,
-            )));
-
-            element
+            ElementData::$element_type(payload)
         }
     };
 }
@@ -651,8 +543,7 @@ mod creators {
 
 use creators::*;
 
-type ElementCreateFn =
-    fn(session: &Session, element_name: &QualName, attributes: Attributes) -> Element;
+type ElementDataCreateFn = fn(session: &Session, attributes: &Attributes) -> ElementData;
 
 #[derive(Copy, Clone, PartialEq)]
 enum ElementCreateFlags {
@@ -662,10 +553,10 @@ enum ElementCreateFlags {
 
 // Lines in comments are elements that we don't support.
 #[rustfmt::skip]
-static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCreateFlags)>> = Lazy::new(|| {
+static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementDataCreateFn, ElementCreateFlags)>> = Lazy::new(|| {
     use ElementCreateFlags::*;
 
-    let creators_table: Vec<(&str, ElementCreateFn, ElementCreateFlags)> = vec![
+    let creators_table: Vec<(&str, ElementDataCreateFn, ElementCreateFlags)> = vec![
         // name, supports_class, create_fn
         ("a",                   create_link,                  Default),
         /* ("altGlyph",         ), */
@@ -755,81 +646,3 @@ static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementCreateFn, ElementCre
 
     creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
 });
-
-#[cfg(ignore)]
-mod sizes {
-    //! This module is in this file just because here we have all the imports.
-
-    use super::*;
-
-    macro_rules! print_size {
-        ($ty:ty) => {
-            println!("sizeof {}: {}", stringify!($ty), mem::size_of::<$ty>());
-        };
-    }
-
-    pub fn print_sizes() {
-        use crate::properties::{ComputedValues, ParsedProperty, SpecifiedValues};
-        use std::mem;
-
-        print_size!(NodeData);
-        print_size!(Element);
-        print_size!(SpecifiedValues);
-        print_size!(ComputedValues);
-        print_size!(ParsedProperty);
-
-        print_size!(Circle);
-        print_size!(ClipPath);
-        print_size!(NonRendering);
-        print_size!(Ellipse);
-        print_size!(FeBlend);
-        print_size!(FeColorMatrix);
-        print_size!(FeComponentTransfer);
-        print_size!(FeFuncA);
-        print_size!(FeFuncB);
-        print_size!(FeFuncG);
-        print_size!(FeFuncR);
-        print_size!(FeComposite);
-        print_size!(FeConvolveMatrix);
-        print_size!(FeDiffuseLighting);
-        print_size!(FeDistantLight);
-        print_size!(FeDisplacementMap);
-        print_size!(FeDropShadow);
-        print_size!(FeFlood);
-        print_size!(FeGaussianBlur);
-        print_size!(FeImage);
-        print_size!(FeMerge);
-        print_size!(FeMergeNode);
-        print_size!(FeMorphology);
-        print_size!(FeOffset);
-        print_size!(FePointLight);
-        print_size!(FeSpecularLighting);
-        print_size!(FeSpotLight);
-        print_size!(FeTile);
-        print_size!(FeTurbulence);
-        print_size!(Filter);
-        print_size!(Group);
-        print_size!(Image);
-        print_size!(Line);
-        print_size!(LinearGradient);
-        print_size!(Link);
-        print_size!(Marker);
-        print_size!(Mask);
-        print_size!(NonRendering);
-        print_size!(Path);
-        print_size!(Pattern);
-        print_size!(Polygon);
-        print_size!(Polyline);
-        print_size!(RadialGradient);
-        print_size!(Rect);
-        print_size!(Stop);
-        print_size!(Style);
-        print_size!(Svg);
-        print_size!(Switch);
-        print_size!(Symbol);
-        print_size!(Text);
-        print_size!(TRef);
-        print_size!(TSpan);
-        print_size!(Use);
-    }
-}

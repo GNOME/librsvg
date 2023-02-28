@@ -9,7 +9,7 @@ use std::cmp::max;
 
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, Element, SetAttributes};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::filters::{
     bounds::BoundsBuilder,
     context::{FilterContext, FilterOutput},
@@ -213,7 +213,7 @@ impl FeDistantLight {
     }
 }
 
-impl SetAttributes for FeDistantLight {
+impl ElementTrait for FeDistantLight {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -228,8 +228,6 @@ impl SetAttributes for FeDistantLight {
         }
     }
 }
-
-impl Draw for FeDistantLight {}
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FePointLight {
@@ -249,7 +247,7 @@ impl FePointLight {
     }
 }
 
-impl SetAttributes for FePointLight {
+impl ElementTrait for FePointLight {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -261,8 +259,6 @@ impl SetAttributes for FePointLight {
         }
     }
 }
-
-impl Draw for FePointLight {}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FeSpotLight {
@@ -314,7 +310,7 @@ impl FeSpotLight {
     }
 }
 
-impl SetAttributes for FeSpotLight {
+impl ElementTrait for FeSpotLight {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -345,15 +341,13 @@ impl SetAttributes for FeSpotLight {
     }
 }
 
-impl Draw for FeSpotLight {}
-
 /// Applies the `primitiveUnits` coordinate transformation to a non-x or y distance.
 #[inline]
 fn transform_dist(t: Transform, d: f64) -> f64 {
     d * (t.xx.powi(2) + t.yy.powi(2)).sqrt() / std::f64::consts::SQRT_2
 }
 
-impl SetAttributes for FeDiffuseLighting {
+impl ElementTrait for FeDiffuseLighting {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 
@@ -407,7 +401,7 @@ impl DiffuseLighting {
     }
 }
 
-impl SetAttributes for FeSpecularLighting {
+impl ElementTrait for FeSpecularLighting {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 
@@ -709,10 +703,10 @@ macro_rules! impl_lighting_filter {
                 let mut sources = node.children().rev().filter(|c| {
                     c.is_element()
                         && matches!(
-                            *c.borrow_element(),
-                            Element::FeDistantLight(_)
-                                | Element::FePointLight(_)
-                                | Element::FeSpotLight(_)
+                            *c.borrow_element_data(),
+                            ElementData::FeDistantLight(_)
+                                | ElementData::FePointLight(_)
+                                | ElementData::FeSpotLight(_)
                         )
                 });
 
@@ -722,18 +716,13 @@ macro_rules! impl_lighting_filter {
                 }
 
                 let source_node = source_node.unwrap();
-                let elt = source_node.borrow_element();
 
-                let source = match *elt {
-                    Element::FeDistantLight(ref l) => {
-                        UntransformedLightSource::Distant(l.element_impl.clone())
+                let source = match &*source_node.borrow_element_data() {
+                    ElementData::FeDistantLight(l) => {
+                        UntransformedLightSource::Distant((**l).clone())
                     }
-                    Element::FePointLight(ref l) => {
-                        UntransformedLightSource::Point(l.element_impl.clone())
-                    }
-                    Element::FeSpotLight(ref l) => {
-                        UntransformedLightSource::Spot(l.element_impl.clone())
-                    }
+                    ElementData::FePointLight(l) => UntransformedLightSource::Point((**l).clone()),
+                    ElementData::FeSpotLight(l) => UntransformedLightSource::Spot((**l).clone()),
                     _ => unreachable!(),
                 };
 

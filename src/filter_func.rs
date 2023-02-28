@@ -18,7 +18,7 @@ use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
     color_matrix::ColorMatrix,
-    component_transfer,
+    component_transfer::{self, FeFuncA, FeFuncB, FeFuncCommon, FeFuncG, FeFuncR},
     composite::{Composite, Operator},
     flood::Flood,
     gaussian_blur::GaussianBlur,
@@ -293,22 +293,22 @@ impl Brightness {
             primitive: Primitive::default(),
             params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
                 functions: component_transfer::Functions {
-                    r: component_transfer::FeFuncR {
+                    r: FeFuncR(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Linear,
                         slope,
-                        ..component_transfer::FeFuncR::default()
-                    },
-                    g: component_transfer::FeFuncG {
+                        ..FeFuncCommon::default()
+                    }),
+                    g: FeFuncG(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Linear,
                         slope,
-                        ..component_transfer::FeFuncG::default()
-                    },
-                    b: component_transfer::FeFuncB {
+                        ..FeFuncCommon::default()
+                    }),
+                    b: FeFuncB(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Linear,
                         slope,
-                        ..component_transfer::FeFuncB::default()
-                    },
-                    ..component_transfer::Functions::default()
+                        ..FeFuncCommon::default()
+                    }),
+                    a: FeFuncA::default(),
                 },
                 ..component_transfer::ComponentTransfer::default()
             }),
@@ -332,25 +332,25 @@ impl Contrast {
             primitive: Primitive::default(),
             params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
                 functions: component_transfer::Functions {
-                    r: component_transfer::FeFuncR {
+                    r: FeFuncR(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Linear,
                         slope,
                         intercept,
-                        ..component_transfer::FeFuncR::default()
-                    },
-                    g: component_transfer::FeFuncG {
+                        ..FeFuncCommon::default()
+                    }),
+                    g: FeFuncG(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Linear,
                         slope,
                         intercept,
-                        ..component_transfer::FeFuncG::default()
-                    },
-                    b: component_transfer::FeFuncB {
+                        ..FeFuncCommon::default()
+                    }),
+                    b: FeFuncB(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Linear,
                         slope,
                         intercept,
-                        ..component_transfer::FeFuncB::default()
-                    },
-                    ..component_transfer::Functions::default()
+                        ..FeFuncCommon::default()
+                    }),
+                    a: FeFuncA::default(),
                 },
                 ..component_transfer::ComponentTransfer::default()
             }),
@@ -501,22 +501,22 @@ impl Invert {
             primitive: Primitive::default(),
             params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
                 functions: component_transfer::Functions {
-                    r: component_transfer::FeFuncR {
+                    r: FeFuncR(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Table,
                         table_values: vec![p, 1.0 - p],
-                        ..component_transfer::FeFuncR::default()
-                    },
-                    g: component_transfer::FeFuncG {
+                        ..FeFuncCommon::default()
+                    }),
+                    g: FeFuncG(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Table,
                         table_values: vec![p, 1.0 - p],
-                        ..component_transfer::FeFuncG::default()
-                    },
-                    b: component_transfer::FeFuncB {
+                        ..FeFuncCommon::default()
+                    }),
+                    b: FeFuncB(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Table,
                         table_values: vec![p, 1.0 - p],
-                        ..component_transfer::FeFuncB::default()
-                    },
-                    ..component_transfer::Functions::default()
+                        ..FeFuncCommon::default()
+                    }),
+                    a: FeFuncA::default(),
                 },
                 ..component_transfer::ComponentTransfer::default()
             }),
@@ -539,11 +539,11 @@ impl Opacity {
             primitive: Primitive::default(),
             params: PrimitiveParams::ComponentTransfer(component_transfer::ComponentTransfer {
                 functions: component_transfer::Functions {
-                    a: component_transfer::FeFuncA {
+                    a: FeFuncA(FeFuncCommon {
                         function_type: component_transfer::FunctionType::Table,
                         table_values: vec![0.0, p],
-                        ..component_transfer::FeFuncA::default()
-                    },
+                        ..FeFuncCommon::default()
+                    }),
                     ..component_transfer::Functions::default()
                 },
                 ..component_transfer::ComponentTransfer::default()

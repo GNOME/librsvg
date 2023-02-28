@@ -62,17 +62,17 @@ pub type WeakNode = rctree::WeakNode<NodeData>;
 /// methods from the `NodeBorrow` trait to see if you can then call
 /// `borrow_chars`, `borrow_element`, or `borrow_element_mut`.
 pub enum NodeData {
-    Element(Element),
-    Text(Chars),
+    Element(Box<Element>),
+    Text(Box<Chars>),
 }
 
 impl NodeData {
     pub fn new_element(session: &Session, name: &QualName, attrs: Attributes) -> NodeData {
-        NodeData::Element(Element::new(session, name, attrs))
+        NodeData::Element(Box::new(Element::new(session, name, attrs)))
     }
 
     pub fn new_chars(initial_text: &str) -> NodeData {
-        NodeData::Text(Chars::new(initial_text))
+        NodeData::Text(Box::new(Chars::new(initial_text)))
     }
 }
 
@@ -212,6 +212,11 @@ pub trait NodeBorrow {
     ///
     /// Panics: will panic if `&self` is not a `NodeData::Element` node
     fn borrow_element_mut(&mut self) -> RefMut<'_, Element>;
+
+    /// Borrows an `ElementData` reference to the concrete element type.
+    ///
+    /// Panics: will panic if `&self` is not a `NodeData::Element` node
+    fn borrow_element_data(&self) -> Ref<'_, ElementData>;
 }
 
 impl NodeBorrow for Node {
@@ -224,23 +229,30 @@ impl NodeBorrow for Node {
     }
 
     fn borrow_chars(&self) -> Ref<'_, Chars> {
-        Ref::map(self.borrow(), |n| match *n {
-            NodeData::Text(ref c) => c,
+        Ref::map(self.borrow(), |n| match n {
+            NodeData::Text(c) => &**c,
             _ => panic!("tried to borrow_chars for a non-text node"),
         })
     }
 
     fn borrow_element(&self) -> Ref<'_, Element> {
-        Ref::map(self.borrow(), |n| match *n {
-            NodeData::Element(ref e) => e,
+        Ref::map(self.borrow(), |n| match n {
+            NodeData::Element(e) => &**e,
             _ => panic!("tried to borrow_element for a non-element node"),
         })
     }
 
     fn borrow_element_mut(&mut self) -> RefMut<'_, Element> {
-        RefMut::map(self.borrow_mut(), |n| match *n {
-            NodeData::Element(ref mut e) => e,
+        RefMut::map(self.borrow_mut(), |n| match &mut *n {
+            NodeData::Element(e) => &mut **e,
             _ => panic!("tried to borrow_element_mut for a non-element node"),
+        })
+    }
+
+    fn borrow_element_data(&self) -> Ref<'_, ElementData> {
+        Ref::map(self.borrow(), |n| match n {
+            NodeData::Element(e) => &e.element_data,
+            _ => panic!("tried to borrow_element_data for a non-element node"),
         })
     }
 }
@@ -249,8 +261,8 @@ impl NodeBorrow for Node {
 macro_rules! is_element_of_type {
     ($node:expr, $element_type:ident) => {
         matches!(
-            *$node.borrow_element(),
-            $crate::element::Element::$element_type(_)
+            $node.borrow_element().element_data,
+            $crate::element::ElementData::$element_type(_)
         )
     };
 }
@@ -258,8 +270,8 @@ macro_rules! is_element_of_type {
 #[macro_export]
 macro_rules! borrow_element_as {
     ($node:expr, $element_type:ident) => {
-        std::cell::Ref::map($node.borrow_element(), |e| match *e {
-            $crate::element::Element::$element_type(ref e) => &*e,
+        std::cell::Ref::map($node.borrow_element_data(), |d| match d {
+            $crate::element::ElementData::$element_type(ref e) => &*e,
             _ => panic!("tried to borrow_element_as {}", stringify!($element_type)),
         })
     };
@@ -287,7 +299,9 @@ impl NodeCascade for Node {
     }
 }
 
-/// Helper trait for drawing recursively
+/// Helper trait for drawing recursively.
+///
+/// This is a trait because [`Node`] is a type alias over [`rctree::Node`], not a concrete type.
 pub trait NodeDraw {
     fn draw(
         &self,

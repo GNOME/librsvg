@@ -11,7 +11,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
-use crate::element::{set_attribute, Draw, SetAttributes};
+use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::layout::{self, Shape, StackingContext};
@@ -199,7 +199,7 @@ impl Marker {
     }
 }
 
-impl SetAttributes for Marker {
+impl ElementTrait for Marker {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -232,8 +232,6 @@ impl SetAttributes for Marker {
         }
     }
 }
-
-impl Draw for Marker {}
 
 // Machinery to figure out marker orientations
 #[derive(Debug, PartialEq)]

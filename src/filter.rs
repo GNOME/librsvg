@@ -7,7 +7,7 @@ use std::slice::Iter;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{DrawingCtx, ViewParams};
-use crate::element::{set_attribute, Draw, Element, SetAttributes};
+use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
 use crate::filters::{FilterResolveError, FilterSpec};
@@ -70,7 +70,7 @@ impl Filter {
     }
 }
 
-impl SetAttributes for Filter {
+impl ElementTrait for Filter {
     fn set_attributes(&mut self, attrs: &Attributes, session: &Session) {
         for (attr, value) in attrs.iter() {
             match attr.expanded() {
@@ -93,8 +93,6 @@ impl SetAttributes for Filter {
         }
     }
 }
-
-impl Draw for Filter {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FilterValue {
@@ -244,10 +242,9 @@ fn filter_spec_from_filter_node(
         })
         .and_then(|acquired| {
             let node = acquired.get();
-            let element = node.borrow_element();
 
-            match *element {
-                Element::Filter(_) => extract_filter_from_filter_node(
+            match *node.borrow_element_data() {
+                ElementData::Filter(_) => extract_filter_from_filter_node(
                     node,
                     acquired_nodes,
                     &session,
