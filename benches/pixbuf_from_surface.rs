@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use librsvg::{
+use rsvg::{
     surface_utils::{
         shared_surface::{ExclusiveImageSurface, SurfaceType},
         ImageSurfaceDataExt, Pixel,

@@ -56,9 +56,9 @@ impl Loader {
     /// # Example:
     ///
     /// ```
-    /// use librsvg;
+    /// use rsvg;
     ///
-    /// let svg_handle = librsvg::Loader::new()
+    /// let svg_handle = rsvg::Loader::new()
     ///     .read_path("example.svg")
     ///     .unwrap();
     /// ```
@@ -90,9 +90,9 @@ impl Loader {
     ///
     /// # Example:
     /// ```
-    /// use librsvg;
+    /// use rsvg;
     ///
-    /// let svg_handle = librsvg::Loader::new()
+    /// let svg_handle = rsvg::Loader::new()
     ///     .with_unlimited_size(true)
     ///     .read_path("example.svg")    // presumably a trusted huge file
     ///     .unwrap();
@@ -118,7 +118,7 @@ impl Loader {
     ///
     /// ```
     /// # use std::env;
-    /// let svg_handle = librsvg::Loader::new()
+    /// let svg_handle = rsvg::Loader::new()
     ///     .keep_image_data(true)
     ///     .read_path("example.svg")
     ///     .unwrap();
@@ -128,12 +128,12 @@ impl Loader {
     /// let surface = cairo::PdfSurface::new(640.0, 480.0, output)?;
     /// let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
     ///
-    /// let renderer = librsvg::CairoRenderer::new(&svg_handle);
+    /// let renderer = rsvg::CairoRenderer::new(&svg_handle);
     /// renderer.render_document(
     ///     &cr,
     ///     &cairo::Rectangle::new(0.0, 0.0, 640.0, 480.0),
     /// )?;
-    /// # Ok::<(), librsvg::RenderingError>(())
+    /// # Ok::<(), rsvg::RenderingError>(())
     /// ```
     pub fn keep_image_data(mut self, keep: bool) -> Self {
         self.keep_image_data = keep;
@@ -145,7 +145,7 @@ impl Loader {
     /// # Example:
     ///
     /// ```
-    /// let svg_handle = librsvg::Loader::new()
+    /// let svg_handle = rsvg::Loader::new()
     ///     .read_path("example.svg")
     ///     .unwrap();
     /// ```
@@ -160,7 +160,7 @@ impl Loader {
     ///
     /// # Example:
     /// ```
-    /// let svg_handle = librsvg::Loader::new()
+    /// let svg_handle = rsvg::Loader::new()
     ///     .read_file(&gio::File::for_path("example.svg"), None::<&gio::Cancellable>)
     ///     .unwrap();
     /// ```
@@ -194,7 +194,7 @@ impl Loader {
     ///
     /// let stream = file.read(None::<&gio::Cancellable>).unwrap();
     ///
-    /// let svg_handle = librsvg::Loader::new()
+    /// let svg_handle = rsvg::Loader::new()
     ///     .read_stream(&stream, Some(&file), None::<&gio::Cancellable>)
     ///     .unwrap();
     /// ```

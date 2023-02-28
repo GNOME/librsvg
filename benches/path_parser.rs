@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use librsvg::bench_only::Lexer;
-use librsvg::bench_only::PathBuilder;
+use rsvg::bench_only::Lexer;
+use rsvg::bench_only::PathBuilder;
 
 static INPUT: &'static str = "M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
 

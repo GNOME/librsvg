@@ -10,7 +10,7 @@ use std::env;
 use std::ffi::CString;
 use std::sync::Once;
 
-use librsvg::{
+use rsvg::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     CairoRenderer, Loader, LoadingError, RenderingError, SvgHandle,
 };

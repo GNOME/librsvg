@@ -28,7 +28,7 @@
 
 use anyhow::{Context, Result};
 use cairo;
-use librsvg::{CairoRenderer, LengthUnit, Loader, Rect};
+use rsvg::{CairoRenderer, LengthUnit, Loader, Rect};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs;
@@ -72,7 +72,7 @@ fn read_geometries(path: &str) -> Result<Geometries> {
 // We create a struct with the id and geometry so that
 // assert_eq!() in the tests will print out the element name for failures.
 //
-// Here we use librsvg::Rect as that one has an approx_eq() method.
+// Here we use rsvg::Rect as that one has an approx_eq() method.
 #[derive(Debug, PartialEq)]
 struct Element {
     id: String,

@@ -1,6 +1,6 @@
 use cairo;
-use librsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 use matches::matches;
+use rsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};

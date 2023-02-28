@@ -18,7 +18,7 @@
 //! structure with fields for the `(center_x, center_y, radius)`:
 //!
 //! ```
-//! # use librsvg::doctest_only::{Length,ULength,Horizontal,Vertical,Both};
+//! # use rsvg::doctest_only::{Length,ULength,Horizontal,Vertical,Both};
 //! pub struct Circle {
 //!     cx: Length<Horizontal>,
 //!     cy: Length<Vertical>,
@@ -205,8 +205,8 @@ impl Validate for Unsigned {
 /// Examples of construction:
 ///
 /// ```
-/// # use librsvg::doctest_only::{Length,ULength,LengthUnit,Horizontal,Vertical,Both};
-/// # use librsvg::doctest_only::Parse;
+/// # use rsvg::doctest_only::{Length,ULength,LengthUnit,Horizontal,Vertical,Both};
+/// # use rsvg::doctest_only::Parse;
 /// // Explicit type
 /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
 ///
@@ -341,7 +341,7 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
     /// You can specify them explicitly, or call the parametrized method:
     ///
     /// ```
-    /// # use librsvg::doctest_only::{Length,LengthUnit,Horizontal,Vertical};
+    /// # use rsvg::doctest_only::{Length,LengthUnit,Horizontal,Vertical};
     /// // Explicit type
     /// let width: Length<Horizontal> = Length::new(42.0, LengthUnit::Cm);
     ///

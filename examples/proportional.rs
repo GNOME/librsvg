@@ -1,5 +1,5 @@
 use cairo;
-use librsvg;
+use rsvg;
 
 use std::fs::File;
 use std::io::BufWriter;
@@ -28,7 +28,7 @@ fn main() {
 
     assert!(width > 0 && height > 0);
 
-    let handle = match librsvg::Loader::new().read_path(input) {
+    let handle = match rsvg::Loader::new().read_path(input) {
         Ok(handle) => handle,
 
         Err(e) => {
@@ -37,7 +37,7 @@ fn main() {
         }
     };
 
-    let renderer = librsvg::CairoRenderer::new(&handle);
+    let renderer = rsvg::CairoRenderer::new(&handle);
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height).unwrap();
     let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");

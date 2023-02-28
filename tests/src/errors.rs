@@ -11,7 +11,7 @@
 #![cfg(test)]
 
 use cairo;
-use librsvg::{CairoRenderer, ImplementationLimit, Loader, LoadingError, RenderingError};
+use rsvg::{CairoRenderer, ImplementationLimit, Loader, LoadingError, RenderingError};
 
 #[ignore]
 #[test]

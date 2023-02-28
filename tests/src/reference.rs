@@ -7,7 +7,7 @@
 //!
 
 use cairo;
-use librsvg::{
+use rsvg::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     CairoRenderer, IntrinsicDimensions, Length, Loader,
 };
@@ -121,7 +121,7 @@ fn image_size(dim: IntrinsicDimensions, dpi: f64) -> (i32, i32) {
         vbox,
     } = dim;
 
-    use librsvg::LengthUnit::*;
+    use rsvg::LengthUnit::*;
 
     if !(has_supported_unit(&width) && has_supported_unit(&height)) {
         panic!("SVG has unsupported unit type in width or height");
@@ -161,7 +161,7 @@ fn checked_i32(x: f64) -> i32 {
 }
 
 fn has_supported_unit(l: &Length) -> bool {
-    use librsvg::LengthUnit::*;
+    use rsvg::LengthUnit::*;
 
     match l.unit {
         Percent | Px | In | Cm | Mm | Pt | Pc => true,
@@ -175,7 +175,7 @@ const MM_PER_INCH: f64 = 25.4;
 const PICA_PER_INCH: f64 = 6.0;
 
 fn normalize(l: &Length, dpi: f64) -> f64 {
-    use librsvg::LengthUnit::*;
+    use rsvg::LengthUnit::*;
 
     match l.unit {
         Px => l.length,

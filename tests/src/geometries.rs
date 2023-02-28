@@ -13,7 +13,7 @@
 //! time.
 
 use anyhow::{Context, Result};
-use librsvg::{CairoRenderer, LengthUnit, Loader, Rect};
+use rsvg::{CairoRenderer, LengthUnit, Loader, Rect};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs;

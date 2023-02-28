@@ -5,10 +5,10 @@ use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
 #[cfg(system_deps_have_cairo_pdf)]
 use chrono::{TimeZone, Utc};
-use librsvg::{Length, LengthUnit};
 use predicates::boolean::*;
 use predicates::prelude::*;
 use predicates::str::*;
+use rsvg::{Length, LengthUnit};
 use std::path::Path;
 use tempfile::Builder;
 use url::Url;

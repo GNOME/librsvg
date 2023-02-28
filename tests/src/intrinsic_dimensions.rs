@@ -1,6 +1,6 @@
 use cairo;
 
-use librsvg::{CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError};
+use rsvg::{CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError};
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{load_svg, render_document, SurfaceSize};

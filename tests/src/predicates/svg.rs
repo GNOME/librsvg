@@ -6,7 +6,7 @@ use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::cmp;
 use std::fmt;
 
-use librsvg::{CairoRenderer, Length, Loader, LoadingError, SvgHandle};
+use rsvg::{CairoRenderer, Length, Loader, LoadingError, SvgHandle};
 
 /// Checks that the variable of type [u8] can be parsed as a SVG file.
 #[derive(Debug)]
