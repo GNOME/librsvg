@@ -1,6 +1,6 @@
 use cairo;
-use librsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use librsvg::{CairoRenderer, RenderingError};
+use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg::{CairoRenderer, RenderingError};
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::load_svg;

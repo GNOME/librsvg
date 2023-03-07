@@ -16,8 +16,8 @@ use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
 use glib::gobject_ffi::GObject;
 
-use librsvg::rsvg_convert_only::LegacySize;
-use librsvg::Loader;
+use rsvg::rsvg_convert_only::LegacySize;
+use rsvg::Loader;
 
 use cstr::cstr;
 
@@ -83,7 +83,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
             .read_stream::<_, gio::File, gio::Cancellable>(&ctx.stream, None, None)
             .map_err(|e| e.to_string())?;
 
-        let renderer = librsvg::CairoRenderer::new(&handle);
+        let renderer = rsvg::CairoRenderer::new(&handle);
         let (w, h) = renderer.legacy_document_size().map_err(|e| e.to_string())?;
         let mut w = w.ceil() as c_int;
         let mut h = h.ceil() as c_int;
@@ -104,7 +104,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
             }
         }
 
-        let pb = librsvg::c_api::pixbuf_utils::render_to_pixbuf_at_size(
+        let pb = rsvg::c_api::pixbuf_utils::render_to_pixbuf_at_size(
             &renderer, w as f64, h as f64, w as f64, h as f64,
         )
         .map_err(|e| e.to_string())?;

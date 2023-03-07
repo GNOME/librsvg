@@ -244,9 +244,9 @@ impl fmt::Display for AcquireError {
 /// `set_atts()` methods as follows:
 ///
 /// ```
-/// # use librsvg::doctest_only::AttributeResultExt;
-/// # use librsvg::doctest_only::ValueErrorKind;
-/// # use librsvg::doctest_only::ElementError;
+/// # use rsvg::doctest_only::AttributeResultExt;
+/// # use rsvg::doctest_only::ValueErrorKind;
+/// # use rsvg::doctest_only::ElementError;
 /// # use markup5ever::{QualName, Prefix, Namespace, LocalName};
 /// # type FooError = ValueErrorKind;
 /// fn parse_foo(value: &str) -> Result<(), FooError>

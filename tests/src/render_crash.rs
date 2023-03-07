@@ -4,7 +4,7 @@
 //! about the resulting image or even whether there were errors during rendering.
 
 use cairo;
-use librsvg::{CairoRenderer, Loader};
+use rsvg::{CairoRenderer, Loader};
 
 use std::path::PathBuf;
 

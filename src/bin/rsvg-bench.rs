@@ -33,7 +33,7 @@ struct Opt {
 #[derive(Debug)]
 enum LoadingError {
     Skipped,
-    Rsvg(librsvg::LoadingError),
+    Rsvg(rsvg::LoadingError),
 }
 
 #[derive(Debug, Error)]
@@ -51,8 +51,8 @@ impl From<cairo::Error> for ProcessingError {
     }
 }
 
-impl From<librsvg::RenderingError> for ProcessingError {
-    fn from(_: librsvg::RenderingError) -> ProcessingError {
+impl From<rsvg::RenderingError> for ProcessingError {
+    fn from(_: rsvg::RenderingError) -> ProcessingError {
         ProcessingError::RenderingError
     }
 }
@@ -82,8 +82,8 @@ fn process_directory<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
     Ok(())
 }
 
-fn read_svg(opt: &Opt, path: &Path) -> Result<librsvg::SvgHandle, LoadingError> {
-    match (opt.hard_failures, librsvg::Loader::new().read_path(path)) {
+fn read_svg(opt: &Opt, path: &Path) -> Result<rsvg::SvgHandle, LoadingError> {
+    match (opt.hard_failures, rsvg::Loader::new().read_path(path)) {
         (_, Ok(h)) => Ok(h),
         (false, Err(e)) => {
             println!(
@@ -125,8 +125,8 @@ fn process_file<P: AsRef<Path>>(opt: &Opt, path: P) -> Result<()> {
     Ok(())
 }
 
-fn render_to_cairo(opt: &Opt, handle: &librsvg::SvgHandle) -> Result<(), ProcessingError> {
-    let renderer = librsvg::CairoRenderer::new(handle);
+fn render_to_cairo(opt: &Opt, handle: &rsvg::SvgHandle) -> Result<(), ProcessingError> {
+    let renderer = rsvg::CairoRenderer::new(handle);
 
     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100)?;
     let cr = cairo::Context::new(&surface)?;

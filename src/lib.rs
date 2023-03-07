@@ -20,7 +20,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! librsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
+//! rsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
 //! cairo-rs = "0.8.0"
 //! glib = "0.9.0"                                # only if you need streams
 //! gio = { version="0.8.1", features=["v2_50"] } # likewise
@@ -36,12 +36,12 @@
 //! fn main() {
 //!     // Loading from a file
 //!
-//!     let handle = librsvg::Loader::new().read_path("example.svg").unwrap();
+//!     let handle = rsvg::Loader::new().read_path("example.svg").unwrap();
 //!
 //!     let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, WIDTH, HEIGHT).unwrap();
 //!     let cr = cairo::Context::new(&surface).expect("Failed to create a cairo context");
 //!
-//!     let renderer = librsvg::CairoRenderer::new(&handle);
+//!     let renderer = rsvg::CairoRenderer::new(&handle);
 //!     renderer.render_document(
 //!         &cr,
 //!         &cairo::Rectangle::new(0.0, 0.0, f64::from(WIDTH), f64::from(HEIGHT))
@@ -58,7 +58,7 @@
 //!     );
 //!     let stream = gio::MemoryInputStream::from_bytes(&bytes);
 //!
-//!     let handle = librsvg::Loader::new().read_stream(
+//!     let handle = rsvg::Loader::new().read_stream(
 //!         &stream,
 //!         None::<&gio::File>,          // no base file as this document has no references
 //!         None::<&gio::Cancellable>,   // no cancellable

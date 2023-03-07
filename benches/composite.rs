@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use librsvg::{
+use rsvg::{
     surface_utils::shared_surface::{
         composite_arithmetic, ExclusiveImageSurface, SharedImageSurface, SurfaceType,
     },

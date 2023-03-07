@@ -190,7 +190,7 @@ impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX
 ///
 /// ```
 /// # use cssparser::{ParserInput, Parser};
-/// # use librsvg::parse_identifiers;
+/// # use rsvg::parse_identifiers;
 /// # fn main() -> Result<(), cssparser::BasicParseError<'static>> {
 /// # let mut input = ParserInput::new("true");
 /// # let mut parser = Parser::new(&mut input);

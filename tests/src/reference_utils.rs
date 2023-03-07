@@ -12,7 +12,7 @@ use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 
-use librsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
 use crate::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
 
@@ -238,7 +238,7 @@ macro_rules! test_svg_reference {
             use crate::reference_utils::{Compare, Evaluate, Reference};
             use crate::utils::{render_document, setup_font_map, SurfaceSize};
             use cairo;
-            use librsvg::{CairoRenderer, Loader};
+            use rsvg::{CairoRenderer, Loader};
 
             setup_font_map();
 

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use librsvg::surface_utils::{
+use rsvg::surface_utils::{
     iterators::Pixels,
     shared_surface::{SharedImageSurface, SurfaceType},
     ImageSurfaceDataExt, Pixel, PixelOps,

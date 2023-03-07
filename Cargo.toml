@@ -45,7 +45,7 @@ freetype2 = "20.0.14"
 libxml2 = { name = "libxml-2.0", version = "2.9" }
 
 [lib]
-name = "librsvg"
+name = "rsvg"
 crate-type = [ "staticlib", "rlib" ]
 
 [dependencies]

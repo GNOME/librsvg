@@ -3,7 +3,7 @@
 //! Ensures that loading and parsing (but not rendering) a particular
 //! SVG doesn't crash.
 
-use librsvg::Loader;
+use rsvg::Loader;
 
 use std::path::PathBuf;
 

@@ -1,6 +1,6 @@
 use cairo;
 
-use librsvg::{rsvg_convert_only::LegacySize, CairoRenderer};
+use rsvg::{rsvg_convert_only::LegacySize, CairoRenderer};
 
 use crate::utils::load_svg;
 

@@ -1,6 +1,6 @@
 use cairo;
 use float_cmp::approx_eq;
-use librsvg::{CairoRenderer, Loader};
+use rsvg::{CairoRenderer, Loader};
 
 use crate::reference_utils::{Compare, Evaluate, Reference};
 use crate::utils::{load_svg, render_document, setup_font_map, SurfaceSize};
