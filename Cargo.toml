@@ -55,7 +55,7 @@ anyhow = "1.0"
 byteorder = "1.4"
 cairo-rs = { version = "0.17", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
-chrono = "0.4.0" # rsvg-convert
+chrono = { version = "0.4.0", default-features = false, features = ["clock", "std", "wasmbind"] } # rsvg-convert
 clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
 clap_complete = "4.0.5" # rsvg-convert
 cssparser = "0.29.0"
@@ -91,7 +91,7 @@ anyhow = "1.0"
 assert_cmd = "2.0.2"
 cairo-rs = { version = "0.17", features = ["png"] }
 cast = "0.3.0"
-chrono = "0.4.0"
+chrono = { version = "0.4.0", default-features = false, features = ["clock", "std", "wasmbind"] }
 criterion = "0.4"
 glib = "0.17"
 libc = "0.2"
