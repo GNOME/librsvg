@@ -128,10 +128,10 @@ indented/aligned by hand, please use ``#[rustfmt::skip]``.
 One job runs `cargo deny`, which checks if there are dependencies with
 vulnerabilities.
 
-Another job runs a script to check that the Rust versions mentioned in
-various parts of the source code all match (e.g. `Cargo.toml` and
-`configure.ac` must have check for the same Minimum Supported Rust
-Version (MSRV)).
+Another job runs a script to check that the version numbers mentioned
+in various parts of the source code all match.  For example,
+`Cargo.toml` and `configure.ac` must have check for the same Minimum
+Supported Rust Version (MSRV).
 
 
 Test coverage report
