@@ -75,7 +75,7 @@ considerations for librsvg's dependencies, see the [Security
 chapter][security] in the development guide.
 
 [c-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html
-[rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html
+[rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html
 
 # Contributing to librsvg's development
 

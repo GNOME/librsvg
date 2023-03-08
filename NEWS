@@ -18,6 +18,9 @@ Version 2.55.92
 - The Rust crate is now called "rsvg", for consistency with other
   crates that don't usually have a "lib" prefix.
 
+- The Rust API documentation is now available at
+  https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html
+
 Version 2.55.91
 ===============
 
