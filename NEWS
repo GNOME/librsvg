@@ -6,6 +6,18 @@ Version 2.55.92
   (https://drafts.csswg.org/css-color-4/#changes).  Note that values
   inside hwb() are *not* comma-separated, just whitespace.
 
+- #932 - Fix panic when a requested font-size is too big.
+
+- #930 - Validate all clipPath and mask transforms.
+
+- Add a performance tracking framework.  This is part of an Outreachy
+  internship (Neetu Mehta).
+
+- Slight improvements in the size of generated code and memory consumption.
+
+- The Rust crate is now called "rsvg", for consistency with other
+  crates that don't usually have a "lib" prefix.
+
 Version 2.55.91
 ===============
 
