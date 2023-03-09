@@ -92,7 +92,7 @@ Other artifacts
   it.
 
 - `Documentation for the Rust API
-  <https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html>`_,
+  <https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html>`_,
   published online.  This is not built from the normal `make` process,
   but independently as part of the :doc:`ci` pipeline.
 

@@ -78,7 +78,7 @@ Understand the code
 
 Test suite - move tests/readme here?
 
-- `Documentation of the library's internals <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html>`_
+- `Documentation of the library's internals <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html>`_
 
 - :doc:`architecture`
 - :doc:`adding_a_property`

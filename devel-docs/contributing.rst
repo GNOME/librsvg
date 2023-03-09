@@ -40,7 +40,7 @@ See the rest of this development guide, especially the chapter on
 :doc:`architecture`, and the tutorial on :doc:`adding_a_property`.
 
 The library’s internals are being documented at
-https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html
+https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html
 
 What can you hack on?
 

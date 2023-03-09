@@ -155,17 +155,17 @@ sequence of spans.
 This is why you'll see that the code does this; start at ``Text::draw``:
 
 - Start with an empty list of chunks (`Text::make_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/struct.Text.html#method.make_chunks>`_).
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.Text.html#method.make_chunks>`_).
   Push an empty initial chunk defined by the ``x`` and ``y``
   coordinates of the ``<text>`` element.
 
 - Recursively call `children_to_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/fn.children_to_chunks.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/fn.children_to_chunks.html>`_
   on the children of the ``<text>`` element, to create chunks and
   spans for them.
 
 - `TSpan::to_chunks
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/struct.TSpan.html#method.to_chunks>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.TSpan.html#method.to_chunks>`_
   sees if the span has ``x`` or ``y`` attributes; if so, it pushes a
   new empty chunk with those coordinates.  Then it recursively calls
   ``children_to_chunks`` to grab its character content and children.
@@ -258,7 +258,7 @@ Bidi handling
 
 The ``unicode-bidi`` and ``direction`` properties get handled
 together.  The `BidiControl
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/struct.BidiControl.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.BidiControl.html>`_
 struct computes which Unicode control characters need to be inserted
 at the start and end of a ``<tspan>``'s text; SVG authors use these
 properties to override text direction when inserting LTR or RTL text

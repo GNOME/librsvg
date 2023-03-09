@@ -128,10 +128,10 @@ indented/aligned by hand, please use ``#[rustfmt::skip]``.
 One job runs `cargo deny`, which checks if there are dependencies with
 vulnerabilities.
 
-Another job runs a script to check that the Rust versions mentioned in
-various parts of the source code all match (e.g. `Cargo.toml` and
-`configure.ac` must have check for the same Minimum Supported Rust
-Version (MSRV)).
+Another job runs a script to check that the version numbers mentioned
+in various parts of the source code all match.  For example,
+`Cargo.toml` and `configure.ac` must have check for the same Minimum
+Supported Rust Version (MSRV).
 
 
 Test coverage report
@@ -170,7 +170,7 @@ The following sets of documentation get generated:
 - `C API docs
   <https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html>`_,
   with `gi-docgen <https://gitlab.gnome.org/GNOME/gi-docgen>`_.
-- `Rust API docs <https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg/index.html>`_, with ``cargo doc``.
-- `Internals docs <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html>`_, with ``cargo doc --document-private-items``.
+- `Rust API docs <https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html>`_, with ``cargo doc``.
+- `Internals docs <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html>`_, with ``cargo doc --document-private-items``.
 - `This development guide <https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html>`_, with ``sphinx``.
   

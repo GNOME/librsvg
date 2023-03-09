@@ -8,7 +8,7 @@ corner.
 
 The library’s internals are documented as Rust documentation comments;
 you can look at the rendered version at
-https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/index.html
+https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html
 
 You may also want to see the section below on `interesting parts of the
 code <#some-interesting-parts-of-the-code>`__.
@@ -36,7 +36,7 @@ cross-element references like in SVG filters.
 
 Librsvg started as a C library with an ad-hoc API. At some point it
 got turned into a GObject library, so that the main `RsvgHandle
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/c_api/handle/struct.RsvgHandle.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/c_api/handle/struct.RsvgHandle.html>`_
 class defines most of the entry points into the library. Through
 `GObject Introspection <https://gi.readthedocs.io/en/latest/>`__, this
 allows librsvg to be used from other programming languages.
@@ -119,44 +119,44 @@ Loading an SVG document
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The Rust API starts by constructing an `SvgHandle
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/api/struct.SvgHandle.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/api/struct.SvgHandle.html>`_
 from a `Loader
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/api/struct.Loader.html>`_;
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/api/struct.Loader.html>`_;
 both of those are public types. Internally the ``SvgHandle`` is just a
 wrapper around a `Handle
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/handle/struct.Handle.html>`_,
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/handle/struct.Handle.html>`_,
 which is a private type. ``Handle`` represents an SVG document loaded
 in memory; it acts as a wrapper around a `Document
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/document/struct.Document.html>`_,
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/document/struct.Document.html>`_,
 and provides the basic primitive operations like “render the whole
 document” or “compute the geometry of an element” that are needed to
 implement the public APIs.
 
 A ``Document`` gets created by loading XML from a stream, into a tree
 of `Node
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/node/type.Node.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/node/type.Node.html>`_
 structures. This is similar to a web browser’s DOM tree.
 
 Each XML element causes a new ``Node`` to get created with an `Element
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/element/enum.Element.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/enum.Element.html>`_
 in it. The ``Element`` enum can represent all the SVG element types;
 for example, a ``<path>`` element from XML gets turned into a
 ``Node::Element(Element::Path)``.
 
 When an ``Element`` is created from its corresponding XML, its
 `Attributes
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/xml/attributes/struct.Attributes.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/xml/attributes/struct.Attributes.html>`_
 get parsed. On one hand, attributes that are specific to a particular
 element type, like the ``d`` in ``<path d="...">`` get parsed by the
 `set_attributes
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/element/trait.SetAttributes.html#method.set_attributes>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.SetAttributes.html#method.set_attributes>`_
 method of each particular element type (in that case,
 `Path::set_attributes
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/shapes/struct.Path.html#method.set_attributes>`_).
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/shapes/struct.Path.html#method.set_attributes>`_).
 
 On the other hand, attributes that refer to styles, and which may
 appear for any kind of element, get all parsed into a `SpecifiedValues
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/properties/struct.SpecifiedValues.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/properties/struct.SpecifiedValues.html>`_
 struct. This is a memory-efficient representation of the CSS style
 properties that an element has.
 
@@ -170,7 +170,7 @@ The CSS cascade
 ~~~~~~~~~~~~~~~
 
 Each ``Element`` has a `SpecifiedValues
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/properties/struct.SpecifiedValues.html>`_,
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/properties/struct.SpecifiedValues.html>`_,
 which has the CSS style properties that the XML specified for that
 element. However, ``SpecifiedValues`` is sparse, as not all the
 possible style properties may have been filled in. Cascading means
@@ -194,12 +194,12 @@ and are thus not copied to child elements.
 
 In librsvg, the individual types for CSS properties are defined with
 the `make_property
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/macro.make_property.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/macro.make_property.html>`_
 macro.
 
 The cascading step takes each element’s ``SpecifiedValues`` and
 composes it by CSS inheritance onto a `ComputedValues
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/properties/struct.ComputedValues.html>`_,
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/properties/struct.ComputedValues.html>`_,
 which has the result of the cascade for each element's properties.
 
 When cascading is done, each ``Element`` has a fully resolved
@@ -213,27 +213,27 @@ Librsvg uses an XML parser (`libxml2
 <https://gitlab.gnome.org/GNOME/libxml2/-/wikis/home>`_ at the time of
 this writing) to do the first-stage parsing of the SVG
 document. `XmlState
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/xml/struct.XmlState.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/xml/struct.XmlState.html>`_
 contains the XML parsing state, which is a stack of contexts depending
 on the XML nesting structure. ``XmlState`` has public methods, called
 from the XML parser as it goes. The most important one is
 `start_element
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/xml/struct.XmlState.html#method.start_element>`_;
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/xml/struct.XmlState.html#method.start_element>`_;
 this is responsible for creating new ``Node`` structures in the tree,
 within the `DocumentBuilder
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/document/struct.DocumentBuilder.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/document/struct.DocumentBuilder.html>`_
 being built.
 
 Nodes are either SVG elements (the `Element
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/element/enum.Element.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/enum.Element.html>`_
 enum), or text data inside elements (the `Chars
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/struct.Chars.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.Chars.html>`_
 struct); this last one will not concern us here, and we will only talk
 about ``Element``.
 
 Each supported kind of ``Element`` parses its attributes in a
 `set_attributes
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/element/trait.SetAttributes.html#method.set_attributes>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.SetAttributes.html#method.set_attributes>`_
 method. Each attribute is just a key/value pair; for example, the
 ``<rect width="5px">`` element has a ``width`` attribute whose value
 is ``5px``.
@@ -267,12 +267,12 @@ trait. Its `parse_value
 method takes the name of a CSS property name like ``fill``, plus a
 value like ``rgb(255, 0, 0)``, and it must return a value that
 represents a parsed declaration. Librsvg uses the `Declaration
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/css/struct.Declaration.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/css/struct.Declaration.html>`_
 struct for this.
 
 The core of parsing CSS is the ``parse_value`` function, which returns
 a `ParsedProperty
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/properties/enum.ParsedProperty.html>`_:
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/properties/enum.ParsedProperty.html>`_:
 
 .. code:: rust
 
@@ -284,7 +284,7 @@ a `ParsedProperty
    }
 
 What is `SpecifiedValue
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/properties/enum.SpecifiedValue.html>`_?
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/properties/enum.SpecifiedValue.html>`_?
 It is the parsed value for a CSS property directly as it comes out of
 the SVG document:
 
@@ -314,9 +314,9 @@ Let’s break this down:
   property declarations can have.
 
 - ``Opacity(UnitInterval(0.5))`` - This is the type `Opacity
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/property_defs/struct.Opacity.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/property_defs/struct.Opacity.html>`_
   property, which is a newtype around an internal `UnitInterval
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/unit_interval/struct.UnitInterval.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/unit_interval/struct.UnitInterval.html>`_
   type, which in turn guarantees that we have a float in the range
   ``[0.0, 1.0]``.
 
@@ -325,7 +325,7 @@ of these types are newtypes around primitive types like ``f64``.
 
 Eventually an entire CSS stylesheet, like the contents of a
 ``<style>`` element, gets parsed into a `Stylesheet
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/css/struct.Stylesheet.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/css/struct.Stylesheet.html>`_
 struct. A stylesheet has a list of rules, where each rule is the CSS
 selectors defined for it, and the style declarations that should be
 applied for the ``Node``\ s that match the selectors. For example, in
@@ -352,14 +352,14 @@ Rendering
 ---------
 
 The rendering process starts at the `draw_tree()
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/drawing_ctx/fn.draw_tree.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/drawing_ctx/fn.draw_tree.html>`_
 function. This sets up a `DrawingCtx
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/drawing_ctx/struct.DrawingCtx.html>`_,
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/drawing_ctx/struct.DrawingCtx.html>`_,
 which carries around all the mutable state during rendering.
 
 Rendering is a recursive process, which goes back and forth between
 the utility functions in ``DrawingCtx`` and the `draw
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/element/trait.Draw.html#method.draw>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.Draw.html#method.draw>`_
 method in elements.
 
 The main job of ``DrawingCtx`` is to deal with the SVG drawing model.
@@ -385,7 +385,7 @@ rendering process in librsvg. When computing a subtree’s bounding box,
 the bounding boxes from the leaves get aggregated up to the root of
 the subtree. Each node in the tree has its own coordinate system;
 `BoundingBox
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/bbox/struct.BoundingBox.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/bbox/struct.BoundingBox.html>`_
 is able to transform coordinate systems to get a bounding box that is
 meaningful with respect to the root’s transform.
 
@@ -410,7 +410,7 @@ of integral part and 8 bits of fractional part).
 So, we can consider two numbers to be “equal” if they would be
 represented as the same fixed-point value by Cairo. Librsvg implements
 this in the `ApproxEqCairo
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/float_eq_cairo/trait.ApproxEqCairo.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/float_eq_cairo/trait.ApproxEqCairo.html>`_
 trait.  You can use it like this:
 
 .. code:: rust
@@ -431,44 +431,44 @@ Some interesting parts of the code
 
 - Are you adding support for a CSS property? Look at the 
   :doc:`adding_a_property` tutorial; look in the `property_defs
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/property_defs/index.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/property_defs/index.html>`_
   and `properties
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/properties/index.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/properties/index.html>`_
   modules. ``property_defs`` defines most of the CSS properties that
   librsvg supports, and ``properties`` actually puts all those
   properties in the ``SpecifiedValues`` and ``ComputedValues``
   structs.
 
 - The `Handle
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/handle/struct.Handle.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/handle/struct.Handle.html>`_
   struct provides the primitives to implement the public APIs, such as
   loading an SVG file and rendering it.
 
 - The `DrawingCtx
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/drawing_ctx/struct.DrawingCtx.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/drawing_ctx/struct.DrawingCtx.html>`_
   struct is active while an SVG handle is being drawn. It has all the
   mutable state related to the drawing process, such as the stack of
   temporary rendered surfaces, and the viewport stack.
 
 - The `Document
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/document/struct.Document.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/document/struct.Document.html>`_
   struct represents a loaded SVG document. It holds the tree of `Node
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/node/type.Node.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/node/type.Node.html>`_
   structs, some of which contain `Element
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/element/enum.Element.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/enum.Element.html>`_
   and some other contain `Chars
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/text/struct.Chars.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.Chars.html>`_
   for text data in the XML. A ``Document`` also contains a mapping of
   ``id`` attributes to the corresponding element nodes.
 
 - The `xml
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/xml/index.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/xml/index.html>`_
   module receives events from an XML parser, and builds a
   ``Document`` tree.
 
 - The `css
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/css/index.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/css/index.html>`_
   module has the high-level machinery for parsing CSS and representing
   parsed stylesheets. The low-level parsers for individual properties
-  are in `property_defs <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/property_defs/index.html>`_ and
-  `font_props <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/font_props/index.html>`_.
+  are in `property_defs <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/property_defs/index.html>`_ and
+  `font_props <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/font_props/index.html>`_.
