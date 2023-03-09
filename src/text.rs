@@ -784,11 +784,7 @@ impl ElementTrait for Text {
         );
 
         let layout_text = {
-            let transform = if stacking_ctx.should_isolate() {
-                draw_ctx.toplevel_transform()
-            } else {
-                draw_ctx.get_transform().into::<Transform>()
-            };
+            let transform = draw_ctx.get_transform_for_stacking_ctx(&stacking_ctx)?;
 
             let layout_context = LayoutContext {
                 writing_mode: values.writing_mode(),
@@ -829,7 +825,7 @@ impl ElementTrait for Text {
                 }
             }
 
-            let empty_bbox = BoundingBox::new().with_transform(transform);
+            let empty_bbox = BoundingBox::new().with_transform(*transform);
 
             let text_bbox = layout_spans.iter().fold(empty_bbox, |mut bbox, span| {
                 if let Some(ref span_bbox) = span.bbox {

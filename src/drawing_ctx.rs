@@ -358,8 +358,26 @@ impl DrawingCtx {
         *self.initial_viewport.vbox
     }
 
-    pub fn toplevel_transform(&self) -> Transform {
-        self.initial_viewport.transform.clone()
+    /// Gets the transform that will be used on the target surface,
+    /// whether using an isolated stacking context or not.
+    ///
+    /// This is only used in the text code, and we should probably try
+    /// to remove it.
+    pub fn get_transform_for_stacking_ctx(
+        &self,
+        stacking_ctx: &StackingContext,
+    ) -> Result<ValidTransform, RenderingError> {
+        if stacking_ctx.should_isolate() {
+            let affines = CompositingAffines::new(
+                *self.get_transform(),
+                self.initial_viewport.transform,
+                self.cr_stack.borrow().len(),
+            );
+
+            Ok(ValidTransform::try_from(affines.for_temporary_surface)?)
+        } else {
+            Ok(self.get_transform())
+        }
     }
 
     pub fn is_measuring(&self) -> bool {
