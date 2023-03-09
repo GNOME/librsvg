@@ -108,7 +108,7 @@ tempfile = "3"
 yeslogic-fontconfig-sys = "4.0.1"
 
 [build-dependencies]
-regex = "1"
+regex = "1.7.1"
 system-deps = "6.0.0"
 
 [[bench]]
