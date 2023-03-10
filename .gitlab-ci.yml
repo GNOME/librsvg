@@ -55,7 +55,7 @@ cargo_test:
       - tests/output
     expire_in: 1 day
   variables:
-    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
   script:
     - cargo test -- --skip loading_crash --skip reference --skip render_crash
 
@@ -73,8 +73,6 @@ test_rust_gdk_pixbuf_loader:
     paths:
       - tests/output
     expire_in: 1 day
-  variables:
-    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
   script:
     - cd gdk-pixbuf-loader
     - cargo test
@@ -90,11 +88,13 @@ test_rust_gdk_pixbuf_loader:
       - tests/output
     expire_in: 1 day
   variables:
-    OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
 
 .build-rsvg-no-docs:
   extends: '.cache'
   stage: build
+  variables:
+    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
   script:
     - mkdir -p _build
     - cd _build
@@ -111,6 +111,8 @@ test_rust_gdk_pixbuf_loader:
 .build-rsvg-full:
   extends: '.cache'
   stage: build
+  variables:
+    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
   script:
     - mkdir -p _build
     - cd _build
@@ -122,6 +124,12 @@ test_rust_gdk_pixbuf_loader:
     paths:
       - _build/doc/
       - _build/tests/*.log
+    expire_in: 1 day
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/*.log
+      - _build/tests/output
     expire_in: 1 day
 
 autotools build - opensuse@x86_64.stable:
@@ -406,7 +414,7 @@ msys2-mingw64:
   artifacts:
     when: 'on_failure'
     paths:
-      - _build/tests/output
+      - _build\tests\output
     expire_in: 1 day
 
 distcheck:
