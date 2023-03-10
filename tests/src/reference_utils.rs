@@ -113,7 +113,7 @@ fn write_to_file(input: &SharedImageSurface, output_base_name: &str, suffix: &st
 
 /// Creates a directory for test output and returns its path.
 ///
-/// The location for the output directory is taken from the `OUT_DIR` environment
+/// The location for the output directory is taken from the `TESTS_OUTPUT_DIR` environment
 /// variable if that is set. Otherwise std::env::temp_dir() will be used, which is
 /// a platform dependent location for temporary files.
 ///
@@ -126,7 +126,7 @@ pub fn output_dir() -> PathBuf {
         path.push("rsvg-test-output");
         path
     };
-    let path = env::var_os("OUT_DIR").map_or_else(tempdir, PathBuf::from);
+    let path = env::var_os("TESTS_OUTPUT_DIR").map_or_else(tempdir, PathBuf::from);
 
     fs::create_dir_all(&path).expect("could not create output directory for tests");
 
