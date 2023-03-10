@@ -403,6 +403,11 @@ msys2-mingw64:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  artifacts:
+    when: 'on_failure'
+    paths:
+      - _build/tests/output
+    expire_in: 1 day
 
 distcheck:
   stage: acceptance test
