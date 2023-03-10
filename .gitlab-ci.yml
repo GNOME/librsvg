@@ -52,7 +52,7 @@ cargo_test:
   artifacts:
     when: 'on_failure'
     paths:
-      - _build/tests/output
+      - tests/output
     expire_in: 1 day
   variables:
     OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
@@ -71,7 +71,7 @@ test_rust_gdk_pixbuf_loader:
   artifacts:
     when: 'on_failure'
     paths:
-      - _build/tests/output
+      - tests/output
     expire_in: 1 day
   variables:
     OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
@@ -87,7 +87,7 @@ test_rust_gdk_pixbuf_loader:
   artifacts:
     when: 'on_failure'
     paths:
-      - _build/tests/output
+      - tests/output
     expire_in: 1 day
   variables:
     OUT_DIR: "${CI_PROJECT_DIR}/tests/output"
