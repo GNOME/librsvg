@@ -25,7 +25,7 @@ use crate::document::{Document, DocumentBuilder};
 use crate::error::{ImplementationLimit, LoadingError};
 use crate::handle::LoadOptions;
 use crate::io::{self, IoError};
-use crate::limits::MAX_LOADED_ELEMENTS;
+use crate::limits::{MAX_LOADED_ELEMENTS, MAX_XINCLUDE_DEPTH};
 use crate::node::{Node, NodeBorrow};
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;
@@ -106,6 +106,7 @@ struct XmlStateInner {
     weak: Option<Weak<XmlState>>,
     document_builder: Option<DocumentBuilder>,
     num_loaded_elements: usize,
+    xinclude_depth: usize,
     context_stack: Vec<Context>,
     current_node: Option<Node>,
 
@@ -144,6 +145,7 @@ impl XmlState {
                 weak: None,
                 document_builder: Some(document_builder),
                 num_loaded_elements: 0,
+                xinclude_depth: 0,
                 context_stack: vec![Context::Start],
                 current_node: None,
                 entities: HashMap::new(),
@@ -546,7 +548,7 @@ impl XmlState {
             // the absence of a default value declaration). Values
             // other than "xml" and "text" are a fatal error."
             match parse {
-                None | Some("xml") => self.acquire_xml(&aurl),
+                None | Some("xml") => self.include_xml(&aurl),
 
                 Some("text") => self.acquire_text(&aurl, encoding),
 
@@ -563,6 +565,34 @@ impl XmlState {
             // actually include anything.
             Ok(())
         }
+    }
+
+    fn include_xml(&self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
+        self.increase_xinclude_depth(aurl)?;
+
+        let result = self.acquire_xml(aurl);
+
+        self.decrease_xinclude_depth();
+
+        result
+    }
+
+    fn increase_xinclude_depth(&self, aurl: &AllowedUrl) -> Result<(), AcquireError> {
+        let mut inner = self.inner.borrow_mut();
+
+        if inner.xinclude_depth == MAX_XINCLUDE_DEPTH {
+            Err(AcquireError::FatalError(format!(
+                "exceeded maximum level of nested xinclude in {aurl}"
+            )))
+        } else {
+            inner.xinclude_depth += 1;
+            Ok(())
+        }
+    }
+
+    fn decrease_xinclude_depth(&self) {
+        let mut inner = self.inner.borrow_mut();
+        inner.xinclude_depth -= 1;
     }
 
     fn acquire_text(&self, aurl: &AllowedUrl, encoding: Option<&str>) -> Result<(), AcquireError> {
