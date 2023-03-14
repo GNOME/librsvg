@@ -40,3 +40,13 @@ pub const MAX_LOADED_ELEMENTS: usize = 1_000_000;
 /// of attributes that the SVG standard ascribes meaning to are lower than
 /// this limit.
 pub const MAX_LOADED_ATTRIBUTES: usize = u16::MAX as usize;
+
+/// Maximum level of nesting for XInclude (XML Include) files.
+///
+/// See <https://gitlab.gnome.org/GNOME/librsvg/-/issues/942>.  With
+/// the use of XML like `<xi:include parse="xml" href="foo.xml"/>`, an
+/// SVG document can recursively include other XML files.  This value
+/// defines a maximum level of nesting for XInclude, to prevent cases
+/// where the base document is included within itself, or when two
+/// documents recursively include each other.
+pub const MAX_XINCLUDE_DEPTH: usize = 20;

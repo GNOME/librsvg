@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include parse="xml" href="bug942-xinclude-mutual-recursion.svg"/>
+</svg>
