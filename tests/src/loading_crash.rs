@@ -39,6 +39,7 @@ mod tests {
     t!(bug467_xinclude_without_parent_element_svg,   "bug467-xinclude-without-parent-element.svg");
     t!(bug524_invalid_stylesheet_href_svg,           "bug524-invalid-stylesheet-href.svg");
     t!(bug942_xinclude_recursion_svg,                "bug942-xinclude-recursion.svg");
+    t!(bug942_xinclude_mutual_recursion_svg,         "bug942-xinclude-mutual-recursion.svg");
     t!(bug620238_svg,                                "bug620238.svg");
     t!(bug759084_svg,                                "bug759084.svg");
     t!(bug785276_empty_svg,                          "bug785276-empty.svg");
