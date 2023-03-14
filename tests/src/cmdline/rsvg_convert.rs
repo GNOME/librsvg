@@ -438,7 +438,7 @@ fn env_source_data_epoch_controls_pdf_creation_date() {
         .arg(input)
         .assert()
         .success()
-        .stdout(file::is_pdf().with_creation_date(Utc.timestamp(date, 0)));
+        .stdout(file::is_pdf().with_creation_date(Utc.timestamp_opt(date, 0).unwrap()));
 }
 
 #[cfg(system_deps_have_cairo_pdf)]
