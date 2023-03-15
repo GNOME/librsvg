@@ -4,6 +4,9 @@ Version 2.55.2
 - #942: Fix crash when XML files get recursively included through
   XInclude.  Thanks to Stefan Schiller for catching this.
 
+- The Minimum Supported Rust Version (MSRV) is now Rust 1.60.  Several
+  dependencies have bumped their MSRV on their own, unfortunately.
+
 Version 2.55.1
 ==============
 
