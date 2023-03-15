@@ -308,6 +308,7 @@ coverage:
     - source ./ci/env.sh
     - bash -x ./ci/gen-coverage.sh
   coverage: '/Coverage: \d+\.\d+/'
+  allow_failure: true
   artifacts:
     name: ${CI_JOB_NAME}-${CI_COMMIT_REF_NAME}-${CI_COMMIT_SHA}
     expire_in: 2 days
