@@ -3,7 +3,7 @@ AC_PREREQ([2.69])
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[55])
-m4_define([rsvg_micro_version],[1]) # Keep this in sync with Cargo.toml and doc/librsvg.toml
+m4_define([rsvg_micro_version],[2]) # Keep this in sync with Cargo.toml and doc/librsvg.toml
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version])
 
 # Library version information.  To make a release:
@@ -107,7 +107,7 @@ AS_IF(test x$RUSTC = xno,
 
 dnl MSRV - Minimum Supported Rust Version
 dnl If you change this, please update COMPILING.md
-MINIMUM_RUST_VER=1.58
+MINIMUM_RUST_VER=1.60
 rust_version=`$RUSTC --version | sed -e 's/^rustc //g'`
 AX_COMPARE_VERSION([$rust_version],[lt],[$MINIMUM_RUST_VER], [
     AC_MSG_ERROR([librsvg needs at least rustc version $MINIMUM_RUST_VER])

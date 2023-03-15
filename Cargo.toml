@@ -1,6 +1,6 @@
 [package]
 name = "librsvg"
-version = "2.55.1"
+version = "2.55.2"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
 description = "Render SVG documents with Cairo"
 license = "LGPL-2.1-or-later"
@@ -9,7 +9,7 @@ homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 build = "build.rs"
 edition = "2021"
-rust-version = "1.58"
+rust-version = "1.60"
 
 [package.metadata.system-deps]
 cairo-pdf = { version = "1.16", optional = true }
