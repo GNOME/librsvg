@@ -124,11 +124,6 @@ test_rust_gdk_pixbuf_loader:
     paths:
       - _build/doc/
       - _build/tests/*.log
-    expire_in: 1 day
-  artifacts:
-    when: 'on_failure'
-    paths:
-      - _build/tests/*.log
       - _build/tests/output
     expire_in: 1 day
 
