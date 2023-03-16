@@ -58,9 +58,20 @@ To run the full test suite, you need to go through autotools.  Run the
 following commands in the toplevel source directory:
 
 ```sh
+export TESTS_OUTPUT_DIR=/some/directory/for/test/failures
 ./autogen.sh
 make check
 ```
+
+## Artifacts produced from the tests
+
+**Failures for reference tests:** Tests that render a document and
+compare the result to a reference image will write details on failures
+to files under the `TESTS_OUTPUT_DIR` environment variable.  If this
+variable is missing, the files will appear under `$TMPDIR/rsvg-test-output`.
+
+**Test logs:** the C API tests produce a `$builddir/tests/*.log`
+series of files with a list of test results.
 
 ## C API tests - `api.c`
 
