@@ -1,3 +1,15 @@
+Version 2.56.0
+==============
+
+- #942: Fix crash when XML files get recursively included through
+  XInclude.  Thanks to Stefan Schiller for catching this.
+
+- When running the suite of reference tests, you can now use the
+  TESTS_OUTPUT_DIR environment variable to specify where results for
+  failures get written.  See tests/README.md for details.
+
+- The minimum supported Rust version (MSRV) is 1.64.
+
 Version 2.55.92
 ===============
 
