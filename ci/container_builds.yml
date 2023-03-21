@@ -6,7 +6,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2023-02-08.1-main"
+  BASE_TAG: "2023-03-21.0-main"
   RUST_STABLE: "1.67.0"
   RUST_MINIMUM: "1.64.0"
 
