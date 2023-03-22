@@ -691,7 +691,6 @@ impl DrawingCtx {
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                values,
                 false,
                 None,
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
@@ -716,7 +715,6 @@ impl DrawingCtx {
         &mut self,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        _values: &ComputedValues,
         clipping: bool,
         clip_rect: Option<Rect>,
         draw_fn: &mut dyn FnMut(
@@ -1130,7 +1128,6 @@ impl DrawingCtx {
                     dc.with_discrete_layer(
                         &stacking_ctx,
                         acquired_nodes,
-                        pattern_values,
                         false,
                         None,
                         &mut |an, dc| pattern_node.draw_children(an, &pattern_cascaded, dc, false),
@@ -1262,18 +1259,17 @@ impl DrawingCtx {
         &mut self,
         layer: &Layer,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         match &layer.kind {
             LayerKind::Shape(shape) => {
-                self.draw_shape(shape, &layer.stacking_ctx, acquired_nodes, values, clipping)
+                self.draw_shape(shape, &layer.stacking_ctx, acquired_nodes, clipping)
             }
             LayerKind::Text(text) => {
-                self.draw_text(text, &layer.stacking_ctx, acquired_nodes, values, clipping)
+                self.draw_text(text, &layer.stacking_ctx, acquired_nodes, clipping)
             }
             LayerKind::Image(image) => {
-                self.draw_image(image, &layer.stacking_ctx, acquired_nodes, values, clipping)
+                self.draw_image(image, &layer.stacking_ctx, acquired_nodes, clipping)
             }
         }
     }
@@ -1283,7 +1279,6 @@ impl DrawingCtx {
         shape: &Shape,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if shape.extents.is_none() {
@@ -1293,7 +1288,6 @@ impl DrawingCtx {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             None,
             &mut |an, dc| {
@@ -1397,7 +1391,6 @@ impl DrawingCtx {
         image: &Image,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let image_width = image.surface.width();
@@ -1427,7 +1420,6 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 stacking_ctx,
                 acquired_nodes,
-                values,
                 clipping,
                 None,
                 &mut |_an, dc| {
@@ -1549,13 +1541,11 @@ impl DrawingCtx {
         text: &Text,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             None,
             &mut |an, dc| {
@@ -1789,7 +1779,6 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                values,
                 clipping,
                 None,
                 &mut |an, dc| {
@@ -1823,7 +1812,6 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                values,
                 clipping,
                 None,
                 &mut |an, dc| {

@@ -153,7 +153,7 @@ fn draw_basic_shape(
         stacking_ctx,
     };
 
-    draw_ctx.draw_layer(&layer, acquired_nodes, values, clipping)
+    draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
 }
 
 macro_rules! impl_draw {

@@ -46,7 +46,6 @@ impl ElementTrait for Group {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             None,
             &mut |an, dc| node.draw_children(an, cascaded, dc, clipping),
@@ -90,7 +89,6 @@ impl ElementTrait for Switch {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             None,
             &mut |an, dc| {
@@ -305,7 +303,6 @@ impl ElementTrait for Svg {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             None,
             &mut |an, dc| {
@@ -608,7 +605,6 @@ impl ElementTrait for Link {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             None,
             &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),

@@ -876,7 +876,7 @@ impl ElementTrait for Text {
             stacking_ctx,
         };
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, values, clipping)
+        draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
     }
 }
 

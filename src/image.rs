@@ -114,6 +114,6 @@ impl ElementTrait for Image {
             stacking_ctx,
         };
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, values, clipping)
+        draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
     }
 }
