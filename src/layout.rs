@@ -159,10 +159,18 @@ fn get_filter(values: &ComputedValues) -> Option<Filter> {
     match values.filter() {
         properties::Filter::None => None,
 
-        properties::Filter::List(filter_list) => Some(Filter {
-            filter_list: filter_list,
-            current_color: values.color().0,
-        }),
+        properties::Filter::List(filter_list) => {
+            Some(get_filter_from_filter_list(filter_list, values))
+        }
+    }
+}
+
+fn get_filter_from_filter_list(filter_list: FilterValueList, values: &ComputedValues) -> Filter {
+    let current_color = values.color().0;
+
+    Filter {
+        filter_list,
+        current_color,
     }
 }
 
