@@ -51,7 +51,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::ViewParams;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
-use crate::properties::ComputedValues;
+use crate::properties::{ComputedValues, FontSize};
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
@@ -302,6 +302,22 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
     }
 }
 
+/// Parameters for length normalization extractedfrom [`ComputedValues`].
+///
+/// This is a precursor to [`NormalizeParams::from_values`], for cases where it is inconvenient
+/// to keep a [`ComputedValues`] around.
+pub struct NormalizeValues {
+    font_size: FontSize,
+}
+
+impl NormalizeValues {
+    pub fn new(values: &ComputedValues) -> NormalizeValues {
+        NormalizeValues {
+            font_size: values.font_size(),
+        }
+    }
+}
+
 /// Parameters to normalize [`Length`] values to user-space distances.
 pub struct NormalizeParams {
     vbox: ViewBox,
@@ -312,13 +328,15 @@ pub struct NormalizeParams {
 impl NormalizeParams {
     /// Extracts the information needed to normalize [`Length`] values from a set of
     /// [`ComputedValues`] and the viewport size in [`ViewParams`].
-    // TODO: It is awkward to pass a `ComputedValues` everywhere just to be able to get
-    // the font size in the end.  Can we instead have a `ComputedFontSize(FontSize)`
-    // newtype, extracted from the `ComputedValues`?
     pub fn new(values: &ComputedValues, params: &ViewParams) -> NormalizeParams {
+        let v = NormalizeValues::new(values);
+        NormalizeParams::from_values(&v, params)
+    }
+
+    pub fn from_values(v: &NormalizeValues, params: &ViewParams) -> NormalizeParams {
         NormalizeParams {
             vbox: params.vbox,
-            font_size: font_size_from_values(values, params.dpi),
+            font_size: font_size_from_values(v, params.dpi),
             dpi: params.dpi,
         }
     }
@@ -451,8 +469,8 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
     }
 }
 
-fn font_size_from_values(values: &ComputedValues, dpi: Dpi) -> f64 {
-    let v = &values.font_size().value();
+fn font_size_from_values(values: &NormalizeValues, dpi: Dpi) -> f64 {
+    let v = values.font_size.value();
 
     match v.unit {
         LengthUnit::Percent => unreachable!("ComputedValues can't have a relative font size"),
