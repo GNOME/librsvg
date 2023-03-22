@@ -784,7 +784,7 @@ impl ElementTrait for Text {
         );
 
         let layout_text = {
-            let transform = draw_ctx.get_transform_for_stacking_ctx(&stacking_ctx)?;
+            let transform = draw_ctx.get_transform_for_stacking_ctx(&stacking_ctx, clipping)?;
 
             let layout_context = LayoutContext {
                 writing_mode: values.writing_mode(),

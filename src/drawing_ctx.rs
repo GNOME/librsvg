@@ -366,8 +366,9 @@ impl DrawingCtx {
     pub fn get_transform_for_stacking_ctx(
         &self,
         stacking_ctx: &StackingContext,
+        clipping: bool,
     ) -> Result<ValidTransform, RenderingError> {
-        if stacking_ctx.should_isolate() {
+        if stacking_ctx.should_isolate() && !clipping {
             let affines = CompositingAffines::new(
                 *self.get_transform(),
                 self.initial_viewport.transform,
@@ -1329,10 +1330,12 @@ impl DrawingCtx {
             values,
             clipping,
             None,
-            &mut |an, dc, transform| {
+            &mut |an, dc, _transform| {
                 let cr = dc.cr.clone();
+
+                let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
                 let mut path_helper =
-                    PathHelper::new(&cr, *transform, &shape.path, shape.stroke.line_cap);
+                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
 
                 if clipping {
                     if shape.is_visible {
