@@ -1568,7 +1568,7 @@ impl DrawingCtx {
         })
     }
 
-    pub fn draw_text(
+    fn draw_text(
         &mut self,
         text: &Text,
         stacking_ctx: &StackingContext,
