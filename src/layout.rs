@@ -5,6 +5,7 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
+use cssparser::RGBA;
 use float_cmp::approx_eq;
 
 use crate::aspect_ratio::AspectRatio;
@@ -47,6 +48,7 @@ pub struct StackingContext {
     pub transform: Transform,
     pub opacity: Opacity,
     pub filter: Filter,
+    pub current_color: RGBA,
     pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
@@ -161,6 +163,8 @@ impl StackingContext {
         let opacity;
         let filter;
 
+        let current_color = values.color().0;
+
         match element.element_data {
             // "The opacity, filter and display properties do not apply to the mask element"
             // https://drafts.fxtf.org/css-masking-1/#MaskElement
@@ -233,6 +237,7 @@ impl StackingContext {
             transform,
             opacity,
             filter,
+            current_color,
             clip_in_user_space,
             clip_in_object_space,
             mask,

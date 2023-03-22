@@ -796,8 +796,6 @@ impl DrawingCtx {
                                     .unwrap(),
                             )?;
 
-                            let current_color = values.color().0;
-
                             let params = temporary_draw_ctx.get_view_params();
 
                             // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
@@ -810,7 +808,7 @@ impl DrawingCtx {
                                     .resolve(
                                         acquired_nodes,
                                         values.stroke_opacity().0,
-                                        current_color,
+                                        stacking_ctx.current_color,
                                         None,
                                         None,
                                         self.session(),
@@ -825,7 +823,7 @@ impl DrawingCtx {
                                     .resolve(
                                         acquired_nodes,
                                         values.fill_opacity().0,
-                                        current_color,
+                                        stacking_ctx.current_color,
                                         None,
                                         None,
                                         self.session(),
@@ -851,7 +849,7 @@ impl DrawingCtx {
                                     &user_space_params,
                                     stroke_paint_source,
                                     fill_paint_source,
-                                    current_color,
+                                    stacking_ctx.current_color,
                                     bbox,
                                 )?
                                 .into_image_surface()?;
