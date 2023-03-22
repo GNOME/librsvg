@@ -1,6 +1,5 @@
 //! The main context structure which drives the drawing process.
 
-use cssparser::RGBA;
 use float_cmp::approx_eq;
 use glib::translate::*;
 use once_cell::sync::Lazy;
@@ -22,11 +21,12 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
 use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
-use crate::filter::FilterValueList;
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan};
+use crate::layout::{
+    Filter, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
+};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -821,13 +821,12 @@ impl DrawingCtx {
                             let filtered_surface = temporary_draw_ctx
                                 .run_filters(
                                     surface_to_filter,
-                                    &filter.filter_list,
+                                    filter,
                                     acquired_nodes,
                                     &stacking_ctx.element_name,
                                     &user_space_params,
                                     stroke_paint_source,
                                     fill_paint_source,
-                                    filter.current_color,
                                     bbox,
                                 )?
                                 .into_image_surface()?;
@@ -949,13 +948,12 @@ impl DrawingCtx {
     fn run_filters(
         &mut self,
         surface_to_filter: SharedImageSurface,
-        filter_list: &FilterValueList,
+        filter: &Filter,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
         user_space_params: &NormalizeParams,
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
-        current_color: RGBA,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
         // We try to convert each item in the filter_list to a FilterSpec.
@@ -966,13 +964,14 @@ impl DrawingCtx {
         //
         // So, run through the filter_list and collect into a Result<Vec<FilterSpec>>.
         // This will return an Err if any of the conversions failed.
-        let filter_specs = filter_list
+        let filter_specs = filter
+            .filter_list
             .iter()
             .map(|filter_value| {
                 filter_value.to_filter_spec(
                     acquired_nodes,
                     user_space_params,
-                    current_color,
+                    filter.current_color,
                     self,
                     node_name,
                 )
