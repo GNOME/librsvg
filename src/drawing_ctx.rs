@@ -765,7 +765,7 @@ impl DrawingCtx {
 
                     // Create temporary surface and its cr
 
-                    let cr = match stacking_ctx.filter {
+                    let cr = match stacking_ctx.filter.filter {
                         Filter::None => cairo::Context::new(
                             &self
                                 .create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
@@ -790,7 +790,7 @@ impl DrawingCtx {
                             BoundingBox::new().with_transform(affines.for_temporary_surface)
                         };
 
-                        if let Filter::List(ref filter_list) = stacking_ctx.filter {
+                        if let Filter::List(ref filter_list) = stacking_ctx.filter.filter {
                             let surface_to_filter = SharedImageSurface::copy_from_surface(
                                 &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target())
                                     .unwrap(),
@@ -808,7 +808,7 @@ impl DrawingCtx {
                                     .resolve(
                                         acquired_nodes,
                                         values.stroke_opacity().0,
-                                        stacking_ctx.current_color,
+                                        stacking_ctx.filter.current_color,
                                         None,
                                         None,
                                         self.session(),
@@ -823,7 +823,7 @@ impl DrawingCtx {
                                     .resolve(
                                         acquired_nodes,
                                         values.fill_opacity().0,
-                                        stacking_ctx.current_color,
+                                        stacking_ctx.filter.current_color,
                                         None,
                                         None,
                                         self.session(),
@@ -849,7 +849,7 @@ impl DrawingCtx {
                                     &user_space_params,
                                     stroke_paint_source,
                                     fill_paint_source,
-                                    stacking_ctx.current_color,
+                                    stacking_ctx.filter.current_color,
                                     bbox,
                                 )?
                                 .into_image_surface()?;
@@ -1296,10 +1296,14 @@ impl DrawingCtx {
             ),
             LayerKind::Text(text) => {
                 self.draw_text(&text, &layer.stacking_ctx, acquired_nodes, values, clipping)
-            },
-            LayerKind::Image(image) => {
-                self.draw_image(&image, &layer.stacking_ctx, acquired_nodes, values, clipping)
-            },
+            }
+            LayerKind::Image(image) => self.draw_image(
+                &image,
+                &layer.stacking_ctx,
+                acquired_nodes,
+                values,
+                clipping,
+            ),
         }
     }
 

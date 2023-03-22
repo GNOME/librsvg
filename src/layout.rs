@@ -19,7 +19,7 @@ use crate::node::*;
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::Path;
 use crate::properties::{
-    ClipRule, ComputedValues, Direction, FillRule, Filter, FontFamily, FontStretch, FontStyle,
+    self, ClipRule, ComputedValues, Direction, FillRule, FontFamily, FontStretch, FontStyle,
     FontVariant, FontWeight, Isolation, MixBlendMode, Opacity, Overflow, PaintOrder,
     ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
     TextDecoration, TextRendering, UnicodeBidi, VectorEffect, XmlLang,
@@ -48,7 +48,6 @@ pub struct StackingContext {
     pub transform: Transform,
     pub opacity: Opacity,
     pub filter: Filter,
-    pub current_color: RGBA,
     pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
@@ -150,6 +149,11 @@ pub struct FontProperties {
     pub text_decoration: TextDecoration,
 }
 
+pub struct Filter {
+    pub filter: properties::Filter,
+    pub current_color: RGBA,
+}
+
 impl StackingContext {
     pub fn new(
         session: &Session,
@@ -170,7 +174,7 @@ impl StackingContext {
             // https://drafts.fxtf.org/css-masking-1/#MaskElement
             ElementData::Mask(_) => {
                 opacity = Opacity(UnitInterval::clamp(1.0));
-                filter = Filter::None;
+                filter = properties::Filter::None;
             }
 
             _ => {
@@ -178,6 +182,11 @@ impl StackingContext {
                 filter = values.filter();
             }
         }
+
+        let filter = Filter {
+            filter,
+            current_color,
+        };
 
         let clip_path = values.clip_path();
         let clip_uri = clip_path.0.get();
@@ -237,7 +246,6 @@ impl StackingContext {
             transform,
             opacity,
             filter,
-            current_color,
             clip_in_user_space,
             clip_in_object_space,
             mask,
@@ -266,7 +274,7 @@ impl StackingContext {
             Isolation::Auto => {
                 let is_opaque = approx_eq!(f64, opacity, 1.0);
                 !(is_opaque
-                    && self.filter == Filter::None
+                    && self.filter.filter == properties::Filter::None
                     && self.mask.is_none()
                     && self.mix_blend_mode == MixBlendMode::Normal
                     && self.clip_in_object_space.is_none())
