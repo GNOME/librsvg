@@ -34,8 +34,8 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, Filter, MaskType, MixBlendMode, Opacity, Overflow,
-    PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, ComputedValues, FillRule, MaskType, MixBlendMode, Opacity, Overflow, PaintTarget,
+    ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
@@ -765,12 +765,12 @@ impl DrawingCtx {
 
                     // Create temporary surface and its cr
 
-                    let cr = match stacking_ctx.filter.filter {
-                        Filter::None => cairo::Context::new(
+                    let cr = match stacking_ctx.filter {
+                        None => cairo::Context::new(
                             &self
                                 .create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
                         )?,
-                        Filter::List(_) => {
+                        Some(_) => {
                             cairo::Context::new(self.create_surface_for_toplevel_viewport()?)?
                         }
                     };
@@ -790,7 +790,7 @@ impl DrawingCtx {
                             BoundingBox::new().with_transform(affines.for_temporary_surface)
                         };
 
-                        if let Filter::List(ref filter_list) = stacking_ctx.filter.filter {
+                        if let Some(ref filter) = stacking_ctx.filter {
                             let surface_to_filter = SharedImageSurface::copy_from_surface(
                                 &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target())
                                     .unwrap(),
@@ -808,7 +808,7 @@ impl DrawingCtx {
                                     .resolve(
                                         acquired_nodes,
                                         values.stroke_opacity().0,
-                                        stacking_ctx.filter.current_color,
+                                        filter.current_color,
                                         None,
                                         None,
                                         self.session(),
@@ -823,7 +823,7 @@ impl DrawingCtx {
                                     .resolve(
                                         acquired_nodes,
                                         values.fill_opacity().0,
-                                        stacking_ctx.filter.current_color,
+                                        filter.current_color,
                                         None,
                                         None,
                                         self.session(),
@@ -843,13 +843,13 @@ impl DrawingCtx {
                             let filtered_surface = temporary_draw_ctx
                                 .run_filters(
                                     surface_to_filter,
-                                    filter_list,
+                                    &filter.filter_list,
                                     acquired_nodes,
                                     &stacking_ctx.element_name,
                                     &user_space_params,
                                     stroke_paint_source,
                                     fill_paint_source,
-                                    stacking_ctx.filter.current_color,
+                                    filter.current_color,
                                     bbox,
                                 )?
                                 .into_image_surface()?;

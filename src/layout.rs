@@ -14,6 +14,7 @@ use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::{Element, ElementData};
+use crate::filter::FilterValueList;
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
@@ -47,7 +48,7 @@ pub struct StackingContext {
     pub element_name: String,
     pub transform: Transform,
     pub opacity: Opacity,
-    pub filter: Filter,
+    pub filter: Option<Filter>,
     pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
@@ -150,8 +151,19 @@ pub struct FontProperties {
 }
 
 pub struct Filter {
-    pub filter: properties::Filter,
+    pub filter_list: FilterValueList,
     pub current_color: RGBA,
+}
+
+fn get_filter(values: &ComputedValues) -> Option<Filter> {
+    match values.filter() {
+        properties::Filter::None => None,
+
+        properties::Filter::List(filter_list) => Some(Filter {
+            filter_list: filter_list,
+            current_color: values.color().0,
+        }),
+    }
 }
 
 impl StackingContext {
@@ -167,26 +179,19 @@ impl StackingContext {
         let opacity;
         let filter;
 
-        let current_color = values.color().0;
-
         match element.element_data {
             // "The opacity, filter and display properties do not apply to the mask element"
             // https://drafts.fxtf.org/css-masking-1/#MaskElement
             ElementData::Mask(_) => {
                 opacity = Opacity(UnitInterval::clamp(1.0));
-                filter = properties::Filter::None;
+                filter = None;
             }
 
             _ => {
                 opacity = values.opacity();
-                filter = values.filter();
+                filter = get_filter(values);
             }
         }
-
-        let filter = Filter {
-            filter,
-            current_color,
-        };
 
         let clip_path = values.clip_path();
         let clip_uri = clip_path.0.get();
@@ -274,7 +279,7 @@ impl StackingContext {
             Isolation::Auto => {
                 let is_opaque = approx_eq!(f64, opacity, 1.0);
                 !(is_opaque
-                    && self.filter.filter == properties::Filter::None
+                    && self.filter.is_none()
                     && self.mask.is_none()
                     && self.mix_blend_mode == MixBlendMode::Normal
                     && self.clip_in_object_space.is_none())
