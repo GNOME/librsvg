@@ -118,8 +118,10 @@ fn draw_basic_shape(
 
     let extents = draw_ctx.compute_path_extents(&shape_def.path)?;
 
-    let stroke_paint = stroke_paint.to_user_space(&extents, &view_params, values);
-    let fill_paint = fill_paint.to_user_space(&extents, &view_params, values);
+    let normalize_values = NormalizeValues::new(values);
+
+    let stroke_paint = stroke_paint.to_user_space(&extents, &view_params, &normalize_values);
+    let fill_paint = fill_paint.to_user_space(&extents, &view_params, &normalize_values);
 
     let shape = Box::new(Shape {
         path: shape_def.path,

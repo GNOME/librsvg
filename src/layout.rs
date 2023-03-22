@@ -155,6 +155,7 @@ pub struct Filter {
     pub current_color: RGBA,
     pub stroke_paint_source: Arc<PaintSource>,
     pub fill_paint_source: Arc<PaintSource>,
+    pub normalize_values: NormalizeValues,
 }
 
 fn get_filter(
@@ -200,11 +201,14 @@ fn get_filter_from_filter_list(
         session,
     );
 
+    let normalize_values = NormalizeValues::new(values);
+
     Filter {
         filter_list,
         current_color,
         stroke_paint_source,
         fill_paint_source,
+        normalize_values,
     }
 }
 

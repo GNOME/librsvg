@@ -716,7 +716,7 @@ impl DrawingCtx {
         &mut self,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
+        _values: &ComputedValues,
         clipping: bool,
         clip_rect: Option<Rect>,
         draw_fn: &mut dyn FnMut(
@@ -798,23 +798,25 @@ impl DrawingCtx {
 
                             let params = temporary_draw_ctx.get_view_params();
 
-                            let stroke_paint_source = Rc::new(
-                                filter
-                                    .stroke_paint_source
-                                    .to_user_space(&bbox.rect, &params, values),
-                            );
-                            let fill_paint_source = Rc::new(
-                                filter
-                                    .fill_paint_source
-                                    .to_user_space(&bbox.rect, &params, values),
-                            );
+                            let stroke_paint_source =
+                                Rc::new(filter.stroke_paint_source.to_user_space(
+                                    &bbox.rect,
+                                    &params,
+                                    &filter.normalize_values,
+                                ));
+                            let fill_paint_source =
+                                Rc::new(filter.fill_paint_source.to_user_space(
+                                    &bbox.rect,
+                                    &params,
+                                    &filter.normalize_values,
+                                ));
 
                             // Filter functions (like "blend()", not the <filter> element) require
                             // being resolved in userSpaceonUse units, since that is the default
                             // for primitive_units.  So, get the corresponding NormalizeParams
                             // here and pass them down.
-                            let user_space_params = NormalizeParams::new(
-                                values,
+                            let user_space_params = NormalizeParams::from_values(
+                                &filter.normalize_values,
                                 &params.with_units(CoordUnits::UserSpaceOnUse),
                             );
 
@@ -1264,23 +1266,15 @@ impl DrawingCtx {
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         match &layer.kind {
-            LayerKind::Shape(shape) => self.draw_shape(
-                shape,
-                &layer.stacking_ctx,
-                acquired_nodes,
-                values,
-                clipping,
-            ),
+            LayerKind::Shape(shape) => {
+                self.draw_shape(shape, &layer.stacking_ctx, acquired_nodes, values, clipping)
+            }
             LayerKind::Text(text) => {
                 self.draw_text(text, &layer.stacking_ctx, acquired_nodes, values, clipping)
             }
-            LayerKind::Image(image) => self.draw_image(
-                image,
-                &layer.stacking_ctx,
-                acquired_nodes,
-                values,
-                clipping,
-            ),
+            LayerKind::Image(image) => {
+                self.draw_image(image, &layer.stacking_ctx, acquired_nodes, values, clipping)
+            }
         }
     }
 

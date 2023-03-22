@@ -9,10 +9,10 @@ use crate::drawing_ctx::ViewParams;
 use crate::element::ElementData;
 use crate::error::{AcquireError, NodeIdError, ParseError, ValueErrorKind};
 use crate::gradient::{ResolvedGradient, UserSpaceGradient};
+use crate::length::NormalizeValues;
 use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::{ResolvedPattern, UserSpacePattern};
-use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::session::Session;
 use crate::unit_interval::UnitInterval;
@@ -244,7 +244,7 @@ impl PaintSource {
         &self,
         object_bbox: &Option<Rect>,
         current_params: &ViewParams,
-        values: &ComputedValues,
+        values: &NormalizeValues,
     ) -> UserSpacePaintSource {
         match *self {
             PaintSource::None => UserSpacePaintSource::None,
