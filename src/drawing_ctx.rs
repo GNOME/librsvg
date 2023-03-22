@@ -1302,7 +1302,7 @@ impl DrawingCtx {
         }
     }
 
-    pub fn draw_shape(
+    fn draw_shape(
         &mut self,
         shape: &Shape,
         stacking_ctx: &StackingContext,
