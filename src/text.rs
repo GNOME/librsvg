@@ -790,7 +790,7 @@ impl ElementTrait for Text {
                 writing_mode: values.writing_mode(),
                 transform,
                 font_options: draw_ctx.get_font_options(),
-                view_params: draw_ctx.get_view_params(),
+                view_params,
                 session: draw_ctx.session().clone(),
             };
 
