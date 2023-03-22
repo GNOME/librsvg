@@ -65,6 +65,7 @@ pub struct Layer {
 pub enum LayerKind {
     Shape(Box<Shape>),
     Text(Box<Text>),
+    Image(Box<Image>),
 }
 
 /// Stroke parameters in user-space coordinates.

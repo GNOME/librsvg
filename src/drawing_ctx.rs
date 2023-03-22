@@ -1298,7 +1298,10 @@ impl DrawingCtx {
             ),
             LayerKind::Text(text) => {
                 self.draw_text(&text, &layer.stacking_ctx, acquired_nodes, values, clipping)
-            }
+            },
+            LayerKind::Image(image) => {
+                self.draw_image(&image, &layer.stacking_ctx, acquired_nodes, values, clipping)
+            },
         }
     }
 
@@ -1416,7 +1419,7 @@ impl DrawingCtx {
         cr.paint()
     }
 
-    pub fn draw_image(
+    fn draw_image(
         &mut self,
         image: &Image,
         stacking_ctx: &StackingContext,
