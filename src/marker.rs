@@ -194,7 +194,7 @@ impl Marker {
             values,
             clipping,
             clip,
-            &mut |an, dc, _transform| node.draw_children(an, &cascaded, dc, clipping),
+            &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
         )
     }
 }
