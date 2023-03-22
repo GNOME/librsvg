@@ -798,36 +798,14 @@ impl DrawingCtx {
 
                             let params = temporary_draw_ctx.get_view_params();
 
-                            // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
-                            // they are also needed for filters in all elements.  Maybe we should make them part
-                            // of the StackingContext instead of Shape?
                             let stroke_paint_source = Rc::new(
-                                values
-                                    .stroke()
-                                    .0
-                                    .resolve(
-                                        acquired_nodes,
-                                        values.stroke_opacity().0,
-                                        filter.current_color,
-                                        None,
-                                        None,
-                                        self.session(),
-                                    )
+                                filter
+                                    .stroke_paint_source
                                     .to_user_space(&bbox.rect, &params, values),
                             );
-
                             let fill_paint_source = Rc::new(
-                                values
-                                    .fill()
-                                    .0
-                                    .resolve(
-                                        acquired_nodes,
-                                        values.fill_opacity().0,
-                                        filter.current_color,
-                                        None,
-                                        None,
-                                        self.session(),
-                                    )
+                                filter
+                                    .fill_paint_source
                                     .to_user_space(&bbox.rect, &params, values),
                             );
 

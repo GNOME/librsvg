@@ -153,24 +153,58 @@ pub struct FontProperties {
 pub struct Filter {
     pub filter_list: FilterValueList,
     pub current_color: RGBA,
+    pub stroke_paint_source: Arc<PaintSource>,
+    pub fill_paint_source: Arc<PaintSource>,
 }
 
-fn get_filter(values: &ComputedValues) -> Option<Filter> {
+fn get_filter(
+    values: &ComputedValues,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    session: &Session,
+) -> Option<Filter> {
     match values.filter() {
         properties::Filter::None => None,
 
-        properties::Filter::List(filter_list) => {
-            Some(get_filter_from_filter_list(filter_list, values))
-        }
+        properties::Filter::List(filter_list) => Some(get_filter_from_filter_list(
+            filter_list,
+            acquired_nodes,
+            values,
+            session,
+        )),
     }
 }
 
-fn get_filter_from_filter_list(filter_list: FilterValueList, values: &ComputedValues) -> Filter {
+fn get_filter_from_filter_list(
+    filter_list: FilterValueList,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    values: &ComputedValues,
+    session: &Session,
+) -> Filter {
     let current_color = values.color().0;
+
+    let stroke_paint_source = values.stroke().0.resolve(
+        acquired_nodes,
+        values.stroke_opacity().0,
+        current_color,
+        None,
+        None,
+        session,
+    );
+
+    let fill_paint_source = values.fill().0.resolve(
+        acquired_nodes,
+        values.fill_opacity().0,
+        current_color,
+        None,
+        None,
+        session,
+    );
 
     Filter {
         filter_list,
         current_color,
+        stroke_paint_source,
+        fill_paint_source,
     }
 }
 
@@ -197,7 +231,7 @@ impl StackingContext {
 
             _ => {
                 opacity = values.opacity();
-                filter = get_filter(values);
+                filter = get_filter(values, acquired_nodes, session);
             }
         }
 
