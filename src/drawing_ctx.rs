@@ -1265,17 +1265,17 @@ impl DrawingCtx {
     ) -> Result<BoundingBox, RenderingError> {
         match &layer.kind {
             LayerKind::Shape(shape) => self.draw_shape(
-                &shape,
+                shape,
                 &layer.stacking_ctx,
                 acquired_nodes,
                 values,
                 clipping,
             ),
             LayerKind::Text(text) => {
-                self.draw_text(&text, &layer.stacking_ctx, acquired_nodes, values, clipping)
+                self.draw_text(text, &layer.stacking_ctx, acquired_nodes, values, clipping)
             }
             LayerKind::Image(image) => self.draw_image(
-                &image,
+                image,
                 &layer.stacking_ctx,
                 acquired_nodes,
                 values,
