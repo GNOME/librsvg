@@ -390,7 +390,6 @@ cargo_bench:
       - target/criterion
     expire_in: 1 week
 
-
 msys2-mingw64:
   stage: acceptance test
   tags:
@@ -445,6 +444,7 @@ reference:
   artifacts:
     paths:
       - public
+    expire_in: 1 day
 
 devel-docs:
   extends:
@@ -460,6 +460,7 @@ devel-docs:
   artifacts:
     paths:
       - public
+    expire_in: 1 day
 
 pages:
   stage: docs
@@ -481,5 +482,6 @@ pages:
   artifacts:
     paths:
       - public
+    expire_in: 1 day
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
