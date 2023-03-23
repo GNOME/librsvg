@@ -12,7 +12,6 @@ use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
-use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
@@ -355,12 +354,12 @@ impl ResolvedPattern {
         &self,
         object_bbox: &Option<Rect>,
         current_params: &ViewParams,
-        values: &ComputedValues,
+        values: &NormalizeValues,
     ) -> Option<UserSpacePattern> {
         let node_with_children = self.node_with_children()?;
 
         let view_params = current_params.with_units(self.units.0);
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::from_values(values, &view_params);
 
         let rect = self.get_rect(&params);
 

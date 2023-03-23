@@ -1,6 +1,5 @@
 //! The main context structure which drives the drawing process.
 
-use cssparser::RGBA;
 use float_cmp::approx_eq;
 use glib::translate::*;
 use once_cell::sync::Lazy;
@@ -22,11 +21,12 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
 use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, RenderingError};
-use crate::filter::FilterValueList;
 use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
-use crate::layout::{Image, Shape, StackingContext, Stroke, Text, TextSpan};
+use crate::layout::{
+    Filter, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
+};
 use crate::length::*;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
@@ -34,8 +34,8 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, Filter, Isolation, MaskType, MixBlendMode, Opacity,
-    Overflow, PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, ComputedValues, FillRule, MaskType, MixBlendMode, Opacity, Overflow, PaintTarget,
+    ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
@@ -358,11 +358,34 @@ impl DrawingCtx {
         *self.initial_viewport.vbox
     }
 
+    /// Gets the transform that will be used on the target surface,
+    /// whether using an isolated stacking context or not.
+    ///
+    /// This is only used in the text code, and we should probably try
+    /// to remove it.
+    pub fn get_transform_for_stacking_ctx(
+        &self,
+        stacking_ctx: &StackingContext,
+        clipping: bool,
+    ) -> Result<ValidTransform, RenderingError> {
+        if stacking_ctx.should_isolate() && !clipping {
+            let affines = CompositingAffines::new(
+                *self.get_transform(),
+                self.initial_viewport.transform,
+                self.cr_stack.borrow().len(),
+            );
+
+            Ok(ValidTransform::try_from(affines.for_temporary_surface)?)
+        } else {
+            Ok(self.get_transform())
+        }
+    }
+
     pub fn is_measuring(&self) -> bool {
         self.measuring
     }
 
-    fn get_transform(&self) -> ValidTransform {
+    pub fn get_transform(&self) -> ValidTransform {
         let t = Transform::from(self.cr.matrix());
         ValidTransform::try_from(t)
             .expect("Cairo should already have checked that its current transform is valid")
@@ -668,10 +691,9 @@ impl DrawingCtx {
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                values,
                 false,
                 None,
-                &mut |an, dc, _transform| mask_node.draw_children(an, &cascaded, dc, false),
+                &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
             );
 
             res?;
@@ -693,13 +715,11 @@ impl DrawingCtx {
         &mut self,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
         clip_rect: Option<Rect>,
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
-            &ValidTransform,
         ) -> Result<BoundingBox, RenderingError>,
     ) -> Result<BoundingBox, RenderingError> {
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
@@ -708,8 +728,7 @@ impl DrawingCtx {
         self.cr.transform(stacking_ctx_transform.into());
 
         let res = if clipping {
-            let current_transform = self.get_transform();
-            draw_fn(acquired_nodes, self, &current_transform)
+            draw_fn(acquired_nodes, self)
         } else {
             with_saved_cr(&self.cr.clone(), || {
                 if let Some(ref link_target) = stacking_ctx.link_target {
@@ -731,17 +750,7 @@ impl DrawingCtx {
                     &self.empty_bbox(),
                 )?;
 
-                let should_isolate = match stacking_ctx.isolation {
-                    Isolation::Auto => {
-                        let is_opaque = approx_eq!(f64, opacity, 1.0);
-                        !(is_opaque
-                            && stacking_ctx.filter == Filter::None
-                            && stacking_ctx.mask.is_none()
-                            && stacking_ctx.mix_blend_mode == MixBlendMode::Normal
-                            && stacking_ctx.clip_in_object_space.is_none())
-                    }
-                    Isolation::Isolate => true,
-                };
+                let should_isolate = stacking_ctx.should_isolate();
 
                 let res = if should_isolate {
                     // Compute our assortment of affines
@@ -755,11 +764,11 @@ impl DrawingCtx {
                     // Create temporary surface and its cr
 
                     let cr = match stacking_ctx.filter {
-                        Filter::None => cairo::Context::new(
+                        None => cairo::Context::new(
                             &self
                                 .create_similar_surface_for_toplevel_viewport(&self.cr.target())?,
                         )?,
-                        Filter::List(_) => {
+                        Some(_) => {
                             cairo::Context::new(self.create_surface_for_toplevel_viewport()?)?
                         }
                     };
@@ -771,12 +780,7 @@ impl DrawingCtx {
 
                         // Draw!
 
-                        let temporary_transform = temporary_draw_ctx.get_transform();
-                        let res = draw_fn(
-                            acquired_nodes,
-                            &mut temporary_draw_ctx,
-                            &temporary_transform,
-                        );
+                        let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
 
                         let bbox = if let Ok(ref bbox) = res {
                             *bbox
@@ -784,68 +788,45 @@ impl DrawingCtx {
                             BoundingBox::new().with_transform(affines.for_temporary_surface)
                         };
 
-                        if let Filter::List(ref filter_list) = stacking_ctx.filter {
+                        if let Some(ref filter) = stacking_ctx.filter {
                             let surface_to_filter = SharedImageSurface::copy_from_surface(
                                 &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target())
                                     .unwrap(),
                             )?;
 
-                            let current_color = values.color().0;
-
                             let params = temporary_draw_ctx.get_view_params();
 
-                            // TODO: the stroke/fill paint are already resolved for shapes.  Outside of shapes,
-                            // they are also needed for filters in all elements.  Maybe we should make them part
-                            // of the StackingContext instead of Shape?
-                            let stroke_paint_source = Rc::new(
-                                values
-                                    .stroke()
-                                    .0
-                                    .resolve(
-                                        acquired_nodes,
-                                        values.stroke_opacity().0,
-                                        current_color,
-                                        None,
-                                        None,
-                                        self.session(),
-                                    )
-                                    .to_user_space(&bbox.rect, &params, values),
-                            );
-
-                            let fill_paint_source = Rc::new(
-                                values
-                                    .fill()
-                                    .0
-                                    .resolve(
-                                        acquired_nodes,
-                                        values.fill_opacity().0,
-                                        current_color,
-                                        None,
-                                        None,
-                                        self.session(),
-                                    )
-                                    .to_user_space(&bbox.rect, &params, values),
-                            );
+                            let stroke_paint_source =
+                                Rc::new(filter.stroke_paint_source.to_user_space(
+                                    &bbox.rect,
+                                    &params,
+                                    &filter.normalize_values,
+                                ));
+                            let fill_paint_source =
+                                Rc::new(filter.fill_paint_source.to_user_space(
+                                    &bbox.rect,
+                                    &params,
+                                    &filter.normalize_values,
+                                ));
 
                             // Filter functions (like "blend()", not the <filter> element) require
                             // being resolved in userSpaceonUse units, since that is the default
                             // for primitive_units.  So, get the corresponding NormalizeParams
                             // here and pass them down.
-                            let user_space_params = NormalizeParams::new(
-                                values,
+                            let user_space_params = NormalizeParams::from_values(
+                                &filter.normalize_values,
                                 &params.with_units(CoordUnits::UserSpaceOnUse),
                             );
 
                             let filtered_surface = temporary_draw_ctx
                                 .run_filters(
                                     surface_to_filter,
-                                    filter_list,
+                                    filter,
                                     acquired_nodes,
                                     &stacking_ctx.element_name,
                                     &user_space_params,
                                     stroke_paint_source,
                                     fill_paint_source,
-                                    current_color,
                                     bbox,
                                 )?
                                 .into_image_surface()?;
@@ -916,8 +897,7 @@ impl DrawingCtx {
                     self.cr.set_matrix(affine_at_start.into());
                     res
                 } else {
-                    let current_transform = self.get_transform();
-                    draw_fn(acquired_nodes, self, &current_transform)
+                    draw_fn(acquired_nodes, self)
                 };
 
                 if stacking_ctx.link_target.is_some() {
@@ -968,13 +948,12 @@ impl DrawingCtx {
     fn run_filters(
         &mut self,
         surface_to_filter: SharedImageSurface,
-        filter_list: &FilterValueList,
+        filter: &Filter,
         acquired_nodes: &mut AcquiredNodes<'_>,
         node_name: &str,
         user_space_params: &NormalizeParams,
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
-        current_color: RGBA,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
         // We try to convert each item in the filter_list to a FilterSpec.
@@ -985,13 +964,14 @@ impl DrawingCtx {
         //
         // So, run through the filter_list and collect into a Result<Vec<FilterSpec>>.
         // This will return an Err if any of the conversions failed.
-        let filter_specs = filter_list
+        let filter_specs = filter
+            .filter_list
             .iter()
             .map(|filter_value| {
                 filter_value.to_filter_spec(
                     acquired_nodes,
                     user_space_params,
-                    current_color,
+                    filter.current_color,
                     self,
                     node_name,
                 )
@@ -1148,12 +1128,9 @@ impl DrawingCtx {
                     dc.with_discrete_layer(
                         &stacking_ctx,
                         acquired_nodes,
-                        pattern_values,
                         false,
                         None,
-                        &mut |an, dc, _transform| {
-                            pattern_node.draw_children(an, &pattern_cascaded, dc, false)
-                        },
+                        &mut |an, dc| pattern_node.draw_children(an, &pattern_cascaded, dc, false),
                     )
                 })
                 .map(|_| ())?;
@@ -1278,12 +1255,30 @@ impl DrawingCtx {
         Ok(Some(Rect::new(x0, y0, x1, y1)))
     }
 
-    pub fn draw_shape(
+    pub fn draw_layer(
+        &mut self,
+        layer: &Layer,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        clipping: bool,
+    ) -> Result<BoundingBox, RenderingError> {
+        match &layer.kind {
+            LayerKind::Shape(shape) => {
+                self.draw_shape(shape, &layer.stacking_ctx, acquired_nodes, clipping)
+            }
+            LayerKind::Text(text) => {
+                self.draw_text(text, &layer.stacking_ctx, acquired_nodes, clipping)
+            }
+            LayerKind::Image(image) => {
+                self.draw_image(image, &layer.stacking_ctx, acquired_nodes, clipping)
+            }
+        }
+    }
+
+    fn draw_shape(
         &mut self,
         shape: &Shape,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if shape.extents.is_none() {
@@ -1293,13 +1288,14 @@ impl DrawingCtx {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             None,
-            &mut |an, dc, transform| {
+            &mut |an, dc| {
                 let cr = dc.cr.clone();
+
+                let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
                 let mut path_helper =
-                    PathHelper::new(&cr, *transform, &shape.path, shape.stroke.line_cap);
+                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
 
                 if clipping {
                     if shape.is_visible {
@@ -1390,12 +1386,11 @@ impl DrawingCtx {
         cr.paint()
     }
 
-    pub fn draw_image(
+    fn draw_image(
         &mut self,
         image: &Image,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
-        values: &ComputedValues,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let image_width = image.surface.width();
@@ -1425,10 +1420,9 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 stacking_ctx,
                 acquired_nodes,
-                values,
                 clipping,
                 None,
-                &mut |_an, dc, _transform| {
+                &mut |_an, dc| {
                     with_saved_cr(&dc.cr.clone(), || {
                         if let Some(_params) =
                             dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
@@ -1542,20 +1536,29 @@ impl DrawingCtx {
         })
     }
 
-    pub fn draw_text(
+    fn draw_text(
         &mut self,
         text: &Text,
+        stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
-        let mut bbox = self.empty_bbox();
+        self.with_discrete_layer(
+            stacking_ctx,
+            acquired_nodes,
+            clipping,
+            None,
+            &mut |an, dc| {
+                let mut bbox = dc.empty_bbox();
 
-        for span in &text.spans {
-            let span_bbox = self.draw_text_span(span, acquired_nodes, clipping)?;
-            bbox.insert(&span_bbox);
-        }
+                for span in &text.spans {
+                    let span_bbox = dc.draw_text_span(span, an, clipping)?;
+                    bbox.insert(&span_bbox);
+                }
 
-        Ok(bbox)
+                Ok(bbox)
+            },
+        )
     }
 
     pub fn get_snapshot(
@@ -1776,10 +1779,9 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                values,
                 clipping,
                 None,
-                &mut |an, dc, _transform| {
+                &mut |an, dc| {
                     let _params =
                         dc.push_new_viewport(viewbox, use_rect, preserve_aspect_ratio, clip_mode);
 
@@ -1810,10 +1812,9 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                values,
                 clipping,
                 None,
-                &mut |an, dc, _transform| {
+                &mut |an, dc| {
                     child.draw(
                         an,
                         &CascadedValues::new_from_values(

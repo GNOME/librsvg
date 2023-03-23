@@ -15,7 +15,6 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
 use crate::parsers::{Parse, ParseValue};
-use crate::properties::ComputedValues;
 use crate::rect::{rect_to_transform, Rect};
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
@@ -656,12 +655,12 @@ impl ResolvedGradient {
         &self,
         object_bbox: &Option<Rect>,
         current_params: &ViewParams,
-        values: &ComputedValues,
+        values: &NormalizeValues,
     ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
         let transform = rect_to_transform(object_bbox, units).ok()?;
         let view_params = current_params.with_units(units);
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::from_values(values, &view_params);
 
         let gradient_transform = self.transform.to_transform();
         let transform = transform.pre_transform(&gradient_transform).invert()?;

@@ -191,10 +191,9 @@ impl Marker {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
-            values,
             clipping,
             clip,
-            &mut |an, dc, _transform| node.draw_children(an, &cascaded, dc, clipping),
+            &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
         )
     }
 }

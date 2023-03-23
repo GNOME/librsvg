@@ -12,7 +12,7 @@ use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
-use crate::layout::{self, FontProperties, StackingContext, Stroke, TextSpan};
+use crate::layout::{self, FontProperties, Layer, LayerKind, StackingContext, Stroke, TextSpan};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::PaintSource;
@@ -783,98 +783,100 @@ impl ElementTrait for Text {
             values,
         );
 
-        draw_ctx.with_discrete_layer(
-            &stacking_ctx,
-            acquired_nodes,
-            values,
-            clipping,
-            None,
-            &mut |an, dc, transform| {
-                let layout_context = LayoutContext {
-                    writing_mode: values.writing_mode(),
-                    transform: *transform,
-                    font_options: dc.get_font_options(),
-                    view_params: dc.get_view_params(),
-                    session: dc.session().clone(),
+        let layout_text = {
+            let transform = draw_ctx.get_transform_for_stacking_ctx(&stacking_ctx, clipping)?;
+
+            let layout_context = LayoutContext {
+                writing_mode: values.writing_mode(),
+                transform,
+                font_options: draw_ctx.get_font_options(),
+                view_params,
+                session: draw_ctx.session().clone(),
+            };
+
+            let mut x = self.x.to_user(&params);
+            let mut y = self.y.to_user(&params);
+
+            let chunks = self.make_chunks(node, acquired_nodes, cascaded, &layout_context, x, y);
+
+            let mut measured_chunks = Vec::new();
+            for chunk in &chunks {
+                measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
+            }
+
+            let mut positioned_chunks = Vec::new();
+            for chunk in &measured_chunks {
+                let chunk_x = chunk.x.unwrap_or(x);
+                let chunk_y = chunk.y.unwrap_or(y);
+
+                let positioned =
+                    PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
+
+                x = positioned.next_chunk_x;
+                y = positioned.next_chunk_y;
+
+                positioned_chunks.push(positioned);
+            }
+
+            let mut layout_spans = Vec::new();
+            for chunk in &positioned_chunks {
+                for span in &chunk.spans {
+                    layout_spans.push(span.layout(&layout_context, acquired_nodes));
+                }
+            }
+
+            let empty_bbox = BoundingBox::new().with_transform(*transform);
+
+            let text_bbox = layout_spans.iter().fold(empty_bbox, |mut bbox, span| {
+                if let Some(ref span_bbox) = span.bbox {
+                    bbox.insert(span_bbox);
+                }
+
+                bbox
+            });
+
+            let mut text_spans = Vec::new();
+            for span in layout_spans {
+                let normalize_values = NormalizeValues::new(&span.values);
+
+                let stroke_paint = span.stroke_paint.to_user_space(
+                    &text_bbox.rect,
+                    &layout_context.view_params,
+                    &normalize_values,
+                );
+                let fill_paint = span.fill_paint.to_user_space(
+                    &text_bbox.rect,
+                    &layout_context.view_params,
+                    &normalize_values,
+                );
+
+                let text_span = TextSpan {
+                    layout: span.layout,
+                    gravity: span.gravity,
+                    bbox: span.bbox,
+                    is_visible: span.is_visible,
+                    x: span.x,
+                    y: span.y,
+                    paint_order: span.paint_order,
+                    stroke: span.stroke,
+                    stroke_paint,
+                    fill_paint,
+                    text_rendering: span.text_rendering,
+                    link_target: span.link_target,
                 };
 
-                let mut x = self.x.to_user(&params);
-                let mut y = self.y.to_user(&params);
+                text_spans.push(text_span);
+            }
 
-                let chunks = self.make_chunks(node, an, cascaded, &layout_context, x, y);
+            layout::Text { spans: text_spans }
+        };
 
-                let mut measured_chunks = Vec::new();
-                for chunk in &chunks {
-                    measured_chunks.push(MeasuredChunk::from_chunk(&layout_context, chunk));
-                }
+        let layer = Layer {
+            kind: LayerKind::Text(Box::new(layout_text)),
+            stacking_ctx,
+        };
 
-                let mut positioned_chunks = Vec::new();
-                for chunk in &measured_chunks {
-                    let chunk_x = chunk.x.unwrap_or(x);
-                    let chunk_y = chunk.y.unwrap_or(y);
-
-                    let positioned =
-                        PositionedChunk::from_measured(&layout_context, chunk, chunk_x, chunk_y);
-
-                    x = positioned.next_chunk_x;
-                    y = positioned.next_chunk_y;
-
-                    positioned_chunks.push(positioned);
-                }
-
-                let mut layout_spans = Vec::new();
-                for chunk in &positioned_chunks {
-                    for span in &chunk.spans {
-                        layout_spans.push(span.layout(&layout_context, an));
-                    }
-                }
-
-                let empty_bbox = BoundingBox::new().with_transform(**transform);
-
-                let text_bbox = layout_spans.iter().fold(empty_bbox, |mut bbox, span| {
-                    if let Some(ref span_bbox) = span.bbox {
-                        bbox.insert(span_bbox);
-                    }
-
-                    bbox
-                });
-
-                let mut text_spans = Vec::new();
-                for span in layout_spans {
-                    let stroke_paint = span.stroke_paint.to_user_space(
-                        &text_bbox.rect,
-                        &layout_context.view_params,
-                        &span.values,
-                    );
-                    let fill_paint = span.fill_paint.to_user_space(
-                        &text_bbox.rect,
-                        &layout_context.view_params,
-                        &span.values,
-                    );
-
-                    let text_span = TextSpan {
-                        layout: span.layout,
-                        gravity: span.gravity,
-                        bbox: span.bbox,
-                        is_visible: span.is_visible,
-                        x: span.x,
-                        y: span.y,
-                        paint_order: span.paint_order,
-                        stroke: span.stroke,
-                        stroke_paint,
-                        fill_paint,
-                        text_rendering: span.text_rendering,
-                        link_target: span.link_target,
-                    };
-
-                    text_spans.push(text_span);
-                }
-
-                let text_layout = layout::Text { spans: text_spans };
-
-                dc.draw_text(&text_layout, an, clipping)
-            },
-        )
+        draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
     }
 }
 

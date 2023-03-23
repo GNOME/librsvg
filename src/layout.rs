@@ -5,18 +5,22 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
+use cssparser::RGBA;
+use float_cmp::approx_eq;
+
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::dasharray::Dasharray;
 use crate::document::AcquiredNodes;
 use crate::element::{Element, ElementData};
+use crate::filter::FilterValueList;
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::Path;
 use crate::properties::{
-    ClipRule, ComputedValues, Direction, FillRule, Filter, FontFamily, FontStretch, FontStyle,
+    self, ClipRule, ComputedValues, Direction, FillRule, FontFamily, FontStretch, FontStyle,
     FontVariant, FontWeight, Isolation, MixBlendMode, Opacity, Overflow, PaintOrder,
     ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
     TextDecoration, TextRendering, UnicodeBidi, VectorEffect, XmlLang,
@@ -44,7 +48,7 @@ pub struct StackingContext {
     pub element_name: String,
     pub transform: Transform,
     pub opacity: Opacity,
-    pub filter: Filter,
+    pub filter: Option<Filter>,
     pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
@@ -53,6 +57,17 @@ pub struct StackingContext {
 
     /// Target from an <a> element
     pub link_target: Option<String>,
+}
+
+/// The item being rendered inside a stacking context.
+pub struct Layer {
+    pub kind: LayerKind,
+    pub stacking_ctx: StackingContext,
+}
+pub enum LayerKind {
+    Shape(Box<Shape>),
+    Text(Box<Text>),
+    Image(Box<Image>),
 }
 
 /// Stroke parameters in user-space coordinates.
@@ -135,6 +150,68 @@ pub struct FontProperties {
     pub text_decoration: TextDecoration,
 }
 
+pub struct Filter {
+    pub filter_list: FilterValueList,
+    pub current_color: RGBA,
+    pub stroke_paint_source: Arc<PaintSource>,
+    pub fill_paint_source: Arc<PaintSource>,
+    pub normalize_values: NormalizeValues,
+}
+
+fn get_filter(
+    values: &ComputedValues,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    session: &Session,
+) -> Option<Filter> {
+    match values.filter() {
+        properties::Filter::None => None,
+
+        properties::Filter::List(filter_list) => Some(get_filter_from_filter_list(
+            filter_list,
+            acquired_nodes,
+            values,
+            session,
+        )),
+    }
+}
+
+fn get_filter_from_filter_list(
+    filter_list: FilterValueList,
+    acquired_nodes: &mut AcquiredNodes<'_>,
+    values: &ComputedValues,
+    session: &Session,
+) -> Filter {
+    let current_color = values.color().0;
+
+    let stroke_paint_source = values.stroke().0.resolve(
+        acquired_nodes,
+        values.stroke_opacity().0,
+        current_color,
+        None,
+        None,
+        session,
+    );
+
+    let fill_paint_source = values.fill().0.resolve(
+        acquired_nodes,
+        values.fill_opacity().0,
+        current_color,
+        None,
+        None,
+        session,
+    );
+
+    let normalize_values = NormalizeValues::new(values);
+
+    Filter {
+        filter_list,
+        current_color,
+        stroke_paint_source,
+        fill_paint_source,
+        normalize_values,
+    }
+}
+
 impl StackingContext {
     pub fn new(
         session: &Session,
@@ -153,12 +230,12 @@ impl StackingContext {
             // https://drafts.fxtf.org/css-masking-1/#MaskElement
             ElementData::Mask(_) => {
                 opacity = Opacity(UnitInterval::clamp(1.0));
-                filter = Filter::None;
+                filter = None;
             }
 
             _ => {
                 opacity = values.opacity();
-                filter = values.filter();
+                filter = get_filter(values, acquired_nodes, session);
             }
         }
 
@@ -240,6 +317,21 @@ impl StackingContext {
         let mut ctx = Self::new(session, acquired_nodes, element, transform, values);
         ctx.link_target = link_target;
         ctx
+    }
+
+    pub fn should_isolate(&self) -> bool {
+        let Opacity(UnitInterval(opacity)) = self.opacity;
+        match self.isolation {
+            Isolation::Auto => {
+                let is_opaque = approx_eq!(f64, opacity, 1.0);
+                !(is_opaque
+                    && self.filter.is_none()
+                    && self.mask.is_none()
+                    && self.mix_blend_mode == MixBlendMode::Normal
+                    && self.clip_in_object_space.is_none())
+            }
+            Isolation::Isolate => true,
+        }
     }
 }
 

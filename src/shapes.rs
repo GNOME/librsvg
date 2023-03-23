@@ -12,7 +12,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
-use crate::layout::{Marker, Shape, StackingContext, Stroke};
+use crate::layout::{Layer, LayerKind, Marker, Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
@@ -118,10 +118,12 @@ fn draw_basic_shape(
 
     let extents = draw_ctx.compute_path_extents(&shape_def.path)?;
 
-    let stroke_paint = stroke_paint.to_user_space(&extents, &view_params, values);
-    let fill_paint = fill_paint.to_user_space(&extents, &view_params, values);
+    let normalize_values = NormalizeValues::new(values);
 
-    let shape = Shape {
+    let stroke_paint = stroke_paint.to_user_space(&extents, &view_params, &normalize_values);
+    let fill_paint = fill_paint.to_user_space(&extents, &view_params, &normalize_values);
+
+    let shape = Box::new(Shape {
         path: shape_def.path,
         extents,
         is_visible,
@@ -135,7 +137,7 @@ fn draw_basic_shape(
         marker_start,
         marker_mid,
         marker_end,
-    };
+    });
 
     let elt = node.borrow_element();
     let stacking_ctx = StackingContext::new(
@@ -146,7 +148,12 @@ fn draw_basic_shape(
         values,
     );
 
-    draw_ctx.draw_shape(&shape, &stacking_ctx, acquired_nodes, values, clipping)
+    let layer = Layer {
+        kind: LayerKind::Shape(shape),
+        stacking_ctx,
+    };
+
+    draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
 }
 
 macro_rules! impl_draw {

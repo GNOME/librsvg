@@ -9,7 +9,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
-use crate::layout::{self, StackingContext};
+use crate::layout::{self, Layer, LayerKind, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
@@ -92,13 +92,13 @@ impl ElementTrait for Image {
 
         let overflow = values.overflow();
 
-        let image = layout::Image {
+        let image = Box::new(layout::Image {
             surface,
             is_visible,
             rect,
             aspect: self.aspect,
             overflow,
-        };
+        });
 
         let elt = node.borrow_element();
         let stacking_ctx = StackingContext::new(
@@ -109,6 +109,11 @@ impl ElementTrait for Image {
             values,
         );
 
-        draw_ctx.draw_image(&image, &stacking_ctx, acquired_nodes, values, clipping)
+        let layer = Layer {
+            kind: LayerKind::Image(image),
+            stacking_ctx,
+        };
+
+        draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
     }
 }

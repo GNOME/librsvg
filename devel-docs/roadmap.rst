@@ -17,7 +17,7 @@ Short term
   offsetting for layers with opacity.  Solving this should make it easier to fix the root
   cause of `issue #1 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_, where librsvg
   cannot compute arbitrary regions for filter effects and it only takes the user-specified
-  viewport into account.
+  viewport into account.  See :doc:`render_tree` for details on this.
 
 - Continue with the revamp of :doc:`text_layout`.
 
