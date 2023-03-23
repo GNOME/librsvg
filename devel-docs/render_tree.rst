@@ -1,6 +1,57 @@
 Render tree
 ===========
 
+For historical reasons, librsvg's code flow during rendering is as
+follows.  The rendering code traverses the SVG tree of elements, and
+for each one, its ``::draw()`` method is called; its signature looks
+like this (some arguments omitted):
+
+.. code-block:: rust
+
+    pub fn draw(
+        &self,
+        ...
+        draw_ctx: &mut DrawingCtx,
+    ) -> Result<BoundingBox, RenderingError> { ... }
+
+The draw() methods perform the actual rendering as side effects on the
+``draw_ctx``, and return a ``BoundingBox``.  That is, the bounding box of
+an element is computed at the same time that it is rendered.  This is
+suboptimal for several reasons:
+
+- Many things that happen during rendering depend on knowing the
+  bounding box.  For example, gradients, patterns, and filters with
+  units set to ``objectBoundingBox`` need to know the bounds.  The
+  rendering code in drawing_ctx.rs is cluttered because it must
+  resolve bounding boxes very late.
+
+- This is especially problematic for filters, since a Cairo surface
+  needs to be created *before* rendering, and that surface should have
+  a size relative to the bounding box of the element being filtered!
+  `Bug #1 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_ is
+  precisely about this: librsvg instead creates a temporary surface as
+  big as the document's toplevel viewport and filters it, but this
+  doesn't work well for filters like Gaussian blur that should
+  actually reference pixels outside of the document's area (think of a
+  shape that extends past the document's area, which then gets
+  blurred).
+
+- The way for an element to signal that it is not drawable
+  (e.g. ``<defs>`` is by returning an empty bounding box and not
+  rendering anything.  This is awkward.
+
+- When rendering to a temporary surface for filtering or masking,
+  there is a set of affine transformations that needs to be maintained
+  carefully: an affine for the clipping path outside the temporary
+  surface, an affine for drawing inside the surface, an affine to
+  composite the surface into the final result.  This is hard to
+  understand and hard to test.
+
+These problems can be solved by having a **render tree**.
+
+What is a render tree?
+----------------------
+
 As of 2022/Oct/06, librsvg does not compute a render tree data
 structure prior to rendering.  Instead, in a very 2000s fashion, it
 walks the tree of elements and calls a ``.draw()`` method for each
