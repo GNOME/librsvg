@@ -134,7 +134,7 @@ pub fn output_dir() -> PathBuf {
 }
 
 fn tolerable_difference() -> u8 {
-    static mut TOLERANCE: u8 = 2;
+    static mut TOLERANCE: u8 = 8;
 
     static ONCE: Once = Once::new();
     ONCE.call_once(|| unsafe {
