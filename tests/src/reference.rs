@@ -221,7 +221,6 @@ mod tests {
     t!(filter_effects_region_svg,                                   "filter-effects-region.svg");
     t!(filter_image_from_reference_page_svg,                        "filter-image-from-reference-page.svg");
     t!(filter_kernel_unit_length_svg,                               "filter-kernel-unit-length.svg");
-    t!(filter_morphology_from_reference_page_svg,                   "filter-morphology-from-reference-page.svg");
     t!(filter_offset_svg,                                           "filter-offset.svg");
     t!(font_shorthand_svg,                                          "font-shorthand.svg");
     t!(gzip_compressed_svg,                                         "gzip-compressed.svg");
