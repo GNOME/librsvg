@@ -121,8 +121,8 @@ impl Marker {
 
         let values = cascaded.get();
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let viewport = draw_ctx.get_viewport();
+        let params = NormalizeParams::new(values, &viewport);
 
         let marker_width = self.width.to_user(&params);
         let marker_height = self.height.to_user(&params);
@@ -151,7 +151,7 @@ impl Marker {
             transform = transform.pre_scale(line_width, line_width);
         }
 
-        let content_view_params = if let Some(vbox) = self.vbox {
+        let content_viewport = if let Some(vbox) = self.vbox {
             if vbox.is_empty() {
                 return Ok(draw_ctx.empty_bbox());
             }
@@ -168,7 +168,7 @@ impl Marker {
             draw_ctx.push_view_box(marker_width, marker_height)
         };
 
-        let content_params = NormalizeParams::new(values, &content_view_params);
+        let content_params = NormalizeParams::new(values, &content_viewport);
 
         transform = transform.pre_translate(
             -self.ref_x.to_user(&content_params),

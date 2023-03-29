@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
+use crate::drawing_ctx::{ClipMode, DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -219,11 +219,11 @@ impl Svg {
         node: &Node,
         cascaded: &CascadedValues<'_>,
         draw_ctx: &mut DrawingCtx,
-    ) -> Option<ViewParams> {
+    ) -> Option<Viewport> {
         let values = cascaded.get();
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let current_viewport = draw_ctx.get_viewport();
+        let params = NormalizeParams::new(values, &current_viewport);
 
         let has_parent = node.parent().is_some();
 
@@ -381,8 +381,8 @@ impl ElementTrait for Use {
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(link) = self.link.as_ref() {
             let values = cascaded.get();
-            let view_params = draw_ctx.get_view_params();
-            let params = NormalizeParams::new(values, &view_params);
+            let viewport = draw_ctx.get_viewport();
+            let params = NormalizeParams::new(values, &viewport);
             let rect = self.get_rect(&params);
 
             let stroke_paint = values.stroke().0.resolve(

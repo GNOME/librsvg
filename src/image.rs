@@ -71,8 +71,8 @@ impl ElementTrait for Image {
 
         let values = cascaded.get();
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let viewport = draw_ctx.get_viewport();
+        let params = NormalizeParams::new(values, &viewport);
 
         let x = values.x().0.to_user(&params);
         let y = values.y().0.to_user(&params);

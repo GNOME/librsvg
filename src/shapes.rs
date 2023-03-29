@@ -51,8 +51,8 @@ fn draw_basic_shape(
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
     let values = cascaded.get();
-    let view_params = draw_ctx.get_view_params();
-    let params = NormalizeParams::new(values, &view_params);
+    let viewport = draw_ctx.get_viewport();
+    let params = NormalizeParams::new(values, &viewport);
     let shape_def = basic_shape.make_shape(&params, values);
 
     let is_visible = values.is_visible();
@@ -120,8 +120,8 @@ fn draw_basic_shape(
 
     let normalize_values = NormalizeValues::new(values);
 
-    let stroke_paint = stroke_paint.to_user_space(&extents, &view_params, &normalize_values);
-    let fill_paint = fill_paint.to_user_space(&extents, &view_params, &normalize_values);
+    let stroke_paint = stroke_paint.to_user_space(&extents, &viewport, &normalize_values);
+    let fill_paint = fill_paint.to_user_space(&extents, &viewport, &normalize_values);
 
     let shape = Box::new(Shape {
         path: shape_def.path,

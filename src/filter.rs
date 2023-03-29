@@ -6,7 +6,7 @@ use std::slice::Iter;
 
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{DrawingCtx, ViewParams};
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
@@ -131,22 +131,22 @@ impl FilterValue {
 /// pre-compute both cases and pass them around.
 ///
 /// This struct needs a better name; I didn't want to make it seem specific to filters by
-/// calling `FiltersViewParams` or `FilterCollectionProcessViewParams`.  Maybe the
-/// original [`ViewParams`] should be this struct, with both cases included...
-pub struct ViewParamsGen {
-    object_bounding_box: ViewParams,
-    user_space_on_use: ViewParams,
+/// calling `FiltersViewport` or `FilterCollectionProcessViewport`.  Maybe the
+/// original [`Viewport`] should be this struct, with both cases included...
+struct ViewportGen {
+    object_bounding_box: Viewport,
+    user_space_on_use: Viewport,
 }
 
-impl ViewParamsGen {
+impl ViewportGen {
     pub fn new(draw_ctx: &DrawingCtx) -> Self {
-        ViewParamsGen {
-            object_bounding_box: draw_ctx.get_view_params_for_units(CoordUnits::ObjectBoundingBox),
-            user_space_on_use: draw_ctx.get_view_params_for_units(CoordUnits::UserSpaceOnUse),
+        ViewportGen {
+            object_bounding_box: draw_ctx.get_viewport_for_units(CoordUnits::ObjectBoundingBox),
+            user_space_on_use: draw_ctx.get_viewport_for_units(CoordUnits::UserSpaceOnUse),
         }
     }
 
-    fn get(&self, units: CoordUnits) -> &ViewParams {
+    fn get(&self, units: CoordUnits) -> &Viewport {
         match units {
             CoordUnits::ObjectBoundingBox => &self.object_bounding_box,
             CoordUnits::UserSpaceOnUse => &self.user_space_on_use,
@@ -158,7 +158,7 @@ fn extract_filter_from_filter_node(
     filter_node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     session: &Session,
-    filter_view_params: &ViewParamsGen,
+    filter_view_params: &ViewportGen,
 ) -> Result<FilterSpec, FilterResolveError> {
     assert!(is_element_of_type!(filter_node, Filter));
 
@@ -226,7 +226,7 @@ fn filter_spec_from_filter_node(
 ) -> Result<FilterSpec, FilterResolveError> {
     let session = draw_ctx.session().clone();
 
-    let filter_view_params = ViewParamsGen::new(draw_ctx);
+    let filter_view_params = ViewportGen::new(draw_ctx);
 
     acquired_nodes
         .acquire(node_id)

@@ -48,7 +48,7 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use crate::dpi::Dpi;
-use crate::drawing_ctx::ViewParams;
+use crate::drawing_ctx::Viewport;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
 use crate::properties::{ComputedValues, FontSize};
@@ -327,17 +327,17 @@ pub struct NormalizeParams {
 
 impl NormalizeParams {
     /// Extracts the information needed to normalize [`Length`] values from a set of
-    /// [`ComputedValues`] and the viewport size in [`ViewParams`].
-    pub fn new(values: &ComputedValues, params: &ViewParams) -> NormalizeParams {
+    /// [`ComputedValues`] and the viewport size in [`Viewport`].
+    pub fn new(values: &ComputedValues, viewport: &Viewport) -> NormalizeParams {
         let v = NormalizeValues::new(values);
-        NormalizeParams::from_values(&v, params)
+        NormalizeParams::from_values(&v, viewport)
     }
 
-    pub fn from_values(v: &NormalizeValues, params: &ViewParams) -> NormalizeParams {
+    pub fn from_values(v: &NormalizeValues, viewport: &Viewport) -> NormalizeParams {
         NormalizeParams {
-            vbox: params.vbox,
-            font_size: font_size_from_values(v, params.dpi),
-            dpi: params.dpi,
+            vbox: viewport.vbox,
+            font_size: font_size_from_values(v, viewport.dpi),
+            dpi: viewport.dpi,
         }
     }
 
@@ -641,7 +641,7 @@ mod tests {
 
     #[test]
     fn normalize_default_works() {
-        let view_params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 100.0);
+        let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 100.0);
         let values = ComputedValues::default();
         let params = NormalizeParams::new(&values, &view_params);
 
@@ -653,7 +653,7 @@ mod tests {
 
     #[test]
     fn normalize_absolute_units_works() {
-        let view_params = ViewParams::new(Dpi::new(40.0, 50.0), 100.0, 100.0);
+        let view_params = Viewport::new(Dpi::new(40.0, 50.0), 100.0, 100.0);
         let values = ComputedValues::default();
         let params = NormalizeParams::new(&values, &view_params);
 
@@ -686,7 +686,7 @@ mod tests {
 
     #[test]
     fn normalize_percent_works() {
-        let view_params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
+        let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
         let values = ComputedValues::default();
         let params = NormalizeParams::new(&values, &view_params);
 
@@ -702,7 +702,7 @@ mod tests {
 
     #[test]
     fn normalize_font_em_ex_works() {
-        let view_params = ViewParams::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
+        let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
         let values = ComputedValues::default();
         let params = NormalizeParams::new(&values, &view_params);
 

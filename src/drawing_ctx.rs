@@ -47,58 +47,6 @@ use crate::transform::{Transform, ValidTransform};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
 
-/// Holds values that are required to normalize `CssLength` values to a current viewport.
-///
-/// This struct is created by calling `DrawingCtx::push_view_box()` or
-/// `DrawingCtx::get_view_params()`.
-///
-/// This struct holds the size of the current viewport in the user's coordinate system.  A
-/// viewport pushed with `DrawingCtx::push_view_box()` will remain in place until the
-/// returned `ViewParams` is dropped; at that point, the `DrawingCtx` will resume using its
-/// previous viewport.
-pub struct ViewParams {
-    pub dpi: Dpi,
-    pub vbox: ViewBox,
-    viewport_stack: Option<Weak<RefCell<Vec<Viewport>>>>,
-}
-
-impl ViewParams {
-    pub fn new(dpi: Dpi, view_box_width: f64, view_box_height: f64) -> ViewParams {
-        ViewParams {
-            dpi,
-            vbox: ViewBox::from(Rect::from_size(view_box_width, view_box_height)),
-            viewport_stack: None,
-        }
-    }
-
-    pub fn with_units(&self, units: CoordUnits) -> ViewParams {
-        match units {
-            CoordUnits::ObjectBoundingBox => ViewParams {
-                dpi: self.dpi,
-                vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
-                viewport_stack: None,
-            },
-
-            CoordUnits::UserSpaceOnUse => ViewParams {
-                dpi: self.dpi,
-                vbox: self.vbox,
-                viewport_stack: None,
-            },
-        }
-    }
-}
-
-impl Drop for ViewParams {
-    fn drop(&mut self) {
-        if let Some(ref weak_stack) = self.viewport_stack {
-            let stack = weak_stack
-                .upgrade()
-                .expect("A ViewParams was dropped after its DrawingCtx!?");
-            stack.borrow_mut().pop();
-        }
-    }
-}
-
 /// Opaque font options for a DrawingCtx.
 ///
 /// This is used for DrawingCtx::create_pango_context.
@@ -161,13 +109,60 @@ impl<'a> PathHelper<'a> {
     }
 }
 
-#[derive(Copy, Clone)]
-struct Viewport {
+/// Holds the size of the current viewport in the user's coordinate system.
+#[derive(Clone)]
+pub struct Viewport {
+    pub dpi: Dpi,
+
+    /// Corners of the current coordinate space.
+    pub vbox: ViewBox,
+
     /// The viewport's coordinate system, or "user coordinate system" in SVG terms.
     transform: Transform,
 
-    /// Corners of the current coordinate space.
-    vbox: ViewBox,
+    viewport_stack: Option<Weak<RefCell<Vec<Viewport>>>>,
+}
+
+impl Drop for Viewport {
+    fn drop(&mut self) {
+        if let Some(ref weak_stack) = self.viewport_stack {
+            let stack = weak_stack
+                .upgrade()
+                .expect("A Viewport was dropped after its DrawingCtx!?");
+            stack.borrow_mut().pop();
+        }
+    }
+}
+
+impl Viewport {
+    /// FIXME: this is just used in Handle::with_height_to_user(), and in length.rs's test suite.
+    /// Find a way to do this without involving a default identity transform.
+    pub fn new(dpi: Dpi, view_box_width: f64, view_box_height: f64) -> Viewport {
+        Viewport {
+            dpi,
+            vbox: ViewBox::from(Rect::from_size(view_box_width, view_box_height)),
+            transform: Default::default(),
+            viewport_stack: None,
+        }
+    }
+
+    pub fn with_units(&self, units: CoordUnits) -> Viewport {
+        match units {
+            CoordUnits::ObjectBoundingBox => Viewport {
+                dpi: self.dpi,
+                vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
+                transform: self.transform,
+                viewport_stack: None,
+            },
+
+            CoordUnits::UserSpaceOnUse => Viewport {
+                dpi: self.dpi,
+                vbox: self.vbox,
+                transform: self.transform,
+                viewport_stack: None,
+            },
+        }
+    }
 }
 
 pub struct DrawingCtx {
@@ -303,9 +298,14 @@ impl DrawingCtx {
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
         let vbox = ViewBox::from(viewport);
-        let initial_viewport = Viewport { transform, vbox };
+        let initial_viewport = Viewport {
+            dpi,
+            vbox,
+            transform,
+            viewport_stack: None,
+        };
 
-        let viewport_stack = vec![initial_viewport];
+        let viewport_stack = vec![initial_viewport.clone()];
 
         DrawingCtx {
             session,
@@ -334,7 +334,7 @@ impl DrawingCtx {
 
         DrawingCtx {
             session: self.session.clone(),
-            initial_viewport: self.initial_viewport,
+            initial_viewport: self.initial_viewport.clone(),
             dpi: self.dpi,
             cr_stack,
             cr,
@@ -434,29 +434,37 @@ impl DrawingCtx {
 
     fn get_top_viewport(&self) -> Viewport {
         let viewport_stack = self.viewport_stack.borrow();
-        *viewport_stack
+        let viewport = viewport_stack
             .last()
-            .expect("viewport_stack must never be empty!")
+            .expect("viewport_stack must never be empty!");
+        Viewport {
+            viewport_stack: None,
+            ..*viewport
+        }
     }
 
     // Same as `push_coord_units` but doesn't leave the coordinate space pushed
-    pub fn get_view_params_for_units(&self, units: CoordUnits) -> ViewParams {
+    pub fn get_viewport_for_units(&self, units: CoordUnits) -> Viewport {
+        let transform = self.get_top_viewport().transform;
+
         match units {
-            CoordUnits::ObjectBoundingBox => ViewParams {
+            CoordUnits::ObjectBoundingBox => Viewport {
                 dpi: self.dpi,
                 vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
+                transform,
                 viewport_stack: None,
             },
 
-            CoordUnits::UserSpaceOnUse => ViewParams {
+            CoordUnits::UserSpaceOnUse => Viewport {
                 dpi: self.dpi,
                 vbox: self.get_top_viewport().vbox,
+                transform,
                 viewport_stack: None,
             },
         }
     }
 
-    pub fn push_coord_units(&self, units: CoordUnits) -> ViewParams {
+    pub fn push_coord_units(&self, units: CoordUnits) -> Viewport {
         match units {
             CoordUnits::ObjectBoundingBox => self.push_view_box(1.0, 1.0),
 
@@ -468,63 +476,65 @@ impl DrawingCtx {
         }
     }
 
-    /// Gets the viewport that was last pushed with `push_view_box()`.
-    pub fn get_view_params(&self) -> ViewParams {
-        let viewport = self.get_top_viewport();
-
-        ViewParams {
-            dpi: self.dpi,
-            vbox: viewport.vbox,
-            viewport_stack: None,
-        }
+    /// Gets the viewport that was last pushed.
+    pub fn get_viewport(&self) -> Viewport {
+        self.get_top_viewport()
     }
 
-    fn push_viewport(&self, viewport: Viewport) -> ViewParams {
+    fn push_viewport(&self, viewport: Viewport) -> Viewport {
         let vbox = viewport.vbox;
+        let transform = viewport.transform;
 
         self.viewport_stack.borrow_mut().push(viewport);
 
-        ViewParams {
+        Viewport {
             dpi: self.dpi,
             vbox,
+            transform,
             viewport_stack: Some(Rc::downgrade(&self.viewport_stack)),
         }
     }
 
     /// Pushes a viewport size for normalizing `Length` values.
     ///
-    /// With the returned `ViewParams`, plus a `ComputedValues`, you can create a
+    /// With the returned `Viewport`, plus a `ComputedValues`, you can create a
     /// `NormalizeParams` that can be used with calls to `CssLength.to_user()` that
     /// correspond to this viewport.
     ///
     /// The viewport will stay in place, and will be the one returned by
-    /// `get_view_params()`, until the returned `ViewParams` is dropped.
-    pub fn push_view_box(&self, width: f64, height: f64) -> ViewParams {
-        let Viewport { transform, .. } = self.get_top_viewport();
+    /// [`DrawingCtx::get_viewport()`], until the returned `Viewport` is dropped.
+    pub fn push_view_box(&self, width: f64, height: f64) -> Viewport {
+        let top_viewport = self.get_top_viewport();
 
         let vbox = ViewBox::from(Rect::from_size(width, height));
-        self.push_viewport(Viewport { transform, vbox })
+        let viewport = Viewport {
+            dpi: top_viewport.dpi,
+            vbox,
+            transform: top_viewport.transform,
+            viewport_stack: None,
+        };
+        self.push_viewport(viewport)
     }
 
     /// Creates a new coordinate space inside a viewport and sets a clipping rectangle.
     ///
     /// Note that this actually changes the `draw_ctx.cr`'s transformation to match
     /// the new coordinate space, but the old one is not restored after the
-    /// result's `ViewParams` is dropped.  Thus, this function must be called
+    /// result's `Viewport` is dropped.  Thus, this function must be called
     /// inside `with_saved_cr` or `draw_ctx.with_discrete_layer`.
     pub fn push_new_viewport(
         &self,
         vbox: Option<ViewBox>,
-        viewport: Rect,
+        viewport_rect: Rect,
         preserve_aspect_ratio: AspectRatio,
         clip_mode: ClipMode,
-    ) -> Option<ViewParams> {
+    ) -> Option<Viewport> {
         if let ClipMode::ClipToViewport = clip_mode {
-            clip_to_rectangle(&self.cr, &viewport);
+            clip_to_rectangle(&self.cr, &viewport_rect);
         }
 
         preserve_aspect_ratio
-            .viewport_to_viewbox_transform(vbox, &viewport)
+            .viewport_to_viewbox_transform(vbox, &viewport_rect)
             .unwrap_or_else(|_e| {
                 match vbox {
                     None => unreachable!(
@@ -549,8 +559,10 @@ impl DrawingCtx {
                 let top_viewport = self.get_top_viewport();
 
                 self.push_viewport(Viewport {
-                    transform: top_viewport.transform.post_transform(&t),
+                    dpi: self.dpi,
                     vbox: vbox.unwrap_or(top_viewport.vbox),
+                    transform: top_viewport.transform.post_transform(&t),
+                    viewport_stack: None,
                 })
             })
     }
@@ -631,7 +643,7 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let params = NormalizeParams::new(values, &self.get_view_params_for_units(mask_units));
+            let params = NormalizeParams::new(values, &self.get_viewport_for_units(mask_units));
             mask.get_rect(&params)
         };
 
@@ -674,7 +686,7 @@ impl DrawingCtx {
 
             // TODO: this is the last place where push_coord_units() is called.  The call to
             // draw_children below assumes that the new coordinate system is in place.  Can we
-            // pass the ViewParams to with_discrete_layer / Node::draw instead of having them
+            // pass the Viewport to with_discrete_layer / Node::draw instead of having them
             // assume the viewport from the DrawingCtx?
             let _params = self.push_coord_units(mask.get_content_units());
 
@@ -794,7 +806,7 @@ impl DrawingCtx {
                                     .unwrap(),
                             )?;
 
-                            let params = temporary_draw_ctx.get_view_params();
+                            let params = temporary_draw_ctx.get_viewport();
 
                             let stroke_paint_source =
                                 Rc::new(filter.stroke_paint_source.to_user_space(
@@ -1617,7 +1629,7 @@ impl DrawingCtx {
     ) -> Result<SharedImageSurface, RenderingError> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
-        let save_initial_viewport = self.initial_viewport;
+        let save_initial_viewport = self.initial_viewport.clone();
         let save_cr = self.cr.clone();
 
         {
@@ -1626,8 +1638,10 @@ impl DrawingCtx {
 
             self.cr = cr;
             self.initial_viewport = Viewport {
+                dpi: self.dpi,
                 transform: affine,
                 vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
+                viewport_stack: None,
             };
 
             let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, false)?;
