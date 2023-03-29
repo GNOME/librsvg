@@ -505,16 +505,11 @@ pub type Length<N> = CssLength<N, Signed>;
 /// Alias for `CssLength` types that are non negative
 pub type ULength<N> = CssLength<N, Unsigned>;
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub enum LengthOrAuto<N: Normalize> {
-    Length(CssLength<N, Unsigned>),
+    #[default]
     Auto,
-}
-
-impl<N: Normalize> Default for LengthOrAuto<N> {
-    fn default() -> Self {
-        LengthOrAuto::Auto
-    }
+    Length(CssLength<N, Unsigned>),
 }
 
 impl<N: Normalize> Parse for LengthOrAuto<N> {
