@@ -106,12 +106,14 @@ impl FilterValue {
         acquired_nodes: &mut AcquiredNodes<'_>,
         user_space_params: &NormalizeParams,
         current_color: RGBA,
+        viewport: &Viewport,
         draw_ctx: &DrawingCtx,
         node_being_filtered_name: &str,
     ) -> Result<FilterSpec, FilterResolveError> {
         match *self {
             FilterValue::Url(ref node_id) => filter_spec_from_filter_node(
                 acquired_nodes,
+                viewport,
                 draw_ctx,
                 node_id,
                 node_being_filtered_name,
@@ -139,10 +141,10 @@ struct ViewportGen {
 }
 
 impl ViewportGen {
-    pub fn new(draw_ctx: &DrawingCtx) -> Self {
+    pub fn new(viewport: &Viewport) -> Self {
         ViewportGen {
-            object_bounding_box: draw_ctx.get_viewport_for_units(CoordUnits::ObjectBoundingBox),
-            user_space_on_use: draw_ctx.get_viewport_for_units(CoordUnits::UserSpaceOnUse),
+            object_bounding_box: viewport.with_units(CoordUnits::ObjectBoundingBox),
+            user_space_on_use: viewport.with_units(CoordUnits::UserSpaceOnUse),
         }
     }
 
@@ -220,13 +222,14 @@ fn extract_filter_from_filter_node(
 
 fn filter_spec_from_filter_node(
     acquired_nodes: &mut AcquiredNodes<'_>,
+    viewport: &Viewport,
     draw_ctx: &DrawingCtx,
     node_id: &NodeId,
     node_being_filtered_name: &str,
 ) -> Result<FilterSpec, FilterResolveError> {
     let session = draw_ctx.session().clone();
 
-    let filter_view_params = ViewportGen::new(draw_ctx);
+    let filter_view_params = ViewportGen::new(viewport);
 
     acquired_nodes
         .acquire(node_id)

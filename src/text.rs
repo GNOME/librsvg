@@ -766,12 +766,12 @@ impl ElementTrait for Text {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        let viewport = draw_ctx.get_viewport();
-        let params = NormalizeParams::new(values, &viewport);
+        let params = NormalizeParams::new(values, viewport);
 
         let elt = node.borrow_element();
 
@@ -790,7 +790,7 @@ impl ElementTrait for Text {
                 writing_mode: values.writing_mode(),
                 transform,
                 font_options: draw_ctx.get_font_options(),
-                viewport,
+                viewport: viewport.clone(),
                 session: draw_ctx.session().clone(),
             };
 
@@ -876,7 +876,7 @@ impl ElementTrait for Text {
             stacking_ctx,
         };
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
+        draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
     }
 }
 

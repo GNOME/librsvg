@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
@@ -47,12 +47,12 @@ fn draw_basic_shape(
     node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
+    viewport: &Viewport,
     draw_ctx: &mut DrawingCtx,
     clipping: bool,
 ) -> Result<BoundingBox, RenderingError> {
     let values = cascaded.get();
-    let viewport = draw_ctx.get_viewport();
-    let params = NormalizeParams::new(values, &viewport);
+    let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
 
     let is_visible = values.is_visible();
@@ -120,8 +120,8 @@ fn draw_basic_shape(
 
     let normalize_values = NormalizeValues::new(values);
 
-    let stroke_paint = stroke_paint.to_user_space(&extents, &viewport, &normalize_values);
-    let fill_paint = fill_paint.to_user_space(&extents, &viewport, &normalize_values);
+    let stroke_paint = stroke_paint.to_user_space(&extents, viewport, &normalize_values);
+    let fill_paint = fill_paint.to_user_space(&extents, viewport, &normalize_values);
 
     let shape = Box::new(Shape {
         path: shape_def.path,
@@ -153,7 +153,7 @@ fn draw_basic_shape(
         stacking_ctx,
     };
 
-    draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
+    draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
 }
 
 macro_rules! impl_draw {
@@ -163,10 +163,19 @@ macro_rules! impl_draw {
             node: &Node,
             acquired_nodes: &mut AcquiredNodes<'_>,
             cascaded: &CascadedValues<'_>,
+            viewport: &Viewport,
             draw_ctx: &mut DrawingCtx,
             clipping: bool,
         ) -> Result<BoundingBox, RenderingError> {
-            draw_basic_shape(self, node, acquired_nodes, cascaded, draw_ctx, clipping)
+            draw_basic_shape(
+                self,
+                node,
+                acquired_nodes,
+                cascaded,
+                viewport,
+                draw_ctx,
+                clipping,
+            )
         }
     };
 }

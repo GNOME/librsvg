@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -50,6 +50,7 @@ impl ElementTrait for Image {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -71,8 +72,7 @@ impl ElementTrait for Image {
 
         let values = cascaded.get();
 
-        let viewport = draw_ctx.get_viewport();
-        let params = NormalizeParams::new(values, &viewport);
+        let params = NormalizeParams::new(values, viewport);
 
         let x = values.x().0.to_user(&params);
         let y = values.y().0.to_user(&params);
@@ -114,6 +114,6 @@ impl ElementTrait for Image {
             stacking_ctx,
         };
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
+        draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
     }
 }

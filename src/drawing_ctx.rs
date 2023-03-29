@@ -146,6 +146,16 @@ impl Viewport {
         }
     }
 
+    /// Creates a new viewport suitable for a certain kind of units.
+    ///
+    /// For `objectBoundingBox`, CSS lengths which are in percentages
+    /// refer to the size of the current viewport.  Librsvg implements
+    /// that by keeping the same current transformation matrix, and
+    /// setting a viewport size of (1.0, 1.0).
+    ///
+    /// For `userSpaceOnUse`, we just duplicate the current viewport,
+    /// since that kind of units means to use the current coordinate
+    /// system unchanged.
     pub fn with_units(&self, units: CoordUnits) -> Viewport {
         match units {
             CoordUnits::ObjectBoundingBox => Viewport {
@@ -161,6 +171,16 @@ impl Viewport {
                 transform: self.transform,
                 viewport_stack: None,
             },
+        }
+    }
+
+    /// Returns a viewport with a new size for normalizing `Length` values.
+    pub fn with_view_box(&self, width: f64, height: f64) -> Viewport {
+        Viewport {
+            dpi: self.dpi,
+            vbox: ViewBox::from(Rect::from_size(width, height)),
+            transform: self.transform,
+            viewport_stack: None,
         }
     }
 }
@@ -198,7 +218,7 @@ pub fn draw_tree(
     session: Session,
     mode: DrawingMode,
     cr: &cairo::Context,
-    viewport: Rect,
+    viewport_rect: Rect,
     user_language: &UserLanguage,
     dpi: Dpi,
     measuring: bool,
@@ -232,7 +252,7 @@ pub fn draw_tree(
     // the top/left of the viewport"
 
     // Translate so (0, 0) is at the viewport's upper-left corner.
-    let transform = user_transform.pre_translate(viewport.x0, viewport.y0);
+    let transform = user_transform.pre_translate(viewport_rect.x0, viewport_rect.y0);
 
     // Here we exit immediately if the transform is not valid, since we are in the
     // toplevel drawing function.  Downstream cases would simply not render the current
@@ -241,13 +261,18 @@ pub fn draw_tree(
     cr.set_matrix(valid_transform.into());
 
     // Per the spec, so the viewport has (0, 0) as upper-left.
-    let viewport = viewport.translate((-viewport.x0, -viewport.y0));
+    let viewport_rect = viewport_rect.translate((-viewport_rect.x0, -viewport_rect.y0));
+    let initial_viewport = Viewport {
+        dpi,
+        vbox: ViewBox::from(viewport_rect),
+        transform,
+        viewport_stack: None,
+    };
 
     let mut draw_ctx = DrawingCtx::new(
         session,
         cr,
-        transform,
-        viewport,
+        &initial_viewport,
         user_language.clone(),
         dpi,
         measuring,
@@ -255,7 +280,13 @@ pub fn draw_tree(
         drawsub_stack,
     );
 
-    let content_bbox = draw_ctx.draw_node_from_stack(&node, acquired_nodes, &cascaded, false)?;
+    let content_bbox = draw_ctx.draw_node_from_stack(
+        &node,
+        acquired_nodes,
+        &cascaded,
+        &initial_viewport,
+        false,
+    )?;
 
     user_bbox.insert(&content_bbox);
 
@@ -289,27 +320,18 @@ impl DrawingCtx {
     fn new(
         session: Session,
         cr: &cairo::Context,
-        transform: Transform,
-        viewport: Rect,
+        initial_viewport: &Viewport,
         user_language: UserLanguage,
         dpi: Dpi,
         measuring: bool,
         testing: bool,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
-        let vbox = ViewBox::from(viewport);
-        let initial_viewport = Viewport {
-            dpi,
-            vbox,
-            transform,
-            viewport_stack: None,
-        };
-
         let viewport_stack = vec![initial_viewport.clone()];
 
         DrawingCtx {
             session,
-            initial_viewport,
+            initial_viewport: initial_viewport.clone(),
             dpi,
             cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
@@ -432,90 +454,6 @@ impl DrawingCtx {
         )?)
     }
 
-    fn get_top_viewport(&self) -> Viewport {
-        let viewport_stack = self.viewport_stack.borrow();
-        let viewport = viewport_stack
-            .last()
-            .expect("viewport_stack must never be empty!");
-        Viewport {
-            viewport_stack: None,
-            ..*viewport
-        }
-    }
-
-    // Same as `push_coord_units` but doesn't leave the coordinate space pushed
-    pub fn get_viewport_for_units(&self, units: CoordUnits) -> Viewport {
-        let transform = self.get_top_viewport().transform;
-
-        match units {
-            CoordUnits::ObjectBoundingBox => Viewport {
-                dpi: self.dpi,
-                vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
-                transform,
-                viewport_stack: None,
-            },
-
-            CoordUnits::UserSpaceOnUse => Viewport {
-                dpi: self.dpi,
-                vbox: self.get_top_viewport().vbox,
-                transform,
-                viewport_stack: None,
-            },
-        }
-    }
-
-    pub fn push_coord_units(&self, units: CoordUnits) -> Viewport {
-        match units {
-            CoordUnits::ObjectBoundingBox => self.push_view_box(1.0, 1.0),
-
-            CoordUnits::UserSpaceOnUse => {
-                // Duplicate the topmost viewport;
-                let viewport = self.get_top_viewport();
-                self.push_viewport(viewport)
-            }
-        }
-    }
-
-    /// Gets the viewport that was last pushed.
-    pub fn get_viewport(&self) -> Viewport {
-        self.get_top_viewport()
-    }
-
-    fn push_viewport(&self, viewport: Viewport) -> Viewport {
-        let vbox = viewport.vbox;
-        let transform = viewport.transform;
-
-        self.viewport_stack.borrow_mut().push(viewport);
-
-        Viewport {
-            dpi: self.dpi,
-            vbox,
-            transform,
-            viewport_stack: Some(Rc::downgrade(&self.viewport_stack)),
-        }
-    }
-
-    /// Pushes a viewport size for normalizing `Length` values.
-    ///
-    /// With the returned `Viewport`, plus a `ComputedValues`, you can create a
-    /// `NormalizeParams` that can be used with calls to `CssLength.to_user()` that
-    /// correspond to this viewport.
-    ///
-    /// The viewport will stay in place, and will be the one returned by
-    /// [`DrawingCtx::get_viewport()`], until the returned `Viewport` is dropped.
-    pub fn push_view_box(&self, width: f64, height: f64) -> Viewport {
-        let top_viewport = self.get_top_viewport();
-
-        let vbox = ViewBox::from(Rect::from_size(width, height));
-        let viewport = Viewport {
-            dpi: top_viewport.dpi,
-            vbox,
-            transform: top_viewport.transform,
-            viewport_stack: None,
-        };
-        self.push_viewport(viewport)
-    }
-
     /// Creates a new coordinate space inside a viewport and sets a clipping rectangle.
     ///
     /// Note that this actually changes the `draw_ctx.cr`'s transformation to match
@@ -524,6 +462,7 @@ impl DrawingCtx {
     /// inside `with_saved_cr` or `draw_ctx.with_discrete_layer`.
     pub fn push_new_viewport(
         &self,
+        current_viewport: &Viewport,
         vbox: Option<ViewBox>,
         viewport_rect: Rect,
         preserve_aspect_ratio: AspectRatio,
@@ -556,14 +495,12 @@ impl DrawingCtx {
             .map(|t| {
                 self.cr.transform(t.into());
 
-                let top_viewport = self.get_top_viewport();
-
-                self.push_viewport(Viewport {
+                Viewport {
                     dpi: self.dpi,
-                    vbox: vbox.unwrap_or(top_viewport.vbox),
-                    transform: top_viewport.transform.post_transform(&t),
+                    vbox: vbox.unwrap_or(current_viewport.vbox),
+                    transform: current_viewport.transform.post_transform(&t),
                     viewport_stack: None,
-                })
+                }
             })
     }
 
@@ -571,6 +508,7 @@ impl DrawingCtx {
         &mut self,
         clip_node: &Option<Node>,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
         bbox: &BoundingBox,
     ) -> Result<(), RenderingError> {
         if clip_node.is_none() {
@@ -596,6 +534,7 @@ impl DrawingCtx {
                 child.draw(
                     acquired_nodes,
                     &CascadedValues::clone_with_node(&cascaded, &child),
+                    viewport,
                     self,
                     true,
                 )?;
@@ -612,6 +551,7 @@ impl DrawingCtx {
     fn generate_cairo_mask(
         &mut self,
         mask_node: &Node,
+        viewport: &Viewport,
         transform: Transform,
         bbox: &BoundingBox,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -643,7 +583,7 @@ impl DrawingCtx {
         let mask_units = mask.get_units();
 
         let mask_rect = {
-            let params = NormalizeParams::new(values, &self.get_viewport_for_units(mask_units));
+            let params = NormalizeParams::new(values, &viewport.with_units(mask_units));
             mask.get_rect(&params)
         };
 
@@ -684,11 +624,7 @@ impl DrawingCtx {
                 mask_cr.transform(ValidTransform::try_from(bbtransform)?.into());
             }
 
-            // TODO: this is the last place where push_coord_units() is called.  The call to
-            // draw_children below assumes that the new coordinate system is in place.  Can we
-            // pass the Viewport to with_discrete_layer / Node::draw instead of having them
-            // assume the viewport from the DrawingCtx?
-            let _params = self.push_coord_units(mask.get_content_units());
+            let mask_viewport = viewport.with_units(mask.get_content_units());
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
@@ -703,9 +639,10 @@ impl DrawingCtx {
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
+                &mask_viewport,
                 false,
                 None,
-                &mut |an, dc| mask_node.draw_children(an, &cascaded, dc, false),
+                &mut |an, dc| mask_node.draw_children(an, &cascaded, &mask_viewport, dc, false),
             );
 
             res?;
@@ -727,6 +664,7 @@ impl DrawingCtx {
         &mut self,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
         clipping: bool,
         clip_rect: Option<Rect>,
         draw_fn: &mut dyn FnMut(
@@ -759,6 +697,7 @@ impl DrawingCtx {
                 self.clip_to_node(
                     &stacking_ctx.clip_in_user_space,
                     acquired_nodes,
+                    viewport,
                     &self.empty_bbox(),
                 )?;
 
@@ -806,18 +745,16 @@ impl DrawingCtx {
                                     .unwrap(),
                             )?;
 
-                            let params = temporary_draw_ctx.get_viewport();
-
                             let stroke_paint_source =
                                 Rc::new(filter.stroke_paint_source.to_user_space(
                                     &bbox.rect,
-                                    &params,
+                                    viewport,
                                     &filter.normalize_values,
                                 ));
                             let fill_paint_source =
                                 Rc::new(filter.fill_paint_source.to_user_space(
                                     &bbox.rect,
-                                    &params,
+                                    viewport,
                                     &filter.normalize_values,
                                 ));
 
@@ -827,11 +764,12 @@ impl DrawingCtx {
                             // here and pass them down.
                             let user_space_params = NormalizeParams::from_values(
                                 &filter.normalize_values,
-                                &params.with_units(CoordUnits::UserSpaceOnUse),
+                                &viewport.with_units(CoordUnits::UserSpaceOnUse),
                             );
 
                             let filtered_surface = temporary_draw_ctx
                                 .run_filters(
+                                    viewport,
                                     surface_to_filter,
                                     filter,
                                     acquired_nodes,
@@ -862,7 +800,12 @@ impl DrawingCtx {
                     self.cr.set_matrix(
                         ValidTransform::try_from(affines.outside_temporary_surface)?.into(),
                     );
-                    self.clip_to_node(&stacking_ctx.clip_in_object_space, acquired_nodes, &bbox)?;
+                    self.clip_to_node(
+                        &stacking_ctx.clip_in_object_space,
+                        acquired_nodes,
+                        viewport,
+                        &bbox,
+                    )?;
 
                     // Mask
 
@@ -870,6 +813,7 @@ impl DrawingCtx {
                         res = res.and_then(|bbox| {
                             self.generate_cairo_mask(
                                 mask_node,
+                                viewport,
                                 affines.for_temporary_surface,
                                 &bbox,
                                 acquired_nodes,
@@ -959,6 +903,7 @@ impl DrawingCtx {
 
     fn run_filters(
         &mut self,
+        viewport: &Viewport,
         surface_to_filter: SharedImageSurface,
         filter: &Filter,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -984,6 +929,7 @@ impl DrawingCtx {
                     acquired_nodes,
                     user_space_params,
                     filter.current_color,
+                    viewport,
                     self,
                     node_name,
                 )
@@ -1115,12 +1061,21 @@ impl DrawingCtx {
         let cr_pattern = cairo::Context::new(&surface)?;
 
         // Set up transformations to be determined by the contents units
-        cr_pattern.set_matrix(ValidTransform::try_from(caffine)?.into());
+
+        let transform = ValidTransform::try_from(caffine)?;
+        cr_pattern.set_matrix(transform.into());
 
         // Draw everything
 
         {
             let mut pattern_draw_ctx = self.nested(cr_pattern);
+
+            let pattern_viewport = Viewport {
+                dpi: self.dpi,
+                vbox: ViewBox::from(Rect::from_size(pattern.width, pattern.height)),
+                transform: *transform,
+                viewport_stack: None,
+            };
 
             pattern_draw_ctx
                 .with_alpha(pattern.opacity, &mut |dc| {
@@ -1140,9 +1095,18 @@ impl DrawingCtx {
                     dc.with_discrete_layer(
                         &stacking_ctx,
                         acquired_nodes,
+                        &pattern_viewport,
                         false,
                         None,
-                        &mut |an, dc| pattern_node.draw_children(an, &pattern_cascaded, dc, false),
+                        &mut |an, dc| {
+                            pattern_node.draw_children(
+                                an,
+                                &pattern_cascaded,
+                                &pattern_viewport,
+                                dc,
+                                false,
+                            )
+                        },
                     )
                 })
                 .map(|_| ())?;
@@ -1272,17 +1236,30 @@ impl DrawingCtx {
         layer: &Layer,
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
+        viewport: &Viewport,
     ) -> Result<BoundingBox, RenderingError> {
         match &layer.kind {
-            LayerKind::Shape(shape) => {
-                self.draw_shape(shape, &layer.stacking_ctx, acquired_nodes, clipping)
-            }
-            LayerKind::Text(text) => {
-                self.draw_text(text, &layer.stacking_ctx, acquired_nodes, clipping)
-            }
-            LayerKind::Image(image) => {
-                self.draw_image(image, &layer.stacking_ctx, acquired_nodes, clipping)
-            }
+            LayerKind::Shape(shape) => self.draw_shape(
+                shape,
+                &layer.stacking_ctx,
+                acquired_nodes,
+                clipping,
+                viewport,
+            ),
+            LayerKind::Text(text) => self.draw_text(
+                text,
+                &layer.stacking_ctx,
+                acquired_nodes,
+                clipping,
+                viewport,
+            ),
+            LayerKind::Image(image) => self.draw_image(
+                image,
+                &layer.stacking_ctx,
+                acquired_nodes,
+                clipping,
+                viewport,
+            ),
         }
     }
 
@@ -1292,6 +1269,7 @@ impl DrawingCtx {
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
+        viewport: &Viewport,
     ) -> Result<BoundingBox, RenderingError> {
         if shape.extents.is_none() {
             return Ok(self.empty_bbox());
@@ -1300,6 +1278,7 @@ impl DrawingCtx {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
+            viewport,
             clipping,
             None,
             &mut |an, dc| {
@@ -1361,7 +1340,9 @@ impl DrawingCtx {
 
                             PaintTarget::Markers => {
                                 path_helper.unset();
-                                marker::render_markers_for_shape(shape, dc, an, clipping)?;
+                                marker::render_markers_for_shape(
+                                    shape, viewport, dc, an, clipping,
+                                )?;
                             }
                         }
                     }
@@ -1404,6 +1385,7 @@ impl DrawingCtx {
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
+        viewport: &Viewport,
     ) -> Result<BoundingBox, RenderingError> {
         let image_width = image.surface.width();
         let image_height = image.surface.height();
@@ -1432,13 +1414,18 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 stacking_ctx,
                 acquired_nodes,
+                viewport, // FIXME: should this be the push_new_viewport below?
                 clipping,
                 None,
                 &mut |_an, dc| {
                     with_saved_cr(&dc.cr.clone(), || {
-                        if let Some(_params) =
-                            dc.push_new_viewport(Some(vbox), image.rect, image.aspect, clip_mode)
-                        {
+                        if let Some(_params) = dc.push_new_viewport(
+                            viewport,
+                            Some(vbox),
+                            image.rect,
+                            image.aspect,
+                            clip_mode,
+                        ) {
                             dc.paint_surface(&image.surface, image_width, image_height)?;
                         }
 
@@ -1554,10 +1541,12 @@ impl DrawingCtx {
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
         clipping: bool,
+        viewport: &Viewport,
     ) -> Result<BoundingBox, RenderingError> {
         self.with_discrete_layer(
             stacking_ctx,
             acquired_nodes,
+            viewport,
             clipping,
             None,
             &mut |an, dc| {
@@ -1629,7 +1618,6 @@ impl DrawingCtx {
     ) -> Result<SharedImageSurface, RenderingError> {
         let surface = cairo::ImageSurface::create(cairo::Format::ARgb32, width, height)?;
 
-        let save_initial_viewport = self.initial_viewport.clone();
         let save_cr = self.cr.clone();
 
         {
@@ -1637,18 +1625,17 @@ impl DrawingCtx {
             cr.set_matrix(ValidTransform::try_from(affine)?.into());
 
             self.cr = cr;
-            self.initial_viewport = Viewport {
+            let viewport = Viewport {
                 dpi: self.dpi,
                 transform: affine,
                 vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
                 viewport_stack: None,
             };
 
-            let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, false)?;
+            let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport, false)?;
         }
 
         self.cr = save_cr;
-        self.initial_viewport = save_initial_viewport;
 
         Ok(SharedImageSurface::wrap(surface, SurfaceType::SRgb)?)
     }
@@ -1658,6 +1645,7 @@ impl DrawingCtx {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let stack_top = self.drawsub_stack.pop();
@@ -1669,7 +1657,7 @@ impl DrawingCtx {
         };
 
         let res = if draw {
-            node.draw(acquired_nodes, cascaded, self, clipping)
+            node.draw(acquired_nodes, cascaded, viewport, self, clipping)
         } else {
             Ok(self.empty_bbox())
         };
@@ -1689,6 +1677,7 @@ impl DrawingCtx {
         use_rect: Rect,
         link: &NodeId,
         clipping: bool,
+        viewport: &Viewport,
         fill_paint: Arc<PaintSource>,
         stroke_paint: Arc<PaintSource>,
     ) -> Result<BoundingBox, RenderingError> {
@@ -1793,23 +1782,32 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
+                viewport, // FIXME: should this be the child_viewport from below?
                 clipping,
                 None,
                 &mut |an, dc| {
-                    let _params =
-                        dc.push_new_viewport(viewbox, use_rect, preserve_aspect_ratio, clip_mode);
-
-                    child.draw_children(
-                        an,
-                        &CascadedValues::new_from_values(
-                            child,
-                            values,
-                            Some(fill_paint.clone()),
-                            Some(stroke_paint.clone()),
-                        ),
-                        dc,
-                        clipping,
-                    )
+                    if let Some(child_viewport) = dc.push_new_viewport(
+                        viewport,
+                        viewbox,
+                        use_rect,
+                        preserve_aspect_ratio,
+                        clip_mode,
+                    ) {
+                        child.draw_children(
+                            an,
+                            &CascadedValues::new_from_values(
+                                child,
+                                values,
+                                Some(fill_paint.clone()),
+                                Some(stroke_paint.clone()),
+                            ),
+                            &child_viewport,
+                            dc,
+                            clipping,
+                        )
+                    } else {
+                        Ok(dc.empty_bbox())
+                    }
                 },
             )
         } else {
@@ -1826,6 +1824,7 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
+                viewport,
                 clipping,
                 None,
                 &mut |an, dc| {
@@ -1837,6 +1836,7 @@ impl DrawingCtx {
                             Some(fill_paint.clone()),
                             Some(stroke_paint.clone()),
                         ),
+                        viewport,
                         dc,
                         clipping,
                     )

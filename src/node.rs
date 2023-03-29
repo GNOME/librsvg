@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::*;
 use crate::error::*;
 use crate::paint_server::PaintSource;
@@ -307,6 +307,7 @@ pub trait NodeDraw {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError>;
@@ -315,6 +316,7 @@ pub trait NodeDraw {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError>;
@@ -325,12 +327,13 @@ impl NodeDraw for Node {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         match *self.borrow() {
             NodeData::Element(ref e) => {
-                match e.draw(self, acquired_nodes, cascaded, draw_ctx, clipping) {
+                match e.draw(self, acquired_nodes, cascaded, viewport, draw_ctx, clipping) {
                     Ok(bbox) => Ok(bbox),
 
                     // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
@@ -352,6 +355,7 @@ impl NodeDraw for Node {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -362,6 +366,7 @@ impl NodeDraw for Node {
                 &child,
                 acquired_nodes,
                 &CascadedValues::clone_with_node(cascaded, &child),
+                viewport,
                 clipping,
             )?;
             bbox.insert(&child_bbox);

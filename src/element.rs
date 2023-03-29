@@ -10,7 +10,7 @@ use crate::bbox::BoundingBox;
 use crate::cond::{RequiredExtensions, RequiredFeatures, SystemLanguage};
 use crate::css::{Declaration, Origin};
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::error::*;
 use crate::filter::Filter;
 use crate::filters::{
@@ -63,6 +63,7 @@ pub trait ElementTrait {
         _node: &Node,
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _cascaded: &CascadedValues<'_>,
+        _viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -372,13 +373,14 @@ impl Element {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
         if values.is_displayed() {
             self.element_data
-                .draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
+                .draw(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
         } else {
             Ok(draw_ctx.empty_bbox())
         }
@@ -393,6 +395,7 @@ impl ElementData {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -454,7 +457,7 @@ impl ElementData {
             FeTurbulence(d) =>         &**d,
         };
 
-        data.draw(node, acquired_nodes, cascaded, draw_ctx, clipping)
+        data.draw(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
     }
 }
 
