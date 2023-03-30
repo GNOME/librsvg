@@ -68,8 +68,9 @@ pub struct Transform {
 /// The `transform` property from the CSS Transforms Module Level 1.
 ///
 /// CSS Transforms 1: <https://www.w3.org/TR/css-transforms-1/#transform-property>
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub enum TransformProperty {
+    #[default]
     None,
     List(Vec<TransformFunction>),
 }
@@ -79,12 +80,6 @@ pub enum TransformProperty {
 /// SVG1.1: <https://www.w3.org/TR/SVG11/coords.html#TransformAttribute>
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub struct TransformAttribute(Transform);
-
-impl Default for TransformProperty {
-    fn default() -> Self {
-        TransformProperty::None
-    }
-}
 
 impl Property for TransformProperty {
     fn inherits_automatically() -> bool {
