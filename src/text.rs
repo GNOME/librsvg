@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, ViewParams};
+use crate::drawing_ctx::{create_pango_context, DrawingCtx, FontOptions, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::layout::{self, FontProperties, Layer, LayerKind, StackingContext, Stroke, TextSpan};
@@ -39,7 +39,7 @@ struct LayoutContext {
     font_options: FontOptions,
 
     /// For normalizing lengths.
-    view_params: ViewParams,
+    viewport: Viewport,
 
     /// Session metadata for the document
     session: Session,
@@ -193,7 +193,7 @@ impl PositionedChunk {
         let mut chunk_bounds: Option<Rect> = None;
 
         for mspan in &measured.spans {
-            let params = NormalizeParams::new(&mspan.values, &layout_context.view_params);
+            let params = NormalizeParams::new(&mspan.values, &layout_context.viewport);
 
             let layout = mspan.layout.clone();
             let layout_size = mspan.layout_size;
@@ -359,7 +359,7 @@ impl MeasuredSpan {
     fn from_span(layout_context: &LayoutContext, span: &Span) -> Option<MeasuredSpan> {
         let values = span.values.clone();
 
-        let params = NormalizeParams::new(&values, &layout_context.view_params);
+        let params = NormalizeParams::new(&values, &layout_context.viewport);
 
         let properties = FontProperties::new(&values, &params);
 
@@ -454,7 +454,7 @@ impl PositionedSpan {
         layout_context: &LayoutContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
     ) -> LayoutSpan {
-        let params = NormalizeParams::new(&self.values, &layout_context.view_params);
+        let params = NormalizeParams::new(&self.values, &layout_context.viewport);
 
         let layout = self.layout.clone();
         let is_visible = self.values.is_visible();
@@ -726,7 +726,7 @@ impl Text {
         let mut chunks = Vec::new();
 
         let values = cascaded.get();
-        let params = NormalizeParams::new(values, &layout_context.view_params);
+        let params = NormalizeParams::new(values, &layout_context.viewport);
 
         chunks.push(Chunk::new(values, Some(x), Some(y)));
 
@@ -766,12 +766,12 @@ impl ElementTrait for Text {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         let values = cascaded.get();
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, viewport);
 
         let elt = node.borrow_element();
 
@@ -790,7 +790,7 @@ impl ElementTrait for Text {
                 writing_mode: values.writing_mode(),
                 transform,
                 font_options: draw_ctx.get_font_options(),
-                view_params,
+                viewport: viewport.clone(),
                 session: draw_ctx.session().clone(),
             };
 
@@ -841,12 +841,12 @@ impl ElementTrait for Text {
 
                 let stroke_paint = span.stroke_paint.to_user_space(
                     &text_bbox.rect,
-                    &layout_context.view_params,
+                    &layout_context.viewport,
                     &normalize_values,
                 );
                 let fill_paint = span.fill_paint.to_user_space(
                     &text_bbox.rect,
-                    &layout_context.view_params,
+                    &layout_context.viewport,
                     &normalize_values,
                 );
 
@@ -876,7 +876,7 @@ impl ElementTrait for Text {
             stacking_ctx,
         };
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, clipping)
+        draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
     }
 }
 
@@ -977,7 +977,7 @@ impl TSpan {
             return;
         }
 
-        let params = NormalizeParams::new(values, &layout_context.view_params);
+        let params = NormalizeParams::new(values, &layout_context.viewport);
 
         let x = self.x.map(|l| l.to_user(&params));
         let y = self.y.map(|l| l.to_user(&params));

@@ -7,7 +7,7 @@ use markup5ever::{
 
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
-use crate::drawing_ctx::ViewParams;
+use crate::drawing_ctx::Viewport;
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -654,12 +654,12 @@ impl ResolvedGradient {
     pub fn to_user_space(
         &self,
         object_bbox: &Option<Rect>,
-        current_params: &ViewParams,
+        viewport: &Viewport,
         values: &NormalizeValues,
     ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
         let transform = rect_to_transform(object_bbox, units).ok()?;
-        let view_params = current_params.with_units(units);
+        let view_params = viewport.with_units(units);
         let params = NormalizeParams::from_values(values, &view_params);
 
         let gradient_transform = self.transform.to_transform();

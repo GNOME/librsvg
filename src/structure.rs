@@ -6,7 +6,7 @@ use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{ClipMode, DrawingCtx, ViewParams};
+use crate::drawing_ctx::{ClipMode, DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -29,6 +29,7 @@ impl ElementTrait for Group {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -46,9 +47,10 @@ impl ElementTrait for Group {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
+            viewport,
             clipping,
             None,
-            &mut |an, dc| node.draw_children(an, cascaded, dc, clipping),
+            &mut |an, dc| node.draw_children(an, cascaded, viewport, dc, clipping),
         )
     }
 }
@@ -72,6 +74,7 @@ impl ElementTrait for Switch {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -89,6 +92,7 @@ impl ElementTrait for Switch {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
+            viewport,
             clipping,
             None,
             &mut |an, dc| {
@@ -99,6 +103,7 @@ impl ElementTrait for Switch {
                     child.draw(
                         an,
                         &CascadedValues::clone_with_node(cascaded, &child),
+                        viewport,
                         dc,
                         clipping,
                     )
@@ -214,16 +219,16 @@ impl Svg {
         self.preserve_aspect_ratio
     }
 
-    fn push_viewport(
+    fn make_svg_viewport(
         &self,
         node: &Node,
         cascaded: &CascadedValues<'_>,
+        current_viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Option<ViewParams> {
+    ) -> Option<Viewport> {
         let values = cascaded.get();
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, current_viewport);
 
         let has_parent = node.parent().is_some();
 
@@ -262,7 +267,13 @@ impl Svg {
             )
         };
 
-        draw_ctx.push_new_viewport(vbox, viewport, self.preserve_aspect_ratio, clip_mode)
+        draw_ctx.push_new_viewport(
+            current_viewport,
+            vbox,
+            viewport,
+            self.preserve_aspect_ratio,
+            clip_mode,
+        )
     }
 }
 
@@ -286,6 +297,7 @@ impl ElementTrait for Svg {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -303,11 +315,15 @@ impl ElementTrait for Svg {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
+            viewport, // FIXME: should this be the svg_viewport from below?
             clipping,
             None,
             &mut |an, dc| {
-                let _params = self.push_viewport(node, cascaded, dc);
-                node.draw_children(an, cascaded, dc, clipping)
+                if let Some(svg_viewport) = self.make_svg_viewport(node, cascaded, viewport, dc) {
+                    node.draw_children(an, cascaded, &svg_viewport, dc, clipping)
+                } else {
+                    Ok(dc.empty_bbox())
+                }
             },
         )
     }
@@ -376,13 +392,13 @@ impl ElementTrait for Use {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
         if let Some(link) = self.link.as_ref() {
             let values = cascaded.get();
-            let view_params = draw_ctx.get_view_params();
-            let params = NormalizeParams::new(values, &view_params);
+            let params = NormalizeParams::new(values, viewport);
             let rect = self.get_rect(&params);
 
             let stroke_paint = values.stroke().0.resolve(
@@ -410,6 +426,7 @@ impl ElementTrait for Use {
                 rect,
                 link,
                 clipping,
+                viewport,
                 fill_paint,
                 stroke_paint,
             )
@@ -569,6 +586,7 @@ impl ElementTrait for Link {
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
         cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, RenderingError> {
@@ -605,9 +623,10 @@ impl ElementTrait for Link {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
+            viewport,
             clipping,
             None,
-            &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
+            &mut |an, dc| node.draw_children(an, &cascaded, viewport, dc, clipping),
         )
     }
 }

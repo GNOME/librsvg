@@ -10,7 +10,7 @@ use crate::angle::Angle;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::DrawingCtx;
+use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::float_eq_cairo::ApproxEqCairo;
@@ -106,6 +106,7 @@ impl Marker {
         &self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         xpos: f64,
         ypos: f64,
@@ -121,8 +122,7 @@ impl Marker {
 
         let values = cascaded.get();
 
-        let view_params = draw_ctx.get_view_params();
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, viewport);
 
         let marker_width = self.width.to_user(&params);
         let marker_height = self.height.to_user(&params);
@@ -151,7 +151,7 @@ impl Marker {
             transform = transform.pre_scale(line_width, line_width);
         }
 
-        let content_view_params = if let Some(vbox) = self.vbox {
+        let content_viewport = if let Some(vbox) = self.vbox {
             if vbox.is_empty() {
                 return Ok(draw_ctx.empty_bbox());
             }
@@ -163,12 +163,12 @@ impl Marker {
             let (vb_width, vb_height) = vbox.size();
             transform = transform.pre_scale(r.width() / vb_width, r.height() / vb_height);
 
-            draw_ctx.push_view_box(vb_width, vb_height)
+            viewport.with_view_box(vb_width, vb_height)
         } else {
-            draw_ctx.push_view_box(marker_width, marker_height)
+            viewport.with_view_box(marker_width, marker_height)
         };
 
-        let content_params = NormalizeParams::new(values, &content_view_params);
+        let content_params = NormalizeParams::new(values, &content_viewport);
 
         transform = transform.pre_translate(
             -self.ref_x.to_user(&content_params),
@@ -188,12 +188,14 @@ impl Marker {
         let stacking_ctx =
             StackingContext::new(draw_ctx.session(), acquired_nodes, &elt, transform, values);
 
+        // FIXME: use content_viewport
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
+            &content_viewport,
             clipping,
             clip,
-            &mut |an, dc| node.draw_children(an, &cascaded, dc, clipping),
+            &mut |an, dc| node.draw_children(an, &cascaded, &content_viewport, dc, clipping),
         )
     }
 }
@@ -578,6 +580,7 @@ enum MarkerType {
 }
 
 fn emit_marker_by_node(
+    viewport: &Viewport,
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
     marker: &layout::Marker,
@@ -597,6 +600,7 @@ fn emit_marker_by_node(
             marker_elt.render(
                 node,
                 acquired_nodes,
+                viewport,
                 draw_ctx,
                 xpos,
                 ypos,
@@ -645,6 +649,7 @@ where
 
 pub fn render_markers_for_shape(
     shape: &Shape,
+    viewport: &Viewport,
     draw_ctx: &mut DrawingCtx,
     acquired_nodes: &mut AcquiredNodes<'_>,
     clipping: bool,
@@ -672,6 +677,7 @@ pub fn render_markers_for_shape(
 
             if marker.node_ref.is_some() {
                 emit_marker_by_node(
+                    viewport,
                     draw_ctx,
                     acquired_nodes,
                     marker,

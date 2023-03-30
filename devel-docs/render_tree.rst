@@ -194,18 +194,20 @@ The most critical function in librsvg is probably
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/drawing_ctx/struct.DrawingCtx.html#method.with_discrete_layer>`_;
 it implements this drawing model.
 
-Current state
--------------
+Current state (2023/03/30)
+--------------------------
 
 ``layout.rs`` has the beginnings of the render tree.  It's probably mis-named?  It contains this:
 
-- A primitive for path-based shapes.
-
-- A primitive for text.
+- A `LayerKind` with primitives for path-based shapes, text, and images.
 
 - A `stacking context
   <https://www.w3.org/TR/SVG2/render.html#EstablishingStackingContex>`_,
   which indicates each layer's opacity/clip/mask/filters.
+
+- A `Layer` which composes the previous two.  The `StackingContext`
+  provides the compositing/masking/filtering parameters, while the
+  `LayerKind` determines the primitive contents of the layer.
 
 - Various ancillary structures that try to have only user-space
   coordinates (e.g. a number of CSS pixels instead of ``5cm``) and no
@@ -266,6 +268,15 @@ probably called ``layer``, with something like this:
 
 That is, every stacking context should contain the thing that it will
 draw, and that thing may be a shape/text or another stacking context!
+
+As of 2023/03/30, the "current viewport" is no longer part of
+`DrawingCtx`'s mutable state.  Instead, a `Viewport` struct is passed
+down the call chain via a function argument.  This is not complete
+yet, since the code modifies the current `cr`'s transform apart from
+the current viewport's transform.  The goal is to have the current
+viewport actually have the full transform to be applied to the object
+being rendered.  This should simplify gnarly code paths like the one
+for rendering ``<pattern>``.
 
 Bounding boxes
 --------------

@@ -9,7 +9,7 @@ use crate::bbox::BoundingBox;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, ViewParams};
+use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, Viewport};
 use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
@@ -124,7 +124,7 @@ impl Handle {
         let width = dimensions.width;
         let height = dimensions.height;
 
-        let view_params = ViewParams::new(dpi, 0.0, 0.0);
+        let view_params = Viewport::new(dpi, 0.0, 0.0);
         let root = self.document.root();
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
