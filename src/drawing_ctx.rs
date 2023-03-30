@@ -10,7 +10,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::f64::consts::*;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::accept_language::UserLanguage;
@@ -119,19 +119,6 @@ pub struct Viewport {
 
     /// The viewport's coordinate system, or "user coordinate system" in SVG terms.
     transform: Transform,
-
-    viewport_stack: Option<Weak<RefCell<Vec<Viewport>>>>,
-}
-
-impl Drop for Viewport {
-    fn drop(&mut self) {
-        if let Some(ref weak_stack) = self.viewport_stack {
-            let stack = weak_stack
-                .upgrade()
-                .expect("A Viewport was dropped after its DrawingCtx!?");
-            stack.borrow_mut().pop();
-        }
-    }
 }
 
 impl Viewport {
@@ -142,7 +129,6 @@ impl Viewport {
             dpi,
             vbox: ViewBox::from(Rect::from_size(view_box_width, view_box_height)),
             transform: Default::default(),
-            viewport_stack: None,
         }
     }
 
@@ -162,14 +148,12 @@ impl Viewport {
                 dpi: self.dpi,
                 vbox: ViewBox::from(Rect::from_size(1.0, 1.0)),
                 transform: self.transform,
-                viewport_stack: None,
             },
 
             CoordUnits::UserSpaceOnUse => Viewport {
                 dpi: self.dpi,
                 vbox: self.vbox,
                 transform: self.transform,
-                viewport_stack: None,
             },
         }
     }
@@ -180,7 +164,6 @@ impl Viewport {
             dpi: self.dpi,
             vbox: ViewBox::from(Rect::from_size(width, height)),
             transform: self.transform,
-            viewport_stack: None,
         }
     }
 }
@@ -196,8 +179,6 @@ pub struct DrawingCtx {
     cr: cairo::Context,
 
     user_language: UserLanguage,
-
-    viewport_stack: Rc<RefCell<Vec<Viewport>>>,
 
     drawsub_stack: Vec<Node>,
 
@@ -266,7 +247,6 @@ pub fn draw_tree(
         dpi,
         vbox: ViewBox::from(viewport_rect),
         transform,
-        viewport_stack: None,
     };
 
     let mut draw_ctx = DrawingCtx::new(
@@ -327,8 +307,6 @@ impl DrawingCtx {
         testing: bool,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
-        let viewport_stack = vec![initial_viewport.clone()];
-
         DrawingCtx {
             session,
             initial_viewport: initial_viewport.clone(),
@@ -336,7 +314,6 @@ impl DrawingCtx {
             cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
             user_language,
-            viewport_stack: Rc::new(RefCell::new(viewport_stack)),
             drawsub_stack,
             measuring,
             testing,
@@ -361,7 +338,6 @@ impl DrawingCtx {
             cr_stack,
             cr,
             user_language: self.user_language.clone(),
-            viewport_stack: self.viewport_stack.clone(),
             drawsub_stack: self.drawsub_stack.clone(),
             measuring: self.measuring,
             testing: self.testing,
@@ -499,7 +475,6 @@ impl DrawingCtx {
                     dpi: self.dpi,
                     vbox: vbox.unwrap_or(current_viewport.vbox),
                     transform: current_viewport.transform.post_transform(&t),
-                    viewport_stack: None,
                 }
             })
     }
@@ -1074,7 +1049,6 @@ impl DrawingCtx {
                 dpi: self.dpi,
                 vbox: ViewBox::from(Rect::from_size(pattern.width, pattern.height)),
                 transform: *transform,
-                viewport_stack: None,
             };
 
             pattern_draw_ctx
@@ -1629,7 +1603,6 @@ impl DrawingCtx {
                 dpi: self.dpi,
                 transform: affine,
                 vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
-                viewport_stack: None,
             };
 
             let _ = self.draw_node_from_stack(node, acquired_nodes, cascaded, &viewport, false)?;
