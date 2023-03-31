@@ -1,13 +1,10 @@
-[package]
-name = "librsvg"
+[workspace.package]
 version = "2.56.0"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
 description = "Render SVG documents with Cairo"
 license = "LGPL-2.1-or-later"
-documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html"
 homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
-build = "build.rs"
 edition = "2021"
 rust-version = "1.64.0"
 
@@ -15,134 +12,13 @@ rust-version = "1.64.0"
 inherits = "release"
 overflow-checks = true
 
-[package.metadata.system-deps]
-cairo-pdf = { version = "1.16", optional = true }
-cairo-ps = { version = "1.16", optional = true }
-cairo-svg = { version = "1.16", optional = true }
-gdk-pixbuf = { name = "gdk-pixbuf-2.0", version = "2.20" }
-gio = { name = "gio-2.0", version = "2.24" }
-glib = { name = "glib-2.0", version = "2.50" }
-pangocairo = "1.46"
-
-[package.metadata.system-deps.'cfg(windows)']
-fontconfig = { version = "1.7", optional = true }
-pangoft2 = { version = "1.46", optional = true }
-harfbuzz = { version = "2.0", optional = true }
-freetype2 = { version = "20.0.14", optional = true }
-cairo = { version = "1.16", optional = true }
-cairo-gobject = { version = "1.16", optional = true }
-cairo-png = { version = "1.16", optional = true }
-libxml2 = { name = "libxml-2.0", version = "2.9", optional = true  }
-
-[package.metadata.system-deps.'cfg(not(windows))']
-fontconfig = { version = "1.7" }
-pangoft2 = { version = "1.46" }
-cairo = "1.16"
-cairo-gobject = "1.16"
-cairo-png = "1.16"
-harfbuzz = "2.0"
-freetype2 = "20.0.14"
-libxml2 = { name = "libxml-2.0", version = "2.9" }
-
-[lib]
-name = "rsvg"
-crate-type = [ "staticlib", "rlib" ]
-
-[dependencies]
-# Keep these in sync with respect to the cairo-rs version:
-#   src/lib.rs - toplevel example in the docs
-anyhow = "1.0"
-byteorder = "1.4"
-cairo-rs = { version = "0.17", features=["v1_16", "png", "pdf", "ps", "svg"] }
-cast = "0.3.0"
-chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] } # rsvg-convert
-clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
-clap_complete = "4.0.5" # rsvg-convert
-cssparser = "0.29.0"
-data-url = "0.2.0"
-encoding_rs = "0.8.32"
-float-cmp = "0.9.0"
-gdk-pixbuf = "0.17"
-gio = "0.17"
-glib = "0.17"
-itertools = "0.10.3"
-language-tags = "0.3.1"
-libc = "0.2"
-locale_config = "*" # recommended explicitly by locale_config's README.md
-markup5ever = "0.11.0"
-nalgebra = "0.32.1"
-num-traits = "0.2"
-once_cell = "1.2.0"
-pango = { version = "0.17", features = ["v1_46"] }
-pangocairo = "0.17"
-rayon = "1"
-rctree = "0.5.0"
-regex = "1.7.1"
-rgb = { version="0.8", features=["argb"] }
-selectors = "0.24.0"
-string_cache = "0.8.0"
-thiserror = "1.0"
-tinyvec = { version = "1.2.0", features = ["alloc"] }
-url = "2"
-xml5ever = "0.17.0"
-
-[dev-dependencies]
-anyhow = "1.0"
-assert_cmd = "2.0.2"
-cairo-rs = { version = "0.17", features = ["png"] }
-cast = "0.3.0"
-chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
-criterion = "0.4"
-glib = "0.17"
-libc = "0.2"
-lopdf = "0.29.0"
-matches = "0.1"
-pango = "0.17"
-pangocairo = "0.17"
-png = "0.17.2"
-predicates = "2.0.0"
-proptest = "1.0.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tempfile = "3"
-yeslogic-fontconfig-sys = "4.0.1"
-
-[build-dependencies]
-regex = "1.7.1"
-system-deps = "6.0.0"
-
-[[bench]]
-name = "box_blur"
-harness = false
-
-[[bench]]
-name = "composite"
-harness = false
-
-[[bench]]
-name = "lighting"
-harness = false
-
-[[bench]]
-name = "path_parser"
-harness = false
-
-[[bench]]
-name = "pixbuf_from_surface"
-harness = false
-
-[[bench]]
-name = "pixel_iterators"
-harness = false
-
-[[bench]]
-name = "pixel_ops"
-harness = false
-
-[[bench]]
-name = "srgb"
-harness = false
-
-[[bench]]
-name = "surface_from_pixbuf"
-harness = false
+[workspace]
+members = [
+    "gdk-pixbuf-loader",
+    "rsvg",
+    "rsvg-convert",
+    "rsvg-bench",
+]
+default-members = [
+    "rsvg-convert",
+]

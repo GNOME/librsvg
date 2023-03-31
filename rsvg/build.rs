@@ -70,7 +70,7 @@ fn write_version() {
     let mut micro = None;
 
     {
-        let file = File::open("configure.ac")
+        let file = File::open("../configure.ac")
             .expect("builds must take place within the librsvg source tree");
 
         let major_regex = Regex::new(r#"^m4_define\(\[rsvg_major_version\],\[(\d+)\]\)"#).unwrap();

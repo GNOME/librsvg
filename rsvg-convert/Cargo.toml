@@ -1,0 +1,31 @@
+[package]
+name = "rsvg-convert"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[package.metadata.system-deps]
+cairo-pdf = { version = "1.16", optional = true }
+cairo-ps = { version = "1.16", optional = true }
+cairo-svg = { version = "1.16", optional = true }
+
+[dependencies]
+# Keep these in sync with respect to the cairo-rs version:
+#   src/lib.rs - toplevel example in the docs
+cairo-rs = { version = "0.17", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cast = "0.3.0"
+chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
+clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
+clap_complete = "4.0.5" # rsvg-convert
+cssparser = "0.29.0"
+gio = "0.17"
+libc = "0.2"
+librsvg = { version = "*", path = "../rsvg" }
+
+[build-dependencies]
+system-deps = "6.0.0"

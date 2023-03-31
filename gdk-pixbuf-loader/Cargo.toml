@@ -2,13 +2,16 @@
 name = "pixbufloader-svg"
 version = "0.0.1"
 authors = ["Alberto Ruiz <aruiz@gnome.org>"]
-edition = "2021"
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-librsvg = { path = ".." }
+librsvg = { path = "../rsvg" }
 gdk-pixbuf = "0.17"
 libc = "0.2"
 glib = "0.17"
