@@ -1,9 +1,9 @@
 use predicates::prelude::*;
 use predicates::str::StartsWithPredicate;
 
-use crate::predicates::pdf::PdfPredicate;
-use crate::predicates::png::PngPredicate;
-use crate::predicates::svg::SvgPredicate;
+use super::pdf::PdfPredicate;
+use super::png::PngPredicate;
+use super::svg::SvgPredicate;
 
 /// Predicates to check that some output ([u8]) is of a certain file type
 

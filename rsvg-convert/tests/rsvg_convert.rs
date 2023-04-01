@@ -1,5 +1,6 @@
-use crate::predicates::ends_with_pkg_version;
-use crate::predicates::file;
+//use crate::predicates::ends_with_pkg_version;
+mod internal_predicates;
+use internal_predicates::file;
 
 use assert_cmd::assert::IntoOutputPredicate;
 use assert_cmd::Command;
@@ -1051,7 +1052,8 @@ fn no_keep_image_data_option() {
 }
 
 fn is_version_output() -> AndPredicate<StartsWithPredicate, TrimPredicate<EndsWithPredicate>, str> {
-    starts_with("rsvg-convert version ").and(ends_with_pkg_version().trim())
+    starts_with("rsvg-convert version ")
+        .and(predicates::str::ends_with(env!("CARGO_PKG_VERSION")).trim())
 }
 
 #[test]

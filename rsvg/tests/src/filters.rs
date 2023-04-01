@@ -1,8 +1,8 @@
 use cairo;
 
-use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{load_svg, render_document, SurfaceSize};
-use crate::{test_compare_render_output, test_svg_reference};
+use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
+use rsvg::test_utils::{load_svg, render_document, SurfaceSize};
+use rsvg::{test_compare_render_output, test_svg_reference};
 
 #[test]
 fn invalid_filter_reference_cancels_filter_chain() {

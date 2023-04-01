@@ -12,9 +12,9 @@ use rsvg::{
     CairoRenderer, IntrinsicDimensions, Length, Loader,
 };
 
-use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
-use crate::{test_compare_render_output, test_svg_reference};
+use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
+use rsvg::test_utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
+use rsvg::{test_compare_render_output, test_svg_reference};
 
 use std::path::{Path, PathBuf};
 

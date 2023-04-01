@@ -21,11 +21,14 @@ use self::windows_imports::*;
 
 use cssparser::{_cssparser_internal_to_lowercase, match_ignore_ascii_case};
 
+use librsvg_c::c_api::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
-    AspectRatio, CssLength, Dpi, Horizontal, LegacySize, Length, Normalize, NormalizeParams, Parse,
-    PathOrUrl, Rect, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
+    AspectRatio, CssLength, Horizontal, Length, Normalize, NormalizeParams, Parse, Signed, ULength,
+    Unsigned, Validate, Vertical, ViewBox,
 };
-use rsvg::{AcceptLanguage, CairoRenderer, Color, Language, LengthUnit, Loader, RenderingError};
+use rsvg::{
+    AcceptLanguage, CairoRenderer, Color, Dpi, Language, LengthUnit, Loader, Rect, RenderingError,
+};
 
 use std::ffi::OsString;
 use std::io;

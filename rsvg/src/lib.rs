@@ -218,10 +218,21 @@ mod url_resolver;
 mod viewbox;
 mod xml;
 
+#[cfg(feature = "test-utils")]
+#[doc(hidden)]
+pub mod test_utils;
+
 #[doc(hidden)]
 pub mod bench_only {
     pub use crate::path_builder::PathBuilder;
     pub use crate::path_parser::Lexer;
+}
+
+#[doc(hidden)]
+#[cfg(feature = "c-api")]
+pub mod c_api_only {
+    pub use crate::handle::Handle;
+    pub use crate::session::Session;
 }
 
 #[doc(hidden)]
@@ -239,7 +250,6 @@ pub mod doctest_only {
 #[doc(hidden)]
 pub mod rsvg_convert_only {
     pub use crate::aspect_ratio::AspectRatio;
-    pub use crate::dpi::Dpi;
     pub use crate::error::ParseError;
     pub use crate::length::{
         CssLength, Horizontal, Length, Normalize, NormalizeParams, Signed, ULength, Unsigned,

@@ -12,10 +12,10 @@ use super::dpi::Dpi;
 use super::handle::{checked_i32, set_gerror};
 use super::sizing::LegacySize;
 
-use crate::api::{CairoRenderer, Loader};
-use crate::error::RenderingError;
-use crate::session::Session;
-use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg::c_api_only::Session;
+use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg::RenderingError;
+use rsvg::{CairoRenderer, Loader};
 
 pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
     // GdkPixbuf does not allow zero-sized pixbufs, but Cairo allows zero-sized

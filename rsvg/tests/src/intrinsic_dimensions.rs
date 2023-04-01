@@ -2,8 +2,8 @@ use cairo;
 
 use rsvg::{CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError};
 
-use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{load_svg, render_document, SurfaceSize};
+use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
+use rsvg::test_utils::{load_svg, render_document, SurfaceSize};
 
 #[test]
 fn no_intrinsic_dimensions() {

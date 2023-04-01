@@ -1,8 +1,8 @@
 use cairo;
 
-use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::test_compare_render_output;
-use crate::utils::{load_svg, render_document, SurfaceSize};
+use rsvg::test_compare_render_output;
+use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
+use rsvg::test_utils::{load_svg, render_document, SurfaceSize};
 
 #[test]
 fn simple_opacity_with_transform() {

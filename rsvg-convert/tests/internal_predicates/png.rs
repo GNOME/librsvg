@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 
 use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use crate::compare_surfaces::BufferDiff;
-use crate::reference_utils::{surface_from_png, Compare, Deviation, Reference};
+use rsvg::test_utils::compare_surfaces::BufferDiff;
+use rsvg::test_utils::reference_utils::{surface_from_png, Compare, Deviation, Reference};
 
 /// Checks that the variable of type [u8] can be parsed as a PNG file.
 #[derive(Debug)]

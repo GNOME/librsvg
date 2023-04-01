@@ -1117,7 +1117,6 @@ name = "librsvg"
 version = "2.56.0"
 dependencies = [
  "anyhow",
- "assert_cmd",
  "byteorder",
  "cairo-rs",
  "cast",
@@ -1164,7 +1163,7 @@ dependencies = [
 
 [[package]]
 name = "librsvg-c"
-version = "0.1.0"
+version = "2.56.0"
 dependencies = [
  "cairo-rs",
  "cast",
@@ -1662,6 +1661,7 @@ dependencies = [
  "glib",
  "libc",
  "librsvg",
+ "librsvg-c",
 ]
 
 [[package]]
@@ -2041,16 +2041,24 @@ dependencies = [
 name = "rsvg-convert"
 version = "2.56.0"
 dependencies = [
+ "assert_cmd",
  "cairo-rs",
  "cast",
  "chrono",
  "clap 4.1.9",
  "clap_complete",
  "cssparser",
+ "float-cmp",
  "gio",
  "libc",
  "librsvg",
+ "librsvg-c",
+ "lopdf",
+ "png",
+ "predicates 2.1.5",
  "system-deps",
+ "tempfile",
+ "url",
 ]
 
 [[package]]

@@ -1,8 +1,8 @@
 use cairo;
 
-use rsvg::{rsvg_convert_only::LegacySize, CairoRenderer};
-
-use crate::utils::load_svg;
+use librsvg_c::c_api::sizing::LegacySize;
+use rsvg::test_utils::load_svg;
+use rsvg::CairoRenderer;
 
 #[test]
 fn just_viewbox_uses_viewbox_size() {

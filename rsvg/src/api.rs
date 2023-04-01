@@ -6,6 +6,7 @@
 
 pub use crate::{
     accept_language::{AcceptLanguage, Language},
+    dpi::Dpi,
     error::{ImplementationLimit, LoadingError, RenderingError},
     length::{LengthUnit, RsvgLength as Length},
 };
@@ -22,7 +23,6 @@ use locale_config::{LanguageRange, Locale};
 
 use crate::{
     accept_language::{LanguageTags, UserLanguage},
-    dpi::Dpi,
     handle::{Handle, LoadOptions},
     session::Session,
     url_resolver::UrlResolver,
@@ -64,14 +64,19 @@ impl Loader {
     /// ```
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        Self::new_with_session(Session::default())
+        Self {
+            unlimited_size: false,
+            keep_image_data: false,
+            session: Session::default(),
+        }
     }
 
     /// Creates a `Loader` from a pre-created [`Session`].
     ///
     /// This is useful when a `Loader` must be created by the C API, which should already
     /// have created a session for logging.
-    pub(crate) fn new_with_session(session: Session) -> Self {
+    #[cfg(feature = "c-api")]
+    pub fn new_with_session(session: Session) -> Self {
         Self {
             unlimited_size: false,
             keep_image_data: false,
@@ -613,6 +618,17 @@ impl<'a> CairoRenderer<'a> {
             self.dpi,
             self.is_testing,
         )
+    }
+
+    /// Returns DPI TODO
+    pub fn dpi(&self) -> Dpi {
+        self.dpi
+    }
+
+    /// Questionable Special function TODO
+    #[cfg(feature = "c-api")]
+    pub fn handle(&self) -> &Handle {
+        &self.handle.handle
     }
 
     /// Turns on test mode.  Do not use this function; it is for librsvg's test suite only.

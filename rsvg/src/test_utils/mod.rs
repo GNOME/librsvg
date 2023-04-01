@@ -1,5 +1,5 @@
-#![cfg(test)]
-#![allow(unused)]
+pub mod compare_surfaces;
+pub mod reference_utils;
 
 use cairo;
 use gio;
@@ -10,7 +10,7 @@ use std::env;
 use std::ffi::CString;
 use std::sync::Once;
 
-use rsvg::{
+use crate::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     CairoRenderer, Loader, LoadingError, RenderingError, SvgHandle,
 };

@@ -2,9 +2,9 @@ use cairo;
 use float_cmp::approx_eq;
 use rsvg::{CairoRenderer, Loader};
 
-use crate::reference_utils::{Compare, Evaluate, Reference};
-use crate::utils::{load_svg, render_document, setup_font_map, SurfaceSize};
-use crate::{test_compare_render_output, test_svg_reference};
+use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
+use rsvg::test_utils::{load_svg, render_document, setup_font_map, SurfaceSize};
+use rsvg::{test_compare_render_output, test_svg_reference};
 
 // From https://www.w3.org/Style/CSS/Test/Fonts/Ahem/
 //

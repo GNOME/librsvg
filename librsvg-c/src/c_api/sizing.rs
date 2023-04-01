@@ -12,10 +12,8 @@
 
 use float_cmp::approx_eq;
 
-use crate::api::{CairoRenderer, IntrinsicDimensions, RenderingError};
-use crate::dpi::Dpi;
-use crate::handle::Handle;
-use crate::length::*;
+use rsvg::c_api_only::Handle;
+use rsvg::{CairoRenderer, Dpi, IntrinsicDimensions, RenderingError};
 
 use super::handle::CairoRectangleExt;
 
@@ -51,9 +49,9 @@ impl<'a> LegacySize for CairoRenderer<'a> {
                 let size_from_intrinsic_dimensions =
                     self.intrinsic_size_in_pixels().or_else(|| {
                         size_in_pixels_from_percentage_width_and_height(
-                            &self.handle.handle,
+                            self.handle(),
                             &self.intrinsic_dimensions(),
-                            self.dpi,
+                            self.dpi(),
                         )
                     });
 
@@ -94,7 +92,7 @@ fn size_in_pixels_from_percentage_width_and_height(
         vbox,
     } = *dim;
 
-    use LengthUnit::*;
+    use rsvg::LengthUnit::*;
 
     // Unwrap or return None if we don't know the aspect ratio -> Let the caller handle it.
     let vbox = vbox?;

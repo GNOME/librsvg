@@ -21,5 +21,6 @@ members = [
     "rsvg-bench",
 ]
 default-members = [
+    "rsvg",
     "rsvg-convert",
 ]

@@ -38,14 +38,10 @@ use glib::types::instance_of;
 use glib::{ffi::gpointer, gobject_ffi};
 use glib::{Bytes, Cast, StaticType, ToValue};
 
-use crate::api::{self, CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
-
-use crate::{
-    length::RsvgLength,
-    rsvg_log,
-    session::Session,
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-};
+use rsvg::c_api_only::Session;
+use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg::{rsvg_log, Length};
+use rsvg::{CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
 
 use super::dpi::Dpi;
 use super::messages::{rsvg_g_critical, rsvg_g_warning};
@@ -59,13 +55,13 @@ include!(concat!(env!("OUT_DIR"), "/version.rs"));
 // This is basically the same as api::RenderingError but with extra cases for
 // the peculiarities of the C API.
 enum RenderingError {
-    RenderingError(api::RenderingError),
+    RenderingError(rsvg::RenderingError),
 
     // The RsvgHandle is created, but hasn't been loaded yet.
     HandleIsNotLoaded,
 }
 
-impl<T: Into<api::RenderingError>> From<T> for RenderingError {
+impl<T: Into<rsvg::RenderingError>> From<T> for RenderingError {
     fn from(e: T) -> RenderingError {
         RenderingError::RenderingError(e.into())
     }
@@ -1645,9 +1641,9 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
 pub unsafe extern "C" fn rsvg_handle_get_intrinsic_dimensions(
     handle: *const RsvgHandle,
     out_has_width: *mut glib::ffi::gboolean,
-    out_width: *mut RsvgLength,
+    out_width: *mut Length,
     out_has_height: *mut glib::ffi::gboolean,
-    out_height: *mut RsvgLength,
+    out_height: *mut Length,
     out_has_viewbox: *mut glib::ffi::gboolean,
     out_viewbox: *mut RsvgRectangle,
 ) {

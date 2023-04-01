@@ -12,9 +12,9 @@ use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 
-use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 
-use crate::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
+use super::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
 
 pub struct Reference(SharedImageSurface);
 
@@ -23,7 +23,7 @@ impl Reference {
     where
         P: AsRef<Path>,
     {
-        let file = File::open(path).map_err(|e| cairo::IoError::Io(e))?;
+        let file = File::open(path).map_err(cairo::IoError::Io)?;
         let mut reader = BufReader::new(file);
         let surface = surface_from_png(&mut reader)?;
         Self::from_surface(surface)
@@ -100,7 +100,7 @@ impl Evaluate for Result<BufferDiff, cairo::IoError> {
 }
 
 fn write_to_file(input: &SharedImageSurface, output_base_name: &str, suffix: &str) {
-    let path = output_dir().join(&format!("{}-{}.png", output_base_name, suffix));
+    let path = output_dir().join(format!("{}-{}.png", output_base_name, suffix));
     println!("{}: {}", suffix, path.to_string_lossy());
     let mut output_file = File::create(path).unwrap();
     input
@@ -191,7 +191,7 @@ macro_rules! test_compare_render_output {
     ($test_name:ident, $width:expr, $height:expr, $test:expr, $reference:expr $(,)?) => {
         #[test]
         fn $test_name() {
-            crate::utils::setup_font_map();
+            $crate::test_utils::setup_font_map();
 
             let sx: i32 = $width;
             let sy: i32 = $height;
@@ -235,10 +235,10 @@ macro_rules! test_svg_reference {
     ($test_name:ident, $test_filename:expr, $reference_filename:expr) => {
         #[test]
         fn $test_name() {
-            use crate::reference_utils::{Compare, Evaluate, Reference};
-            use crate::utils::{render_document, setup_font_map, SurfaceSize};
             use cairo;
             use rsvg::{CairoRenderer, Loader};
+            use $crate::test_utils::reference_utils::{Compare, Evaluate, Reference};
+            use $crate::test_utils::{render_document, setup_font_map, SurfaceSize};
 
             setup_font_map();
 

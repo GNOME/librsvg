@@ -1,4 +1,4 @@
-use crate::test_svg_reference;
+use rsvg::test_svg_reference;
 
 test_svg_reference!(
     ellipse_auto_rx_ry,
