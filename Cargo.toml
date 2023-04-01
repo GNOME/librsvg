@@ -15,6 +15,7 @@ overflow-checks = true
 [workspace]
 members = [
     "gdk-pixbuf-loader",
+    "librsvg-c",
     "rsvg",
     "rsvg-convert",
     "rsvg-bench",

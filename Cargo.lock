@@ -1163,6 +1163,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "librsvg-c"
+version = "0.1.0"
+dependencies = [
+ "cairo-rs",
+ "cast",
+ "float-cmp",
+ "gdk-pixbuf",
+ "gio",
+ "glib",
+ "libc",
+ "librsvg",
+ "once_cell",
+ "regex",
+ "url",
+]
+
+[[package]]
 name = "link-cplusplus"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"

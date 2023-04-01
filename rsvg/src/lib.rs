@@ -175,7 +175,6 @@ mod angle;
 mod api;
 mod aspect_ratio;
 mod bbox;
-pub mod c_api;
 mod color;
 mod cond;
 mod css;
@@ -240,8 +239,6 @@ pub mod doctest_only {
 #[doc(hidden)]
 pub mod rsvg_convert_only {
     pub use crate::aspect_ratio::AspectRatio;
-    pub use crate::c_api::handle::PathOrUrl;
-    pub use crate::c_api::sizing::LegacySize;
     pub use crate::dpi::Dpi;
     pub use crate::error::ParseError;
     pub use crate::length::{

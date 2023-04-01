@@ -1,0 +1,19 @@
+[package]
+name = "librsvg-c"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+librsvg = { version = "*", path = "../rsvg" }
+gio = "0.17"
+glib = "0.17"
+cairo-rs = { version = "0.17", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cast = "0.3.0"
+gdk-pixbuf = "0.17"
+libc = "0.2"
+float-cmp = "0.9.0"
+url = "2"
+once_cell = "1.2.0"
+
+[build-dependencies]
+regex = "1.7.1"
