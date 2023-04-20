@@ -162,6 +162,8 @@ RUST_EXTRA =						\
 	rsvg-convert/tests/internal_predicates/svg.rs	\
 	rsvg-convert/tests/rsvg_convert.rs		\
 	librsvg-c/tests/legacy_sizing.rs		\
+	gdk-pixbuf-loader/Cargo.toml			\
+	gdk-pixbuf-loader/src/lib.rs			\
 	$(NULL)
 
 if DEBUG_RELEASE
