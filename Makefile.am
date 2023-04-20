@@ -218,14 +218,18 @@ CLEANFILES += $(bin_SCRIPTS)
 
 RSVG_CONVERT_BIN=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/rsvg-convert$(EXEEXT)
 
-RSVG_CONVERT_SRC = src/bin/rsvg-convert.rs
+RSVG_CONVERT_SRC =				\
+	rsvg-convert/Cargo.toml			\
+	rsvg-convert/build.rs			\
+	rsvg-convert/src/main.rs		\
+	$(NULL)
 
 $(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC) | librsvg_c_api.la
 	+cd $(top_srcdir) &&							\
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
-	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --bin rsvg-convert
+	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --package rsvg-convert
 
 rsvg-convert$(EXEEXT): $(RSVG_CONVERT_BIN)
 	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
