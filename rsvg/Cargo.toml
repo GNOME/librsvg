@@ -45,7 +45,6 @@ test-utils = ["yeslogic-fontconfig-sys"]
 
 [lib]
 name = "rsvg"
-crate-type = [ "staticlib", "rlib" ]
 
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
