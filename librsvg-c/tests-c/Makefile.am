@@ -23,9 +23,5 @@ AM_CPPFLAGS =					\
 	-DTOP_SRC_DIR="\"$(top_srcdir)\""	\
 	$(LIBRSVG_CFLAGS)
 
-EXTRA_DIST +=			\
-	README.md		\
-	$(NULL)
-
 clean-local:
 	rm -rf output
