@@ -127,16 +127,16 @@ LIBRSVG_SRC =						\
 
 RUST_EXTRA =					\
 	Cargo.lock				\
-	example.svg				\
-	benches/box_blur.rs			\
-	benches/composite.rs			\
-	benches/lighting.rs			\
-	benches/path_parser.rs			\
-	benches/pixbuf_from_surface.rs		\
-	benches/pixel_iterators.rs		\
-	benches/pixel_ops.rs			\
-	benches/srgb.rs				\
-	benches/surface_from_pixbuf.rs		\
+	rsvg/example.svg			\
+	rsvg/benches/box_blur.rs		\
+	rsvg/benches/composite.rs		\
+	rsvg/benches/lighting.rs		\
+	rsvg/benches/path_parser.rs		\
+	rsvg/benches/pixbuf_from_surface.rs	\
+	rsvg/benches/pixel_iterators.rs		\
+	rsvg/benches/pixel_ops.rs		\
+	rsvg/benches/srgb.rs			\
+	rsvg/benches/surface_from_pixbuf.rs	\
 	$(NULL)
 
 if DEBUG_RELEASE
