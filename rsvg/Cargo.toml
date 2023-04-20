@@ -75,7 +75,7 @@ regex = "1.7.1"
 rgb = { version="0.8", features=["argb"] }
 selectors = "0.24.0"
 string_cache = "0.8.0"
-tinyvec = { version = "1.2.0", features = ["alloc"] }
+tinyvec = { version = "1.2.0", features = ["alloc", "rustc_1_55"] }
 url = "2"
 xml5ever = "0.17.0"
 yeslogic-fontconfig-sys = { version = "4.0.1", optional = true }
