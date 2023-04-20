@@ -16,7 +16,7 @@ use gio::prelude::MemoryInputStreamExt;
 use gio::MemoryInputStream;
 use glib::gobject_ffi::GObject;
 
-use librsvg_c::c_api::sizing::LegacySize;
+use librsvg_c::sizing::LegacySize;
 use rsvg::Loader;
 
 use cstr::cstr;
