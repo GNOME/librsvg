@@ -125,18 +125,43 @@ LIBRSVG_SRC =						\
 	rsvg/src/xml/xml2.rs				\
 	$(NULL)
 
-RUST_EXTRA =					\
-	Cargo.lock				\
-	rsvg/example.svg			\
-	rsvg/benches/box_blur.rs		\
-	rsvg/benches/composite.rs		\
-	rsvg/benches/lighting.rs		\
-	rsvg/benches/path_parser.rs		\
-	rsvg/benches/pixbuf_from_surface.rs	\
-	rsvg/benches/pixel_iterators.rs		\
-	rsvg/benches/pixel_ops.rs		\
-	rsvg/benches/srgb.rs			\
-	rsvg/benches/surface_from_pixbuf.rs	\
+RUST_EXTRA =						\
+	Cargo.lock					\
+	rsvg/benches/box_blur.rs			\
+	rsvg/benches/composite.rs			\
+	rsvg/benches/lighting.rs			\
+	rsvg/benches/path_parser.rs			\
+	rsvg/benches/pixbuf_from_surface.rs		\
+	rsvg/benches/pixel_iterators.rs			\
+	rsvg/benches/pixel_ops.rs			\
+	rsvg/benches/srgb.rs				\
+	rsvg/benches/surface_from_pixbuf.rs		\
+	rsvg/example.svg				\
+	rsvg/tests/src/api.rs				\
+	rsvg/tests/src/bugs.rs				\
+	rsvg/tests/src/errors.rs			\
+	rsvg/tests/src/filters.rs			\
+	rsvg/tests/src/geometries.rs			\
+	rsvg/tests/src/intrinsic_dimensions.rs		\
+	rsvg/tests/src/loading_crash.rs			\
+	rsvg/tests/src/primitive_geometries.rs		\
+	rsvg/tests/src/primitives.rs			\
+	rsvg/tests/src/reference.rs			\
+	rsvg/tests/src/render_crash.rs			\
+	rsvg/tests/src/shapes.rs			\
+	rsvg/tests/src/text.rs				\
+	rsvg/src/test_utils/compare_surfaces.rs		\
+	rsvg/src/test_utils/mod.rs			\
+	rsvg/src/test_utils/reference_utils.rs		\
+	rsvg-bench/Cargo.toml				\
+	rsvg-bench/src/main.rs				\
+	rsvg-convert/tests/internal_predicates/file.rs	\
+	rsvg-convert/tests/internal_predicates/mod.rs	\
+	rsvg-convert/tests/internal_predicates/pdf.rs	\
+	rsvg-convert/tests/internal_predicates/png.rs	\
+	rsvg-convert/tests/internal_predicates/svg.rs	\
+	rsvg-convert/tests/rsvg_convert.rs		\
+	librsvg-c/tests/legacy_sizing.rs		\
 	$(NULL)
 
 if DEBUG_RELEASE
@@ -254,10 +279,45 @@ dist_doc_DATA =				\
 	README.md			\
 	code-of-conduct.md
 
+test_resources =						\
+	$(wildcard $(srcdir)/rsvg/tests/resources/*.ttf)
+
+test_fixtures =									\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/api/*.svg)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/cmdline/*.svg)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/cmdline/*.png)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/crash/*.svg)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/crash/*.png)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/errors/*)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/geometries/*)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/loading/*)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/primitive_geometries/*)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.css)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.svg)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.png)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.txt)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/adwaita/*.svg)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/adwaita/*.png)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/bugs/*.svg)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/bugs/*.png)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg1.1/*.svg)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg1.1/*.png)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg1.1/images/*)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg1.1/resources/*)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2/*.svg)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2/*.png)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/bugs-reftests/*.svg)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2-reftests/*.svg)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/render-crash/*.svg)		\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/text/*.svg)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/dimensions/*.svg)
+
 EXTRA_DIST =				\
 	$(LIBRSVG_SRC)			\
 	$(RUST_EXTRA)			\
 	$(RSVG_CONVERT_SRC)		\
+	$(test_resources)		\
+	$(test_fixtures)		\
 	AUTHORS				\
 	COPYING.LIB 			\
 	NEWS				\
