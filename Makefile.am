@@ -157,7 +157,7 @@ cargo_verbose_1 = --verbose
 LIBRSVG_BUILD_DIR=@abs_top_builddir@
 CARGO_TARGET_DIR=$(LIBRSVG_BUILD_DIR)/target
 
-RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/librsvg.a
+RUST_LIB=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/liblibrsvg_c.a
 
 check-local:
 	cd $(srcdir) &&						\

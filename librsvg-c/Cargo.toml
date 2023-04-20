@@ -26,5 +26,4 @@ regex = "1.7.1"
 librsvg = { path = "../rsvg", features = ["c-api", "test-utils"] }
 
 [lib]
-name = "rsvg"
-crate-type = [ "staticlib" ]
+crate-type = [ "staticlib", "rlib" ]
