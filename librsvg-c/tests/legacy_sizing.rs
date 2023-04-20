@@ -1,6 +1,6 @@
 use cairo;
 
-use librsvg_c::c_api::sizing::LegacySize;
+use librsvg_c::sizing::LegacySize;
 use rsvg::test_utils::load_svg;
 use rsvg::CairoRenderer;
 
