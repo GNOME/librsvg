@@ -2,7 +2,7 @@ if ENABLE_GTK_DOC
 RSVG_DOC = doc
 endif
 
-SUBDIRS = . gdk-pixbuf-loader tests $(RSVG_DOC) win32
+SUBDIRS = . gdk-pixbuf-loader librsvg-c/tests-c $(RSVG_DOC) win32
 
 NULL =
 

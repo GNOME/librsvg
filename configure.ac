@@ -339,7 +339,7 @@ include/librsvg/rsvg-version.h
 Makefile
 librsvg-zip
 gdk-pixbuf-loader/Makefile
-tests/Makefile
+librsvg-c/tests-c/Makefile
 doc/Makefile
 win32/Makefile
 win32/config.h.win32
