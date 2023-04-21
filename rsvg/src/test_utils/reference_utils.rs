@@ -224,7 +224,8 @@ macro_rules! test_compare_render_output {
 ///
 /// This is used to implement reference tests, or reftests.  Use it like this:
 ///
-/// ```ignore
+/// ```no_run
+/// use rsvg::test_svg_reference;
 /// test_svg_reference!(test_name, "tests/fixtures/blah/foo.svg", "tests/fixtures/blah/foo-ref.svg");
 /// ```
 ///
