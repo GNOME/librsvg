@@ -312,7 +312,9 @@ test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2-reftests/*.svg)	\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/text/*.svg)			\
-	$(wildcard $(srcdir)/rsvg/tests/fixtures/dimensions/*.svg)
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/dimensions/*.svg)		\
+	$(wildcard $(srcdir)/rsvg-convert/tests/fixtures/*.svg)			\
+	$(wildcard $(srcdir)/rsvg-convert/tests/fixtures/*.png)
 
 EXTRA_DIST =				\
 	$(LIBRSVG_SRC)			\
