@@ -38,7 +38,7 @@ check:
   stage: check
   needs: ['opensuse-container@x86_64.stable']
   script:
-    - cargo check --all-targets
+    - cargo check --all-targets --workspace
 
 cargo_test:
   stage: check
@@ -57,7 +57,7 @@ cargo_test:
   variables:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
   script:
-    - cargo test -- --skip loading_crash --skip reference --skip render_crash
+    - cargo test --workspace -- --skip loading_crash --skip reference --skip render_crash
 
 test_rust_gdk_pixbuf_loader:
   stage: check
@@ -81,7 +81,7 @@ test_rust_gdk_pixbuf_loader:
   extends: '.cache'
   stage: build
   script:
-    - cargo test
+    - cargo test --workspace
   artifacts:
     when: 'on_failure'
     paths:
