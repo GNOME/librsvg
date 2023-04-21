@@ -104,7 +104,7 @@ unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> 
             }
         }
 
-        let pb = librsvg_c::c_api::pixbuf_utils::render_to_pixbuf_at_size(
+        let pb = librsvg_c::pixbuf_utils::render_to_pixbuf_at_size(
             &renderer, w as f64, h as f64, w as f64, h as f64,
         )
         .map_err(|e| e.to_string())?;
