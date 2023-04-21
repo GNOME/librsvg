@@ -229,7 +229,7 @@ test_utils_get_test_data_path (void)
     if (data_path)
         return data_path;
 
-    data_path = g_test_build_filename (G_TEST_DIST, "fixtures", NULL);
+    data_path = g_test_build_filename (G_TEST_DIST, "../../rsvg/tests/fixtures", NULL);
 
     return data_path;
 }
