@@ -914,9 +914,8 @@ fn export_id_with_zero_stroke_width() {
         .assert()
         .success()
         .stdout(
-            file::is_png().with_contents(
-                "tests/fixtures/bug601-zero-stroke-width-render-only-foo.png",
-            ),
+            file::is_png()
+                .with_contents("tests/fixtures/bug601-zero-stroke-width-render-only-foo.png"),
         );
 }
 
@@ -1026,9 +1025,7 @@ fn accept_language_fallback() {
         .arg("--accept-language=fr")
         .assert()
         .success()
-        .stdout(
-            file::is_png().with_contents("tests/fixtures/accept-language-fallback.png"),
-        );
+        .stdout(file::is_png().with_contents("tests/fixtures/accept-language-fallback.png"));
 }
 
 #[test]
