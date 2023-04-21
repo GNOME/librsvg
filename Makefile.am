@@ -137,19 +137,19 @@ RUST_EXTRA =						\
 	rsvg/benches/srgb.rs				\
 	rsvg/benches/surface_from_pixbuf.rs		\
 	rsvg/example.svg				\
-	rsvg/tests/src/api.rs				\
-	rsvg/tests/src/bugs.rs				\
-	rsvg/tests/src/errors.rs			\
-	rsvg/tests/src/filters.rs			\
-	rsvg/tests/src/geometries.rs			\
-	rsvg/tests/src/intrinsic_dimensions.rs		\
-	rsvg/tests/src/loading_crash.rs			\
-	rsvg/tests/src/primitive_geometries.rs		\
-	rsvg/tests/src/primitives.rs			\
-	rsvg/tests/src/reference.rs			\
-	rsvg/tests/src/render_crash.rs			\
-	rsvg/tests/src/shapes.rs			\
-	rsvg/tests/src/text.rs				\
+	rsvg/tests/api.rs				\
+	rsvg/tests/bugs.rs				\
+	rsvg/tests/errors.rs				\
+	rsvg/tests/filters.rs				\
+	rsvg/tests/geometries.rs			\
+	rsvg/tests/intrinsic_dimensions.rs		\
+	rsvg/tests/loading_crash.rs			\
+	rsvg/tests/primitive_geometries.rs		\
+	rsvg/tests/primitives.rs			\
+	rsvg/tests/reference.rs				\
+	rsvg/tests/render_crash.rs			\
+	rsvg/tests/shapes.rs				\
+	rsvg/tests/text.rs				\
 	rsvg/src/test_utils/compare_surfaces.rs		\
 	rsvg/src/test_utils/mod.rs			\
 	rsvg/src/test_utils/reference_utils.rs		\
