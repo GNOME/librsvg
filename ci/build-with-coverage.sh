@@ -10,7 +10,7 @@ export CC="clang"
 export CFLAGS="-coverage -ftest-coverage -fprofile-arcs"
 # RUSTFLAGS: "-Cinstrument-coverage"
 export RUSTDOCFLAGS="-Cinstrument-coverage"
-export LLVM_PROFILE_FILE="coverage-profiles/coverage-%p-%m.profraw"
+export LLVM_PROFILE_FILE="$(pwd)/coverage-profiles/coverage-%p-%m.profraw"
 export LDFLAGS="--coverage -L/usr/lib64/clang/$clang_version/lib/linux"
 export LIBS="-lclang_rt.profile-x86_64"
 export RUSTC_BOOTSTRAP="1"   # hack to make -Zprofile work on the non-nightly compiler
