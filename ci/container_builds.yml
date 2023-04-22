@@ -41,7 +41,7 @@ variables:
       openssl-devel
       pango-devel
       python3-pip
-      python38-docutils
+      python3-docutils
       shadow
       system-group-wheel
       vala
