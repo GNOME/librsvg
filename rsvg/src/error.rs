@@ -182,7 +182,7 @@ impl From<cairo::Error> for RenderingError {
 
 /// Indicates that a transform is not invertible.
 ///
-/// This generally represents an error from [`ValidTransform::try_from`], which is what we use
+/// This generally represents an error from [`crate::transform::ValidTransform::try_from`], which is what we use
 /// to check affine transforms for validity.
 #[derive(Debug, PartialEq)]
 pub struct InvalidTransform;
