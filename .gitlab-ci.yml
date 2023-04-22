@@ -456,10 +456,10 @@ pages:
     - job: devel-docs
   script:
     - mkdir -p public/internals
-    - cargo doc --document-private-items --no-deps
+    - cargo doc --workspace --document-private-items --no-deps
     - cp -r target/doc/* public/internals
     - mkdir -p public/doc
-    - cargo doc --no-deps --lib
+    - cargo doc --no-deps --package librsvg
     - cp -r target/doc/* public/doc
   artifacts:
     paths:
