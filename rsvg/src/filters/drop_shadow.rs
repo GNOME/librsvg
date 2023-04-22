@@ -28,7 +28,7 @@ pub struct DropShadow {
 }
 
 impl Default for DropShadow {
-    /// Defaults come from https://www.w3.org/TR/filter-effects/#feDropShadowElement
+    /// Defaults come from <https://www.w3.org/TR/filter-effects/#feDropShadowElement>
     fn default() -> Self {
         Self {
             in1: Default::default(),

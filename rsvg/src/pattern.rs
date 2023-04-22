@@ -74,8 +74,8 @@ enum Children {
 }
 
 /// Main structure used during pattern resolution.  For unresolved
-/// patterns, we store all fields as Option<T> - if None, it means
-/// that the field is not specified; if Some(T), it means that the
+/// patterns, we store all fields as `Option<T>` - if `None`, it means
+/// that the field is not specified; if `Some(T)`, it means that the
 /// field was specified.
 struct UnresolvedPattern {
     common: Common,

@@ -55,7 +55,7 @@ pub struct StackingContext {
     pub mix_blend_mode: MixBlendMode,
     pub isolation: Isolation,
 
-    /// Target from an <a> element
+    /// Target from an `<a>` element
     pub link_target: Option<String>,
 }
 

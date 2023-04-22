@@ -681,7 +681,7 @@ impl selectors::Element for RsvgElement {
             }
     }
 
-    /// Returns whether the element is an HTML <slot> element.
+    /// Returns whether the element is an HTML `<slot>` element.
     fn is_html_slot_element(&self) -> bool {
         false
     }

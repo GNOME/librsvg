@@ -18,7 +18,7 @@ use crate::rect::Rect;
 use crate::session::Session;
 use crate::xml::Attributes;
 
-/// The <filter> node.
+/// The `<filter>` node.
 pub struct Filter {
     x: Length<Horizontal>,
     y: Length<Vertical>,
@@ -28,7 +28,7 @@ pub struct Filter {
     primitive_units: CoordUnits,
 }
 
-/// A <filter> element definition in user-space coordinates.
+/// A `<filter>` element definition in user-space coordinates.
 pub struct UserSpaceFilter {
     pub rect: Rect,
     pub filter_units: CoordUnits,

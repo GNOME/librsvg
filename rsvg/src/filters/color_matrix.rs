@@ -243,7 +243,7 @@ impl ColorMatrix {
 
     /// Compute a `type="hueRotate"` matrix.
     ///
-    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    /// <https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values>
     #[rustfmt::skip]
     pub fn hue_rotate_matrix(radians: f64) -> Matrix5<f64> {
         let (sin, cos) = radians.sin_cos();
@@ -276,7 +276,7 @@ impl ColorMatrix {
 
     /// Compute a `type="luminanceToAlpha"` matrix.
     ///
-    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    /// <https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values>
     #[rustfmt::skip]
     fn luminance_to_alpha_matrix() -> Matrix5<f64> {
         Matrix5::new(
@@ -290,7 +290,7 @@ impl ColorMatrix {
 
     /// Compute a `type="saturate"` matrix.
     ///
-    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    /// <https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values>
     #[rustfmt::skip]
     fn saturate_matrix(s: f64) -> Matrix5<f64> {
         Matrix5::new(
@@ -304,7 +304,7 @@ impl ColorMatrix {
 
     /// Default for `type="matrix"`.
     ///
-    /// https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values
+    /// <https://drafts.fxtf.org/filter-effects/#element-attrdef-fecolormatrix-values>
     fn default_matrix() -> Matrix5<f64> {
         Matrix5::identity()
     }

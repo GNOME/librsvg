@@ -282,7 +282,7 @@ impl FilterContext {
 
     /// Get a filter primitive's default input as if its `in=\"...\"` were not specified.
     ///
-    /// Per https://drafts.fxtf.org/filter-effects/#element-attrdef-filter-primitive-in,
+    /// Per <https://drafts.fxtf.org/filter-effects/#element-attrdef-filter-primitive-in>,
     /// "References to non-existent results will be treated as if no result was
     /// specified".  That is, fall back to the last result in the filter chain, or if this
     /// is the first in the chain, just use SourceGraphic.

@@ -21,13 +21,13 @@ use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
 use crate::xml::Attributes;
 
-/// Contents of a <stop> element for gradient color stops
+/// Contents of a `<stop>` element for gradient color stops
 #[derive(Copy, Clone)]
 pub struct ColorStop {
-    /// <stop offset="..."/>
+    /// `<stop offset="..."/>`
     pub offset: UnitInterval,
 
-    /// <stop stop-color="..." stop-opacity="..."/>
+    /// `<stop stop-color="..." stop-opacity="..."/>`
     pub rgba: cssparser::RGBA,
 }
 
@@ -55,10 +55,10 @@ impl Parse for SpreadMethod {
     }
 }
 
-/// Node for the <stop> element
+/// Node for the `<stop>` element
 #[derive(Default)]
 pub struct Stop {
-    /// <stop offset="..."/>
+    /// `<stop offset="..."/>`
     offset: UnitInterval,
     /* stop-color and stop-opacity are not attributes; they are properties, so
      * they go into property_defs.rs */
@@ -76,7 +76,7 @@ impl ElementTrait for Stop {
 
 /// Parameters specific to each gradient type, before being resolved.
 /// These will be composed together with UnreseolvedVariant from fallback
-/// nodes (referenced with e.g. <linearGradient xlink:href="#fallback">) to form
+/// nodes (referenced with e.g. `<linearGradient xlink:href="#fallback">`) to form
 /// a final, resolved Variant.
 #[derive(Copy, Clone)]
 enum UnresolvedVariant {
@@ -288,7 +288,7 @@ struct Common {
     fallback: Option<NodeId>,
 }
 
-/// Node for the <linearGradient> element
+/// Node for the `<linearGradient>` element
 #[derive(Default)]
 pub struct LinearGradient {
     common: Common,
@@ -299,7 +299,7 @@ pub struct LinearGradient {
     y2: Option<Length<Vertical>>,
 }
 
-/// Node for the <radialGradient> element
+/// Node for the `<radialGradient>` element
 #[derive(Default)]
 pub struct RadialGradient {
     common: Common,
@@ -313,8 +313,8 @@ pub struct RadialGradient {
 }
 
 /// Main structure used during gradient resolution.  For unresolved
-/// gradients, we store all fields as Option<T> - if None, it means
-/// that the field is not specified; if Some(T), it means that the
+/// gradients, we store all fields as `Option<T>` - if `None`, it means
+/// that the field is not specified; if `Some(T)`, it means that the
 /// field was specified.
 struct UnresolvedGradient {
     units: Option<GradientUnits>,
@@ -403,7 +403,7 @@ impl UnresolvedGradient {
         }
     }
 
-    /// Looks for <stop> children inside a linearGradient or radialGradient node,
+    /// Looks for `<stop>` children inside a linearGradient or radialGradient node,
     /// and adds their info to the UnresolvedGradient &self.
     fn add_color_stops_from_node(&mut self, node: &Node, opacity: UnitInterval) {
         assert!(matches!(

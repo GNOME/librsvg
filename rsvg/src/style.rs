@@ -7,7 +7,7 @@ use crate::error::*;
 use crate::session::Session;
 use crate::xml::Attributes;
 
-/// Represents the syntax used in the <style> node.
+/// Represents the syntax used in the `<style>` node.
 ///
 /// Currently only "text/css" is supported.
 ///
@@ -38,7 +38,7 @@ impl StyleType {
     }
 }
 
-/// Represents a <style> node.
+/// Represents a `<style>` node.
 ///
 /// It does not render itself, and just holds CSS stylesheet information for the rest of
 /// the code to use.
