@@ -13,7 +13,7 @@ use rsvg::{
 };
 
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
-use rsvg::test_utils::{load_svg, render_document, setup_font_map, setup_language, SurfaceSize};
+use rsvg::test_utils::{setup_font_map, setup_language};
 use rsvg::{test_compare_render_output, test_svg_reference};
 
 use std::path::{Path, PathBuf};

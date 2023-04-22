@@ -13,8 +13,11 @@ use std::path::{Path, PathBuf};
 use std::sync::Once;
 
 use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::test_utils::{render_document, setup_font_map, SurfaceSize};
+use crate::{CairoRenderer, Loader};
 
 use super::compare_surfaces::{compare_surfaces, BufferDiff, Diff};
+use super::load_svg;
 
 pub struct Reference(SharedImageSurface);
 
@@ -191,33 +194,47 @@ macro_rules! test_compare_render_output {
     ($test_name:ident, $width:expr, $height:expr, $test:expr, $reference:expr $(,)?) => {
         #[test]
         fn $test_name() {
-            $crate::test_utils::setup_font_map();
-
-            let sx: i32 = $width;
-            let sy: i32 = $height;
-            let svg = load_svg($test).unwrap();
-            let output_surf = render_document(
-                &svg,
-                SurfaceSize(sx, sy),
-                |_| (),
-                cairo::Rectangle::new(0.0, 0.0, f64::from(sx), f64::from(sy)),
-            )
-            .unwrap();
-
-            let reference = load_svg($reference).unwrap();
-            let reference_surf = render_document(
-                &reference,
-                SurfaceSize(sx, sy),
-                |_| (),
-                cairo::Rectangle::new(0.0, 0.0, f64::from(sx), f64::from(sy)),
-            )
-            .unwrap();
-
-            Reference::from_surface(reference_surf.into_image_surface().unwrap())
-                .compare(&output_surf)
-                .evaluate(&output_surf, stringify!($test_name));
+            $crate::test_utils::reference_utils::compare_render_output(
+                stringify!($test_name),
+                $width,
+                $height,
+                $test,
+                $reference,
+            );
         }
     };
+}
+
+pub fn compare_render_output(
+    test_name: &str,
+    width: i32,
+    height: i32,
+    test: &'static [u8],
+    reference: &'static [u8],
+) {
+    setup_font_map();
+
+    let svg = load_svg(test).unwrap();
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(width, height),
+        |_| (),
+        cairo::Rectangle::new(0.0, 0.0, f64::from(width), f64::from(height)),
+    )
+    .unwrap();
+
+    let reference = load_svg(reference).unwrap();
+    let reference_surf = render_document(
+        &reference,
+        SurfaceSize(width, height),
+        |_| (),
+        cairo::Rectangle::new(0.0, 0.0, f64::from(width), f64::from(height)),
+    )
+    .unwrap();
+
+    Reference::from_surface(reference_surf.into_image_surface().unwrap())
+        .compare(&output_surf)
+        .evaluate(&output_surf, test_name);
 }
 
 /// Render two SVG files and compare them.
@@ -236,54 +253,57 @@ macro_rules! test_svg_reference {
     ($test_name:ident, $test_filename:expr, $reference_filename:expr) => {
         #[test]
         fn $test_name() {
-            use cairo;
-            use rsvg::{CairoRenderer, Loader};
-            use $crate::test_utils::reference_utils::{Compare, Evaluate, Reference};
-            use $crate::test_utils::{render_document, setup_font_map, SurfaceSize};
-
-            setup_font_map();
-
-            let svg = Loader::new()
-                .read_path($test_filename)
-                .expect("reading SVG test file");
-            let reference = Loader::new()
-                .read_path($reference_filename)
-                .expect("reading reference file");
-
-            let svg_renderer = CairoRenderer::new(&svg);
-            let ref_renderer = CairoRenderer::new(&reference);
-
-            let svg_dim = svg_renderer.intrinsic_dimensions();
-            let ref_dim = ref_renderer.intrinsic_dimensions();
-
-            assert_eq!(
-                svg_dim, ref_dim,
-                "sizes of SVG document and reference file are different"
+            $crate::test_utils::reference_utils::svg_reference_test(
+                stringify!($test_name),
+                $test_filename,
+                $reference_filename,
             );
-
-            let pixels = svg_renderer
-                .intrinsic_size_in_pixels()
-                .unwrap_or((100.0, 100.0));
-
-            let output_surf = render_document(
-                &svg,
-                SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
-                |_| (),
-                cairo::Rectangle::new(0.0, 0.0, pixels.0, pixels.1),
-            )
-            .unwrap();
-
-            let reference_surf = render_document(
-                &reference,
-                SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
-                |_| (),
-                cairo::Rectangle::new(0.0, 0.0, pixels.0, pixels.1),
-            )
-            .unwrap();
-
-            Reference::from_surface(reference_surf.into_image_surface().unwrap())
-                .compare(&output_surf)
-                .evaluate(&output_surf, stringify!($test_name));
         }
     };
+}
+
+pub fn svg_reference_test(test_name: &str, test_filename: &str, reference_filename: &str) {
+    setup_font_map();
+
+    let svg = Loader::new()
+        .read_path(test_filename)
+        .expect("reading SVG test file");
+    let reference = Loader::new()
+        .read_path(reference_filename)
+        .expect("reading reference file");
+
+    let svg_renderer = CairoRenderer::new(&svg);
+    let ref_renderer = CairoRenderer::new(&reference);
+
+    let svg_dim = svg_renderer.intrinsic_dimensions();
+    let ref_dim = ref_renderer.intrinsic_dimensions();
+
+    assert_eq!(
+        svg_dim, ref_dim,
+        "sizes of SVG document and reference file are different"
+    );
+
+    let pixels = svg_renderer
+        .intrinsic_size_in_pixels()
+        .unwrap_or((100.0, 100.0));
+
+    let output_surf = render_document(
+        &svg,
+        SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
+        |_| (),
+        cairo::Rectangle::new(0.0, 0.0, pixels.0, pixels.1),
+    )
+    .unwrap();
+
+    let reference_surf = render_document(
+        &reference,
+        SurfaceSize(pixels.0.ceil() as i32, pixels.1.ceil() as i32),
+        |_| (),
+        cairo::Rectangle::new(0.0, 0.0, pixels.0, pixels.1),
+    )
+    .unwrap();
+
+    Reference::from_surface(reference_surf.into_image_surface().unwrap())
+        .compare(&output_surf)
+        .evaluate(&output_surf, test_name);
 }
