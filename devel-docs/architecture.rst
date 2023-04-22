@@ -64,8 +64,8 @@ The public Rust API is implemented in `src/api.rs
 has all the primitives needed to load and render SVG documents or
 individual elements, and to configure loading/rendering options.
 
-The public C API is implemented in `src/c_api/
-<https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/src/c_api>`_, and
+The public C API is implemented in `librsvg-c/src
+<https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/librsvg-c/src>`_, and
 it is implemented in terms of the public Rust API. Note that as of
 2021/Feb the corresponding C header files are hand-written in
 `include/librsvg/
@@ -74,7 +74,7 @@ maybe in the future they will be generated automatically with
 `cbindgen <https://github.com/eqrion/cbindgen/blob/master/docs.md>`__.
 
 We consider it good practice to provide simple and clean primitives in
-the Rust API, and have ``c_api`` deal with all the idiosyncrasies and
+the Rust API, and have ``librsvg-c`` deal with all the idiosyncrasies and
 historical considerations for the C API.
 
 In short: the public C API calls the public Rust API, and the public
@@ -84,7 +84,7 @@ Rust API calls into the library's internals.
 
    +----------------+
    |  Public C API  |
-   |    src/c_api   |
+   |  librsvg-c/src |
    +----------------+
            |
          calls
@@ -92,7 +92,7 @@ Rust API calls into the library's internals.
            v
    +-------------------+
    |  Public Rust API  |
-   |     src/api.rs    |
+   |   rsvg/src/api.rs |
    +-------------------+
            |
          calls
@@ -100,13 +100,14 @@ Rust API calls into the library's internals.
            v
    +-------------------+
    | library internals |
-   |      src/*.rs     |
+   |  rsvg/src/*.rs    |
    +-------------------+
 
 The test suite
 --------------
 
-The test suite is documented in ``tests/README.md``.
+The test suite is documented in `rsvg/tests/README.md
+<https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/rsvg/tests/README.md>`_.
 
 Code flow
 ---------
