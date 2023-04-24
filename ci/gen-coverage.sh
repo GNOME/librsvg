@@ -12,7 +12,6 @@ call_grcov() {
     # grcov coverage-profiles _build               - paths where to find .rawprof (llvm) and .gcda (gcc) files, respectively
     #       --binary-path ./_build/target/debug/   - where the Rust test binaries are located
     #       --source-dir .                         - toplevel source directory
-    #       --prefix-dir ../../                    - prefix to remove from C source files, since they are relative to builddir
     #       --branch                               - compute branch coverage if possible
     #       --ignore '**/build/markup5ever*'       - ignore generated code from dependencies
     #       --ignore '**/build/cssparser*'         - ignore generated code from dependencies
@@ -24,7 +23,6 @@ call_grcov() {
     grcov coverage-profiles _build               \
           --binary-path ./_build/target/debug/   \
           --source-dir .                         \
-          --prefix-dir ../../                    \
           --branch                               \
           --ignore '**/build/markup5ever*'       \
           --ignore '**/build/cssparser*'         \
