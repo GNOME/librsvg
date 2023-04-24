@@ -14,7 +14,6 @@ call_grcov() {
     #       --source-dir .                         - toplevel source directory
     #       --prefix-dir ../../                    - prefix to remove from C source files, since they are relative to builddir
     #       --branch                               - compute branch coverage if possible
-    #       --ignore build.rs                      - https://github.com/mozilla/grcov/issues/845
     #       --ignore '**/build/markup5ever*'       - ignore generated code from dependencies
     #       --ignore '**/build/cssparser*'         - ignore generated code from dependencies
     #       --ignore 'cargo_cache/*'               - ignore code from dependencies
@@ -27,7 +26,6 @@ call_grcov() {
           --source-dir .                         \
           --prefix-dir ../../                    \
           --branch                               \
-          --ignore build.rs                      \
           --ignore '**/build/markup5ever*'       \
           --ignore '**/build/cssparser*'         \
           --ignore 'cargo_cache/*'               \
