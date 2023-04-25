@@ -6,7 +6,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2023-03-28.0-main"
+  BASE_TAG: "2023-04-21.0-main"
   RUST_STABLE: "1.68.2"
   RUST_MINIMUM: "1.64.0"
 
@@ -24,6 +24,8 @@ variables:
       clang
       clang-tools
       curl
+      diffutils
+      findutils
       gcc
       gdb
       gdk-pixbuf-devel
@@ -39,7 +41,7 @@ variables:
       openssl-devel
       pango-devel
       python3-pip
-      python38-docutils
+      python3-docutils
       shadow
       system-group-wheel
       vala

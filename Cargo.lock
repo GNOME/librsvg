@@ -456,6 +456,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cstr"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8aa998c33a6d3271e3678950a22134cd7dd27cef86dee1b611b5b14207d1d90b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+]
+
+[[package]]
 name = "cxx"
 version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1107,13 +1117,10 @@ name = "librsvg"
 version = "2.56.0"
 dependencies = [
  "anyhow",
- "assert_cmd",
  "byteorder",
  "cairo-rs",
  "cast",
  "chrono",
- "clap 4.1.9",
- "clap_complete",
  "criterion",
  "cssparser",
  "data-url",
@@ -1137,6 +1144,7 @@ dependencies = [
  "png",
  "predicates 2.1.5",
  "proptest",
+ "quick-error 2.0.1",
  "rayon",
  "rctree",
  "regex",
@@ -1147,11 +1155,27 @@ dependencies = [
  "string_cache",
  "system-deps",
  "tempfile",
- "thiserror",
  "tinyvec",
  "url",
  "xml5ever",
  "yeslogic-fontconfig-sys",
+]
+
+[[package]]
+name = "librsvg-c"
+version = "2.56.0"
+dependencies = [
+ "cairo-rs",
+ "cast",
+ "float-cmp",
+ "gdk-pixbuf",
+ "gio",
+ "glib",
+ "libc",
+ "librsvg",
+ "once_cell",
+ "regex",
+ "url",
 ]
 
 [[package]]
@@ -1627,6 +1651,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
+name = "pixbufloader-svg"
+version = "0.0.1"
+dependencies = [
+ "cairo-rs",
+ "cstr",
+ "gdk-pixbuf",
+ "gio",
+ "glib",
+ "libc",
+ "librsvg",
+ "librsvg-c",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1986,6 +2024,41 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20ec2d3e3fc7a92ced357df9cebd5a10b6fb2aa1ee797bf7e9ce2f17dffc8f59"
 dependencies = [
  "bytemuck",
+]
+
+[[package]]
+name = "rsvg-bench"
+version = "2.56.0"
+dependencies = [
+ "anyhow",
+ "cairo-rs",
+ "clap 4.1.9",
+ "librsvg",
+ "thiserror",
+]
+
+[[package]]
+name = "rsvg-convert"
+version = "2.56.0"
+dependencies = [
+ "assert_cmd",
+ "cairo-rs",
+ "cast",
+ "chrono",
+ "clap 4.1.9",
+ "clap_complete",
+ "cssparser",
+ "float-cmp",
+ "gio",
+ "libc",
+ "librsvg",
+ "librsvg-c",
+ "lopdf",
+ "png",
+ "predicates 2.1.5",
+ "system-deps",
+ "tempfile",
+ "url",
 ]
 
 [[package]]

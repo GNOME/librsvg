@@ -1,0 +1,20 @@
+[package]
+name = "rsvg-bench"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html"
+
+[dependencies]
+# Keep these in sync with respect to the cairo-rs version:
+#   src/lib.rs - toplevel example in the docs
+anyhow = "1.0"
+cairo-rs = { version = "0.17", features=["v1_16", "png", "pdf", "ps", "svg"] }
+clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
+librsvg = { path = "../rsvg" }
+thiserror = "1.0"

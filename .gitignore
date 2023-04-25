@@ -1,5 +1,6 @@
 *~
 ChangeLog
+Makefile.in
 TAGS
 aclocal.m4
 autom4te.cache
@@ -14,7 +15,6 @@ librsvg.spec
 libtool
 ltmain.sh
 missing
-rsvg-convert
 stamp-h1
 test-driver
 .devcontainer
@@ -28,6 +28,7 @@ test-driver
 .deps
 .libs
 _build/
+doc/Makefile.in
 doc/html/
 doc/*.bak
 doc/rsvg-decl-list.txt
@@ -46,10 +47,12 @@ doc/tmpl/rsvg-file-util.sgml.bak
 doc/tmpl/rsvg.sgml.bak
 doc/version.xml
 doc/xml/
+gdk-pixbuf-loader/Makefile.in
 gdk-pixbuf-loader/gdk-pixbuf.loaders
 gdk-pixbuf-loader/librsvg.thumbnailer
 gdk-pixbuf-loader/rsvg-loader
 include/rsvg-version.h
+librsvg-c/tests-c/Makefile.in
 m4/gettext.m4
 m4/gtk-doc.m4
 m4/host-cpu-c-abi.m4
@@ -73,6 +76,7 @@ tests/api
 tests/rsvg-test
 tests/*.log
 tests/*.trs
+win32/Makefile.in
 win32/config-msvc.mak
 win32/*.bat
 win32/vs12

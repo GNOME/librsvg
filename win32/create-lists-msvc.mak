@@ -56,13 +56,13 @@ NULL=
 !if [call create-lists.bat header rsvg_objs.mak rsvg_tests]
 !endif
 
-!if [for %c in (..\tests\*.c) do @if not "%~nxc" == "test-utils.c" call create-lists.bat file rsvg_objs.mak ^$(OUTDIR)\%~nc.exe]
+!if [for %c in (..\librsvg-c\tests-c\*.c) do @if not "%~nxc" == "test-utils.c" call create-lists.bat file rsvg_objs.mak ^$(OUTDIR)\%~nc.exe]
 !endif
 
 !if [call create-lists.bat footer rsvg_objs.mak]
 !endif
 
-!if [for %c in (..\tests\*.c) do @if not "%~nxc" == "test-utils.c" @echo ^$(OUTDIR)\%~nc.exe: ^$(LIBRSVG_LIB) ^$(OUTDIR)\rsvg-tests\%~nc.obj ^$(OUTDIR)\rsvg-tests\test-utils.obj >>rsvg_tests_rules.mak]
+!if [for %c in (..\librsvg-c\tests-c\*.c) do @if not "%~nxc" == "test-utils.c" @echo ^$(OUTDIR)\%~nc.exe: ^$(LIBRSVG_LIB) ^$(OUTDIR)\rsvg-tests\%~nc.obj ^$(OUTDIR)\rsvg-tests\test-utils.obj >>rsvg_tests_rules.mak]
 !endif
 
 !include rsvg_objs.mak
