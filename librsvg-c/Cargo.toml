@@ -25,7 +25,7 @@ url = "2"
 regex = "1.7.1"
 
 [dev-dependencies]
-librsvg = { path = "../rsvg", features = ["c-api", "test-utils"] }
+librsvg = { path = "../rsvg", features = ["c-api"] }
 
 [lib]
 crate-type = [ "staticlib", "rlib" ]
