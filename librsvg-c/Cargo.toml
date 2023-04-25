@@ -23,6 +23,8 @@ url = "2"
 
 [build-dependencies]
 regex = "1.7.1"
+
+[dev-dependencies]
 librsvg = { path = "../rsvg", features = ["c-api", "test-utils"] }
 
 [lib]
