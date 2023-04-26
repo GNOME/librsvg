@@ -110,7 +110,7 @@ Where:
 	   will also create and copy the `librsvg-2.0.pc` pkg-config file if
        Python can be found.
 
-*  `<path_options>` is as follows (plase note that paths with spaces
+*  `<path_options>` is as follows (please note that paths with spaces
    should be quoted):
     *  `PREFIX`: Root directory where built files will be copied to with
 	the `install` target.  This also determines the root directory from
