@@ -41,7 +41,7 @@ all: $(RSVG_TOOLS) $(EXTRA_TARGETS) build-info-librsvg
 
 tests: all $(rsvg_tests)
 	@set PATH=$(BINDIR);$(PATH)
-	set G_TEST_SRCDIR=$(MAKEDIR)\..\tests
+	set G_TEST_SRCDIR=$(MAKEDIR)\..\librsvg-c\tests-c
 	@for %%x in ($(rsvg_tests)) do %%x
 
 rsvg_rust_tests:
