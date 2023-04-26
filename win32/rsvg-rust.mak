@@ -120,16 +120,16 @@ build-$(PLAT)-$(CFG).pre.bat:
 
 build-$(PLAT)-$(CFG)-lib.bat: build-$(PLAT)-$(CFG).pre.bat
 	@type $**>$@
-	@echo $(CARGO_CMD) $(RUST_VERBOSE_FLAG) --lib>>$@
+	@echo $(CARGO_CMD) $(RUST_VERBOSE_FLAG) --package librsvg-c>>$@
 
 build-$(PLAT)-$(CFG)-bin.bat: build-$(PLAT)-$(CFG).pre.bat
 	@type $**>$@
 	@echo $(CARGO_CMD) $(RUST_VERBOSE_FLAG) --bin rsvg-convert>>$@
 
-$(CARGO_TARGET_OUTPUT_DIR)\rsvg.lib: build-$(PLAT)-$(CFG)-lib.bat
+$(RSVG_INTERNAL_LIB): build-$(PLAT)-$(CFG)-lib.bat
 $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe: build-$(PLAT)-$(CFG)-bin.bat
 
-$(CARGO_TARGET_OUTPUT_DIR)\rsvg.lib	\
+$(RSVG_INTERNAL_LIB)	\
 $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 	@echo Please do not manually close the command window that pops up...
 	@echo.
@@ -140,13 +140,13 @@ $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 	@start "Building the Rust bits for $(PLAT) Windows MSVC Build, please do not close this console window..." /wait /i cmd /c $**
 
 !else
-$(CARGO_TARGET_OUTPUT_DIR)\rsvg.lib:
+$(RSVG_INTERNAL_LIB):
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)
-	$(CARGO_CMD) $(RUST_VERBOSE_FLAG) --lib
+	$(CARGO_CMD) $(RUST_VERBOSE_FLAG) --package librsvg-c
 	@set GTK_LIB_DIR=
 
 $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:

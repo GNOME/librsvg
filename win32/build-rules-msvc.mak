@@ -134,6 +134,6 @@ clean:
 	@-rmdir /s /q $(OUTDIR)\rsvg-tests
 	@-rmdir /s /q $(OUTDIR)\rsvg-gdk-pixbuf-loader
 	@-rmdir /s /q $(OUTDIR)\librsvg
-	$(MAKE) /f rsvg-rust.mak CFG=$(CFG) cargo-clean
+	$(MAKE) /f rsvg-rust.mak CFG=$(CFG) RSVG_INTERNAL_LIB=$(RSVG_INTERNAL_LIB) cargo-clean
 	@-rmdir /s /q $(OUTDIR)\obj
 	@-del build-$(PLAT)-$(CFG)*.bat
