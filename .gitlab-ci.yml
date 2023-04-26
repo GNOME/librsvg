@@ -339,8 +339,6 @@ coverage:
   script:
     - source ./ci/env.sh
     - bash -x ./ci/build-with-coverage.sh
-  after_script:
-    - source ./ci/env.sh
     - bash -x ./ci/gen-coverage.sh
   coverage: '/Coverage: \d+\.\d+/'
   artifacts:
