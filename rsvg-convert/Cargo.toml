@@ -24,6 +24,7 @@ clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
 clap_complete = "4.0.5" # rsvg-convert
 cssparser = "0.29.0"
 gio = "0.17"
+glib = "0.17"
 libc = "0.2"
 librsvg = { path = "../rsvg" }
 librsvg-c = { path = "../librsvg-c" }

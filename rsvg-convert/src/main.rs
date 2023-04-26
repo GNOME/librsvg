@@ -391,7 +391,7 @@ fn checked_i32(x: f64) -> Result<i32, cairo::Error> {
 }
 
 mod metadata {
-    use crate::Error;
+    use super::Error;
     use chrono::prelude::*;
     use std::env;
     use std::str::FromStr;
