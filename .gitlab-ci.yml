@@ -392,6 +392,21 @@ msys2-mingw64:
       - _build\tests\output
     expire_in: 1 day
 
+vs2017-x64:
+  # TODO: Uncomment this when ready to merge.
+  # rules:
+  #   - if: $CI_PROJECT_NAMESPACE == "GNOME"
+  stage: build
+  tags:
+    - win32-ps
+  needs: []
+  script:
+    - ci/test-msvc.bat
+  artifacts:
+    when: always
+    paths:
+      - "${CI_PROJECT_DIR}/_build/meson-logs"
+
 distcheck:
   stage: acceptance test
   extends:
