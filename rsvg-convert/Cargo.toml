@@ -31,7 +31,7 @@ librsvg-c = { path = "../librsvg-c" }
 
 [dev-dependencies]
 assert_cmd = "2.0.2"
-predicates = "2.0.0"
+predicates = "3.0.3"
 tempfile = "3"
 url = "2"
 lopdf = "0.29.0"
