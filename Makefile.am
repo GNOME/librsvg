@@ -211,7 +211,7 @@ librsvg_c_api.la: $(librsvg_c_api_la_OBJECTS) $(LIBRSVG_SRC)
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
 	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --package librsvg-c \
-	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && mv $(RUST_LIB) .libs/librsvg_c_api.a
+	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && cp $(RUST_LIB) .libs/librsvg_c_api.a
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = $(AM_CPPFLAGS)
 
@@ -259,7 +259,7 @@ $(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC) | librsvg_c_api.la
 	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --package rsvg_convert
 
 rsvg-convert$(EXEEXT): $(RSVG_CONVERT_BIN)
-	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
+	cd $(LIBRSVG_BUILD_DIR) && cp $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
 
 rsvg-convert.1: rsvg-convert.rst
 if HAVE_RST2MAN
