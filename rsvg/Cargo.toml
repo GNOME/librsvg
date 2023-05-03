@@ -78,6 +78,8 @@ string_cache = "0.8.0"
 tinyvec = { version = "1.2.0", features = ["alloc", "rustc_1_55"] }
 url = "2"
 xml5ever = "0.17.0"
+
+[target.'cfg(not(windows))'.dependencies]
 yeslogic-fontconfig-sys = { version = "4.0.1", optional = true }
 
 [dev-dependencies]
