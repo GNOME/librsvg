@@ -25,7 +25,7 @@ $<
 $<
 <<
 
-{..\tests\}.c{$(OUTDIR)\rsvg-tests\}.obj:
+{..\librsvg-c\tests-c\}.c{$(OUTDIR)\rsvg-tests\}.obj:
 	@if not exist $(@D)\ mkdir $(@D)
 	@if not exist $(@D)\..\librsvg\config.h copy .\config.h.win32 $(@D)\..\librsvg\config.h
 	$(CC) $(TEST_CFLAGS) $(LIBRSVG_LOG_DOMAIN) $(TOOLS_DEP_INCLUDES) /Fo$(@D)\ /Fd$(@D)\ /c @<<
@@ -134,6 +134,6 @@ clean:
 	@-rmdir /s /q $(OUTDIR)\rsvg-tests
 	@-rmdir /s /q $(OUTDIR)\rsvg-gdk-pixbuf-loader
 	@-rmdir /s /q $(OUTDIR)\librsvg
-	$(MAKE) /f rsvg-rust.mak CFG=$(CFG) cargo-clean
+	$(MAKE) /f rsvg-rust.mak CFG=$(CFG) RSVG_INTERNAL_LIB=$(RSVG_INTERNAL_LIB) cargo-clean
 	@-rmdir /s /q $(OUTDIR)\obj
 	@-del build-$(PLAT)-$(CFG)*.bat

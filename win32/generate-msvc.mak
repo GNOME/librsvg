@@ -33,13 +33,19 @@ generate-docs:
 # Generate NMake Makefiles (for git checkouts only)
 
 !ifndef IS_NOT_GIT
+# Either having python.exe your PATH will work or passing in
+# PYTHON=<full path to your Python interpretor> will do
+!ifndef PYTHON
+PYTHON=python
+!endif
+
 config.h.win32: ..\.git ..\configure.ac prebuild.py config.h.win32.in
 config-msvc.mak: ..\.git ..\configure.ac prebuild.py config-msvc.mak.in
 ..\include\librsvg\rsvg-version.h: ..\.git ..\configure.ac prebuild.py ..\include\librsvg\rsvg-version.h.in
 
 generate-nmake-files: config.h.win32 config-msvc.mak ..\include\librsvg\rsvg-version.h
-	@if not "$(PYTHON)" == "" $(PYTHON) prebuild.py
-	@if "$(PYTHON)" == "" echo You need to specify your Python interpreter PATH by passing in PYTHON^=^<full_path_to_python_interpreter^>
+	@echo If error meesages appear here you will need to pass in PYTHON=^<path_to_python.exe^>...
+	@$(PYTHON) prebuild.py
 
 remove-generated-nmake-files: ..\.git
 	@-del /f/q config-msvc.mak
