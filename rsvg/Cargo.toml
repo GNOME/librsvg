@@ -89,7 +89,7 @@ criterion = "0.4"
 lopdf = "0.29.0"
 matches = "0.1"
 png = "0.17.2"
-predicates = "2.0.0"
+predicates = "3.0.3"
 proptest = "1.0.0"
 quick-error = "2.0.0"
 serde = { version = "1.0", features = ["derive"] }
