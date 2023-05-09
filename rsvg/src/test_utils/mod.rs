@@ -4,10 +4,7 @@ pub mod reference_utils;
 use cairo;
 use gio;
 use glib;
-use glib::translate::*;
-use libc;
 use std::env;
-use std::ffi::CString;
 use std::sync::Once;
 
 use crate::{
@@ -50,7 +47,10 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
 mod pango_ft2 {
     use super::*;
     use glib::prelude::*;
+    use glib::translate::*;
+    use libc;
     use pangocairo::FontMap;
+    use std::ffi::CString;
 
     extern "C" {
         // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
