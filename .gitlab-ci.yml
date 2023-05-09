@@ -382,9 +382,6 @@ msys2-mingw64:
   script:
     - C:\msys64\usr\bin\pacman --noconfirm -Syyuu
     - C:\msys64\usr\bin\bash -lc "bash -x ./ci/test-msys2.sh"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
   artifacts:
     when: 'on_failure'
     paths:
