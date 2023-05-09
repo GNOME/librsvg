@@ -155,12 +155,12 @@ RUST_EXTRA =						\
 	rsvg/src/test_utils/reference_utils.rs		\
 	rsvg-bench/Cargo.toml				\
 	rsvg-bench/src/main.rs				\
-	rsvg-convert/tests/internal_predicates/file.rs	\
-	rsvg-convert/tests/internal_predicates/mod.rs	\
-	rsvg-convert/tests/internal_predicates/pdf.rs	\
-	rsvg-convert/tests/internal_predicates/png.rs	\
-	rsvg-convert/tests/internal_predicates/svg.rs	\
-	rsvg-convert/tests/rsvg_convert.rs		\
+	rsvg_convert/tests/internal_predicates/file.rs	\
+	rsvg_convert/tests/internal_predicates/mod.rs	\
+	rsvg_convert/tests/internal_predicates/pdf.rs	\
+	rsvg_convert/tests/internal_predicates/png.rs	\
+	rsvg_convert/tests/internal_predicates/svg.rs	\
+	rsvg_convert/tests/rsvg_convert.rs		\
 	librsvg-c/tests/legacy_sizing.rs		\
 	gdk-pixbuf-loader/Cargo.toml			\
 	gdk-pixbuf-loader/src/lib.rs			\
@@ -211,7 +211,7 @@ librsvg_c_api.la: $(librsvg_c_api_la_OBJECTS) $(LIBRSVG_SRC)
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
 	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --package librsvg-c \
-	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && mv $(RUST_LIB) .libs/librsvg_c_api.a
+	&& cd $(LIBRSVG_BUILD_DIR) && $(LINK) $< && cp $(RUST_LIB) .libs/librsvg_c_api.a
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = $(AM_CPPFLAGS)
 
@@ -246,9 +246,9 @@ CLEANFILES += $(bin_SCRIPTS)
 RSVG_CONVERT_BIN=$(CARGO_TARGET_DIR)/$(RUST_TARGET_SUBDIR)/rsvg-convert$(EXEEXT)
 
 RSVG_CONVERT_SRC =				\
-	rsvg-convert/Cargo.toml			\
-	rsvg-convert/build.rs			\
-	rsvg-convert/src/main.rs		\
+	rsvg_convert/Cargo.toml			\
+	rsvg_convert/build.rs			\
+	rsvg_convert/src/main.rs		\
 	$(NULL)
 
 $(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC) | librsvg_c_api.la
@@ -256,10 +256,10 @@ $(RSVG_CONVERT_BIN): $(RSVG_CONVERT_SRC) | librsvg_c_api.la
 	PKG_CONFIG_ALLOW_CROSS=1						\
 	PKG_CONFIG='$(PKG_CONFIG)'						\
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)					\
-	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --package rsvg-convert
+	$(CARGO) --locked build $(CARGO_VERBOSE) $(CARGO_TARGET_ARGS) $(CARGO_RELEASE_ARGS) --package rsvg_convert
 
 rsvg-convert$(EXEEXT): $(RSVG_CONVERT_BIN)
-	cd $(LIBRSVG_BUILD_DIR) && mv $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
+	cd $(LIBRSVG_BUILD_DIR) && cp $(RSVG_CONVERT_BIN) rsvg-convert$(EXEEXT)
 
 rsvg-convert.1: rsvg-convert.rst
 if HAVE_RST2MAN
@@ -313,8 +313,8 @@ test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/text/*.svg)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/dimensions/*.svg)		\
-	$(wildcard $(srcdir)/rsvg-convert/tests/fixtures/*.svg)			\
-	$(wildcard $(srcdir)/rsvg-convert/tests/fixtures/*.png)
+	$(wildcard $(srcdir)/rsvg_convert/tests/fixtures/*.svg)			\
+	$(wildcard $(srcdir)/rsvg_convert/tests/fixtures/*.png)
 
 EXTRA_DIST =				\
 	$(LIBRSVG_SRC)			\

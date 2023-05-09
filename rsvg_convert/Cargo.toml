@@ -1,5 +1,5 @@
 [package]
-name = "rsvg-convert"
+name = "rsvg_convert"
 version.workspace = true
 authors.workspace = true
 description.workspace = true
@@ -8,6 +8,9 @@ homepage.workspace = true
 repository.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+
+# So that we can use an rsvg-convert name instead of the default rsvg_convert
+autobins = false
 
 [package.metadata.system-deps]
 cairo-pdf = { version = "1.16", optional = true }
@@ -41,3 +44,7 @@ librsvg = { path = "../rsvg", features = ["test-utils"] }
 
 [build-dependencies]
 system-deps = "6.0.0"
+
+[[bin]]
+name = "rsvg-convert"
+path = "src/main.rs"

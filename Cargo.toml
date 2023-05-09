@@ -17,10 +17,10 @@ members = [
     "gdk-pixbuf-loader",
     "librsvg-c",
     "rsvg",
-    "rsvg-convert",
+    "rsvg_convert",
     "rsvg-bench",
 ]
 default-members = [
     "rsvg",
-    "rsvg-convert",
+    "rsvg_convert",
 ]
