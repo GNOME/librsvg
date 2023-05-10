@@ -4,10 +4,7 @@ pub mod reference_utils;
 use cairo;
 use gio;
 use glib;
-use glib::translate::*;
-use libc;
 use std::env;
-use std::ffi::CString;
 use std::sync::Once;
 
 use crate::{
@@ -46,11 +43,14 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
     res.and_then(|_| Ok(SharedImageSurface::wrap(output, SurfaceType::SRgb)?))
 }
 
-#[cfg(system_deps_have_pangoft2)]
+#[cfg(all(not(windows), system_deps_have_pangoft2))]
 mod pango_ft2 {
     use super::*;
     use glib::prelude::*;
+    use glib::translate::*;
+    use libc;
     use pangocairo::FontMap;
+    use std::ffi::CString;
 
     extern "C" {
         // pango_fc_font_map_set_config (PangoFcFontMap *fcfontmap,
@@ -97,14 +97,14 @@ mod pango_ft2 {
     }
 }
 
-#[cfg(system_deps_have_pangoft2)]
+#[cfg(all(not(windows), system_deps_have_pangoft2))]
 pub fn setup_font_map() {
     unsafe {
         self::pango_ft2::load_test_fonts();
     }
 }
 
-#[cfg(not(system_deps_have_pangoft2))]
+#[cfg(any(windows, not(system_deps_have_pangoft2)))]
 pub fn setup_font_map() {}
 
 pub fn setup_language() {
