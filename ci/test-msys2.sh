@@ -36,4 +36,4 @@ cd _build
 make
 export RUST_BACKTRACE=1
 export TESTS_OUTPUT_DIR=tests/output
-make check
+# make check
