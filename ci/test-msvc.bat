@@ -58,7 +58,7 @@ copy /b release\x64\pkg-config.exe %INST%\bin
 nmake /f Makefile.vc CFG=release clean
 cd ..
 
-:: build and install FreeType (needed at least until Cairo fixes its checks for FontConfig)
+:: build and install FreeType
 md _build_ft
 cd _build_ft
 meson setup ../freetype-%FREETYPE2_VER% --buildtype=release --prefix=%INST_PSX% --pkg-config-path=%INST%\lib\pkgconfig --cmake-prefix-path=%INST%

@@ -14,6 +14,7 @@ rust-version.workspace = true
 cairo-pdf = { version = "1.16", optional = true }
 cairo-ps = { version = "1.16", optional = true }
 cairo-svg = { version = "1.16", optional = true }
+freetype2 = "20.0.14"
 gdk-pixbuf = { name = "gdk-pixbuf-2.0", version = "2.20" }
 gio = { name = "gio-2.0", version = "2.24" }
 glib = { name = "glib-2.0", version = "2.50" }
@@ -24,7 +25,6 @@ pangocairo = "1.46"
 fontconfig = { version = "1.7", optional = true }
 pangoft2 = { version = "1.46", optional = true }
 harfbuzz = { version = "2.0", optional = true }
-freetype2 = { version = "20.0.14", optional = true }
 cairo = { version = "1.16", optional = true }
 cairo-gobject = { version = "1.16", optional = true }
 cairo-png = { version = "1.16", optional = true }
@@ -36,7 +36,6 @@ cairo = "1.16"
 cairo-gobject = "1.16"
 cairo-png = "1.16"
 harfbuzz = "2.0"
-freetype2 = "20.0.14"
 
 [features]
 c-api = []
