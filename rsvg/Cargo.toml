@@ -27,7 +27,12 @@ freetype2 = { version = "20.0.14", optional = true }
 cairo = { version = "1.16", optional = true }
 cairo-gobject = { version = "1.16", optional = true }
 cairo-png = { version = "1.16", optional = true }
-libxml2 = { name = "libxml-2.0", version = "2.9", optional = true  }
+
+[package.metadata.system-deps.'cfg(target_env = "msvc")']
+libxml2 = { name = "libxml-2.0", fallback-names = ["libxml2"], version = "2.9" }
+
+[package.metadata.system-deps.'cfg(not(target_env = "msvc"))']
+libxml2 = { name = "libxml-2.0", version = "2.9" }
 
 [package.metadata.system-deps.'cfg(not(windows))']
 fontconfig = { version = "1.7" }
@@ -37,7 +42,6 @@ cairo-gobject = "1.16"
 cairo-png = "1.16"
 harfbuzz = "2.0"
 freetype2 = "20.0.14"
-libxml2 = { name = "libxml-2.0", version = "2.9" }
 
 [features]
 c-api = []
