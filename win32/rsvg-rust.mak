@@ -114,6 +114,7 @@ build-$(PLAT)-$(CFG).pre.bat:
 	@echo if not "$(__VSCMD_PREINIT_PATH)" == "" set PATH=$(__VSCMD_PREINIT_PATH);%HOMEPATH%\.cargo\bin>>$@
 	@echo if "$(__VSCMD_PREINIT_PATH)" == "" set PATH=c:\Windows\system;c:\Windows;c:\Windows\system32\wbem;%HOMEPATH%\.cargo\bin>>$@
 	@echo set GTK_LIB_DIR=$(LIBDIR)>>$@
+	@echo set SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG=1 >>$@
 	@echo set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)>>$@
 	@if not "$(PKG_CONFIG_PATH)" == "" echo set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)>>$@
 	@if not "$(PKG_CONFIG)" == "" echo set PKG_CONFIG=$(PKG_CONFIG)>>$@
@@ -143,6 +144,7 @@ $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 $(RSVG_INTERNAL_LIB):
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
+	@set SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG=1
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)
@@ -152,6 +154,7 @@ $(RSVG_INTERNAL_LIB):
 $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
+	@set SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG=1
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)

@@ -47,6 +47,7 @@ tests: all $(rsvg_tests)
 rsvg_rust_tests:
 	@set PATH=$(BINDIR);%PATH%;%HOMEPATH%\.cargo\bin
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
+	@set SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG=1
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
 	@if not "$(PKG_CONFIG)" == "" set PKG_CONFIG=$(PKG_CONFIG)
