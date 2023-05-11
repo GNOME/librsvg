@@ -63,6 +63,7 @@ BASE_DEP_INCLUDES =			\
 	/I$(INCLUDEDIR)\glib-2.0	\
 	/I$(LIBDIR)\glib-2.0\include	\
 	/I$(INCLUDEDIR)\harfbuzz	\
+	/I$(INCLUDEDIR)\freetype2	\
 	/I$(INCLUDEDIR)\cairo	\
 	/I$(INCLUDEDIR)
 
