@@ -58,7 +58,7 @@ copy /b release\x64\pkg-config.exe %INST%\bin
 nmake /f Makefile.vc CFG=release clean
 cd ..
 
-:: build and install FreeType (needed at least until Cairo fixes its checks for FontConfig)
+:: build and install FreeType
 md _build_ft
 cd _build_ft
 meson setup ../freetype-%FREETYPE2_VER% --buildtype=release --prefix=%INST_PSX% --pkg-config-path=%INST%\lib\pkgconfig --cmake-prefix-path=%INST%
@@ -91,10 +91,9 @@ rustup-init -y --default-toolchain=stable-%RUST_HOST% --default-host=%RUST_HOST%
 :: now build librsvg
 cd win32
 nmake /f generate-msvc.mak generate-nmake-files PYTHON=python || goto :error
-:: ideally, we should use `nmake /f Makefile.vc ... || goto :error`, but let's allow this command to fail
-:: for now, since for this pipeline to really pass we need some MRs that fixes NMake builds and
-:: optional dependencies to land.
-nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig
+nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig || goto :error
+nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig tests || goto :error
+nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig rsvg_rust_tests
 
 goto :EOF
 :error
