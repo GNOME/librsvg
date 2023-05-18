@@ -780,6 +780,7 @@ impl ElementTrait for Text {
             acquired_nodes,
             &elt,
             values.transform(),
+            None,
             values,
         );
 

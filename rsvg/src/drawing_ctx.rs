@@ -608,6 +608,7 @@ impl DrawingCtx {
                 acquired_nodes,
                 &mask_element,
                 Transform::identity(),
+                None,
                 values,
             );
 
@@ -616,7 +617,6 @@ impl DrawingCtx {
                 acquired_nodes,
                 &mask_viewport,
                 false,
-                None,
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, &mask_viewport, dc, false),
             );
 
@@ -641,7 +641,6 @@ impl DrawingCtx {
         acquired_nodes: &mut AcquiredNodes<'_>,
         viewport: &Viewport,
         clipping: bool,
-        clip_rect: Option<Rect>,
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
@@ -664,8 +663,8 @@ impl DrawingCtx {
 
                 let affine_at_start = self.get_transform();
 
-                if let Some(rect) = clip_rect {
-                    clip_to_rectangle(&self.cr, &rect);
+                if let Some(rect) = stacking_ctx.clip_rect.as_ref() {
+                    clip_to_rectangle(&self.cr, rect);
                 }
 
                 // Here we are clipping in user space, so the bbox doesn't matter
@@ -1063,6 +1062,7 @@ impl DrawingCtx {
                         acquired_nodes,
                         &elt,
                         Transform::identity(),
+                        None,
                         pattern_values,
                     );
 
@@ -1071,7 +1071,6 @@ impl DrawingCtx {
                         acquired_nodes,
                         &pattern_viewport,
                         false,
-                        None,
                         &mut |an, dc| {
                             pattern_node.draw_children(
                                 an,
@@ -1254,7 +1253,6 @@ impl DrawingCtx {
             acquired_nodes,
             viewport,
             clipping,
-            None,
             &mut |an, dc| {
                 let cr = dc.cr.clone();
 
@@ -1390,7 +1388,6 @@ impl DrawingCtx {
                 acquired_nodes,
                 viewport, // FIXME: should this be the push_new_viewport below?
                 clipping,
-                None,
                 &mut |_an, dc| {
                     with_saved_cr(&dc.cr.clone(), || {
                         if let Some(_params) = dc.push_new_viewport(
@@ -1522,7 +1519,6 @@ impl DrawingCtx {
             acquired_nodes,
             viewport,
             clipping,
-            None,
             &mut |an, dc| {
                 let mut bbox = dc.empty_bbox();
 
@@ -1749,6 +1745,7 @@ impl DrawingCtx {
                 acquired_nodes,
                 &use_element,
                 Transform::identity(),
+                None,
                 values,
             );
 
@@ -1757,7 +1754,6 @@ impl DrawingCtx {
                 acquired_nodes,
                 viewport, // FIXME: should this be the child_viewport from below?
                 clipping,
-                None,
                 &mut |an, dc| {
                     if let Some(child_viewport) = dc.push_new_viewport(
                         viewport,
@@ -1791,6 +1787,7 @@ impl DrawingCtx {
                 acquired_nodes,
                 &use_element,
                 Transform::new_translate(use_rect.x0, use_rect.y0),
+                None,
                 values,
             );
 
@@ -1799,7 +1796,6 @@ impl DrawingCtx {
                 acquired_nodes,
                 viewport,
                 clipping,
-                None,
                 &mut |an, dc| {
                     child.draw(
                         an,
