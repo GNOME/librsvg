@@ -11,12 +11,12 @@ edition.workspace = true
 rust-version.workspace = true
 
 [package.metadata.system-deps]
-cairo = "1.16"
-cairo-gobject = "1.16"
-cairo-png = "1.16"
-cairo-pdf = { version = "1.16", optional = true }
-cairo-ps = { version = "1.16", optional = true }
-cairo-svg = { version = "1.16", optional = true }
+cairo = "1.17"
+cairo-gobject = "1.17"
+cairo-png = "1.17"
+cairo-pdf = { version = "1.17", optional = true }
+cairo-ps = { version = "1.17", optional = true }
+cairo-svg = { version = "1.17", optional = true }
 freetype2 = "20.0.14"
 gdk-pixbuf = { name = "gdk-pixbuf-2.0", version = "2.20" }
 gio = { name = "gio-2.0", version = "2.24" }
