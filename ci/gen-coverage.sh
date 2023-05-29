@@ -16,6 +16,8 @@ call_grcov() {
     #       --ignore '**/build/markup5ever*'       - ignore generated code from dependencies
     #       --ignore '**/build/cssparser*'         - ignore generated code from dependencies
     #       --ignore 'cargo_cache/*'               - ignore code from dependencies
+    #       --ignore '_build/*'                    - ignore generated code
+    #       --ignore 'rsvg-bench/*'                - ignore benchmarks; they are not useful for the test coverage report
     #       --excl-line 'unreachable!'             - ignore lines with the unreachable!() macro
     #       --output-type $output_type
     #       --output-path $output_path
@@ -27,6 +29,8 @@ call_grcov() {
           --ignore '**/build/markup5ever*'       \
           --ignore '**/build/cssparser*'         \
           --ignore 'cargo_cache/*'               \
+          --ignore '_build/*'                    \
+          --ignore 'rsvg-bench/*'                \
           --excl-line 'unreachable!'             \
           --output-type $output_type             \
           --output-path $output_path
