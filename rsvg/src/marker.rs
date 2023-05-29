@@ -184,10 +184,11 @@ impl Marker {
         let clip_rect = if values.is_overflow() {
             None
         } else {
-            Some(
-                self.vbox
-                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| *vb),
-            )
+            if let Some(vbox) = self.vbox {
+                Some(*vbox)
+            } else {
+                Some(Rect::from_size(marker_width, marker_height))
+            }
         };
 
         let elt = node.borrow_element();
