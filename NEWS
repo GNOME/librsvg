@@ -1,3 +1,11 @@
+Version 2.56.1
+==============
+
+- #965 - Shrink the shared library by telling the linker to omit
+  unused code (Sebastian Dröge).
+
+- Updates to dependencies (Lukáš Tyrychtr, Kalev Lember).
+
 Version 2.56.0
 ==============
 
