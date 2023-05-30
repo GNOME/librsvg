@@ -36,7 +36,7 @@ cross-element references like in SVG filters.
 
 Librsvg started as a C library with an ad-hoc API. At some point it
 got turned into a GObject library, so that the main `RsvgHandle
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/c_api/handle/struct.RsvgHandle.html>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg_c/handle/struct.RsvgHandle.html>`_
 class defines most of the entry points into the library. Through
 `GObject Introspection <https://gi.readthedocs.io/en/latest/>`__, this
 allows librsvg to be used from other programming languages.
@@ -60,7 +60,7 @@ The Rust API is a bit more lax in its API stability, but we try to stick
 to `semantic versioning <https://semver.org/>`__ as is common in Rust.
 
 The public Rust API is implemented in `src/api.rs
-<https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/src/api.rs>`_. This
+<https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/rsvg/src/api.rs>`_. This
 has all the primitives needed to load and render SVG documents or
 individual elements, and to configure loading/rendering options.
 
@@ -71,7 +71,7 @@ it is implemented in terms of the public Rust API. Note that as of
 `include/librsvg/
 <https://gitlab.gnome.org/GNOME/librsvg/-/tree/main/include/librsvg>`_;
 maybe in the future they will be generated automatically with
-`cbindgen <https://github.com/eqrion/cbindgen/blob/master/docs.md>`__.
+`cbindgen <https://github.com/mozilla/cbindgen/blob/master/docs.md>`__.
 
 We consider it good practice to provide simple and clean primitives in
 the Rust API, and have ``librsvg-c`` deal with all the idiosyncrasies and
@@ -136,13 +136,22 @@ implement the public APIs.
 A ``Document`` gets created by loading XML from a stream, into a tree
 of `Node
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/node/type.Node.html>`_
-structures. This is similar to a web browser’s DOM tree.
+structures.  This is similar to a web browser’s DOM tree.  ``Node`` is
+just a type alias for ``rctree::Node<NodeData>``: an ``rctree`` is an
+N-ary tree of reference-counted nodes, and `NodeData
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/node/enum.NodeData.html#>`_
+is the enum that librsvg uses to represent either XML element nodes, or
+text nodes in the XML.
 
-Each XML element causes a new ``Node`` to get created with an `Element
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/enum.Element.html>`_
-in it. The ``Element`` enum can represent all the SVG element types;
-for example, a ``<path>`` element from XML gets turned into a
-``Node::Element(Element::Path)``.
+Each XML element causes a new ``Node`` to get created with a
+``NodeData::Element(e)``.  The ``e`` is an `Element
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/struct.Element.html>`_,
+which is a struct that holds an XML element's name and its attributes.
+It also contains an ``element_data`` field, which is an `ElementData
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/enum.ElementData.html>`_:
+an enum that can represent all the SVG element types.  For example, a
+``<path>`` element from XML gets turned into a ``NodeData::Element(e)`` that has
+its ``element_data`` set to ``ElementData::Path``.
 
 When an ``Element`` is created from its corresponding XML, its
 `Attributes
@@ -150,10 +159,10 @@ When an ``Element`` is created from its corresponding XML, its
 get parsed. On one hand, attributes that are specific to a particular
 element type, like the ``d`` in ``<path d="...">`` get parsed by the
 `set_attributes
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.SetAttributes.html#method.set_attributes>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.ElementTrait.html#method.set_attributes>`_
 method of each particular element type (in that case,
 `Path::set_attributes
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/shapes/struct.Path.html#method.set_attributes>`_).
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.ElementTrait.html#method.set_attributes>`_).
 
 On the other hand, attributes that refer to styles, and which may
 appear for any kind of element, get all parsed into a `SpecifiedValues
@@ -226,15 +235,15 @@ within the `DocumentBuilder
 being built.
 
 Nodes are either SVG elements (the `Element
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/enum.Element.html>`_
-enum), or text data inside elements (the `Chars
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/struct.Element.html>`_
+struct), or text data inside elements (the `Chars
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.Chars.html>`_
 struct); this last one will not concern us here, and we will only talk
 about ``Element``.
 
 Each supported kind of ``Element`` parses its attributes in a
 `set_attributes
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.SetAttributes.html#method.set_attributes>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.ElementTrait.html#method.set_attributes>`_
 method. Each attribute is just a key/value pair; for example, the
 ``<rect width="5px">`` element has a ``width`` attribute whose value
 is ``5px``.
@@ -360,7 +369,7 @@ which carries around all the mutable state during rendering.
 
 Rendering is a recursive process, which goes back and forth between
 the utility functions in ``DrawingCtx`` and the `draw
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.Draw.html#method.draw>`_
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/trait.ElementTrait.html#method.draw>`_
 method in elements.
 
 The main job of ``DrawingCtx`` is to deal with the SVG drawing model.
@@ -456,7 +465,7 @@ Some interesting parts of the code
   struct represents a loaded SVG document. It holds the tree of `Node
   <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/node/type.Node.html>`_
   structs, some of which contain `Element
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/enum.Element.html>`_
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/element/struct.Element.html>`_
   and some other contain `Chars
   <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/text/struct.Chars.html>`_
   for text data in the XML. A ``Document`` also contains a mapping of

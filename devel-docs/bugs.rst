@@ -1,7 +1,7 @@
 Reporting bugs
 ==============
 
-Please report bugs at https://gitlab.gnome.org/GNOME/librsvg/issues
+Please report bugs at https://gitlab.gnome.org/GNOME/librsvg/-/issues
 
 If you want to report a rendering bug, or a missing SVG feature,
 please provide an example SVG file as an attachment to your bug

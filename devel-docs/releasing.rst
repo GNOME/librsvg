@@ -215,10 +215,13 @@ It is important to keep these dependencies updated; you can do that
 regularly with the ``cargo update`` step listed in the checklist
 above.
 
-`cargo-audit <https://github.com/RustSec/cargo-audit>`__ is very
-useful to scan the list of dependencies for registered vulnerabilities
-in the `RustSec vulnerability database <https://rustsec.org/>`__. Run
-it especially before making a new ``x.y.0`` release.
+`cargo-audit <https://github.com/rustsec/rustsec>`__ is very useful to
+scan the list of dependencies for registered vulnerabilities in the
+`RustSec vulnerability database <https://rustsec.org/>`__. Run it
+especially before making a new ``x.y.0`` release, or check the output
+of the ``deny`` job in CI pipelines — this runs `cargo-deny
+<https://embarkstudios.github.io/cargo-deny/>`_ to check for
+vulnerable and duplicate dependencies.
 
 Sometimes cargo-audit will report crates that are not vulnerable, but
 that are unmaintained. Keep an eye of those; you may want to file bugs
