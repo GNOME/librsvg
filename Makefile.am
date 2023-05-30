@@ -187,12 +187,24 @@ librsvg_@RSVG_API_MAJOR_VERSION@_la_CPPFLAGS = $(AM_CPPFLAGS)
 
 librsvg_@RSVG_API_MAJOR_VERSION@_la_CFLAGS = $(AM_CFLAGS)
 
-librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS = \
-	$(BSYMBOLIC_LDFLAG) \
-	-version-info @RSVG_LT_VERSION_INFO@ \
-	-export-dynamic \
-	-no-undefined \
-	-export-symbols-regex "^rsvg_.*" \
+# This is not strictly needed, but since we are telling Cargo to build a staticlib, it puts in
+# all of Rust's standard library and code from dependencies even when it is not needed.
+# With the following, we shrink the final .so size; see issue #965.
+#
+# This will no longer be needed when we switch to cargo-cbuild, which does this automatically.
+if OS_DARWIN
+gc_linked_library_args="-Wl,-dead_strip"
+else
+gc_linked_library_args="-Wl,--gc-sections"
+endif
+
+librsvg_@RSVG_API_MAJOR_VERSION@_la_LDFLAGS =	\
+	$(BSYMBOLIC_LDFLAG)			\
+	-version-info @RSVG_LT_VERSION_INFO@	\
+	-export-dynamic				\
+	-no-undefined				\
+	-export-symbols-regex "^rsvg_.*"	\
+        $(gc_linked_library_args)		\
 	$(AM_LDFLAGS)
 
 if OS_DARWIN
