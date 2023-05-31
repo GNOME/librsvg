@@ -2,7 +2,7 @@ Detailed compilation instructions
 =================================
 
 A full build of librsvg requires
-`autotools <https://autotools.io/index.html>`__. A full build will
+`autotools <https://autotools.info/index.html>`__. A full build will
 produce these (see :doc:`product` for details):
 
 -  ``rsvg-convert`` binary and its ``man`` page.
@@ -13,28 +13,27 @@ produce these (see :doc:`product` for details):
 -  Vala language bindings.
 
 Librsvg uses a mostly normal `autotools
-<https://autotools.io/index.html>`__ setup. The historical details of
+<https://autotools.info/index.html>`__ setup. The historical details of
 how librsvg integrates Cargo and Rust into its autotools setup are
 described in `this blog post
 <https://viruta.org/librsvgs-build-infrastructure-autotools-and-rust.html>`__,
 although hopefully you will not need to refer to it.
 
 It is perfectly fine to `ask the maintainer
-<https://gitlab.gnome.org/GNOME/librsvg/#maintainers>`__ if you have
-questions about the Autotools setup; it’s a tricky bit of machinery, and
-we are glad to help.
+<https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md#maintainers>`_
+if you have questions about the Autotools setup; it’s a tricky bit of
+machinery, and we are glad to help.
 
 The rest of this document explains librsvg’s peculiarities apart from
 the usual way of compiling Autotools projects:
 
--  `Basic compilation instructions <#basic-compilation-instructions>`__
--  `Verbosity <#verbosity>`__
--  `Debug or release builds <#debug-or-release-builds>`__
--  `Selecting a Rust toolchain <#selecting-a-rust-toolchain>`__
--  `Cross-compilation <#cross-compilation>`__
--  `Building with no network
-   access <#building-with-no-network-access>`__
--  `Running "make distcheck" <#running-make-distcheck>`__
+- `Basic compilation instructions <#basic-compilation-instructions>`_
+- `Verbosity <#verbosity>`_
+- `Debug or release builds <#debug-or-release-builds>`_
+- `Selecting a Rust toolchain <#selecting-a-rust-toolchain>`_
+- `Cross-compilation <#cross-compilation>`_
+- `Building with no network access <#building-with-no-network-access>`_
+- `Running "make distcheck" <#running-make-distcheck>`_
 
 Basic compilation instructions
 ------------------------------
@@ -175,7 +174,7 @@ When building with a target that is not supported out of the box by
 Rust, you have to do this:
 
 1. Create a `target JSON definition
-   file <https://github.com/japaric/rust-cross#target-specification-files>`__.
+   file <https://github.com/japaric/rust-cross/blob/master/README.md#target-specification-files>`_.
 
 2. Set the environment variable ``RUST_TARGET_PATH`` to its directory
    for the ``make`` command.
@@ -194,7 +193,7 @@ Cross-compiling for win32 target
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can also cross-compile to win32 (Microsoft Windows) target by using
-`MinGW-w64 <https://mingw-w64.org/>`__. You need to specify the
+`MinGW-w64 <https://www.mingw-w64.org/>`_. You need to specify the
 appropriate target in the same way as usual:
 
 -  Set an appropriate target via the ``--host`` configure option:

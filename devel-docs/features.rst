@@ -31,7 +31,7 @@ Librsvg does not try to support them exhaustively (there are too many
 features in CSS!). Instead, we try to prioritize new features based on
 the needs which people express in librsvg’s bug tracker. Do you want a
 feature? `File an
-issue <https://gitlab.gnome.org/GNOME/librsvg/issues>`__!
+issue <https://gitlab.gnome.org/GNOME/librsvg/-/issues>`__!
 
 Attributes supported by all elements
 ------------------------------------

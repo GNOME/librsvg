@@ -50,3 +50,19 @@ html_theme = 'sphinx_rtd_theme'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+
+# Options for the linkcheck builder.  This is used by the ci/check_docs_links.sh script.
+#
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-the-linkcheck-builder
+
+linkcheck_ignore = [
+    # These URLs fail for some reason, but work in the browser.
+    r'https://crates.io/crates/.*',
+
+    # Links with anchors for section names or line numbers fail.  But since we usually
+    # use specific commit ids, they should be correct anyway.
+    r'https://github.com/.*#.*',
+    r'https://gitlab.gnome.org/.*#.*',
+    r'https://gitlab.freedesktop.org/.*#.*',
+]

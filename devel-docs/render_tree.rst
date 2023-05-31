@@ -191,7 +191,7 @@ transparent, temporary surface:
 
 The most critical function in librsvg is probably
 `DrawingCtx::with_discrete_layer
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/librsvg/drawing_ctx/struct.DrawingCtx.html#method.with_discrete_layer>`_;
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/drawing_ctx/struct.DrawingCtx.html#method.with_discrete_layer>`_;
 it implements this drawing model.
 
 Current state (2023/03/30)
