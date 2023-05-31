@@ -6,7 +6,7 @@ use std::slice::Iter;
 
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{DrawingCtx, Viewport};
+use crate::drawing_ctx::Viewport;
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::ValueErrorKind;
 use crate::filter_func::FilterFunction;
@@ -107,14 +107,14 @@ impl FilterValue {
         user_space_params: &NormalizeParams,
         current_color: RGBA,
         viewport: &Viewport,
-        draw_ctx: &DrawingCtx,
+        session: &Session,
         node_being_filtered_name: &str,
     ) -> Result<FilterSpec, FilterResolveError> {
         match *self {
             FilterValue::Url(ref node_id) => filter_spec_from_filter_node(
                 acquired_nodes,
                 viewport,
-                draw_ctx,
+                session,
                 node_id,
                 node_being_filtered_name,
             ),
@@ -223,19 +223,17 @@ fn extract_filter_from_filter_node(
 fn filter_spec_from_filter_node(
     acquired_nodes: &mut AcquiredNodes<'_>,
     viewport: &Viewport,
-    draw_ctx: &DrawingCtx,
+    session: &Session,
     node_id: &NodeId,
     node_being_filtered_name: &str,
 ) -> Result<FilterSpec, FilterResolveError> {
-    let session = draw_ctx.session().clone();
-
     let filter_view_params = ViewportGen::new(viewport);
 
     acquired_nodes
         .acquire(node_id)
         .map_err(|e| {
             rsvg_log!(
-                session,
+                *session,
                 "element {} will not be filtered with \"{}\": {}",
                 node_being_filtered_name,
                 node_id,
@@ -250,13 +248,13 @@ fn filter_spec_from_filter_node(
                 ElementData::Filter(_) => extract_filter_from_filter_node(
                     node,
                     acquired_nodes,
-                    &session,
+                    session,
                     &filter_view_params,
                 ),
 
                 _ => {
                     rsvg_log!(
-                        session,
+                        *session,
                         "element {} will not be filtered since \"{}\" is not a filter",
                         node_being_filtered_name,
                         node_id,

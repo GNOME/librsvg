@@ -887,6 +887,8 @@ impl DrawingCtx {
         fill_paint_source: Rc<UserSpacePaintSource>,
         node_bbox: BoundingBox,
     ) -> Result<SharedImageSurface, RenderingError> {
+        let session = self.session();
+
         // We try to convert each item in the filter_list to a FilterSpec.
         //
         // However, the spec mentions, "If the filter references a non-existent object or
@@ -904,7 +906,7 @@ impl DrawingCtx {
                     user_space_params,
                     filter.current_color,
                     viewport,
-                    self,
+                    session,
                     node_name,
                 )
             })
