@@ -1,3 +1,15 @@
+Version 2.56.1
+==============
+
+- The minimum supported Rust version (MSRV) is 1.65.  Unfortunately
+  the assert_cmd crate, used in the test suite, bumped its MSRV and is
+  forcing us to do the same.
+
+- #965 - Shrink the shared library by telling the linker to omit
+  unused code (Sebastian Dröge).
+
+- Updates to dependencies (Lukáš Tyrychtr, Kalev Lember).
+
 Version 2.56.0
 ==============
 
