@@ -110,7 +110,7 @@ Where:
 	   will also create and copy the `librsvg-2.0.pc` pkg-config file if
        Python can be found.
 
-*  `<path_options>` is as follows (plase note that paths with spaces
+*  `<path_options>` is as follows (please note that paths with spaces
    should be quoted):
     *  `PREFIX`: Root directory where built files will be copied to with
 	the `install` target.  This also determines the root directory from
@@ -159,7 +159,7 @@ Where:
 	   `pip` typically produces `gi-docgen` in `.exe` format).
 
 *  `<other_options>` is as follows, activate the options using
-   `<option>=1`:
+   `<option>=1`, unless otherwise noted:
     *  `INTROSPECTION`: Build the introspection files.  Please see notes
     above.
     *  `USE_PANGOFT2`: Build the test programs with PangoFT2 support,
@@ -168,7 +168,12 @@ Where:
        that HarfBuzz, FontConfig and FreeType will also be required for
        the test programs to run.
     *  `VERBOSE`: Use verbose mode when building the Rust code.
-    *  `USE_NIGHTLY_TOOLCHAIN`: Use a nightly/unstable Rust toolchain
-       instead of the default stable toolchain.  Useful for testing
-       the librsvg code against an unstable toolchain or the unstable
-       toolchain itself.
+    *  `USE_NIGHTLY_TOOLCHAIN`, `TOOLCHAIN_VERSION=<Rust_toolchain_version>`:
+       Use a nightly (unstable) Rust toolchain or an installed previous-stable
+       version of the Rust toolchain instead of the latest stable toolchain,
+       which is the default. Useful for testing the librsvg code against an
+       unstable toolchain or the unstable toolchain itself, or if the
+       latest Rust toolchain release introduced unexpected issues.  Note
+       that `USE_NIGHTLY_TOOLCHAIN` takes precedence over
+       `TOOLCHAIN_VERSION`, and `TOOLCHAIN_VERSION=nightly` is the same
+       as `USE_NIGHTLY_TOOLCHAIN=1`
