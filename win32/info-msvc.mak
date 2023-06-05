@@ -110,9 +110,12 @@ help:
 	@echo VERBOSE:
 	@echo Run Cargo (i.e. the Rust compilation) in verbose mode.
 	@echo.
-	@echo USE_NIGHTLY_TOOLCHAIN:
-	@echo Use a nightly Rust toolchain instead of a stable one.  Notice the nightly
-	@echo toolchain for the target architecture must be installed beforehand.
+	@echo USE_NIGHTLY_TOOLCHAIN/TOOLCHAIN_VERSION:
+	@echo Use a nightly Rust toolchain or a specific toolchain version instead of
+	@echo the latest installed stable one.  Notice the nightly toolchain or specified
+	@echo toolchain version for the target architecture must be installed beforehand.
+	@echo (note that TOOLCHAIN_VERSION=nightly is the same as USE_NIGHTLY_TOOLCHAIN=1,
+	@echo and USE_NIGHTLY_TOOLCHAIN takes precedence over TOOLCHAIN_VERSION).
 	@echo ======
 	@echo.
 	@echo Other options:
