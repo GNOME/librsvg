@@ -183,12 +183,10 @@ impl Marker {
         // in the viewport, so it knows whether to clip or not.
         let clip_rect = if values.is_overflow() {
             None
+        } else if let Some(vbox) = self.vbox {
+            Some(*vbox)
         } else {
-            if let Some(vbox) = self.vbox {
-                Some(*vbox)
-            } else {
-                Some(Rect::from_size(marker_width, marker_height))
-            }
+            Some(Rect::from_size(marker_width, marker_height))
         };
 
         let elt = node.borrow_element();
