@@ -37,7 +37,7 @@ copy /b %INST%\lib\z.lib %INST%\lib\zlib.lib
 :: (sadly there is no CUrl, but wget, so MSYS2 is needed temporarily)
 :: %MSYS2_BINDIR% must be in PATH to find gzip/xz.
 set PATH=%PATH%;%MSYS2_BINDIR%
-%MSYS2_BINDIR%\wget https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe
+if not exist %HOMEPATH%\.cargo\bin\rustup.exe %MSYS2_BINDIR%\wget https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe
 %MSYS2_BINDIR%\wget https://pkgconfig.freedesktop.org/releases/pkg-config-%PKG_CONFIG_VER%.tar.gz
 %MSYS2_BINDIR%\wget https://downloads.sourceforge.net/freetype/freetype-%FREETYPE2_VER%.tar.xz
 %MSYS2_BINDIR%\wget https://download.gnome.org/sources/libxml2/2.10/libxml2-%LIBXML2_VER%.tar.xz
@@ -86,7 +86,9 @@ cd ..
 rmdir /s/q _build_pango
 
 :: Install Rust
-rustup-init -y --default-toolchain=stable-%RUST_HOST% --default-host=%RUST_HOST%
+if exist %HOMEPATH%\.cargo\bin\rustup.exe %HOMEPATH%\.cargo\bin\rustup update
+if not exist %HOMEPATH%\.cargo\bin\rustup.exe rustup-init -y --default-toolchain=stable-%RUST_HOST% --default-host=%RUST_HOST%
+
 
 :: now build librsvg
 cd win32
