@@ -13,9 +13,12 @@ CARGO = cargo
 RUSTUP = rustup
 !endif
 
-# For those who wish to use the nightly toolchain to build librsvg
+# For those who wish to use the nightly toolchain or a particular
+# toolchain version to build librsvg
 !ifdef USE_NIGHTLY_TOOLCHAIN
 TOOLCHAIN_TYPE = nightly
+!elseif defined(TOOLCHAIN_VERSION)
+TOOLCHAIN_TYPE = $(TOOLCHAIN_VERSION)
 !else
 TOOLCHAIN_TYPE = stable
 !endif
