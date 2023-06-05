@@ -244,10 +244,11 @@ yet).
 
 Elements that establish a viewport (``svg``, ``symbol``, ``image``,
 ``marker``, ``pattern``) need to carry information about this
-viewport, which is a ``viewBox`` plus ``preserveAspectRatio``.  See
-`#298 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/298>`_ for a
-somewhat obsolete description of the refactoring work needed to unify
-this logic.
+viewport, which is a ``viewBox`` plus ``preserveAspectRatio`` and
+``overflow``.  See `#298
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/298>`_ for a somewhat
+obsolete description of the refactoring work needed to unify this
+logic.
 
 The ``layout::StackingContext`` struct should contain another field,
 probably called ``layer``, with something like this:
