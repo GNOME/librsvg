@@ -89,13 +89,24 @@ rmdir /s/q _build_pango
 if exist %HOMEPATH%\.cargo\bin\rustup.exe %HOMEPATH%\.cargo\bin\rustup update
 if not exist %HOMEPATH%\.cargo\bin\rustup.exe rustup-init -y --default-toolchain=stable-%RUST_HOST% --default-host=%RUST_HOST%
 
+:: workaround issue 968 due to bug in Rust 1.70.0
+@set DOWNGRADE_RUST_VERSION=1
 
 :: now build librsvg
 cd win32
 nmake /f generate-msvc.mak generate-nmake-files PYTHON=python || goto :error
+if "%DOWNGRADE_RUST_VERSION%" == "1" goto :downgrade_rust
 nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig || goto :error
 nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig tests || goto :error
 nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig rsvg_rust_tests
+
+goto :EOF
+:downgrade_rust
+@set RUST_DOWNGRADE_VER=1.69.0
+%HOMEPATH%\.cargo\bin\rustup install %RUST_DOWNGRADE_VER%-%RUST_HOST%
+nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig TOOLCHAIN_VERSION=%RUST_DOWNGRADE_VER%|| goto :error
+nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig TOOLCHAIN_VERSION=%RUST_DOWNGRADE_VER% tests || goto :error
+nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig TOOLCHAIN_VERSION=%RUST_DOWNGRADE_VER% rsvg_rust_tests
 
 goto :EOF
 :error
