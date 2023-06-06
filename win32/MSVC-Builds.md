@@ -168,12 +168,10 @@ Where:
        that HarfBuzz, FontConfig and FreeType will also be required for
        the test programs to run.
     *  `VERBOSE`: Use verbose mode when building the Rust code.
-    *  `USE_NIGHTLY_TOOLCHAIN`, `TOOLCHAIN_VERSION=<Rust_toolchain_version>`:
-       Use a nightly (unstable) Rust toolchain or an installed previous-stable
-       version of the Rust toolchain instead of the latest stable toolchain,
-       which is the default. Useful for testing the librsvg code against an
-       unstable toolchain or the unstable toolchain itself, or if the
-       latest Rust toolchain release introduced unexpected issues.  Note
-       that `USE_NIGHTLY_TOOLCHAIN` takes precedence over
-       `TOOLCHAIN_VERSION`, and `TOOLCHAIN_VERSION=nightly` is the same
-       as `USE_NIGHTLY_TOOLCHAIN=1`
+    *  `TOOLCHAIN_VERSION=<Rust_toolchain_version>`:
+       Use an specified installed version (or nightly version)
+       of the Rust toolchain instead of the default toolchain.
+       Useful for testing the librsvg code against a nightly toolchain
+       or the unstable toolchain itself, or if the latest Rust toolchain
+       release (which is often set as the default) introduced unexpected
+       issues.
