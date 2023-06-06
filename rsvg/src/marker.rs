@@ -175,26 +175,35 @@ impl Marker {
             -self.ref_y.to_user(&content_params),
         );
 
-        let clip = if values.is_overflow() {
+        // FIXME: This is the only place in the code where we pass a Some(rect) to
+        // StackingContext::new() for its clip_rect argument.  The effect is to clip to
+        // the viewport that the current marker should establish, but this code for
+        // drawing markers does not yet use the viewports machinery and instead does
+        // things by hand.  We should encode the information about the overflow property
+        // in the viewport, so it knows whether to clip or not.
+        let clip_rect = if values.is_overflow() {
             None
+        } else if let Some(vbox) = self.vbox {
+            Some(*vbox)
         } else {
-            Some(
-                self.vbox
-                    .map_or_else(|| Rect::from_size(marker_width, marker_height), |vb| *vb),
-            )
+            Some(Rect::from_size(marker_width, marker_height))
         };
 
         let elt = node.borrow_element();
-        let stacking_ctx =
-            StackingContext::new(draw_ctx.session(), acquired_nodes, &elt, transform, values);
+        let stacking_ctx = StackingContext::new(
+            draw_ctx.session(),
+            acquired_nodes,
+            &elt,
+            transform,
+            clip_rect,
+            values,
+        );
 
-        // FIXME: use content_viewport
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
             &content_viewport,
             clipping,
-            clip,
             &mut |an, dc| node.draw_children(an, &cascaded, &content_viewport, dc, clipping),
         )
     }

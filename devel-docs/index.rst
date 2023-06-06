@@ -35,6 +35,7 @@ Development guide for librsvg
    render_tree
    api_observability
    performance_tracking
+   viewport
 
 .. toctree::
    :caption: Info for Maintainers
@@ -96,6 +97,7 @@ a sort of big-picture development history apart from commit messages.
 - :doc:`render_tree`
 - :doc:`api_observability`
 - :doc:`performance_tracking`
+- :doc:`viewport`
 
 See https://rustc-dev-guide.rust-lang.org/walkthrough.html, section
 Overview, to formalize the RFC process for features vs. drive-by

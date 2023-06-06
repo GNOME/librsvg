@@ -106,6 +106,7 @@ impl ElementTrait for Image {
             acquired_nodes,
             &elt,
             values.transform(),
+            None,
             values,
         );
 

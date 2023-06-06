@@ -41,6 +41,7 @@ impl ElementTrait for Group {
             acquired_nodes,
             &elt,
             values.transform(),
+            None,
             values,
         );
 
@@ -49,7 +50,6 @@ impl ElementTrait for Group {
             acquired_nodes,
             viewport,
             clipping,
-            None,
             &mut |an, dc| node.draw_children(an, cascaded, viewport, dc, clipping),
         )
     }
@@ -86,6 +86,7 @@ impl ElementTrait for Switch {
             acquired_nodes,
             &elt,
             values.transform(),
+            None,
             values,
         );
 
@@ -94,7 +95,6 @@ impl ElementTrait for Switch {
             acquired_nodes,
             viewport,
             clipping,
-            None,
             &mut |an, dc| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
@@ -309,6 +309,7 @@ impl ElementTrait for Svg {
             acquired_nodes,
             &elt,
             values.transform(),
+            None,
             values,
         );
 
@@ -317,7 +318,6 @@ impl ElementTrait for Svg {
             acquired_nodes,
             viewport, // FIXME: should this be the svg_viewport from below?
             clipping,
-            None,
             &mut |an, dc| {
                 if let Some(svg_viewport) = self.make_svg_viewport(node, cascaded, viewport, dc) {
                     node.draw_children(an, cascaded, &svg_viewport, dc, clipping)
@@ -625,7 +625,6 @@ impl ElementTrait for Link {
             acquired_nodes,
             viewport,
             clipping,
-            None,
             &mut |an, dc| node.draw_children(an, &cascaded, viewport, dc, clipping),
         )
     }

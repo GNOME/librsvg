@@ -978,12 +978,13 @@ pub fn cascade(
 
         matches.as_mut_slice().sort();
 
+        let mut element = node.borrow_element_mut();
+
         for m in matches {
-            node.borrow_element_mut()
-                .apply_style_declaration(m.declaration, m.origin);
+            element.apply_style_declaration(m.declaration, m.origin);
         }
 
-        node.borrow_element_mut().set_style_attribute(session);
+        element.set_style_attribute(session);
     }
 
     let values = ComputedValues::default();

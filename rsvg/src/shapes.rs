@@ -145,6 +145,7 @@ fn draw_basic_shape(
         acquired_nodes,
         &elt,
         values.transform(),
+        None,
         values,
     );
 

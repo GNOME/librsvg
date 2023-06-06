@@ -49,6 +49,7 @@ pub struct StackingContext {
     pub transform: Transform,
     pub opacity: Opacity,
     pub filter: Option<Filter>,
+    pub clip_rect: Option<Rect>,
     pub clip_in_user_space: Option<Node>,
     pub clip_in_object_space: Option<Node>,
     pub mask: Option<Node>,
@@ -218,6 +219,7 @@ impl StackingContext {
         acquired_nodes: &mut AcquiredNodes<'_>,
         element: &Element,
         transform: Transform,
+        clip_rect: Option<Rect>,
         values: &ComputedValues,
     ) -> StackingContext {
         let element_name = format!("{element}");
@@ -297,6 +299,7 @@ impl StackingContext {
             transform,
             opacity,
             filter,
+            clip_rect,
             clip_in_user_space,
             clip_in_object_space,
             mask,
@@ -314,7 +317,9 @@ impl StackingContext {
         values: &ComputedValues,
         link_target: Option<String>,
     ) -> StackingContext {
-        let mut ctx = Self::new(session, acquired_nodes, element, transform, values);
+        // Note that the clip_rect=Some(...) argument is only used by the markers code,
+        // hence it is None here.  Something to refactor later.
+        let mut ctx = Self::new(session, acquired_nodes, element, transform, None, values);
         ctx.link_target = link_target;
         ctx
     }
