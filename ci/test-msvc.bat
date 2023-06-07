@@ -89,12 +89,14 @@ rmdir /s/q _build_pango
 if exist %HOMEPATH%\.cargo\bin\rustup.exe %HOMEPATH%\.cargo\bin\rustup update
 if not exist %HOMEPATH%\.cargo\bin\rustup.exe rustup-init -y --default-toolchain=stable-%RUST_HOST% --default-host=%RUST_HOST%
 
-:: workaround issue 968 due to bug in Rust 1.70.0
-@set DOWNGRADE_RUST_VERSION=1
+:: Enable workaround if latest stable Rust caused issues like #968.
+:: Update RUST_DOWNGRADE_VER below as well as required.
+:: @set DOWNGRADE_RUST_VERSION=1
 
 :: now build librsvg
 cd win32
 nmake /f generate-msvc.mak generate-nmake-files PYTHON=python || goto :error
+
 if "%DOWNGRADE_RUST_VERSION%" == "1" goto :downgrade_rust
 nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig || goto :error
 nmake /f Makefile.vc CFG=release PREFIX=%INST% PKG_CONFIG=%INST%\bin\pkg-config.exe PKG_CONFIG_PATH=%INST%\lib\pkgconfig tests || goto :error
