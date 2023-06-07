@@ -42,8 +42,9 @@ $(LIBRSVG_LIB): $(LIBRSVG_DLL)
 # $(dependent_objects)
 # <<
 # 	@-if exist $@.manifest mt /manifest $@.manifest /outputresource:$@;2
+
 $(LIBRSVG_DLL): $(RSVG_INTERNAL_LIB) $(librsvg_OBJS) $(LIBRSVG_DEF)
-	link /DLL $(LDFLAGS) $(LIBRSVG_DEP_LIBS)	\
+	link /DLL $(LDFLAGS) $(LIBRSVG_DEP_LIBS) $(LIBRSVG_SYSTEM_DEP_LIBS)	\
 	/implib:$(LIBRSVG_LIB)	\
 	-out:$@ /def:$(LIBRSVG_DEF) @<<
 $(librsvg_OBJS)

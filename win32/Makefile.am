@@ -15,7 +15,7 @@ EXTRA_DIST = \
 	Makefile.vc		\
 	MSVC-Builds.md		\
 	rsvg-rust.mak		\
-	rust-default-target.bat	\
+	rust-query-cfg.bat	\
 	pc_base.py		\
 	replace.py		\
 	rsvgpc.py
