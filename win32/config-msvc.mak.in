@@ -114,12 +114,7 @@ LIBRSVG_DEP_LIBS =			\
 	$(LIBRSVG_EXTRA_DEP_LIBS)	\
 	pango-1.0.lib			\
 	cairo-gobject.lib		\
-	$(BASE_DEP_LIBS)		\
-	libxml2.lib			\
-	advapi32.lib			\
-	userenv.lib			\
-	bcrypt.lib			\
-	ws2_32.lib
+	$(BASE_DEP_LIBS)
 
 RSVG_PIXBUF_LOADER_CFLAGS =			\
 	$(BASE_CFLAGS)				\
