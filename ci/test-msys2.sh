@@ -32,7 +32,7 @@ mkdir -p _build
 cd _build
 
 # Stolen from https://github.com/msys2/MINGW-packages/blob/master/mingw-w64-librsvg/PKGBUILD
-../autogen.sh LIBS="-lws2_32 -luserenv"
+../autogen.sh
 make
 export RUST_BACKTRACE=1
 export TESTS_OUTPUT_DIR=tests/output

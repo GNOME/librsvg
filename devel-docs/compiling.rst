@@ -206,17 +206,13 @@ appropriate target in the same way as usual:
    -  ``i686-pc-windows-gnu`` for 32-bit target
    -  ``x86_64-pc-windows-gnu`` for 64-bit target
 
-In addition you may need to link with some win32 specific libraries like
-``LIBS="-lws2_32 -luserenv"``.
-
-Example:
+For example:
 
 .. code:: sh
 
    ./configure \
      --host=x86_64-w64-mingw32 \
-     RUST_TARGET=x86_64-pc-windows-gnu \
-     LIBS="-lws2_32 -luserenv"
+     RUST_TARGET=x86_64-pc-windows-gnu
    make
 
 The most painful aspect of this way of building is preparing a win32
