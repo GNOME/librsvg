@@ -6,21 +6,41 @@ LIBDIR=$(PREFIX)\lib
 !endif
 
 !if "$(CARGO)" == ""
-CARGO = cargo
+CARGO = %HOMEPATH%\.cargo\bin\cargo
 !endif
 
 !if "$(RUSTUP)" == ""
-RUSTUP = rustup
+RUSTUP = %HOMEPATH%\.cargo\bin\rustup
 !endif
 
-# For those who wish to use the nightly toolchain or a particular
-# toolchain version to build librsvg
-!ifdef USE_NIGHTLY_TOOLCHAIN
-TOOLCHAIN_TYPE = nightly
-!elseif defined(TOOLCHAIN_VERSION)
+!if [call rust-default-target.bat $(RUSTUP)]
+!endif
+!include rust-cfg.mak
+!if [del /f/q rust-cfg.mak]
+!endif
+
+# For those who wish to use a particular toolchain version to build librsvg
+!if defined(TOOLCHAIN_VERSION)
 TOOLCHAIN_TYPE = $(TOOLCHAIN_VERSION)
 !else
-TOOLCHAIN_TYPE = stable
+TOOLCHAIN_TYPE =
+!endif
+
+!if "$(TOOLCHAIN_TYPE)" == ""
+!if "$(RUST_DEFAULT_COMPILER)" != "pc-windows-msvc"
+!error The default Rust toolchain is not an MSVC toolchain. Please use `rustup` to set the default to an MSVC toolchain
+!endif
+TOOLCHAIN_TYPE = $(RUST_DEFAULT_CHANNEL)
+BUILD_HOST = $(RUST_DEFAULT_TARGET)
+# non-default toolchain requested
+!else
+!if "$(PROCESSOR_ARCHITECTURE)" == "x64" || "$(PROCESSOR_ARCHITECTURE)" == "X64" || "$(PROCESSOR_ARCHITECTURE)" == "AMD64"
+BUILD_HOST = x64
+!elseif "$(PROCESSOR_ARCHITECTURE)" == "ARM64"
+BUILD_HOST = arm64
+!elseif "$(PROCESSOR_ARCHITECTURE)" == "x86"
+BUILD_HOST = Win32
+!endif
 !endif
 
 !ifdef VERBOSE
@@ -32,26 +52,37 @@ RUST_VERBOSE_FLAG = --verbose
 FORCE_CROSS = 0
 !endif
 
+# Setup cross builds if needed
 !if "$(PLAT)" == "x64"
 RUST_TARGET = x86_64
-!if "$(PROCESSOR_ARCHITECTURE)" == "ARM64"
+!if "$(BUILD_HOST)" != "$(PLAT)"
 FORCE_CROSS = 1
+!if "$(BUILD_HOST)" == "arm64"
 RUST_HOST = aarch64
-!elseif "$(PROCESSOR_ARCHITECTURE)" == "x86"
-FORCE_CROSS = 1
+!elseif "$(BUILD_HOST)" == "Win32"
 RUST_HOST = i686
+!endif
 !endif
 !elseif "$(PLAT)" == "arm64"
 RUST_TARGET = aarch64
-!if "$(PROCESSOR_ARCHITECTURE)" == "x64" || "$(PROCESSOR_ARCHITECTURE)" == "X64" || "$(PROCESSOR_ARCHITECTURE)" == "AMD64"
+!if "$(BUILD_HOST)" != "$(PLAT)"
 FORCE_CROSS = 1
+!if "$(BUILD_HOST)" == "x64"
 RUST_HOST = x86_64
-!elseif "$(PROCESSOR_ARCHITECTURE)" == "x86"
-FORCE_CROSS = 1
+!elseif "$(BUILD_HOST)" == "Win32"
 RUST_HOST = i686
+!endif
 !endif
 !else
 RUST_TARGET = i686
+!if "$(BUILD_HOST)" != "$(PLAT)"
+FORCE_CROSS = 1
+!if "$(BUILD_HOST)" == "arm64"
+RUST_HOST = aarch64
+!elseif "$(BUILD_HOST)" == "x64"
+RUST_HOST = x86_64
+!endif
+!endif
 !endif
 
 !if "$(VALID_CFGSET)" == "TRUE"
@@ -63,21 +94,23 @@ BUILD_RUST = 0
 !if "$(BUILD_RUST)" == "1"
 
 CARGO_TARGET = $(RUST_TARGET)-pc-windows-msvc
-CARGO_TARGET_CMD = --target $(CARGO_TARGET)
-CARGO_TARGET_TOOLCHAIN = $(TOOLCHAIN_TYPE)-$(CARGO_TARGET)
+CARGO_TARGET_TOOLCHAIN = +$(TOOLCHAIN_TYPE)-$(CARGO_TARGET)
+
 RUSTUP_CMD = $(RUSTUP) default $(DEFAULT_TARGET)
 CARGO_TARGET_DIR = vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
 CARGO_TARGET_DIR_FLAG = --target-dir=$(CARGO_TARGET_DIR)
 
 MANIFEST_PATH_FLAG = --manifest-path=..\Cargo.toml
 !if $(FORCE_CROSS) > 0
-RUST_HOST_TOOLCHAIN = $(TOOLCHAIN_TYPE)-$(RUST_HOST)-pc-windows-msvc
-CARGO_CMD = $(CARGO) +$(RUST_HOST_TOOLCHAIN) --locked build $(CARGO_TARGET_CMD) $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
-CARGO_CLEAN_CMD = $(CARGO) +$(RUST_HOST_TOOLCHAIN) clean $(CARGO_TARGET_CMD) $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+RUST_HOST_TOOLCHAIN = +$(TOOLCHAIN_TYPE)-$(RUST_HOST)-pc-windows-msvc
+
+CARGO_TARGET_CMD = --target $(CARGO_TARGET)
+CARGO_CMD = $(CARGO) $(RUST_HOST_TOOLCHAIN) --locked build $(CARGO_TARGET_CMD) $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+CARGO_CLEAN_CMD = $(CARGO) $(RUST_HOST_TOOLCHAIN) clean $(CARGO_TARGET_CMD) $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
 CARGO_TARGET_OUTPUT_DIR = $(CARGO_TARGET_DIR)\$(CARGO_TARGET)\$(CFG)
 !else
-CARGO_CMD = $(CARGO) +$(CARGO_TARGET_TOOLCHAIN) --locked build $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
-CARGO_CLEAN_CMD = $(CARGO) +$(CARGO_TARGET_TOOLCHAIN) clean $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+CARGO_CMD = $(CARGO) $(CARGO_TARGET_TOOLCHAIN) --locked build $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
+CARGO_CLEAN_CMD = $(CARGO) $(CARGO_TARGET_TOOLCHAIN) clean $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
 CARGO_TARGET_OUTPUT_DIR = $(CARGO_TARGET_DIR)\$(CFG)
 !endif
 !if "$(CFG)" == "release" || "$(CFG)" == "Release"
@@ -125,8 +158,8 @@ build-$(PLAT)-$(CFG).pre.bat:
 	@echo set __VSCMD_PREINIT_VCToolsVersion=>>$@
 	@echo set __VSCMD_PREINIT_VS160COMNTOOLS=>>$@
 	@echo set __VSCMD_script_err_count=>>$@
-	@echo if not "$(__VSCMD_PREINIT_PATH)" == "" set PATH=$(__VSCMD_PREINIT_PATH);%HOMEPATH%\.cargo\bin>>$@
-	@echo if "$(__VSCMD_PREINIT_PATH)" == "" set PATH=c:\Windows\system;c:\Windows;c:\Windows\system32\wbem;%HOMEPATH%\.cargo\bin>>$@
+	@echo if not "$(__VSCMD_PREINIT_PATH)" == "" set PATH=$(__VSCMD_PREINIT_PATH)>>$@
+	@echo if "$(__VSCMD_PREINIT_PATH)" == "" set PATH=c:\Windows\system;c:\Windows;c:\Windows\system32\wbem>>$@
 	@echo set GTK_LIB_DIR=$(LIBDIR)>>$@
 	@echo set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)>>$@
 	@if not "$(PKG_CONFIG_PATH)" == "" echo set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)>>$@
@@ -155,7 +188,6 @@ $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 
 !else
 $(CARGO_TARGET_OUTPUT_DIR)\rsvg.lib:
-	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
@@ -164,7 +196,6 @@ $(CARGO_TARGET_OUTPUT_DIR)\rsvg.lib:
 	@set GTK_LIB_DIR=
 
 $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
-	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@set GTK_LIB_DIR=$(LIBDIR);$(LIB)
 	@set SYSTEM_DEPS_LIBXML2_LIB=$(LIBXML2_LIB:.lib=)
 	@if not "$(PKG_CONFIG_PATH)" == "" set PKG_CONFIG_PATH=$(PKG_CONFIG_PATH)
@@ -174,7 +205,6 @@ $(CARGO_TARGET_OUTPUT_DIR)\rsvg-convert.exe:
 !endif
 
 cargo-clean:
-	@set PATH=%PATH%;%HOMEPATH%\.cargo\bin
 	@if exist build-$(PLAT)-$(CFG).bat del /f/q build-$(PLAT)-$(CFG).bat
 	@$(CARGO_CLEAN_CMD)
 	

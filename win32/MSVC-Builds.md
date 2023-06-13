@@ -24,11 +24,18 @@ dependencies:
 
 You will also need the following tools:
 *  Visual Studio 2013 or later, with C/C++ compilation support (MSVC).
-*  The Rust Compiler and tools with the msvc toolchain(s) installed, that
-   matches the architecture that is being built.  It is recommended to use
-   the `rustup` tool from https://www.rust-lang.org/ to install and
-   configure Rust, which will install Rust in `%HOMEPATH%\.cargo` by
-   default.
+*  The Rust Compiler and tools with the msvc toolchain(s) and/or target(s)
+   installed, that matches the architecture that is being built.  It is
+   recommended to use the `rustup` tool from https://www.rust-lang.org/
+   to install and configure Rust, which will install Rust in
+   `%HOMEPATH%\.cargo` by default, which will be the default location that
+   is looked up for the `rustup` and `cargo` tools. If no `TOOLCHAIN_VERSION`
+   is specified (or if you are carrying out a cross-build), you need to
+   ensure that you added the target architecture to your default toolchain
+   via `rustup` if the architecture differs from the toolchain's architure.
+   If `TOOLCHAIN_VERSION` is specified and a cross-build is not carried out,
+   you will need to ensure the corresponding toolchain for the target
+   architecture is installed.
 *  `pkg-config` tool (or something that is compatible, set via
    `PKG_CONFIG` in the NMake command line if cross-compiling, or if in a
    non-standard location).  `PKG_CONFIG_PATH` in the NMake command line is
@@ -168,12 +175,10 @@ Where:
        that HarfBuzz, FontConfig and FreeType will also be required for
        the test programs to run.
     *  `VERBOSE`: Use verbose mode when building the Rust code.
-    *  `USE_NIGHTLY_TOOLCHAIN`, `TOOLCHAIN_VERSION=<Rust_toolchain_version>`:
-       Use a nightly (unstable) Rust toolchain or an installed previous-stable
-       version of the Rust toolchain instead of the latest stable toolchain,
-       which is the default. Useful for testing the librsvg code against an
-       unstable toolchain or the unstable toolchain itself, or if the
-       latest Rust toolchain release introduced unexpected issues.  Note
-       that `USE_NIGHTLY_TOOLCHAIN` takes precedence over
-       `TOOLCHAIN_VERSION`, and `TOOLCHAIN_VERSION=nightly` is the same
-       as `USE_NIGHTLY_TOOLCHAIN=1`
+    *  `TOOLCHAIN_VERSION=<Rust_toolchain_version>`:
+       Use an specified installed version (or nightly version)
+       of the Rust toolchain instead of the default toolchain.
+       Useful for testing the librsvg code against a nightly toolchain
+       or the unstable toolchain itself, or if the latest Rust toolchain
+       release (which is often set as the default) introduced unexpected
+       issues.
