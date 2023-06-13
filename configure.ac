@@ -195,6 +195,11 @@ AS_IF([test x"$platform" = xWindows], [
   LIBS="$LIBS $USERENV_LIBS"
   AC_CHECK_HEADER([bcrypt.h], [BCRYPT_LIBS=-lbcrypt], [], [#include <windows.h>])
   LIBS="$LIBS $BCRYPT_LIBS"
+  # Link -lntdll if using Rust 1.70.0 or later
+  AX_COMPARE_VERSION([$rust_version],[ge],[1.70.0], [
+    AC_CHECK_HEADER([winternl.h], [WINNTDLL_LIBS=-lntdll], [], [#include <ntdef.h>])
+    LIBS="$LIBS $WINNTDLL_LIBS"
+  ])
 ])
 
 dnl ===========================================================================
