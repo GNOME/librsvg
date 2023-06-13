@@ -13,12 +13,6 @@ CARGO = %HOMEPATH%\.cargo\bin\cargo
 RUSTUP = %HOMEPATH%\.cargo\bin\rustup
 !endif
 
-!if [call rust-default-target.bat $(RUSTUP)]
-!endif
-!include rust-cfg.mak
-!if [del /f/q rust-cfg.mak]
-!endif
-
 # For those who wish to use a particular toolchain version to build librsvg
 !if defined(TOOLCHAIN_VERSION)
 TOOLCHAIN_TYPE = $(TOOLCHAIN_VERSION)
@@ -27,19 +21,28 @@ TOOLCHAIN_TYPE =
 !endif
 
 !if "$(TOOLCHAIN_TYPE)" == ""
+!if [call rust-query-cfg.bat use-rustup $(RUSTUP)]
+!endif
+!include rust-cfg.mak
+!if [del /f/q rust-cfg.mak]
+!endif
 !if "$(RUST_DEFAULT_COMPILER)" != "pc-windows-msvc"
 !error The default Rust toolchain is not an MSVC toolchain. Please use `rustup` to set the default to an MSVC toolchain
 !endif
 TOOLCHAIN_TYPE = $(RUST_DEFAULT_CHANNEL)
-BUILD_HOST = $(RUST_DEFAULT_TARGET)
+BUILD_HOST = $(RUST_DEFAULT_MSVC_TARGET)
+RUST_HOST = $(RUST_DEFAULT_TARGET)
 # non-default toolchain requested
 !else
 !if "$(PROCESSOR_ARCHITECTURE)" == "x64" || "$(PROCESSOR_ARCHITECTURE)" == "X64" || "$(PROCESSOR_ARCHITECTURE)" == "AMD64"
 BUILD_HOST = x64
+RUST_HOST = x86_64
 !elseif "$(PROCESSOR_ARCHITECTURE)" == "ARM64"
 BUILD_HOST = arm64
+RUST_HOST = aarch64
 !elseif "$(PROCESSOR_ARCHITECTURE)" == "x86"
 BUILD_HOST = Win32
+RUST_HOST = i686
 !endif
 !endif
 
@@ -55,34 +58,13 @@ FORCE_CROSS = 0
 # Setup cross builds if needed
 !if "$(PLAT)" == "x64"
 RUST_TARGET = x86_64
-!if "$(BUILD_HOST)" != "$(PLAT)"
-FORCE_CROSS = 1
-!if "$(BUILD_HOST)" == "arm64"
-RUST_HOST = aarch64
-!elseif "$(BUILD_HOST)" == "Win32"
-RUST_HOST = i686
-!endif
-!endif
 !elseif "$(PLAT)" == "arm64"
 RUST_TARGET = aarch64
-!if "$(BUILD_HOST)" != "$(PLAT)"
-FORCE_CROSS = 1
-!if "$(BUILD_HOST)" == "x64"
-RUST_HOST = x86_64
-!elseif "$(BUILD_HOST)" == "Win32"
-RUST_HOST = i686
-!endif
-!endif
 !else
 RUST_TARGET = i686
+!endif
 !if "$(BUILD_HOST)" != "$(PLAT)"
 FORCE_CROSS = 1
-!if "$(BUILD_HOST)" == "arm64"
-RUST_HOST = aarch64
-!elseif "$(BUILD_HOST)" == "x64"
-RUST_HOST = x86_64
-!endif
-!endif
 !endif
 
 !if "$(VALID_CFGSET)" == "TRUE"
@@ -92,11 +74,8 @@ BUILD_RUST = 0
 !endif
 
 !if "$(BUILD_RUST)" == "1"
-
 CARGO_TARGET = $(RUST_TARGET)-pc-windows-msvc
-CARGO_TARGET_TOOLCHAIN = +$(TOOLCHAIN_TYPE)-$(CARGO_TARGET)
 
-RUSTUP_CMD = $(RUSTUP) default $(DEFAULT_TARGET)
 CARGO_TARGET_DIR = vs$(VSVER)\$(CFG)\$(PLAT)\obj\rsvg_c_api
 CARGO_TARGET_DIR_FLAG = --target-dir=$(CARGO_TARGET_DIR)
 
@@ -109,10 +88,25 @@ CARGO_CMD = $(CARGO) $(RUST_HOST_TOOLCHAIN) --locked build $(CARGO_TARGET_CMD) $
 CARGO_CLEAN_CMD = $(CARGO) $(RUST_HOST_TOOLCHAIN) clean $(CARGO_TARGET_CMD) $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
 CARGO_TARGET_OUTPUT_DIR = $(CARGO_TARGET_DIR)\$(CARGO_TARGET)\$(CFG)
 !else
+CARGO_TARGET_TOOLCHAIN = +$(TOOLCHAIN_TYPE)-$(CARGO_TARGET)
+
 CARGO_CMD = $(CARGO) $(CARGO_TARGET_TOOLCHAIN) --locked build $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
 CARGO_CLEAN_CMD = $(CARGO) $(CARGO_TARGET_TOOLCHAIN) clean $(MANIFEST_PATH_FLAG) $(CARGO_TARGET_DIR_FLAG)
 CARGO_TARGET_OUTPUT_DIR = $(CARGO_TARGET_DIR)\$(CFG)
 !endif
+
+# Query the system libs that we will be using to link the librsvg DLL
+!if $(FORCE_CROSS) > 0
+!if [call rust-query-cfg.bat check-syslibs $(RUSTUP) $(RUST_HOST_TOOLCHAIN) $(RUST_TARGET)]
+!endif
+!else
+!if [call rust-query-cfg.bat check-syslibs $(RUSTUP) $(CARGO_TARGET_TOOLCHAIN) $(RUST_TARGET)]
+!endif
+!endif
+!include rust-sys-libs.mak
+!if [del /f/q rust-sys-libs.mak]
+!endif
+
 !if "$(CFG)" == "release" || "$(CFG)" == "Release"
 CARGO_CMD = $(CARGO_CMD) --release
 !endif
