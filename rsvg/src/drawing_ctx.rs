@@ -24,7 +24,7 @@ use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
-    Filter, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
+    Filter, Group, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
 };
 use crate::length::*;
 use crate::marker;
@@ -1246,6 +1246,13 @@ impl DrawingCtx {
                 clipping,
                 viewport,
             ),
+            LayerKind::Group(group) => self.draw_group(
+                group,
+                &layer.stacking_ctx,
+                acquired_nodes,
+                clipping,
+                viewport,
+            ),
         }
     }
 
@@ -1430,6 +1437,17 @@ impl DrawingCtx {
         } else {
             Ok(bounds)
         }
+    }
+
+    fn draw_group(
+        &mut self,
+        _group: &Group,
+        _stacking_ctx: &StackingContext,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        _clipping: bool,
+        _viewport: &Viewport,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        unimplemented!()
     }
 
     fn draw_text_span(

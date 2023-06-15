@@ -71,6 +71,7 @@ pub enum LayerKind {
     Shape(Box<Shape>),
     Text(Box<Text>),
     Image(Box<Image>),
+    Group(Box<Group>),
 }
 
 pub struct Group {
