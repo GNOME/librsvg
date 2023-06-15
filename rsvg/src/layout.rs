@@ -72,6 +72,27 @@ pub enum LayerKind {
     Image(Box<Image>),
 }
 
+pub struct Group {
+    pub children: Vec<Layer>,
+    pub is_visible: bool, // FIXME: move to Layer?  All of them have this...
+    pub establish_viewport: Option<LayoutViewport>,
+}
+
+// FIXME: look at Image here, it has a lot of what we need
+pub struct LayoutViewport {
+    // transform goes in the group's layer's StackingContext
+
+    /// Position and size of the element, per its x/y/width/height properties.
+    /// For markers, this is markerWidth/markerHeight.
+    pub geometry: Rect,
+
+    /// preserveAspectRatio attribute
+    pub preserve_aspect_ratio: AspectRatio,
+
+    /// overflow property
+    pub overflow: Overflow,
+}
+
 /// Stroke parameters in user-space coordinates.
 pub struct Stroke {
     pub width: f64,
