@@ -30,6 +30,7 @@ use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::viewbox::ViewBox;
 use crate::{borrow_element_as, is_element_of_type};
 
 /// SVG Stacking context, an inner node in the layout tree.
@@ -85,6 +86,9 @@ pub struct LayoutViewport {
     /// Position and size of the element, per its x/y/width/height properties.
     /// For markers, this is markerWidth/markerHeight.
     pub geometry: Rect,
+
+    /// viewBox attribute
+    pub vbox: Option<ViewBox>,
 
     /// preserveAspectRatio attribute
     pub preserve_aspect_ratio: AspectRatio,
