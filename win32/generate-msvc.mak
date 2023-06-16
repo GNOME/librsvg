@@ -42,7 +42,8 @@ config-msvc.mak: ..\.git ..\configure.ac prebuild.py config-msvc.mak.in
 ..\include\librsvg\rsvg-version.h: ..\.git ..\configure.ac prebuild.py ..\include\librsvg\rsvg-version.h.in
 
 generate-nmake-files: warn-appstore-python config.h.win32 config-msvc.mak ..\include\librsvg\rsvg-version.h
-	@echo If error messages appear here you will need to pass in PYTHON=^<path_to_python.exe^>...
+	@echo If error messages appear below you will need to pass in PYTHON=^<path_to_python.exe^>
+	@echo and/or check that the path you passed in for PYTHON is correct.
 	@$(PYTHON) prebuild.py
 
 remove-generated-nmake-files: ..\.git
