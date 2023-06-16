@@ -80,7 +80,8 @@ $(rsvg_tests):
 	@-if exist $@.manifest mt /manifest $@.manifest /outputresource:$@;1
 
 !ifdef INTROSPECTION
-$(OUTDIR)\Rsvg-$(RSVG_API_VER).gir: $(LIBRSVG_LIB) $(OUTDIR)\librsvg\Rsvg_2_0_gir_list
+
+$(OUTDIR)\Rsvg-$(RSVG_API_VER).gir: $(LIBRSVG_LIB) $(OUTDIR)\librsvg\Rsvg_2_0_gir_list warn-appstore-python
 	@-echo Generating $@...
 	@set PATH=$(BINDIR);$(PATH)
 	$(PYTHON) $(G_IR_SCANNER)	\

@@ -22,17 +22,6 @@ PKG_CONFIG_PATH=$(PREFIX_LIB_FULL)\pkgconfig;$(PKG_CONFIG_PATH)
 !if ![del $(ERRNUL) /q/f pfx.x]
 !endif
 
-# Note: The PYTHON must be the Python release series that was used to build
-# the GObject-introspection scanner Python module!
-# Either having python.exe your PATH will work or passing in
-# PYTHON=<full path to your Python interpretor> will do
-
-# This is required, and gobject-introspection needs to be built
-# before this can be successfully run.
-!if "$(PYTHON)" == ""
-PYTHON=python
-!endif
-
 # Path to the pkg-config tool, if not already in the PATH
 !if "$(PKG_CONFIG)" == ""
 PKG_CONFIG=pkg-config
