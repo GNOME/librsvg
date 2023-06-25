@@ -9,6 +9,7 @@ use nalgebra::{storage::Storage, Dim, Matrix};
 use rgb::FromSlice;
 
 use crate::error::*;
+use crate::properties::{ComputedValues, ImageRendering};
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
 use crate::util::clamp;
@@ -1047,6 +1048,7 @@ impl ImageSurface<Shared> {
         bounds: Rect,
         image: &SharedImageSurface,
         rect: Option<Rect>,
+        values: &ComputedValues,
     ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
@@ -1071,6 +1073,14 @@ impl ImageSurface<Shared> {
                 matrix.invert();
 
                 cr.source().set_matrix(matrix);
+                match values.image_rendering() {
+                    ImageRendering::Pixelated
+                    | ImageRendering::CrispEdges
+                    | ImageRendering::OptimizeSpeed => {
+                        cr.source().set_filter(cairo::Filter::Nearest)
+                    }
+                    _ => (),
+                }
             }
 
             cr.paint()?;

@@ -547,6 +547,28 @@ make_property!(
 );
 
 make_property!(
+    /// `image-rendering` property.
+    ///
+    /// CSS Images Module Level 3: <https://www.w3.org/TR/css-images-3/#the-image-rendering>
+    ///
+    /// Note that this property previously accepted the values optimizeSpeed and optimizeQuality.
+    /// These are now deprecated; a user agent must accept them as valid values but must treat
+    /// them as having the same behavior as crisp-edges and smooth respectively.
+    ImageRendering,
+    default: Auto,
+    inherits_automatically: true,
+
+    identifiers:
+    "auto" => Auto,
+    "smooth" => Smooth,
+    "optimizeQuality" => OptimizeQuality,
+    "high-quality" => HighQuality,
+    "crisp-edges" => CrispEdges,
+    "optimizeSpeed" => OptimizeSpeed,
+    "pixelated" => Pixelated,
+);
+
+make_property!(
     /// `isolation` property.
     ///
     /// CSS Compositing and Blending 1: <https://www.w3.org/TR/compositing-1/#isolation>

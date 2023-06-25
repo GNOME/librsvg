@@ -80,7 +80,9 @@ impl Image {
             ctx.source_graphic().height(),
         )?;
 
-        let surface = ctx.source_graphic().paint_image(bounds, &image, None)?;
+        let surface =
+            ctx.source_graphic()
+                .paint_image(bounds, &image, None, &self.feimage_values)?;
 
         Ok(surface)
     }
@@ -107,9 +109,12 @@ impl Image {
             &bounds.unclipped,
         );
 
-        let surface = ctx
-            .source_graphic()
-            .paint_image(bounds.clipped, &image, Some(rect))?;
+        let surface = ctx.source_graphic().paint_image(
+            bounds.clipped,
+            &image,
+            Some(rect),
+            &self.feimage_values,
+        )?;
 
         Ok(surface)
     }

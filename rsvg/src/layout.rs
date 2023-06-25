@@ -21,8 +21,8 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::Path;
 use crate::properties::{
     self, ClipRule, ComputedValues, Direction, FillRule, FontFamily, FontStretch, FontStyle,
-    FontVariant, FontWeight, Isolation, MixBlendMode, Opacity, Overflow, PaintOrder,
-    ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
+    FontVariant, FontWeight, ImageRendering, Isolation, MixBlendMode, Opacity, Overflow,
+    PaintOrder, ShapeRendering, StrokeDasharray, StrokeLinecap, StrokeLinejoin, StrokeMiterlimit,
     TextDecoration, TextRendering, UnicodeBidi, VectorEffect, XmlLang,
 };
 use crate::rect::Rect;
@@ -113,6 +113,7 @@ pub struct Image {
     pub rect: Rect,
     pub aspect: AspectRatio,
     pub overflow: Overflow,
+    pub image_rendering: ImageRendering,
 }
 
 /// A single text span in user-space coordinates.

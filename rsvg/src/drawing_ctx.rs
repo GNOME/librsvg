@@ -34,8 +34,8 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, MaskType, MixBlendMode, Opacity, Overflow, PaintTarget,
-    ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, ComputedValues, FillRule, ImageRendering, MaskType, MixBlendMode, Opacity, Overflow,
+    PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
@@ -1345,6 +1345,9 @@ impl DrawingCtx {
         // transparent almost everywhere without this fix (which it shouldn't).
         let ptn = surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
+        if cr.antialias() == cairo::Antialias::None {
+            ptn.set_filter(cairo::Filter::Nearest);
+        }
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
@@ -1399,6 +1402,21 @@ impl DrawingCtx {
                             image.aspect,
                             clip_mode,
                         ) {
+                            match image.image_rendering {
+                                ImageRendering::Pixelated
+                                | ImageRendering::CrispEdges
+                                | ImageRendering::OptimizeSpeed => {
+                                    dc.cr.set_antialias(cairo::Antialias::None)
+                                }
+                                ImageRendering::Smooth
+                                | ImageRendering::OptimizeQuality
+                                | ImageRendering::HighQuality => {
+                                    dc.cr.set_antialias(cairo::Antialias::Best)
+                                }
+                                ImageRendering::Auto => {
+                                    dc.cr.set_antialias(cairo::Antialias::Default)
+                                }
+                            }
                             dc.paint_surface(&image.surface, image_width, image_height)?;
                         }
 
