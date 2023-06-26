@@ -1951,6 +1951,13 @@ impl PathOrUrl {
             PathOrUrl::Url(ref u) => gio::File::for_uri(u.as_str()),
         }
     }
+
+    pub fn is_stdin_alias(&self) -> bool {
+        match *self {
+            PathOrUrl::Path(ref p) => matches!(p.to_str(), Some("-")),
+            PathOrUrl::Url(ref u) => u.as_str() == "-",
+        }
+    }
 }
 
 impl fmt::Display for PathOrUrl {
