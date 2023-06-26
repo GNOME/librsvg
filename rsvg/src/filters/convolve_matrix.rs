@@ -331,17 +331,6 @@ impl FilterEffect for FeConvolveMatrix {
     }
 }
 
-impl Parse for EdgeMode {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        Ok(parse_identifiers!(
-            parser,
-            "duplicate" => EdgeMode::Duplicate,
-            "wrap" => EdgeMode::Wrap,
-            "none" => EdgeMode::None,
-        )?)
-    }
-}
-
 // Used for the preserveAlpha attribute
 impl Parse for bool {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

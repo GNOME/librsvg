@@ -17,7 +17,10 @@ use crate::paint_server::UserSpacePaintSource;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::session::Session;
-use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use crate::surface_utils::{
+    shared_surface::{SharedImageSurface, SurfaceType},
+    EdgeMode,
+};
 use crate::transform::Transform;
 use crate::xml::Attributes;
 
@@ -377,5 +380,16 @@ impl From<ColorInterpolationFilters> for SurfaceType {
             ColorInterpolationFilters::LinearRgb => SurfaceType::LinearRgb,
             _ => SurfaceType::SRgb,
         }
+    }
+}
+
+impl Parse for EdgeMode {
+    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        Ok(parse_identifiers!(
+            parser,
+            "duplicate" => EdgeMode::Duplicate,
+            "wrap" => EdgeMode::Wrap,
+            "none" => EdgeMode::None,
+        )?)
     }
 }
