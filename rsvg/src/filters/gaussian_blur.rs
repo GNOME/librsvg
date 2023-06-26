@@ -186,6 +186,7 @@ fn gaussian_blur(
     input_surface: &SharedImageSurface,
     bounds: IRect,
     std_deviation: f64,
+    edge_mode: EdgeMode,
     vertical: bool,
 ) -> Result<SharedImageSurface, FilterError> {
     let kernel = gaussian_kernel(std_deviation);
@@ -200,7 +201,7 @@ fn gaussian_blur(
         bounds,
         ((cols / 2) as i32, (rows / 2) as i32),
         &kernel,
-        EdgeMode::None,
+        edge_mode,
     )?)
 }
 
@@ -251,7 +252,7 @@ impl GaussianBlur {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
             three_box_blurs::<Horizontal>(input_1.surface(), bounds, std_x)?
         } else if std_x != 0.0 {
-            gaussian_blur(input_1.surface(), bounds, std_x, false)?
+            gaussian_blur(input_1.surface(), bounds, std_x, self.edge_mode, false)?
         } else {
             input_1.surface().clone()
         };
@@ -261,7 +262,7 @@ impl GaussianBlur {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
             three_box_blurs::<Vertical>(&horiz_result_surface, bounds, std_y)?
         } else if std_y != 0.0 {
-            gaussian_blur(&horiz_result_surface, bounds, std_y, true)?
+            gaussian_blur(&horiz_result_surface, bounds, std_y, self.edge_mode, true)?
         } else {
             horiz_result_surface
         };
