@@ -42,6 +42,7 @@ pub struct FeGaussianBlur {
 pub struct GaussianBlur {
     pub in1: Input,
     pub std_deviation: NumberOptionalNumber<f64>,
+    pub edge_mode: EdgeMode,
     pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
@@ -51,6 +52,9 @@ impl Default for GaussianBlur {
         GaussianBlur {
             in1: Default::default(),
             std_deviation: NumberOptionalNumber(0.0, 0.0),
+            // Note that per the spec, `edgeMode` has a different initial value
+            // in feGaussianBlur than feConvolveMatrix.
+            edge_mode: EdgeMode::None,
             color_interpolation_filters: Default::default(),
         }
     }
@@ -61,8 +65,15 @@ impl ElementTrait for FeGaussianBlur {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
-            if let expanded_name!("", "stdDeviation") = attr.expanded() {
-                set_attribute(&mut self.params.std_deviation, attr.parse(value), session);
+            match attr.expanded() {
+                expanded_name!("", "stdDeviation") => {
+                    set_attribute(&mut self.params.std_deviation, attr.parse(value), session)
+                }
+                expanded_name!("", "edgeMode") => {
+                    set_attribute(&mut self.params.edge_mode, attr.parse(value), session)
+                }
+
+                _ => (),
             }
         }
     }

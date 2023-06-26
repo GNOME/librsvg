@@ -61,6 +61,8 @@ impl Default for ConvolveMatrix {
             bias: 0.0,
             target_x: None,
             target_y: None,
+            // Note that per the spec, `edgeMode` has a different initial value
+            // in feConvolveMatrix than feGaussianBlur.
             edge_mode: EdgeMode::Duplicate,
             kernel_unit_length: None,
             preserve_alpha: false,
