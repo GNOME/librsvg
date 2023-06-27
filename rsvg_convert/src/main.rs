@@ -1131,14 +1131,14 @@ fn parse_args() -> Result<Converter, Error> {
         None => vec![Input::Stdin],
     };
 
+    if input.iter().filter(|i| matches!(i, Input::Stdin)).count() > 1 {
+        return Err(error!("Only one input file can be read from stdin."));
+    }
+
     if input.len() > 1 && !matches!(format, Format::Ps | Format::Eps | Format::Pdf) {
         return Err(error!(
             "Multiple SVG files are only allowed for PDF and (E)PS output."
         ));
-    }
-
-    if input.iter().filter(|i| matches!(i, Input::Stdin)).count() > 1 {
-        return Err(error!("Only one input file can be read from stdin."));
     }
 
     let export_id: Option<String> = matches.get_one::<String>("export_id").map(lookup_id);

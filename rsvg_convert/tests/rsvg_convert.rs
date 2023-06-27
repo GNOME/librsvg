@@ -1087,9 +1087,8 @@ fn help_short_option() {
 }
 
 #[test]
-fn multiple_stdin_arguments() {
+fn multiple_stdin_arguments_not_allowed() {
     RsvgConvert::new_with_input("tests/fixtures/accept-language.svg")
-        .arg("--format=pdf")
         .arg("-")
         .arg("-")
         .assert()
