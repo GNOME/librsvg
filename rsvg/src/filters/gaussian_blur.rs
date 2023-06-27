@@ -42,6 +42,7 @@ pub struct FeGaussianBlur {
 pub struct GaussianBlur {
     pub in1: Input,
     pub std_deviation: NumberOptionalNumber<f64>,
+    pub edge_mode: EdgeMode,
     pub color_interpolation_filters: ColorInterpolationFilters,
 }
 
@@ -51,6 +52,9 @@ impl Default for GaussianBlur {
         GaussianBlur {
             in1: Default::default(),
             std_deviation: NumberOptionalNumber(0.0, 0.0),
+            // Note that per the spec, `edgeMode` has a different initial value
+            // in feGaussianBlur than feConvolveMatrix.
+            edge_mode: EdgeMode::None,
             color_interpolation_filters: Default::default(),
         }
     }
@@ -61,8 +65,15 @@ impl ElementTrait for FeGaussianBlur {
         self.params.in1 = self.base.parse_one_input(attrs, session);
 
         for (attr, value) in attrs.iter() {
-            if let expanded_name!("", "stdDeviation") = attr.expanded() {
-                set_attribute(&mut self.params.std_deviation, attr.parse(value), session);
+            match attr.expanded() {
+                expanded_name!("", "stdDeviation") => {
+                    set_attribute(&mut self.params.std_deviation, attr.parse(value), session)
+                }
+                expanded_name!("", "edgeMode") => {
+                    set_attribute(&mut self.params.edge_mode, attr.parse(value), session)
+                }
+
+                _ => (),
             }
         }
     }
@@ -175,6 +186,7 @@ fn gaussian_blur(
     input_surface: &SharedImageSurface,
     bounds: IRect,
     std_deviation: f64,
+    edge_mode: EdgeMode,
     vertical: bool,
 ) -> Result<SharedImageSurface, FilterError> {
     let kernel = gaussian_kernel(std_deviation);
@@ -189,7 +201,7 @@ fn gaussian_blur(
         bounds,
         ((cols / 2) as i32, (rows / 2) as i32),
         &kernel,
-        EdgeMode::None,
+        edge_mode,
     )?)
 }
 
@@ -240,7 +252,7 @@ impl GaussianBlur {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
             three_box_blurs::<Horizontal>(input_1.surface(), bounds, std_x)?
         } else if std_x != 0.0 {
-            gaussian_blur(input_1.surface(), bounds, std_x, false)?
+            gaussian_blur(input_1.surface(), bounds, std_x, self.edge_mode, false)?
         } else {
             input_1.surface().clone()
         };
@@ -250,7 +262,7 @@ impl GaussianBlur {
             // The spec says for deviation >= 2.0 three box blurs can be used as an optimization.
             three_box_blurs::<Vertical>(&horiz_result_surface, bounds, std_y)?
         } else if std_y != 0.0 {
-            gaussian_blur(&horiz_result_surface, bounds, std_y, true)?
+            gaussian_blur(&horiz_result_surface, bounds, std_y, self.edge_mode, true)?
         } else {
             horiz_result_surface
         };

@@ -61,6 +61,8 @@ impl Default for ConvolveMatrix {
             bias: 0.0,
             target_x: None,
             target_y: None,
+            // Note that per the spec, `edgeMode` has a different initial value
+            // in feConvolveMatrix than feGaussianBlur.
             edge_mode: EdgeMode::Duplicate,
             kernel_unit_length: None,
             preserve_alpha: false,
@@ -328,17 +330,6 @@ impl FilterEffect for FeConvolveMatrix {
             primitive: self.base.clone(),
             params: PrimitiveParams::ConvolveMatrix(params),
         }])
-    }
-}
-
-impl Parse for EdgeMode {
-    fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        Ok(parse_identifiers!(
-            parser,
-            "duplicate" => EdgeMode::Duplicate,
-            "wrap" => EdgeMode::Wrap,
-            "none" => EdgeMode::None,
-        )?)
     }
 }
 
