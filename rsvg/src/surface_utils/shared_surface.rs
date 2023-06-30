@@ -9,7 +9,6 @@ use nalgebra::{storage::Storage, Dim, Matrix};
 use rgb::FromSlice;
 
 use crate::error::*;
-use crate::properties::{ComputedValues, ImageRendering};
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
 use crate::util::clamp;
@@ -19,6 +18,31 @@ use super::{
     AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps, ToCairoARGB,
     ToGdkPixbufRGBA, ToPixel,
 };
+
+/// Interpolation when scaling images.
+///
+/// This is meant to be translated from the `ImageRendering` property.  We don't use
+/// `ImageRendering` directly here, because this module is supposed to be lower-level
+/// than the main part of librsvg.  Here, we take `Interpolation` and translate it
+/// to Cairo's own values for pattern filtering.
+///
+/// This enum can be expanded to use more of Cairo's filtering modes.
+#[derive(Copy, Clone)]
+pub enum Interpolation {
+    Nearest,
+    Smooth,
+}
+
+impl From<Interpolation> for cairo::Filter {
+    fn from(i: Interpolation) -> cairo::Filter {
+        // Cairo's default for interpolation is CAIRO_FILTER_GOOD.  This happens in Cairo's internals, as
+        // CAIRO_FILTER_DEFAULT is an internal macro that expands to CAIRO_FILTER_GOOD.
+        match i {
+            Interpolation::Nearest => cairo::Filter::Nearest,
+            Interpolation::Smooth => cairo::Filter::Good,
+        }
+    }
+}
 
 /// Types of pixel data in a `ImageSurface`.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -1048,7 +1072,7 @@ impl ImageSurface<Shared> {
         bounds: Rect,
         image: &SharedImageSurface,
         rect: Option<Rect>,
-        values: &ComputedValues,
+        interpolation: Interpolation,
     ) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
@@ -1073,14 +1097,7 @@ impl ImageSurface<Shared> {
                 matrix.invert();
 
                 cr.source().set_matrix(matrix);
-                match values.image_rendering() {
-                    ImageRendering::Pixelated
-                    | ImageRendering::CrispEdges
-                    | ImageRendering::OptimizeSpeed => {
-                        cr.source().set_filter(cairo::Filter::Nearest)
-                    }
-                    _ => (),
-                }
+                cr.source().set_filter(cairo::Filter::from(interpolation));
             }
 
             cr.paint()?;

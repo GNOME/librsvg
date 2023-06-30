@@ -39,9 +39,8 @@ use crate::properties::{
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
-use crate::surface_utils::{
-    shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
+use crate::surface_utils::shared_surface::{
+    ExclusiveImageSurface, Interpolation, SharedImageSurface, SurfaceType,
 };
 use crate::transform::{Transform, ValidTransform};
 use crate::unit_interval::UnitInterval;
@@ -1347,21 +1346,9 @@ impl DrawingCtx {
         let ptn = surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
 
-        // Cairo's default for interpolation is CAIRO_FILTER_GOOD.  This happens in Cairo's internals, as
-        // CAIRO_FILTER_DEFAULT is an internal macro that expands to CAIRO_FILTER_GOOD.
-        let pattern_filter = match image_rendering {
-            ImageRendering::Pixelated
-            | ImageRendering::CrispEdges
-            | ImageRendering::OptimizeSpeed => cairo::Filter::Nearest,
+        let interpolation = Interpolation::from(image_rendering);
 
-            ImageRendering::Smooth
-            | ImageRendering::OptimizeQuality
-            | ImageRendering::HighQuality => cairo::Filter::Good,
-
-            ImageRendering::Auto => cairo::Filter::Good,
-        };
-
-        ptn.set_filter(pattern_filter);
+        ptn.set_filter(cairo::Filter::from(interpolation));
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
@@ -1861,6 +1848,21 @@ impl DrawingCtx {
         options.set_hint_metrics(cairo::HintMetrics::Off);
 
         FontOptions { options }
+    }
+}
+
+impl From<ImageRendering> for Interpolation {
+    fn from(r: ImageRendering) -> Interpolation {
+        match r {
+            ImageRendering::Pixelated
+            | ImageRendering::CrispEdges
+            | ImageRendering::OptimizeSpeed => Interpolation::Nearest,
+
+            ImageRendering::Smooth
+            | ImageRendering::OptimizeQuality
+            | ImageRendering::HighQuality
+            | ImageRendering::Auto => Interpolation::Smooth,
+        }
     }
 }
 
