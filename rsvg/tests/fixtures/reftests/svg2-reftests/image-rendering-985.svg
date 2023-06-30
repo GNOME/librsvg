@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="777" height="480">
+  <!-- We want to test that image-rendering="pixelated" produces the
+       rainbow flag with plain stripes.  The file
+       rainbow-flag-pixels.png is a tiny 1x6 pixel image, so we
+       stretch it but ask for it to not be smoothed - this produces
+       "pixelated" stripes, which is what we want.
+  -->
+  <image href="rainbow-flag-pixels.png" width="777" height="480"
+         preserveAspectRatio="none"
+         image-rendering="pixelated"/>
+</svg>
