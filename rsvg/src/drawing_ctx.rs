@@ -1333,6 +1333,7 @@ impl DrawingCtx {
         surface: &SharedImageSurface,
         width: f64,
         height: f64,
+        image_rendering: ImageRendering,
     ) -> Result<(), cairo::Error> {
         let cr = self.cr.clone();
 
@@ -1345,9 +1346,22 @@ impl DrawingCtx {
         // transparent almost everywhere without this fix (which it shouldn't).
         let ptn = surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
-        if cr.antialias() == cairo::Antialias::None {
-            ptn.set_filter(cairo::Filter::Nearest);
-        }
+
+        // Cairo's default for interpolation is CAIRO_FILTER_GOOD.  This happens in Cairo's internals, as
+        // CAIRO_FILTER_DEFAULT is an internal macro that expands to CAIRO_FILTER_GOOD.
+        let pattern_filter = match image_rendering {
+            ImageRendering::Pixelated
+            | ImageRendering::CrispEdges
+            | ImageRendering::OptimizeSpeed => cairo::Filter::Nearest,
+
+            ImageRendering::Smooth
+            | ImageRendering::OptimizeQuality
+            | ImageRendering::HighQuality => cairo::Filter::Good,
+
+            ImageRendering::Auto => cairo::Filter::Good,
+        };
+
+        ptn.set_filter(pattern_filter);
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
@@ -1402,22 +1416,12 @@ impl DrawingCtx {
                             image.aspect,
                             clip_mode,
                         ) {
-                            match image.image_rendering {
-                                ImageRendering::Pixelated
-                                | ImageRendering::CrispEdges
-                                | ImageRendering::OptimizeSpeed => {
-                                    dc.cr.set_antialias(cairo::Antialias::None)
-                                }
-                                ImageRendering::Smooth
-                                | ImageRendering::OptimizeQuality
-                                | ImageRendering::HighQuality => {
-                                    dc.cr.set_antialias(cairo::Antialias::Best)
-                                }
-                                ImageRendering::Auto => {
-                                    dc.cr.set_antialias(cairo::Antialias::Default)
-                                }
-                            }
-                            dc.paint_surface(&image.surface, image_width, image_height)?;
+                            dc.paint_surface(
+                                &image.surface,
+                                image_width,
+                                image_height,
+                                image.image_rendering,
+                            )?;
                         }
 
                         Ok(bounds)
