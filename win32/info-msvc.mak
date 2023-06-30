@@ -72,6 +72,10 @@ help:
 	@echo GObject-Introspection built with Meson, consult the shebang line in
 	@echo ^$(BINDIR)\g-ir-scanner for determining the correct Python interpreter.
 	@echo.
+	@echo Be aware that Windows 10/11 users may end up running a stub python.exe
+	@echo that will not work if PYTHON is not specified and a Microsoft Store
+	@echo version of Python is not installed.
+	@echo.
 	@echo G_IR_SCANNER, G_IR_COMPILER: Paths to g-ir-scanner and g-ir-compiler,
 	@echo defaults are ^$(BINDIR)\g-ir-scanner and ^$(BINDIR)\g-ir-compiler
 	@echo respectively.

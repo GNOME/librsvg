@@ -77,13 +77,17 @@ It is recommended that the dependent libraries are built with the same
 version of Visual Studio that is being used to build librsvg, as far as
 possible.
 
-If building from a git checkout is desired, you will need to run in this directory (not supported in an unpacked release tarball):
+If building from a git checkout is desired, you will need to run in this
+directory (not supported in an unpacked release tarball) prior to carrying
+out the actual build as mentioned in the next lines:
 ```
 nmake /f generate-msvc.mak generate-nmake-files
 ```
 You may need to pass in `PYTHON=<path_to_python_interpreter>` in the
 NMake command line above if your Python interpreter is not in your
-`%PATH%`.  Run `nmake /f generate-msvc.mak remove-generated-nmake-files`
+`%PATH%`. You will need to run this line again if you changed branches.
+
+Run `nmake /f generate-msvc.mak remove-generated-nmake-files`
 to remove any generated files.
 
 From this directory in a Visual Studio command prompt, run the following:
