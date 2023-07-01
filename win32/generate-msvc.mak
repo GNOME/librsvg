@@ -33,19 +33,16 @@ generate-docs:
 # Generate NMake Makefiles (for git checkouts only)
 
 !ifndef IS_NOT_GIT
-# Either having python.exe your PATH will work or passing in
-# PYTHON=<full path to your Python interpretor> will do
-!ifndef PYTHON
-PYTHON=python
-!endif
+# We use Python to generate some files form the GIT checkout. Not
+# used for release tarballs
+!include python-config.mak
 
 config.h.win32: ..\.git ..\configure.ac prebuild.py config.h.win32.in
 config-msvc.mak: ..\.git ..\configure.ac prebuild.py config-msvc.mak.in
 ..\include\librsvg\rsvg-version.h: ..\.git ..\configure.ac prebuild.py ..\include\librsvg\rsvg-version.h.in
 
-generate-nmake-files: config.h.win32 config-msvc.mak ..\include\librsvg\rsvg-version.h
-	@echo If error messages appear below you will need to pass in PYTHON=^<path_to_python.exe^>
-	@echo and/or check that the path you passed in for PYTHON is correct.
+generate-nmake-files: warn-appstore-python config.h.win32 config-msvc.mak ..\include\librsvg\rsvg-version.h
+	@echo If error messages appear here you will need to pass in PYTHON=^<path_to_python.exe^>...
 	@$(PYTHON) prebuild.py
 
 remove-generated-nmake-files: ..\.git

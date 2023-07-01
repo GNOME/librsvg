@@ -1,7 +1,7 @@
 # NMake Makefile snippet for copying the built libraries, utilities and headers to
 # a path under $(PREFIX).
 
-install: all
+install: warn-appstore-python all
 	@if not exist $(PREFIX)\bin\ mkdir $(PREFIX)\bin
 	@if not exist $(PREFIX)\lib\gdk-pixbuf-2.0\2.10.0\loaders\ mkdir $(PREFIX)\lib\gdk-pixbuf-2.0\2.10.0\loaders
 	@if not exist $(PREFIX)\include\librsvg-$(RSVG_API_VER)\librsvg @mkdir $(PREFIX)\include\librsvg-$(RSVG_API_VER)\librsvg

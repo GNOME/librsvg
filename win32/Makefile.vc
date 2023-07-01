@@ -39,6 +39,16 @@ all: $(RSVG_TOOLS) $(EXTRA_TARGETS) build-info-librsvg
 !include create-lists-msvc.mak
 !include build-rules-msvc.mak
 
+# Include the items to check for the Python interpreter
+# Note: For introspection, the PYTHON must be the Python release series that
+# was used to build the GObject-introspection scanner Python module!
+# gobject-introspection must be built prior to building introspection files,
+# and requires Python to build and run
+
+# Please see the comments in python-config.mak for more details.
+
+!include python-config.mak
+
 tests: all $(rsvg_tests)
 	@set PATH=$(BINDIR);$(PATH)
 	set G_TEST_SRCDIR=$(MAKEDIR)\..\librsvg-c\tests-c
@@ -60,11 +70,6 @@ rsvg_rust_tests:
 !include generate-msvc.mak
 
 # Generate the introspection files
-
-!if "$(INTROSPECTION)" == "1"
-# Include the rules for building the introspection files
-!include introspection-msvc.mak
-!endif
 
 !include install-msvc.mak
 
