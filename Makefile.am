@@ -322,6 +322,7 @@ test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2/*.png)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/bugs-reftests/*.svg)	\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2-reftests/*.svg)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2-reftests/*.png)	\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/text/*.svg)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/dimensions/*.svg)		\
