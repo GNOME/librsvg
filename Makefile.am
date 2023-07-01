@@ -198,6 +198,9 @@ clean-local:
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)	\
 	$(CARGO) clean
 
+distclean-local:
+	-rm -rf $(LIBRSVG_BUILD_DIR)/tests/output
+
 distcheck-hook:
 	if test -z "${DESTDIR}";						\
 	then									\
