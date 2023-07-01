@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="777" height="480">
+  <!-- Original from Wikimedia Commons, in the public domain.
+       https://commons.wikimedia.org/wiki/File:Gay_Pride_Flag.svg
+
+       Modified to have width/height instead of a viewBox.
+  -->
+  <path fill="#770088" d="M0 0h777v480H0z"/>
+  <path fill="#004CFF" d="M0 0h777v400H0z"/>
+  <path fill="#028121" d="M0 0h777v320H0z"/>
+  <path fill="#FFEE00" d="M0 0h777v240H0z"/>
+  <path fill="#FF8D00" d="M0 0h777v160H0z"/>
+  <path fill="#E50000" d="M0 0h777v80H0z"/>
+</svg>

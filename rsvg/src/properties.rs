@@ -446,7 +446,7 @@ make_properties! {
         "glyph-orientation-vertical"  => (PresentationAttr::Yes, glyph_orientation_vertical  : GlyphOrientationVertical),
         "height" => (PresentationAttr::Yes, height: Height),
 
-        // "image-rendering"          => (PresentationAttr::Yes, unimplemented),
+        "image-rendering"             => (PresentationAttr::Yes, image_rendering             : ImageRendering),
         "letter-spacing"              => (PresentationAttr::Yes, letter_spacing              : LetterSpacing),
         "lighting-color"              => (PresentationAttr::Yes, lighting_color              : LightingColor),
         "marker-end"                  => (PresentationAttr::Yes, marker_end                  : MarkerEnd),
@@ -718,6 +718,7 @@ impl SpecifiedValues {
         compute!(FontWeight, font_weight);
         compute!(GlyphOrientationVertical, glyph_orientation_vertical);
         compute!(Height, height);
+        compute!(ImageRendering, image_rendering);
         compute!(Isolation, isolation);
         compute!(LetterSpacing, letter_spacing);
         compute!(LightingColor, lighting_color);

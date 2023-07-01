@@ -198,6 +198,9 @@ clean-local:
 	CARGO_TARGET_DIR=$(CARGO_TARGET_DIR)	\
 	$(CARGO) clean
 
+distclean-local:
+	-rm -rf $(LIBRSVG_BUILD_DIR)/tests/output
+
 distcheck-hook:
 	if test -z "${DESTDIR}";						\
 	then									\
@@ -322,6 +325,7 @@ test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2/*.png)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/bugs-reftests/*.svg)	\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2-reftests/*.svg)	\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/svg2-reftests/*.png)	\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/text/*.svg)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/dimensions/*.svg)		\

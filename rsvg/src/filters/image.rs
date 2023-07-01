@@ -10,7 +10,7 @@ use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
 use crate::session::Session;
-use crate::surface_utils::shared_surface::SharedImageSurface;
+use crate::surface_utils::shared_surface::{Interpolation, SharedImageSurface};
 use crate::viewbox::ViewBox;
 use crate::xml::Attributes;
 
@@ -71,6 +71,8 @@ impl Image {
         let cascaded =
             CascadedValues::new_from_values(referenced_node, &self.feimage_values, None, None);
 
+        let interpolation = Interpolation::from(self.feimage_values.image_rendering());
+
         let image = draw_ctx.draw_node_to_surface(
             referenced_node,
             acquired_nodes,
@@ -80,7 +82,9 @@ impl Image {
             ctx.source_graphic().height(),
         )?;
 
-        let surface = ctx.source_graphic().paint_image(bounds, &image, None)?;
+        let surface = ctx
+            .source_graphic()
+            .paint_image(bounds, &image, None, interpolation)?;
 
         Ok(surface)
     }
@@ -107,9 +111,11 @@ impl Image {
             &bounds.unclipped,
         );
 
-        let surface = ctx
-            .source_graphic()
-            .paint_image(bounds.clipped, &image, Some(rect))?;
+        let interpolation = Interpolation::from(self.feimage_values.image_rendering());
+
+        let surface =
+            ctx.source_graphic()
+                .paint_image(bounds.clipped, &image, Some(rect), interpolation)?;
 
         Ok(surface)
     }

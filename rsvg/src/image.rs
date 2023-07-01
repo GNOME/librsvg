@@ -98,6 +98,7 @@ impl ElementTrait for Image {
             rect,
             aspect: self.aspect,
             overflow,
+            image_rendering: values.image_rendering(),
         });
 
         let elt = node.borrow_element();

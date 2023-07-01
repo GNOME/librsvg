@@ -34,14 +34,13 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, MaskType, MixBlendMode, Opacity, Overflow, PaintTarget,
-    ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
+    ClipRule, ComputedValues, FillRule, ImageRendering, MaskType, MixBlendMode, Opacity, Overflow,
+    PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
 use crate::session::Session;
-use crate::surface_utils::{
-    shared_surface::ExclusiveImageSurface, shared_surface::SharedImageSurface,
-    shared_surface::SurfaceType,
+use crate::surface_utils::shared_surface::{
+    ExclusiveImageSurface, Interpolation, SharedImageSurface, SurfaceType,
 };
 use crate::transform::{Transform, ValidTransform};
 use crate::unit_interval::UnitInterval;
@@ -1333,6 +1332,7 @@ impl DrawingCtx {
         surface: &SharedImageSurface,
         width: f64,
         height: f64,
+        image_rendering: ImageRendering,
     ) -> Result<(), cairo::Error> {
         let cr = self.cr.clone();
 
@@ -1345,6 +1345,10 @@ impl DrawingCtx {
         // transparent almost everywhere without this fix (which it shouldn't).
         let ptn = surface.to_cairo_pattern();
         ptn.set_extend(cairo::Extend::Pad);
+
+        let interpolation = Interpolation::from(image_rendering);
+
+        ptn.set_filter(cairo::Filter::from(interpolation));
         cr.set_source(&ptn)?;
 
         // Clip is needed due to extend being set to pad.
@@ -1399,7 +1403,12 @@ impl DrawingCtx {
                             image.aspect,
                             clip_mode,
                         ) {
-                            dc.paint_surface(&image.surface, image_width, image_height)?;
+                            dc.paint_surface(
+                                &image.surface,
+                                image_width,
+                                image_height,
+                                image.image_rendering,
+                            )?;
                         }
 
                         Ok(bounds)
@@ -1839,6 +1848,21 @@ impl DrawingCtx {
         options.set_hint_metrics(cairo::HintMetrics::Off);
 
         FontOptions { options }
+    }
+}
+
+impl From<ImageRendering> for Interpolation {
+    fn from(r: ImageRendering) -> Interpolation {
+        match r {
+            ImageRendering::Pixelated
+            | ImageRendering::CrispEdges
+            | ImageRendering::OptimizeSpeed => Interpolation::Nearest,
+
+            ImageRendering::Smooth
+            | ImageRendering::OptimizeQuality
+            | ImageRendering::HighQuality
+            | ImageRendering::Auto => Interpolation::Smooth,
+        }
     }
 }
 
