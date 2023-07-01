@@ -77,6 +77,15 @@ fn converts_svg_from_stdin_to_png() {
 }
 
 #[test]
+fn converts_svg_from_stdin_to_png_using_stdin_argument() {
+    RsvgConvert::new_with_input("tests/fixtures/bug521-with-viewbox.svg")
+        .arg("-")
+        .assert()
+        .success()
+        .stdout(file::is_png());
+}
+
+#[test]
 fn argument_is_input_filename() {
     let input = Path::new("tests/fixtures/bug521-with-viewbox.svg");
     RsvgConvert::new()
@@ -1075,4 +1084,14 @@ fn help_option() {
 #[test]
 fn help_short_option() {
     RsvgConvert::option_yields_output("-?", is_usage_output())
+}
+
+#[test]
+fn multiple_stdin_arguments_not_allowed() {
+    RsvgConvert::new_with_input("tests/fixtures/accept-language.svg")
+        .arg("-")
+        .arg("-")
+        .assert()
+        .failure()
+        .stderr(contains("Only one input file can be read from stdin"));
 }

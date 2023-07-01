@@ -1022,7 +1022,7 @@ fn build_cli() -> clap::Command {
         .arg(
             clap::Arg::new("FILE")
                 .value_parser(clap::value_parser!(OsString))
-                .help("The input file(s) to convert")
+                .help("The input file(s) to convert, you can use - for stdin")
                 .num_args(1..)
                 .action(clap::ArgAction::Append),
         )
@@ -1122,11 +1122,18 @@ fn parse_args() -> Result<Converter, Error> {
     let input = match matches.get_many::<std::ffi::OsString>("FILE") {
         Some(values) => values
             .map(|f| PathOrUrl::from_os_str(f).map_err(Error))
-            .map(|r| r.map(Input::Named))
+            .map(|r| match r {
+                Ok(p) if p.is_stdin_alias() => Ok(Input::Stdin),
+                p => p.map(Input::Named),
+            })
             .collect::<Result<Vec<Input>, Error>>()?,
 
         None => vec![Input::Stdin],
     };
+
+    if input.iter().filter(|i| matches!(i, Input::Stdin)).count() > 1 {
+        return Err(error!("Only one input file can be read from stdin."));
+    }
 
     if input.len() > 1 && !matches!(format, Format::Ps | Format::Eps | Format::Pdf) {
         return Err(error!(
