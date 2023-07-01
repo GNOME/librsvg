@@ -1,3 +1,44 @@
+Version 2.56.90
+===============
+
+This version of librsvg depends on Cairo 1.17.0 or later, to make it
+more reliable on Windows.  Also, that version of Cairo fixes a lot of
+crashers when using out-of-bounds coordinates in paths.
+
+- #985 - Support the image-rendering property (nedondev).
+
+- #989 - For consistency with other command-line tools, rsvg-convert
+  now supports an argument "-" to specify the standard input.  This is
+  in addition to the already-supported syntax of not specifying an
+  input file at all (Lukáš Tyrychtr).
+
+- #965 - Shrink the shared library by telling the linker to omit unused
+  code (Sebastian Dröge).
+
+- #950 - Massive reorganization of the source tree.  With this, Rust
+  programs like Loupe can avoid including the dependencies that
+  librsvg only uses for rsvg-convert (Sophie Herold, Federico Mena
+  Quintero, Chun-wei Fan, Michael Catanzaro, Abderrahim Kitouni).
+
+- Partial support for the edgeMode attribute in feGaussianBlur, only
+  for small blurs right now.
+
+- Update dependencies (Lukáš Tyrychtr, Kalev Lember)).
+
+- Librsvg now runs its CI on Windows with MSVC!!! (Chun-wei Fan).
+
+- Lots of build fixes for Windows (Chun-wei Fan, Kleis Auke Wolthuizen).
+
+- Lots of internal refactoring to allow fixing long-standing bugs.
+  Nothing is user-visible yet.
+
+- #966 - Fix a bunch of broken links in the documentation; we have a link
+  checker now for the development guide.
+
+Special thanks to Sophie Herold for jumpstarting the source
+reorganization, and Chun-wei Fan for being patient with Windows build
+problems and for actually implementing CI for MSVC.
+
 Version 2.56.0
 ==============
 
