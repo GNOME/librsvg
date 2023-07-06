@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100">
+  <!-- Test that <use> cascades its properties to a referenced <symbol>.  In #992 we had a
+       regression where this worked for non-symbol elements, but it broke for symbols.
+  -->
+  <symbol id="foo">
+    <rect x="10" y="10" width="50" height="50"/>
+  </symbol>
+
+  <use xlink:href="#foo" fill="lime"/>
+</svg>

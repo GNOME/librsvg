@@ -1735,10 +1735,10 @@ impl DrawingCtx {
 
             let elt = child.borrow_element();
 
-            let values = elt.get_computed_values();
+            let child_values = elt.get_computed_values();
 
             // FIXME: do we need to look at preserveAspectRatio.slice, like in draw_image()?
-            let clip_mode = if !values.is_overflow() {
+            let clip_mode = if !child_values.is_overflow() {
                 ClipMode::ClipToViewport
             } else {
                 ClipMode::NoClip
