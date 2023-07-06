@@ -95,6 +95,9 @@ if not exist %HOMEPATH%\.cargo\bin\rustup.exe rustup-init -y --default-toolchain
 
 :: now build librsvg
 cd win32
+
+:: Fix linking to PCRE for CI's sake
+if exist %INST%\lib\libpcre2-8.a copy /b %INST%\lib\libpcre2-8.a %INST%\lib\pcre2-8.lib
 nmake /f generate-msvc.mak generate-nmake-files PYTHON=python || goto :error
 
 if "%DOWNGRADE_RUST_VERSION%" == "1" goto :downgrade_rust
