@@ -57,6 +57,13 @@ impl PdfPredicate {
             d: Detail::Text(text.to_string()),
         }
     }
+
+    pub fn with_version(self: Self, version: &str) -> DetailPredicate<Self> {
+        DetailPredicate::<Self> {
+            p: self,
+            d: Detail::Version(version.to_string()),
+        }
+    }
 }
 
 impl Predicate<[u8]> for PdfPredicate {
@@ -94,6 +101,7 @@ enum Detail {
     CreationDate(DateTime<Utc>),
     Link(String),
     Text(String),
+    Version(String),
 }
 
 /// A PDF page's dimensions from its `MediaBox`.
@@ -169,6 +177,7 @@ impl DetailPredicate<PdfPredicate> {
             Detail::CreationDate(d) => doc.get_creation_date().map_or(false, |date| date == *d),
             Detail::Link(link) => document_has_link(doc, &link),
             Detail::Text(text) => document_has_text(doc, &text),
+            Detail::Version(version) => document_has_version(doc, &version),
         }
     }
 
@@ -205,6 +214,7 @@ impl DetailPredicate<PdfPredicate> {
             Detail::Text(_) => {
                 Product::new("actual text contents", doc.extract_text(&[1]).unwrap())
             }
+            Detail::Version(_) => Product::new("actual version contents", doc.version.to_string()),
         }
     }
 }
@@ -303,6 +313,7 @@ impl fmt::Display for DetailPredicate<PdfPredicate> {
             Detail::CreationDate(d) => write!(f, "is a PDF created {:?}", d),
             Detail::Link(l) => write!(f, "is a PDF with a link to {}", l),
             Detail::Text(t) => write!(f, "is a PDF with \"{}\" in its text content", t),
+            Detail::Version(v) => write!(f, "is a PDF with version {}", v),
         }
     }
 }
@@ -315,6 +326,10 @@ fn document_has_text(document: &lopdf::Document, needle: &str) -> bool {
     } else {
         false
     }
+}
+
+fn document_has_version(document: &lopdf::Document, version_to_search: &str) -> bool {
+    document.version == version_to_search
 }
 
 // We do a super simple test that a PDF actually contains an Annotation object

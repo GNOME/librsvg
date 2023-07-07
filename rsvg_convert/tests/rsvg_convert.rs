@@ -150,6 +150,26 @@ fn output_format_pdf() {
         .stdout(file::is_pdf());
 }
 
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
+fn output_format_pdf_1_5() {
+    RsvgConvert::new_with_input("tests/fixtures/bug521-with-viewbox.svg")
+        .arg("--format=pdf1.5")
+        .assert()
+        .success()
+        .stdout(file::is_pdf().with_version("1.5"));
+}
+
+#[cfg(system_deps_have_cairo_pdf)]
+#[test]
+fn output_format_pdf_1_4() {
+    RsvgConvert::new_with_input("tests/fixtures/bug521-with-viewbox.svg")
+        .arg("--format=pdf1.4")
+        .assert()
+        .success()
+        .stdout(file::is_pdf().with_version("1.4"));
+}
+
 #[cfg(system_deps_have_cairo_svg)]
 #[test]
 fn output_format_svg_short_option() {
