@@ -279,7 +279,11 @@ impl Surface {
     }
 
     #[cfg(system_deps_have_cairo_pdf)]
-    fn new_for_pdf(size: Size, stream: OutputStream, version: Option<cairo::PdfVersion>) -> Result<Self, Error> {
+    fn new_for_pdf(
+        size: Size,
+        stream: OutputStream,
+        version: Option<cairo::PdfVersion>,
+    ) -> Result<Self, Error> {
         let surface = cairo::PdfSurface::for_stream(size.w, size.h, stream.into_write())?;
         if let Some(ver) = version {
             surface.restrict(ver)?;
