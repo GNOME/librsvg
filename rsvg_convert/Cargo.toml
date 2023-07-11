@@ -20,7 +20,7 @@ cairo-svg = { version = "1.17", optional = true }
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
-cairo-rs = { version = "0.17", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cairo-rs = { version = "0.17", features=["v1_18", "v1_16", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
 clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert

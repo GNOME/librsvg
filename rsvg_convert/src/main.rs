@@ -262,6 +262,7 @@ impl Surface {
         match format {
             Format::Png => Self::new_for_png(size, stream),
             Format::Pdf => Self::new_for_pdf(size, stream, None),
+            Format::Pdf1_6 => Self::new_for_pdf(size, stream, Some(cairo::PdfVersion::_1_6)),
             Format::Pdf1_5 => Self::new_for_pdf(size, stream, Some(cairo::PdfVersion::_1_5)),
             Format::Pdf1_4 => Self::new_for_pdf(size, stream, Some(cairo::PdfVersion::_1_4)),
             Format::Ps => Self::new_for_ps(size, stream, false),
@@ -492,6 +493,7 @@ impl std::fmt::Display for Output {
 enum Format {
     Png,
     Pdf,
+    Pdf1_6,
     Pdf1_5,
     Pdf1_4,
     Ps,
@@ -600,7 +602,12 @@ impl Converter {
                     )
                 }
 
-                Format::Pdf | Format::Pdf1_5 | Format::Pdf1_4 | Format::Ps | Format::Eps => {
+                Format::Pdf
+                | Format::Pdf1_6
+                | Format::Pdf1_5
+                | Format::Pdf1_4
+                | Format::Ps
+                | Format::Eps => {
                     // These surfaces require units in points
                     unit = LengthUnit::Pt;
 
@@ -791,6 +798,8 @@ fn build_cli() -> clap::Command {
         "png",
         #[cfg(system_deps_have_cairo_pdf)]
         "pdf",
+        #[cfg(system_deps_have_cairo_pdf)]
+        "pdf1.6",
         #[cfg(system_deps_have_cairo_pdf)]
         "pdf1.5",
         #[cfg(system_deps_have_cairo_pdf)]
@@ -1066,6 +1075,7 @@ fn parse_args() -> Result<Converter, Error> {
         format_str,
         "png" => Format::Png,
         "pdf" => Format::Pdf,
+        "pdf1.6" => Format::Pdf1_6,
         "pdf1.5" => Format::Pdf1_5,
         "pdf1.4" => Format::Pdf1_4,
         "ps" => Format::Ps,
