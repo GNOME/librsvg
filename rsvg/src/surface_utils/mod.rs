@@ -57,7 +57,7 @@ impl AsCairoARGB for [u32] {
 
 /// Modes which specify how the values of out of bounds pixels are computed.
 ///
-/// https://www.w3.org/TR/filter-effects/#element-attrdef-fegaussianblur-edgemode
+/// <https://www.w3.org/TR/filter-effects/#element-attrdef-fegaussianblur-edgemode>
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EdgeMode {
     /// The nearest inbounds pixel value is returned.
