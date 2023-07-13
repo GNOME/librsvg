@@ -16,5 +16,5 @@ documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.htm
 anyhow = "1.0"
 cairo-rs = { version = "0.17", features=["v1_16", "png", "pdf", "ps", "svg"] }
 clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
-librsvg = { path = "../rsvg" }
+rsvg = { path = "../rsvg" }
 thiserror = "1.0"
