@@ -484,7 +484,7 @@ cargo-doc:
     - cargo doc --workspace --document-private-items --no-deps
     - cp -r target/doc/* public/internals
     - mkdir -p public/doc
-    - cargo doc --no-deps --package librsvg
+    - cargo doc --no-deps --package rsvg
     - cp -r target/doc/* public/doc
   artifacts:
     paths:
