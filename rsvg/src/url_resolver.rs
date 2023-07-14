@@ -40,6 +40,17 @@ impl UrlResolver {
             return Ok(AllowedUrl(url));
         }
 
+        // Queries are not allowed.
+        if !url.query().is_none() {
+            return Err(AllowedUrlError::NoQueriesAllowed);
+        }
+
+        // Fragment identifiers are not allowed.  They should have been stripped
+        // upstream, by NodeId.
+        if !url.fragment().is_none() {
+            return Err(AllowedUrlError::NoFragmentIdentifierAllowed);
+        }
+
         // All other sources require a base url
         if self.base_url.is_none() {
             return Err(AllowedUrlError::BaseRequired);
@@ -62,6 +73,31 @@ impl UrlResolver {
             return Err(AllowedUrlError::DisallowedScheme);
         }
 
+        // The rest of this function assumes file: URLs; guard against
+        // incorrect refactoring.
+        assert!(url.scheme() == "file");
+
+        // We have a file: URI.  Reject queries, e.g. "file:///foo.svg?bar"
+        if !url.query().is_none() {
+            return Err(AllowedUrlError::NoQueriesAllowed);
+        }
+
+        // If we have a base_uri of "file:///foo/bar.svg", and resolve an href of ".",
+        // Url.parse() will give us "file:///foo/".  We don't want that, so check
+        // if the last path segment is empty - it will not be empty for a normal file.
+
+        if let Some(segments) = url.path_segments() {
+            if segments
+                .last()
+                .expect("URL path segments always contain at last 1 element")
+                .is_empty()
+            {
+                return Err(AllowedUrlError::NotSiblingOrChildOfBaseFile);
+            }
+        } else {
+            unreachable!("the file: URL cannot have an empty path");
+        }
+
         // We have two file: URIs.  Now canonicalize them (remove .. and symlinks, etc.)
         // and see if the directories match
 
@@ -79,13 +115,15 @@ impl UrlResolver {
 
         let base_parent = base_parent.unwrap();
 
-        let url_canon =
+        let path_canon =
             canonicalize(url_path).map_err(|_| AllowedUrlError::CanonicalizationError)?;
         let parent_canon =
             canonicalize(base_parent).map_err(|_| AllowedUrlError::CanonicalizationError)?;
 
-        if url_canon.starts_with(parent_canon) {
-            Ok(AllowedUrl(url))
+        if path_canon.starts_with(parent_canon) {
+            // Finally, convert the canonicalized path back to a URL.
+            let path_to_url = Url::from_file_path(path_canon).unwrap();
+            Ok(AllowedUrl(path_to_url))
         } else {
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         }
@@ -116,12 +154,13 @@ impl fmt::Display for AllowedUrl {
     }
 }
 
-// For tests, we don't want to touch the filesystem.  In that case,
-// assume that we are being passed canonical file names.
+// For tests, we want a dummy canonicalization function since the tested filenames don't exist.
+// For real use cases, we *do* want to canonicalize.
 #[cfg(not(test))]
 fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
     path.as_ref().canonicalize()
 }
+
 #[cfg(test)]
 fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
     Ok(path.as_ref().to_path_buf())
@@ -233,6 +272,71 @@ mod tests {
         assert!(matches!(
             url_resolver.resolve_href(&make_file_uri("/etc/passwd")),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
+        ));
+    }
+
+    #[test]
+    fn disallows_queries() {
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
+        ));
+        assert!(matches!(
+            url_resolver.resolve_href(".?../../../../../../../../../../etc/passwd"),
+            Err(AllowedUrlError::NoQueriesAllowed)
+        ));
+    }
+
+    #[test]
+    fn disallows_weird_relative_uris() {
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
+        ));
+
+        assert!(url_resolver
+            .resolve_href(".@../../../../../../../../../../etc/passwd")
+            .is_err());
+        assert!(url_resolver
+            .resolve_href(".$../../../../../../../../../../etc/passwd")
+            .is_err());
+        assert!(url_resolver
+            .resolve_href(".%../../../../../../../../../../etc/passwd")
+            .is_err());
+        assert!(url_resolver
+            .resolve_href(".*../../../../../../../../../../etc/passwd")
+            .is_err());
+        assert!(url_resolver
+            .resolve_href("~/../../../../../../../../../../etc/passwd")
+            .is_err());
+    }
+
+    #[test]
+    fn disallows_dot_sibling() {
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
+        ));
+
+        assert!(matches!(
+            url_resolver.resolve_href("."),
+            Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
+        ));
+        assert!(matches!(
+            url_resolver.resolve_href(".#../../../../../../../../../../etc/passwd"),
+            Err(AllowedUrlError::NoFragmentIdentifierAllowed)
+        ));
+    }
+
+    #[test]
+    fn disallows_fragment() {
+        // UrlResolver::resolve_href() explicitly disallows fragment identifiers.
+        // This is because they should have been stripped before calling that function,
+        // by NodeId or the Iri machinery.
+        let url_resolver = UrlResolver::new(Some(
+            Url::parse("https://example.com/foo.svg").unwrap(),
+        ));
+
+        assert!(matches!(
+            url_resolver.resolve_href("bar.svg#fragment"),
+            Err(AllowedUrlError::NoFragmentIdentifierAllowed)
         ));
     }
 
