@@ -266,6 +266,8 @@ mod tests {
         assert!(resolved_str.ends_with("/loading/subdir/baz.svg"));
     }
 
+    // Ignore on Windows since we test for /etc/passwd
+    #[cfg(unix)]
     #[test]
     fn disallows_non_sibling() {
         let url_resolver = UrlResolver::new(Some(url_from_test_fixtures(
