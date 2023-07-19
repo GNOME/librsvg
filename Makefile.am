@@ -309,6 +309,7 @@ test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/errors/*)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/geometries/*)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/loading/*)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/loading/subdir/*)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/primitive_geometries/*)	\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.css)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.svg)		\
