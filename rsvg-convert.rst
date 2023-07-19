@@ -351,8 +351,9 @@ OPTIONS
 GENERAL OPTIONS
 ---------------
 
-``-f`` *format*, ``--format=[png, pdf, ps, eps, svg]``
+``-f`` *format*, ``--format=[png, pdf, pdf1.4, pdf1.5, pdf1.6. pdf1.7, ps, eps, svg]``
    Output format for the rendered document. Default is ``png``.
+   See the section "PDF VERSIONS" for more detail on what each one allows.
 
 ``-o`` *filename*, ``--output`` *filename*
    Specify the output filename. If unspecified, outputs to standard
@@ -496,6 +497,39 @@ ENVIRONMENT VARIABLES
    to use the system's environment to detect the user's preferred
    language. This consults the environment variables ``LANGUAGE``,
    ``LC_ALL``, ``LC_MESSAGES``, and ``LANG``.
+
+PDF VERSIONS
+============
+
+The ``--format=pdf`` option makes rsvg-convert output the latest
+version of PDF that it supports.  Normally this is the right thing to
+do, except when you have tools that consume the resulting PDFs but
+only support certain versions.
+
+For example, LaTeX tools like pdflatex may issue a warning if you try
+to include a PDF image that uses a newer version than the surrounding
+document, similar to
+
+  *PDF inclusion: found PDF version <1.7> but at most version <1.5> allowed*
+
+In this case, you may need to restrict the PDF version that
+rsvg-convert produces.  Instead of ``--format=pdf``, you can use the
+following:
+
+``--format=pdf1.4``
+  Does not use PDF object streams; files may be bigger as they allow for less compression.
+
+``--format=pdf1.5``
+  Allows creating PDFs where text can be selected and searched.
+
+``--format=pdf1.6``
+  No special behavior.
+
+``--format=pdf1.7``
+  Allows including UTF-8 filenames in link objects reliably.
+
+If you are using LaTeX tooling, you may want to research options like
+``\pdfminorversion=6``.
 
 
 MORE INFORMATION

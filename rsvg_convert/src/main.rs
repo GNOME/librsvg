@@ -261,7 +261,11 @@ impl Surface {
     ) -> Result<Self, Error> {
         match format {
             Format::Png => Self::new_for_png(size, stream),
-            Format::Pdf => Self::new_for_pdf(size, stream),
+            Format::Pdf => Self::new_for_pdf(size, stream, None),
+            Format::Pdf1_7 => Self::new_for_pdf(size, stream, Some(cairo::PdfVersion::_1_7)),
+            Format::Pdf1_6 => Self::new_for_pdf(size, stream, Some(cairo::PdfVersion::_1_6)),
+            Format::Pdf1_5 => Self::new_for_pdf(size, stream, Some(cairo::PdfVersion::_1_5)),
+            Format::Pdf1_4 => Self::new_for_pdf(size, stream, Some(cairo::PdfVersion::_1_4)),
             Format::Ps => Self::new_for_ps(size, stream, false),
             Format::Eps => Self::new_for_ps(size, stream, true),
             Format::Svg => Self::new_for_svg(size, stream, unit),
@@ -277,8 +281,15 @@ impl Surface {
     }
 
     #[cfg(system_deps_have_cairo_pdf)]
-    fn new_for_pdf(size: Size, stream: OutputStream) -> Result<Self, Error> {
+    fn new_for_pdf(
+        size: Size,
+        stream: OutputStream,
+        version: Option<cairo::PdfVersion>,
+    ) -> Result<Self, Error> {
         let surface = cairo::PdfSurface::for_stream(size.w, size.h, stream.into_write())?;
+        if let Some(ver) = version {
+            surface.restrict(ver)?;
+        }
         if let Some(date) = metadata::creation_date()? {
             surface.set_metadata(cairo::PdfMetadata::CreateDate, &date)?;
         }
@@ -483,6 +494,10 @@ impl std::fmt::Display for Output {
 enum Format {
     Png,
     Pdf,
+    Pdf1_7,
+    Pdf1_6,
+    Pdf1_5,
+    Pdf1_4,
     Ps,
     Eps,
     Svg,
@@ -589,7 +604,13 @@ impl Converter {
                     )
                 }
 
-                Format::Pdf | Format::Ps | Format::Eps => {
+                Format::Pdf
+                | Format::Pdf1_7
+                | Format::Pdf1_6
+                | Format::Pdf1_5
+                | Format::Pdf1_4
+                | Format::Ps
+                | Format::Eps => {
                     // These surfaces require units in points
                     unit = LengthUnit::Pt;
 
@@ -780,6 +801,14 @@ fn build_cli() -> clap::Command {
         "png",
         #[cfg(system_deps_have_cairo_pdf)]
         "pdf",
+        #[cfg(system_deps_have_cairo_pdf)]
+        "pdf1.7",
+        #[cfg(system_deps_have_cairo_pdf)]
+        "pdf1.6",
+        #[cfg(system_deps_have_cairo_pdf)]
+        "pdf1.5",
+        #[cfg(system_deps_have_cairo_pdf)]
+        "pdf1.4",
         #[cfg(system_deps_have_cairo_ps)]
         "ps",
         #[cfg(system_deps_have_cairo_ps)]
@@ -1051,6 +1080,10 @@ fn parse_args() -> Result<Converter, Error> {
         format_str,
         "png" => Format::Png,
         "pdf" => Format::Pdf,
+        "pdf1.7" => Format::Pdf1_7,
+        "pdf1.6" => Format::Pdf1_6,
+        "pdf1.5" => Format::Pdf1_5,
+        "pdf1.4" => Format::Pdf1_4,
         "ps" => Format::Ps,
         "eps" => Format::Eps,
         "svg" => Format::Svg,
