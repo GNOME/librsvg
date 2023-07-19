@@ -29,6 +29,9 @@ mod legacy_sizing;
 mod loading_crash;
 
 #[cfg(test)]
+mod loading_disallowed;
+
+#[cfg(test)]
 mod predicates;
 
 #[cfg(test)]

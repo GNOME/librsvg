@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xi="http://www.w3.org/2001/XInclude"
+     width="500" height="500">
+  <rect width="100%" height="100%" fill="white"/>
+
+  <text x="20" y="40" style="font: 30px Sans;" fill="black">
+    <xi:include href=".?../../../../../../../../../../etc/passwd" parse="text" encoding="UTF-8">
+      <xi:fallback>This text should appear</xi:fallback>
+    </xi:include>
+  </text>
+</svg>
