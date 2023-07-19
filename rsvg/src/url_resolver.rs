@@ -8,6 +8,8 @@ use url::Url;
 
 use crate::error::AllowedUrlError;
 
+/// Decides which URLs are allowed to be loaded.
+///
 /// Currently only contains the base URL.
 ///
 /// The plan is to add:
@@ -29,6 +31,11 @@ impl UrlResolver {
         UrlResolver { base_url }
     }
 
+    /// Decides which URLs are allowed to be loaded based on the presence of a base URL.
+    ///
+    /// This function implements the policy described in "Security and locations of
+    /// referenced files" in the [crate
+    /// documentation](index.html#security-and-locations-of-referenced-files).
     pub fn resolve_href(&self, href: &str) -> Result<AllowedUrl, AllowedUrlError> {
         let url = Url::options()
             .base_url(self.base_url.as_ref())
