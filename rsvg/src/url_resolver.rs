@@ -46,13 +46,13 @@ impl UrlResolver {
         }
 
         // Queries are not allowed.
-        if !url.query().is_none() {
+        if url.query().is_some() {
             return Err(AllowedUrlError::NoQueriesAllowed);
         }
 
         // Fragment identifiers are not allowed.  They should have been stripped
         // upstream, by NodeId.
-        if !url.fragment().is_none() {
+        if url.fragment().is_some() {
             return Err(AllowedUrlError::NoFragmentIdentifierAllowed);
         }
 
