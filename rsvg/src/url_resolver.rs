@@ -77,11 +77,6 @@ impl UrlResolver {
         // incorrect refactoring.
         assert!(url.scheme() == "file");
 
-        // We have a file: URI.  Reject queries, e.g. "file:///foo.svg?bar"
-        if !url.query().is_none() {
-            return Err(AllowedUrlError::NoQueriesAllowed);
-        }
-
         // If we have a base_uri of "file:///foo/bar.svg", and resolve an href of ".",
         // Url.parse() will give us "file:///foo/".  We don't want that, so check
         // if the last path segment is empty - it will not be empty for a normal file.
