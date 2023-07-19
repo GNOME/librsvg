@@ -1,9 +1,7 @@
 //! Determine which URLs are allowed for loading.
 
 use std::fmt;
-use std::io;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::error::AllowedUrlError;
@@ -117,10 +115,12 @@ impl UrlResolver {
 
         let base_parent = base_parent.unwrap();
 
-        let path_canon =
-            canonicalize(url_path).map_err(|_| AllowedUrlError::CanonicalizationError)?;
-        let parent_canon =
-            canonicalize(base_parent).map_err(|_| AllowedUrlError::CanonicalizationError)?;
+        let path_canon = url_path
+            .canonicalize()
+            .map_err(|_| AllowedUrlError::CanonicalizationError)?;
+        let parent_canon = base_parent
+            .canonicalize()
+            .map_err(|_| AllowedUrlError::CanonicalizationError)?;
 
         if path_canon.starts_with(parent_canon) {
             // Finally, convert the canonicalized path back to a URL.
@@ -156,21 +156,11 @@ impl fmt::Display for AllowedUrl {
     }
 }
 
-// For tests, we want a dummy canonicalization function since the tested filenames don't exist.
-// For real use cases, we *do* want to canonicalize.
-#[cfg(not(test))]
-fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
-    path.as_ref().canonicalize()
-}
-
-#[cfg(test)]
-fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
-    Ok(path.as_ref().to_path_buf())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use std::path::PathBuf;
 
     #[test]
     fn disallows_relative_file_with_no_base_file() {
@@ -232,45 +222,55 @@ mod tests {
         );
     }
 
+    fn url_from_test_fixtures(filename_relative_to_librsvg_srcdir: &str) -> Url {
+        let path = PathBuf::from(filename_relative_to_librsvg_srcdir);
+        let absolute = path
+            .canonicalize()
+            .expect("files from test fixtures are supposed to canonicalize");
+        Url::from_file_path(absolute).unwrap()
+    }
+
     #[test]
     fn allows_relative() {
-        let url_resolver = UrlResolver::new(Some(
-            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
-        ));
+        let base_url = url_from_test_fixtures("tests/fixtures/loading/bar.svg");
+        let url_resolver = UrlResolver::new(Some(base_url));
+
         let resolved = url_resolver.resolve_href("foo.svg").unwrap();
-        let expected = make_file_uri("/example/foo.svg");
-        assert_eq!(resolved.as_ref(), expected);
+        let resolved_str = resolved.as_str();
+        assert!(resolved_str.ends_with("/loading/foo.svg"));
     }
 
     #[test]
     fn allows_sibling() {
-        let url_resolver = UrlResolver::new(Some(
-            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
-        ));
+        let url_resolver = UrlResolver::new(Some(url_from_test_fixtures(
+            "tests/fixtures/loading/bar.svg",
+        )));
         let resolved = url_resolver
-            .resolve_href(&make_file_uri("/example/foo.svg"))
+            .resolve_href(url_from_test_fixtures("tests/fixtures/loading/foo.svg").as_str())
             .unwrap();
-        let expected = make_file_uri("/example/foo.svg");
-        assert_eq!(resolved.as_ref(), expected);
+
+        let resolved_str = resolved.as_str();
+        assert!(resolved_str.ends_with("/loading/foo.svg"));
     }
 
     #[test]
     fn allows_child_of_sibling() {
-        let url_resolver = UrlResolver::new(Some(
-            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
-        ));
+        let url_resolver = UrlResolver::new(Some(url_from_test_fixtures(
+            "tests/fixtures/loading/bar.svg",
+        )));
         let resolved = url_resolver
-            .resolve_href(&make_file_uri("/example/subdir/foo.svg"))
+            .resolve_href(url_from_test_fixtures("tests/fixtures/loading/subdir/baz.svg").as_str())
             .unwrap();
-        let expected = make_file_uri("/example/subdir/foo.svg");
-        assert_eq!(resolved.as_ref(), expected);
+
+        let resolved_str = resolved.as_str();
+        assert!(resolved_str.ends_with("/loading/subdir/baz.svg"));
     }
 
     #[test]
     fn disallows_non_sibling() {
-        let url_resolver = UrlResolver::new(Some(
-            Url::parse(&make_file_uri("/example/bar.svg")).unwrap(),
-        ));
+        let url_resolver = UrlResolver::new(Some(url_from_test_fixtures(
+            "tests/fixtures/loading/bar.svg",
+        )));
         assert!(matches!(
             url_resolver.resolve_href(&make_file_uri("/etc/passwd")),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
@@ -332,9 +332,8 @@ mod tests {
         // UrlResolver::resolve_href() explicitly disallows fragment identifiers.
         // This is because they should have been stripped before calling that function,
         // by NodeId or the Iri machinery.
-        let url_resolver = UrlResolver::new(Some(
-            Url::parse("https://example.com/foo.svg").unwrap(),
-        ));
+        let url_resolver =
+            UrlResolver::new(Some(Url::parse("https://example.com/foo.svg").unwrap()));
 
         assert!(matches!(
             url_resolver.resolve_href("bar.svg#fragment"),
