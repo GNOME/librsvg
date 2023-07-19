@@ -333,6 +333,12 @@ pub enum AllowedUrlError {
     /// or in one directory below the base file.
     NotSiblingOrChildOfBaseFile,
 
+    /// Loaded file:// URLs cannot have a query part, e.g. `file:///foo?blah`
+    NoQueriesAllowed,
+
+    /// URLs may not have fragment identifiers at this stage
+    NoFragmentIdentifierAllowed,
+
     /// Error when obtaining the file path or the base file path
     InvalidPath,
 
@@ -345,17 +351,18 @@ pub enum AllowedUrlError {
 
 impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use AllowedUrlError::*;
         match *self {
-            AllowedUrlError::UrlParseError(e) => write!(f, "URL parse error: {e}"),
-            AllowedUrlError::BaseRequired => write!(f, "base required"),
-            AllowedUrlError::DifferentUriSchemes => write!(f, "different URI schemes"),
-            AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
-            AllowedUrlError::NotSiblingOrChildOfBaseFile => {
-                write!(f, "not sibling or child of base file")
-            }
-            AllowedUrlError::InvalidPath => write!(f, "invalid path"),
-            AllowedUrlError::BaseIsRoot => write!(f, "base is root"),
-            AllowedUrlError::CanonicalizationError => write!(f, "canonicalization error"),
+            UrlParseError(e) => write!(f, "URL parse error: {e}"),
+            BaseRequired => write!(f, "base required"),
+            DifferentUriSchemes => write!(f, "different URI schemes"),
+            DisallowedScheme => write!(f, "disallowed scheme"),
+            NotSiblingOrChildOfBaseFile => write!(f, "not sibling or child of base file"),
+            NoQueriesAllowed => write!(f, "no queries allowed"),
+            NoFragmentIdentifierAllowed => write!(f, "no fragment identifier allowed"),
+            InvalidPath => write!(f, "invalid path"),
+            BaseIsRoot => write!(f, "base is root"),
+            CanonicalizationError => write!(f, "canonicalization error"),
         }
     }
 }
