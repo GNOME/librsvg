@@ -136,7 +136,11 @@ GType rsvg_error_get_type (void);
  *   </listitem>
  *
  *   <listitem>
- *     All other URL schemes in references require a base URL.  For
+ *     URLs with queries ("?") or fragment identifiers ("#") are not allowed.
+ *   </listitem>
+ *
+ *   <listitem>
+ *     All other URL schemes other than data: in references require a base URL.  For
  *     example, this means that if you load an SVG with
  *     rsvg_handle_new_from_data() without calling rsvg_handle_set_base_uri(),
  *     then any referenced files will not be allowed (e.g. raster images to be

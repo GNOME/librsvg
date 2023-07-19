@@ -105,28 +105,30 @@
 //! include raster image data, encoded as base-64, directly in an SVG
 //! file.
 //!
-//! 2. All other URL schemes in references require a base URL.  For
+//! 2. URLs with queries ("?") or fragment identifiers ("#") are not allowed.
+//!
+//! 3. All URL schemes other than data: in references require a base URL.  For
 //! example, this means that if you load an SVG with [`Loader::read_stream`]
 //! without providing a `base_file`, then any referenced files will not
 //! be allowed (e.g. raster images to be loaded from other files will
 //! not work).
 //!
-//! 3. If referenced URLs are absolute, rather than relative, then
+//! 4. If referenced URLs are absolute, rather than relative, then
 //! they must have the same scheme as the base URL.  For example, if
 //! the base URL has a "`file`" scheme, then all URL references inside
 //! the SVG must also have the "`file`" scheme, or be relative
 //! references which will be resolved against the base URL.
 //!
-//! 4. If referenced URLs have a "`resource`" scheme, that is, if they
+//! 5. If referenced URLs have a "`resource`" scheme, that is, if they
 //! are included into your binary program with GLib's resource
 //! mechanism, they are allowed to be loaded (provided that the base
 //! URL is also a "`resource`", per the previous rule).
 //!
-//! 5. Otherwise, non-`file` schemes are not allowed.  For example,
+//! 6. Otherwise, non-`file` schemes are not allowed.  For example,
 //! librsvg will not load `http` resources, to keep malicious SVG data
 //! from "phoning home".
 //!
-//! 6. A relative URL must resolve to the same directory as the base
+//! 7. A relative URL must resolve to the same directory as the base
 //! URL, or to one of its subdirectories.  Librsvg will canonicalize
 //! filenames, by removing "`..`" path components and resolving symbolic
 //! links, to decide whether files meet these conditions.
