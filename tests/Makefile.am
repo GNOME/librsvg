@@ -10,6 +10,7 @@ test_sources =				\
 	src/intrinsic_dimensions.rs	\
 	src/legacy_sizing.rs		\
 	src/loading_crash.rs		\
+	src/loading_disallowed.rs	\
 	src/main.rs			\
 	src/primitive_geometries.rs	\
 	src/primitives.rs		\
@@ -61,6 +62,7 @@ test_fixtures =								\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
 	$(wildcard $(srcdir)/fixtures/geometries/*)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
+	$(wildcard $(srcdir)/fixtures/loading/subdir/*)			\
 	$(wildcard $(srcdir)/fixtures/primitive_geometries/*)		\
 	$(wildcard $(srcdir)/fixtures/reftests/*.css)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
