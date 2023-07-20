@@ -14,6 +14,8 @@ This is a security release for bug #996.
 - #664 - Rename the Rust crate to "rsvg", in preparation for crates.io
   (Sophie Herold).
 
+- The minimum supported Rust version (MSRV) is 1.66.0.
+
 Version 2.56.90
 ===============
 
