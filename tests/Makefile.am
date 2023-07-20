@@ -71,6 +71,7 @@ dist_installed_test_data =						\
 	$(wildcard $(srcdir)/fixtures/errors/*)				\
 	$(wildcard $(srcdir)/fixtures/infinite-loop/*)			\
 	$(wildcard $(srcdir)/fixtures/loading/*)			\
+	$(wildcard $(srcdir)/fixtures/loading/subdir/*)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.css)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.svg)			\
 	$(wildcard $(srcdir)/fixtures/reftests/*.png)			\
