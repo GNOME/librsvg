@@ -261,7 +261,7 @@ macro_rules! func_or_default {
                 $func_data.get_impl::<$func_type>()
             }
             _ => &$func_default,
-        };
+        }
     };
 }
 
