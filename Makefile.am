@@ -144,6 +144,7 @@ RUST_EXTRA =						\
 	rsvg/tests/geometries.rs			\
 	rsvg/tests/intrinsic_dimensions.rs		\
 	rsvg/tests/loading_crash.rs			\
+	rsvg/tests/loading_disallowed.rs		\
 	rsvg/tests/primitive_geometries.rs		\
 	rsvg/tests/primitives.rs			\
 	rsvg/tests/reference.rs				\
@@ -308,6 +309,7 @@ test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/errors/*)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/geometries/*)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/loading/*)			\
+	$(wildcard $(srcdir)/rsvg/tests/fixtures/loading/subdir/*)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/primitive_geometries/*)	\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.css)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/reftests/*.svg)		\
