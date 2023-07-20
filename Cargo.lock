@@ -880,7 +880,7 @@ checksum = "8371e4e5341c3a96db127eb2465ac681ced4c433e01dd0e938adbef26ba93ba5"
 
 [[package]]
 name = "librsvg"
-version = "2.54.5"
+version = "2.54.6"
 dependencies = [
  "anyhow",
  "assert_cmd",
