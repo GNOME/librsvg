@@ -261,7 +261,7 @@ macro_rules! func_or_default {
                 }
             }
             _ => &$func_default,
-        };
+        }
     };
 }
 

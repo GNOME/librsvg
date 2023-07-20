@@ -2,9 +2,7 @@
 
 use std::error;
 use std::fmt;
-use std::io;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::error::HrefError;
@@ -37,6 +35,12 @@ pub enum AllowedUrlError {
     /// or in one directory below the base file.
     NotSiblingOrChildOfBaseFile,
 
+    /// Loaded file:// URLs cannot have a query part, e.g. `file:///foo?blah`
+    NoQueriesAllowed,
+
+    /// URLs may not have fragment identifiers at this stage
+    NoFragmentIdentifierAllowed,
+
     /// Error when obtaining the file path or the base file path
     InvalidPath,
 
@@ -57,6 +61,17 @@ impl AllowedUrl {
         // Allow loads of data: from any location
         if url.scheme() == "data" {
             return Ok(AllowedUrl(url));
+        }
+
+        // Queries are not allowed.
+        if url.query().is_some() {
+            return Err(AllowedUrlError::NoQueriesAllowed);
+        }
+
+        // Fragment identifiers are not allowed.  They should have been stripped
+        // upstream, by NodeId.
+        if url.fragment().is_some() {
+            return Err(AllowedUrlError::NoFragmentIdentifierAllowed);
         }
 
         // All other sources require a base url
@@ -81,6 +96,26 @@ impl AllowedUrl {
             return Err(AllowedUrlError::DisallowedScheme);
         }
 
+        // The rest of this function assumes file: URLs; guard against
+        // incorrect refactoring.
+        assert!(url.scheme() == "file");
+
+        // If we have a base_uri of "file:///foo/bar.svg", and resolve an href of ".",
+        // Url.parse() will give us "file:///foo/".  We don't want that, so check
+        // if the last path segment is empty - it will not be empty for a normal file.
+
+        if let Some(segments) = url.path_segments() {
+          if segments
+                .last()
+                .expect("URL path segments always contain at last 1 element")
+                .is_empty()
+            {
+                return Err(AllowedUrlError::NotSiblingOrChildOfBaseFile);
+            }
+        } else {
+            unreachable!("the file: URL cannot have an empty path");
+        }
+
         // We have two file: URIs.  Now canonicalize them (remove .. and symlinks, etc.)
         // and see if the directories match
 
@@ -98,13 +133,17 @@ impl AllowedUrl {
 
         let base_parent = base_parent.unwrap();
 
-        let url_canon =
-            canonicalize(&url_path).map_err(|_| AllowedUrlError::CanonicalizationError)?;
-        let parent_canon =
-            canonicalize(&base_parent).map_err(|_| AllowedUrlError::CanonicalizationError)?;
+        let path_canon = url_path
+            .canonicalize()
+            .map_err(|_| AllowedUrlError::CanonicalizationError)?;
+        let parent_canon = base_parent
+            .canonicalize()
+            .map_err(|_| AllowedUrlError::CanonicalizationError)?;
 
-        if url_canon.starts_with(parent_canon) {
-            Ok(AllowedUrl(url))
+        if path_canon.starts_with(parent_canon) {
+            // Finally, convert the canonicalized path back to a URL.
+            let path_to_url = Url::from_file_path(path_canon).unwrap();
+            Ok(AllowedUrl(path_to_url))
         } else {
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         }
@@ -129,30 +168,20 @@ impl error::Error for AllowedUrlError {}
 
 impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match *self {
-            AllowedUrlError::HrefParseError(e) => write!(f, "href parse error: {}", e),
-            AllowedUrlError::BaseRequired => write!(f, "base required"),
-            AllowedUrlError::DifferentURISchemes => write!(f, "different URI schemes"),
-            AllowedUrlError::DisallowedScheme => write!(f, "disallowed scheme"),
-            AllowedUrlError::NotSiblingOrChildOfBaseFile => {
-                write!(f, "not sibling or child of base file")
-            }
-            AllowedUrlError::InvalidPath => write!(f, "invalid path"),
-            AllowedUrlError::BaseIsRoot => write!(f, "base is root"),
-            AllowedUrlError::CanonicalizationError => write!(f, "canonicalization error"),
+        use AllowedUrlError::*;
+        match self {
+            HrefParseError(e) => write!(f, "URL parse error: {e}"),
+            BaseRequired => write!(f, "base required"),
+            DifferentUriSchemes => write!(f, "different URI schemes"),
+            DisallowedScheme => write!(f, "disallowed scheme"),
+            NotSiblingOrChildOfBaseFile => write!(f, "not sibling or child of base file"),
+            NoQueriesAllowed => write!(f, "no queries allowed"),
+            NoFragmentIdentifierAllowed => write!(f, "no fragment identifier allowed"),
+            InvalidPath => write!(f, "invalid path"),
+            BaseIsRoot => write!(f, "base is root"),
+            CanonicalizationError => write!(f, "canonicalization error"),
         }
     }
-}
-
-// For tests, we don't want to touch the filesystem.  In that case,
-// assume that we are being passed canonical file names.
-#[cfg(not(test))]
-fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
-    path.as_ref().canonicalize()
-}
-#[cfg(test)]
-fn canonicalize<P: AsRef<Path>>(path: P) -> Result<PathBuf, io::Error> {
-    Ok(path.as_ref().to_path_buf())
 }
 
 /// Parsed result of an href from an SVG or CSS file
@@ -234,6 +263,8 @@ impl Href {
 mod tests {
     use super::*;
 
+    use std::path::PathBuf;
+
     #[test]
     fn disallows_relative_file_with_no_base_file() {
         assert_eq!(
@@ -284,55 +315,135 @@ mod tests {
         );
     }
 
+    fn url_from_test_fixtures(filename_relative_to_librsvg_srcdir: &str) -> Url {
+        let path = PathBuf::from(filename_relative_to_librsvg_srcdir);
+        let absolute = path
+            .canonicalize()
+            .expect("files from test fixtures are supposed to canonicalize");
+        Url::from_file_path(absolute).unwrap()
+    }
+
     #[test]
     fn allows_relative() {
-        assert_eq!(
-            AllowedUrl::from_href(
-                "foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
-            )
-            .unwrap()
-            .as_ref(),
-            "file:///example/foo.svg",
-        );
+        let resolved = AllowedUrl::from_href(
+            "foo.svg",
+            Some(url_from_test_fixtures("../tests/fixtures/loading/bar.svg")).as_ref()
+        ).unwrap();
+
+        let resolved_str = resolved.as_str();
+        assert!(resolved_str.ends_with("/loading/foo.svg"));
     }
 
     #[test]
     fn allows_sibling() {
-        assert_eq!(
-            AllowedUrl::from_href(
-                "file:///example/foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
-            )
-            .unwrap()
-            .as_ref(),
-            "file:///example/foo.svg",
-        );
+        let sibling = url_from_test_fixtures("../tests/fixtures/loading/foo.svg");
+        let resolved = AllowedUrl::from_href(
+            sibling.as_str(),
+            Some(url_from_test_fixtures("../tests/fixtures/loading/bar.svg")).as_ref()
+        ).unwrap();
+        
+        let resolved_str = resolved.as_str();
+        assert!(resolved_str.ends_with("/loading/foo.svg"));
     }
 
     #[test]
     fn allows_child_of_sibling() {
-        assert_eq!(
-            AllowedUrl::from_href(
-                "file:///example/subdir/foo.svg",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
-            )
-            .unwrap()
-            .as_ref(),
-            "file:///example/subdir/foo.svg",
-        );
+        let child_of_sibling = url_from_test_fixtures("../tests/fixtures/loading/subdir/baz.svg");
+        let resolved = AllowedUrl::from_href(
+            child_of_sibling.as_str(),
+            Some(url_from_test_fixtures("../tests/fixtures/loading/bar.svg")).as_ref()
+        ).unwrap();
+        
+        let resolved_str = resolved.as_str();
+        assert!(resolved_str.ends_with("/loading/subdir/baz.svg"));
     }
 
+    // Ignore on Windows since we test for /etc/passwd
+    #[cfg(unix)]
     #[test]
     fn disallows_non_sibling() {
         assert_eq!(
             AllowedUrl::from_href(
                 "file:///etc/passwd",
-                Some(Url::parse("file:///example/bar.svg").unwrap()).as_ref()
+                Some(url_from_test_fixtures("../tests/fixtures/loading/bar.svg")).as_ref()
             ),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         );
     }
+
+    #[test]
+    fn disallows_queries() {
+        assert!(matches!(
+            AllowedUrl::from_href(
+                ".?../../../../../../../../../../etc/passwd",
+                Some(url_from_test_fixtures("../tests/fixtures/loading/bar.svg")).as_ref(),
+            ),
+            Err(AllowedUrlError::NoQueriesAllowed)
+        ));
+    }
+
+    #[test]
+    fn disallows_weird_relative_uris() {
+        let base_url = url_from_test_fixtures("../tests/fixtures/loading/bar.svg");
+
+        assert!(
+            AllowedUrl::from_href(
+                ".@../../../../../../../../../../etc/passwd",
+                Some(&base_url),
+            ).is_err()
+        );
+        assert!(
+            AllowedUrl::from_href(
+                ".$../../../../../../../../../../etc/passwd",
+                Some(&base_url),
+            ).is_err()
+        );
+        assert!(
+            AllowedUrl::from_href(
+                ".%../../../../../../../../../../etc/passwd",
+                Some(&base_url),
+            ).is_err()
+        );
+        assert!(
+            AllowedUrl::from_href(
+                ".*../../../../../../../../../../etc/passwd",
+                Some(&base_url),
+            ).is_err()
+        );
+        assert!(
+            AllowedUrl::from_href(
+                "~/../../../../../../../../../../etc/passwd",
+                Some(&base_url),
+            ).is_err()
+        );
+    }
+
+    #[test]
+    fn disallows_dot_sibling() {
+        println!("cwd: {:?}", std::env::current_dir());
+        let base_url = url_from_test_fixtures("../tests/fixtures/loading/bar.svg");
+
+        assert!(matches!(
+            AllowedUrl::from_href(".", Some(&base_url)),
+            Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
+        ));
+        assert!(matches!(
+            AllowedUrl::from_href(".#../../../../../../../../../../etc/passwd", Some(&base_url)),
+            Err(AllowedUrlError::NoFragmentIdentifierAllowed)
+        ));
+    }
+
+    #[test]
+    fn disallows_fragment() {
+        // AllowedUrl::from_href() explicitly disallows fragment identifiers.
+        // This is because they should have been stripped before calling that function,
+        // by the Iri machinery.
+
+        assert!(matches!(
+            AllowedUrl::from_href("bar.svg#fragment", Some(Url::parse("https://example.com/foo.svg").unwrap()).as_ref()),
+            Err(AllowedUrlError::NoFragmentIdentifierAllowed)
+        ));
+     }
 
     #[test]
     fn parses_href() {
