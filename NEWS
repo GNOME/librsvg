@@ -1,4 +1,13 @@
 ==============
+Version 2.50.8
+==============
+
+This is a security release for bug #996.
+
+- #996 - Fix arbitrary file read when href has special characters.
+
+
+==============
 Version 2.50.7
 ==============
 
