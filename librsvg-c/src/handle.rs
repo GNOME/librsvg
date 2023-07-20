@@ -1419,7 +1419,7 @@ pub unsafe extern "C" fn rsvg_handle_new() -> *const RsvgHandle {
 #[no_mangle]
 pub unsafe extern "C" fn rsvg_handle_new_with_flags(flags: RsvgHandleFlags) -> *const RsvgHandle {
     let obj = glib::Object::builder::<CHandle>()
-        .property("flags", &HandleFlags::from_bits_truncate(flags))
+        .property("flags", HandleFlags::from_bits_truncate(flags))
         .build();
 
     obj.to_glib_full()

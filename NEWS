@@ -1,3 +1,21 @@
+Version 2.56.91
+===============
+
+This is a security release for bug #996.
+
+- #996 - Fix arbitrary file read when href has special characters.
+
+- #998 - Fix cascade for symbol elements being referenced from use elements.
+
+- rsvg-convert can now output PDF versions 1.4, 1.5, 1.6, in addition
+  to the default 1.7, especially for LaTeX users.  See the
+  rsvg-convert(1) man page for options like --format=pdf1.4 (Simon Buttgereit).
+
+- #664 - Rename the Rust crate to "rsvg", in preparation for crates.io
+  (Sophie Herold).
+
+- The minimum supported Rust version (MSRV) is 1.66.0.
+
 Version 2.56.90
 ===============
 
