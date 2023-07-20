@@ -1,3 +1,12 @@
+Version 2.56.3
+==============
+
+This is a security release for bug #996.
+
+- #996 - Fix arbitrary file read when href has special characters.
+
+- #998 - Fix cascade for symbol elements being referenced from use elements.
+
 Version 2.56.2
 ==============
 
