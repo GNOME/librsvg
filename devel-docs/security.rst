@@ -25,10 +25,52 @@ Development and beta versions have a micro version starting at 90
 
 The following list is only for stable release streams.
 
+2.56.3
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.55.3
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.54.6
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.52.10
+~~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.50.8
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
 2.50.4
 ~~~~~~
 
 RUSTSEC-2020-0146 - lifetime erasure in generic-array.
+
+2.48.11
+~~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
 
 2.48.10
 ~~~~~~~
@@ -46,6 +88,13 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
 CVE-2019-20446 - guard against exponential growth of CPU time from
 malicious SVGs.
+
+2.46.6
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
 
 2.46.5
 ~~~~~~
