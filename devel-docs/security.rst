@@ -234,8 +234,12 @@ will generate an XML parse error and the document will not be loaded.
 Security considerations for Cairo
 ---------------------------------
 
-Cairo is easy to crash if given coordinates that fall outside the range
-of its 24.8 fixed-point numbers. Librsvg is working on mitigating this.
+Cairo versions before 1.17.0 are easy to crash if given coordinates
+that fall outside the range of its 24.8 fixed-point numbers.  Please
+make sure that you use librsvg with Cairo 1.17.0 or newer.
+
+The first version of librsvg to require at least Cairo 1.17.0 is
+librsvg 2.56.90 (development), or librsvg 2.57.0 (stable).
 
 Security considerations for gdk-pixbuf
 --------------------------------------
