@@ -110,7 +110,7 @@ minimum version is listed here; you may use a newer version instead.
 
 **Mandatory dependencies:**
 
-* Cairo 1.16.0 with PNG support
+* Cairo 1.17.0 with PNG support
 * Freetype2 2.8.0
 * Gdk-pixbuf 2.20.0
 * GIO 2.24.0
@@ -184,11 +184,13 @@ Building and testing
 Make sure you have gone through the steps in :ref:`podman_setup` or
 :ref:`manual_setup`.  Then, do the following.
 
-**Normal development:** You can use ``cargo build`` and ``cargo test``
-as for a simple Rust project; this is what you will use most of the
-time during regular development.  If you are using the podman
-container as per above, you should do this in the ``/srv/project``
-directory most of the time.
+**Normal development:** You can use ``cargo build --workspace`` and
+``cargo test --workspace`` as for a simple Rust project; this is what
+you will use most of the time during regular development.  If you are
+using the podman container as per above, you should do this in the
+``/srv/project`` directory most of the time.  The ``--workspace``
+options are because librsvg's repository contains multiple crates in a
+single Cargo workspace.
 
 To casually test rendering, for example, for a feature you are
 developing, you can run `target/debug/rsvg-convert -o output.png

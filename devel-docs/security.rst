@@ -25,10 +25,52 @@ Development and beta versions have a micro version starting at 90
 
 The following list is only for stable release streams.
 
+2.56.3
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.55.3
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.54.6
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.52.10
+~~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+2.50.8
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
 2.50.4
 ~~~~~~
 
 RUSTSEC-2020-0146 - lifetime erasure in generic-array.
+
+2.48.11
+~~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
 
 2.48.10
 ~~~~~~~
@@ -47,6 +89,20 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 CVE-2019-20446 - guard against exponential growth of CPU time from
 malicious SVGs.
 
+Releases older than 2.48.0 are not recommended
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See notes below on :ref:`libcroco<libcroco>`.
+
+2.46.6
+~~~~~~
+
+CVE-2023-38633 - `#996
+<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
+file read when xinclude href has special characters.
+
+See notes below on :ref:`libcroco<libcroco>`.
+
 2.46.5
 ~~~~~~
 
@@ -54,7 +110,7 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
 CVE-2021-25900 - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
-See notes below on libcroco.
+See notes below on :ref:`libcroco<libcroco>`.
 
 2.44.17
 ~~~~~~~
@@ -68,7 +124,7 @@ smallvec.
 
 CVE-2021-25900 - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
-See notes below on libcroco.
+See notes below on :ref:`libcroco<libcroco>`.
 
 2.44.16
 ~~~~~~~
@@ -76,7 +132,7 @@ See notes below on libcroco.
 CVE-2019-20446 - guard against exponential growth of CPU time from
 malicious SVGs.
 
-See notes below on libcroco.
+See notes below on :ref:`libcroco<libcroco>`.
 
 2.42.8
 ~~~~~~
@@ -84,14 +140,14 @@ See notes below on libcroco.
 CVE-2019-20446 - guard against exponential growth of CPU time from
 malicious SVGs.
 
-See notes below on libcroco.
+See notes below on :ref:`libcroco<libcroco>`.
 
 2.42.9
 ~~~~~~
 
 CVE-2018-20991 - RUSTSEC-2018-0003 - double-free in smallvec.
 
-See notes below on libcroco.
+See notes below on :ref:`libcroco<libcroco>`.
 
 2.40.21
 ~~~~~~~
@@ -99,19 +155,24 @@ See notes below on libcroco.
 CVE-2019-20446 - guard against exponential growth of CPU time from
 malicious SVGs.
 
-See notes below on libcroco.
+See notes below on :ref:`libcroco<libcroco>`.
 
 2.40.18
 ~~~~~~~
 
 CVE-2017-11464 - Fix division-by-zero in the Gaussian blur code.
 
-See notes below on libcroco.
+See notes below on :ref:`libcroco<libcroco>`.
 
 Earlier releases should be avoided and are not listed here.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Important note on libcroco:** Note that librsvg 2.46.x and earlier use
+.. _libcroco:
+
+Important note on libcroco
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Note that librsvg 2.46.x and earlier use
 `libcroco <https://gitlab.gnome.org/Archive/libcroco/>`__ for parsing
 CSS, but that library is deprecated, unmaintained, and has open CVEs as
 of May 2021.
@@ -173,8 +234,12 @@ will generate an XML parse error and the document will not be loaded.
 Security considerations for Cairo
 ---------------------------------
 
-Cairo is easy to crash if given coordinates that fall outside the range
-of its 24.8 fixed-point numbers. Librsvg is working on mitigating this.
+Cairo versions before 1.17.0 are easy to crash if given coordinates
+that fall outside the range of its 24.8 fixed-point numbers.  Please
+make sure that you use librsvg with Cairo 1.17.0 or newer.
+
+The first version of librsvg to require at least Cairo 1.17.0 is
+librsvg 2.56.90 (development), or librsvg 2.57.0 (stable).
 
 Security considerations for gdk-pixbuf
 --------------------------------------

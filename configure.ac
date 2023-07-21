@@ -56,9 +56,9 @@ AC_SUBST([LIBRSVG_MAJOR_VERSION],[rsvg_major_version])
 AC_SUBST([LIBRSVG_MINOR_VERSION],[rsvg_minor_version])
 AC_SUBST([LIBRSVG_MICRO_VERSION],[rsvg_micro_version])
 
-dnl ===========================================================================
-dnl Please update COMPILING.md with version numbers if these change
-CAIRO_REQUIRED=1.16.0
+dnl ===================================================================================
+dnl Please update devel-docs/devel_environment.rst with version numbers if these change
+CAIRO_REQUIRED=1.17.0
 dnl This corresponds to Freetype2 2.8
 FREETYPE2_REQUIRED=20.0.14
 GDK_PIXBUF_REQUIRED=2.20
