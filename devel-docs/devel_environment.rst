@@ -110,7 +110,7 @@ minimum version is listed here; you may use a newer version instead.
 
 **Mandatory dependencies:**
 
-* Cairo 1.16.0 with PNG support
+* Cairo 1.17.0 with PNG support
 * Freetype2 2.8.0
 * Gdk-pixbuf 2.20.0
 * GIO 2.24.0
