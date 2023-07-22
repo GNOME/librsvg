@@ -333,7 +333,7 @@ impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use AllowedUrlError::*;
         match *self {
-            UrlParseError(e) => write!(f, "URL parse error: {e}"),
+            UrlParseError(e) => write!(f, "URL parse error: {}", e),
             BaseRequired => write!(f, "base required"),
             DifferentUriSchemes => write!(f, "different URI schemes"),
             DisallowedScheme => write!(f, "disallowed scheme"),
