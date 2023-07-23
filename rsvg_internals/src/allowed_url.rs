@@ -170,7 +170,7 @@ impl fmt::Display for AllowedUrlError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use AllowedUrlError::*;
         match self {
-            HrefParseError(e) => write!(f, "URL parse error: {e}"),
+            HrefParseError(e) => write!(f, "URL parse error: {}", e),
             BaseRequired => write!(f, "base required"),
             DifferentUriSchemes => write!(f, "different URI schemes"),
             DisallowedScheme => write!(f, "disallowed scheme"),
@@ -373,7 +373,7 @@ mod tests {
 
     #[test]
     fn disallows_queries() {
-        assert!(matches!(
+        assert!(matches::matches!(
             AllowedUrl::from_href(
                 ".?../../../../../../../../../../etc/passwd",
                 Some(url_from_test_fixtures("../tests/fixtures/loading/bar.svg")).as_ref(),
@@ -423,11 +423,11 @@ mod tests {
         println!("cwd: {:?}", std::env::current_dir());
         let base_url = url_from_test_fixtures("../tests/fixtures/loading/bar.svg");
 
-        assert!(matches!(
+        assert!(matches::matches!(
             AllowedUrl::from_href(".", Some(&base_url)),
             Err(AllowedUrlError::NotSiblingOrChildOfBaseFile)
         ));
-        assert!(matches!(
+        assert!(matches::matches!(
             AllowedUrl::from_href(".#../../../../../../../../../../etc/passwd", Some(&base_url)),
             Err(AllowedUrlError::NoFragmentIdentifierAllowed)
         ));
@@ -439,7 +439,7 @@ mod tests {
         // This is because they should have been stripped before calling that function,
         // by the Iri machinery.
 
-        assert!(matches!(
+        assert!(matches::matches!(
             AllowedUrl::from_href("bar.svg#fragment", Some(Url::parse("https://example.com/foo.svg").unwrap()).as_ref()),
             Err(AllowedUrlError::NoFragmentIdentifierAllowed)
         ));
