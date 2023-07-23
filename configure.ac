@@ -1,7 +1,7 @@
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[46])
-m4_define([rsvg_micro_version],[6]) # Keep this in sync with librsvg_crate/Cargo.toml
+m4_define([rsvg_micro_version],[7]) # Keep this in sync with librsvg_crate/Cargo.toml
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version])
 
 # Library version information.  To make a release:
@@ -116,7 +116,7 @@ AC_CHECK_PROGS(NM, nm)
 dnl Minimum version of rustc that we support
 dnl If you change this, please update COMPILING.md
 MINIMUM_RUST_MAJOR=1
-MINIMUM_RUST_MINOR=34
+MINIMUM_RUST_MINOR=53
 
 rust_version=`$RUSTC --version`
 version=`echo "$rust_version" | sed -e 's/^rustc //g'`

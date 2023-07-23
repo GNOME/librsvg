@@ -1,5 +1,12 @@
 ==============
-Version 2.46.5
+Version 2.46.7
+==============
+
+- Fix compilation on Rust 1.53.  The Minimum Supported Rust Version
+  has been raised due to dependent crates.
+
+==============
+Version 2.46.6
 ==============
 
 This is a security release for bug #996.
