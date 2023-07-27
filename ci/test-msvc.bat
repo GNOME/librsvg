@@ -78,10 +78,7 @@ cd ..\..
 md _build_pango
 cd _build_pango
 meson setup ../pango --buildtype=release --prefix=%INST_PSX% -Dfontconfig=disabled --pkg-config-path=%INST%\lib\pkgconfig
-:: ideally, we should use `ninja install || goto :error`, but let's allow this command to
-:: fail due to a Cairo issue that FontConfig is insisted upon, see
-:: https://gitlab.freedesktop.org/cairo/cairo/-/merge_requests/469
-ninja install
+ninja install || goto :error
 cd ..
 rmdir /s/q _build_pango
 
