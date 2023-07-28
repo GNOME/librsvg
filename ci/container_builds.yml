@@ -6,9 +6,9 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2023-07-20.0-main"
-  RUST_STABLE: "1.70.0"
-  RUST_MINIMUM: "1.66.0"
+  BASE_TAG: "2023-07-28.0-main"
+  RUST_STABLE: "1.71.0"
+  RUST_MINIMUM: "1.70.0"
 
 .container.opensuse@common:
   stage: "container-build"
