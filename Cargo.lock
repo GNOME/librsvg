@@ -1102,9 +1102,9 @@ checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
 
 [[package]]
 name = "lopdf"
-version = "0.30.0"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ab029c5cd5b0a292b05e3121b6bcf02f20e58e85ffe6d5417a38c1f8f24cbf7"
+checksum = "07c8e1b6184b1b32ea5f72f572ebdc40e5da1d2921fa469947ff7c480ad1f85a"
 dependencies = [
  "chrono",
  "encoding_rs",
@@ -1112,6 +1112,7 @@ dependencies = [
  "itoa",
  "linked-hash-map",
  "log",
+ "md5",
  "nom",
  "rayon",
  "time",
@@ -1162,6 +1163,12 @@ dependencies = [
  "autocfg",
  "rawpointer",
 ]
+
+[[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "memchr"
