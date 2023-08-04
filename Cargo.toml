@@ -6,7 +6,7 @@ license = "LGPL-2.1-or-later"
 homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
 edition = "2021"
-rust-version = "1.66.0"
+rust-version = "1.70.0"
 
 [profile.overflow]
 inherits = "release"

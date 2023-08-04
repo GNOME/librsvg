@@ -103,7 +103,7 @@ minimum version is listed here; you may use a newer version instead.
 **Compilers and build tools:**
 
 * a C compiler and `make` tool; we recommend GNU `make`.
-* rust 1.66.0 or later
+* rust 1.70.0 or later
 * cargo
 * autoconf, automake, libtool, itstool
 * vala (optional)

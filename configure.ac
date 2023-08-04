@@ -108,7 +108,7 @@ AS_IF(test x$RUSTC = xno,
 dnl MSRV - Minimum Supported Rust Version
 dnl If you change this, please update the "_manual_setup" section of devel-docs/devel_environment.rst
 dnl keep in sync with Cargo.toml
-MINIMUM_RUST_VER=1.66.0
+MINIMUM_RUST_VER=1.70.0
 rust_version=`$RUSTC --version | sed -e 's/^rustc //g'`
 AX_COMPARE_VERSION([$rust_version],[lt],[$MINIMUM_RUST_VER], [
     AC_MSG_ERROR([librsvg needs at least rustc version $MINIMUM_RUST_VER])

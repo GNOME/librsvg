@@ -11,11 +11,11 @@ rust-version.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-cairo-rs = "0.17"
+cairo-rs = "0.18"
 cstr = "0.2"
-gdk-pixbuf = "0.17"
-gio = "0.17"
-glib = "0.17"
+gdk-pixbuf = "0.18"
+gio = "0.18"
+glib = "0.18"
 libc = "0.2"
 rsvg = { path = "../rsvg" }
 librsvg-c = { path = "../librsvg-c" }

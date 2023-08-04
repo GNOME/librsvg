@@ -323,9 +323,18 @@ mod imp {
                     ParamSpecInt::builder("height").read_only().build(),
                     ParamSpecDouble::builder("em").read_only().build(),
                     ParamSpecDouble::builder("ex").read_only().build(),
-                    ParamSpecString::builder("title").read_only().build(),
-                    ParamSpecString::builder("desc").read_only().build(),
-                    ParamSpecString::builder("metadata").read_only().build(),
+                    ParamSpecString::builder("title")
+                        .deprecated()
+                        .read_only()
+                        .build(),
+                    ParamSpecString::builder("desc")
+                        .deprecated()
+                        .read_only()
+                        .build(),
+                    ParamSpecString::builder("metadata")
+                        .deprecated()
+                        .read_only()
+                        .build(),
                 ]
             });
             PROPERTIES.as_ref()
