@@ -48,13 +48,13 @@ byteorder = "1.4"
 cairo-rs = { version = "0.18", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 cssparser = "0.29.0"
-data-url = "0.2.0"
+data-url = "0.3.0"
 encoding_rs = "0.8.32"
 float-cmp = "0.9.0"
 gdk-pixbuf = "0.18"
 gio = "0.18"
 glib = "0.18"
-itertools = "0.10.3"
+itertools = "0.11.0"
 language-tags = "0.3.1"
 libc = "0.2"
 locale_config = "*" # recommended explicitly by locale_config's README.md
@@ -80,7 +80,7 @@ yeslogic-fontconfig-sys = { version = "4.0.1", optional = true }
 [dev-dependencies]
 anyhow = "1.0"
 chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
-criterion = "0.4"
+criterion = "0.5"
 lopdf = "0.31"
 matches = "0.1"
 png = "0.17.2"
