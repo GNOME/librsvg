@@ -572,10 +572,8 @@ impl Saturate {
         )
     }
 
-    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
-        let user_space_filter = Filter::default().to_user_space(params);
-
-        let saturate = ResolvedPrimitive {
+    fn to_resolved_primitive(&self, params: &NormalizeParams) -> ResolvedPrimitive {
+        ResolvedPrimitive {
             primitive: Primitive::default(),
             params: PrimitiveParams::ColorMatrix(ColorMatrix {
                 matrix: self.matrix(),
@@ -583,6 +581,12 @@ impl Saturate {
             }),
         }
         .into_user_space(params);
+    }
+
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let user_space_filter = Filter::default().to_user_space(params);
+
+        let saturate = self.to_resolved_primitive(params);
 
         FilterSpec {
             user_space_filter,
