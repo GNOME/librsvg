@@ -547,6 +547,7 @@ impl DrawingCtx {
             _ => unreachable!(),
         };
 
+        let mask_element = mask_node.borrow_element();
         let mask = borrow_element_as!(mask_node, Mask);
 
         let bbox_rect = bbox.rect.as_ref().unwrap();
@@ -560,8 +561,6 @@ impl DrawingCtx {
             let params = NormalizeParams::new(values, &viewport.with_units(mask_units));
             mask.get_rect(&params)
         };
-
-        let mask_element = mask_node.borrow_element();
 
         let mask_transform = values.transform().post_transform(&transform);
         let transform_for_mask = ValidTransform::try_from(mask_transform)?;
@@ -611,6 +610,8 @@ impl DrawingCtx {
                 values,
             );
 
+            rsvg_log!(self.session, "(mask {}", mask_element);
+
             let res = mask_draw_ctx.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
@@ -618,6 +619,8 @@ impl DrawingCtx {
                 false,
                 &mut |an, dc| mask_node.draw_children(an, &cascaded, &mask_viewport, dc, false),
             );
+
+            rsvg_log!(self.session, ")");
 
             res?;
         }
