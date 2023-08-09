@@ -61,6 +61,7 @@ pub mod tile;
 pub mod turbulence;
 
 pub struct FilterSpec {
+    pub name: String,
     pub user_space_filter: UserSpaceFilter,
     pub primitives: Vec<UserSpacePrimitive>,
 }
@@ -276,7 +277,8 @@ pub fn render(
         // the message has an unclosed parenthesis; we'll close it below.
         rsvg_log!(
             session,
-            "(rendering filter with effects_region={:?}",
+            "(filter \"{}\" with effects_region={:?}",
+            filter.name,
             filter_ctx.effects_region()
         );
         for user_space_primitive in &filter.primitives {
@@ -287,7 +289,7 @@ pub fn render(
                     let elapsed = start.elapsed();
                     rsvg_log!(
                         session,
-                        "(rendered filter primitive {} in\n    {} seconds)",
+                        "(rendered filter primitive {} in {} seconds)",
                         user_space_primitive.params.name(),
                         elapsed.as_secs() as f64 + f64::from(elapsed.subsec_nanos()) / 1e9
                     );

@@ -333,7 +333,9 @@ impl NodeDraw for Node {
     ) -> Result<BoundingBox, RenderingError> {
         match *self.borrow() {
             NodeData::Element(ref e) => {
-                match e.draw(self, acquired_nodes, cascaded, viewport, draw_ctx, clipping) {
+                rsvg_log!(draw_ctx.session(), "({}", e);
+                let res = match e.draw(self, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+                {
                     Ok(bbox) => Ok(bbox),
 
                     // https://www.w3.org/TR/css-transforms-1/#transform-function-lists
@@ -344,7 +346,11 @@ impl NodeDraw for Node {
                     Err(RenderingError::InvalidTransform) => Ok(draw_ctx.empty_bbox()),
 
                     Err(e) => Err(e),
-                }
+                };
+
+                rsvg_log!(draw_ctx.session(), ")");
+
+                res
             }
 
             _ => Ok(draw_ctx.empty_bbox()),
