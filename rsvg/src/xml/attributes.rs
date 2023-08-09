@@ -10,7 +10,7 @@ use string_cache::DefaultAtom;
 
 use crate::error::{ImplementationLimit, LoadingError};
 use crate::limits;
-use crate::util::{c_char_as_u8_ptr, opt_utf8_cstr, utf8_cstr};
+use crate::util::{opt_utf8_cstr, utf8_cstr};
 
 /// Type used to store attribute values.
 ///
@@ -103,7 +103,7 @@ impl Attributes {
                     let end = value_end as usize;
                     let len = end - start;
 
-                    let value_slice = slice::from_raw_parts(c_char_as_u8_ptr(value_start), len);
+                    let value_slice = slice::from_raw_parts(value_start.cast::<u8>(), len);
                     let value_str = str::from_utf8_unchecked(value_slice);
                     let value_atom = DefaultAtom::from(value_str);
 
