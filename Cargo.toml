@@ -1,10 +1,16 @@
 [workspace.package]
 version = "2.56.91"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
-description = "Render SVG documents with Cairo"
+description = """
+A library to render SVG images to Cairo surfaces. GNOME uses this to
+render SVG icons. Outside of GNOME, other desktop environments use it
+for similar purposes. Wikimedia uses it for Wikipedia's SVG diagrams.
+"""
 license = "LGPL-2.1-or-later"
 homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
+categories = [ "graphics", "multimedia::images", "rendering::data-formats" ]
+keywords = [ "svg", "cairo" ]
 edition = "2021"
 rust-version = "1.70.0"
 
