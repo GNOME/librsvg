@@ -215,6 +215,10 @@ fn extract_filter_from_filter_node(
     }
 
     Ok(FilterSpec {
+        name: filter_element
+            .get_id()
+            .unwrap_or("(filter element without id)")
+            .to_string(),
         user_space_filter,
         primitives: user_space_primitives,
     })

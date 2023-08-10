@@ -46,7 +46,7 @@ enum Source {
     None,
 
     /// Reference to a node.
-    Node(Node),
+    Node(Node, String),
 
     /// Reference to an external image.  This is just a URL.
     ExternalImage(String),
@@ -155,15 +155,18 @@ impl Image {
         let surface = match &self.source {
             Source::None => return Err(FilterError::InvalidInput),
 
-            Source::Node(node) => {
+            Source::Node(node, ref name) => {
                 if let Ok(acquired) = acquired_nodes.acquire_ref(node) {
-                    self.render_node(
+                    rsvg_log!(draw_ctx.session(), "(feImage \"{}\"", name);
+                    let res = self.render_node(
                         ctx,
                         acquired_nodes,
                         draw_ctx,
                         bounds.clipped,
                         acquired.get(),
-                    )?
+                    );
+                    rsvg_log!(draw_ctx.session(), ")");
+                    res?
                 } else {
                     return Err(FilterError::InvalidInput);
                 }
@@ -197,7 +200,7 @@ impl FilterEffect for FeImage {
                 if let Ok(node_id) = NodeId::parse(s) {
                     acquired_nodes
                         .acquire(&node_id)
-                        .map(|acquired| Source::Node(acquired.get().clone()))
+                        .map(|acquired| Source::Node(acquired.get().clone(), s.clone()))
                         .unwrap_or(Source::None)
                 } else {
                     Source::ExternalImage(s.to_string())

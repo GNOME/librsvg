@@ -24,7 +24,7 @@ use crate::filters::{
     gaussian_blur::GaussianBlur,
     merge::{Merge, MergeNode},
     offset::Offset,
-    FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive,
+    FilterSpec, Input, Primitive, PrimitiveParams, ResolvedPrimitive, UserSpacePrimitive,
 };
 use crate::length::*;
 use crate::paint_server::resolve_color;
@@ -278,6 +278,7 @@ impl Blur {
         .into_user_space(params);
 
         FilterSpec {
+            name: "blur()".to_string(),
             user_space_filter,
             primitives: vec![gaussian_blur],
         }
@@ -316,6 +317,7 @@ impl Brightness {
         .into_user_space(params);
 
         FilterSpec {
+            name: "brightness()".to_string(),
             user_space_filter,
             primitives: vec![brightness],
         }
@@ -358,6 +360,7 @@ impl Contrast {
         .into_user_space(params);
 
         FilterSpec {
+            name: "contrast()".to_string(),
             user_space_filter,
             primitives: vec![contrast],
         }
@@ -452,6 +455,7 @@ impl DropShadow {
             .collect();
 
         FilterSpec {
+            name: "drop-shadow()".to_string(),
             user_space_filter,
             primitives,
         }
@@ -467,7 +471,14 @@ impl Grayscale {
             proportion: Some(p),
         };
 
-        saturate.to_filter_spec(params)
+        let user_space_filter = Filter::default().to_user_space(params);
+        let primitive = saturate.to_user_space_primitive(params);
+
+        FilterSpec {
+            name: "grayscale".to_string(),
+            user_space_filter,
+            primitives: vec![primitive],
+        }
     }
 }
 
@@ -486,6 +497,7 @@ impl HueRotate {
         .into_user_space(params);
 
         FilterSpec {
+            name: "hue-rotate".to_string(),
             user_space_filter,
             primitives: vec![huerotate],
         }
@@ -524,6 +536,7 @@ impl Invert {
         .into_user_space(params);
 
         FilterSpec {
+            name: "invert".to_string(),
             user_space_filter,
             primitives: vec![invert],
         }
@@ -552,6 +565,7 @@ impl Opacity {
         .into_user_space(params);
 
         FilterSpec {
+            name: "opacity".to_string(),
             user_space_filter,
             primitives: vec![opacity],
         }
@@ -572,19 +586,24 @@ impl Saturate {
         )
     }
 
-    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
-        let user_space_filter = Filter::default().to_user_space(params);
-
-        let saturate = ResolvedPrimitive {
+    fn to_user_space_primitive(&self, params: &NormalizeParams) -> UserSpacePrimitive {
+        ResolvedPrimitive {
             primitive: Primitive::default(),
             params: PrimitiveParams::ColorMatrix(ColorMatrix {
                 matrix: self.matrix(),
                 ..ColorMatrix::default()
             }),
         }
-        .into_user_space(params);
+        .into_user_space(params)
+    }
+
+    fn to_filter_spec(&self, params: &NormalizeParams) -> FilterSpec {
+        let user_space_filter = Filter::default().to_user_space(params);
+
+        let saturate = self.to_user_space_primitive(params);
 
         FilterSpec {
+            name: "saturate".to_string(),
             user_space_filter,
             primitives: vec![saturate],
         }
@@ -618,6 +637,7 @@ impl Sepia {
         .into_user_space(params);
 
         FilterSpec {
+            name: "sepia".to_string(),
             user_space_filter,
             primitives: vec![sepia],
         }
