@@ -2,7 +2,6 @@
 
 use std::borrow::Cow;
 use std::ffi::CStr;
-use std::mem::transmute;
 use std::str;
 
 /// Converts a `char *` which is known to be valid UTF-8 into a `&str`
@@ -31,25 +30,6 @@ pub unsafe fn cstr<'a>(s: *const libc::c_char) -> Cow<'a, str> {
         return Cow::Borrowed("(null)");
     }
     CStr::from_ptr(s).to_string_lossy()
-}
-
-/// Casts a pointer to `c_char` to a pointer to `u8`.
-///
-/// The obvious `p as *const u8` or `p as *const _` produces a
-/// trivial_casts warning when compiled on aarch64, where `c_char` is
-/// unsigned (on Intel, it is signed, so the cast works).
-///
-/// We do this here with a `transmute`, which is awkward to type,
-/// so wrap it in a function.
-pub unsafe fn c_char_as_u8_ptr(p: *const libc::c_char) -> *const u8 {
-    transmute::<_, *const u8>(p)
-}
-
-/// Casts a pointer to `c_char` to a pointer to mutable `u8`.
-///
-/// See [`c_char_as_u8_ptr`] for the reason for this.
-pub unsafe fn c_char_as_u8_ptr_mut(p: *mut libc::c_char) -> *mut u8 {
-    transmute::<_, *mut u8>(p)
 }
 
 pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {

@@ -16,7 +16,7 @@ use glib::translate::*;
 use markup5ever::{namespace_url, ns, LocalName, Namespace, Prefix, QualName};
 
 use crate::error::LoadingError;
-use crate::util::{c_char_as_u8_ptr, c_char_as_u8_ptr_mut, cstr, opt_utf8_cstr, utf8_cstr};
+use crate::util::{cstr, opt_utf8_cstr, utf8_cstr};
 
 use super::xml2::*;
 use super::Attributes;
@@ -267,7 +267,7 @@ unsafe extern "C" fn sax_characters_cb(
 
     // libxml2 already validated the incoming string as UTF-8.  Note that
     // it is *not* nul-terminated; this is why we create a byte slice first.
-    let bytes = std::slice::from_raw_parts(c_char_as_u8_ptr(unterminated_text), len as usize);
+    let bytes = std::slice::from_raw_parts(unterminated_text.cast::<u8>(), len as usize);
     let utf8 = str::from_utf8_unchecked(bytes);
 
     xml2_parser.state.characters(utf8);
@@ -347,7 +347,7 @@ unsafe extern "C" fn stream_ctx_read(
         return -1;
     }
 
-    let buf: &mut [u8] = slice::from_raw_parts_mut(c_char_as_u8_ptr_mut(buffer), len as usize);
+    let buf: &mut [u8] = slice::from_raw_parts_mut(buffer.cast::<u8>(), len as usize);
 
     match ctx.stream.read(buf, ctx.cancellable.as_ref()) {
         Ok(size) => size as libc::c_int,

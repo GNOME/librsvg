@@ -154,8 +154,6 @@ cargo test - opensuse@aarch64:
       artifacts: false
     - job: check
       artifacts: false
-  # The tests fail on aarch64 - some rendering differences.  Needs diagnosis.
-  allow_failure: true
 
 cargo test - fedora@x86_64:
   extends:
