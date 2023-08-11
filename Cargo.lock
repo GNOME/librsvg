@@ -998,6 +998,55 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7012b1bbb0719e1097c47611d3898568c546d597c2e74d66f6087edd5233ff4"
 
 [[package]]
+name = "librsvg"
+version = "2.56.92"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "cairo-rs",
+ "cast",
+ "chrono",
+ "criterion",
+ "cssparser",
+ "data-url",
+ "encoding_rs",
+ "float-cmp",
+ "gdk-pixbuf",
+ "gio",
+ "glib",
+ "itertools 0.11.0",
+ "language-tags",
+ "libc",
+ "locale_config",
+ "lopdf",
+ "markup5ever",
+ "matches",
+ "nalgebra",
+ "num-traits",
+ "once_cell",
+ "pango",
+ "pangocairo",
+ "png",
+ "predicates",
+ "proptest",
+ "quick-error 2.0.1",
+ "rayon",
+ "rctree",
+ "regex",
+ "rgb",
+ "selectors",
+ "serde",
+ "serde_json",
+ "string_cache",
+ "system-deps",
+ "tempfile",
+ "tinyvec",
+ "url",
+ "xml5ever",
+ "yeslogic-fontconfig-sys",
+]
+
+[[package]]
 name = "librsvg-c"
 version = "2.56.92"
 dependencies = [
@@ -1008,9 +1057,9 @@ dependencies = [
  "gio",
  "glib",
  "libc",
+ "librsvg",
  "once_cell",
  "regex",
- "rsvg",
  "url",
 ]
 
@@ -1502,8 +1551,8 @@ dependencies = [
  "gio",
  "glib",
  "libc",
+ "librsvg",
  "librsvg-c",
- "rsvg",
 ]
 
 [[package]]
@@ -1864,62 +1913,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "rsvg"
-version = "2.56.92"
-dependencies = [
- "anyhow",
- "byteorder",
- "cairo-rs",
- "cast",
- "chrono",
- "criterion",
- "cssparser",
- "data-url",
- "encoding_rs",
- "float-cmp",
- "gdk-pixbuf",
- "gio",
- "glib",
- "itertools 0.11.0",
- "language-tags",
- "libc",
- "locale_config",
- "lopdf",
- "markup5ever",
- "matches",
- "nalgebra",
- "num-traits",
- "once_cell",
- "pango",
- "pangocairo",
- "png",
- "predicates",
- "proptest",
- "quick-error 2.0.1",
- "rayon",
- "rctree",
- "regex",
- "rgb",
- "selectors",
- "serde",
- "serde_json",
- "string_cache",
- "system-deps",
- "tempfile",
- "tinyvec",
- "url",
- "xml5ever",
- "yeslogic-fontconfig-sys",
-]
-
-[[package]]
 name = "rsvg-bench"
 version = "2.56.92"
 dependencies = [
  "anyhow",
  "cairo-rs",
  "clap",
- "rsvg",
+ "librsvg",
  "thiserror",
 ]
 
@@ -1938,11 +1938,11 @@ dependencies = [
  "gio",
  "glib",
  "libc",
+ "librsvg",
  "librsvg-c",
  "lopdf",
  "png",
  "predicates",
- "rsvg",
  "system-deps",
  "tempfile",
  "url",

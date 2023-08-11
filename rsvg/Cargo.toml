@@ -1,5 +1,5 @@
 [package]
-name = "rsvg"
+name = "librsvg"
 documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html"
 version.workspace = true
 authors.workspace = true
