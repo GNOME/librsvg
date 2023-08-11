@@ -172,21 +172,20 @@ impl Light {
                 limiting_cone_angle,
                 ..
             } => {
+                let transparent_color = cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(0.0));
                 let minus_l_dot_s = -vector.dot(&direction);
                 match limiting_cone_angle {
-                    _ if minus_l_dot_s <= 0.0 => cssparser::RGBA::transparent(),
-                    Some(a) if minus_l_dot_s < a.to_radians().cos() => {
-                        cssparser::RGBA::transparent()
-                    }
+                    _ if minus_l_dot_s <= 0.0 => transparent_color,
+                    Some(a) if minus_l_dot_s < a.to_radians().cos() => transparent_color,
                     _ => {
                         let factor = minus_l_dot_s.powf(specular_exponent);
                         let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
 
                         cssparser::RGBA {
-                            red: compute(self.lighting_color.red),
-                            green: compute(self.lighting_color.green),
-                            blue: compute(self.lighting_color.blue),
-                            alpha: 255,
+                            red: Some(compute(self.lighting_color.red.unwrap_or(0))),
+                            green: Some(compute(self.lighting_color.green.unwrap_or(0))),
+                            blue: Some(compute(self.lighting_color.blue.unwrap_or(0))),
+                            alpha: Some(1.0),
                         }
                     }
                 }
@@ -557,9 +556,9 @@ macro_rules! impl_lighting_filter {
                             let compute =
                                 |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
-                            let r = compute(color.red);
-                            let g = compute(color.green);
-                            let b = compute(color.blue);
+                            let r = compute(color.red.unwrap_or(0));
+                            let g = compute(color.green.unwrap_or(0));
+                            let b = compute(color.blue.unwrap_or(0));
                             let a = $alpha_func(r, g, b);
 
                             let output_pixel = Pixel { r, g, b, a };

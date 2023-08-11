@@ -160,7 +160,7 @@ make_property!(
     /// Most of the time the `color` property is used to call
     /// [`crate::paint_server::resolve_color`].
     Color,
-    default: cssparser::RGBA::new(0, 0, 0, 0xff),
+    default: cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(1.0)),
     inherits_automatically: true,
     newtype_parse: cssparser::RGBA,
 );
@@ -401,7 +401,7 @@ make_property!(
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#FloodColorProperty>
     FloodColor,
-    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
+    default: cssparser::Color::Rgba(cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
 );
@@ -612,7 +612,7 @@ make_property!(
     ///
     /// Filter Effects 1: <https://www.w3.org/TR/filter-effects/#LightingColorProperty>
     LightingColor,
-    default: cssparser::Color::RGBA(cssparser::RGBA::new(255, 255, 255, 255)),
+    default: cssparser::Color::Rgba(cssparser::RGBA::new(Some(255), Some(255), Some(255), Some(1.0))),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
 );
@@ -888,7 +888,7 @@ make_property!(
     ///
     /// SVG2: <https://www.w3.org/TR/SVG2/pservers.html#StopColorProperty>
     StopColor,
-    default: cssparser::Color::RGBA(cssparser::RGBA::new(0, 0, 0, 255)),
+    default: cssparser::Color::Rgba(cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
     inherits_automatically: false,
     newtype_parse: cssparser::Color,
 );

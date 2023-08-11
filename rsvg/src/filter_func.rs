@@ -757,11 +757,11 @@ mod tests {
         assert_eq!(
             FilterFunction::parse_str("drop-shadow(#ff0000 4px 5px 32px)").unwrap(),
             FilterFunction::DropShadow(DropShadow {
-                color: Some(Color::RGBA(RGBA {
-                    red: 255,
-                    green: 0,
-                    blue: 0,
-                    alpha: 255
+                color: Some(Color::Rgba(RGBA {
+                    red: Some(255),
+                    green: Some(0),
+                    blue: Some(0),
+                    alpha: Some(1.0)
                 })),
                 dx: Some(Length::new(4.0, LengthUnit::Px)),
                 dy: Some(Length::new(5.0, LengthUnit::Px)),
@@ -772,11 +772,11 @@ mod tests {
         assert_eq!(
             FilterFunction::parse_str("drop-shadow(1px 2px blue)").unwrap(),
             FilterFunction::DropShadow(DropShadow {
-                color: Some(Color::RGBA(RGBA {
-                    red: 0,
-                    green: 0,
-                    blue: 255,
-                    alpha: 255
+                color: Some(Color::Rgba(RGBA {
+                    red: Some(0),
+                    green: Some(0),
+                    blue: Some(255),
+                    alpha: Some(1.0)
                 })),
                 dx: Some(Length::new(1.0, LengthUnit::Px)),
                 dy: Some(Length::new(2.0, LengthUnit::Px)),

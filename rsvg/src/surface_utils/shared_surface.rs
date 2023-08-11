@@ -1017,17 +1017,17 @@ impl ImageSurface<Shared> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        if color.alpha > 0 {
+        if color.alpha.unwrap_or(0.0) > 0.0 {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
             cr.set_source_rgba(
-                f64::from(color.red_f32()),
-                f64::from(color.green_f32()),
-                f64::from(color.blue_f32()),
-                f64::from(color.alpha_f32()),
+                f64::from(color.red.unwrap_or(0)) / 255.0,
+                f64::from(color.green.unwrap_or(0)) / 255.0,
+                f64::from(color.blue.unwrap_or(0)) / 255.0,
+                f64::from(color.alpha.unwrap_or(0.0)),
             );
             cr.paint()?;
         }

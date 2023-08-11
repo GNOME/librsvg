@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use cssparser::Parser;
+use cssparser::{ParseErrorKind, Parser};
 
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
@@ -94,7 +94,16 @@ impl Parse for PaintServer {
                 {
                     None
                 } else {
-                    Some(parser.try_parse(cssparser::Color::parse)?)
+                    Some(
+                        parser
+                            .try_parse(cssparser::Color::parse)
+                            .map_err(|e| ParseError {
+                                kind: ParseErrorKind::Custom(ValueErrorKind::parse_error(
+                                    "Could not parse color",
+                                )),
+                                location: e.location,
+                            })?,
+                    )
                 }
             } else {
                 None
@@ -109,7 +118,14 @@ impl Parse for PaintServer {
                 alternate,
             })
         } else {
-            Ok(cssparser::Color::parse(parser).map(PaintServer::SolidColor)?)
+            cssparser::Color::parse(parser)
+                .map(PaintServer::SolidColor)
+                .map_err(|e| ParseError {
+                    kind: ParseErrorKind::Custom(ValueErrorKind::parse_error(
+                        "Could not parse color",
+                    )),
+                    location: e.location,
+                })
         }
     }
 }
@@ -279,17 +295,21 @@ pub fn resolve_color(
     current_color: cssparser::RGBA,
 ) -> cssparser::RGBA {
     let rgba = match *color {
-        cssparser::Color::RGBA(rgba) => rgba,
+        cssparser::Color::Rgba(rgba) => rgba,
         cssparser::Color::CurrentColor => current_color,
+        _ => unimplemented!(),
     };
 
     let UnitInterval(o) = opacity;
 
-    let alpha = (f64::from(rgba.alpha) * o).round();
-    let alpha = util::clamp(alpha, 0.0, 255.0);
-    let alpha = cast::u8(alpha).unwrap();
+    let alpha = f64::from(rgba.alpha.unwrap_or(0.0)) * o;
+    let alpha = util::clamp(alpha, 0.0, 1.0);
+    let alpha = cast::f32(alpha).unwrap();
 
-    cssparser::RGBA { alpha, ..rgba }
+    cssparser::RGBA {
+        alpha: Some(alpha),
+        ..rgba
+    }
 }
 
 impl std::fmt::Debug for PaintSource {
@@ -323,8 +343,11 @@ mod tests {
     fn parses_solid_color() {
         assert_eq!(
             PaintServer::parse_str("rgb(255, 128, 64, 0.5)").unwrap(),
-            PaintServer::SolidColor(cssparser::Color::RGBA(cssparser::RGBA::new(
-                255, 128, 64, 128
+            PaintServer::SolidColor(cssparser::Color::Rgba(cssparser::RGBA::new(
+                Some(255),
+                Some(128),
+                Some(64),
+                Some(0.5)
             )))
         );
 
@@ -356,8 +379,11 @@ mod tests {
             PaintServer::parse_str("url(#link) #ff8040").unwrap(),
             PaintServer::Iri {
                 iri: Box::new(NodeId::Internal("link".to_string())),
-                alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
-                    255, 128, 64, 255
+                alternate: Some(cssparser::Color::Rgba(cssparser::RGBA::new(
+                    Some(255),
+                    Some(128),
+                    Some(64),
+                    Some(1.0)
                 ))),
             }
         );
@@ -366,8 +392,11 @@ mod tests {
             PaintServer::parse_str("url(#link) rgb(255, 128, 64, 0.5)").unwrap(),
             PaintServer::Iri {
                 iri: Box::new(NodeId::Internal("link".to_string())),
-                alternate: Some(cssparser::Color::RGBA(cssparser::RGBA::new(
-                    255, 128, 64, 128
+                alternate: Some(cssparser::Color::Rgba(cssparser::RGBA::new(
+                    Some(255),
+                    Some(128),
+                    Some(64),
+                    Some(0.5)
                 ))),
             }
         );
@@ -389,11 +418,11 @@ mod tests {
 
         assert_eq!(
             resolve_color(
-                &Color::RGBA(RGBA::new(255, 0, 0, 128)),
+                &Color::Rgba(RGBA::new(Some(255), Some(0), Some(0), Some(0.5))),
                 UnitInterval::clamp(0.5),
-                RGBA::new(0, 255, 0, 255)
+                RGBA::new(Some(0), Some(255), Some(0), Some(1.0))
             ),
-            RGBA::new(255, 0, 0, 64),
+            RGBA::new(Some(255), Some(0), Some(0), Some(0.25)),
         );
     }
 
@@ -405,9 +434,9 @@ mod tests {
             resolve_color(
                 &Color::CurrentColor,
                 UnitInterval::clamp(0.5),
-                RGBA::new(0, 255, 0, 128)
+                RGBA::new(Some(0), Some(255), Some(0), Some(0.5))
             ),
-            RGBA::new(0, 255, 0, 64),
+            RGBA::new(Some(0), Some(255), Some(0), Some(0.25)),
         );
     }
 }

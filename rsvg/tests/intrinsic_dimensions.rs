@@ -1,5 +1,3 @@
-use cairo;
-
 use rsvg::{CairoRenderer, IntrinsicDimensions, Length, LengthUnit, RenderingError};
 
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};

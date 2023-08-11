@@ -19,7 +19,7 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
-use cssparser::{_cssparser_internal_to_lowercase, match_ignore_ascii_case};
+use cssparser::match_ignore_ascii_case;
 
 use librsvg_c::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
@@ -348,12 +348,12 @@ impl Surface {
     ) -> Result<(), Error> {
         let cr = cairo::Context::new(self)?;
 
-        if let Some(Color::RGBA(rgba)) = background_color {
+        if let Some(Color::Rgba(rgba)) = background_color {
             cr.set_source_rgba(
-                rgba.red_f32().into(),
-                rgba.green_f32().into(),
-                rgba.blue_f32().into(),
-                rgba.alpha_f32().into(),
+                f64::from(rgba.red.unwrap_or(0)) / 255.0,
+                f64::from(rgba.green.unwrap_or(0)) / 255.0,
+                f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+                f64::from(rgba.alpha.unwrap_or(0.0)),
             );
 
             cr.paint()?;

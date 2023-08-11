@@ -1,5 +1,3 @@
-use cairo;
-
 use rsvg::test_compare_render_output;
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
 use rsvg::test_utils::{load_svg, render_document, SurfaceSize};

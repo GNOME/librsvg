@@ -3,7 +3,6 @@
 //! Ensures that redering a particular SVG doesn't crash, but we don't care
 //! about the resulting image or even whether there were errors during rendering.
 
-use cairo;
 use rsvg::{CairoRenderer, Loader};
 
 use std::path::PathBuf;

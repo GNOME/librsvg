@@ -15,14 +15,14 @@
 //! This is available in methods that take an argument of type [`ComputedValues`].
 
 use cssparser::{
-    self, BasicParseErrorKind, DeclarationListParser, ParseErrorKind, Parser, ParserInput, ToCss,
+    self, BasicParseErrorKind, ParseErrorKind, Parser, ParserInput, RuleBodyParser, ToCss,
 };
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName,
 };
 use std::collections::HashSet;
 
-use crate::css::{DeclParser, Declaration, Origin};
+use crate::css::{DeclParser, Declaration, Origin, RuleBodyItem};
 use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_macros::Property;
@@ -977,9 +977,10 @@ impl SpecifiedValues {
         let mut input = ParserInput::new(declarations);
         let mut parser = Parser::new(&mut input);
 
-        DeclarationListParser::new(&mut parser, DeclParser)
+        RuleBodyParser::new(&mut parser, &mut DeclParser)
             .filter_map(|r| match r {
-                Ok(decl) => Some(decl),
+                Ok(RuleBodyItem::Decl(decl)) => Some(decl),
+                Ok(RuleBodyItem::Rule(_)) => None,
                 Err(e) => {
                     rsvg_log!(session, "Invalid declaration; ignoring: {:?}", e);
                     None
@@ -1094,7 +1095,7 @@ mod tests {
 
     #[test]
     fn computes_property_that_does_not_inherit_automatically() {
-        assert_eq!(<Opacity as Property>::inherits_automatically(), false);
+        assert!(!<Opacity as Property>::inherits_automatically());
 
         let half_opacity = Opacity::parse_str("0.5").unwrap();
 

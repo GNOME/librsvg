@@ -27,7 +27,7 @@
 //! call `CairoRenderer::get_layer_geometry()` and compare its result against the provided rectangles.
 
 use anyhow::{Context, Result};
-use cairo;
+
 use rsvg::{CairoRenderer, LengthUnit, Loader, Rect};
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -66,7 +66,7 @@ struct Geometries(BTreeMap<String, ElementGeometry>);
 
 fn read_geometries(path: &str) -> Result<Geometries> {
     let contents = fs::read_to_string(path).context(format!("could not read {:?}", path))?;
-    Ok(serde_json::from_str(&contents).context(format!("could not parse JSON from {:?}", path))?)
+    serde_json::from_str(&contents).context(format!("could not parse JSON from {:?}", path))
 }
 
 // We create a struct with the id and geometry so that
@@ -126,7 +126,7 @@ fn test(svg_filename: &str, geometries_filename: &str) {
 
         let (ink_rect, logical_rect) = renderer
             .geometry_for_layer(Some(id), &viewport)
-            .expect(&format!("getting geometry for {}", id));
+            .unwrap_or_else(|_| panic!("getting geometry for {}", id));
 
         let computed = Element::from_rectangles(id, ink_rect, logical_rect);
 

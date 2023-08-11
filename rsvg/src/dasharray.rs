@@ -45,12 +45,7 @@ mod tests {
     use super::*;
 
     fn dasharray(l: &[ULength<Both>]) -> Dasharray {
-        Dasharray::Array(
-            l.iter()
-                .cloned()
-                .collect::<Vec<ULength<Both>>>()
-                .into_boxed_slice(),
-        )
+        Dasharray::Array(l.to_vec().into_boxed_slice())
     }
 
     #[test]

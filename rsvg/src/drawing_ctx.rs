@@ -969,10 +969,10 @@ impl DrawingCtx {
 
             g.add_color_stop_rgba(
                 stop_offset,
-                f64::from(stop.rgba.red_f32()),
-                f64::from(stop.rgba.green_f32()),
-                f64::from(stop.rgba.blue_f32()),
-                f64::from(stop.rgba.alpha_f32()),
+                f64::from(stop.rgba.red.unwrap_or(0)) / 255.0,
+                f64::from(stop.rgba.green.unwrap_or(0)) / 255.0,
+                f64::from(stop.rgba.blue.unwrap_or(0)) / 255.0,
+                f64::from(stop.rgba.alpha.unwrap_or(0.0)),
             );
         }
 
@@ -1104,10 +1104,10 @@ impl DrawingCtx {
 
     fn set_color(&self, rgba: cssparser::RGBA) {
         self.cr.clone().set_source_rgba(
-            f64::from(rgba.red_f32()),
-            f64::from(rgba.green_f32()),
-            f64::from(rgba.blue_f32()),
-            f64::from(rgba.alpha_f32()),
+            f64::from(rgba.red.unwrap_or(0)) / 255.0,
+            f64::from(rgba.green.unwrap_or(0)) / 255.0,
+            f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+            f64::from(rgba.alpha.unwrap_or(0.0)),
         );
     }
 

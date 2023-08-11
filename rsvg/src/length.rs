@@ -42,7 +42,7 @@
 //!
 //! [diag]: https://www.w3.org/TR/SVG/coords.html#Units
 
-use cssparser::{match_ignore_ascii_case, Parser, Token, _cssparser_internal_to_lowercase};
+use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::f64::consts::*;
 use std::fmt;
 use std::marker::PhantomData;

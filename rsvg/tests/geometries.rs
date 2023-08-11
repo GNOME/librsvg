@@ -46,7 +46,7 @@ struct Geometries(BTreeMap<String, Rectangle>);
 
 fn read_geometries(path: &Path) -> Result<Geometries> {
     let contents = fs::read_to_string(path).context(format!("could not read {:?}", path))?;
-    Ok(serde_json::from_str(&contents).context(format!("could not parse JSON from {:?}", path))?)
+    serde_json::from_str(&contents).context(format!("could not parse JSON from {:?}", path))
 }
 
 // We create a struct with the id and geometry so that
@@ -103,7 +103,7 @@ fn test(svg_filename: &str) {
 
         let (geometry, _) = renderer
             .geometry_for_layer(Some(id), &viewport)
-            .expect(&format!("getting geometry for {}", id));
+            .unwrap_or_else(|_| panic!("getting geometry for {}", id));
 
         let computed = Element {
             id: String::from(id),

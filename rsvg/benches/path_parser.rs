@@ -3,9 +3,9 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rsvg::bench_only::Lexer;
 use rsvg::bench_only::PathBuilder;
 
-static INPUT: &'static str = "M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
+static INPUT: &str = "M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
 
-static BYTES: &'static [u8; 49] = b"M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
+static BYTES: &[u8; 49] = b"M10 20 C 30,40 50 60-70,80,90 100,110 120,130,140";
 
 static SLICE_EDGES: [(usize, usize); 14] = [
     (1, 3),
@@ -38,7 +38,7 @@ fn path_parser(c: &mut Criterion) {
 
         b.iter(|| {
             let mut builder = PathBuilder::default();
-            let _ = builder.parse(&input);
+            let _ = builder.parse(input);
         });
     });
 

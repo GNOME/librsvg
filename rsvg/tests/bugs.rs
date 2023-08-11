@@ -1,4 +1,3 @@
-use cairo;
 use matches::matches;
 use rsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 
@@ -210,7 +209,7 @@ fn recursive_paint_servers_fallback_to_color() {
 
 fn test_renders_as_empty(svg: &SvgHandle, test_name: &str) {
     let output_surf = render_document(
-        &svg,
+        svg,
         SurfaceSize(100, 100),
         |_| (),
         cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0),

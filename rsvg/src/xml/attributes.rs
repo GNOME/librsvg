@@ -209,16 +209,16 @@ mod tests {
                 prefix
                     .as_ref()
                     .map(|p: &CString| p.as_ptr())
-                    .unwrap_or_else(|| ptr::null()),
+                    .unwrap_or_else(ptr::null),
             );
             v.push(
                 uri.as_ref()
                     .map(|p: &CString| p.as_ptr())
-                    .unwrap_or_else(|| ptr::null()),
+                    .unwrap_or_else(ptr::null),
             );
 
             let val_start = val.as_ptr();
-            let val_end = unsafe { val_start.offset(val.as_bytes().len() as isize) };
+            let val_end = unsafe { val_start.add(val.as_bytes().len()) };
             v.push(val_start); // value_start
             v.push(val_end); // value_end
         }
@@ -242,7 +242,7 @@ mod tests {
                 }
 
                 expanded_name!("", "d") => {
-                    assert!(v == "");
+                    assert!(v.is_empty());
                     had_d = true;
                 }
 
