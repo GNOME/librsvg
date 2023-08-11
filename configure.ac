@@ -3,7 +3,7 @@ AC_PREREQ([2.69])
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
 m4_define([rsvg_minor_version],[56])
-m4_define([rsvg_micro_version],[91]) # Keep this in sync with Cargo.toml and doc/librsvg.toml
+m4_define([rsvg_micro_version],[92]) # Keep this in sync with Cargo.toml and doc/librsvg.toml
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version])
 
 # Library version information.  To make a release:
