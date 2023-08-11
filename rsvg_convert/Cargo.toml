@@ -29,7 +29,7 @@ cssparser = "0.29.0"
 gio = "0.18"
 glib = "0.18"
 libc = "0.2"
-rsvg = { path = "../rsvg" }
+librsvg = { path = "../rsvg" }
 librsvg-c = { path = "../librsvg-c" }
 
 [dev-dependencies]
@@ -40,7 +40,7 @@ url = "2"
 lopdf = "0.31"
 png = "0.17.2"
 float-cmp = "0.9.0"
-rsvg = { path = "../rsvg", features = ["test-utils"] }
+librsvg = { path = "../rsvg", features = ["test-utils"] }
 
 [build-dependencies]
 system-deps = "6.0.0"
