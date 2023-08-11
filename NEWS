@@ -1,3 +1,18 @@
+Version 2.56.92
+===============
+
+- #991 - Fix the build for aarch64.
+
+- More extensive logging for filter primitives.
+
+- Update gtk-rs-core to 0.18 (Bilal Elmoussaoui).
+
+- Update dependencies (Sophie Herold, Kalev Lember).
+
+- Include license text in packaged crates (Davide Cavalca).
+
+- The minimum supported Rust version (MSRV) is 1.70.0, due to the gtk-rs-core update.
+
 Version 2.56.91
 ===============
 
