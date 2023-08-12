@@ -16,44 +16,14 @@ features][features] in the development guide.
 [`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
 Please see [Contributing to librsvg][contributing] for details.
 
-Table of contents:
-
-[[_TOC_]]
-
-# Supported branches
-
-Generally two branches are supported at any one time:
-
-* The latest stable branch.  See the [branches
-  page](https://gitlab.gnome.org/GNOME/librsvg/-/branches) and look for
-  the one called `librsvg-x.yy` where the `x.yy` numbers are highest. You
-  can use this branch safely for production work.
-
-* The `main` branch.  All development happens here.
-
-Stable branches become unsupported when a new one appears.  For
-example, `librsvg-2.55` will become unsupported when `librsvg-2.56`
-appears.
-
-* [Release archive](https://gitlab.gnome.org/GNOME/librsvg/-/releases) in gitlab.gnome.org
-* [Source tarballs for download](https://download.gnome.org/sources/librsvg/) at download.gnome.org
+This is the `README.md` file for the Rust crate; you may want to see
+the [main
+README.md](https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md)
+for the whole project.
 
 # Using librsvg
 
-* [C API documentation][c-docs]
 * [Rust API documentation][rust-docs]
-
-**Compiling:** Librsvg uses a mostly normal [autotools] setup.  You
-may run into some peculiarities due to the Rust internals library if
-you are **cross-compiling** or if you are in a **build system with no
-network access**, or if you are **building binary packages from a
-librsvg tarball**.  In those cases, please refer to the
-[Detailed compilation instructions][compiling] in the development guide.
-
-**Documentation:** You can read the documentation for librsvg's [C
-API][c-docs] or the [Rust API][rust-docs].  Please [file an
-issue][reporting-bugs] if you don't find something there that you
-need.
 
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
@@ -63,24 +33,18 @@ page in the development guide to see how to provide a good bug report.
 in the "Platform" category of [GNOME's Discourse][discourse].  You can
 also ask via chat in the Matrix room for [GNOME Rust][gnome-rust].
 
-**Programming languages:** Librsvg exports its API through [GObject
-Introspection][gi].  This way, it is available in many programming
-languages other than C.  Please see your language binding's
-documentation for information on how to load the `Rsvg` namespace.
-
 **Security:** For a list of releases with security issues,
 instructions on reporting security-related bugs, and the security
 considerations for librsvg's dependencies, see the [Security
 chapter][security] in the development guide.
 
-[c-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/Rsvg-2.0/index.html
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html
+
 
 # Contributing to librsvg's development
 
 There is a code of conduct for contributors to librsvg; please see the
-[GNOME Code of Conduct][coc], which is duplicated in the file
-[`code-of-conduct.md`][coc-local].
+[GNOME Code of Conduct][coc].
 
 Please see the [Development Guide for librsvg][devel-guide] on how to
 contribute to librsvg, how to report bugs, how set up your development
@@ -193,27 +157,25 @@ ways:
   the articles about porting librsvg from C to Rust, which happened
   between 2016 and 2020.
 
+
+
 [svg]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 [gnome]: https://www.gnome.org/
 [cairo]: https://www.cairographics.org/
-[coc]: https://conduct.gnome.org
-[coc-local]: code-of-conduct.md
-[autotools]: https://autotools.io/index.html
-[compiling]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/compiling.html
-[mail]: mailto:federico@gnome.org
-[bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
-[gi]: https://gi.readthedocs.io/en/latest/
 [contributing]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/contributing.html
+[coc]: https://conduct.gnome.org
+[devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
+[features]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html
+[security]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html
+[bugs]: https://gitlab.gnome.org/GNOME/librsvg/issues
 [reporting-bugs]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/bugs.html
 [discourse]: https://discourse.gnome.org/c/platform/5
-[d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
-[federico]: https://viruta.org/
+[gnome-rust]: https://matrix.to/#/#rust:gnome.org
 [platform]: https://developer.gnome.org/
 [guadec-presentation-1]: https://viruta.org/docs/fmq-porting-c-to-rust.pdf
 [guadec-presentation-2]: https://viruta.org/docs/fmq-refactoring-c-to-rust.pdf
+[federico]: https://viruta.org/
+[mail]: mailto:federico@gnome.org
 [gnome-hackers]: https://matrix.to/#/#gnome-hackers:gnome.org
 [gnome-rust]: https://matrix.to/#/#rust:gnome.org
-[devel-guide]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/index.html
-[security]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html
-[features]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/features.html
 [blog]: https://viruta.org/tag/librsvg.html
