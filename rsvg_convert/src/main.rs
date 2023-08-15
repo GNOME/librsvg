@@ -1253,8 +1253,8 @@ impl<T> NotFound for Result<T, clap::Error> {
 fn parse_background_color(s: &str) -> Result<Option<Color>, String> {
     match s {
         "none" | "None" => Ok(None),
-        _ => <Color as Parse>::parse_str(s).map(Some).map_err(|_| {
-            format!("Invalid value: The argument '{s}' can not be parsed as a CSS color value")
+        _ => <Color as Parse>::parse_str(s).map(Some).map_err(|e| {
+            format!("Invalid value: The argument '{s}' can not be parsed as a CSS color value: {e}")
         }),
     }
 }
