@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use cssparser::{ParseErrorKind, Parser};
 
+use crate::color::color_to_rgba;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
 use crate::element::ElementData;
@@ -295,9 +296,8 @@ pub fn resolve_color(
     current_color: cssparser::RGBA,
 ) -> cssparser::RGBA {
     let rgba = match *color {
-        cssparser::Color::Rgba(rgba) => rgba,
         cssparser::Color::CurrentColor => current_color,
-        _ => unimplemented!(),
+        _ => color_to_rgba(color),
     };
 
     let UnitInterval(o) = opacity;

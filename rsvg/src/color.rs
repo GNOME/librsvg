@@ -1,6 +1,6 @@
 //! CSS color values.
 
-use cssparser::{ParseErrorKind, Parser};
+use cssparser::{hsl_to_rgb, hwb_to_rgb, Color, ParseErrorKind, Parser, RGBA};
 
 use crate::error::*;
 use crate::parsers::Parse;
@@ -54,5 +54,33 @@ impl Parse for cssparser::RGBA {
             ))),
             _ => Err(loc.new_custom_error(ValueErrorKind::value_error("Unsupported color type"))),
         }
+    }
+}
+
+pub fn color_to_rgba(color: &Color) -> RGBA {
+    match color {
+        Color::Rgba(rgba) => *rgba,
+
+        Color::Hsl(hsl) => {
+            let (red, green, blue) = hsl_to_rgb(
+                hsl.hue.unwrap_or(0.0) / 360.0,
+                hsl.saturation.unwrap_or(0.0),
+                hsl.lightness.unwrap_or(0.0),
+            );
+
+            RGBA::from_floats(Some(red), Some(green), Some(blue), hsl.alpha)
+        }
+
+        Color::Hwb(hwb) => {
+            let (red, green, blue) = hwb_to_rgb(
+                hwb.hue.unwrap_or(0.0) / 360.0,
+                hwb.whiteness.unwrap_or(0.0),
+                hwb.blackness.unwrap_or(0.0),
+            );
+
+            RGBA::from_floats(Some(red), Some(green), Some(blue), hwb.alpha)
+        }
+
+        _ => unimplemented!(),
     }
 }

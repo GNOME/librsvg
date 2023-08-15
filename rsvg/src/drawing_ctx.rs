@@ -16,6 +16,7 @@ use std::sync::Arc;
 use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
+use crate::color::color_to_rgba;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
@@ -1905,14 +1906,14 @@ pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -
 }
 
 pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &cssparser::Color) {
-    if let cssparser::Color::Rgba(rgba) = color {
-        cr.set_source_rgba(
-            f64::from(rgba.red.unwrap_or(0)) / 255.0,
-            f64::from(rgba.green.unwrap_or(0)) / 255.0,
-            f64::from(rgba.blue.unwrap_or(0)) / 255.0,
-            f64::from(rgba.alpha.unwrap_or(0.0)),
-        );
-    }
+    let rgba = color_to_rgba(color);
+
+    cr.set_source_rgba(
+        f64::from(rgba.red.unwrap_or(0)) / 255.0,
+        f64::from(rgba.green.unwrap_or(0)) / 255.0,
+        f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+        f64::from(rgba.alpha.unwrap_or(0.0)),
+    );
 }
 
 /// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).
