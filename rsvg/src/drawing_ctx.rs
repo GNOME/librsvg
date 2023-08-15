@@ -1102,15 +1102,6 @@ impl DrawingCtx {
         Ok(true)
     }
 
-    fn set_color(&self, rgba: cssparser::RGBA) {
-        self.cr.clone().set_source_rgba(
-            f64::from(rgba.red.unwrap_or(0)) / 255.0,
-            f64::from(rgba.green.unwrap_or(0)) / 255.0,
-            f64::from(rgba.blue.unwrap_or(0)) / 255.0,
-            f64::from(rgba.alpha.unwrap_or(0.0)),
-        );
-    }
-
     fn set_paint_source(
         &mut self,
         paint_source: &UserSpacePaintSource,
@@ -1125,14 +1116,14 @@ impl DrawingCtx {
                 if self.set_pattern(pattern, acquired_nodes)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(c);
+                    set_source_color_on_cairo(&self.cr, &cssparser::Color::Rgba(c));
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
             UserSpacePaintSource::SolidColor(c) => {
-                self.set_color(c);
+                set_source_color_on_cairo(&self.cr, &cssparser::Color::Rgba(c));
                 Ok(true)
             }
             UserSpacePaintSource::None => Ok(false),
@@ -1911,6 +1902,17 @@ pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -
     pangocairo::functions::context_set_resolution(&context, 72.0);
 
     context
+}
+
+pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &cssparser::Color) {
+    if let cssparser::Color::Rgba(rgba) = color {
+        cr.set_source_rgba(
+            f64::from(rgba.red.unwrap_or(0)) / 255.0,
+            f64::from(rgba.green.unwrap_or(0)) / 255.0,
+            f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+            f64::from(rgba.alpha.unwrap_or(0.0)),
+        );
+    }
 }
 
 /// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).

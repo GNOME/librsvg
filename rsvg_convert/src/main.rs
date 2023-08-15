@@ -23,8 +23,8 @@ use cssparser::{match_ignore_ascii_case, Color};
 
 use librsvg_c::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
-    AspectRatio, CssLength, Horizontal, Length, Normalize, NormalizeParams, Parse, Signed, ULength,
-    Unsigned, Validate, Vertical, ViewBox,
+    set_source_color_on_cairo, AspectRatio, CssLength, Horizontal, Length, Normalize,
+    NormalizeParams, Parse, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
 };
 use rsvg::{
     AcceptLanguage, CairoRenderer, Dpi, Language, LengthUnit, Loader, Rect, RenderingError,
@@ -348,14 +348,8 @@ impl Surface {
     ) -> Result<(), Error> {
         let cr = cairo::Context::new(self)?;
 
-        if let Some(Color::Rgba(rgba)) = background_color {
-            cr.set_source_rgba(
-                f64::from(rgba.red.unwrap_or(0)) / 255.0,
-                f64::from(rgba.green.unwrap_or(0)) / 255.0,
-                f64::from(rgba.blue.unwrap_or(0)) / 255.0,
-                f64::from(rgba.alpha.unwrap_or(0.0)),
-            );
-
+        if let Some(color) = background_color {
+            set_source_color_on_cairo(&cr, &color);
             cr.paint()?;
         }
 
