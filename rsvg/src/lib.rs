@@ -147,8 +147,6 @@
 // The public API is exported here
 pub use crate::api::*;
 
-pub use crate::color::Color;
-
 pub use crate::rect::{IRect, Rect};
 
 #[macro_use]

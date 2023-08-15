@@ -5,8 +5,6 @@ use cssparser::{ParseErrorKind, Parser};
 use crate::error::*;
 use crate::parsers::Parse;
 
-pub use cssparser::Color;
-
 /// Turn a short-lived [`cssparser::ParseError`] into a long-lived [`ParseError`].
 ///
 /// cssparser's error type has a lifetime equal to the string being parsed.  We want

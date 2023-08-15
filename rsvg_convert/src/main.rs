@@ -19,7 +19,7 @@ mod windows_imports {
 #[cfg(windows)]
 use self::windows_imports::*;
 
-use cssparser::match_ignore_ascii_case;
+use cssparser::{match_ignore_ascii_case, Color};
 
 use librsvg_c::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
@@ -27,7 +27,7 @@ use rsvg::rsvg_convert_only::{
     Unsigned, Validate, Vertical, ViewBox,
 };
 use rsvg::{
-    AcceptLanguage, CairoRenderer, Color, Dpi, Language, LengthUnit, Loader, Rect, RenderingError,
+    AcceptLanguage, CairoRenderer, Dpi, Language, LengthUnit, Loader, Rect, RenderingError,
 };
 
 use std::ffi::OsString;
