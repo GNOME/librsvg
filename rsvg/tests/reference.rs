@@ -1161,3 +1161,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/bugs/use-symbol-cascade-992.svg",
     "tests/fixtures/reftests/bugs/use-symbol-cascade-992-ref.svg"
 );
+
+test_svg_reference!(
+    color_types,
+    "tests/fixtures/reftests/color-types.svg",
+    "tests/fixtures/reftests/color-types-ref.svg"
+);
