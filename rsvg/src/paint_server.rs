@@ -2,9 +2,10 @@
 
 use std::sync::Arc;
 
-use cssparser::{ParseErrorKind, Parser};
+use cssparser::{
+    Color, ColorFunction, Hsl, Hwb, Lab, Lch, Oklab, Oklch, ParseErrorKind, Parser, RGBA,
+};
 
-use crate::color::color_to_rgba;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
 use crate::element::ElementData;
@@ -53,9 +54,9 @@ pub enum PaintServer {
 /// [`UserSpacePaintSource`].
 pub enum PaintSource {
     None,
-    Gradient(ResolvedGradient, Option<cssparser::RGBA>),
-    Pattern(ResolvedPattern, Option<cssparser::RGBA>),
-    SolidColor(cssparser::RGBA),
+    Gradient(ResolvedGradient, Option<Color>),
+    Pattern(ResolvedPattern, Option<Color>),
+    SolidColor(Color),
 }
 
 /// Fully resolved paint server, in user-space units.
@@ -63,9 +64,9 @@ pub enum PaintSource {
 /// This has everything required for rendering.
 pub enum UserSpacePaintSource {
     None,
-    Gradient(UserSpaceGradient, Option<cssparser::RGBA>),
-    Pattern(UserSpacePattern, Option<cssparser::RGBA>),
-    SolidColor(cssparser::RGBA),
+    Gradient(UserSpaceGradient, Option<Color>),
+    Pattern(UserSpacePattern, Option<Color>),
+    SolidColor(Color),
 }
 
 impl Parse for PaintServer {
@@ -147,7 +148,7 @@ impl PaintServer {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
-        current_color: cssparser::RGBA,
+        current_color: Color,
         context_fill: Option<Arc<PaintSource>>,
         context_stroke: Option<Arc<PaintSource>>,
         session: &Session,
@@ -167,7 +168,7 @@ impl PaintServer {
                             g.resolve(node, acquired_nodes, opacity).map(|g| {
                                 Arc::new(PaintSource::Gradient(
                                     g,
-                                    alternate.map(|c| resolve_color(&c, opacity, current_color)),
+                                    alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
                             })
                         }
@@ -175,7 +176,7 @@ impl PaintServer {
                             p.resolve(node, acquired_nodes, opacity, session).map(|p| {
                                 Arc::new(PaintSource::Pattern(
                                     p,
-                                    alternate.map(|c| resolve_color(&c, opacity, current_color)),
+                                    alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
                             })
                         }
@@ -183,7 +184,7 @@ impl PaintServer {
                             g.resolve(node, acquired_nodes, opacity).map(|g| {
                                 Arc::new(PaintSource::Gradient(
                                     g,
-                                    alternate.map(|c| resolve_color(&c, opacity, current_color)),
+                                    alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
                             })
                         }
@@ -213,7 +214,7 @@ impl PaintServer {
                         Arc::new(PaintSource::SolidColor(resolve_color(
                             color,
                             opacity,
-                            current_color,
+                            &current_color,
                         )))
                     }
 
@@ -231,7 +232,7 @@ impl PaintServer {
             PaintServer::SolidColor(color) => Arc::new(PaintSource::SolidColor(resolve_color(
                 color,
                 opacity,
-                current_color,
+                &current_color,
             ))),
 
             PaintServer::ContextFill => {
@@ -286,29 +287,86 @@ impl PaintSource {
     }
 }
 
-/// Resolves a CSS color into an RGBA value.
+/// Takes the `opacity` property and an alpha value from a CSS `<color>` and returns a resulting
+/// alpha for a computed value.
 ///
-/// A CSS color can be `currentColor`, in which case the computed value comes from
-/// the `color` property.  You should pass the `color` property's value for `current_color`.
-pub fn resolve_color(
-    color: &cssparser::Color,
-    opacity: UnitInterval,
-    current_color: cssparser::RGBA,
-) -> cssparser::RGBA {
-    let rgba = match *color {
-        cssparser::Color::CurrentColor => current_color,
-        _ => color_to_rgba(color),
-    };
-
+/// `alpha` is `Option<f32>` because that is what cssparser uses everywhere.
+fn resolve_alpha(opacity: UnitInterval, alpha: Option<f32>) -> Option<f32> {
     let UnitInterval(o) = opacity;
 
-    let alpha = f64::from(rgba.alpha.unwrap_or(0.0)) * o;
+    let alpha = f64::from(alpha.unwrap_or(0.0)) * o;
     let alpha = util::clamp(alpha, 0.0, 1.0);
     let alpha = cast::f32(alpha).unwrap();
 
-    cssparser::RGBA {
-        alpha: Some(alpha),
-        ..rgba
+    Some(alpha)
+}
+
+fn black() -> Color {
+    Color::Rgba(RGBA::new(Some(0), Some(0), Some(0), Some(1.0)))
+}
+
+/// Resolves a CSS color from itself, an `opacity` property, and a `color` property (to resolve `currentColor`).
+///
+/// A CSS color can be `currentColor`, in which case the computed value comes from
+/// the `color` property.  You should pass the `color` property's value for `current_color`.
+///
+/// Note that `currrent_color` can itself have a value of `currentColor`.  In that case, we
+/// consider it to be opaque black.
+pub fn resolve_color(color: &Color, opacity: UnitInterval, current_color: &Color) -> Color {
+    let without_opacity_applied = match color {
+        Color::CurrentColor => {
+            if let Color::CurrentColor = current_color {
+                black()
+            } else {
+                *current_color
+            }
+        }
+
+        _ => *color,
+    };
+
+    match without_opacity_applied {
+        Color::CurrentColor => unreachable!(),
+
+        Color::Rgba(rgba) => Color::Rgba(RGBA {
+            alpha: resolve_alpha(opacity, rgba.alpha),
+            ..rgba
+        }),
+
+        Color::Hsl(hsl) => Color::Hsl(Hsl {
+            alpha: resolve_alpha(opacity, hsl.alpha),
+            ..hsl
+        }),
+
+        Color::Hwb(hwb) => Color::Hwb(Hwb {
+            alpha: resolve_alpha(opacity, hwb.alpha),
+            ..hwb
+        }),
+
+        Color::Lab(lab) => Color::Lab(Lab {
+            alpha: resolve_alpha(opacity, lab.alpha),
+            ..lab
+        }),
+
+        Color::Lch(lch) => Color::Lch(Lch {
+            alpha: resolve_alpha(opacity, lch.alpha),
+            ..lch
+        }),
+
+        Color::Oklab(oklab) => Color::Oklab(Oklab {
+            alpha: resolve_alpha(opacity, oklab.alpha),
+            ..oklab
+        }),
+
+        Color::Oklch(oklch) => Color::Oklch(Oklch {
+            alpha: resolve_alpha(opacity, oklch.alpha),
+            ..oklch
+        }),
+
+        Color::ColorFunction(cf) => Color::ColorFunction(ColorFunction {
+            alpha: resolve_alpha(opacity, cf.alpha),
+            ..cf
+        }),
     }
 }
 
@@ -414,29 +472,25 @@ mod tests {
 
     #[test]
     fn resolves_explicit_color() {
-        use cssparser::{Color, RGBA};
-
         assert_eq!(
             resolve_color(
                 &Color::Rgba(RGBA::new(Some(255), Some(0), Some(0), Some(0.5))),
                 UnitInterval::clamp(0.5),
-                RGBA::new(Some(0), Some(255), Some(0), Some(1.0))
+                &Color::Rgba(RGBA::new(Some(0), Some(255), Some(0), Some(1.0))),
             ),
-            RGBA::new(Some(255), Some(0), Some(0), Some(0.25)),
+            Color::Rgba(RGBA::new(Some(255), Some(0), Some(0), Some(0.25))),
         );
     }
 
     #[test]
     fn resolves_current_color() {
-        use cssparser::{Color, RGBA};
-
         assert_eq!(
             resolve_color(
                 &Color::CurrentColor,
                 UnitInterval::clamp(0.5),
-                RGBA::new(Some(0), Some(255), Some(0), Some(0.5))
+                &Color::Rgba(RGBA::new(Some(0), Some(255), Some(0), Some(0.5))),
             ),
-            RGBA::new(Some(0), Some(255), Some(0), Some(0.25)),
+            Color::Rgba(RGBA::new(Some(0), Some(255), Some(0), Some(0.25))),
         );
     }
 }

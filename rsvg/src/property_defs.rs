@@ -160,9 +160,9 @@ make_property!(
     /// Most of the time the `color` property is used to call
     /// [`crate::paint_server::resolve_color`].
     Color,
-    default: cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(1.0)),
+    default: cssparser::Color::Rgba(cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(1.0))),
     inherits_automatically: true,
-    newtype_parse: cssparser::RGBA,
+    newtype_parse: cssparser::Color,
 );
 
 make_property!(

@@ -5,7 +5,7 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use cssparser::RGBA;
+use cssparser::Color;
 use float_cmp::approx_eq;
 
 use crate::aspect_ratio::AspectRatio;
@@ -154,7 +154,7 @@ pub struct FontProperties {
 
 pub struct Filter {
     pub filter_list: FilterValueList,
-    pub current_color: RGBA,
+    pub current_color: Color,
     pub stroke_paint_source: Arc<PaintSource>,
     pub fill_paint_source: Arc<PaintSource>,
     pub normalize_values: NormalizeValues,

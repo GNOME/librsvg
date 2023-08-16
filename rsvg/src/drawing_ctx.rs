@@ -968,12 +968,14 @@ impl DrawingCtx {
         for stop in &gradient.stops {
             let UnitInterval(stop_offset) = stop.offset;
 
+            let rgba = color_to_rgba(&stop.color);
+
             g.add_color_stop_rgba(
                 stop_offset,
-                f64::from(stop.rgba.red.unwrap_or(0)) / 255.0,
-                f64::from(stop.rgba.green.unwrap_or(0)) / 255.0,
-                f64::from(stop.rgba.blue.unwrap_or(0)) / 255.0,
-                f64::from(stop.rgba.alpha.unwrap_or(0.0)),
+                f64::from(rgba.red.unwrap_or(0)) / 255.0,
+                f64::from(rgba.green.unwrap_or(0)) / 255.0,
+                f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+                f64::from(rgba.alpha.unwrap_or(0.0)),
             );
         }
 
@@ -1113,18 +1115,18 @@ impl DrawingCtx {
                 self.set_gradient(gradient)?;
                 Ok(true)
             }
-            UserSpacePaintSource::Pattern(ref pattern, c) => {
+            UserSpacePaintSource::Pattern(ref pattern, ref c) => {
                 if self.set_pattern(pattern, acquired_nodes)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    set_source_color_on_cairo(&self.cr, &cssparser::Color::Rgba(c));
+                    set_source_color_on_cairo(&self.cr, c);
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            UserSpacePaintSource::SolidColor(c) => {
-                set_source_color_on_cairo(&self.cr, &cssparser::Color::Rgba(c));
+            UserSpacePaintSource::SolidColor(ref c) => {
+                set_source_color_on_cairo(&self.cr, c);
                 Ok(true)
             }
             UserSpacePaintSource::None => Ok(false),

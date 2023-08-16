@@ -1,3 +1,5 @@
+use cssparser::Color;
+
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::ElementTrait;
@@ -21,7 +23,7 @@ pub struct FeFlood {
 
 /// Resolved `feFlood` primitive for rendering.
 pub struct Flood {
-    pub color: cssparser::RGBA,
+    pub color: Color,
 }
 
 impl ElementTrait for FeFlood {
@@ -62,7 +64,7 @@ impl FilterEffect for FeFlood {
                 color: resolve_color(
                     &values.flood_color().0,
                     values.flood_opacity().0,
-                    values.color().0,
+                    &values.color().0,
                 ),
             }),
         }])

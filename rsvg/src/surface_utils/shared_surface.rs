@@ -4,10 +4,13 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::slice;
 
+use cssparser::Color;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
 use rgb::FromSlice;
 
+use crate::color::color_to_rgba;
+use crate::drawing_ctx::set_source_color_on_cairo;
 use crate::error::*;
 use crate::rect::{IRect, Rect};
 use crate::surface_utils::srgb;
@@ -1009,26 +1012,19 @@ impl ImageSurface<Shared> {
 
     /// Fills the with a specified color.
     #[inline]
-    pub fn flood(
-        &self,
-        bounds: IRect,
-        color: cssparser::RGBA,
-    ) -> Result<SharedImageSurface, cairo::Error> {
+    pub fn flood(&self, bounds: IRect, color: Color) -> Result<SharedImageSurface, cairo::Error> {
         let output_surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, self.width, self.height)?;
 
-        if color.alpha.unwrap_or(0.0) > 0.0 {
+        let rgba = color_to_rgba(&color);
+
+        if rgba.alpha.unwrap_or(0.0) > 0.0 {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(bounds);
             cr.rectangle(r.x(), r.y(), r.width(), r.height());
             cr.clip();
 
-            cr.set_source_rgba(
-                f64::from(color.red.unwrap_or(0)) / 255.0,
-                f64::from(color.green.unwrap_or(0)) / 255.0,
-                f64::from(color.blue.unwrap_or(0)) / 255.0,
-                f64::from(color.alpha.unwrap_or(0.0)),
-            );
+            set_source_color_on_cairo(&cr, &color);
             cr.paint()?;
         }
 
