@@ -120,14 +120,7 @@ impl Parse for PaintServer {
                 alternate,
             })
         } else {
-            cssparser::Color::parse(parser)
-                .map(PaintServer::SolidColor)
-                .map_err(|e| ParseError {
-                    kind: ParseErrorKind::Custom(ValueErrorKind::parse_error(
-                        "Could not parse color",
-                    )),
-                    location: e.location,
-                })
+            <Color as Parse>::parse(parser).map(PaintServer::SolidColor)
         }
     }
 }
