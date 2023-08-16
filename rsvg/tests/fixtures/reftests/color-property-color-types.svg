@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="100">
+  <!--
+      Test that the color property supports all the color types we handle from cssparser.
+      Elements have a fill of currentColor to use the color from the style definitions.
+  -->
+  <style>
+    .rgb { color: rgb(0, 255, 0); }
+    .rgba { color: rgba(0, 255, 0, 0.5); }
+    .hsl { color: hsl(120, 100%, 50%); }
+    .hsla { color: hsla(120, 100%, 50%, 0.5); }
+    .hwb { color: hwb(120 0% 0%); }
+    .hwba { color: hwb(120 0% 0% / 0.5); }
+  </style>
+  <rect class="rgb" x="0" y="0" width="100" height="100" fill="currentColor"/>
+  <rect class="rgba" x="100" y="0" width="100" height="100" fill="currentColor"/>
+  <rect class="hsl" x="200" y="0" width="100" height="100" fill="currentColor"/>
+  <rect class="hsla" x="300" y="0" width="100" height="100" fill="currentColor"/>
+  <rect class="hwb" x="400" y="0" width="100" height="100" fill="currentColor"/>
+  <rect class="hwba" x="500" y="0" width="100" height="100" fill="currentColor"/>
+</svg>

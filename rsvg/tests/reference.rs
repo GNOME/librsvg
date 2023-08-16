@@ -1167,3 +1167,10 @@ test_svg_reference!(
     "tests/fixtures/reftests/color-types.svg",
     "tests/fixtures/reftests/color-types-ref.svg"
 );
+
+// Note that this uses the same reference file as color-types.svg - the result ought to be the same.
+test_svg_reference!(
+    color_property_color_types,
+    "tests/fixtures/reftests/color-property-color-types.svg",
+    "tests/fixtures/reftests/color-types-ref.svg"
+);
