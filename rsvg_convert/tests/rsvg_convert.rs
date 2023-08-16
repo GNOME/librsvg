@@ -982,7 +982,7 @@ fn background_color_hwba() {
 #[test]
 fn stylesheet_option() {
     RsvgConvert::new_with_input("tests/fixtures/dpi.svg")
-        .arg("--stylesheet=tests/fixtures/empty.svg")
+        .arg("--stylesheet=tests/fixtures/empty.css")
         .assert()
         .success();
 }
@@ -991,7 +991,7 @@ fn stylesheet_option() {
 fn stylesheet_short_option() {
     RsvgConvert::new_with_input("tests/fixtures/dpi.svg")
         .arg("-s")
-        .arg("tests/fixtures/empty.svg")
+        .arg("tests/fixtures/empty.css")
         .assert()
         .success();
 }
