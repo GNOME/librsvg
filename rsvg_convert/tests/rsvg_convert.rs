@@ -914,6 +914,72 @@ fn background_color_is_rendered() {
 }
 
 #[test]
+fn background_color_rgb() {
+    RsvgConvert::new_with_input("tests/fixtures/empty-10x10.svg")
+        .arg("--width=10")
+        .arg("--height=10")
+        .arg("--background-color=rgb(0, 255, 0)")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/lime-ref.png"));
+}
+
+#[test]
+fn background_color_rgba() {
+    RsvgConvert::new_with_input("tests/fixtures/empty-10x10.svg")
+        .arg("--width=10")
+        .arg("--height=10")
+        .arg("--background-color=rgba(0, 255, 0, 0.5)")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/lime-transparent-ref.png"));
+}
+
+#[test]
+fn background_color_hsl() {
+    RsvgConvert::new_with_input("tests/fixtures/empty-10x10.svg")
+        .arg("--width=10")
+        .arg("--height=10")
+        .arg("--background-color=hsl(120, 100%, 50%)")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/lime-ref.png"));
+}
+
+#[test]
+fn background_color_hsla() {
+    RsvgConvert::new_with_input("tests/fixtures/empty-10x10.svg")
+        .arg("--width=10")
+        .arg("--height=10")
+        .arg("--background-color=hsla(120, 100%, 50%, 0.5)")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/lime-transparent-ref.png"));
+}
+
+#[test]
+fn background_color_hwb() {
+    RsvgConvert::new_with_input("tests/fixtures/empty-10x10.svg")
+        .arg("--width=10")
+        .arg("--height=10")
+        .arg("--background-color=hwb(120 0% 0%)")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/lime-ref.png"));
+}
+
+#[test]
+fn background_color_hwba() {
+    RsvgConvert::new_with_input("tests/fixtures/empty-10x10.svg")
+        .arg("--width=10")
+        .arg("--height=10")
+        .arg("--background-color=hwb(120 0% 0% / 0.5)")
+        .assert()
+        .success()
+        .stdout(file::is_png().with_contents("tests/fixtures/lime-transparent-ref.png"));
+}
+
+#[test]
 fn stylesheet_option() {
     RsvgConvert::new_with_input("tests/fixtures/dpi.svg")
         .arg("--stylesheet=tests/fixtures/empty.svg")
