@@ -1174,3 +1174,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/color-property-color-types.svg",
     "tests/fixtures/reftests/color-types-ref.svg"
 );
+
+test_svg_reference!(
+    color_types_unsupported,
+    "tests/fixtures/reftests/color-types-unsupported.svg",
+    "tests/fixtures/reftests/color-types-unsupported-ref.svg"
+);
