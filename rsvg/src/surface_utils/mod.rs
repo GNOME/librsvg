@@ -276,10 +276,8 @@ impl<'a> ImageSurfaceDataExt for cairo::ImageSurfaceData<'a> {
 impl ImageSurfaceDataExt for [u8] {
     #[inline]
     fn set_pixel(&mut self, stride: usize, pixel: Pixel, x: u32, y: u32) {
-        use byteorder::{NativeEndian, WriteBytesExt};
-        let mut this = &mut self[y as usize * stride + x as usize * 4..];
-        this.write_u32::<NativeEndian>(pixel.to_u32())
-            .expect("out of bounds pixel access on [u8]");
+        let this = &mut self[y as usize * stride + x as usize * 4..];
+        this[..4].copy_from_slice(&pixel.to_u32().to_ne_bytes());
     }
 }
 impl ImageSurfaceDataExt for [u32] {
