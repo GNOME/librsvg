@@ -979,7 +979,6 @@ name = "librsvg"
 version = "2.57.0-beta.2"
 dependencies = [
  "anyhow",
- "byteorder",
  "cairo-rs",
  "cast",
  "chrono",
