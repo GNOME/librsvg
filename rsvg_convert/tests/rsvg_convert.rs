@@ -979,6 +979,32 @@ fn background_color_hwba() {
         .stdout(file::is_png().with_contents("tests/fixtures/lime-transparent-ref.png"));
 }
 
+fn test_unsupported_background_color(color: &str) {
+    let color_arg = format!("--background-color={color}");
+    RsvgConvert::new_with_input("tests/fixtures/empty-10x10.svg")
+        .arg("--width=10")
+        .arg("--height=10")
+        .arg(&color_arg)
+        .assert()
+        .failure()
+        .stderr(contains("Invalid value").and(contains("unsupported color syntax")));
+}
+
+#[test]
+fn unsupported_background_color() {
+    let colors = [
+        "lab(62.2345% -34.9638 47.7721)",
+        "lch(62.2345% 59.2 126.2)",
+        "oklab(66.016% -0.1084 0.1114)",
+        "oklch(0.66016 0.15546 134.231)",
+        "color(display-p3 -0.6112 1.0079 -0.2192)",
+    ];
+
+    for c in &colors {
+        test_unsupported_background_color(c);
+    }
+}
+
 #[test]
 fn stylesheet_option() {
     RsvgConvert::new_with_input("tests/fixtures/dpi.svg")
