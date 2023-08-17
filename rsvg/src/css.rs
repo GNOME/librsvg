@@ -274,10 +274,10 @@ impl<'i> selectors::Parser<'i> for RuleParser {
     }
 }
 
-// `cssparser::RuleListParser` is a struct which requires that we
-// provide a type that implements `cssparser::QualifiedRuleParser`.
+// `cssparser::StyleSheetParser` is a struct which requires that we provide a type that
+// implements `cssparser::QualifiedRuleParser` and `cssparser::AtRuleParser`.
 //
-// In turn, cssparser::QualifiedRuleParser` requires that we
+// In turn, `cssparser::QualifiedRuleParser` requires that we
 // implement a way to parse the `Prelude` of a ruleset or rule.  For
 // example, in this ruleset:
 //
@@ -334,7 +334,7 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
     }
 }
 
-// Required by `cssparser::RuleListParser`.
+// Required by `cssparser::StyleSheetParser`.
 //
 // This only handles the `@import` at-rule.
 impl<'i> AtRuleParser<'i> for RuleParser {
