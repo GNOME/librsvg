@@ -147,8 +147,6 @@
 // The public API is exported here
 pub use crate::api::*;
 
-pub use crate::color::Color;
-
 pub use crate::rect::{IRect, Rect};
 
 #[macro_use]
@@ -252,6 +250,7 @@ pub mod doctest_only {
 #[doc(hidden)]
 pub mod rsvg_convert_only {
     pub use crate::aspect_ratio::AspectRatio;
+    pub use crate::drawing_ctx::set_source_color_on_cairo;
     pub use crate::error::ParseError;
     pub use crate::length::{
         CssLength, Horizontal, Length, Normalize, NormalizeParams, Signed, ULength, Unsigned,

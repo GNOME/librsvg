@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="100">
+  <!-- Test that we don't crash with the color types from cssparser that we don't support. -->
+  <rect x="0" y="0" width="100" height="100" fill="lab(62.2345% -34.9638 47.7721)"/>
+  <rect x="100" y="0" width="100" height="100" fill="lch(62.2345% 59.2 126.2)"/>
+  <rect x="200" y="0" width="100" height="100" fill="oklab(66.016% -0.1084 0.1114)"/>
+  <rect x="300" y="0" width="100" height="100" fill="oklch(0.66016 0.15546 134.231)"/>
+  <rect x="400" y="0" width="100" height="100" fill="color(display-p3 -0.6112 1.0079 -0.2192)"/>
+</svg>

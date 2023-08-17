@@ -6,7 +6,6 @@
 //! antialiasing artifacts, floating-point variations, and such.
 //!
 
-use cairo;
 use rsvg::{
     surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
     CairoRenderer, IntrinsicDimensions, Length, Loader,
@@ -43,10 +42,10 @@ fn reference_test(path: &Path) {
         return;
     }
 
-    let reference = reference_path(&path);
+    let reference = reference_path(path);
 
     let handle = Loader::new()
-        .read_path(&path)
+        .read_path(path)
         .unwrap_or_else(|e| panic!("could not load: {}", e));
 
     let renderer = CairoRenderer::new(&handle)
@@ -76,7 +75,7 @@ fn reference_test(path: &Path) {
 
     let output_surf = SharedImageSurface::wrap(surface, SurfaceType::SRgb).unwrap();
 
-    Reference::from_png(&reference)
+    Reference::from_png(reference)
         .compare(&output_surf)
         .evaluate(&output_surf, &path_base_name);
 }
@@ -100,7 +99,7 @@ fn extract_rectangle(
 ) -> Result<cairo::ImageSurface, cairo::Error> {
     let dest = cairo::ImageSurface::create(cairo::Format::ARgb32, w, h)?;
     let cr = cairo::Context::new(&dest).expect("Failed to create a cairo context");
-    cr.set_source_surface(&source, f64::from(-x), f64::from(-y))
+    cr.set_source_surface(source, f64::from(-x), f64::from(-y))
         .unwrap();
     cr.paint().unwrap();
     Ok(dest)
@@ -1161,4 +1160,23 @@ test_svg_reference!(
     bug_992_use_symbol_cascade,
     "tests/fixtures/reftests/bugs/use-symbol-cascade-992.svg",
     "tests/fixtures/reftests/bugs/use-symbol-cascade-992-ref.svg"
+);
+
+test_svg_reference!(
+    color_types,
+    "tests/fixtures/reftests/color-types.svg",
+    "tests/fixtures/reftests/color-types-ref.svg"
+);
+
+// Note that this uses the same reference file as color-types.svg - the result ought to be the same.
+test_svg_reference!(
+    color_property_color_types,
+    "tests/fixtures/reftests/color-property-color-types.svg",
+    "tests/fixtures/reftests/color-types-ref.svg"
+);
+
+test_svg_reference!(
+    color_types_unsupported,
+    "tests/fixtures/reftests/color-types-unsupported.svg",
+    "tests/fixtures/reftests/color-types-unsupported-ref.svg"
 );

@@ -1,6 +1,6 @@
 //! The `filter` element.
 
-use cssparser::{Parser, RGBA};
+use cssparser::{Color, Parser};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::slice::Iter;
 
@@ -105,7 +105,7 @@ impl FilterValue {
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         user_space_params: &NormalizeParams,
-        current_color: RGBA,
+        current_color: Color,
         viewport: &Viewport,
         session: &Session,
         node_being_filtered_name: &str,

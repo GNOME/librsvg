@@ -1,4 +1,3 @@
-use cairo;
 use float_cmp::approx_eq;
 use rsvg::{CairoRenderer, Loader};
 

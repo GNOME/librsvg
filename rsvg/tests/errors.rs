@@ -10,7 +10,6 @@
 
 #![cfg(test)]
 
-use cairo;
 use rsvg::{CairoRenderer, ImplementationLimit, Loader, LoadingError, RenderingError};
 
 #[ignore]

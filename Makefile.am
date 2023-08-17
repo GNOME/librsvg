@@ -331,6 +331,7 @@ test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/render-crash/*.svg)		\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/text/*.svg)			\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/dimensions/*.svg)		\
+	$(wildcard $(srcdir)/rsvg_convert/tests/fixtures/*.css)			\
 	$(wildcard $(srcdir)/rsvg_convert/tests/fixtures/*.svg)			\
 	$(wildcard $(srcdir)/rsvg_convert/tests/fixtures/*.png)
 

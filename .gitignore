@@ -4,6 +4,7 @@ Makefile.in
 TAGS
 aclocal.m4
 autom4te.cache
+cargo_cache
 compile
 config.*
 configure

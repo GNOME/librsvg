@@ -1,5 +1,6 @@
 //! Lighting filters and light nodes.
 
+use cssparser::{Color, RGBA};
 use float_cmp::approx_eq;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use nalgebra::{Vector2, Vector3};
@@ -7,6 +8,7 @@ use num_traits::identities::Zero;
 use rayon::prelude::*;
 use std::cmp::max;
 
+use crate::color::color_to_rgba;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementData, ElementTrait};
@@ -134,68 +136,65 @@ impl UntransformedLightSource {
 
 struct Light {
     source: UntransformedLightSource,
-    lighting_color: cssparser::RGBA,
+    lighting_color: Color,
     color_interpolation_filters: ColorInterpolationFilters,
 }
 
-impl Light {
-    /// Returns the color and unit (or null) vector from the image sample to the light.
-    #[inline]
-    pub fn color_and_vector(
-        &self,
-        source: &LightSource,
-        x: f64,
-        y: f64,
-        z: f64,
-    ) -> (cssparser::RGBA, Vector3<f64>) {
-        let vector = match *source {
-            LightSource::Distant { azimuth, elevation } => {
-                let azimuth = azimuth.to_radians();
-                let elevation = elevation.to_radians();
-                Vector3::new(
-                    azimuth.cos() * elevation.cos(),
-                    azimuth.sin() * elevation.cos(),
-                    elevation.sin(),
-                )
-            }
-            LightSource::Point { origin } | LightSource::Spot { origin, .. } => {
-                let mut v = origin - Vector3::new(x, y, z);
-                let _ = v.try_normalize_mut(0.0);
-                v
-            }
-        };
+/// Returns the color and unit (or null) vector from the image sample to the light.
+#[inline]
+fn color_and_vector(
+    lighting_color: &RGBA,
+    source: &LightSource,
+    x: f64,
+    y: f64,
+    z: f64,
+) -> (cssparser::RGBA, Vector3<f64>) {
+    let vector = match *source {
+        LightSource::Distant { azimuth, elevation } => {
+            let azimuth = azimuth.to_radians();
+            let elevation = elevation.to_radians();
+            Vector3::new(
+                azimuth.cos() * elevation.cos(),
+                azimuth.sin() * elevation.cos(),
+                elevation.sin(),
+            )
+        }
+        LightSource::Point { origin } | LightSource::Spot { origin, .. } => {
+            let mut v = origin - Vector3::new(x, y, z);
+            let _ = v.try_normalize_mut(0.0);
+            v
+        }
+    };
 
-        let color = match *source {
-            LightSource::Spot {
-                direction,
-                specular_exponent,
-                limiting_cone_angle,
-                ..
-            } => {
-                let minus_l_dot_s = -vector.dot(&direction);
-                match limiting_cone_angle {
-                    _ if minus_l_dot_s <= 0.0 => cssparser::RGBA::transparent(),
-                    Some(a) if minus_l_dot_s < a.to_radians().cos() => {
-                        cssparser::RGBA::transparent()
-                    }
-                    _ => {
-                        let factor = minus_l_dot_s.powf(specular_exponent);
-                        let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
+    let color = match *source {
+        LightSource::Spot {
+            direction,
+            specular_exponent,
+            limiting_cone_angle,
+            ..
+        } => {
+            let transparent_color = cssparser::RGBA::new(Some(0), Some(0), Some(0), Some(0.0));
+            let minus_l_dot_s = -vector.dot(&direction);
+            match limiting_cone_angle {
+                _ if minus_l_dot_s <= 0.0 => transparent_color,
+                Some(a) if minus_l_dot_s < a.to_radians().cos() => transparent_color,
+                _ => {
+                    let factor = minus_l_dot_s.powf(specular_exponent);
+                    let compute = |x| (clamp(f64::from(x) * factor, 0.0, 255.0) + 0.5) as u8;
 
-                        cssparser::RGBA {
-                            red: compute(self.lighting_color.red),
-                            green: compute(self.lighting_color.green),
-                            blue: compute(self.lighting_color.blue),
-                            alpha: 255,
-                        }
+                    cssparser::RGBA {
+                        red: Some(compute(lighting_color.red.unwrap_or(0))),
+                        green: Some(compute(lighting_color.green.unwrap_or(0))),
+                        blue: Some(compute(lighting_color.blue.unwrap_or(0))),
+                        alpha: Some(1.0),
                     }
                 }
             }
-            _ => self.lighting_color,
-        };
+        }
+        _ => *lighting_color,
+    };
 
-        (color, vector)
-    }
+    (color, vector)
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -536,6 +535,8 @@ macro_rules! impl_lighting_filter {
                     SurfaceType::from(self.light.color_interpolation_filters),
                 )?;
 
+                let lighting_color = color_to_rgba(&self.light.lighting_color);
+
                 {
                     let output_stride = surface.stride() as usize;
                     let mut output_data = surface.data();
@@ -550,16 +551,16 @@ macro_rules! impl_lighting_filter {
                             let z = f64::from(pixel.a) / 255.0 * self.params.surface_scale;
 
                             let (color, vector) =
-                                self.light.color_and_vector(&source, scaled_x, scaled_y, z);
+                                color_and_vector(&lighting_color, &source, scaled_x, scaled_y, z);
 
                             // compute the factor just once for the three colors
                             let factor = self.compute_factor(normal, vector);
                             let compute =
                                 |x| (clamp(factor * f64::from(x), 0.0, 255.0) + 0.5) as u8;
 
-                            let r = compute(color.red);
-                            let g = compute(color.green);
-                            let b = compute(color.blue);
+                            let r = compute(color.red.unwrap_or(0));
+                            let g = compute(color.green.unwrap_or(0));
+                            let b = compute(color.blue.unwrap_or(0));
                             let a = $alpha_func(r, g, b);
 
                             let output_pixel = Pixel { r, g, b, a };
@@ -738,7 +739,7 @@ macro_rules! impl_lighting_filter {
                             lighting_color: resolve_color(
                                 &values.lighting_color().0,
                                 UnitInterval::clamp(1.0),
-                                values.color().0,
+                                &values.color().0,
                             ),
                             color_interpolation_filters: values.color_interpolation_filters(),
                         },

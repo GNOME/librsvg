@@ -11,7 +11,7 @@ use std::fmt;
 pub struct PdfPredicate {}
 
 impl PdfPredicate {
-    pub fn with_page_count(self: Self, num_pages: usize) -> DetailPredicate<Self> {
+    pub fn with_page_count(self, num_pages: usize) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::PageCount(num_pages),
@@ -19,7 +19,7 @@ impl PdfPredicate {
     }
 
     pub fn with_page_size(
-        self: Self,
+        self,
         idx: usize,
         width_in_points: f32,
         height_in_points: f32,
@@ -37,28 +37,28 @@ impl PdfPredicate {
         }
     }
 
-    pub fn with_creation_date(self: Self, when: DateTime<Utc>) -> DetailPredicate<Self> {
+    pub fn with_creation_date(self, when: DateTime<Utc>) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::CreationDate(when),
         }
     }
 
-    pub fn with_link(self: Self, link: &str) -> DetailPredicate<Self> {
+    pub fn with_link(self, link: &str) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::Link(link.to_string()),
         }
     }
 
-    pub fn with_text(self: Self, text: &str) -> DetailPredicate<Self> {
+    pub fn with_text(self, text: &str) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::Text(text.to_string()),
         }
     }
 
-    pub fn with_version(self: Self, version: &str) -> DetailPredicate<Self> {
+    pub fn with_version(self, version: &str) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::Version(version.to_string()),
@@ -124,11 +124,11 @@ impl Dimensions {
         })
     }
 
-    pub fn width_in_pt(self: &Self) -> f32 {
+    pub fn width_in_pt(&self) -> f32 {
         self.w * self.unit
     }
 
-    pub fn height_in_pt(self: &Self) -> f32 {
+    pub fn height_in_pt(&self) -> f32 {
         self.h * self.unit
     }
 }
@@ -161,12 +161,8 @@ trait Details {
     fn get_page_count(&self) -> usize;
     fn get_page_size(&self, idx: usize) -> Option<Dimensions>;
     fn get_creation_date(&self) -> Option<DateTime<Utc>>;
-    fn get_from_trailer<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object>;
-    fn get_from_page<'a>(
-        self: &'a Self,
-        idx: usize,
-        key: &[u8],
-    ) -> lopdf::Result<&'a lopdf::Object>;
+    fn get_from_trailer<'a>(&'a self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object>;
+    fn get_from_page<'a>(&'a self, idx: usize, key: &[u8]) -> lopdf::Result<&'a lopdf::Object>;
 }
 
 impl DetailPredicate<PdfPredicate> {
@@ -175,9 +171,9 @@ impl DetailPredicate<PdfPredicate> {
             Detail::PageCount(n) => doc.get_page_count() == *n,
             Detail::PageSize(d, idx) => doc.get_page_size(*idx).map_or(false, |dim| dim == *d),
             Detail::CreationDate(d) => doc.get_creation_date().map_or(false, |date| date == *d),
-            Detail::Link(link) => document_has_link(doc, &link),
-            Detail::Text(text) => document_has_text(doc, &text),
-            Detail::Version(version) => document_has_version(doc, &version),
+            Detail::Link(link) => document_has_link(doc, link),
+            Detail::Text(text) => document_has_text(doc, text),
+            Detail::Version(version) => document_has_version(doc, version),
         }
     }
 
@@ -237,11 +233,11 @@ impl ObjExt for lopdf::Object {
 }
 
 impl Details for lopdf::Document {
-    fn get_page_count(self: &Self) -> usize {
+    fn get_page_count(&self) -> usize {
         self.get_pages().len()
     }
 
-    fn get_page_size(self: &Self, idx: usize) -> Option<Dimensions> {
+    fn get_page_size(&self, idx: usize) -> Option<Dimensions> {
         match self.get_from_page(idx, b"MediaBox") {
             Ok(obj) => {
                 let unit = self
@@ -254,23 +250,19 @@ impl Details for lopdf::Document {
         }
     }
 
-    fn get_creation_date(self: &Self) -> Option<DateTime<Utc>> {
+    fn get_creation_date(&self) -> Option<DateTime<Utc>> {
         match self.get_from_trailer(b"CreationDate") {
             Ok(obj) => obj.as_datetime().map(|date| date.with_timezone(&Utc)),
             Err(_) => None,
         }
     }
 
-    fn get_from_trailer<'a>(self: &'a Self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object> {
+    fn get_from_trailer<'a>(&'a self, key: &[u8]) -> lopdf::Result<&'a lopdf::Object> {
         let id = self.trailer.get(b"Info")?.as_reference()?;
         self.get_object(id)?.as_dict()?.get(key)
     }
 
-    fn get_from_page<'a>(
-        self: &'a Self,
-        idx: usize,
-        key: &[u8],
-    ) -> lopdf::Result<&'a lopdf::Object> {
+    fn get_from_page<'a>(&'a self, idx: usize, key: &[u8]) -> lopdf::Result<&'a lopdf::Object> {
         let mut iter = self.page_iter();
         for _ in 0..idx {
             let _ = iter.next();
@@ -338,8 +330,7 @@ fn document_has_version(document: &lopdf::Document, version_to_search: &str) -> 
 fn document_has_link(document: &lopdf::Document, link_text: &str) -> bool {
     document
         .objects
-        .iter()
-        .map(|(_obj_id, object)| object)
+        .values()
         .any(|obj| object_is_annotation_with_link(obj, link_text))
 }
 

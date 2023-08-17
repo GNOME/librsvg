@@ -1,4 +1,3 @@
-use png;
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::fmt;
@@ -15,11 +14,11 @@ use rsvg::test_utils::reference_utils::{surface_from_png, Compare, Deviation, Re
 pub struct PngPredicate {}
 
 impl PngPredicate {
-    pub fn with_size(self: Self, w: u32, h: u32) -> SizePredicate<Self> {
+    pub fn with_size(self, w: u32, h: u32) -> SizePredicate<Self> {
         SizePredicate::<Self> { p: self, w, h }
     }
 
-    pub fn with_contents<P: AsRef<Path>>(self: Self, reference: P) -> ReferencePredicate<Self> {
+    pub fn with_contents<P: AsRef<Path>>(self, reference: P) -> ReferencePredicate<Self> {
         let mut path = PathBuf::new();
         path.push(reference);
         ReferencePredicate::<Self> { p: self, path }
@@ -81,7 +80,7 @@ impl Predicate<[u8]> for SizePredicate<PngPredicate> {
     fn eval(&self, data: &[u8]) -> bool {
         let decoder = png::Decoder::new(data);
         match decoder.read_info() {
-            Ok(reader) => self.eval_info(&reader.info()),
+            Ok(reader) => self.eval_info(reader.info()),
             _ => false,
         }
     }
@@ -126,7 +125,7 @@ impl ReferencePredicate<PngPredicate> {
     fn diff_surface(&self, surface: &SharedImageSurface) -> Option<BufferDiff> {
         let reference = Reference::from_png(&self.path)
             .unwrap_or_else(|_| panic!("could not open {:?}", self.path));
-        if let Ok(diff) = reference.compare(&surface) {
+        if let Ok(diff) = reference.compare(surface) {
             if !Self::diff_acceptable(&diff) {
                 return Some(diff);
             }
@@ -139,7 +138,7 @@ impl ReferencePredicate<PngPredicate> {
         expected: bool,
         surface: &SharedImageSurface,
     ) -> Option<Case<'a>> {
-        let diff = self.diff_surface(&surface);
+        let diff = self.diff_surface(surface);
         if diff.is_some() != expected {
             let product = self.product_for_diff(&diff.unwrap());
             Some(Case::new(Some(self), false).add_product(product))

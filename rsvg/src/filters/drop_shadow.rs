@@ -75,7 +75,7 @@ impl FilterEffect for FeDropShadow {
         let color = resolve_color(
             &values.flood_color().0,
             values.flood_opacity().0,
-            values.color().0,
+            &values.color().0,
         );
 
         Ok(drop_shadow_primitives(

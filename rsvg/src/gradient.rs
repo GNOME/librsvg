@@ -1,6 +1,6 @@
 //! Gradient paint servers; the `linearGradient` and `radialGradient` elements.
 
-use cssparser::Parser;
+use cssparser::{Color, Parser};
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
 };
@@ -28,7 +28,7 @@ pub struct ColorStop {
     pub offset: UnitInterval,
 
     /// `<stop stop-color="..." stop-opacity="..."/>`
-    pub rgba: cssparser::RGBA,
+    pub color: Color,
 }
 
 // gradientUnits attribute; its default is objectBoundingBox
@@ -379,7 +379,7 @@ impl UnresolvedGradient {
     }
 
     /// Helper for add_color_stops_from_node()
-    fn add_color_stop(&mut self, offset: UnitInterval, rgba: cssparser::RGBA) {
+    fn add_color_stop(&mut self, offset: UnitInterval, color: Color) {
         if self.stops.is_none() {
             self.stops = Some(Vec::<ColorStop>::new());
         }
@@ -397,7 +397,7 @@ impl UnresolvedGradient {
                 last_offset
             };
 
-            stops.push(ColorStop { offset, rgba });
+            stops.push(ColorStop { offset, color });
         } else {
             unreachable!();
         }
@@ -421,10 +421,10 @@ impl UnresolvedGradient {
 
                 let composed_opacity = UnitInterval(stop_opacity * o);
 
-                let rgba =
-                    resolve_color(&values.stop_color().0, composed_opacity, values.color().0);
+                let stop_color =
+                    resolve_color(&values.stop_color().0, composed_opacity, &values.color().0);
 
-                self.add_color_stop(stop.offset, rgba);
+                self.add_color_stop(stop.offset, stop_color);
             }
         }
     }

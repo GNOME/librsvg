@@ -75,15 +75,19 @@
 
 use cssparser::{
     self, match_ignore_ascii_case, parse_important, AtRuleParser, BasicParseErrorKind, CowRcStr,
-    DeclarationListParser, DeclarationParser, Parser, ParserInput, ParserState,
-    QualifiedRuleParser, RuleListParser, SourceLocation, ToCss, _cssparser_internal_to_lowercase,
+    DeclarationParser, Parser, ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser,
+    RuleBodyParser, SourceLocation, StyleSheetParser, ToCss,
 };
 use data_url::mime::Mime;
 use language_tags::LanguageTag;
 use markup5ever::{self, namespace_url, ns, Namespace, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
-use selectors::matching::{ElementSelectorFlags, MatchingContext, MatchingMode, QuirksMode};
-use selectors::{OpaqueElement, SelectorImpl, SelectorList};
+use selectors::matching::{
+    ElementSelectorFlags, IgnoreNthChildForInvalidation, MatchingContext, MatchingMode,
+    NeedsSelectorFlags, QuirksMode,
+};
+use selectors::parser::ParseRelative;
+use selectors::{NthIndexCache, OpaqueElement, SelectorImpl, SelectorList};
 use std::cmp::Ordering;
 use std::fmt;
 use std::str;
@@ -108,6 +112,14 @@ pub struct Declaration {
     pub important: bool,
 }
 
+/// This enum represents the fact that a rule body can be either a
+/// declaration or a nested rule.
+pub enum RuleBodyItem {
+    Decl(Declaration),
+    #[allow(dead_code)] // We don't support nested rules yet
+    Rule(Rule),
+}
+
 /// Dummy struct required to use `cssparser::DeclarationListParser`
 ///
 /// It implements `cssparser::DeclarationParser`, which knows how to parse
@@ -115,7 +127,7 @@ pub struct Declaration {
 pub struct DeclParser;
 
 impl<'i> DeclarationParser<'i> for DeclParser {
-    type Declaration = Declaration;
+    type Declaration = RuleBodyItem;
     type Error = ValueErrorKind;
 
     /// Parses a CSS declaration like `name: input_value [!important]`
@@ -123,17 +135,17 @@ impl<'i> DeclarationParser<'i> for DeclParser {
         &mut self,
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
-    ) -> Result<Declaration, ParseError<'i>> {
+    ) -> Result<RuleBodyItem, cssparser::ParseError<'i, Self::Error>> {
         let prop_name = QualName::new(None, ns!(), markup5ever::LocalName::from(name.as_ref()));
         let property = parse_value(&prop_name, input, ParseAs::Property)?;
 
         let important = input.try_parse(parse_important).is_ok();
 
-        Ok(Declaration {
+        Ok(RuleBodyItem::Decl(Declaration {
             prop_name,
             property,
             important,
-        })
+        }))
     }
 }
 
@@ -143,8 +155,27 @@ impl<'i> DeclarationParser<'i> for DeclParser {
 // CSS parsing state like Servo does.
 impl<'i> AtRuleParser<'i> for DeclParser {
     type Prelude = ();
-    type AtRule = Declaration;
+    type AtRule = RuleBodyItem;
     type Error = ValueErrorKind;
+}
+
+/// We need this dummy implementation as well.
+impl<'i> QualifiedRuleParser<'i> for DeclParser {
+    type Prelude = ();
+    type QualifiedRule = RuleBodyItem;
+    type Error = ValueErrorKind;
+}
+
+impl<'i> RuleBodyItemParser<'i, RuleBodyItem, ValueErrorKind> for DeclParser {
+    /// We want to parse declarations.
+    fn parse_declarations(&self) -> bool {
+        true
+    }
+
+    /// We don't wanto parse qualified rules though.
+    fn parse_qualified(&self) -> bool {
+        false
+    }
 }
 
 /// Struct to implement cssparser::QualifiedRuleParser and cssparser::AtRuleParser
@@ -243,8 +274,8 @@ impl<'i> selectors::Parser<'i> for RuleParser {
     }
 }
 
-// `cssparser::RuleListParser` is a struct which requires that we
-// provide a type that implements `cssparser::QualifiedRuleParser`.
+// `cssparser::StyleSheetParser` is a struct which requires that we provide a type that
+// implements `cssparser::QualifiedRuleParser` and `cssparser::AtRuleParser`.
 //
 // In turn, `cssparser::QualifiedRuleParser` requires that we
 // implement a way to parse the `Prelude` of a ruleset or rule.  For
@@ -265,13 +296,18 @@ impl<'i> selectors::Parser<'i> for RuleParser {
 impl<'i> QualifiedRuleParser<'i> for RuleParser {
     type Prelude = SelectorList<Selector>;
     type QualifiedRule = Rule;
-    type Error = ParseErrorKind<'i>;
+    type Error = ValueErrorKind;
 
     fn parse_prelude<'t>(
         &mut self,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::Prelude, cssparser::ParseError<'i, Self::Error>> {
-        SelectorList::parse(self, input)
+        SelectorList::parse(self, input, ParseRelative::No).map_err(|e| ParseError {
+            kind: cssparser::ParseErrorKind::Custom(ValueErrorKind::parse_error(
+                "Could not parse selector",
+            )),
+            location: e.location,
+        })
     }
 
     fn parse_block<'t>(
@@ -280,9 +316,10 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
         _start: &ParserState,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::QualifiedRule, cssparser::ParseError<'i, Self::Error>> {
-        let declarations = DeclarationListParser::new(input, DeclParser)
+        let declarations = RuleBodyParser::<_, _, Self::Error>::new(input, &mut DeclParser)
             .filter_map(|r| match r {
-                Ok(decl) => Some(decl),
+                Ok(RuleBodyItem::Decl(decl)) => Some(decl),
+                Ok(RuleBodyItem::Rule(_)) => None,
                 Err(e) => {
                     rsvg_log!(self.session, "Invalid declaration; ignoring: {:?}", e);
                     None
@@ -297,13 +334,13 @@ impl<'i> QualifiedRuleParser<'i> for RuleParser {
     }
 }
 
-// Required by `cssparser::RuleListParser`.
+// Required by `cssparser::StyleSheetParser`.
 //
 // This only handles the `@import` at-rule.
 impl<'i> AtRuleParser<'i> for RuleParser {
     type Prelude = AtRulePrelude;
     type AtRule = Rule;
-    type Error = ParseErrorKind<'i>;
+    type Error = ValueErrorKind;
 
     #[allow(clippy::type_complexity)]
     fn parse_prelude<'t>(
@@ -495,7 +532,7 @@ impl ToCss for NamespacePrefix {
 }
 
 impl SelectorImpl for Selector {
-    type ExtraMatchingData = ();
+    type ExtraMatchingData<'a> = ();
     type AttrValue = AttributeValue;
     type Identifier = Identifier;
     type LocalName = LocalName;
@@ -632,15 +669,12 @@ impl selectors::Element for RsvgElement {
             .unwrap_or(false)
     }
 
-    fn match_non_ts_pseudo_class<F>(
+    fn match_non_ts_pseudo_class(
         &self,
         pc: &<Self::Impl as SelectorImpl>::NonTSPseudoClass,
         _context: &mut MatchingContext<'_, Self::Impl>,
-        _flags_setter: &mut F,
     ) -> bool
-    where
-        F: FnMut(&Self, ElementSelectorFlags),
-    {
+where {
         match pc {
             NonTSPseudoClass::Link => self.is_link(),
             NonTSPseudoClass::Visited => false,
@@ -734,6 +768,19 @@ impl selectors::Element for RsvgElement {
     /// if the parent node is a `DocumentFragment`.
     fn is_root(&self) -> bool {
         self.0.parent().is_none()
+    }
+
+    /// Returns the first child element of this element.
+    fn first_element_child(&self) -> Option<Self> {
+        self.0
+            .children()
+            .find(|child| child.is_element())
+            .map(|n| n.into())
+    }
+
+    /// Applies the given selector flags to this element.
+    fn apply_selector_flags(&self, _: ElementSelectorFlags) {
+        todo!()
     }
 }
 
@@ -842,11 +889,11 @@ impl Stylesheet {
     ) -> Result<(), LoadingError> {
         let mut input = ParserInput::new(buf);
         let mut parser = Parser::new(&mut input);
-        let rule_parser = RuleParser {
+        let mut rule_parser = RuleParser {
             session: session.clone(),
         };
 
-        RuleListParser::new_for_stylesheet(&mut parser, rule_parser)
+        StyleSheetParser::new(&mut parser, &mut rule_parser)
             .filter_map(|r| match r {
                 Ok(rule) => Some(rule),
                 Err(e) => {
@@ -921,7 +968,6 @@ impl Stylesheet {
                     None,
                     &RsvgElement(node.clone()),
                     match_ctx,
-                    &mut |_, _| {},
                 );
 
                 if matches {
@@ -959,13 +1005,15 @@ pub fn cascade(
         let parent = node.parent().clone();
         node.borrow_element_mut().inherit_xml_lang(parent);
 
+        let mut cache = NthIndexCache::default();
         let mut match_ctx = MatchingContext::new(
             MatchingMode::Normal,
             // FIXME: how the fuck does one set up a bloom filter here?
             None,
-            // n_index_cache,
-            None,
+            &mut cache,
             QuirksMode::NoQuirks,
+            NeedsSelectorFlags::No,
+            IgnoreNthChildForInvalidation::No,
         );
 
         for s in ua_stylesheets

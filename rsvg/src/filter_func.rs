@@ -11,7 +11,7 @@
 //! Those types get aggregated in the [`FilterFunction`] enum.  A [`FilterFunction`] can
 //! then convert itself into a [`FilterSpec`], which is ready to be rendered on a surface.
 
-use cssparser::{Color, Parser, RGBA};
+use cssparser::{Color, Parser};
 
 use crate::angle::Angle;
 use crate::error::*;
@@ -376,7 +376,7 @@ pub fn drop_shadow_primitives(
     dx: f64,
     dy: f64,
     std_deviation: NumberOptionalNumber<f64>,
-    color: RGBA,
+    color: Color,
 ) -> Vec<ResolvedPrimitive> {
     let offsetblur = CustomIdent("offsetblur".to_string());
 
@@ -435,7 +435,7 @@ impl DropShadow {
     /// Converts a DropShadow into the set of filter element primitives.
     ///
     /// See <https://www.w3.org/TR/filter-effects/#dropshadowEquivalent>.
-    fn to_filter_spec(&self, params: &NormalizeParams, default_color: RGBA) -> FilterSpec {
+    fn to_filter_spec(&self, params: &NormalizeParams, default_color: Color) -> FilterSpec {
         let user_space_filter = Filter::default().to_user_space(params);
         let dx = self.dx.map(|l| l.to_user(params)).unwrap_or(0.0);
         let dy = self.dy.map(|l| l.to_user(params)).unwrap_or(0.0);
@@ -444,7 +444,7 @@ impl DropShadow {
         let color = self
             .color
             .as_ref()
-            .map(|c| resolve_color(c, UnitInterval::clamp(1.0), default_color))
+            .map(|c| resolve_color(c, UnitInterval::clamp(1.0), &default_color))
             .unwrap_or(default_color);
 
         let resolved_primitives = drop_shadow_primitives(dx, dy, std_deviation, color);
@@ -675,7 +675,7 @@ impl Parse for FilterFunction {
 impl FilterFunction {
     // If this function starts actually returning an Err, remove this Clippy exception:
     #[allow(clippy::unnecessary_wraps)]
-    pub fn to_filter_spec(&self, params: &NormalizeParams, current_color: RGBA) -> FilterSpec {
+    pub fn to_filter_spec(&self, params: &NormalizeParams, current_color: Color) -> FilterSpec {
         match self {
             FilterFunction::Blur(v) => v.to_filter_spec(params),
             FilterFunction::Brightness(v) => v.to_filter_spec(params),
@@ -693,6 +693,8 @@ impl FilterFunction {
 
 #[cfg(test)]
 mod tests {
+    use cssparser::RGBA;
+
     use super::*;
 
     #[test]
@@ -757,11 +759,11 @@ mod tests {
         assert_eq!(
             FilterFunction::parse_str("drop-shadow(#ff0000 4px 5px 32px)").unwrap(),
             FilterFunction::DropShadow(DropShadow {
-                color: Some(Color::RGBA(RGBA {
-                    red: 255,
-                    green: 0,
-                    blue: 0,
-                    alpha: 255
+                color: Some(Color::Rgba(RGBA {
+                    red: Some(255),
+                    green: Some(0),
+                    blue: Some(0),
+                    alpha: Some(1.0)
                 })),
                 dx: Some(Length::new(4.0, LengthUnit::Px)),
                 dy: Some(Length::new(5.0, LengthUnit::Px)),
@@ -772,11 +774,11 @@ mod tests {
         assert_eq!(
             FilterFunction::parse_str("drop-shadow(1px 2px blue)").unwrap(),
             FilterFunction::DropShadow(DropShadow {
-                color: Some(Color::RGBA(RGBA {
-                    red: 0,
-                    green: 0,
-                    blue: 255,
-                    alpha: 255
+                color: Some(Color::Rgba(RGBA {
+                    red: Some(0),
+                    green: Some(0),
+                    blue: Some(255),
+                    alpha: Some(1.0)
                 })),
                 dx: Some(Length::new(1.0, LengthUnit::Px)),
                 dy: Some(Length::new(2.0, LengthUnit::Px)),

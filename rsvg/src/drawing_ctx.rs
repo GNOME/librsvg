@@ -16,6 +16,7 @@ use std::sync::Arc;
 use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
+use crate::color::color_to_rgba;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::dpi::Dpi;
@@ -967,12 +968,14 @@ impl DrawingCtx {
         for stop in &gradient.stops {
             let UnitInterval(stop_offset) = stop.offset;
 
+            let rgba = color_to_rgba(&stop.color);
+
             g.add_color_stop_rgba(
                 stop_offset,
-                f64::from(stop.rgba.red_f32()),
-                f64::from(stop.rgba.green_f32()),
-                f64::from(stop.rgba.blue_f32()),
-                f64::from(stop.rgba.alpha_f32()),
+                f64::from(rgba.red.unwrap_or(0)) / 255.0,
+                f64::from(rgba.green.unwrap_or(0)) / 255.0,
+                f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+                f64::from(rgba.alpha.unwrap_or(0.0)),
             );
         }
 
@@ -1102,15 +1105,6 @@ impl DrawingCtx {
         Ok(true)
     }
 
-    fn set_color(&self, rgba: cssparser::RGBA) {
-        self.cr.clone().set_source_rgba(
-            f64::from(rgba.red_f32()),
-            f64::from(rgba.green_f32()),
-            f64::from(rgba.blue_f32()),
-            f64::from(rgba.alpha_f32()),
-        );
-    }
-
     fn set_paint_source(
         &mut self,
         paint_source: &UserSpacePaintSource,
@@ -1121,18 +1115,18 @@ impl DrawingCtx {
                 self.set_gradient(gradient)?;
                 Ok(true)
             }
-            UserSpacePaintSource::Pattern(ref pattern, c) => {
+            UserSpacePaintSource::Pattern(ref pattern, ref c) => {
                 if self.set_pattern(pattern, acquired_nodes)? {
                     Ok(true)
                 } else if let Some(c) = c {
-                    self.set_color(c);
+                    set_source_color_on_cairo(&self.cr, c);
                     Ok(true)
                 } else {
                     Ok(false)
                 }
             }
-            UserSpacePaintSource::SolidColor(c) => {
-                self.set_color(c);
+            UserSpacePaintSource::SolidColor(ref c) => {
+                set_source_color_on_cairo(&self.cr, c);
                 Ok(true)
             }
             UserSpacePaintSource::None => Ok(false),
@@ -1911,6 +1905,17 @@ pub fn create_pango_context(font_options: &FontOptions, transform: &Transform) -
     pangocairo::functions::context_set_resolution(&context, 72.0);
 
     context
+}
+
+pub fn set_source_color_on_cairo(cr: &cairo::Context, color: &cssparser::Color) {
+    let rgba = color_to_rgba(color);
+
+    cr.set_source_rgba(
+        f64::from(rgba.red.unwrap_or(0)) / 255.0,
+        f64::from(rgba.green.unwrap_or(0)) / 255.0,
+        f64::from(rgba.blue.unwrap_or(0)) / 255.0,
+        f64::from(rgba.alpha.unwrap_or(0.0)),
+    );
 }
 
 /// Converts a Pango layout to a Cairo path on the specified cr starting at (x, y).

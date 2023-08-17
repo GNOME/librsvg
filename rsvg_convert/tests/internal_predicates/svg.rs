@@ -13,7 +13,7 @@ use rsvg::{CairoRenderer, Length, Loader, LoadingError, SvgHandle};
 pub struct SvgPredicate {}
 
 impl SvgPredicate {
-    pub fn with_size(self: Self, width: Length, height: Length) -> DetailPredicate<Self> {
+    pub fn with_size(self, width: Length, height: Length) -> DetailPredicate<Self> {
         DetailPredicate::<Self> {
             p: self,
             d: Detail::Size(Dimensions {
@@ -71,11 +71,11 @@ struct Dimensions {
 }
 
 impl Dimensions {
-    pub fn width(self: &Self) -> f64 {
+    pub fn width(&self) -> f64 {
         self.w.length
     }
 
-    pub fn height(self: &Self) -> f64 {
+    pub fn height(&self) -> f64 {
         self.h.length
     }
 }
