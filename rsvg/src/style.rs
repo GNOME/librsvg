@@ -13,12 +13,11 @@ use crate::xml::Attributes;
 ///
 /// <https://www.w3.org/TR/SVG11/styling.html#StyleElementTypeAttribute>
 /// <https://www.w3.org/TR/SVG11/styling.html#ContentStyleTypeAttribute>
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Default, PartialEq, Debug)]
 pub enum StyleType {
+    #[default]
     TextCss,
 }
-
-enum_default!(StyleType, StyleType::TextCss);
 
 impl StyleType {
     fn parse(value: &str) -> Result<StyleType, ValueErrorKind> {

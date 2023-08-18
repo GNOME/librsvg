@@ -27,13 +27,12 @@ use super::{
 };
 
 /// Enumeration of the possible morphology operations.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 enum Operator {
+    #[default]
     Erode,
     Dilate,
 }
-
-enum_default!(Operator, Operator::Erode);
 
 /// The `feMorphology` filter primitive.
 #[derive(Default)]

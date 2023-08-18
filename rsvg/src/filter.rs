@@ -4,7 +4,6 @@ use cssparser::{Color, Parser};
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::slice::Iter;
 
-use crate::{borrow_element_as, is_element_of_type};
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
 use crate::drawing_ctx::Viewport;
@@ -18,6 +17,7 @@ use crate::parsers::{Parse, ParseValue};
 use crate::rect::Rect;
 use crate::session::Session;
 use crate::xml::Attributes;
+use crate::{borrow_element_as, is_element_of_type};
 
 /// The `<filter>` node.
 pub struct Filter {

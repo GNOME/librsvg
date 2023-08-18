@@ -36,14 +36,13 @@ pub struct ColorStop {
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
 /// spreadMethod attribute for gradients
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub enum SpreadMethod {
+    #[default]
     Pad,
     Reflect,
     Repeat,
 }
-
-enum_default!(SpreadMethod, SpreadMethod::Pad);
 
 impl Parse for SpreadMethod {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, ParseError<'i>> {

@@ -4,9 +4,9 @@
 
 use std::sync::Arc;
 
-use crate::borrow_element_as;
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
+use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;

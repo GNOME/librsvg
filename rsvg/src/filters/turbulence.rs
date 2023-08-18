@@ -24,22 +24,20 @@ use super::{
 };
 
 /// Enumeration of the tile stitching modes.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
 enum StitchTiles {
     Stitch,
+    #[default]
     NoStitch,
 }
 
-enum_default!(StitchTiles, StitchTiles::NoStitch);
-
 /// Enumeration of the noise types.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
 enum NoiseType {
     FractalNoise,
+    #[default]
     Turbulence,
 }
-
-enum_default!(NoiseType, NoiseType::Turbulence);
 
 /// The `feTurbulence` filter primitive.
 #[derive(Default)]

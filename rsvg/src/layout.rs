@@ -8,7 +8,6 @@ use std::sync::Arc;
 use cssparser::Color;
 use float_cmp::approx_eq;
 
-use crate::{borrow_element_as, is_element_of_type};
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
@@ -31,6 +30,7 @@ use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::{borrow_element_as, is_element_of_type};
 
 /// SVG Stacking context, an inner node in the layout tree.
 ///

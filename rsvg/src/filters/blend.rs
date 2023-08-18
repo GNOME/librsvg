@@ -21,8 +21,9 @@ use super::{
 };
 
 /// Enumeration of the possible blending modes.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
 enum Mode {
+    #[default]
     Normal,
     Multiply,
     Screen,
@@ -40,8 +41,6 @@ enum Mode {
     HslColor,
     HslLuminosity,
 }
-
-enum_default!(Mode, Mode::Normal);
 
 /// The `feBlend` filter primitive.
 #[derive(Default)]

@@ -6,10 +6,10 @@ use std::ops::Deref;
 use cssparser::Parser;
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::borrow_element_as;
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
+use crate::borrow_element_as;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
@@ -27,13 +27,12 @@ use crate::viewbox::*;
 use crate::xml::Attributes;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 enum MarkerUnits {
     UserSpaceOnUse,
+    #[default]
     StrokeWidth,
 }
-
-enum_default!(MarkerUnits, MarkerUnits::StrokeWidth);
 
 impl Parse for MarkerUnits {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerUnits, ParseError<'i>> {

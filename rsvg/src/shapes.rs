@@ -6,13 +6,13 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::is_element_of_type;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
+use crate::is_element_of_type;
 use crate::layout::{Layer, LayerKind, Marker, Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};

@@ -23,22 +23,20 @@ use crate::rect::Rect;
 use crate::transform::{Transform, ValidTransform};
 use crate::viewbox::ViewBox;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 enum FitMode {
+    #[default]
     Meet,
     Slice,
 }
 
-enum_default!(FitMode, FitMode::Meet);
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 enum Align1D {
     Min,
+    #[default]
     Mid,
     Max,
 }
-
-enum_default!(Align1D, Align1D::Mid);
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 struct X(Align1D);

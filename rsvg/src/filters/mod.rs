@@ -144,8 +144,9 @@ pub struct UserSpacePrimitive {
 }
 
 /// An enumeration of possible inputs for a filter primitive.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
 pub enum Input {
+    #[default]
     Unspecified,
     SourceGraphic,
     SourceAlpha,
@@ -155,8 +156,6 @@ pub enum Input {
     StrokePaint,
     FilterOutput(CustomIdent),
 }
-
-enum_default!(Input, Input::Unspecified);
 
 impl Parse for Input {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {

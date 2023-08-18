@@ -13,7 +13,6 @@ use std::f64::consts::*;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use crate::{borrow_element_as, is_element_of_type};
 use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
@@ -47,6 +46,7 @@ use crate::surface_utils::shared_surface::{
 use crate::transform::{Transform, ValidTransform};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
+use crate::{borrow_element_as, is_element_of_type};
 
 /// Opaque font options for a DrawingCtx.
 ///

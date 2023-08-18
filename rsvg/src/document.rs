@@ -13,11 +13,11 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::is_element_of_type;
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, LoadingError, NodeIdError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
+use crate::is_element_of_type;
 use crate::limits;
 use crate::node::{Node, NodeBorrow, NodeData};
 use crate::session::Session;

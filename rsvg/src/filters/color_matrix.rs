@@ -25,15 +25,14 @@ use super::{
 };
 
 /// Color matrix operation types.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 enum OperationType {
+    #[default]
     Matrix,
     Saturate,
     HueRotate,
     LuminanceToAlpha,
 }
-
-enum_default!(OperationType, OperationType::Matrix);
 
 /// The `feColorMatrix` filter primitive.
 #[derive(Default)]

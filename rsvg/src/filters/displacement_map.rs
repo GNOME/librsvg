@@ -21,15 +21,14 @@ use super::{
 };
 
 /// Enumeration of the color channels the displacement map can source.
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 enum ColorChannel {
     R,
     G,
     B,
+    #[default]
     A,
 }
-
-enum_default!(ColorChannel, ColorChannel::A);
 
 /// The `feDisplacementMap` filter primitive.
 #[derive(Default)]
