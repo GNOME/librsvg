@@ -56,6 +56,7 @@ use crate::property_macros::Property;
 use crate::rect::Rect;
 use crate::transform::TransformProperty;
 use crate::unit_interval::UnitInterval;
+use crate::{impl_default, impl_property, make_property};
 
 make_property!(
     /// `baseline-shift` property.

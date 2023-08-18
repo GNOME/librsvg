@@ -150,9 +150,6 @@ pub use crate::api::*;
 #[macro_use]
 mod log;
 
-#[macro_use]
-mod property_macros;
-
 mod accept_language;
 mod angle;
 mod api;
@@ -191,6 +188,7 @@ mod path_parser;
 mod pattern;
 mod properties;
 mod property_defs;
+mod property_macros;
 mod rect;
 mod session;
 mod shapes;
