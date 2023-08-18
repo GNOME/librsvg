@@ -8,6 +8,7 @@ use std::sync::Arc;
 use cssparser::Color;
 use float_cmp::approx_eq;
 
+use crate::{borrow_element_as, is_element_of_type};
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;

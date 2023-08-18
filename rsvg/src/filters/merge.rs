@@ -174,6 +174,8 @@ fn resolve_merge_nodes(node: &Node) -> Result<Vec<MergeNode>, FilterResolveError
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::borrow_element_as;
     use crate::document::Document;
 
     #[test]

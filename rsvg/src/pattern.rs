@@ -507,8 +507,11 @@ impl Pattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::NodeData;
+
     use markup5ever::{namespace_url, ns, QualName};
+
+    use crate::borrow_element_as;
+    use crate::node::NodeData;
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {

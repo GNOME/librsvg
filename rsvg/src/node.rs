@@ -257,6 +257,7 @@ impl NodeBorrow for Node {
     }
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! is_element_of_type {
     ($node:expr, $element_type:ident) => {
@@ -267,6 +268,7 @@ macro_rules! is_element_of_type {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! borrow_element_as {
     ($node:expr, $element_type:ident) => {

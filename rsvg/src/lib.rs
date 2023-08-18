@@ -157,9 +157,6 @@ mod parsers;
 mod coord_units;
 
 #[macro_use]
-mod node;
-
-#[macro_use]
 mod property_macros;
 
 #[macro_use]
@@ -194,6 +191,7 @@ mod layout;
 mod length;
 mod limits;
 mod marker;
+mod node;
 mod paint_server;
 mod path_builder;
 mod path_parser;

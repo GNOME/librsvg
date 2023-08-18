@@ -1006,6 +1006,8 @@ impl Normal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::borrow_element_as;
     use crate::document::Document;
 
     #[test]

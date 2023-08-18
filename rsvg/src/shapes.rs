@@ -6,6 +6,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use std::ops::Deref;
 use std::rc::Rc;
 
+use crate::is_element_of_type;
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};

@@ -13,6 +13,7 @@ use std::f64::consts::*;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use crate::{borrow_element_as, is_element_of_type};
 use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;

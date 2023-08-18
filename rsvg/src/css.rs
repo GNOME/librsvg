@@ -1044,6 +1044,7 @@ mod tests {
     use super::*;
     use selectors::Element;
 
+    use crate::is_element_of_type;
     use crate::document::Document;
 
     #[test]

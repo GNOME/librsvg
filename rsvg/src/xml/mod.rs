@@ -19,6 +19,7 @@ use xml5ever::buffer_queue::BufferQueue;
 use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
+use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{Document, DocumentBuilder};
 use crate::error::{ImplementationLimit, LoadingError};
