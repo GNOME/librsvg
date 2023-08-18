@@ -38,6 +38,7 @@ use crate::marker::Marker;
 use crate::node::*;
 use crate::pattern::Pattern;
 use crate::properties::{ComputedValues, SpecifiedValues};
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::shapes::{Circle, Ellipse, Line, Path, Polygon, Polyline, Rect};
 use crate::structure::{ClipPath, Group, Link, Mask, NonRendering, Svg, Switch, Symbol, Use};

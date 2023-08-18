@@ -22,6 +22,7 @@ use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::transform::Transform;
 use crate::viewbox::*;

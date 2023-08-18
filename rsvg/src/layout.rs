@@ -26,6 +26,7 @@ use crate::properties::{
     TextDecoration, TextRendering, UnicodeBidi, VectorEffect, XmlLang,
 };
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;

@@ -17,6 +17,7 @@ use crate::paint_server::UserSpacePaintSource;
 use crate::parse_identifiers;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::{SharedImageSurface, SurfaceType},

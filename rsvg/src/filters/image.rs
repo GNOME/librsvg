@@ -9,6 +9,7 @@ use crate::node::{CascadedValues, Node};
 use crate::parsers::ParseValue;
 use crate::properties::ComputedValues;
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::shared_surface::{Interpolation, SharedImageSurface};
 use crate::viewbox::ViewBox;

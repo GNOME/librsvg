@@ -27,6 +27,7 @@ use crate::handle::LoadOptions;
 use crate::io::{self, IoError};
 use crate::limits::{MAX_LOADED_ELEMENTS, MAX_XINCLUDE_DEPTH};
 use crate::node::{Node, NodeBorrow};
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;

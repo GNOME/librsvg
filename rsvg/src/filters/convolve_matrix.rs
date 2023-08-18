@@ -14,6 +14,7 @@ use crate::parse_identifiers;
 use crate::parsers::{NumberList, NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::util::clamp;
 use crate::xml::Attributes;

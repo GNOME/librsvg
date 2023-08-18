@@ -22,10 +22,14 @@ use markup5ever::{
 };
 use std::collections::HashSet;
 
+#[cfg(doc)]
+use crate::make_property;
+
 use crate::css::{DeclParser, Declaration, Origin, RuleBodyItem};
 use crate::error::*;
 use crate::parsers::{Parse, ParseValue};
 use crate::property_macros::Property;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute, TransformProperty};
 use crate::xml::Attributes;

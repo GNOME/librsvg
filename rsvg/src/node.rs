@@ -19,6 +19,7 @@ use crate::element::*;
 use crate::error::*;
 use crate::paint_server::PaintSource;
 use crate::properties::ComputedValues;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::text::Chars;
 use crate::xml::Attributes;

@@ -147,9 +147,6 @@
 // The public API is exported here
 pub use crate::api::*;
 
-#[macro_use]
-mod log;
-
 mod accept_language;
 mod angle;
 mod api;
@@ -179,6 +176,7 @@ mod iri;
 mod layout;
 mod length;
 mod limits;
+mod log;
 mod marker;
 mod node;
 mod paint_server;
@@ -230,6 +228,7 @@ pub mod bench_only {
 pub mod c_api_only {
     pub use crate::dpi::Dpi;
     pub use crate::handle::Handle;
+    pub use crate::rsvg_log;
     pub use crate::session::Session;
     pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 }

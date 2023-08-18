@@ -19,6 +19,7 @@ use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
 use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::properties::ComputedValues;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::xml::Attributes;
 

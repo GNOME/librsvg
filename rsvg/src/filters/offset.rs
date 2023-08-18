@@ -7,6 +7,7 @@ use crate::node::Node;
 use crate::parsers::ParseValue;
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::xml::Attributes;
 

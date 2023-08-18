@@ -11,6 +11,7 @@ use crate::parse_identifiers;
 use crate::parsers::{NumberList, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,

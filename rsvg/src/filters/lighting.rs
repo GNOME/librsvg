@@ -23,6 +23,7 @@ use crate::paint_server::resolve_color;
 use crate::parsers::{NonNegative, NumberOptionalNumber, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},

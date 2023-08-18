@@ -15,6 +15,7 @@ use crate::length::*;
 use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;

@@ -14,6 +14,7 @@ use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::xml::Attributes;
 

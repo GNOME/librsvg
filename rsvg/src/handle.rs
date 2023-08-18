@@ -15,6 +15,7 @@ use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};

@@ -24,6 +24,7 @@ use crate::{
     accept_language::{LanguageTags, UserLanguage},
     dpi::Dpi,
     handle::{Handle, LoadOptions},
+    rsvg_log,
     session::Session,
     url_resolver::UrlResolver,
 };

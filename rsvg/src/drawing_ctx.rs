@@ -39,6 +39,7 @@ use crate::properties::{
     PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::shared_surface::{
     ExclusiveImageSurface, Interpolation, SharedImageSurface, SurfaceType,
