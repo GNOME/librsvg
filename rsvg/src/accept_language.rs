@@ -103,7 +103,7 @@ impl AcceptLanguage {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&LanguageTag, f32)> {
+    fn iter(&self) -> impl Iterator<Item = (&LanguageTag, f32)> {
         self.0.iter().map(|item| (&item.tag, item.weight.numeric()))
     }
 
