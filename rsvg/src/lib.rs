@@ -154,9 +154,6 @@ mod log;
 mod parsers;
 
 #[macro_use]
-mod coord_units;
-
-#[macro_use]
 mod property_macros;
 
 #[macro_use]
@@ -169,6 +166,7 @@ mod aspect_ratio;
 mod bbox;
 mod color;
 mod cond;
+mod coord_units;
 mod css;
 mod dasharray;
 mod document;

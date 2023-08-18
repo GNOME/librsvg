@@ -2,6 +2,7 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
+use crate::coord_units;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
 use crate::coord_units::CoordUnits;
