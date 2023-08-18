@@ -4,7 +4,7 @@ use std::fmt;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
-use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg::rsvg_convert_only::{SharedImageSurface, SurfaceType};
 
 use rsvg::test_utils::compare_surfaces::BufferDiff;
 use rsvg::test_utils::reference_utils::{surface_from_png, Compare, Deviation, Reference};

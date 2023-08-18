@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use rsvg::surface_utils::{Pixel, PixelOps};
+use rsvg::bench_only::{Pixel, PixelOps};
 
 const OTHER: Pixel = Pixel {
     r: 0x10,

@@ -6,10 +6,8 @@
 //! antialiasing artifacts, floating-point variations, and such.
 //!
 
-use rsvg::{
-    surface_utils::shared_surface::{SharedImageSurface, SurfaceType},
-    CairoRenderer, IntrinsicDimensions, Length, Loader,
-};
+use rsvg::tests_only::{SharedImageSurface, SurfaceType};
+use rsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader};
 
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
 use rsvg::test_utils::{setup_font_map, setup_language};

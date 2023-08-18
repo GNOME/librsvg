@@ -1,4 +1,4 @@
-use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
+use rsvg::tests_only::{SharedImageSurface, SurfaceType};
 use rsvg::{CairoRenderer, RenderingError};
 
 use rsvg::test_utils::load_svg;

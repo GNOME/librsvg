@@ -1,11 +1,9 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use rsvg::{
-    surface_utils::shared_surface::{
-        AlphaOnly, Horizontal, NotAlphaOnly, SharedImageSurface, SurfaceType, Vertical,
-    },
-    IRect,
+use rsvg::bench_only::{
+    AlphaOnly, Horizontal, NotAlphaOnly, SharedImageSurface, SurfaceType, Vertical,
 };
+use rsvg::IRect;
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {

@@ -210,7 +210,7 @@ mod shapes;
 mod space;
 mod structure;
 mod style;
-pub mod surface_utils;
+mod surface_utils;
 mod text;
 mod transform;
 mod unit_interval;
@@ -224,9 +224,18 @@ pub mod test_utils;
 
 #[doc(hidden)]
 pub mod bench_only {
+    pub use crate::filters::lighting::Normal;
     pub use crate::path_builder::PathBuilder;
     pub use crate::path_parser::Lexer;
-    pub use crate::filters::lighting::Normal;
+    pub use crate::surface_utils::{
+        iterators::{PixelRectangle, Pixels},
+        shared_surface::{
+            composite_arithmetic, AlphaOnly, ExclusiveImageSurface, Horizontal, NotAlphaOnly,
+            SharedImageSurface, SurfaceType, Vertical,
+        },
+        srgb::{linearize, map_unpremultiplied_components_loop},
+        EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps,
+    };
 }
 
 #[doc(hidden)]
@@ -234,6 +243,7 @@ pub mod bench_only {
 pub mod c_api_only {
     pub use crate::handle::Handle;
     pub use crate::session::Session;
+    pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 }
 
 #[doc(hidden)]
@@ -259,5 +269,11 @@ pub mod rsvg_convert_only {
     };
     pub use crate::parsers::{Parse, ParseValue};
     pub use crate::rect::Rect;
+    pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
     pub use crate::viewbox::ViewBox;
+}
+
+#[doc(hidden)]
+pub mod tests_only {
+    pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 }

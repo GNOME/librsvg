@@ -1,12 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use rsvg::{
-    surface_utils::{
-        iterators::Pixels,
-        shared_surface::{ExclusiveImageSurface, SharedImageSurface, SurfaceType},
-    },
-    IRect,
-};
+use rsvg::bench_only::{ExclusiveImageSurface, Pixels, SharedImageSurface, SurfaceType};
+use rsvg::IRect;
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {

@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use gdk_pixbuf::{Colorspace, Pixbuf};
 
-use rsvg::surface_utils::shared_surface::SharedImageSurface;
+use rsvg::bench_only::SharedImageSurface;
 
 fn bench_surface_from_pixbuf(c: &mut Criterion) {
     let mut group = c.benchmark_group("surface_from_pixbuf");
