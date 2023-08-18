@@ -240,6 +240,7 @@ pub mod bench_only {
 #[doc(hidden)]
 #[cfg(feature = "c-api")]
 pub mod c_api_only {
+    pub use crate::dpi::Dpi;
     pub use crate::handle::Handle;
     pub use crate::session::Session;
     pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
@@ -260,6 +261,7 @@ pub mod doctest_only {
 #[doc(hidden)]
 pub mod rsvg_convert_only {
     pub use crate::aspect_ratio::AspectRatio;
+    pub use crate::dpi::Dpi;
     pub use crate::drawing_ctx::set_source_color_on_cairo;
     pub use crate::error::ParseError;
     pub use crate::length::{
