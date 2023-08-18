@@ -7,20 +7,30 @@ use std::error;
 use std::fmt;
 use std::str::FromStr;
 
+#[cfg(doc)]
+use crate::api::CairoRenderer;
+
 /// Used to set the language for rendering.
 ///
 /// SVG documents can use the `<switch>` element, whose children have a `systemLanguage`
 /// attribute; only the first child which has a `systemLanguage` that matches the
 /// preferred languages will be rendered.
 ///
-/// This enum, used with `CairoRenderer::with_language`, configures how to obtain the
+/// This enum, used with [`CairoRenderer::with_language`], configures how to obtain the
 /// user's prefererred languages.
 pub enum Language {
     /// Use the Unix environment variables `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` and `LANG` to obtain the
-    /// user's language.  This uses [`g_get_language_names()`][ggln] underneath.
+    /// user's language.
+    ///
+    /// This uses [`g_get_language_names()`][ggln] underneath.
     ///
     /// [ggln]: https://docs.gtk.org/glib/func.get_language_names.html
     FromEnvironment,
+
+    /// Use a list of languages in the form of an HTTP Accept-Language header, like `es, en;q=0.8`.
+    ///
+    /// This is convenient when you want to select an explicit set of languages, instead of
+    /// assuming that the Unix environment has the language you want.
     AcceptLanguage(AcceptLanguage),
 }
 
@@ -80,6 +90,15 @@ impl fmt::Display for AcceptLanguageError {
 const OWS: [char; 2] = ['\x20', '\x09'];
 
 impl AcceptLanguage {
+    /// Parses the payload of an HTTP Accept-Language header.
+    ///
+    /// For example, a valid header looks like `es, en;q=0.8`, and means, "I prefer Spanish,
+    /// but will also accept English".
+    ///
+    /// Use this function to construct a [`Language::AcceptLanguage`]
+    /// variant to pass to the [`CairoRenderer::with_language`] function.
+    ///
+    /// See RFC 7231 for details: <https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.5>
     pub fn parse(s: &str) -> Result<AcceptLanguage, AcceptLanguageError> {
         if !s.is_ascii() {
             return Err(AcceptLanguageError::InvalidCharacters);
