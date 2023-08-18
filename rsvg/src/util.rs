@@ -41,15 +41,3 @@ pub fn clamp<T: PartialOrd>(val: T, low: T, high: T) -> T {
         val
     }
 }
-
-#[macro_export]
-macro_rules! enum_default {
-    ($name:ident, $default:expr) => {
-        impl Default for $name {
-            #[inline]
-            fn default() -> $name {
-                $default
-            }
-        }
-    };
-}

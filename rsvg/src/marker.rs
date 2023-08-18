@@ -52,7 +52,12 @@ enum MarkerOrient {
     Angle(Angle),
 }
 
-enum_default!(MarkerOrient, MarkerOrient::Angle(Angle::new(0.0)));
+impl Default for MarkerOrient {
+    #[inline]
+    fn default() -> MarkerOrient {
+        MarkerOrient::Angle(Angle::new(0.0))
+    }
+}
 
 impl Parse for MarkerOrient {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, ParseError<'i>> {

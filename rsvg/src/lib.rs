@@ -156,9 +156,6 @@ mod parsers;
 #[macro_use]
 mod property_macros;
 
-#[macro_use]
-mod util;
-
 mod accept_language;
 mod angle;
 mod api;
@@ -207,6 +204,7 @@ mod text;
 mod transform;
 mod unit_interval;
 mod url_resolver;
+mod util;
 mod viewbox;
 mod xml;
 
