@@ -111,6 +111,7 @@ pub struct RsvgLength {
 }
 
 impl RsvgLength {
+    /// Constructs a CSS length value.
     pub fn new(l: f64, unit: LengthUnit) -> RsvgLength {
         RsvgLength { length: l, unit }
     }
