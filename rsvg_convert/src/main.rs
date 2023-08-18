@@ -1091,10 +1091,7 @@ fn parse_args() -> Result<Converter, Error> {
         None => Language::FromEnvironment,
         Some(s) => AcceptLanguage::parse(s)
             .map(Language::AcceptLanguage)
-            .map_err(|e| {
-                let desc = format!("{e}");
-                clap::Error::raw(clap::error::ErrorKind::InvalidValue, desc)
-            })?,
+            .map_err(|e| clap::Error::raw(clap::error::ErrorKind::InvalidValue, e))?,
     };
 
     let background_str: &String = matches
