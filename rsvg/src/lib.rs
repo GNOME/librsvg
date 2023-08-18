@@ -148,16 +148,13 @@
 pub use crate::api::*;
 
 #[macro_use]
-pub mod log;
+mod log;
 
 #[macro_use]
 mod parsers;
 
 #[macro_use]
 mod coord_units;
-
-#[macro_use]
-mod float_eq_cairo;
 
 #[macro_use]
 mod node;
@@ -185,6 +182,7 @@ mod error;
 mod filter;
 mod filter_func;
 mod filters;
+mod float_eq_cairo;
 mod font_props;
 mod gradient;
 mod handle;
