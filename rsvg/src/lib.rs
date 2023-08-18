@@ -151,9 +151,6 @@ pub use crate::api::*;
 mod log;
 
 #[macro_use]
-mod parsers;
-
-#[macro_use]
 mod property_macros;
 
 mod accept_language;
@@ -188,6 +185,7 @@ mod limits;
 mod marker;
 mod node;
 mod paint_server;
+mod parsers;
 mod path_builder;
 mod path_parser;
 mod pattern;

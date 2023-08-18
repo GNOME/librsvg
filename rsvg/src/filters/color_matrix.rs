@@ -7,6 +7,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
+use crate::parse_identifiers;
 use crate::parsers::{NumberList, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;

@@ -3,6 +3,7 @@
 use cssparser::Parser;
 
 use crate::error::*;
+use crate::parse_identifiers;
 use crate::parsers::Parse;
 
 /// Defines the units to be used for things that can consider a

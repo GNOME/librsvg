@@ -18,6 +18,7 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::layout::{self, Shape, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
+use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
 use crate::rect::Rect;

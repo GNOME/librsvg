@@ -202,6 +202,7 @@ impl<const REQUIRED: usize, const MAX: usize> Parse for NumberList<REQUIRED, MAX
 /// # Ok(())
 /// # }
 /// ```
+#[doc(hidden)]
 #[macro_export]
 macro_rules! parse_identifiers {
     ($parser:expr,

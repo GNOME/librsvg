@@ -15,6 +15,7 @@ use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
+use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::{rect_to_transform, Rect};
 use crate::session::Session;

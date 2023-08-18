@@ -14,6 +14,7 @@ use crate::filter::UserSpaceFilter;
 use crate::length::*;
 use crate::node::Node;
 use crate::paint_server::UserSpacePaintSource;
+use crate::parse_identifiers;
 use crate::parsers::{CustomIdent, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::session::Session;

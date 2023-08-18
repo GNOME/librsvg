@@ -18,6 +18,7 @@ use cssparser::{BasicParseError, Parser};
 use std::ops::Deref;
 
 use crate::error::*;
+use crate::parse_identifiers;
 use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::transform::{Transform, ValidTransform};

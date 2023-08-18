@@ -49,6 +49,7 @@ use crate::font_props::{
 use crate::iri::Iri;
 use crate::length::*;
 use crate::paint_server::PaintServer;
+use crate::parse_identifiers;
 use crate::parsers::Parse;
 use crate::properties::ComputedValues;
 use crate::property_macros::Property;
