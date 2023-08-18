@@ -1,8 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use nalgebra::{Matrix3, Vector2};
 
+use rsvg::bench_only::Normal;
+
 use rsvg::{
-    filters::lighting::Normal,
     surface_utils::{
         iterators::{PixelRectangle, Pixels},
         shared_surface::{SharedImageSurface, SurfaceType},

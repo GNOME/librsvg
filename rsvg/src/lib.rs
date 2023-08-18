@@ -186,7 +186,7 @@ mod element;
 mod error;
 mod filter;
 mod filter_func;
-pub mod filters;
+mod filters;
 mod font_props;
 mod gradient;
 mod handle;
@@ -226,6 +226,7 @@ pub mod test_utils;
 pub mod bench_only {
     pub use crate::path_builder::PathBuilder;
     pub use crate::path_parser::Lexer;
+    pub use crate::filters::lighting::Normal;
 }
 
 #[doc(hidden)]
