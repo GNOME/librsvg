@@ -6,10 +6,10 @@
 
 set -eu
 
-mkdir -p public/internals
 cargo doc --workspace --document-private-items --no-deps
-cp -r target/doc/* public/internals
+mkdir -p public/internals
+mv target/doc/* public/internals
 
-mkdir -p public/doc
 cargo doc --no-deps --package librsvg
+mkdir -p public/doc
 cp -r target/doc/* public/doc
