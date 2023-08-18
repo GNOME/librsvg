@@ -1,9 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use rsvg::bench_only::{
-    composite_arithmetic, ExclusiveImageSurface, SharedImageSurface, SurfaceType,
+    composite_arithmetic, ExclusiveImageSurface, IRect, SharedImageSurface, SurfaceType,
 };
-use rsvg::IRect;
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {

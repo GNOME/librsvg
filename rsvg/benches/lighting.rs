@@ -3,9 +3,7 @@ use nalgebra::{Matrix3, Vector2};
 
 use rsvg::bench_only::Normal;
 
-use rsvg::bench_only::{EdgeMode, PixelRectangle, Pixels, SharedImageSurface, SurfaceType};
-
-use rsvg::IRect;
+use rsvg::bench_only::{EdgeMode, IRect, PixelRectangle, Pixels, SharedImageSurface, SurfaceType};
 
 /// Computes and returns the normal vector for the light filters.
 fn normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal {

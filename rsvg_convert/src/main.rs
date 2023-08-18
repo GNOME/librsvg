@@ -24,11 +24,9 @@ use cssparser::{match_ignore_ascii_case, Color};
 use librsvg_c::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
     set_source_color_on_cairo, AspectRatio, CssLength, Horizontal, Length, Normalize,
-    NormalizeParams, Parse, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
+    NormalizeParams, Parse, Rect, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
 };
-use rsvg::{
-    AcceptLanguage, CairoRenderer, Dpi, Language, LengthUnit, Loader, Rect, RenderingError,
-};
+use rsvg::{AcceptLanguage, CairoRenderer, Dpi, Language, LengthUnit, Loader, RenderingError};
 
 use std::ffi::OsString;
 use std::io;

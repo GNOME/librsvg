@@ -147,8 +147,6 @@
 // The public API is exported here
 pub use crate::api::*;
 
-pub use crate::rect::{IRect, Rect};
-
 #[macro_use]
 pub mod log;
 
@@ -227,6 +225,7 @@ pub mod bench_only {
     pub use crate::filters::lighting::Normal;
     pub use crate::path_builder::PathBuilder;
     pub use crate::path_parser::Lexer;
+    pub use crate::rect::IRect;
     pub use crate::surface_utils::{
         iterators::{PixelRectangle, Pixels},
         shared_surface::{
@@ -275,5 +274,6 @@ pub mod rsvg_convert_only {
 
 #[doc(hidden)]
 pub mod tests_only {
+    pub use crate::rect::Rect;
     pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 }

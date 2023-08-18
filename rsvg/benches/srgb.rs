@@ -1,11 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use rsvg::bench_only::{
-    linearize, map_unpremultiplied_components_loop, ExclusiveImageSurface, ImageSurfaceDataExt,
-    Pixel, SurfaceType,
+    linearize, map_unpremultiplied_components_loop, ExclusiveImageSurface, IRect,
+    ImageSurfaceDataExt, Pixel, SurfaceType,
 };
-
-use rsvg::IRect;
 
 const SURFACE_SIDE: i32 = 512;
 const BOUNDS: IRect = IRect {

@@ -28,7 +28,8 @@
 
 use anyhow::{Context, Result};
 
-use rsvg::{CairoRenderer, LengthUnit, Loader, Rect};
+use rsvg::tests_only::Rect;
+use rsvg::{CairoRenderer, LengthUnit, Loader};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs;
