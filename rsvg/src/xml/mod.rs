@@ -19,6 +19,7 @@ use xml5ever::buffer_queue::BufferQueue;
 use xml5ever::tendril::format_tendril;
 use xml5ever::tokenizer::{TagKind, Token, TokenSink, XmlTokenizer, XmlTokenizerOpts};
 
+use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{Document, DocumentBuilder};
 use crate::error::{ImplementationLimit, LoadingError};
@@ -26,6 +27,7 @@ use crate::handle::LoadOptions;
 use crate::io::{self, IoError};
 use crate::limits::{MAX_LOADED_ELEMENTS, MAX_XINCLUDE_DEPTH};
 use crate::node::{Node, NodeBorrow};
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::style::StyleType;
 use crate::url_resolver::AllowedUrl;

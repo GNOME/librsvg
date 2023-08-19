@@ -7,20 +7,30 @@ use std::error;
 use std::fmt;
 use std::str::FromStr;
 
+#[cfg(doc)]
+use crate::api::CairoRenderer;
+
 /// Used to set the language for rendering.
 ///
 /// SVG documents can use the `<switch>` element, whose children have a `systemLanguage`
 /// attribute; only the first child which has a `systemLanguage` that matches the
 /// preferred languages will be rendered.
 ///
-/// This enum, used with `CairoRenderer::with_language`, configures how to obtain the
+/// This enum, used with [`CairoRenderer::with_language`], configures how to obtain the
 /// user's prefererred languages.
 pub enum Language {
     /// Use the Unix environment variables `LANGUAGE`, `LC_ALL`, `LC_MESSAGES` and `LANG` to obtain the
-    /// user's language.  This uses [`g_get_language_names()`][ggln] underneath.
+    /// user's language.
+    ///
+    /// This uses [`g_get_language_names()`][ggln] underneath.
     ///
     /// [ggln]: https://docs.gtk.org/glib/func.get_language_names.html
     FromEnvironment,
+
+    /// Use a list of languages in the form of an HTTP Accept-Language header, like `es, en;q=0.8`.
+    ///
+    /// This is convenient when you want to select an explicit set of languages, instead of
+    /// assuming that the Unix environment has the language you want.
     AcceptLanguage(AcceptLanguage),
 }
 
@@ -54,7 +64,7 @@ pub struct AcceptLanguage(Box<[Item]>);
 
 /// Errors when parsing an `AcceptLanguage`.
 #[derive(Debug, PartialEq)]
-pub enum AcceptLanguageError {
+enum AcceptLanguageError {
     NoElements,
     InvalidCharacters,
     InvalidLanguageTag(ParseError),
@@ -80,7 +90,22 @@ impl fmt::Display for AcceptLanguageError {
 const OWS: [char; 2] = ['\x20', '\x09'];
 
 impl AcceptLanguage {
-    pub fn parse(s: &str) -> Result<AcceptLanguage, AcceptLanguageError> {
+    /// Parses the payload of an HTTP Accept-Language header.
+    ///
+    /// For example, a valid header looks like `es, en;q=0.8`, and means, "I prefer Spanish,
+    /// but will also accept English".
+    ///
+    /// Use this function to construct a [`Language::AcceptLanguage`]
+    /// variant to pass to the [`CairoRenderer::with_language`] function.
+    ///
+    /// See RFC 7231 for details: <https://datatracker.ietf.org/doc/html/rfc7231#section-5.3.5>
+    pub fn parse(s: &str) -> Result<AcceptLanguage, String> {
+        AcceptLanguage::parse_internal(s).map_err(|e| format!("{}", e))
+    }
+
+    /// Internal constructor.  We don't expose [`AcceptLanguageError`] in the public API;
+    /// there we just use a [`String`].
+    fn parse_internal(s: &str) -> Result<AcceptLanguage, AcceptLanguageError> {
         if !s.is_ascii() {
             return Err(AcceptLanguageError::InvalidCharacters);
         }
@@ -103,7 +128,7 @@ impl AcceptLanguage {
         }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&LanguageTag, f32)> {
+    fn iter(&self) -> impl Iterator<Item = (&LanguageTag, f32)> {
         self.0.iter().map(|item| (&item.tag, item.weight.numeric()))
     }
 
@@ -237,7 +262,7 @@ mod tests {
     fn parses_accept_language() {
         // plain tag
         assert_eq!(
-            AcceptLanguage::parse("es-MX").unwrap(),
+            AcceptLanguage::parse_internal("es-MX").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -249,7 +274,7 @@ mod tests {
 
         // with quality
         assert_eq!(
-            AcceptLanguage::parse("es-MX;q=1").unwrap(),
+            AcceptLanguage::parse_internal("es-MX;q=1").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -261,7 +286,7 @@ mod tests {
 
         // with quality
         assert_eq!(
-            AcceptLanguage::parse("es-MX;q=0").unwrap(),
+            AcceptLanguage::parse_internal("es-MX;q=0").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -273,7 +298,7 @@ mod tests {
 
         // zero decimals are allowed
         assert_eq!(
-            AcceptLanguage::parse("es-MX;q=0.").unwrap(),
+            AcceptLanguage::parse_internal("es-MX;q=0.").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -285,7 +310,7 @@ mod tests {
 
         // zero decimals are allowed
         assert_eq!(
-            AcceptLanguage::parse("es-MX;q=1.").unwrap(),
+            AcceptLanguage::parse_internal("es-MX;q=1.").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -297,7 +322,7 @@ mod tests {
 
         // one decimal
         assert_eq!(
-            AcceptLanguage::parse("es-MX;q=1.0").unwrap(),
+            AcceptLanguage::parse_internal("es-MX;q=1.0").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -309,7 +334,7 @@ mod tests {
 
         // two decimals
         assert_eq!(
-            AcceptLanguage::parse("es-MX;q=1.00").unwrap(),
+            AcceptLanguage::parse_internal("es-MX;q=1.00").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -321,7 +346,7 @@ mod tests {
 
         // three decimals
         assert_eq!(
-            AcceptLanguage::parse("es-MX;q=1.000").unwrap(),
+            AcceptLanguage::parse_internal("es-MX;q=1.000").unwrap(),
             AcceptLanguage(
                 vec![Item {
                     tag: LanguageTag::parse("es-MX").unwrap(),
@@ -333,7 +358,7 @@ mod tests {
 
         // multiple elements
         assert_eq!(
-            AcceptLanguage::parse("es-MX, en; q=0.5").unwrap(),
+            AcceptLanguage::parse_internal("es-MX, en; q=0.5").unwrap(),
             AcceptLanguage(
                 vec![
                     Item {
@@ -351,7 +376,7 @@ mod tests {
 
         // superfluous whitespace
         assert_eq!(
-            AcceptLanguage::parse(",es-MX;q=1.000  , en; q=0.125  ,  ,").unwrap(),
+            AcceptLanguage::parse_internal(",es-MX;q=1.000  , en; q=0.125  ,  ,").unwrap(),
             AcceptLanguage(
                 vec![
                     Item {
@@ -371,17 +396,17 @@ mod tests {
     #[test]
     fn empty_lists() {
         assert!(matches!(
-            AcceptLanguage::parse(""),
+            AcceptLanguage::parse_internal(""),
             Err(AcceptLanguageError::NoElements)
         ));
 
         assert!(matches!(
-            AcceptLanguage::parse(","),
+            AcceptLanguage::parse_internal(","),
             Err(AcceptLanguageError::NoElements)
         ));
 
         assert!(matches!(
-            AcceptLanguage::parse(", , ,,,"),
+            AcceptLanguage::parse_internal(", , ,,,"),
             Err(AcceptLanguageError::NoElements)
         ));
     }
@@ -389,7 +414,7 @@ mod tests {
     #[test]
     fn ascii_only() {
         assert!(matches!(
-            AcceptLanguage::parse("ës"),
+            AcceptLanguage::parse_internal("ës"),
             Err(AcceptLanguageError::InvalidCharacters)
         ));
     }
@@ -397,7 +422,7 @@ mod tests {
     #[test]
     fn invalid_tag() {
         assert!(matches!(
-            AcceptLanguage::parse("no_underscores"),
+            AcceptLanguage::parse_internal("no_underscores"),
             Err(AcceptLanguageError::InvalidLanguageTag(_))
         ));
     }
@@ -405,44 +430,44 @@ mod tests {
     #[test]
     fn invalid_weight() {
         assert!(matches!(
-            AcceptLanguage::parse("es;"),
+            AcceptLanguage::parse_internal("es;"),
             Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
-            AcceptLanguage::parse("es;q"),
+            AcceptLanguage::parse_internal("es;q"),
             Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
-            AcceptLanguage::parse("es;q="),
+            AcceptLanguage::parse_internal("es;q="),
             Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
-            AcceptLanguage::parse("es;q=2"),
+            AcceptLanguage::parse_internal("es;q=2"),
             Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
-            AcceptLanguage::parse("es;q=1.1"),
+            AcceptLanguage::parse_internal("es;q=1.1"),
             Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
-            AcceptLanguage::parse("es;q=1.12"),
+            AcceptLanguage::parse_internal("es;q=1.12"),
             Err(AcceptLanguageError::InvalidWeight)
         ));
         assert!(matches!(
-            AcceptLanguage::parse("es;q=1.123"),
+            AcceptLanguage::parse_internal("es;q=1.123"),
             Err(AcceptLanguageError::InvalidWeight)
         ));
 
         // Up to three decimals allowed per RFC 7231
         assert!(matches!(
-            AcceptLanguage::parse("es;q=0.1234"),
+            AcceptLanguage::parse_internal("es;q=0.1234"),
             Err(AcceptLanguageError::InvalidWeight)
         ));
     }
 
     #[test]
     fn iter() {
-        let accept_language = AcceptLanguage::parse("es-MX, en; q=0.5").unwrap();
+        let accept_language = AcceptLanguage::parse_internal("es-MX, en; q=0.5").unwrap();
         let mut iter = accept_language.iter();
 
         let (tag, weight) = iter.next().unwrap();

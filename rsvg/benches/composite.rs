@@ -1,10 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use rsvg::{
-    surface_utils::shared_surface::{
-        composite_arithmetic, ExclusiveImageSurface, SharedImageSurface, SurfaceType,
-    },
-    IRect,
+use rsvg::bench_only::{
+    composite_arithmetic, ExclusiveImageSurface, IRect, SharedImageSurface, SurfaceType,
 };
 
 const SURFACE_SIDE: i32 = 512;

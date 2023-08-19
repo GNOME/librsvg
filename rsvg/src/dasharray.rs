@@ -6,13 +6,12 @@ use crate::error::*;
 use crate::length::*;
 use crate::parsers::{optional_comma, Parse};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub enum Dasharray {
+    #[default]
     None,
     Array(Box<[ULength<Both>]>),
 }
-
-enum_default!(Dasharray, Dasharray::None);
 
 impl Parse for Dasharray {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<Dasharray, ParseError<'i>> {

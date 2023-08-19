@@ -102,6 +102,7 @@ pub trait Property {
 /// [`SpecifiedValues`]: crate::properties::SpecifiedValues
 /// [`Property::compute()`]: crate::property_macros::Property::compute
 ///
+#[doc(hidden)]
 #[macro_export]
 macro_rules! make_property {
     ($(#[$attr:meta])*
@@ -263,6 +264,8 @@ macro_rules! make_property {
     };
 }
 
+#[doc(hidden)]
+#[macro_export]
 macro_rules! impl_default {
     ($name:ident, $default:expr) => {
         impl Default for $name {
@@ -273,6 +276,8 @@ macro_rules! impl_default {
     };
 }
 
+#[doc(hidden)]
+#[macro_export]
 macro_rules! impl_property {
     ($name:ident, $inherits_automatically:expr) => {
         impl $crate::property_macros::Property for $name {

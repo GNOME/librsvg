@@ -26,10 +26,12 @@ use crate::properties::{
     TextDecoration, TextRendering, UnicodeBidi, VectorEffect, XmlLang,
 };
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::{borrow_element_as, is_element_of_type};
 
 /// SVG Stacking context, an inner node in the layout tree.
 ///

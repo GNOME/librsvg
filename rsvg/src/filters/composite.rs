@@ -6,6 +6,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
+use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
@@ -21,8 +22,9 @@ use super::{
 };
 
 /// Enumeration of the possible compositing operations.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Operator {
+    #[default]
     Over,
     In,
     Out,
@@ -30,8 +32,6 @@ pub enum Operator {
     Xor,
     Arithmetic,
 }
-
-enum_default!(Operator, Operator::Over);
 
 /// The `feComposite` filter primitive.
 #[derive(Default)]

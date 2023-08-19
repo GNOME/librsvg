@@ -5,6 +5,7 @@ use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace,
 };
 
+use crate::coord_units;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::Viewport;
@@ -14,6 +15,7 @@ use crate::href::{is_href, set_href};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::paint_server::resolve_color;
+use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::{rect_to_transform, Rect};
 use crate::session::Session;
@@ -35,14 +37,13 @@ pub struct ColorStop {
 coord_units!(GradientUnits, CoordUnits::ObjectBoundingBox);
 
 /// spreadMethod attribute for gradients
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub enum SpreadMethod {
+    #[default]
     Pad,
     Reflect,
     Repeat,
 }
-
-enum_default!(SpreadMethod, SpreadMethod::Pad);
 
 impl Parse for SpreadMethod {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<SpreadMethod, ParseError<'i>> {
@@ -702,8 +703,11 @@ impl ResolvedGradient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::{Node, NodeData};
+
     use markup5ever::{namespace_url, ns, QualName};
+
+    use crate::borrow_element_as;
+    use crate::node::{Node, NodeData};
 
     #[test]
     fn parses_spread_method() {

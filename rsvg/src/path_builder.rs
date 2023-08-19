@@ -326,22 +326,20 @@ pub(crate) fn arc_segment(
 /// Long-form version of a single path command.
 ///
 /// This is returned from iterators on paths and subpaths.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub enum PathCommand {
     MoveTo(f64, f64),
     LineTo(f64, f64),
     CurveTo(CubicBezierCurve),
     Arc(EllipticalArc),
+
+    // The #[default] is just so we can use TinyVec, whose type
+    // parameter requires T: Default.  There is no actual default for
+    // path commands in the SVG spec; this is just our implementation
+    // detail.
+    #[default]
     ClosePath,
 }
-
-// This is just so we can use TinyVec, whose type parameter requires T: Default.
-// There is no actual default for path commands in the SVG spec; this is just our
-// implementation detail.
-enum_default!(
-    PathCommand,
-    PathCommand::CurveTo(CubicBezierCurve::default())
-);
 
 impl PathCommand {
     /// Returns the number of coordinate values that this command will generate in a `Path`.

@@ -16,6 +16,7 @@ use crate::node::NodeBorrow;
 use crate::parsers::Parse;
 use crate::pattern::{ResolvedPattern, UserSpacePattern};
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::unit_interval::UnitInterval;
 use crate::util;

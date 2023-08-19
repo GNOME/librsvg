@@ -6,7 +6,6 @@
 
 pub use crate::{
     accept_language::{AcceptLanguage, Language},
-    dpi::Dpi,
     error::{ImplementationLimit, LoadingError, RenderingError},
     length::{LengthUnit, RsvgLength as Length},
 };
@@ -23,7 +22,9 @@ use locale_config::{LanguageRange, Locale};
 
 use crate::{
     accept_language::{LanguageTags, UserLanguage},
+    dpi::Dpi,
     handle::{Handle, LoadOptions},
+    rsvg_log,
     session::Session,
     url_resolver::UrlResolver,
 };
@@ -620,18 +621,20 @@ impl<'a> CairoRenderer<'a> {
         )
     }
 
-    /// Returns DPI TODO
+    #[doc(hidden)]
+    #[cfg(feature = "c-api")]
     pub fn dpi(&self) -> Dpi {
         self.dpi
     }
 
-    /// Questionable Special function TODO
+    #[doc(hidden)]
     #[cfg(feature = "c-api")]
     pub fn handle(&self) -> &Handle {
         &self.handle.handle
     }
 
-    /// Turns on test mode.  Do not use this function; it is for librsvg's test suite only.
+    #[doc(hidden)]
+    #[cfg(feature = "c-api")]
     pub fn test_mode(self, is_testing: bool) -> Self {
         CairoRenderer { is_testing, ..self }
     }

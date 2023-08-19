@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
+use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;
@@ -14,6 +15,7 @@ use crate::error::{DefsLookupErrorKind, LoadingError, RenderingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};

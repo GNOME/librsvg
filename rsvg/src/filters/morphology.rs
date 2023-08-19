@@ -8,6 +8,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::Node;
+use crate::parse_identifiers;
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
@@ -27,13 +28,12 @@ use super::{
 };
 
 /// Enumeration of the possible morphology operations.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 enum Operator {
+    #[default]
     Erode,
     Dilate,
 }
-
-enum_default!(Operator, Operator::Erode);
 
 /// The `feMorphology` filter primitive.
 #[derive(Default)]

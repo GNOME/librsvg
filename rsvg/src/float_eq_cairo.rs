@@ -66,6 +66,7 @@ impl ApproxEqCairo for f64 {
 }
 
 // Macro for usage in unit tests
+#[doc(hidden)]
 #[macro_export]
 macro_rules! assert_approx_eq_cairo {
     ($left:expr, $right:expr) => {{

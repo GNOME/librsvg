@@ -9,6 +9,7 @@ use language_tags::LanguageTag;
 
 use crate::accept_language::{LanguageTags, UserLanguage};
 use crate::error::*;
+use crate::rsvg_log;
 use crate::session::Session;
 
 // No extensions at the moment.

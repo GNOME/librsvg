@@ -19,6 +19,7 @@ use crate::element::*;
 use crate::error::*;
 use crate::paint_server::PaintSource;
 use crate::properties::ComputedValues;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::text::Chars;
 use crate::xml::Attributes;
@@ -257,6 +258,7 @@ impl NodeBorrow for Node {
     }
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! is_element_of_type {
     ($node:expr, $element_type:ident) => {
@@ -267,6 +269,7 @@ macro_rules! is_element_of_type {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! borrow_element_as {
     ($node:expr, $element_type:ident) => {

@@ -22,6 +22,7 @@ use crate::properties::{
     TextAnchor, TextRendering, UnicodeBidi, WritingMode, XmlLang, XmlSpace,
 };
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::space::{xml_space_normalize, NormalizeDefault, XmlSpaceNormalize};
 use crate::transform::{Transform, ValidTransform};

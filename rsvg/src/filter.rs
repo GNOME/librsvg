@@ -15,8 +15,10 @@ use crate::length::*;
 use crate::node::{Node, NodeBorrow};
 use crate::parsers::{Parse, ParseValue};
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::xml::Attributes;
+use crate::{borrow_element_as, is_element_of_type};
 
 /// The `<filter>` node.
 pub struct Filter {

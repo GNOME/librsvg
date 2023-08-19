@@ -3,6 +3,7 @@
 use cssparser::Parser;
 
 use crate::error::*;
+use crate::parse_identifiers;
 use crate::parsers::Parse;
 
 /// Defines the units to be used for things that can consider a
@@ -32,6 +33,7 @@ impl Parse for CoordUnits {
 /// a newtype for each SVG element and attribute that requires values
 /// of this type.  The newtype provides an `impl Default` with the
 /// specified `$default` value.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! coord_units {
     ($name:ident, $default:expr) => {

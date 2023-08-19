@@ -23,12 +23,10 @@ use cssparser::{match_ignore_ascii_case, Color};
 
 use librsvg_c::{handle::PathOrUrl, sizing::LegacySize};
 use rsvg::rsvg_convert_only::{
-    set_source_color_on_cairo, AspectRatio, CssLength, Horizontal, Length, Normalize,
-    NormalizeParams, Parse, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
+    set_source_color_on_cairo, AspectRatio, CssLength, Dpi, Horizontal, Length, Normalize,
+    NormalizeParams, Parse, Rect, Signed, ULength, Unsigned, Validate, Vertical, ViewBox,
 };
-use rsvg::{
-    AcceptLanguage, CairoRenderer, Dpi, Language, LengthUnit, Loader, Rect, RenderingError,
-};
+use rsvg::{AcceptLanguage, CairoRenderer, Language, LengthUnit, Loader, RenderingError};
 
 use std::ffi::OsString;
 use std::io;
@@ -1093,10 +1091,7 @@ fn parse_args() -> Result<Converter, Error> {
         None => Language::FromEnvironment,
         Some(s) => AcceptLanguage::parse(s)
             .map(Language::AcceptLanguage)
-            .map_err(|e| {
-                let desc = format!("{e}");
-                clap::Error::raw(clap::error::ErrorKind::InvalidValue, desc)
-            })?,
+            .map_err(|e| clap::Error::raw(clap::error::ErrorKind::InvalidValue, e))?,
     };
 
     let background_str: &String = matches

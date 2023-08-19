@@ -12,8 +12,8 @@
 
 use float_cmp::approx_eq;
 
-use rsvg::c_api_only::Handle;
-use rsvg::{CairoRenderer, Dpi, IntrinsicDimensions, RenderingError};
+use rsvg::c_api_only::{Dpi, Handle};
+use rsvg::{CairoRenderer, IntrinsicDimensions, RenderingError};
 
 use super::handle::CairoRectangleExt;
 

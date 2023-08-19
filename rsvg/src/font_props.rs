@@ -8,6 +8,7 @@ use cssparser::{Parser, Token};
 
 use crate::error::*;
 use crate::length::*;
+use crate::parse_identifiers;
 use crate::parsers::{finite_f32, Parse};
 use crate::properties::ComputedValues;
 use crate::property_defs::{FontStretch, FontStyle, FontVariant};

@@ -18,27 +18,26 @@ use cssparser::{BasicParseError, Parser};
 use std::ops::Deref;
 
 use crate::error::*;
+use crate::parse_identifiers;
 use crate::parsers::Parse;
 use crate::rect::Rect;
 use crate::transform::{Transform, ValidTransform};
 use crate::viewbox::ViewBox;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 enum FitMode {
+    #[default]
     Meet,
     Slice,
 }
 
-enum_default!(FitMode, FitMode::Meet);
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 enum Align1D {
     Min,
+    #[default]
     Mid,
     Max,
 }
-
-enum_default!(Align1D, Align1D::Mid);
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 struct X(Align1D);
@@ -226,7 +225,8 @@ impl Parse for AspectRatio {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::float_eq_cairo::ApproxEqCairo;
+
+    use crate::{assert_approx_eq_cairo, float_eq_cairo::ApproxEqCairo};
 
     #[test]
     fn parsing_invalid_strings_yields_error() {

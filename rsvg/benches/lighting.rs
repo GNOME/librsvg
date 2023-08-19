@@ -1,15 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use nalgebra::{Matrix3, Vector2};
 
-use rsvg::{
-    filters::lighting::Normal,
-    surface_utils::{
-        iterators::{PixelRectangle, Pixels},
-        shared_surface::{SharedImageSurface, SurfaceType},
-        EdgeMode,
-    },
-    IRect,
-};
+use rsvg::bench_only::Normal;
+
+use rsvg::bench_only::{EdgeMode, IRect, PixelRectangle, Pixels, SharedImageSurface, SurfaceType};
 
 /// Computes and returns the normal vector for the light filters.
 fn normal(surface: &SharedImageSurface, bounds: IRect, x: u32, y: u32) -> Normal {

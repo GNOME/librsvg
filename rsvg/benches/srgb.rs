@@ -1,12 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use rsvg::{
-    surface_utils::{
-        shared_surface::{ExclusiveImageSurface, SurfaceType},
-        srgb::{linearize, map_unpremultiplied_components_loop},
-        ImageSurfaceDataExt, Pixel,
-    },
-    IRect,
+use rsvg::bench_only::{
+    linearize, map_unpremultiplied_components_loop, ExclusiveImageSurface, IRect,
+    ImageSurfaceDataExt, Pixel, SurfaceType,
 };
 
 const SURFACE_SIDE: i32 = 512;

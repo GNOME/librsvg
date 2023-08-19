@@ -6,6 +6,7 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
+use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
@@ -21,15 +22,14 @@ use super::{
 };
 
 /// Enumeration of the color channels the displacement map can source.
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 enum ColorChannel {
     R,
     G,
     B,
+    #[default]
     A,
 }
-
-enum_default!(ColorChannel, ColorChannel::A);
 
 /// The `feDisplacementMap` filter primitive.
 #[derive(Default)]

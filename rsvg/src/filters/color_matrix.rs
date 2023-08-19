@@ -7,9 +7,11 @@ use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::node::{CascadedValues, Node};
+use crate::parse_identifiers;
 use crate::parsers::{NumberList, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
     iterators::Pixels, shared_surface::ExclusiveImageSurface, ImageSurfaceDataExt, Pixel,
@@ -25,15 +27,14 @@ use super::{
 };
 
 /// Color matrix operation types.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 enum OperationType {
+    #[default]
     Matrix,
     Saturate,
     HueRotate,
     LuminanceToAlpha,
 }
-
-enum_default!(OperationType, OperationType::Matrix);
 
 /// The `feColorMatrix` filter primitive.
 #[derive(Default)]

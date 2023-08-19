@@ -1,5 +1,6 @@
 //! Utilities for logging messages from the library.
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! rsvg_log {
     (

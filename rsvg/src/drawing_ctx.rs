@@ -39,6 +39,7 @@ use crate::properties::{
     PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::shared_surface::{
     ExclusiveImageSurface, Interpolation, SharedImageSurface, SurfaceType,
@@ -46,6 +47,7 @@ use crate::surface_utils::shared_surface::{
 use crate::transform::{Transform, ValidTransform};
 use crate::unit_interval::UnitInterval;
 use crate::viewbox::ViewBox;
+use crate::{borrow_element_as, is_element_of_type};
 
 /// Opaque font options for a DrawingCtx.
 ///

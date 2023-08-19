@@ -9,6 +9,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::angle::Angle;
 use crate::aspect_ratio::*;
 use crate::bbox::BoundingBox;
+use crate::borrow_element_as;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
@@ -17,22 +18,23 @@ use crate::float_eq_cairo::ApproxEqCairo;
 use crate::layout::{self, Shape, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
+use crate::parse_identifiers;
 use crate::parsers::{Parse, ParseValue};
 use crate::path_builder::{arc_segment, ArcParameterization, CubicBezierCurve, Path, PathCommand};
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::transform::Transform;
 use crate::viewbox::*;
 use crate::xml::Attributes;
 
 // markerUnits attribute: https://www.w3.org/TR/SVG/painting.html#MarkerElement
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 enum MarkerUnits {
     UserSpaceOnUse,
+    #[default]
     StrokeWidth,
 }
-
-enum_default!(MarkerUnits, MarkerUnits::StrokeWidth);
 
 impl Parse for MarkerUnits {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerUnits, ParseError<'i>> {
@@ -52,7 +54,12 @@ enum MarkerOrient {
     Angle(Angle),
 }
 
-enum_default!(MarkerOrient, MarkerOrient::Angle(Angle::new(0.0)));
+impl Default for MarkerOrient {
+    #[inline]
+    fn default() -> MarkerOrient {
+        MarkerOrient::Angle(Angle::new(0.0))
+    }
+}
 
 impl Parse for MarkerOrient {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<MarkerOrient, ParseError<'i>> {

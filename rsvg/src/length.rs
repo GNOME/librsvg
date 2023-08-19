@@ -111,6 +111,7 @@ pub struct RsvgLength {
 }
 
 impl RsvgLength {
+    /// Constructs a CSS length value.
     pub fn new(l: f64, unit: LengthUnit) -> RsvgLength {
         RsvgLength { length: l, unit }
     }
@@ -547,7 +548,7 @@ impl fmt::Display for LengthUnit {
 mod tests {
     use super::*;
 
-    use crate::float_eq_cairo::ApproxEqCairo;
+    use crate::{assert_approx_eq_cairo, float_eq_cairo::ApproxEqCairo};
 
     #[test]
     fn parses_default() {

@@ -2,8 +2,10 @@
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
-use crate::aspect_ratio::*;
+use crate::coord_units;
 use crate::coord_units::CoordUnits;
+
+use crate::aspect_ratio::*;
 use crate::document::{AcquiredNode, AcquiredNodes, NodeId, NodeStack};
 use crate::drawing_ctx::Viewport;
 use crate::element::{set_attribute, ElementData, ElementTrait};
@@ -13,6 +15,7 @@ use crate::length::*;
 use crate::node::{Node, NodeBorrow, WeakNode};
 use crate::parsers::ParseValue;
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::transform::{Transform, TransformAttribute};
 use crate::unit_interval::UnitInterval;
@@ -507,8 +510,11 @@ impl Pattern {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::NodeData;
+
     use markup5ever::{namespace_url, ns, QualName};
+
+    use crate::borrow_element_as;
+    use crate::node::NodeData;
 
     #[test]
     fn pattern_resolved_from_defaults_is_really_resolved() {

@@ -6,6 +6,7 @@ use crate::element::ElementTrait;
 use crate::node::{CascadedValues, Node};
 use crate::paint_server::resolve_color;
 use crate::rect::IRect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::xml::Attributes;
 

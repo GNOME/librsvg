@@ -38,10 +38,8 @@ use glib::types::instance_of;
 use glib::{ffi::gpointer, gobject_ffi};
 use glib::{Bytes, Cast, StaticType, ToValue};
 
-use rsvg::c_api_only::Session;
-use rsvg::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-use rsvg::{rsvg_log, Length};
-use rsvg::{CairoRenderer, IntrinsicDimensions, Loader, LoadingError, SvgHandle};
+use rsvg::c_api_only::{rsvg_log, Session, SharedImageSurface, SurfaceType};
+use rsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader, LoadingError, SvgHandle};
 
 use super::dpi::Dpi;
 use super::messages::{rsvg_g_critical, rsvg_g_warning};

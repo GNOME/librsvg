@@ -97,6 +97,7 @@ use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
 use crate::properties::{parse_value, ComputedValues, ParseAs, ParsedProperty};
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
 
@@ -1045,6 +1046,7 @@ mod tests {
     use selectors::Element;
 
     use crate::document::Document;
+    use crate::is_element_of_type;
 
     #[test]
     fn xml_lang() {

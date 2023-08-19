@@ -20,16 +20,14 @@
 //!
 //! ```toml
 //! [dependencies]
-//! rsvg = { git="https://gitlab.gnome.org/GNOME/librsvg" }
-//! cairo-rs = "0.8.0"
-//! glib = "0.9.0"                                # only if you need streams
-//! gio = { version="0.8.1", features=["v2_50"] } # likewise
+//! librsvg = "2.57.0-beta.2"
+//! cairo-rs = "0.18"
+//! gio = "0.18"   # only if you need streams
 //! ```
 //!
 //! # Example
 //!
 //! ```
-//!
 //! const WIDTH: i32 = 640;
 //! const HEIGHT: i32 = 480;
 //!
@@ -147,29 +145,6 @@
 // The public API is exported here
 pub use crate::api::*;
 
-pub use crate::rect::{IRect, Rect};
-
-#[macro_use]
-pub mod log;
-
-#[macro_use]
-mod parsers;
-
-#[macro_use]
-mod coord_units;
-
-#[macro_use]
-mod float_eq_cairo;
-
-#[macro_use]
-mod node;
-
-#[macro_use]
-mod property_macros;
-
-#[macro_use]
-mod util;
-
 mod accept_language;
 mod angle;
 mod api;
@@ -177,6 +152,7 @@ mod aspect_ratio;
 mod bbox;
 mod color;
 mod cond;
+mod coord_units;
 mod css;
 mod dasharray;
 mod document;
@@ -186,7 +162,8 @@ mod element;
 mod error;
 mod filter;
 mod filter_func;
-pub mod filters;
+mod filters;
+mod float_eq_cairo;
 mod font_props;
 mod gradient;
 mod handle;
@@ -197,24 +174,29 @@ mod iri;
 mod layout;
 mod length;
 mod limits;
+mod log;
 mod marker;
+mod node;
 mod paint_server;
+mod parsers;
 mod path_builder;
 mod path_parser;
 mod pattern;
 mod properties;
 mod property_defs;
+mod property_macros;
 mod rect;
 mod session;
 mod shapes;
 mod space;
 mod structure;
 mod style;
-pub mod surface_utils;
+mod surface_utils;
 mod text;
 mod transform;
 mod unit_interval;
 mod url_resolver;
+mod util;
 mod viewbox;
 mod xml;
 
@@ -224,15 +206,29 @@ pub mod test_utils;
 
 #[doc(hidden)]
 pub mod bench_only {
+    pub use crate::filters::lighting::Normal;
     pub use crate::path_builder::PathBuilder;
     pub use crate::path_parser::Lexer;
+    pub use crate::rect::IRect;
+    pub use crate::surface_utils::{
+        iterators::{PixelRectangle, Pixels},
+        shared_surface::{
+            composite_arithmetic, AlphaOnly, ExclusiveImageSurface, Horizontal, NotAlphaOnly,
+            SharedImageSurface, SurfaceType, Vertical,
+        },
+        srgb::{linearize, map_unpremultiplied_components_loop},
+        EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps,
+    };
 }
 
 #[doc(hidden)]
 #[cfg(feature = "c-api")]
 pub mod c_api_only {
+    pub use crate::dpi::Dpi;
     pub use crate::handle::Handle;
+    pub use crate::rsvg_log;
     pub use crate::session::Session;
+    pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 }
 
 #[doc(hidden)]
@@ -250,6 +246,7 @@ pub mod doctest_only {
 #[doc(hidden)]
 pub mod rsvg_convert_only {
     pub use crate::aspect_ratio::AspectRatio;
+    pub use crate::dpi::Dpi;
     pub use crate::drawing_ctx::set_source_color_on_cairo;
     pub use crate::error::ParseError;
     pub use crate::length::{
@@ -258,5 +255,12 @@ pub mod rsvg_convert_only {
     };
     pub use crate::parsers::{Parse, ParseValue};
     pub use crate::rect::Rect;
+    pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
     pub use crate::viewbox::ViewBox;
+}
+
+#[doc(hidden)]
+pub mod tests_only {
+    pub use crate::rect::Rect;
+    pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
 }
