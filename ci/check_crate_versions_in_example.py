@@ -10,10 +10,11 @@ import toml
 # bar = { version = "4.5.6", features=["something", "else", "here"]
 def get_crate_version(toml_doc, crate_name):
     crate_decl = toml_doc['dependencies'][crate_name]
-    if type(crate_decl) is dict:
-        version = crate_decl['version']
-    else:
+
+    if type(crate_decl) is str:
         version = crate_decl
+    else:
+        version = crate_decl['version']
 
     return version
 
@@ -50,6 +51,13 @@ def find_toml_in_rust_toplevel_docs(lines):
 
     return "".join(without_comment)
 
+def check_dependency_version(cargo_toml_filename, cargo_toml, other_filename, other_toml, dependency_name):
+    dep_in_cargo_toml = get_crate_version(cargo_toml, dependency_name)
+    dep_in_other = get_crate_version(other_toml, dependency_name)
+
+    if dep_in_cargo_toml != dep_in_other:
+        raise Exception(f'{dependency_name} version in {cargo_toml_filename} is {dep_in_cargo_toml} but is referenced in {other_filename} as {dep_in_other}')
+
 def check():
     cargo_toml = toml.load('rsvg/Cargo.toml')
     librsvg_version = cargo_toml['package']['version']
@@ -63,6 +71,14 @@ def check():
 
     if librsvg_version != example_version:
         raise Exception(f'librsvg version in rsvg/Cargo.toml is {librsvg_version} but is referenced as {example_version} in rsvg/src/lib.rs')
+
+    DEPENDENCIES = [
+        'cairo-rs',
+        'gio',
+    ]
+
+    for dependency_name in DEPENDENCIES:
+        check_dependency_version('rsvg/Cargo.toml', cargo_toml, 'rsvg/src/lib.rs', example_toml, dependency_name)
 
 if __name__ == '__main__':
     check()
