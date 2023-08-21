@@ -29,7 +29,7 @@ for the whole project.
 
 Librsvg depends on a number of non-Rust libraries that must be
 installed on your system.  They need to have a pkg-config `.pc` file
-installed so that librsvg's compilation can find them:
+installed so that librsvg's compilation can find them via [system-deps][system-deps]:
 
   * Cairo - used for the main rendering
   * FreeType2 - font renderer
@@ -40,6 +40,12 @@ installed so that librsvg's compilation can find them:
   * Pangocairo - text rendering
   * Fontconfig - system fonts and rules for using them
   * PangoFT2 - render text via Pango and FreeType2
+
+There are some [security considerations][sec-libs] for these non-Rust
+libraries, which you may want to read.
+
+[system-deps]:(https://github.com/gdesmott/system-deps)
+[sec-libs]:(https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html#librsvgs-dependencies)
 
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
