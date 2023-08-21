@@ -12,10 +12,6 @@ minimal API?  Librsvg may be adequate for you.
 **Supported SVG/CSS features:** Please see the chapter for [supported
 features][features] in the development guide.
 
-***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.***  We use
-[`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
-Please see [Contributing to librsvg][contributing] for details.
-
 This is the `README.md` file for the Rust crate; you may want to see
 the [main
 README.md](https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md)
