@@ -25,6 +25,22 @@ for the whole project.
 
 * [Rust API documentation][rust-docs]
 
+**Non-Rust dependencies:**
+
+Librsvg depends on a number of non-Rust libraries that must be
+installed on your system.  They need to have a pkg-config `.pc` file
+installed so that librsvg's compilation can find them:
+
+  * Cairo - used for the main rendering
+  * FreeType2 - font renderer
+  * gdk-pixbuf - image decoder
+  * gio/glib - I/O primitives and streams
+  * Harfbuzz - text shaping
+  * libxml2 - XML parser
+  * Pangocairo - text rendering
+  * Fontconfig - system fonts and rules for using them
+  * PangoFT2 - render text via Pango and FreeType2
+
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
 page in the development guide to see how to provide a good bug report.
