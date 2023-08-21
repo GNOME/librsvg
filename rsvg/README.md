@@ -34,8 +34,8 @@ installed so that librsvg's compilation can find them via [system-deps][system-d
   * Harfbuzz - text shaping
   * libxml2 - XML parser
   * Pangocairo - text rendering
-  * Fontconfig - system fonts and rules for using them
   * PangoFT2 - render text via Pango and FreeType2
+  * Fontconfig - system fonts and rules for using them
 
 There are some [security considerations][sec-libs] for these non-Rust
 libraries, which you may want to read.

@@ -187,11 +187,13 @@ Librsvg’s dependencies
 Librsvg depends on the following libraries implemented in memory-unsafe
 languages:
 
--  **libxml2** - loading XML data.
--  **cairo** - 2D rendering engine.
--  **gdk-pixbuf** - decoding raster images like JPEG/PNG.
--  **freetype2** - font renderer.
--  **harfbuzz** - text shaping engine.
+- **libxml2** - loading XML data.
+- **cairo** - 2D rendering engine.
+- **gdk-pixbuf** - decoding raster images like JPEG/PNG.
+- **freetype2** - font renderer.
+- **harfbuzz** - text shaping engine.
+- **pango** - high-level text rendering.
+- **fontconfig** - system fonts and rules for using them.
 
 And of course, their recursive dependencies as well, such as
 **glib/gio**, **libjpeg**, **libpng**.
