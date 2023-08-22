@@ -203,9 +203,7 @@ automatically. Some other properties, like ``opacity``, do not inherit
 and are thus not copied to child elements.
 
 In librsvg, the individual types for CSS properties are defined with
-the `make_property
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/macro.make_property.html>`_
-macro.
+the ``make_property`` macro.
 
 The cascading step takes each element’s ``SpecifiedValues`` and
 composes it by CSS inheritance onto a `ComputedValues

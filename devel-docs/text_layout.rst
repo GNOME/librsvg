@@ -181,11 +181,11 @@ This is why you'll see that the code does this; start at ``Text::draw``:
   plus the span's ``dx``/``dy`` attributes.
 
 **Note about SVG2:** The `text layout algorithm for SVG2
- <https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm>`_ is very
- different from the above.  It mostly dispenses with explicit
- computation of chunks with spans, and instead, for each glyph it
- stores a flag that says whether the glyph is at the beginning of a
- chunk.
+<https://www.w3.org/TR/SVG2/text.html#TextLayoutAlgorithm>`_ is very
+different from the above.  It mostly dispenses with explicit
+computation of chunks with spans, and instead, for each glyph it
+stores a flag that says whether the glyph is at the beginning of a
+chunk.
 
 
 Layouts and spans

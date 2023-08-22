@@ -12,10 +12,6 @@ minimal API?  Librsvg may be adequate for you.
 **Supported SVG/CSS features:** Please see the chapter for [supported
 features][features] in the development guide.
 
-***PLEASE DO NOT SEND PULL REQUESTS TO GITHUB.***  We use
-[`gitlab.gnome.org`](https://gitlab.gnome.org/GNOME/librsvg) instead.
-Please see [Contributing to librsvg][contributing] for details.
-
 This is the `README.md` file for the Rust crate; you may want to see
 the [main
 README.md](https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md)
@@ -24,6 +20,28 @@ for the whole project.
 # Using librsvg
 
 * [Rust API documentation][rust-docs]
+
+**Non-Rust dependencies:**
+
+Librsvg depends on a number of non-Rust libraries that must be
+installed on your system.  They need to have a pkg-config `.pc` file
+installed so that librsvg's compilation can find them via [system-deps][system-deps]:
+
+  * Cairo - used for the main rendering
+  * FreeType2 - font renderer
+  * gdk-pixbuf - image decoder
+  * gio/glib - I/O primitives and streams
+  * Harfbuzz - text shaping
+  * libxml2 - XML parser
+  * Pangocairo - text rendering
+  * PangoFT2 - render text via Pango and FreeType2
+  * Fontconfig - system fonts and rules for using them
+
+There are some [security considerations][sec-libs] for these non-Rust
+libraries, which you may want to read.
+
+[system-deps]:(https://github.com/gdesmott/system-deps)
+[sec-libs]:(https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html#librsvgs-dependencies)
 
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"

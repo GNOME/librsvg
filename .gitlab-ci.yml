@@ -305,6 +305,7 @@ check_versions:
   script:
     - python3 ci/check_project_version.py
     - python3 ci/check_rust_versions.py
+    - python3 ci/check_crate_versions_in_example.py
 
 coverage:
   extends:

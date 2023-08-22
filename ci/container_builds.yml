@@ -6,8 +6,8 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2023-07-28.0-main"
-  RUST_STABLE: "1.71.0"
+  BASE_TAG: "2023-08-21.1-main"
+  RUST_STABLE: "1.71.1"
   RUST_MINIMUM: "1.70.0"
 
 .container.opensuse@common:
@@ -26,6 +26,7 @@ variables:
       curl
       diffutils
       findutils
+      gawk
       gcc
       gdb
       gdk-pixbuf-devel
@@ -40,8 +41,12 @@ variables:
       make
       openssl-devel
       pango-devel
+      python3-gi-docgen
       python3-pip
       python3-docutils
+      python311-Sphinx
+      python311-sphinx_rtd_theme
+      python311-toml
       shadow
       system-group-wheel
       vala
@@ -56,7 +61,6 @@ variables:
       bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&
-      pip3 install gi-docgen sphinx sphinx_rtd_theme &&
       rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
 
 .container.opensuse@x86_64.minimum:
@@ -64,24 +68,21 @@ variables:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_MINIMUM}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_MINIMUM} x86_64-unknown-linux-gnu &&
-      pip3 install gi-docgen
+      bash ci/install-rust.sh ${RUST_MINIMUM} x86_64-unknown-linux-gnu
 
 .container.opensuse@x86_64.nightly:
   extends: .container.opensuse@common
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-nightly-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh nightly x86_64-unknown-linux-gnu &&
-      pip3 install gi-docgen
+      bash ci/install-rust.sh nightly x86_64-unknown-linux-gnu
 
 .container.opensuse@aarch64:
   extends: .container.opensuse@common
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu &&
-      pip3 install gi-docgen
+      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu
   tags:
     - aarch64
 
