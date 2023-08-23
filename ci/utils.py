@@ -7,7 +7,7 @@ def get_first_group(regex, line):
     else:
         return matches.group(1)
 
-def get_configure_ac_version():
+def get_configure_ac_version_components():
     major_regex = re.compile(r'^m4_define\(\[rsvg_major_version\],\[(\d+)\]\)')
     minor_regex = re.compile(r'^m4_define\(\[rsvg_minor_version\],\[(\d+)\]\)')
     micro_regex = re.compile(r'^m4_define\(\[rsvg_micro_version\],\[(\d+)\]\)')
@@ -29,5 +29,9 @@ def get_configure_ac_version():
 
     if not (major and minor and micro):
         raise Exception('configure.ac does not have all the necessary version numbers')
-            
+
+    return (major, minor, micro)
+
+def get_configure_ac_version():
+    (major, minor, micro) = get_configure_ac_version_components()
     return f'{major}.{minor}.{micro}'
