@@ -770,7 +770,7 @@ impl ElementTrait for Text {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         let values = cascaded.get();
         let params = NormalizeParams::new(values, viewport);
 

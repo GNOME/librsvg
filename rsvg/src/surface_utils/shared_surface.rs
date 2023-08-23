@@ -1401,8 +1401,8 @@ impl ImageSurface<Exclusive> {
     #[inline]
     pub fn draw(
         &mut self,
-        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), RenderingError>,
-    ) -> Result<(), RenderingError> {
+        draw_fn: &mut dyn FnMut(cairo::Context) -> Result<(), InternalRenderingError>,
+    ) -> Result<(), InternalRenderingError> {
         let cr = cairo::Context::new(&self.surface)?;
         draw_fn(cr)
     }

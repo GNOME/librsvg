@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::error::RenderingError;
+use crate::error::InternalRenderingError;
 
 /// An enumeration of errors that can occur during filter primitive rendering.
 #[derive(Debug, Clone)]
@@ -17,7 +17,7 @@ pub enum FilterError {
     /// status.
     CairoError(cairo::Error),
     /// Error from the rendering backend.
-    Rendering(RenderingError),
+    Rendering(InternalRenderingError),
     /// A lighting filter input surface is too small.
     LightingInputTooSmall,
 }
@@ -70,9 +70,9 @@ impl From<cairo::Error> for FilterError {
     }
 }
 
-impl From<RenderingError> for FilterError {
+impl From<InternalRenderingError> for FilterError {
     #[inline]
-    fn from(e: RenderingError) -> Self {
+    fn from(e: InternalRenderingError) -> Self {
         FilterError::Rendering(e)
     }
 }

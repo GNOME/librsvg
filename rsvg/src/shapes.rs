@@ -52,7 +52,7 @@ fn draw_basic_shape(
     viewport: &Viewport,
     draw_ctx: &mut DrawingCtx,
     clipping: bool,
-) -> Result<BoundingBox, RenderingError> {
+) -> Result<BoundingBox, InternalRenderingError> {
     let values = cascaded.get();
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
@@ -169,7 +169,7 @@ macro_rules! impl_draw {
             viewport: &Viewport,
             draw_ctx: &mut DrawingCtx,
             clipping: bool,
-        ) -> Result<BoundingBox, RenderingError> {
+        ) -> Result<BoundingBox, InternalRenderingError> {
             draw_basic_shape(
                 self,
                 node,

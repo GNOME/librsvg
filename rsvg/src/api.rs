@@ -4,9 +4,11 @@
 
 #![warn(missing_docs)]
 
+use std::fmt;
+
 pub use crate::{
     accept_language::{AcceptLanguage, Language},
-    error::{ImplementationLimit, LoadingError, RenderingError},
+    error::{ImplementationLimit, LoadingError},
     length::{LengthUnit, RsvgLength as Length},
 };
 
@@ -23,11 +25,71 @@ use locale_config::{LanguageRange, Locale};
 use crate::{
     accept_language::{LanguageTags, UserLanguage},
     dpi::Dpi,
+    error::InternalRenderingError,
     handle::{Handle, LoadOptions},
     rsvg_log,
     session::Session,
     url_resolver::UrlResolver,
 };
+
+/// Errors that can happen while rendering or measuring an SVG document.
+#[non_exhaustive]
+#[derive(Debug, Clone)]
+pub enum RenderingError {
+    /// An error from the rendering backend.
+    Rendering(String),
+
+    /// A particular implementation-defined limit was exceeded.
+    LimitExceeded(ImplementationLimit),
+
+    /// Tried to reference an SVG element that does not exist.
+    IdNotFound,
+
+    /// Tried to reference an SVG element from a fragment identifier that is incorrect.
+    InvalidId(String),
+
+    /// Not enough memory was available for rendering.
+    OutOfMemory(String),
+}
+
+impl std::error::Error for RenderingError {}
+
+impl From<cairo::Error> for RenderingError {
+    fn from(e: cairo::Error) -> RenderingError {
+        RenderingError::Rendering(format!("{e:?}"))
+    }
+}
+
+impl From<InternalRenderingError> for RenderingError {
+    fn from(e: InternalRenderingError) -> RenderingError {
+        // These enums are mostly the same, except for cases that should definitely
+        // not bubble up to the public API.  So, we just move each variant, and for the
+        // others, we emit a catch-all value as a safeguard.  (We ought to panic in that case,
+        // maybe.)
+        match e {
+            InternalRenderingError::Rendering(s) => RenderingError::Rendering(s),
+            InternalRenderingError::LimitExceeded(l) => RenderingError::LimitExceeded(l),
+            InternalRenderingError::InvalidTransform => {
+                RenderingError::Rendering("invalid transform".to_string())
+            }
+            InternalRenderingError::IdNotFound => RenderingError::IdNotFound,
+            InternalRenderingError::InvalidId(s) => RenderingError::InvalidId(s),
+            InternalRenderingError::OutOfMemory(s) => RenderingError::OutOfMemory(s),
+        }
+    }
+}
+
+impl fmt::Display for RenderingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            RenderingError::Rendering(ref s) => write!(f, "rendering error: {s}"),
+            RenderingError::LimitExceeded(ref l) => write!(f, "{l}"),
+            RenderingError::IdNotFound => write!(f, "element id not found"),
+            RenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
+            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
+        }
+    }
+}
 
 /// Builder for loading an [`SvgHandle`].
 ///
@@ -256,7 +318,7 @@ impl SvgHandle {
     /// The purpose of the `Err()` case in the return value is to indicate an
     /// incorrectly-formatted `id` argument.
     pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
-        self.handle.has_sub(id)
+        Ok(self.handle.has_sub(id)?)
     }
 
     /// Sets a CSS stylesheet to use for an SVG document.
@@ -470,13 +532,13 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.handle.render_document(
+        Ok(self.handle.handle.render_document(
             cr,
             viewport,
             &self.user_language,
             self.dpi,
             self.is_testing,
-        )
+        )?)
     }
 
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if
@@ -508,10 +570,11 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        self.handle
+        Ok(self
+            .handle
             .handle
             .get_geometry_for_layer(id, viewport, &self.user_language, self.dpi, self.is_testing)
-            .map(|(i, l)| (i, l))
+            .map(|(i, l)| (i, l))?)
     }
 
     /// Renders a single SVG element in the same place as for a whole SVG document
@@ -539,14 +602,14 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.handle.render_layer(
+        Ok(self.handle.handle.render_layer(
             cr,
             id,
             viewport,
             &self.user_language,
             self.dpi,
             self.is_testing,
-        )
+        )?)
     }
 
     /// Computes the (ink_rect, logical_rect) of a single SVG element
@@ -583,10 +646,11 @@ impl<'a> CairoRenderer<'a> {
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        self.handle
+        Ok(self
+            .handle
             .handle
             .get_geometry_for_element(id, &self.user_language, self.dpi, self.is_testing)
-            .map(|(i, l)| (i, l))
+            .map(|(i, l)| (i, l))?)
     }
 
     /// Renders a single SVG element to a given viewport
@@ -611,14 +675,14 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        self.handle.handle.render_element(
+        Ok(self.handle.handle.render_element(
             cr,
             id,
             element_viewport,
             &self.user_language,
             self.dpi,
             self.is_testing,
-        )
+        )?)
     }
 
     #[doc(hidden)]

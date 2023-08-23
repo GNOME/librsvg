@@ -9,7 +9,7 @@ use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
 use crate::drawing_ctx::DrawingCtx;
 use crate::element::{set_attribute, ElementTrait};
-use crate::error::{ParseError, RenderingError};
+use crate::error::{InternalRenderingError, ParseError};
 use crate::filter::UserSpaceFilter;
 use crate::length::*;
 use crate::node::Node;
@@ -263,7 +263,7 @@ pub fn render(
     draw_ctx: &mut DrawingCtx,
     transform: Transform,
     node_bbox: BoundingBox,
-) -> Result<SharedImageSurface, RenderingError> {
+) -> Result<SharedImageSurface, InternalRenderingError> {
     let session = draw_ctx.session().clone();
 
     FilterContext::new(
@@ -328,7 +328,7 @@ pub fn render(
     .or_else(|err| match err {
         FilterError::CairoError(status) => {
             // Exit early on Cairo errors
-            Err(RenderingError::from(status))
+            Err(InternalRenderingError::from(status))
         }
 
         _ => {

@@ -67,7 +67,7 @@ pub trait ElementTrait {
         _viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         _clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         // by default elements don't draw themselves
         Ok(draw_ctx.empty_bbox())
     }
@@ -377,7 +377,7 @@ impl Element {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         let values = cascaded.get();
         if values.is_displayed() {
             self.element_data
@@ -399,7 +399,7 @@ impl ElementData {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         use ElementData::*;
 
         let data: &dyn ElementTrait = match self {

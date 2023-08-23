@@ -33,7 +33,7 @@ impl ElementTrait for Group {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
@@ -78,7 +78,7 @@ impl ElementTrait for Switch {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
@@ -301,7 +301,7 @@ impl ElementTrait for Svg {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
@@ -396,7 +396,7 @@ impl ElementTrait for Use {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         if let Some(link) = self.link.as_ref() {
             let values = cascaded.get();
             let params = NormalizeParams::new(values, viewport);
@@ -590,7 +590,7 @@ impl ElementTrait for Link {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         // If this element is inside of <text>, do not draw it.
         // The <text> takes care of it.
         for an in node.ancestors() {

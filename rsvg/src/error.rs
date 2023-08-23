@@ -6,6 +6,9 @@ use std::fmt;
 use cssparser::{BasicParseError, BasicParseErrorKind, ParseErrorKind, ToCss};
 use markup5ever::QualName;
 
+#[cfg(doc)]
+use crate::RenderingError;
+
 use crate::document::NodeId;
 use crate::io::IoError;
 use crate::limits;
@@ -119,9 +122,17 @@ impl fmt::Display for DefsLookupErrorKind {
 }
 
 /// Errors that can happen while rendering or measuring an SVG document.
-#[non_exhaustive]
+///
+/// This is the internal version of [`crate::api::RenderingError`]; they are the same
+/// except that this one has an `InvalidTransform` variant which is only propagated
+/// internally.  It is caught during the drawing process, and the element in question
+/// is simply not drawn, more or less per <https://www.w3.org/TR/css-transforms-1/#transform-function-lists>
+///
+///   "If a transform function causes the current transformation matrix of an
+///   object to be non-invertible, the object and its content do not get
+///   displayed."
 #[derive(Debug, Clone)]
-pub enum RenderingError {
+pub enum InternalRenderingError {
     /// An error from the rendering backend.
     Rendering(String),
 
@@ -144,39 +155,37 @@ pub enum RenderingError {
     OutOfMemory(String),
 }
 
-impl From<DefsLookupErrorKind> for RenderingError {
-    fn from(e: DefsLookupErrorKind) -> RenderingError {
+impl From<DefsLookupErrorKind> for InternalRenderingError {
+    fn from(e: DefsLookupErrorKind) -> InternalRenderingError {
         match e {
-            DefsLookupErrorKind::NotFound => RenderingError::IdNotFound,
-            _ => RenderingError::InvalidId(format!("{e}")),
+            DefsLookupErrorKind::NotFound => InternalRenderingError::IdNotFound,
+            _ => InternalRenderingError::InvalidId(format!("{e}")),
         }
     }
 }
 
-impl From<InvalidTransform> for RenderingError {
-    fn from(_: InvalidTransform) -> RenderingError {
-        RenderingError::InvalidTransform
+impl From<InvalidTransform> for InternalRenderingError {
+    fn from(_: InvalidTransform) -> InternalRenderingError {
+        InternalRenderingError::InvalidTransform
     }
 }
 
-impl error::Error for RenderingError {}
-
-impl fmt::Display for RenderingError {
+impl fmt::Display for InternalRenderingError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            RenderingError::Rendering(ref s) => write!(f, "rendering error: {s}"),
-            RenderingError::LimitExceeded(ref l) => write!(f, "{l}"),
-            RenderingError::InvalidTransform => write!(f, "invalid transform"),
-            RenderingError::IdNotFound => write!(f, "element id not found"),
-            RenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
-            RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
+            InternalRenderingError::Rendering(ref s) => write!(f, "rendering error: {s}"),
+            InternalRenderingError::LimitExceeded(ref l) => write!(f, "{l}"),
+            InternalRenderingError::InvalidTransform => write!(f, "invalid transform"),
+            InternalRenderingError::IdNotFound => write!(f, "element id not found"),
+            InternalRenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
+            InternalRenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
         }
     }
 }
 
-impl From<cairo::Error> for RenderingError {
-    fn from(e: cairo::Error) -> RenderingError {
-        RenderingError::Rendering(format!("{e:?}"))
+impl From<cairo::Error> for InternalRenderingError {
+    fn from(e: cairo::Error) -> InternalRenderingError {
+        InternalRenderingError::Rendering(format!("{e:?}"))
     }
 }
 
@@ -423,7 +432,7 @@ pub enum LoadingError {
 
 /// Errors for implementation-defined limits, to mitigate malicious SVG documents.
 ///
-/// These get emitted as `LoadingError::LimitExceeded` or `RenderingError::LimitExceeded`.
+/// These get emitted as [`LoadingError::LimitExceeded`] or [`RenderingError::LimitExceeded`].
 /// The limits are present to mitigate malicious SVG documents which may try to exhaust
 /// all available memory, or which would use large amounts of CPU time.
 #[non_exhaustive]

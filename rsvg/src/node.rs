@@ -313,7 +313,7 @@ pub trait NodeDraw {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError>;
+    ) -> Result<BoundingBox, InternalRenderingError>;
 
     fn draw_children(
         &self,
@@ -322,7 +322,7 @@ pub trait NodeDraw {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError>;
+    ) -> Result<BoundingBox, InternalRenderingError>;
 }
 
 impl NodeDraw for Node {
@@ -333,7 +333,7 @@ impl NodeDraw for Node {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         match *self.borrow() {
             NodeData::Element(ref e) => {
                 rsvg_log!(draw_ctx.session(), "({}", e);
@@ -346,7 +346,7 @@ impl NodeDraw for Node {
                     // "If a transform function causes the current transformation matrix of an
                     // object to be non-invertible, the object and its content do not get
                     // displayed."
-                    Err(RenderingError::InvalidTransform) => Ok(draw_ctx.empty_bbox()),
+                    Err(InternalRenderingError::InvalidTransform) => Ok(draw_ctx.empty_bbox()),
 
                     Err(e) => Err(e),
                 };
@@ -367,7 +367,7 @@ impl NodeDraw for Node {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, RenderingError> {
+    ) -> Result<BoundingBox, InternalRenderingError> {
         let mut bbox = draw_ctx.empty_bbox();
 
         for child in self.children().filter(|c| c.is_element()) {
