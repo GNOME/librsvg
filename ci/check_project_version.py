@@ -2,6 +2,7 @@
 
 import re
 import sys
+import toml
 
 def get_first_group(regex, line):
     matches = regex.search(line)
@@ -35,23 +36,13 @@ def get_configure_ac_version():
             
     return f'{major}.{minor}.{micro}'
 
-# Assumes a line like 'version = "1.2.3"'
-def get_version_from_toml(filename):
-    regex = re.compile(r'^version = "(\d+\.\d+\.\d+)"')
-
-    with open(filename) as f:
-        for line in f.readlines():
-            version = get_first_group(regex, line)
-            if version is not None:
-                return version
-
-    raise Exception(f'{filename} does not have a version number')
-
 def get_cargo_toml_version():
-    return get_version_from_toml('Cargo.toml')
+    doc = toml.load('Cargo.toml')
+    return doc['workspace']['package']['version']
 
 def get_doc_version():
-    return get_version_from_toml('doc/librsvg.toml')
+    doc = toml.load('doc/librsvg.toml')
+    return doc['library']['version']
 
 versions = [
     ['configure.ac', get_configure_ac_version()],
