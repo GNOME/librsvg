@@ -11,6 +11,9 @@ edition.workspace = true
 rust-version.workspace = true
 exclude = ["tests/fixtures", "tests/resources" ]
 
+[package.metadata.docs.rs]
+rustc-args = ["--cfg", "docsrs"]
+
 [package.metadata.system-deps]
 cairo = "1.17"
 cairo-gobject = "1.17"
