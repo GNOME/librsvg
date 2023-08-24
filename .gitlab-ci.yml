@@ -99,23 +99,12 @@ cargo_test:
       - tests/output
     expire_in: 1 day
 
-autotools build - opensuse@x86_64.stable:
+.autotools build:
   stage: build
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - .fdo.distribution-image@opensuse
-    # make check runs extra tests that require extra crates, hence cache is pushed
-    - .cache_push
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-    - job: check
-      artifacts: false
   variables:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
     PREFIX: "/usr/local/librsvg"
   script:
-    - source ./ci/setup-dependencies-env.sh
     - mkdir -p _build
     - cd _build
     - ../autogen.sh --enable-gtk-doc --enable-vala
@@ -128,6 +117,22 @@ autotools build - opensuse@x86_64.stable:
       - _build/tests/*.log
       - _build/tests/output
     expire_in: 1 day
+
+autotools build - opensuse@x86_64.stable:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - .fdo.distribution-image@opensuse
+    # make check runs extra tests that require extra crates, hence cache is pushed
+    - .cache_push
+    - ".autotools build"
+  needs:
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+    - job: check
+      artifacts: false
+  script:
+    - source ./ci/setup-dependencies-env.sh
+    - !reference [".autotools build", "script"]
 
 cargo test - opensuse@x86_64:
   extends:
@@ -185,6 +190,62 @@ cargo test - opensuse@aarch64:
   extends: .cache
   cache:
     policy: pull-push
+
+autotools build - gnomeos.nightly@x86_64:
+  extends:
+    - ".container.gnomeos.nightly@x86_64"
+    - .fdo.distribution-image@gnomeos
+    - ".autotools build"
+  needs:
+    - job: gnomeos-container.nightly@x86_64
+      artifacts: false
+    - job: check
+      artifacts: false
+
+autotools build - gnomeos.45@x86_64:
+  extends:
+    - ".container.gnomeos.45@x86_64"
+    - .fdo.distribution-image@gnomeos
+    - ".autotools build"
+  needs:
+    - job: gnomeos-container.45@x86_64
+      artifacts: false
+    - job: check
+      artifacts: false
+
+cargo test - gnomeos.nightly.@x86_64:
+  extends:
+    - ".container.gnomeos.nightly@x86_64"
+    - .fdo.distribution-image@gnomeos
+    - .cargo-test
+  needs:
+    - job: gnomeos-container.nightly@x86_64
+      artifacts: false
+    - job: check
+      artifacts: false
+  parallel:
+    matrix:
+      - RUST_VERSION:
+        - "${RUST_STABLE}"
+        - "${RUST_MINIMUM}"
+        - "nightly"
+
+cargo test - gnomeos.45@x86_64:
+  extends:
+    - ".container.gnomeos.45@x86_64"
+    - .fdo.distribution-image@gnomeos
+    - .cargo-test
+  needs:
+    - job: gnomeos-container.45@x86_64
+      artifacts: false
+    - job: check
+      artifacts: false
+  parallel:
+    matrix:
+      - RUST_VERSION:
+        - "${RUST_STABLE}"
+        - "${RUST_MINIMUM}"
+        - "nightly"
 
 fmt:
   extends:
