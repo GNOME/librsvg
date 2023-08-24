@@ -2,14 +2,22 @@ use std::env;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
-use std::process;
 
-fn main() {
+#[cfg(docsrs)]
+fn probe_system_deps() {
+    // do not probe libraries since the docs.rs environment doesn't have them
+}
+
+#[cfg(not(docsrs))]
+fn probe_system_deps() {
     if let Err(e) = system_deps::Config::new().probe() {
         eprintln!("{e}");
-        process::exit(1);
+        std::process::exit(1);
     }
+}
 
+fn main() {
+    probe_system_deps();
     generate_srgb_tables();
 }
 
