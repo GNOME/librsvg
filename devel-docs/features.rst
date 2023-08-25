@@ -867,7 +867,7 @@ Librsvg supports the `xml:space attribute
 <https://www.w3.org/TR/xml/#sec-white-space>`_ and its handling per
 SVG1.1.  Note that this has been superseded in SVG2 with CSS
 whitespace handling; librsvg does not support this yet as of
-2013/Feb/10.
+2023/Feb/10.
 
 Explicitly Unsupported features
 -------------------------------
