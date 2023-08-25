@@ -6,18 +6,31 @@ off items while making a release.
 
 - ☐ Refresh your memory with
   https://wiki.gnome.org/MaintainersCorner/Releasing
+
+**Versions:**
+
 - ☐ Increase the package version number in ``configure.ac`` (it may
   already be increased but not released; double-check it).
 - ☐ Copy version number to ``Cargo.toml``.
 - ☐ Copy version number to ``doc/librsvg.toml``.
 - ☐ Compute and write version number to ``rsvg/Cargo.toml``, see :ref:`crate version<crate_version>` below.
+- ☐ Copy the crate version number to the example in `rsvg/src/lib.rs`.
 - ☐ ``cargo update`` - needed because you tweaked ``Cargo.toml``, and
   also to get new dependencies.
 - ☐ Tweak the library version number in ``configure.ac`` if the API
   changed; follow the steps there.
+
+**Release notes:**
+
 - ☐ Update ``NEWS``, see below for the preferred format.
+
+**CI:**
+
 - ☐ Commit the changes above; push a branch.
 - ☐ Create a merge request; fix it until it passes the CI.  Merge it.
+
+**Publish:**
+
 - ☐ ``cargo publish -p librsvg``, see :ref:`crate_release` for details.
 - ☐ If this is a development release, create a signed tag for the crate's version - ``git tag -s x.y.z-beta.w``.
 - ☐ Create a signed tag for the merge commit - ``git tag -s x.y.z`` with the version number.
