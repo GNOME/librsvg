@@ -41,8 +41,8 @@ installed so that librsvg's compilation can find them via [system-deps][system-d
 There are some [security considerations][sec-libs] for these non-Rust
 libraries, which you may want to read.
 
-[system-deps]:(https://github.com/gdesmott/system-deps)
-[sec-libs]:(https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html#librsvgs-dependencies)
+[system-deps]: https://github.com/gdesmott/system-deps
+[sec-libs]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/security.html#librsvgs-dependencies
 
 **Bug tracking:** If you have found a bug, take a look at [our bug
 tracker][bugs].  Please see the "[reporting bugs][reporting-bugs]"
