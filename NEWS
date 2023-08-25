@@ -1,5 +1,24 @@
+Version 2.56.93
+===============
+
+librsvg crate version 2.57.0-beta.3
+
+- #1009 - Fix rsvg-convert man page about overriding styles with
+  !important in an external stylesheet.
+
+- #1008 - Clean up the documentation for the Rust API.
+
+- #1012 - RenderingError::InvalidTransform no longer exists; this was
+  not meant to be an error that surfaces to the public API.
+
+- Update cssparser and selectors crates (Lukáš Tyrychtr, Federico Mena).
+
+- Remove unnecessary dependencies (Uli Schlachter).
+
 Version 2.56.92
 ===============
+
+librsvg crate version 2.57.0-beta.2
 
 - #991 - Fix the build for aarch64.
 

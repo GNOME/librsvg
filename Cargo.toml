@@ -1,5 +1,5 @@
 [workspace.package]
-version = "2.56.92"
+version = "2.56.93"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
 description = """
 A library to render SVG images to Cairo surfaces. GNOME uses this to

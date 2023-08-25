@@ -4,26 +4,43 @@ Release process checklist
 Feel free to print this document or copy it to a text editor to check
 off items while making a release.
 
--  ☐ Refresh your memory with
-   https://wiki.gnome.org/MaintainersCorner/Releasing
--  ☐ Increase the package version number in ``configure.ac`` (it may
-   already be increased but not released; double-check it).
--  ☐ Copy version number to ``Cargo.toml``.
--  ☐ Copy version number to ``doc/librsvg.toml``.
--  ☐ ``cargo update`` - needed because you tweaked ``Cargo.toml``, and
-   also to get new dependencies.
--  ☐ Tweak the library version number in ``configure.ac`` if the API
-   changed; follow the steps there.
--  ☐ Update ``NEWS``, see below for the preferred format.
--  ☐ Commit the changes above; push a branch.
--  ☐ Create a merge request; fix it until it passes the CI.  Merge it.
--  ☐ Create a signed tag for the merge commit - ``git tag -s x.y.z`` with the version number.
--  ☐ ``git push`` the signed tag to gitlab.gnome.org/GNOME/librsvg
--  ☐ Go to the merge request's pipeline, and look for the ``distcheck`` job.  That one has the release tarball; download it.
--  ☐ Copy that tarball to the FTP staging server: ``scp librsvg-x.y.z.tar.xz master.gnome.org:``
--  ☐ ``ssh master.gnome.org`` and then
-   ``ftpadmin install librsvg-x.y.z.tar.xz``
--  ☐ Create a `release in Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
+- ☐ Refresh your memory with
+  https://wiki.gnome.org/MaintainersCorner/Releasing
+
+**Versions:**
+
+- ☐ Increase the package version number in ``configure.ac`` (it may
+  already be increased but not released; double-check it).
+- ☐ Copy version number to ``Cargo.toml``.
+- ☐ Copy version number to ``doc/librsvg.toml``.
+- ☐ Compute and write version number to ``rsvg/Cargo.toml``, see :ref:`crate version<crate_version>` below.
+- ☐ Copy the crate version number to the example in `rsvg/src/lib.rs`.
+- ☐ ``cargo update`` - needed because you tweaked ``Cargo.toml``, and
+  also to get new dependencies.
+- ☐ Tweak the library version number in ``configure.ac`` if the API
+  changed; follow the steps there.
+
+**Release notes:**
+
+- ☐ Update ``NEWS``, see below for the preferred format.
+
+**CI:**
+
+- ☐ Commit the changes above; push a branch.
+- ☐ Create a merge request; fix it until it passes the CI.  Merge it.
+
+**Publish:**
+
+- ☐ ``cargo publish -p librsvg``, see :ref:`crate_release` for details.
+- ☐ If this is a development release, create a signed tag for the crate's version - ``git tag -s x.y.z-beta.w``.
+- ☐ Create a signed tag for the merge commit - ``git tag -s x.y.z`` with the version number.
+- ☐ If this is a development release ``git push`` the signed tag for the crate's version to gitlab.gnome.org/GNOME/librsvg
+- ☐ ``git push`` the signed tag for the GNOME version to gitlab.gnome.org/GNOME/librsvg
+- ☐ Go to the merge request's pipeline, and look for the ``distcheck`` job.  That one has the release tarball; download it.
+- ☐ Copy that tarball to the FTP staging server: ``scp librsvg-x.y.z.tar.xz master.gnome.org:``
+- ☐ ``ssh master.gnome.org`` and then
+  ``ftpadmin install librsvg-x.y.z.tar.xz``
+- ☐ Create a `release in Gitlab <https://gitlab.gnome.org/GNOME/librsvg/-/releases>`_.
 
 For ``x.y.0`` releases, do the following:
 
@@ -80,6 +97,50 @@ their tooling for the stable GNOME releases. File an
 issue in their `repository
 <https://gitlab.gnome.org/GNOME/releng/-/issues>`__ to indicate that
 the new ``librsvg-x.y.0`` is a stable series.
+
+.. _crate_version:
+
+Version number for public Rust crate
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``librsvg`` crate is `available on crates.io
+<https://crates.io/crates/librsvg/>`_.  This is for people who wish to
+use librsvg directly from Rust, instead of via the C ABI library
+(i.e. the ``.tar.xz`` release).
+
+While the C ABI library uses the GNOME versioning scheme, Rust crates
+use `SemVer <https://semver.org>`_.  So, for librsvg, we have the
+following scheme:
+
+**Stable releases:**
+
+* GNOME tarball: 2.57.0
+* Rust crate: 2.57.0 (i.e. the same)
+
+**Development releases:**
+
+* GNOME tarball: 2.57.90 through 2.57.99 (.9x patch version means development release)
+* Rust crate: 2.58.0-beta.0 through -beta.9 (SemVer supports a -beta.x suffix)
+
+When making releases, you have to edit ``Cargo.toml`` and
+``rsvg/Cargo.toml`` by hand to put in version numbers like the above.
+The CI scripts will check that the correct versions are in place.
+
+.. _crate_release:
+
+Releasing to crates.io
+----------------------
+
+After preparing a GNOME release, you'll also want to release to
+crates.io.  This requires an `API token
+<https://doc.rust-lang.org/cargo/reference/publishing.html#before-your-first-publish>`_;
+if you are maintainer you should have one, and also write access to
+the ``librsvg`` crate on crates.io.
+
+To make a release, ``cargo publish -p librsvg``.
+
+After this succeeds, proceed with the rest of the steps in the
+ref:`release_process_checklist`.
 
 Minimum supported Rust version (MSRV)
 -------------------------------------
