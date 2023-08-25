@@ -20,6 +20,7 @@ for the whole project.
 # Using librsvg
 
 * [Rust API documentation][rust-docs]
+* [Release notes][release-notes]
 
 **Non-Rust dependencies:**
 
@@ -57,7 +58,7 @@ considerations for librsvg's dependencies, see the [Security
 chapter][security] in the development guide.
 
 [rust-docs]: https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html
-
+[release-notes]: https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/NEWS
 
 # Contributing to librsvg's development
 
