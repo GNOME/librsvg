@@ -38,14 +38,14 @@ def main():
             all_the_same = False
 
     if not all_the_same:
-        print(f'Version numbers do not match in these lines, please fix them!\n', file=sys.stderr)
+        print('Version numbers do not match in these lines, please fix them!\n', file=sys.stderr)
 
         for filename, line_number, version, line in versions:
             print(f'{filename}:{line_number}: {line}', file=sys.stderr)
 
         sys.exit(1)
 
-    print(f'Versions number match.  All good!', file=sys.stderr)
+    print('Versions number match.  All good!', file=sys.stderr)
 
 if __name__ == "__main__":
     main()
