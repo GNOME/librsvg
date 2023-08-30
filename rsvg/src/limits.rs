@@ -33,12 +33,10 @@ pub const MAX_REFERENCED_ELEMENTS: usize = 500_000;
 /// this number of elements during the initial streaming load process.
 pub const MAX_LOADED_ELEMENTS: usize = 1_000_000;
 
-/// Maximum number of attributes loadable per document.
+/// Maximum number of attributes per XML element.
 ///
-/// This is here because librsvg uses u16 to address attributes. It should
-/// be essentially impossible to actually hit this limit, because the number
-/// of attributes that the SVG standard ascribes meaning to are lower than
-/// this limit.
+/// A malicious file could have `<foo attr1="blah" attr2="blah" attr3="blah"/>`,
+/// etc.  Librsvg puts this limit on how many attributes an element can have.
 pub const MAX_LOADED_ATTRIBUTES: usize = u16::MAX as usize;
 
 /// Maximum level of nesting for XInclude (XML Include) files.

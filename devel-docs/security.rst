@@ -254,21 +254,26 @@ Security considerations for librsvg
 
 **Built-in limits:** Librsvg has built-in limits for the following:
 
--  Limit on the maximum number of loaded XML elements, set to 1,000,000
-   (one million). SVG documents with more than this number of elements
-   will fail to load. This is a mitigation for malicious documents that
-   would otherwise consume large amounts of memory, for example by
-   including a huge number of ``<g/>`` elements with no useful content.
-   This is set in the file ``src/limits.rs`` in the
-   ``MAX_LOADED_ELEMENTS`` constant.
+- Limit on the maximum number of loaded XML elements, set to 1,000,000
+  (one million). SVG documents with more than this number of elements
+  will fail to load. This is a mitigation for malicious documents that
+  would otherwise consume large amounts of memory, for example by
+  including a huge number of ``<g/>`` elements with no useful content.
+  This is set in the file ``rsvg/src/limits.rs`` in the
+  ``MAX_LOADED_ELEMENTS`` constant.
 
--  Limit on the maximum number of referenced elements while rendering.
-   The ``<use>`` element in SVG and others like ``<pattern>`` can
-   reference other elements in the document. Malicious documents can
-   cause an exponential number of references to be resolved, so librsvg
-   places a limit of 500,000 references (half a million) to avoid
-   unbounded consumption of CPU time. This is set in the file
-   ``src/limits.rs`` in the ``MAX_REFERENCED_ELEMENTS`` constant.
+- Limit on the maximum number of referenced elements while rendering.
+  The ``<use>`` element in SVG and others like ``<pattern>`` can
+  reference other elements in the document. Malicious documents can
+  cause an exponential number of references to be resolved, so librsvg
+  places a limit of 500,000 references (half a million) to avoid
+  unbounded consumption of CPU time. This is set in the file
+  ``rsvg/src/limits.rs`` in the ``MAX_REFERENCED_ELEMENTS`` constant.
+
+- Limit on the nesting level for XML Includes (``xi:include``), to
+  avoid infinite recursion from an SVG file that includes itself.
+  This is set in the file ``rsvg/src/limits.rs`` in the
+  ``MAX_XINCLUDE_DEPTH`` constant.
 
 Librsvg has no built-in limits on the total amount of memory or CPU time
 consumed to process a document. Your application may want to place
