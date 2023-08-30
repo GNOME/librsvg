@@ -34,12 +34,12 @@ def find_toml_in_rust_toplevel_docs(lines):
     start_index = 0
     end_index = 0
 
-    for (i, l) in enumerate(lines):
-        if not found_start and l.startswith('//! ```toml'):
+    for (i, line) in enumerate(lines):
+        if not found_start and line.startswith('//! ```toml'):
             found_start = True
             start_index = i
             end_index = i
-        elif found_start and l.startswith('//! ```'):
+        elif found_start and line.startswith('//! ```'):
             end_index = i
             break
 
