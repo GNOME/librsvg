@@ -1,6 +1,5 @@
 # This script checks that the project's version is the same in a few files where it must appear.
 
-import re
 import sys
 import toml
 
@@ -28,13 +27,13 @@ def main():
             all_the_same = False
 
     if not all_the_same:
-        print(f'Version numbers do not match, please fix them!\n', file=sys.stderr)
+        print('Version numbers do not match, please fix them!\n', file=sys.stderr)
         for filename, version in versions:
             print(f'{filename}: {version}', file=sys.stderr)
 
         sys.exit(1)
 
-    print(f'Versions number match.  All good!', file=sys.stderr)
+    print('Versions number match.  All good!', file=sys.stderr)
 
 if __name__ == "__main__":
     main()
