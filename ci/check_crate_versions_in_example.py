@@ -54,7 +54,8 @@ def find_toml_in_rust_toplevel_docs(lines):
 
     return "".join(without_comment)
 
-def check_dependency_version(cargo_toml_filename, cargo_toml, other_filename, other_toml, dependency_name):
+def check_dependency_version(cargo_toml_filename, cargo_toml, other_filename, other_toml,
+                             dependency_name):
     dep_in_cargo_toml = get_crate_version(cargo_toml, dependency_name)
     dep_in_other = get_crate_version(other_toml, dependency_name)
 
