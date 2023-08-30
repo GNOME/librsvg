@@ -12,7 +12,7 @@ import toml
 def get_crate_version(toml_doc, crate_name):
     crate_decl = toml_doc['dependencies'][crate_name]
 
-    if type(crate_decl) is str:
+    if isinstance(crate_decl, str):
         version = crate_decl
     else:
         version = crate_decl['version']
