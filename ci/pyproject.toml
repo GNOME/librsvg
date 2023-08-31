@@ -1,0 +1,7 @@
+# Ruff linter.
+#
+# Repository: https://github.com/astral-sh/ruff
+#
+# Documentation: https://beta.ruff.rs/docs/
+[tool.ruff]
+line-length = 100  # same as rustfmt
