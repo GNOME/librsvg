@@ -38,7 +38,9 @@ def check_crate_version(configure_ac_version_str, crate_version_str):
     crate_version = semver.Version.parse(crate_version_str)
 
     if gen_crate_version_from_configure_ac_version(main_version) != crate_version:
-        raise Exception(f'configure.ac version {main_version} does not match rsvg crate version {crate_version}')
+        raise Exception(
+            f'configure.ac version {main_version} does not match rsvg crate version {crate_version}'
+        )
 
 def test_stable():
     a = semver.Version.parse('2.56.3')

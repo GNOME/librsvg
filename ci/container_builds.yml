@@ -6,7 +6,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2023-08-22.0-main"
+  BASE_TAG: "2023-08-30.0-main"
   RUST_STABLE: "1.71.1"
   RUST_MINIMUM: "1.70.0"
 
@@ -41,13 +41,7 @@ variables:
       make
       openssl-devel
       pango-devel
-      python3-gi-docgen
       python3-pip
-      python3-docutils
-      python311-semver
-      python311-Sphinx
-      python311-sphinx_rtd_theme
-      python311-toml
       shadow
       system-group-wheel
       vala
@@ -59,6 +53,10 @@ variables:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
+      python3 -m venv /usr/local/python &&
+      source /usr/local/python/bin/activate &&
+      pip3 install --upgrade pip &&
+      pip3 install -r ci/requirements.txt &&
       bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&
