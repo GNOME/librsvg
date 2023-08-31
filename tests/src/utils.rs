@@ -80,9 +80,7 @@ mod pango_ft2 {
         for path in &font_paths {
             let path_cstring = CString::new(*path).unwrap();
 
-            if fontconfig_sys::FcConfigAppFontAddFile(config, path_cstring.as_ptr() as *const _)
-                == 0
-            {
+            if fontconfig_sys::FcConfigAppFontAddFile(config, path_cstring.as_ptr().cast()) == 0 {
                 panic!("Could not load font file {} for tests; aborting", path,);
             }
         }
