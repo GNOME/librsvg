@@ -458,6 +458,22 @@ devel-docs:
       - public
     expire_in: 1 day
 
+cargo-doc:
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - '.fdo.distribution-image@opensuse'
+    - '.cache'
+  stage: docs
+  needs:
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+  script:
+    - bash -x ./ci/gen-rust-docs.sh
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 day
+
 pages:
   stage: docs
   extends:
@@ -468,13 +484,9 @@ pages:
     - job: reference
     - job: coverage
     - job: devel-docs
+    - job: cargo-doc
   script:
-    - mkdir -p public/internals
-    - cargo doc --document-private-items --no-deps
-    - cp -r target/doc/* public/internals
-    - mkdir -p public/doc
-    - cargo doc --no-deps --lib
-    - cp -r target/doc/* public/doc
+    - echo ""
   artifacts:
     paths:
       - public
