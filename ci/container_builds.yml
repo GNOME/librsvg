@@ -6,7 +6,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2023-08-31.0-librsvg-2.56"
+  BASE_TAG: "2023-08-31.1-librsvg-2.56"
   RUST_STABLE: "1.71.1"
   RUST_MINIMUM: "1.65.0"
 
@@ -26,6 +26,7 @@ variables:
       curl
       diffutils
       findutils
+      gawk
       gcc
       gdb
       gdk-pixbuf-devel
