@@ -1,0 +1,8 @@
+docutils
+gi-docgen
+pytest
+ruff
+semver
+Sphinx
+sphinx_rtd_theme
+toml
