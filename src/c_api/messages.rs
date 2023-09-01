@@ -69,18 +69,18 @@ fn rsvg_g_log(level: glib::ffi::GLogLevelFlags, msg: &str) {
     let fields = [
         GLogField {
             key: rsvg_c_str!("PRIORITY"),
-            value: priority as *const _,
+            value: priority.cast(),
             length: -1,
         },
         GLogField {
             key: rsvg_c_str!("MESSAGE"),
-            value: c_char_msg as *const _,
+            value: c_char_msg.cast(),
             length: msg.len() as _,
         },
         // This is the G_LOG_DOMAIN set from the Makefile
         GLogField {
             key: rsvg_c_str!("GLIB_DOMAIN"),
-            value: rsvg_c_str!("librsvg") as *const _,
+            value: rsvg_c_str!("librsvg").cast(),
             length: -1,
         },
     ];
