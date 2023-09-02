@@ -74,7 +74,7 @@ fn rsvg_g_log(level: glib::ffi::GLogLevelFlags, msg: &str) {
         },
         GLogField {
             key: rsvg_c_str!("MESSAGE"),
-            value: c_char_msg as *const _,
+            value: c_char_msg.cast(),
             length: msg.len() as _,
         },
         // This is the G_LOG_DOMAIN set from the Makefile
