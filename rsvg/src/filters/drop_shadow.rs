@@ -19,7 +19,6 @@ pub struct FeDropShadow {
 }
 
 /// Resolved `feDropShadow` parameters for rendering.
-#[derive(Clone)]
 pub struct DropShadow {
     pub in1: Input,
     pub dx: f64,
