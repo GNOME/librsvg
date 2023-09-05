@@ -1,0 +1,10 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <!-- Test that we don't crash with an invalid gradientTransform attribute. -->
+
+  <linearGradient id="gradient" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0" gradientTransform="matrix(0 0 0 0 0 0)">
+    <stop stop-color="black" offset="0"/>
+    <stop stop-color="white" offset="1"/>
+  </linearGradient>
+
+  <rect x="0" y="0" width="100" height="100" fill="url(#gradient)"/>
+</svg>

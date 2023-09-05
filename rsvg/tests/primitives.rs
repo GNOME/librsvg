@@ -1,6 +1,6 @@
-use rsvg::test_compare_render_output;
 use rsvg::test_utils::reference_utils::{Compare, Evaluate, Reference};
 use rsvg::test_utils::{load_svg, render_document, SurfaceSize};
+use rsvg::{test_compare_render_output, test_svg_reference};
 
 #[test]
 fn simple_opacity_with_transform() {
@@ -362,4 +362,10 @@ test_compare_render_output!(
 <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="-30 -30 60 60">
   <rect x="0" y="0" width="20" height="20" fill="black" transform="translate(-10 -20) scale(2) rotate(45)"/>
 </svg>"##,
+);
+
+test_svg_reference!(
+    invalid_element_type_for_paint_server,
+    "tests/fixtures/reftests/invalid-element-type-for-paint-server.svg",
+    "tests/fixtures/reftests/invalid-element-type-for-paint-server-ref.svg"
 );

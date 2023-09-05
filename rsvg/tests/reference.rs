@@ -1178,3 +1178,15 @@ test_svg_reference!(
     "tests/fixtures/reftests/color-types-unsupported.svg",
     "tests/fixtures/reftests/color-types-unsupported-ref.svg"
 );
+
+test_svg_reference!(
+    invalid_gradient_transform,
+    "tests/fixtures/reftests/invalid-gradient-transform.svg",
+    "tests/fixtures/reftests/invalid-gradient-transform-ref.svg"
+);
+
+test_svg_reference!(
+    xinclude_data_url,
+    "tests/fixtures/reftests/xinclude-data-url.svg",
+    "tests/fixtures/reftests/xinclude-data-url-ref.svg"
+);
