@@ -434,10 +434,6 @@ impl<'i> AcquiredNodes<'i> {
             .lookup_node(node_id)
             .ok_or_else(|| AcquireError::LinkNotFound(node_id.clone()))?;
 
-        if !node.is_element() {
-            return Err(AcquireError::InvalidLinkType(node_id.clone()));
-        }
-
         if node.borrow_element().is_accessed_by_reference() {
             self.acquire_ref(&node)
         } else {
