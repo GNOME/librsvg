@@ -1142,11 +1142,14 @@ trait IntoGError {
 
     fn into_gerror(self, session: &Session, error: *mut *mut glib::ffi::GError)
         -> Self::GlibResult;
+
+    fn into_g_warning(self) -> Self::GlibResult;
 }
 
 impl<E: fmt::Display> IntoGError for Result<(), E> {
     type GlibResult = glib::ffi::gboolean;
 
+    /// Use this one when the public API actually uses a GError.
     fn into_gerror(
         self,
         session: &Session,
@@ -1157,6 +1160,18 @@ impl<E: fmt::Display> IntoGError for Result<(), E> {
 
             Err(e) => {
                 set_gerror(session, error, 0, &format!("{e}"));
+                false.into_glib()
+            }
+        }
+    }
+
+    /// Use this one when the public API doesn't use a GError.
+    fn into_g_warning(self) -> Self::GlibResult {
+        match self {
+            Ok(()) => true.into_glib(),
+
+            Err(e) => {
+                rsvg_g_warning(&format!("{e}"));
                 false.into_glib()
             }
         }
@@ -1264,11 +1279,8 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo(
     }
 
     let rhandle = get_rust_handle(handle);
-    let session = rhandle.imp().session.clone();
 
-    rhandle
-        .render_cairo_sub(cr, None)
-        .into_gerror(&session, ptr::null_mut())
+    rhandle.render_cairo_sub(cr, None).into_g_warning()
 }
 
 #[no_mangle]
@@ -1285,13 +1297,10 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
     }
 
     let rhandle = get_rust_handle(handle);
-    let session = rhandle.imp().session.clone();
 
     let id: Option<String> = from_glib_none(id);
 
-    rhandle
-        .render_cairo_sub(cr, id.as_deref())
-        .into_gerror(&session, ptr::null_mut())
+    rhandle.render_cairo_sub(cr, id.as_deref()).into_g_warning()
 }
 
 #[no_mangle]
@@ -1310,7 +1319,9 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             let session = &rhandle.imp().session;
-            rsvg_log!(session, "could not render: {}", e);
+            let msg = format!("could not render: {}", e);
+            rsvg_log!(session, "{}", msg);
+            rsvg_g_warning(&msg);
             ptr::null_mut()
         }
     }
@@ -1334,7 +1345,9 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             let session = &rhandle.imp().session;
-            rsvg_log!(session, "could not render: {}", e);
+            let msg = format!("could not render: {}", e);
+            rsvg_log!(session, "{}", msg);
+            rsvg_g_warning(&msg);
             ptr::null_mut()
         }
     }

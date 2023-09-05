@@ -78,7 +78,9 @@ G_BEGIN_DECLS
  * context to be in an error state in various situations, for example, if it was
  * passed an invalid matrix or if it was created for an invalid surface.
  *
- * Returns: `TRUE` if drawing succeeded; `FALSE` otherwise.
+ * Returns: `TRUE` if drawing succeeded; `FALSE` otherwise.  This function will emit a g_warning()
+ * if a rendering error occurs.
+ *
  * Since: 2.14
  *
  * Deprecated: 2.52.  Please use [method@Rsvg.Handle.render_document] instead; that function lets
@@ -143,7 +145,9 @@ gboolean rsvg_handle_render_cairo (RsvgHandle *handle, cairo_t *cr);
  * `#foo` (hash `foo`) to get the geometry of the element that
  * has an `id="foo"` attribute.
  *
- * Returns: `TRUE` if drawing succeeded; `FALSE` otherwise.
+ * Returns: `TRUE` if drawing succeeded; `FALSE` otherwise.  This function will emit a g_warning()
+ * if a rendering error occurs.
+ *
  * Since: 2.14
  *
  * Deprecated: 2.52.  Please use [method@Rsvg.Handle.render_layer] instead; that function lets
