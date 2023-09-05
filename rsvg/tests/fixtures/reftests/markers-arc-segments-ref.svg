@@ -1,0 +1,22 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+  <!-- Test that the orientation of markers is computed correctly for Arc segments in paths.-->
+  <defs>
+    <symbol id="triangle" viewBox="0 -10 20 20">
+      <path d="M0,-10 L0,10 L20,0 Z" fill="lime"/>
+    </symbol>
+  </defs>
+
+  <path d="M50,30 L150,30 A20,20,0,0,1,170,50 L170,150 A20,20,0,0,1,150,170 L50,170 A20,20,0,0,1,30,150 L30,50 A20,20,0,0,1,50,30 Z"
+        stroke="blue" stroke-width="5" fill="none"/>
+
+  <g fill="lime">
+    <path d="M50,20 l20,10 l-20,10 Z"/>
+    <path d="M150,20 l20,10 l-20,10 Z"/>
+    <path d="M160,50 l20,0 l-10,20 Z"/>
+    <path d="M160,150 l20,0 l-10,20 Z"/>
+    <path d="M150,160 l0,20 l-20,-10 Z"/>
+    <path d="M50,160 l0,20 l-20,-10 Z"/>
+    <path d="M20,150 l10,-20 l10,20 Z"/>
+    <path d="M20,50 l10,-20 l10,20 Z"/>
+  </g>
+</svg>

@@ -1190,3 +1190,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/xinclude-data-url.svg",
     "tests/fixtures/reftests/xinclude-data-url-ref.svg"
 );
+
+test_svg_reference!(
+    markers_arc_segments,
+    "tests/fixtures/reftests/markers-arc-segments.svg",
+    "tests/fixtures/reftests/markers-arc-segments-ref.svg"
+);
