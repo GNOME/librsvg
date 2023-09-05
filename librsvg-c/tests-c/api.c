@@ -1252,6 +1252,84 @@ empty_write_close (void)
     g_object_unref (handle);
 }
 
+/* Test that trying to render a handle that has not been loaded yet results in a g_critical */
+static void
+ordering_render_before_load (void)
+{
+    if (g_test_subprocess ()) {
+        RsvgHandle *handle = rsvg_handle_new ();
+
+        cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 10, 10);
+        cairo_t *cr = cairo_create (surf);
+
+        g_assert_false (rsvg_handle_render_cairo (handle, cr));
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_failed ();
+    g_test_trap_assert_stderr ("*CRITICAL*Handle has not been loaded*");
+}
+
+/* Test that trying to render a handle that is in the middle of loading results in a g_critical */
+static void
+ordering_render_while_loading (void)
+{
+    if (g_test_subprocess ()) {
+        RsvgHandle *handle = rsvg_handle_new ();
+        GError *error = NULL;
+        guchar buf = '<'; /* as if we started writing some XML */
+
+        /* push a single byte to the handle to start its loading process */
+        g_assert_true (rsvg_handle_write (handle, &buf, 1, &error));
+        g_assert_no_error (error);
+
+        cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 10, 10);
+        cairo_t *cr = cairo_create (surf);
+
+        g_assert_false (rsvg_handle_render_cairo (handle, cr));
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_failed ();
+    g_test_trap_assert_stderr ("*CRITICAL*Handle is still loading*");
+}
+
+/* Test that trying to render a handle that was closed with an error results in a g_critical */
+static void
+rendering_after_close_error (void)
+{
+    if (g_test_subprocess ()) {
+        RsvgHandle *handle = rsvg_handle_new ();
+        GError *error = NULL;
+        guchar buf = 0;
+
+        /* Write nothing to start the loading process */
+        g_assert_true (rsvg_handle_write (handle, &buf, 0, &error));
+        g_assert_no_error (error);
+
+        /* Close the handle */
+        g_assert_false (rsvg_handle_close (handle, &error));
+        g_assert_error (error, RSVG_ERROR, RSVG_ERROR_FAILED);
+
+        g_error_free (error);
+
+        cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 10, 10);
+        cairo_t *cr = cairo_create (surf);
+
+        g_assert_false (rsvg_handle_render_cairo (handle, cr));
+
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_failed ();
+    g_test_trap_assert_stderr ("*CRITICAL*did you check for errors during the loading stage*");
+}
+
 static void
 cannot_request_external_elements (void)
 {
@@ -1658,6 +1736,9 @@ add_api_tests (void)
     g_test_add_func ("/api/untransformed_element", untransformed_element);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);
+    g_test_add_func ("/api/ordering_render_before_load", ordering_render_before_load);
+    g_test_add_func ("/api/ordering_render_while_loading", ordering_render_while_loading);
+    g_test_add_func ("/api/rendering_after_close_error", rendering_after_close_error);
     g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);
     g_test_add_func ("/api/property_flags", property_flags);
     g_test_add_func ("/api/property_dpi", property_dpi);
