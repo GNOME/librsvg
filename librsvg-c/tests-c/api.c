@@ -1350,6 +1350,23 @@ rendering_after_close_error (void)
 }
 
 static void
+render_cairo_produces_g_warning (void)
+{
+    if (g_test_subprocess ()) {
+        RsvgHandle *handle = load_test_document ("instancing-limit.svg");
+
+        cairo_surface_t *surf = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 10, 10);
+        cairo_t *cr = cairo_create (surf);
+
+        g_assert_false (rsvg_handle_render_cairo (handle, cr));
+        return;
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_stderr ("*WARNING*exceeded*");
+}
+
+static void
 cannot_request_external_elements (void)
 {
     /* We want to test that using one of the _sub() functions will fail
@@ -1759,6 +1776,7 @@ add_api_tests (void)
     g_test_add_func ("/api/ordering_render_before_load", ordering_render_before_load);
     g_test_add_func ("/api/ordering_render_while_loading", ordering_render_while_loading);
     g_test_add_func ("/api/rendering_after_close_error", rendering_after_close_error);
+    g_test_add_func ("/api/render_cairo_produces_g_warning", render_cairo_produces_g_warning);
     g_test_add_func ("/api/cannot_request_external_elements", cannot_request_external_elements);
     g_test_add_func ("/api/property_flags", property_flags);
     g_test_add_func ("/api/property_dpi", property_dpi);
