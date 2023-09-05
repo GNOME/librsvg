@@ -1310,7 +1310,9 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             let session = &rhandle.imp().session;
-            rsvg_log!(session, "could not render: {}", e);
+            let msg = format!("could not render: {}", e);
+            rsvg_log!(session, "{}", msg);
+            rsvg_g_warning(&msg);
             ptr::null_mut()
         }
     }
@@ -1334,7 +1336,9 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             let session = &rhandle.imp().session;
-            rsvg_log!(session, "could not render: {}", e);
+            let msg = format!("could not render: {}", e);
+            rsvg_log!(session, "{}", msg);
+            rsvg_g_warning(&msg);
             ptr::null_mut()
         }
     }

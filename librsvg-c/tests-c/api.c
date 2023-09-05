@@ -619,6 +619,25 @@ handle_get_pixbuf_sub (void)
     test_get_pixbuf (TRUE);
 }
 
+/* Test that calling rsvg_handle_get_pixbuf() will produce a g_warning if there is a rendering error.
+ * This is for the benefit of the C-based gdk-pixbuf loader, which uses rsvg_handle_get_pixbuf() --- with
+ * the warning, calling code will at least have a clue that something went wrong, since that function
+ * does not return a GError.
+ */
+static void
+handle_get_pixbuf_produces_g_warning (void)
+{
+    if (g_test_subprocess ()) {
+        RsvgHandle *handle = load_test_document ("too-big.svg");
+
+        GdkPixbuf *pixbuf = rsvg_handle_get_pixbuf (handle);
+        g_assert_null (pixbuf);
+    }
+
+    g_test_trap_subprocess (NULL, 0, 0);
+    g_test_trap_assert_stderr ("*WARNING*could not render*");
+}
+
 static void
 dimensions_and_position (void)
 {
@@ -1717,6 +1736,7 @@ add_api_tests (void)
     g_test_add_func ("/api/handle_has_sub", handle_has_sub);
     g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
     g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
+    g_test_add_func ("/api/handle_get_pixbuf_produces_g_warning", handle_get_pixbuf_produces_g_warning);
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
     g_test_add_func ("/api/set_size_callback", set_size_callback);
     g_test_add_func ("/api/reset_size_callback", reset_size_callback);
