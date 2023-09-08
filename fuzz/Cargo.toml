@@ -1,0 +1,28 @@
+[package]
+name = "rsvg-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+cairo-rs = { version = "0.18" }
+glib = "0.18"
+gio = "0.18"
+libfuzzer-sys = "0.4"
+librsvg = { path = "../rsvg" }
+
+# Prevent this from interfering with workspaces
+# [workspace]
+# members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
