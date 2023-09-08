@@ -30,3 +30,7 @@ default-members = [
     "rsvg",
     "rsvg_convert",
 ]
+exclude = [
+    "afl-fuzz",
+    "fuzz",
+]
