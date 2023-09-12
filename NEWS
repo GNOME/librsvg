@@ -1,3 +1,11 @@
+Version 2.56.4
+==============
+
+- #1009 - Fix rsvg-convert man page about overriding styles with
+  !important in an external stylesheet.
+
+- Fix aarch64 build.
+
 Version 2.56.3
 ==============
 
