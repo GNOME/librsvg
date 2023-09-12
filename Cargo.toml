@@ -1,6 +1,6 @@
 [package]
 name = "librsvg"
-version = "2.56.3"
+version = "2.56.4"
 authors = ["Federico Mena Quintero <federico@gnome.org>", "Many others"]
 description = "Render SVG documents with Cairo"
 license = "LGPL-2.1-or-later"
