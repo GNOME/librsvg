@@ -13,6 +13,7 @@ exclude = ["tests/fixtures", "tests/resources" ]
 
 [package.metadata.docs.rs]
 rustc-args = ["--cfg", "docsrs"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.system-deps]
 cairo = "1.17"
