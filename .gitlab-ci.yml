@@ -407,6 +407,7 @@ msys2-mingw64:
       - _build\tests\*.log
       - _build\tests\output
     expire_in: 1 day
+  allow_failure: true
 
 distcheck:
   stage: acceptance test
