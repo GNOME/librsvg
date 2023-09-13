@@ -1,3 +1,34 @@
+Version 2.57.0
+==============
+
+librsvg crate version 2.57.0
+
+This is the first stable version of librsvg to be available as a
+Rust crate in crates.io.  Please see the documentaiton at
+https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html
+
+This version of librsvg corresponds to the GNOME 45 release.
+
+These are some user-visible new features since 2.56.  For details,
+look at the release notes from the 2.56.9x development series:
+
+- rsvg-convert can now output PDF versions 1.4, 1.5, 1.6, in addition
+  to the default 1.7, especially for LaTeX users.  See the
+  rsvg-convert(1) man page for options like --format=pdf1.4 (Simon Buttgereit).
+
+- #985 - Support the image-rendering property (nedondev).
+
+- #989 - For consistency with other command-line tools, rsvg-convert
+  now supports an argument "-" to specify the standard input.  This is
+  in addition to the already-supported syntax of not specifying an
+  input file at all (Lukáš Tyrychtr).
+
+- Partial support for the edgeMode attribute in feGaussianBlur, only
+  for small blurs right now.
+
+- The minimum supported Rust version (MSRV) is 1.70.0.
+
+
 Version 2.56.93
 ===============
 
