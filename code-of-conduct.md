@@ -6,7 +6,7 @@ Thank you for being a part of the GNOME project. We value your participation and
 
 This Code of Conduct applies to all GNOME community spaces, including, but not limited to:
 
- * Issue tracking systems - bugzilla.gnome.org
+ * Issue tracking systems - gitlab.gnome.org
  * Documentation and tutorials - developer.gnome.org
  * Code repositories - git.gnome.org and gitlab.gnome.org
  * Mailing lists - mail.gnome.org
