@@ -17,8 +17,8 @@
     languages can be created for it in an automated fashion.
   </description>
 
-  <homepage rdf:resource="https://wiki.gnome.org/action/show/Projects/LibRsvg" />
-  <mailing-list rdf:resource="https://mail.gnome.org/mailman/listinfo/desktop-devel-list" />
+  <homepage rdf:resource="https://wiki.gnome.org/Projects/LibRsvg" />
+  <support-forum rdf:resource="https://discourse.gnome.org/c/platform/5" />
   <download-page rdf:resource="https://download.gnome.org/sources/librsvg/" />
   <bug-database rdf:resource="https://gitlab.gnome.org/GNOME/librsvg/issues" />
   <!-- <category rdf:resource="http://api.gnome.org/doap-extensions#deprecated" /> -->
