@@ -48,7 +48,7 @@ name = "rsvg"
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
-cairo-rs = { version = "0.18", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cairo-rs = { version = "0.18.2", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 cssparser = "~0.31"
 data-url = "0.3.0"
