@@ -1,0 +1,86 @@
+#!/bin/sh
+
+set -eux -o pipefail
+
+PREFIX=/usr/local/librsvg
+
+GLIB_TAG="2.78.0"
+GOBJECT_INTROSPECTION_TAG="1.78.0"
+FREETYPE2_TAG="VER-2-13-2"
+FONTCONFIG_TAG="2.14.2"
+CAIRO_TAG="1.17.8"
+HARFBUZZ_TAG="8.2.0"
+PANGO_TAG="1.51.1"
+LIBXML2_TAG="v2.11.5"
+GDK_PIXBUF_TAG="2.42.10"
+
+mkdir deps_src
+cd deps_src
+
+export PATH=$PREFIX/bin:$PATH
+export LD_LIBRARY_PATH=$PREFIX/lib64
+export PKG_CONFIG_PATH=$PREFIX/lib64/pkgconfig
+
+git clone --depth 1 --branch $GLIB_TAG https://gitlab.gnome.org/GNOME/glib
+cd glib
+meson setup _build --prefix $PREFIX
+meson compile -C _build
+meson install -C _build
+
+cd ..
+git clone --depth 1 --branch $GOBJECT_INTROSPECTION_TAG https://gitlab.gnome.org/GNOME/gobject-introspection
+cd gobject-introspection
+meson setup _build --prefix $PREFIX
+meson compile -C _build
+meson install -C _build
+
+cd ..
+git clone --depth 1 --branch $FREETYPE2_TAG https://gitlab.freedesktop.org/freetype/freetype
+cd freetype
+meson setup _build --prefix $PREFIX -Dharfbuzz=disabled
+meson compile -C _build
+meson install -C _build
+
+cd ..
+git clone --depth 1 --branch $FONTCONFIG_TAG https://gitlab.freedesktop.org/fontconfig/fontconfig
+cd fontconfig
+meson setup _build --prefix $PREFIX
+meson compile -C _build
+meson install -C _build
+
+cd ..
+git clone --depth 1 --branch $CAIRO_TAG https://gitlab.freedesktop.org/cairo/cairo
+cd cairo
+meson setup _build --prefix $PREFIX
+meson compile -C _build
+meson install -C _build
+
+cd ..
+git clone --depth 1 --branch $HARFBUZZ_TAG https://github.com/harfbuzz/harfbuzz
+cd harfbuzz
+meson setup _build --prefix $PREFIX
+meson compile -C _build
+meson install -C _build
+
+cd ..
+git clone --depth 1 --branch $PANGO_TAG https://gitlab.gnome.org/GNOME/pango
+cd pango
+meson setup _build --prefix $PREFIX
+meson compile -C _build
+meson install -C _build
+
+cd ..
+git clone --depth 1 --branch $LIBXML2_TAG https://gitlab.gnome.org/GNOME/libxml2
+cd libxml2
+mkdir _build
+cd _build
+../autogen.sh --prefix $PREFIX --libdir /usr/local/librsvg/lib64 --without-python
+make
+make install
+
+cd ..
+git clone --depth 1 --branch $GDK_PIXBUF_TAG https://gitlab.gnome.org/GNOME/gdk-pixbuf
+cd gdk-pixbuf
+meson setup _build --prefix $PREFIX -Dman=false
+meson compile -C _build
+meson install -C _build
