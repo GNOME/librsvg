@@ -20,6 +20,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliar
 @set FREETYPE2_VER=2.13.0
 @set PKG_CONFIG_VER=0.29.2
 
+@set CURRDIR=%CD%
 pip3 install --upgrade --user meson~=0.64 || goto :error
 git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/gdk-pixbuf.git
 git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/pango.git
@@ -47,12 +48,14 @@ if not exist %HOMEPATH%\.cargo\bin\rustup.exe %MSYS2_BINDIR%\wget https://static
 %MSYS2_BINDIR%\tar -Jxf libxml2-%LIBXML2_VER%.tar.xz
 :: Having the gnutools/msys64 in the %PATH% during the MSVC builds
 :: can cause trouble...
-set PATH=%BASEPATH%
 del /f/q pkg-config-%PKG_CONFIG_VER%.tar.gz freetype-%FREETYPE2_VER%.tar.xz libxml2-%LIBXML2_VER%.tar.xz
 
 :: build and install pkg-config
-set PATH=%BASEPATH%
 cd pkg-config-%PKG_CONFIG_VER%
+
+:: patch pkg-config's NMake Makefile so that GNU's mkdir won'y be used by accident
+%MSYS2_BINDIR%\patch -p1 < %CURRDIR:\=/%/ci/pkgconfig.nmake.patch
+set PATH=%BASEPATH%
 nmake /f Makefile.vc CFG=release || goto :error
 copy /b release\x64\pkg-config.exe %INST%\bin
 nmake /f Makefile.vc CFG=release clean
