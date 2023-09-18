@@ -1,0 +1,21 @@
+--- a/Makefile.vc	2023-09-16 11:28:40.214382500 +0800
++++ b/Makefile.vc	2023-09-18 10:37:02.810835600 +0800
+@@ -73,7 +73,7 @@
+ 	@-if exist $@.manifest mt /manifest $@.manifest /outputresource:$@;1
+ 
+ $(CFG)\$(PLAT)\pkg-config:
+-	@-mkdir $@
++	@-md $@
+ 
+ config.h: config.h.win32
+ 	@-copy $@.win32 $@
+@@ -84,7 +84,8 @@
+ 	@-del /f /q $(CFG)\$(PLAT)\*.exe
+ 	@-del /f /q $(CFG)\$(PLAT)\*.ilk
+ 	@-del /f /q $(CFG)\$(PLAT)\pkg-config\*.obj
+-	@-rmdir /s /q $(CFG)\$(PLAT)
++	@-del /f /q $(CFG)\$(PLAT)\pkg-config\*.pdb
++	@-rd $(CFG)\$(PLAT)
+ 	@-del vc$(VSVER)0.pdb
+ 	@-del config.h
+ 
