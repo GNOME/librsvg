@@ -107,7 +107,7 @@ git clone --depth 1 --branch $LIBXML2_TAG https://gitlab.gnome.org/GNOME/libxml2
 cd libxml2
 mkdir _build
 cd _build
-../autogen.sh --prefix $PREFIX --libdir /usr/local/librsvg/lib64 --without-python
+../autogen.sh --prefix $PREFIX --libdir $PREFIX/lib64 --without-python
 make
 make install
 
