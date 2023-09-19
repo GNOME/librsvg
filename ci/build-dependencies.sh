@@ -1,8 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-set -eux -o pipefail
-
-PREFIX=/usr/local/librsvg
+set -o errexit -o pipefail -o noclobber -o nounset
 
 GLIB_TAG="2.78.0"
 GOBJECT_INTROSPECTION_TAG="1.78.0"
@@ -13,6 +11,41 @@ HARFBUZZ_TAG="8.2.0"
 PANGO_TAG="1.51.1"
 LIBXML2_TAG="v2.11.5"
 GDK_PIXBUF_TAG="2.42.10"
+
+PARSED=$(getopt --options '' --longoptions 'prefix:' --name "$0" -- "$@")
+if [ $? -ne 0 ]; then
+	echo 'Terminating...' >&2
+	exit 1
+fi
+
+eval set -- "$PARSED"
+unset PARSED
+
+PREFIX=
+
+while true; do
+    case "$1" in
+        '--prefix')
+            PREFIX=$2
+            shift 2
+            ;;
+
+        '--')
+            shift
+            break
+            ;;
+
+        *)
+            echo "Programming error"
+            exit 3
+            ;;
+    esac
+done
+
+if [ -z "$PREFIX" ]; then
+    echo "please specify a --prefix"
+    exit 1
+fi
 
 mkdir deps_src
 cd deps_src
