@@ -12,7 +12,7 @@ PANGO_TAG="1.51.1"
 LIBXML2_TAG="v2.11.5"
 GDK_PIXBUF_TAG="2.42.10"
 
-PARSED=$(getopt --options '' --longoptions 'prefix:' --name "$0" -- "$@")
+PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")
 if [ $? -ne 0 ]; then
 	echo 'Terminating...' >&2
 	exit 1
@@ -22,11 +22,17 @@ eval set -- "$PARSED"
 unset PARSED
 
 PREFIX=
+MESON_FLAGS=
 
 while true; do
     case "$1" in
         '--prefix')
             PREFIX=$2
+            shift 2
+            ;;
+
+        '--meson-flags')
+            MESON_FLAGS=$2
             shift 2
             ;;
 
@@ -56,49 +62,49 @@ export PKG_CONFIG_PATH=$PREFIX/lib64/pkgconfig
 
 git clone --depth 1 --branch $GLIB_TAG https://gitlab.gnome.org/GNOME/glib
 cd glib
-meson setup _build --prefix $PREFIX
+meson setup _build --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $GOBJECT_INTROSPECTION_TAG https://gitlab.gnome.org/GNOME/gobject-introspection
 cd gobject-introspection
-meson setup _build --prefix $PREFIX
+meson setup _build --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $FREETYPE2_TAG https://gitlab.freedesktop.org/freetype/freetype
 cd freetype
-meson setup _build --prefix $PREFIX -Dharfbuzz=disabled
+meson setup _build --prefix $PREFIX -Dharfbuzz=disabled $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $FONTCONFIG_TAG https://gitlab.freedesktop.org/fontconfig/fontconfig
 cd fontconfig
-meson setup _build --prefix $PREFIX
+meson setup _build --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $CAIRO_TAG https://gitlab.freedesktop.org/cairo/cairo
 cd cairo
-meson setup _build --prefix $PREFIX
+meson setup _build --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $HARFBUZZ_TAG https://github.com/harfbuzz/harfbuzz
 cd harfbuzz
-meson setup _build --prefix $PREFIX
+meson setup _build --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
 cd ..
 git clone --depth 1 --branch $PANGO_TAG https://gitlab.gnome.org/GNOME/pango
 cd pango
-meson setup _build --prefix $PREFIX
+meson setup _build --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
@@ -114,6 +120,6 @@ make install
 cd ..
 git clone --depth 1 --branch $GDK_PIXBUF_TAG https://gitlab.gnome.org/GNOME/gdk-pixbuf
 cd gdk-pixbuf
-meson setup _build --prefix $PREFIX -Dman=false
+meson setup _build --prefix $PREFIX -Dman=false $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
