@@ -53,9 +53,6 @@ if [ -z "$PREFIX" ]; then
     exit 1
 fi
 
-mkdir deps_src
-cd deps_src
-
 export PATH=$PREFIX/bin:$PATH
 export LD_LIBRARY_PATH=$PREFIX/lib64
 export PKG_CONFIG_PATH=$PREFIX/lib64/pkgconfig
