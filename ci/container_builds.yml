@@ -55,7 +55,9 @@ variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
       bash ci/install-python-tools.sh &&
-      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu &&
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version ${RUST_STABLE} \
+                              --arch x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&
       rm -rf /root/.cargo /root/.cache    # cleanup compilation dirs; binaries are installed now
@@ -65,21 +67,27 @@ variables:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_MINIMUM}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_MINIMUM} x86_64-unknown-linux-gnu
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version ${RUST_MINIMUM} \
+                              --arch x86_64-unknown-linux-gnu
 
 .container.opensuse@x86_64.nightly:
   extends: .container.opensuse@common
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-nightly-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh nightly x86_64-unknown-linux-gnu
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version nightly \
+                              --arch x86_64-unknown-linux-gnu
 
 .container.opensuse@aarch64:
   extends: .container.opensuse@common
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version ${RUST_STABLE} \
+                              --arch aarch64-unknown-linux-gnu
   tags:
     - aarch64
 
@@ -143,14 +151,18 @@ opensuse-container@aarch64:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version ${RUST_STABLE} \
+                              --arch x86_64-unknown-linux-gnu
 
 .container.fedora@aarch64:
   extends: .container.fedora@common
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version ${RUST_STABLE} \
+                              --arch aarch64-unknown-linux-gnu
   tags:
     - aarch64
 
@@ -206,14 +218,18 @@ fedora-container@x86_64:
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} x86_64-unknown-linux-gnu
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version ${RUST_STABLE} \
+                              --arch x86_64-unknown-linux-gnu
 
 .container.debian@aarch64:
   extends: .container.debian@common
   variables:
     FDO_DISTRIBUTION_TAG: "aarch64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_EXEC: >-
-      bash ci/install-rust.sh ${RUST_STABLE} aarch64-unknown-linux-gnu
+      bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
+                              --version ${RUST_STABLE} \
+                              --arch aarch64-unknown-linux-gnu
   tags:
     - aarch64
 
