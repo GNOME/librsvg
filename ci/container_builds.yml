@@ -9,6 +9,7 @@ variables:
   BASE_TAG: "2023-08-30.0-main"
   RUST_STABLE: "1.71.1"
   RUST_MINIMUM: "1.70.0"
+  RUSTUP_VERSION: "1.25.1"
 
 .container.opensuse@common:
   stage: "container-build"

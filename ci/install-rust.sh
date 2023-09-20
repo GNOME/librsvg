@@ -3,7 +3,12 @@ source ./ci/env.sh
 set -eu
 export CARGO_HOME='/usr/local/cargo'
 
-RUSTUP_VERSION=1.25.1
+if [ -z "$RUSTUP_VERSION" ]
+then
+    echo "RUSTUP_VERSION is not set, please set it"
+    exit 1
+fi
+
 RUST_VERSION=$1
 RUST_ARCH=$2
 
