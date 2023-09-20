@@ -6,7 +6,7 @@ source ./ci/env.sh
 
 export CARGO_HOME='/usr/local/cargo'
 
-PARSED=$(getopt --options '' --longoptions 'rustup-version:,version:,arch:' --name "$0" -- "$@")
+PARSED=$(getopt --options '' --longoptions 'rustup-version:,stable:,arch:' --name "$0" -- "$@")
 if [ $? -ne 0 ]; then
 	echo 'Terminating...' >&2
 	exit 1
@@ -16,7 +16,7 @@ eval set -- "$PARSED"
 unset PARSED
 
 RUSTUP_VERSION=
-VERSION=
+STABLE=
 ARCH=
 
 while true; do
@@ -26,8 +26,8 @@ while true; do
             shift 2
             ;;
 
-        '--version')
-            VERSION=$2
+        '--stable')
+            STABLE=$2
             shift 2
             ;;
 
@@ -53,8 +53,8 @@ if [ -z "$RUSTUP_VERSION" ]; then
     exit 1
 fi
 
-if [ -z "$VERSION"]; then
-    echo "missing --version argument, please pass the version of rustc you want"
+if [ -z "$STABLE"]; then
+    echo "missing --stable argument, please pass the version of rustc you want"
     exit 1
 fi
     
@@ -66,9 +66,9 @@ fi
 RUSTUP_URL=https://static.rust-lang.org/rustup/archive/$RUSTUP_VERSION/$ARCH/rustup-init
 wget $RUSTUP_URL
 
-chmod +x rustup-init;
-./rustup-init -y --no-modify-path --profile minimal --default-toolchain $VERSION;
-rm rustup-init;
+chmod +x rustup-init
+./rustup-init -y --no-modify-path --profile minimal --default-toolchain $STABLE
+rm rustup-init
 chmod -R a+w $RUSTUP_HOME $CARGO_HOME
 
 rustup --version
