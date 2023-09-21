@@ -143,25 +143,29 @@ autotools build - opensuse@x86_64.stable:
 
 cargo test - opensuse@x86_64.minimum:
   extends:
-    - '.container.opensuse@x86_64.minimum'
+    - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
     - .cargo-test
   needs:
-    - job: opensuse-container@x86_64.minimum
+    - job: opensuse-container@x86_64.stable
       artifacts: false
     - job: check
       artifacts: false
+  before_script:
+    - rustup default ${RUST_MINIMUM}
 
 cargo test - opensuse@x86_64.nightly:
   extends:
-    - '.container.opensuse@x86_64.nightly'
+    - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
     - .cargo-test
   needs:
-    - job: opensuse-container@x86_64.nightly
+    - job: opensuse-container@x86_64.stable
       artifacts: false
     - job: check
       artifacts: false
+  before_script:
+    - rustup default nightly
 
 cargo test - opensuse@aarch64:
   extends:

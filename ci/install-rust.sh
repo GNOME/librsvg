@@ -6,7 +6,7 @@ source ./ci/env.sh
 
 export CARGO_HOME='/usr/local/cargo'
 
-PARSED=$(getopt --options '' --longoptions 'rustup-version:,stable:,arch:' --name "$0" -- "$@")
+PARSED=$(getopt --options '' --longoptions 'rustup-version:,stable:,minimum:,nightly,arch:' --name "$0" -- "$@")
 if [ $? -ne 0 ]; then
 	echo 'Terminating...' >&2
 	exit 1
@@ -17,6 +17,8 @@ unset PARSED
 
 RUSTUP_VERSION=
 STABLE=
+MINIMUM=
+NIGHTLY=
 ARCH=
 
 while true; do
@@ -29,6 +31,16 @@ while true; do
         '--stable')
             STABLE=$2
             shift 2
+            ;;
+
+        '--minimum')
+            MINIMUM=$2
+            shift 2
+            ;;
+
+        '--nightly')
+            NIGHTLY=1
+            shift 1
             ;;
 
         '--arch')
@@ -54,7 +66,7 @@ if [ -z "$RUSTUP_VERSION" ]; then
 fi
 
 if [ -z "$STABLE"]; then
-    echo "missing --stable argument, please pass the version of rustc you want"
+    echo "missing --stable argument, please pass the stable version of rustc you want"
     exit 1
 fi
     
@@ -71,6 +83,10 @@ chmod +x rustup-init
 rm rustup-init
 chmod -R a+w $RUSTUP_HOME $CARGO_HOME
 
-rustup --version
-cargo --version
-rustc --version
+if [ -n "$MINIMUM" ]; then
+    rustup toolchain install $MINIMUM
+fi
+
+if [ -n "$NIGHTLY" ]; then
+    rustup toolchain install nightly
+fi
