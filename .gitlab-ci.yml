@@ -82,6 +82,7 @@ cargo_test:
   extends: '.cache'
   stage: build
   script:
+    - rustup default ${RUST_VERSION}
     - cargo test --workspace
   artifacts:
     when: 'on_failure'
@@ -151,8 +152,8 @@ cargo test - opensuse@x86_64.minimum:
       artifacts: false
     - job: check
       artifacts: false
-  before_script:
-    - rustup default ${RUST_MINIMUM}
+  variables:
+    RUST_VERSION: ${RUST_MINIMUM}
 
 cargo test - opensuse@x86_64.nightly:
   extends:
@@ -164,8 +165,8 @@ cargo test - opensuse@x86_64.nightly:
       artifacts: false
     - job: check
       artifacts: false
-  before_script:
-    - rustup default nightly
+  variables:
+    RUST_VERSION: nightly
 
 cargo test - opensuse@aarch64:
   extends:
