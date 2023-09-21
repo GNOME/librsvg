@@ -18,9 +18,9 @@ fn write_version() {
         let file = File::open("../configure.ac")
             .expect("builds must take place within the librsvg source tree");
 
-        let major_regex = Regex::new(r#"^m4_define\(\[rsvg_major_version\],\[(\d+)\]\)"#).unwrap();
-        let minor_regex = Regex::new(r#"^m4_define\(\[rsvg_minor_version\],\[(\d+)\]\)"#).unwrap();
-        let micro_regex = Regex::new(r#"^m4_define\(\[rsvg_micro_version\],\[(\d+)\]\)"#).unwrap();
+        let major_regex = Regex::new(r"^m4_define\(\[rsvg_major_version\],\[(\d+)\]\)").unwrap();
+        let minor_regex = Regex::new(r"^m4_define\(\[rsvg_minor_version\],\[(\d+)\]\)").unwrap();
+        let micro_regex = Regex::new(r"^m4_define\(\[rsvg_micro_version\],\[(\d+)\]\)").unwrap();
 
         for line in BufReader::new(file).lines() {
             match line {
