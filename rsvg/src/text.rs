@@ -5,7 +5,6 @@ use pango::IsAttribute;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
-use std::sync::Arc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
@@ -122,8 +121,8 @@ struct LayoutSpan {
     y: f64,
     paint_order: PaintOrder,
     stroke: Stroke,
-    stroke_paint: Arc<PaintSource>,
-    fill_paint: Arc<PaintSource>,
+    stroke_paint: Rc<PaintSource>,
+    fill_paint: Rc<PaintSource>,
     text_rendering: TextRendering,
     link_target: Option<String>,
     values: Rc<ComputedValues>,

@@ -3,7 +3,6 @@
 //! The idea is to take the DOM tree and produce a layout tree with SVG concepts.
 
 use std::rc::Rc;
-use std::sync::Arc;
 
 use cssparser::Color;
 use float_cmp::approx_eq;
@@ -104,8 +103,8 @@ pub struct Shape {
 
 pub struct Marker {
     pub node_ref: Option<Node>,
-    pub context_stroke: Arc<PaintSource>,
-    pub context_fill: Arc<PaintSource>,
+    pub context_stroke: Rc<PaintSource>,
+    pub context_fill: Rc<PaintSource>,
 }
 
 /// Image in user-space coordinates.
@@ -157,8 +156,8 @@ pub struct FontProperties {
 pub struct Filter {
     pub filter_list: FilterValueList,
     pub current_color: Color,
-    pub stroke_paint_source: Arc<PaintSource>,
-    pub fill_paint_source: Arc<PaintSource>,
+    pub stroke_paint_source: Rc<PaintSource>,
+    pub fill_paint_source: Rc<PaintSource>,
     pub normalize_values: NormalizeValues,
 }
 
