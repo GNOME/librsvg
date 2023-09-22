@@ -92,9 +92,18 @@ cargo_test:
   variables:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
 
-.build-rsvg-full:
-  extends: '.cache'
+autotools build - opensuse@x86_64.stable:
   stage: build
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - .fdo.distribution-image@opensuse
+    # make check runs extra tests that require extra crates, hence cache is pushed
+    - .cache_push
+  needs:
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+    - job: check
+      artifacts: false
   variables:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
   script:
@@ -110,19 +119,6 @@ cargo_test:
       - _build/tests/*.log
       - _build/tests/output
     expire_in: 1 day
-
-autotools build - opensuse@x86_64.stable:
-  extends:
-    - '.container.opensuse@x86_64.stable'
-    - .fdo.distribution-image@opensuse
-    - .build-rsvg-full
-    # make check runs extra tests that require extra crates, hence cache is pushed
-    - .cache_push
-  needs:
-    - job: opensuse-container@x86_64.stable
-      artifacts: false
-    - job: check
-      artifacts: false
 
 cargo test - opensuse@x86_64.minimum:
   extends:
