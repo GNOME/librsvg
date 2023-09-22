@@ -62,6 +62,7 @@ check:
     - export PATH=${PREFIX}/bin:$PATH
     - export LD_LIBRARY_PATH=${PREFIX}/lib64
     - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share
     - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - cargo check --all-targets --workspace
 
@@ -86,6 +87,7 @@ cargo_test:
     - export PATH=${PREFIX}/bin:$PATH
     - export LD_LIBRARY_PATH=${PREFIX}/lib64
     - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share
     - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - cargo test --workspace -- --skip loading_crash --skip reference --skip render_crash
 
@@ -126,6 +128,7 @@ autotools build - opensuse@x86_64.stable:
     - export PATH=${PREFIX}/bin:$PATH
     - export LD_LIBRARY_PATH=${PREFIX}/lib64
     - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share
     - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - mkdir -p _build
     - cd _build
@@ -228,6 +231,7 @@ clippy:
     - export PATH=${PREFIX}/bin:$PATH
     - export LD_LIBRARY_PATH=${PREFIX}/lib64
     - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share
     - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - cargo clippy --version
     - gitlab-clippy --version
@@ -287,6 +291,7 @@ coverage:
     - export PATH=${PREFIX}/bin:$PATH
     - export LD_LIBRARY_PATH=${PREFIX}/lib64
     - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share
     - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - bash -x ./ci/build-with-coverage.sh
     - bash -x ./ci/gen-coverage.sh
@@ -322,6 +327,7 @@ cargo_bench:
     export PATH=${PREFIX}/bin:$PATH
     export LD_LIBRARY_PATH=${PREFIX}/lib64
     export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    export XDG_DATA_DIRS=${PREFIX}/share
     export ACLOCAL_PATH=${PREFIX}/share/aclocal
     BENCHES=("box_blur" "composite" "lighting" "path_parser" "pixbuf_from_surface" "pixel_iterators" "pixel_ops" "srgb" "surface_from_pixbuf")
     git checkout ${CI_DEFAULT_BRANCH}
@@ -395,6 +401,7 @@ distcheck:
     - export PATH=${PREFIX}/bin:$PATH
     - export LD_LIBRARY_PATH=${PREFIX}/lib64
     - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share
     - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - ./autogen.sh --enable-vala
     - make distcheck
@@ -464,6 +471,7 @@ cargo-doc:
     - export PATH=${PREFIX}/bin:$PATH
     - export LD_LIBRARY_PATH=${PREFIX}/lib64
     - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share
     - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - bash -x ./ci/gen-rust-docs.sh
   artifacts:
