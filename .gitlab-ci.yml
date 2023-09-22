@@ -92,24 +92,6 @@ cargo_test:
   variables:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
 
-.build-rsvg-no-docs:
-  extends: '.cache'
-  stage: build
-  variables:
-    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
-  script:
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --disable-gtk-doc --enable-vala
-    - make
-    - make check
-  artifacts:
-    when: 'on_failure'
-    paths:
-      - _build/tests/*.log
-      - _build/tests/output
-    expire_in: 1 day
-
 .build-rsvg-full:
   extends: '.cache'
   stage: build
