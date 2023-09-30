@@ -5,7 +5,6 @@ use pango::IsAttribute;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
-use std::sync::Arc;
 
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, NodeId};
@@ -122,8 +121,8 @@ struct LayoutSpan {
     y: f64,
     paint_order: PaintOrder,
     stroke: Stroke,
-    stroke_paint: Arc<PaintSource>,
-    fill_paint: Arc<PaintSource>,
+    stroke_paint: Rc<PaintSource>,
+    fill_paint: Rc<PaintSource>,
     text_rendering: TextRendering,
     link_target: Option<String>,
     values: Rc<ComputedValues>,
@@ -1284,9 +1283,7 @@ fn add_pango_attributes(
     font_desc.set_family(props.font_family.as_str());
     font_desc.set_style(pango::Style::from(props.font_style));
 
-    // PANGO_VARIANT_SMALL_CAPS does nothing: https://gitlab.gnome.org/GNOME/pango/-/issues/566
-    // see below for using the "smcp" OpenType feature for fonts that support it.
-    // font_desc.set_variant(pango::Variant::from(props.font_variant));
+    font_desc.set_variant(pango::Variant::from(props.font_variant));
 
     font_desc.set_weight(pango::Weight::from(props.font_weight));
     font_desc.set_stretch(pango::Stretch::from(props.font_stretch));
@@ -1307,13 +1304,6 @@ fn add_pango_attributes(
 
     if props.text_decoration.strike {
         attributes.push(pango::AttrInt::new_strikethrough(true).upcast());
-    }
-
-    // FIXME: Using the "smcp" OpenType feature only works for fonts that support it.  We
-    // should query if the font supports small caps, and synthesize them if it doesn't.
-    if props.font_variant == FontVariant::SmallCaps {
-        // smcp - small capitals - https://docs.microsoft.com/en-ca/typography/opentype/spec/features_pt#smcp
-        attributes.push(pango::AttrFontFeatures::new("'smcp' 1").upcast());
     }
 
     // Set the range in each attribute

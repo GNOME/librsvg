@@ -66,7 +66,7 @@ GIO_REQUIRED=2.24.0
 GLIB_REQUIRED=2.50.0
 HARFBUZZ_REQUIRED=2.0.0
 LIBXML_REQUIRED=2.9.0
-PANGO_REQUIRED=1.46.0
+PANGO_REQUIRED=1.50.0
 
 dnl ===========================================================================
 

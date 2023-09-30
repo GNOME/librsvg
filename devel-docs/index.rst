@@ -36,6 +36,7 @@ Development guide for librsvg
    api_observability
    performance_tracking
    viewport
+   building_deps_in_ci
 
 .. toctree::
    :caption: Info for Maintainers

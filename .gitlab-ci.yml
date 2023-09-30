@@ -56,7 +56,14 @@ check:
     - '.cache_push'
   stage: check
   needs: ['opensuse-container@x86_64.stable']
+  variables:
+    PREFIX: "/usr/local/librsvg"
   script:
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - cargo check --all-targets --workspace
 
 cargo_test:
@@ -75,46 +82,54 @@ cargo_test:
     expire_in: 1 day
   variables:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+    PREFIX: "/usr/local/librsvg"
   script:
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - cargo test --workspace -- --skip loading_crash --skip reference --skip render_crash
 
 .cargo-test:
   extends: '.cache'
   stage: build
+  variables:
+    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
+    PREFIX: "/usr/local/librsvg"
   script:
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - rustup default ${RUST_VERSION}
     - cargo test --workspace
   artifacts:
     when: 'on_failure'
     paths:
       - tests/output
     expire_in: 1 day
-  variables:
-    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/tests/output"
 
-.build-rsvg-no-docs:
-  extends: '.cache'
+autotools build - opensuse@x86_64.stable:
   stage: build
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - .fdo.distribution-image@opensuse
+    # make check runs extra tests that require extra crates, hence cache is pushed
+    - .cache_push
+  needs:
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+    - job: check
+      artifacts: false
   variables:
     TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
+    PREFIX: "/usr/local/librsvg"
   script:
-    - mkdir -p _build
-    - cd _build
-    - ../autogen.sh --disable-gtk-doc --enable-vala
-    - make
-    - make check
-  artifacts:
-    when: 'on_failure'
-    paths:
-      - _build/tests/*.log
-      - _build/tests/output
-    expire_in: 1 day
-
-.build-rsvg-full:
-  extends: '.cache'
-  stage: build
-  variables:
-    TESTS_OUTPUT_DIR: "${CI_PROJECT_DIR}/_build/tests/output"
-  script:
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - mkdir -p _build
     - cd _build
     - ../autogen.sh --enable-gtk-doc --enable-vala
@@ -128,40 +143,31 @@ cargo_test:
       - _build/tests/output
     expire_in: 1 day
 
-autotools build - opensuse@x86_64.stable:
+cargo test - opensuse@x86_64.minimum:
   extends:
     - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
-    - .build-rsvg-full
-    # make check runs extra tests that require extra crates, hence cache is pushed
-    - .cache_push
+    - .cargo-test
   needs:
     - job: opensuse-container@x86_64.stable
       artifacts: false
     - job: check
       artifacts: false
-
-cargo test - opensuse@x86_64.minimum:
-  extends:
-    - '.container.opensuse@x86_64.minimum'
-    - .fdo.distribution-image@opensuse
-    - .cargo-test
-  needs:
-    - job: opensuse-container@x86_64.minimum
-      artifacts: false
-    - job: check
-      artifacts: false
+  variables:
+    RUST_VERSION: ${RUST_MINIMUM}
 
 cargo test - opensuse@x86_64.nightly:
   extends:
-    - '.container.opensuse@x86_64.nightly'
+    - '.container.opensuse@x86_64.stable'
     - .fdo.distribution-image@opensuse
     - .cargo-test
   needs:
-    - job: opensuse-container@x86_64.nightly
+    - job: opensuse-container@x86_64.stable
       artifacts: false
     - job: check
       artifacts: false
+  variables:
+    RUST_VERSION: nightly
 
 cargo test - opensuse@aarch64:
   extends:
@@ -173,75 +179,6 @@ cargo test - opensuse@aarch64:
       artifacts: false
     - job: check
       artifacts: false
-
-cargo test - fedora@x86_64:
-  extends:
-    - .container.fedora@x86_64
-    - .fdo.distribution-image@fedora
-    - .cargo-test
-  needs:
-    - job: fedora-container@x86_64
-      artifacts: false
-    - job: check
-      artifacts: false
-
-.build-rsvg-fedora@aarch64:
-  extends:
-    - .container.fedora@aarch64
-    - .fdo.distribution-image@fedora
-    - .build-rsvg-no-docs
-  needs:
-    - job: fedora-container@aarch64
-      artifacts: false
-    - job: check
-      artifacts: false
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-
-.build-rsvg-debian@x86_64:
-  extends:
-    - '.container.debian@x86_64'
-    - '.fdo.distribution-image@debian'
-    - '.build-rsvg-no-docs'
-  variables:
-    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
-    # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
-    GDK_PIXBUF_QUERYLOADERS: '/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders'
-    LIBRSVG_DEBUG: "no"
-  needs:
-    - job: debian-container@x86_64
-      artifacts: false
-    - job: check
-      artifacts: false
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-
-.build-rsvg-debian@aarch64:
-  extends:
-    - '.container.debian@aarch64'
-    - '.fdo.distribution-image@debian'
-    - '.build-rsvg-no-docs'
-  variables:
-    # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=907306
-    # export GDK_PIXBUF_QUERYLOADERS=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders
-    GDK_PIXBUF_QUERYLOADERS: '/usr/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders'
-    LIBRSVG_DEBUG: "no"
-  needs:
-    - job: debian-container@aarch64
-      artifacts: false
-    - job: check
-      artifacts: false
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "push"'
-      when: manual
-      allow_failure: true
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
 
 .cache:
   variables:
@@ -288,7 +225,14 @@ clippy:
   stage: lint
   needs:
     - job: check
+  variables:
+    PREFIX: "/usr/local/librsvg"
   script:
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - cargo clippy --version
     - gitlab-clippy --version
     - cargo clippy
@@ -340,8 +284,15 @@ coverage:
     - job: opensuse-container@x86_64.stable
     - job: check
       artifacts: false
+  variables:
+    PREFIX: "/usr/local/librsvg"
   script:
     - source ./ci/env.sh
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - bash -x ./ci/build-with-coverage.sh
     - bash -x ./ci/gen-coverage.sh
   coverage: '/Coverage: \d+\.\d+/'
@@ -370,7 +321,14 @@ cargo_bench:
   stage: analysis
   needs:
     - job: check
+  variables:
+    PREFIX: "/usr/local/librsvg"
   script: |
+    export PATH=${PREFIX}/bin:$PATH
+    export LD_LIBRARY_PATH=${PREFIX}/lib64
+    export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    export ACLOCAL_PATH=${PREFIX}/share/aclocal
     BENCHES=("box_blur" "composite" "lighting" "path_parser" "pixbuf_from_surface" "pixel_iterators" "pixel_ops" "srgb" "surface_from_pixbuf")
     git checkout ${CI_DEFAULT_BRANCH}
     for BENCH in "${BENCHES[@]}"
@@ -438,7 +396,13 @@ distcheck:
   variables:
     DESTDIR: "/tmp/distcheck"
     LIBRSVG_DEBUG: "no"
+    PREFIX: "/usr/local/librsvg"
   script:
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - ./autogen.sh --enable-vala
     - make distcheck
   artifacts:
@@ -501,7 +465,14 @@ cargo-doc:
   needs:
     - job: opensuse-container@x86_64.stable
       artifacts: false
+  variables:
+    PREFIX: "/usr/local/librsvg"
   script:
+    - export PATH=${PREFIX}/bin:$PATH
+    - export LD_LIBRARY_PATH=${PREFIX}/lib64
+    - export PKG_CONFIG_PATH=${PREFIX}/lib64/pkgconfig
+    - export XDG_DATA_DIRS=${PREFIX}/share:/usr/share
+    - export ACLOCAL_PATH=${PREFIX}/share/aclocal
     - bash -x ./ci/gen-rust-docs.sh
   artifacts:
     paths:

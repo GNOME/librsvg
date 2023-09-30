@@ -1,6 +1,6 @@
 //! SVG paint servers.
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use cssparser::{
     Color, ColorFunction, Hsl, Hwb, Lab, Lch, Oklab, Oklch, ParseErrorKind, Parser, RGBA,
@@ -136,17 +136,17 @@ impl PaintServer {
     ///
     /// After a paint server is resolved, the resulting [`PaintSource`] can be used in
     /// many places: for an actual shape, or for the `context-fill` of a marker for that
-    /// shape.  Therefore, this returns an [`Arc`] so that the `PaintSource` may be shared
+    /// shape.  Therefore, this returns an [`Rc`] so that the `PaintSource` may be shared
     /// easily.
     pub fn resolve(
         &self,
         acquired_nodes: &mut AcquiredNodes<'_>,
         opacity: UnitInterval,
         current_color: Color,
-        context_fill: Option<Arc<PaintSource>>,
-        context_stroke: Option<Arc<PaintSource>>,
+        context_fill: Option<Rc<PaintSource>>,
+        context_stroke: Option<Rc<PaintSource>>,
         session: &Session,
-    ) -> Arc<PaintSource> {
+    ) -> Rc<PaintSource> {
         match self {
             PaintServer::Iri {
                 ref iri,
@@ -160,7 +160,7 @@ impl PaintServer {
                     match *node.borrow_element_data() {
                         ElementData::LinearGradient(ref g) => {
                             g.resolve(node, acquired_nodes, opacity).map(|g| {
-                                Arc::new(PaintSource::Gradient(
+                                Rc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
@@ -168,7 +168,7 @@ impl PaintServer {
                         }
                         ElementData::Pattern(ref p) => {
                             p.resolve(node, acquired_nodes, opacity, session).map(|p| {
-                                Arc::new(PaintSource::Pattern(
+                                Rc::new(PaintSource::Pattern(
                                     p,
                                     alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
@@ -176,7 +176,7 @@ impl PaintServer {
                         }
                         ElementData::RadialGradient(ref g) => {
                             g.resolve(node, acquired_nodes, opacity).map(|g| {
-                                Arc::new(PaintSource::Gradient(
+                                Rc::new(PaintSource::Gradient(
                                     g,
                                     alternate.map(|c| resolve_color(&c, opacity, &current_color)),
                                 ))
@@ -205,7 +205,7 @@ impl PaintServer {
                             iri
                         );
 
-                        Arc::new(PaintSource::SolidColor(resolve_color(
+                        Rc::new(PaintSource::SolidColor(resolve_color(
                             color,
                             opacity,
                             &current_color,
@@ -219,11 +219,11 @@ impl PaintServer {
                             iri
                         );
 
-                        Arc::new(PaintSource::None)
+                        Rc::new(PaintSource::None)
                     }
                 }),
 
-            PaintServer::SolidColor(color) => Arc::new(PaintSource::SolidColor(resolve_color(
+            PaintServer::SolidColor(color) => Rc::new(PaintSource::SolidColor(resolve_color(
                 color,
                 opacity,
                 &current_color,
@@ -233,7 +233,7 @@ impl PaintServer {
                 if let Some(paint) = context_fill {
                     paint
                 } else {
-                    Arc::new(PaintSource::None)
+                    Rc::new(PaintSource::None)
                 }
             }
 
@@ -241,11 +241,11 @@ impl PaintServer {
                 if let Some(paint) = context_stroke {
                     paint
                 } else {
-                    Arc::new(PaintSource::None)
+                    Rc::new(PaintSource::None)
                 }
             }
 
-            PaintServer::None => Arc::new(PaintSource::None),
+            PaintServer::None => Rc::new(PaintSource::None),
         }
     }
 }
