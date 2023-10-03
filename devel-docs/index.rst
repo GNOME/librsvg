@@ -36,6 +36,7 @@ Development guide for librsvg
    api_observability
    performance_tracking
    viewport
+   custom_properties
    building_deps_in_ci
 
 .. toctree::
