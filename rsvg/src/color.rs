@@ -53,9 +53,46 @@ fn parse_plain_color<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color
     }
 }
 
+/// Parse a custom property name.
+///
+/// <https://drafts.csswg.org/css-variables/#typedef-custom-property-name>
+fn parse_name(s: &str) -> Result<&str, ()> {
+    if s.starts_with("--") && s.len() > 2 {
+        Ok(&s[2..])
+    } else {
+        Err(())
+    }
+}
+
+fn parse_var_with_fallback<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<cssparser::Color, ParseError<'i>> {
+    let name = parser.expect_ident_cloned()?;
+
+    // ignore the name for now; we'll use it later when we actually
+    // process the names of custom variables
+    let _name = parse_name(&name).map_err(|()| {
+        parser.new_custom_error(ValueErrorKind::parse_error(&format!(
+            "unexpected identifier {}",
+            name
+        )))
+    })?;
+
+    parser.expect_comma()?;
+
+    parse_plain_color(parser)
+}
+
 impl Parse for cssparser::Color {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
-        parse_plain_color(parser)
+        if let Ok(c) = parser.try_parse(|p| {
+            p.expect_function_matching("var")?;
+            p.parse_nested_block(parse_var_with_fallback)
+        }) {
+            Ok(c)
+        } else {
+            parse_plain_color(parser)
+        }
     }
 }
 
@@ -84,5 +121,39 @@ pub fn color_to_rgba(color: &Color) -> RGBA {
         }
 
         _ => unimplemented!(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_plain_color() {
+        assert_eq!(
+            Color::parse_str("#112233").unwrap(),
+            Color::Rgba(RGBA::new(Some(0x11), Some(0x22), Some(0x33), Some(1.0)))
+        );
+    }
+
+    #[test]
+    fn var_with_fallback_parses_as_color() {
+        assert_eq!(
+            Color::parse_str("var(--foo, #112233)").unwrap(),
+            Color::Rgba(RGBA::new(Some(0x11), Some(0x22), Some(0x33), Some(1.0)))
+        );
+
+        assert_eq!(
+            Color::parse_str("var(--foo, rgb(100% 50% 25%)").unwrap(),
+            Color::Rgba(RGBA::new(Some(0xff), Some(0x80), Some(0x40), Some(1.0)))
+        );
+    }
+
+    #[test]
+    fn var_without_fallback_yields_error() {
+        assert!(Color::parse_str("var(--foo)").is_err());
+        assert!(Color::parse_str("var(--foo,)").is_err());
+        assert!(Color::parse_str("var(--foo, )").is_err());
+        assert!(Color::parse_str("var(--foo, this is not a color)").is_err());
     }
 }
