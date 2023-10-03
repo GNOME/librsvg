@@ -37,23 +37,25 @@ fn map_color_parse_error(err: cssparser::ParseError<'_, ()>) -> ParseError<'_> {
     }
 }
 
+fn parse_plain_color<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
+    let loc = parser.current_source_location();
+
+    let color = cssparser::Color::parse(parser).map_err(map_color_parse_error)?;
+
+    // Return only supported color types, and mark the others as errors.
+    match color {
+        Color::CurrentColor | Color::Rgba(_) | Color::Hsl(_) | Color::Hwb(_) => Ok(color),
+
+        _ => Err(ParseError {
+            kind: ParseErrorKind::Custom(ValueErrorKind::parse_error("unsupported color syntax")),
+            location: loc,
+        }),
+    }
+}
+
 impl Parse for cssparser::Color {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
-        let loc = parser.current_source_location();
-
-        let color = cssparser::Color::parse(parser).map_err(map_color_parse_error)?;
-
-        // Return only supported color types, and mark the others as errors.
-        match color {
-            Color::CurrentColor | Color::Rgba(_) | Color::Hsl(_) | Color::Hwb(_) => Ok(color),
-
-            _ => Err(ParseError {
-                kind: ParseErrorKind::Custom(ValueErrorKind::parse_error(
-                    "unsupported color syntax",
-                )),
-                location: loc,
-            }),
-        }
+        parse_plain_color(parser)
     }
 }
 
