@@ -80,6 +80,14 @@ fn parse_var_with_fallback<'i>(
 
     parser.expect_comma()?;
 
+    // FIXME: when fixing #459 (full support for var()), note that
+    // https://drafts.csswg.org/css-variables/#using-variables indicates that var(--a,) is
+    // a valid function, which means that the fallback value is an empty set of tokens.
+    //
+    // Also, see Servo's extra code to handle semicolons and stuff in toplevel rules.
+    //
+    // Also, tweak the tests tagged with "FIXME: var()" below.
+
     parse_plain_color(parser)
 }
 
@@ -149,16 +157,14 @@ mod tests {
         );
     }
 
+    // FIXME: var() - when fixing #459, see the note in the code above.  All the syntaxes
+    // in this test function will become valid once we have full support for var().
     #[test]
     fn var_without_fallback_yields_error() {
         assert!(Color::parse_str("var(--foo)").is_err());
         assert!(Color::parse_str("var(--foo,)").is_err());
         assert!(Color::parse_str("var(--foo, )").is_err());
         assert!(Color::parse_str("var(--foo, this is not a color)").is_err());
-    }
-
-    #[test]
-    fn var_with_extra_args_yields_error() {
         assert!(Color::parse_str("var(--foo, #112233, blah)").is_err());
     }
 }
