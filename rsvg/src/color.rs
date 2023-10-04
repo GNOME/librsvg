@@ -37,22 +37,69 @@ fn map_color_parse_error(err: cssparser::ParseError<'_, ()>) -> ParseError<'_> {
     }
 }
 
+fn parse_plain_color<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
+    let loc = parser.current_source_location();
+
+    let color = cssparser::Color::parse(parser).map_err(map_color_parse_error)?;
+
+    // Return only supported color types, and mark the others as errors.
+    match color {
+        Color::CurrentColor | Color::Rgba(_) | Color::Hsl(_) | Color::Hwb(_) => Ok(color),
+
+        _ => Err(ParseError {
+            kind: ParseErrorKind::Custom(ValueErrorKind::parse_error("unsupported color syntax")),
+            location: loc,
+        }),
+    }
+}
+
+/// Parse a custom property name.
+///
+/// <https://drafts.csswg.org/css-variables/#typedef-custom-property-name>
+fn parse_name(s: &str) -> Result<&str, ()> {
+    if s.starts_with("--") && s.len() > 2 {
+        Ok(&s[2..])
+    } else {
+        Err(())
+    }
+}
+
+fn parse_var_with_fallback<'i>(
+    parser: &mut Parser<'i, '_>,
+) -> Result<cssparser::Color, ParseError<'i>> {
+    let name = parser.expect_ident_cloned()?;
+
+    // ignore the name for now; we'll use it later when we actually
+    // process the names of custom variables
+    let _name = parse_name(&name).map_err(|()| {
+        parser.new_custom_error(ValueErrorKind::parse_error(&format!(
+            "unexpected identifier {}",
+            name
+        )))
+    })?;
+
+    parser.expect_comma()?;
+
+    // FIXME: when fixing #459 (full support for var()), note that
+    // https://drafts.csswg.org/css-variables/#using-variables indicates that var(--a,) is
+    // a valid function, which means that the fallback value is an empty set of tokens.
+    //
+    // Also, see Servo's extra code to handle semicolons and stuff in toplevel rules.
+    //
+    // Also, tweak the tests tagged with "FIXME: var()" below.
+
+    parse_plain_color(parser)
+}
+
 impl Parse for cssparser::Color {
     fn parse<'i>(parser: &mut Parser<'i, '_>) -> Result<cssparser::Color, ParseError<'i>> {
-        let loc = parser.current_source_location();
-
-        let color = cssparser::Color::parse(parser).map_err(map_color_parse_error)?;
-
-        // Return only supported color types, and mark the others as errors.
-        match color {
-            Color::CurrentColor | Color::Rgba(_) | Color::Hsl(_) | Color::Hwb(_) => Ok(color),
-
-            _ => Err(ParseError {
-                kind: ParseErrorKind::Custom(ValueErrorKind::parse_error(
-                    "unsupported color syntax",
-                )),
-                location: loc,
-            }),
+        if let Ok(c) = parser.try_parse(|p| {
+            p.expect_function_matching("var")?;
+            p.parse_nested_block(parse_var_with_fallback)
+        }) {
+            Ok(c)
+        } else {
+            parse_plain_color(parser)
         }
     }
 }
@@ -82,5 +129,42 @@ pub fn color_to_rgba(color: &Color) -> RGBA {
         }
 
         _ => unimplemented!(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_plain_color() {
+        assert_eq!(
+            Color::parse_str("#112233").unwrap(),
+            Color::Rgba(RGBA::new(Some(0x11), Some(0x22), Some(0x33), Some(1.0)))
+        );
+    }
+
+    #[test]
+    fn var_with_fallback_parses_as_color() {
+        assert_eq!(
+            Color::parse_str("var(--foo, #112233)").unwrap(),
+            Color::Rgba(RGBA::new(Some(0x11), Some(0x22), Some(0x33), Some(1.0)))
+        );
+
+        assert_eq!(
+            Color::parse_str("var(--foo, rgb(100% 50% 25%)").unwrap(),
+            Color::Rgba(RGBA::new(Some(0xff), Some(0x80), Some(0x40), Some(1.0)))
+        );
+    }
+
+    // FIXME: var() - when fixing #459, see the note in the code above.  All the syntaxes
+    // in this test function will become valid once we have full support for var().
+    #[test]
+    fn var_without_fallback_yields_error() {
+        assert!(Color::parse_str("var(--foo)").is_err());
+        assert!(Color::parse_str("var(--foo,)").is_err());
+        assert!(Color::parse_str("var(--foo, )").is_err());
+        assert!(Color::parse_str("var(--foo, this is not a color)").is_err());
+        assert!(Color::parse_str("var(--foo, #112233, blah)").is_err());
     }
 }

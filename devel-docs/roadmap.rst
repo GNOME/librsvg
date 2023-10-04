@@ -7,8 +7,6 @@ maintainers of librsvg.  Check this often!
 Short term
 ----------
 
-- Merge `the Rust port of the gdk-pixbuf-loader <https://gitlab.gnome.org/GNOME/librsvg/-/merge_requests/722>`_.
-
 - `Switch from autotools to the Meson build system
   <https://gitlab.gnome.org/GNOME/librsvg/-/merge_requests/657>`_.  This may make it
   easier to integrate the Rust-based gdk-pixbuf-loader from the last point.
@@ -20,6 +18,9 @@ Short term
   viewport into account.  See :doc:`render_tree` for details on this.
 
 - Continue with the revamp of :doc:`text_layout`.
+
+- Support CSS custom properties ``var()``, at least the minimal
+  feature set required for OpenType fonts.  See :doc:`custom_properties`.
 
 Medium term
 -----------
