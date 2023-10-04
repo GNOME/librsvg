@@ -156,4 +156,9 @@ mod tests {
         assert!(Color::parse_str("var(--foo, )").is_err());
         assert!(Color::parse_str("var(--foo, this is not a color)").is_err());
     }
+
+    #[test]
+    fn var_with_extra_args_yields_error() {
+        assert!(Color::parse_str("var(--foo, #112233, blah)").is_err());
+    }
 }
