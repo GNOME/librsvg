@@ -82,8 +82,10 @@ Adobe's SVG Native Viewer has a `simple API to specify a color map
 that maps string names to RGBA colors.  I think it would be more
 future-proof to actually let the caller specify the values in a
 ``:root`` selector via an external stylesheet; this way we can
-accomodate media queries and such in a clean fashion without growing
-the public API.
+accomodate media queries in a clean fashion without growing the public
+API.  Media queries are often used to set the custom property values
+depending on the media's characteristics (e.g. change colors depending
+on dark-mode), and later the properties are used with ``var()``.
 
 
 Security considerations
