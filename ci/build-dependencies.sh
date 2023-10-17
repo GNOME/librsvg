@@ -53,9 +53,8 @@ if [ -z "$PREFIX" ]; then
     exit 1
 fi
 
-export PATH=$PREFIX/bin:$PATH
-export LD_LIBRARY_PATH=$PREFIX/lib64
-export PKG_CONFIG_PATH=$PREFIX/lib64/pkgconfig
+# The following assumes that $PREFIX has been set
+source ci/setup-dependencies-env.sh
 
 git clone --depth 1 --branch $GLIB_TAG https://gitlab.gnome.org/GNOME/glib
 cd glib
