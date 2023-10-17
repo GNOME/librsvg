@@ -62,11 +62,13 @@ similar to these:
 
    Don't forget to run this once inside the container:
      source ci/env.sh
+     source ci/setup-dependencies-env.sh
 
 You can cut&paste those commands (from the script's output, not from
 this document!).  The first one should give you a shell prompt inside
-the container.  The second one will make Rust available in the shell's
-environment.
+the container.  The second and third ones will make Rust available in
+the shell's environment, and adjust some environment variables so that
+the compilation process can find the installed dependencies.
 
 What's all that magic?  Let's dissect the podman command line:
 
