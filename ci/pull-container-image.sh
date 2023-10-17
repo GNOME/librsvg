@@ -32,3 +32,4 @@ echo "  podman run --rm -ti --cap-add=SYS_PTRACE -v \$(pwd):/srv/project -w /srv
 echo ""
 echo "Don't forget to run this once inside the container:"
 echo "  source ci/env.sh"
+echo "  source ci/setup-dependencies-env.sh"
