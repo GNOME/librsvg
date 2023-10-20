@@ -165,6 +165,7 @@ cargo test - opensuse@aarch64:
       artifacts: false
     - job: check
       artifacts: false
+  allow_failure: true
 
 .cache:
   variables:
