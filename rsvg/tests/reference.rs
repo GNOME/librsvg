@@ -902,6 +902,7 @@ mod tests {
     t!(svg1_1_struct_cond_01_t_svg,                                 "svg1.1/struct-cond-01-t.svg");
     t!(svg1_1_struct_cond_03_t_svg,                                 "svg1.1/struct-cond-03-t.svg");
     t!(svg1_1_struct_group_03_t_svg,                                "svg1.1/struct-group-03-t.svg");
+    t!(svg1_1_struct_image_05_b_svg,                                "svg1.1/struct-image-05-b.svg");
     t!(svg1_1_struct_svg_03_f_svg,                                  "svg1.1/struct-svg-03-f.svg");
     t!(svg1_1_struct_symbol_01_b_svg,                               "svg1.1/struct-symbol-01-b.svg");
     t!(svg1_1_struct_use_01_t_svg,                                  "svg1.1/struct-use-01-t.svg");
