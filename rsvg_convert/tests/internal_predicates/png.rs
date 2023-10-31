@@ -123,8 +123,7 @@ impl ReferencePredicate<PngPredicate> {
     }
 
     fn diff_surface(&self, surface: &SharedImageSurface) -> Option<BufferDiff> {
-        let reference = Reference::from_png(&self.path)
-            .unwrap_or_else(|_| panic!("could not open {:?}", self.path));
+        let reference = Reference::from_png(&self.path);
         if let Ok(diff) = reference.compare(surface) {
             if !Self::diff_acceptable(&diff) {
                 return Some(diff);
