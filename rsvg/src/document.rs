@@ -180,8 +180,14 @@ impl Document {
     }
 }
 
+/// Any kind of resource loaded while processing an SVG document: images, or SVGs themselves.
+#[derive(Clone)]
+enum Resource {
+    Document(Rc<Document>),
+}
+
 struct Resources {
-    resources: HashMap<AllowedUrl, Result<Rc<Document>, LoadingError>>,
+    resources: HashMap<AllowedUrl, Result<Resource, LoadingError>>,
 }
 
 impl Resources {
@@ -199,7 +205,9 @@ impl Resources {
         id: &str,
     ) -> Result<Node, LoadingError> {
         self.get_extern_document(session, load_options, url)
-            .and_then(|doc| doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl))
+            .and_then(|resource| match resource {
+                Resource::Document(doc) => doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl),
+            })
     }
 
     fn get_extern_document(
@@ -207,7 +215,7 @@ impl Resources {
         session: &Session,
         load_options: &LoadOptions,
         href: &str,
-    ) -> Result<Rc<Document>, LoadingError> {
+    ) -> Result<Resource, LoadingError> {
         let aurl = load_options
             .url_resolver
             .resolve_href(href)
@@ -218,7 +226,7 @@ impl Resources {
             Entry::Vacant(e) => {
                 let aurl = e.key();
                 // FIXME: pass a cancellable to these
-                let doc = io::acquire_stream(aurl, None)
+                let doc_result = io::acquire_stream(aurl, None)
                     .map_err(LoadingError::from)
                     .and_then(|stream| {
                         Document::load_from_stream(
@@ -228,8 +236,9 @@ impl Resources {
                             None,
                         )
                     })
-                    .map(Rc::new);
-                let res = e.insert(doc);
+                    .map(Rc::new)
+                    .map(Resource::Document);
+                let res = e.insert(doc_result);
                 res.clone()
             }
         }
