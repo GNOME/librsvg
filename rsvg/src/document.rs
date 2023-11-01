@@ -82,14 +82,12 @@ pub struct Document {
     /// Mapping from `id` attributes to nodes.
     ids: HashMap<String, Node>,
 
-    // The following two require interior mutability because we load the extern
-    // resources all over the place.  Eventually we'll be able to do this
-    // once, at loading time, and keep this immutable.
-    /// SVG documents referenced from this document.
+    /// Othewr SVG documents and images referenced from this document.
+    ///
+    /// This requires requires interior mutability because we load resources all over the
+    /// place.  Eventually we'll be able to do this once, at loading time, and keep this
+    /// immutable.
     resources: RefCell<Resources>,
-
-    /// Image resources referenced from this document.
-    images: RefCell<Images>,
 
     /// Used to load referenced resources.
     load_options: Arc<LoadOptions>,
@@ -162,7 +160,9 @@ impl Document {
             .resolve_href(url)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        self.images.borrow_mut().lookup_image(&self.load_options, &aurl)
+        self.resources
+            .borrow_mut()
+            .lookup_image(&self.load_options, &aurl)
     }
 
     /// Runs the CSS cascade on the document tree
@@ -184,6 +184,7 @@ impl Document {
 #[derive(Clone)]
 enum Resource {
     Document(Rc<Document>),
+    Image(SharedImageSurface),
 }
 
 struct Resources {
@@ -207,6 +208,7 @@ impl Resources {
         self.get_extern_document(session, load_options, url)
             .and_then(|resource| match resource {
                 Resource::Document(doc) => doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl),
+                _ => unreachable!(),
             })
     }
 
@@ -243,30 +245,22 @@ impl Resources {
             }
         }
     }
-}
-
-struct Images {
-    images: HashMap<AllowedUrl, Result<SharedImageSurface, LoadingError>>,
-}
-
-impl Images {
-    fn new() -> Images {
-        Images {
-            images: Default::default(),
-        }
-    }
 
     fn lookup_image(
         &mut self,
         load_options: &LoadOptions,
         aurl: &AllowedUrl,
     ) -> Result<SharedImageSurface, LoadingError> {
-        match self.images.entry(aurl.clone()) {
-            Entry::Occupied(e) => e.get().clone(),
+        match self.resources.entry(aurl.clone()) {
+            Entry::Occupied(e) => e.get().clone().map(|resource| match resource {
+                Resource::Image(img) => img.clone(),
+                _ => unreachable!(),
+            }),
+
             Entry::Vacant(e) => {
-                let surface = load_image(load_options, e.key());
-                let res = e.insert(surface);
-                res.clone()
+                let surface_result = load_image(load_options, e.key());
+                e.insert(surface_result.clone().map(Resource::Image));
+                surface_result
             }
         }
     }
@@ -434,8 +428,7 @@ impl<'i> AcquiredNodes<'i> {
         // Maybe we should have the following stages:
         //   - load main SVG XML
         //
-        //   - load secondary SVG XML and other files like images; all document::Resources and
-        //     document::Images loaded
+        //   - load secondary resources: SVG XML and other files like images
         //
         //   - Now that all files are loaded, resolve URL references
         let node = self
@@ -615,7 +608,6 @@ impl DocumentBuilder {
                         session: session.clone(),
                         ids,
                         resources: RefCell::new(Resources::new()),
-                        images: RefCell::new(Images::new()),
                         load_options,
                         stylesheets,
                     };
