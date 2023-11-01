@@ -86,7 +86,7 @@ pub struct Document {
     // resources all over the place.  Eventually we'll be able to do this
     // once, at loading time, and keep this immutable.
     /// SVG documents referenced from this document.
-    externs: RefCell<Resources>,
+    resources: RefCell<Resources>,
 
     /// Image resources referenced from this document.
     images: RefCell<Images>,
@@ -142,7 +142,7 @@ impl Document {
         match node_id {
             NodeId::Internal(id) => self.lookup_internal_node(id),
             NodeId::External(url, id) => self
-                .externs
+                .resources
                 .borrow_mut()
                 .lookup(&self.session, &self.load_options, url, id)
                 .ok(),
@@ -614,7 +614,7 @@ impl DocumentBuilder {
                         tree: root,
                         session: session.clone(),
                         ids,
-                        externs: RefCell::new(Resources::new()),
+                        resources: RefCell::new(Resources::new()),
                         images: RefCell::new(Images::new()),
                         load_options,
                         stylesheets,
