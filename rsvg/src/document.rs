@@ -191,13 +191,13 @@ struct Resources {
 }
 
 impl Resources {
-    pub fn new() -> Resources {
+    fn new() -> Resources {
         Resources {
             resources: Default::default(),
         }
     }
 
-    pub fn lookup(
+    fn lookup(
         &mut self,
         session: &Session,
         load_options: &LoadOptions,
