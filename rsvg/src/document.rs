@@ -162,7 +162,7 @@ impl Document {
             .resolve_href(url)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        self.images.borrow_mut().lookup(&self.load_options, &aurl)
+        self.images.borrow_mut().lookup_image(&self.load_options, &aurl)
     }
 
     /// Runs the CSS cascade on the document tree
@@ -256,7 +256,7 @@ impl Images {
         }
     }
 
-    fn lookup(
+    fn lookup_image(
         &mut self,
         load_options: &LoadOptions,
         aurl: &AllowedUrl,
