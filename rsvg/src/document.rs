@@ -144,7 +144,7 @@ impl Document {
             NodeId::External(url, id) => self
                 .resources
                 .borrow_mut()
-                .lookup(&self.session, &self.load_options, url, id)
+                .lookup_node(&self.session, &self.load_options, url, id)
                 .ok(),
         }
     }
@@ -197,7 +197,7 @@ impl Resources {
         }
     }
 
-    fn lookup(
+    fn lookup_node(
         &mut self,
         session: &Session,
         load_options: &LoadOptions,
