@@ -182,7 +182,7 @@ impl Document {
 
 /// Any kind of resource loaded while processing an SVG document: images, or SVGs themselves.
 #[derive(Clone)]
-enum Resource {
+pub enum Resource {
     Document(Rc<Document>),
     Image(SharedImageSurface),
 }
