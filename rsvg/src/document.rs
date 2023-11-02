@@ -136,7 +136,7 @@ impl Document {
     }
 
     /// Looks up a node in this document or one of its resources by its `id` attribute.
-    pub fn lookup_node(&self, node_id: &NodeId) -> Option<Node> {
+    fn lookup_node(&self, node_id: &NodeId) -> Option<Node> {
         match node_id {
             NodeId::Internal(id) => self.lookup_internal_node(id),
             NodeId::External(url, id) => self
@@ -153,7 +153,7 @@ impl Document {
     }
 
     /// Loads an image by URL, or returns a pre-loaded one.
-    pub fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
+    fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
         let aurl = self
             .load_options
             .url_resolver
