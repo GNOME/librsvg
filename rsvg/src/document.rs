@@ -207,7 +207,7 @@ impl Resources {
         self.get_extern_document(session, load_options, url)
             .and_then(|resource| match resource {
                 Resource::Document(doc) => doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl),
-                _ => unreachable!(),
+                _ => unreachable!("get_extern_document() should already have ensured the document"),
             })
     }
 
@@ -222,17 +222,14 @@ impl Resources {
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        match self.resources.entry(aurl) {
-            Entry::Occupied(e) => e.get().clone(),
-            Entry::Vacant(e) => {
-                let aurl = e.key();
-                // FIXME: pass a cancellable to this
-                let doc_result = load_document(session, load_options, &aurl, None)
-                    .map(Rc::new)
-                    .map(Resource::Document);
-                let res = e.insert(doc_result);
-                res.clone()
-            }
+        // FIXME: pass a cancellable to this
+        let resource = self.lookup_resource(session, load_options, &aurl, None)?;
+
+        match resource {
+            Resource::Document(_) => Ok(resource),
+            _ => Err(LoadingError::Other(format!(
+                "{href} is not an SVG document"
+            ))),
         }
     }
 
@@ -315,24 +312,6 @@ fn load_svg_resource_from_bytes(
     )?;
 
     Ok(Resource::Document(Rc::new(document)))
-}
-
-fn load_document(
-    session: &Session,
-    load_options: &LoadOptions,
-    aurl: &AllowedUrl,
-    cancellable: Option<&gio::Cancellable>,
-) -> Result<Document, LoadingError> {
-    io::acquire_stream(aurl, cancellable)
-        .map_err(LoadingError::from)
-        .and_then(|stream| {
-            Document::load_from_stream(
-                session.clone(),
-                Arc::new(load_options.copy_with_base_url(aurl)),
-                &stream,
-                None,
-            )
-        })
 }
 
 fn load_image(
