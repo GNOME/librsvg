@@ -2,6 +2,7 @@
 
 use data_url::mime::Mime;
 use gdk_pixbuf::{prelude::PixbufLoaderExt, PixbufLoader};
+use glib::prelude::*;
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
 use std::cell::RefCell;
@@ -116,8 +117,6 @@ impl Document {
     /// Utility function to load a document from a static string in tests.
     #[cfg(test)]
     pub fn load_from_bytes(input: &'static [u8]) -> Document {
-        use glib::prelude::*;
-
         let bytes = glib::Bytes::from_static(input);
         let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
@@ -227,17 +226,8 @@ impl Resources {
             Entry::Occupied(e) => e.get().clone(),
             Entry::Vacant(e) => {
                 let aurl = e.key();
-                // FIXME: pass a cancellable to these
-                let doc_result = io::acquire_stream(aurl, None)
-                    .map_err(LoadingError::from)
-                    .and_then(|stream| {
-                        Document::load_from_stream(
-                            session.clone(),
-                            Arc::new(load_options.copy_with_base_url(aurl)),
-                            &stream,
-                            None,
-                        )
-                    })
+                // FIXME: pass a cancellable to this
+                let doc_result = load_document(session, load_options, &aurl, None)
                     .map(Rc::new)
                     .map(Resource::Document);
                 let res = e.insert(doc_result);
@@ -264,6 +254,85 @@ impl Resources {
             }
         }
     }
+
+    fn lookup_resource(
+        &mut self,
+        session: &Session,
+        load_options: &LoadOptions,
+        aurl: &AllowedUrl,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<Resource, LoadingError> {
+        match self.resources.entry(aurl.clone()) {
+            Entry::Occupied(e) => e.get().clone(),
+
+            Entry::Vacant(e) => {
+                let resource_result = load_resource(session, load_options, aurl, cancellable);
+                e.insert(resource_result.clone());
+                resource_result
+            }
+        }
+    }
+}
+
+fn load_resource(
+    session: &Session,
+    load_options: &LoadOptions,
+    aurl: &AllowedUrl,
+    cancellable: Option<&gio::Cancellable>,
+) -> Result<Resource, LoadingError> {
+    let data = io::acquire_data(aurl, cancellable)?;
+
+    let svg_mime_type = Mime::from_str("image/svg+xml").unwrap();
+
+    if data.mime_type == svg_mime_type {
+        load_svg_resource_from_bytes(session, load_options, aurl, data, cancellable)
+    } else {
+        // FIXME: load image
+        unimplemented!()
+    }
+}
+
+fn load_svg_resource_from_bytes(
+    session: &Session,
+    load_options: &LoadOptions,
+    aurl: &AllowedUrl,
+    data: BinaryData,
+    cancellable: Option<&gio::Cancellable>,
+) -> Result<Resource, LoadingError> {
+    let BinaryData {
+        data: input_bytes,
+        mime_type: _mime_type,
+    } = data;
+
+    let bytes = glib::Bytes::from_owned(input_bytes);
+    let stream = gio::MemoryInputStream::from_bytes(&bytes);
+
+    let document = Document::load_from_stream(
+        session.clone(),
+        Arc::new(load_options.copy_with_base_url(aurl)),
+        &stream.upcast(),
+        cancellable,
+    )?;
+
+    Ok(Resource::Document(Rc::new(document)))
+}
+
+fn load_document(
+    session: &Session,
+    load_options: &LoadOptions,
+    aurl: &AllowedUrl,
+    cancellable: Option<&gio::Cancellable>,
+) -> Result<Document, LoadingError> {
+    io::acquire_stream(aurl, cancellable)
+        .map_err(LoadingError::from)
+        .and_then(|stream| {
+            Document::load_from_stream(
+                session.clone(),
+                Arc::new(load_options.copy_with_base_url(aurl)),
+                &stream,
+                None,
+            )
+        })
 }
 
 fn load_image(
