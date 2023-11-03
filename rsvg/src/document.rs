@@ -222,7 +222,9 @@ impl Resources {
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        // FIXME: pass a cancellable to this
+        // FIXME: pass a cancellable to this.  This function is called
+        // at rendering time, so probably the cancellable should come
+        // from cancellability in CairoRenderer - see #429
         let resource = self.lookup_resource(session, load_options, &aurl, None)?;
 
         match resource {
@@ -239,7 +241,9 @@ impl Resources {
         load_options: &LoadOptions,
         aurl: &AllowedUrl,
     ) -> Result<SharedImageSurface, LoadingError> {
-        // FIXME: pass a cancellable to this
+        // FIXME: pass a cancellable to this.  This function is called
+        // at rendering time, so probably the cancellable should come
+        // from cancellability in CairoRenderer - see #429
         let resource = self.lookup_resource(session, load_options, aurl, None)?;
 
         match resource {
