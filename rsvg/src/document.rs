@@ -161,7 +161,7 @@ impl Document {
 
         self.resources
             .borrow_mut()
-            .lookup_image(&self.load_options, &aurl)
+            .lookup_image(&self.session, &self.load_options, &aurl)
     }
 
     /// Runs the CSS cascade on the document tree
@@ -235,20 +235,16 @@ impl Resources {
 
     fn lookup_image(
         &mut self,
+        session: &Session,
         load_options: &LoadOptions,
         aurl: &AllowedUrl,
     ) -> Result<SharedImageSurface, LoadingError> {
-        match self.resources.entry(aurl.clone()) {
-            Entry::Occupied(e) => e.get().clone().map(|resource| match resource {
-                Resource::Image(img) => img.clone(),
-                _ => unreachable!(),
-            }),
+        // FIXME: pass a cancellable to this
+        let resource = self.lookup_resource(session, load_options, aurl, None)?;
 
-            Entry::Vacant(e) => {
-                let surface_result = load_image(load_options, e.key());
-                e.insert(surface_result.clone().map(Resource::Image));
-                surface_result
-            }
+        match resource {
+            Resource::Image(image) => Ok(image),
+            _ => Err(LoadingError::Other(format!("{aurl} is not a raster image"))),
         }
     }
 
@@ -284,8 +280,7 @@ fn load_resource(
     if data.mime_type == svg_mime_type {
         load_svg_resource_from_bytes(session, load_options, aurl, data, cancellable)
     } else {
-        // FIXME: load image
-        unimplemented!()
+        load_image_resource_from_bytes(load_options, aurl, data)
     }
 }
 
@@ -314,14 +309,15 @@ fn load_svg_resource_from_bytes(
     Ok(Resource::Document(Rc::new(document)))
 }
 
-fn load_image(
+fn load_image_resource_from_bytes(
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
-) -> Result<SharedImageSurface, LoadingError> {
+    data: BinaryData,
+) -> Result<Resource, LoadingError> {
     let BinaryData {
         data: bytes,
         mime_type,
-    } = io::acquire_data(aurl, None)?;
+    } = data;
 
     if bytes.is_empty() {
         return Err(LoadingError::Other(String::from("no image data")));
@@ -351,7 +347,7 @@ fn load_image(
     let surface = SharedImageSurface::from_pixbuf(&pixbuf, content_type.as_deref(), bytes)
         .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
-    Ok(surface)
+    Ok(Resource::Image(surface))
 }
 
 fn content_type_for_gdk_pixbuf(mime_type: &Mime) -> Option<String> {
