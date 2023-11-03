@@ -164,6 +164,22 @@ impl Document {
             .lookup_image(&self.session, &self.load_options, &aurl)
     }
 
+    /// Loads a resource by URL, or returns a pre-loaded one.
+    fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
+        let aurl = self
+            .load_options
+            .url_resolver
+            .resolve_href(url)
+            .map_err(|_| LoadingError::BadUrl)?;
+
+        // FIXME: pass a cancellable to this.  This function is called
+        // at rendering time, so probably the cancellable should come
+        // from cancellability in CairoRenderer - see #429
+        self.resources
+            .borrow_mut()
+            .lookup_resource(&self.session, &self.load_options, &aurl, None)
+    }
+
     /// Runs the CSS cascade on the document tree
     ///
     /// This uses the default UserAgent stylesheet, the document's internal stylesheets,
@@ -457,6 +473,10 @@ impl<'i> AcquiredNodes<'i> {
 
     pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
         self.document.lookup_image(href)
+    }
+
+    pub fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
+        self.document.lookup_resource(url)
     }
 
     /// Acquires a node by its id.
