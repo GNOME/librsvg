@@ -10,10 +10,11 @@ pub use crate::{
     accept_language::{AcceptLanguage, Language, LanguageTags, UserLanguage},
     document::NodeId,
     dpi::Dpi,
+    drawing_ctx::Viewport,
     error::{DefsLookupErrorKind, ImplementationLimit, InternalRenderingError, LoadingError},
     handle::{Handle, LoadOptions},
-    length::{LengthUnit, RsvgLength as Length},
-    node::Node,
+    length::{LengthUnit, NormalizeParams, RsvgLength as Length},
+    node::{CascadedValues, Node},
     rsvg_log,
     session::Session,
     url_resolver::UrlResolver,
@@ -588,7 +589,7 @@ impl<'a> CairoRenderer<'a> {
             return None;
         }
 
-        Some(self.handle.handle.width_height_to_user(self.dpi))
+        Some(self.width_height_to_user(self.dpi))
     }
 
     /// Renders the whole SVG document fitted to a viewport
@@ -781,10 +782,27 @@ impl<'a> CairoRenderer<'a> {
         self.dpi
     }
 
+    /// Normalizes the svg's width/height properties with a 0-sized viewport
+    ///
+    /// This assumes that if one of the properties is in percentage units, then
+    /// its corresponding value will not be used.  E.g. if width=100%, the caller
+    /// will ignore the resulting width value.
     #[doc(hidden)]
     #[cfg(feature = "c-api")]
-    pub fn handle(&self) -> &Handle {
-        &self.handle.handle
+    pub fn width_height_to_user(&self, dpi: Dpi) -> (f64, f64) {
+        let dimensions = self.handle.handle.get_intrinsic_dimensions();
+
+        let width = dimensions.width;
+        let height = dimensions.height;
+
+        let view_params = Viewport::new(dpi, 0.0, 0.0);
+        let root = self.handle.handle.document.root();
+        let cascaded = CascadedValues::new_from_node(&root);
+        let values = cascaded.get();
+
+        let params = NormalizeParams::new(values, &view_params);
+
+        (width.to_user(&params), height.to_user(&params))
     }
 
     #[doc(hidden)]

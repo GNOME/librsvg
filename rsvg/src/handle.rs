@@ -10,9 +10,8 @@ use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, Viewport};
+use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode};
 use crate::error::{InternalRenderingError, LoadingError};
-use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
 use crate::session::Session;
@@ -98,27 +97,6 @@ impl Handle {
             session: session.clone(),
             document: Document::load_from_stream(session, load_options, stream, cancellable)?,
         })
-    }
-
-    /// Normalizes the svg's width/height properties with a 0-sized viewport
-    ///
-    /// This assumes that if one of the properties is in percentage units, then
-    /// its corresponding value will not be used.  E.g. if width=100%, the caller
-    /// will ignore the resulting width value.
-    pub fn width_height_to_user(&self, dpi: Dpi) -> (f64, f64) {
-        let dimensions = self.get_intrinsic_dimensions();
-
-        let width = dimensions.width;
-        let height = dimensions.height;
-
-        let view_params = Viewport::new(dpi, 0.0, 0.0);
-        let root = self.document.root();
-        let cascaded = CascadedValues::new_from_node(&root);
-        let values = cascaded.get();
-
-        let params = NormalizeParams::new(values, &view_params);
-
-        (width.to_user(&params), height.to_user(&params))
     }
 
     fn geometry_for_layer(
