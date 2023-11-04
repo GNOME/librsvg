@@ -4,7 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::document::AcquiredNodes;
+use crate::document::{AcquiredNodes, Resource};
 use crate::drawing_ctx::{DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
@@ -16,6 +16,7 @@ use crate::parsers::ParseValue;
 use crate::rect::Rect;
 use crate::rsvg_log;
 use crate::session::Session;
+use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::xml::Attributes;
 
 /// The `<image>` element.
@@ -55,22 +56,68 @@ impl ElementTrait for Image {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let surface = match self.href {
-            Some(ref url) => match acquired_nodes.lookup_image(url) {
-                Ok(surf) => surf,
-                Err(e) => {
-                    rsvg_log!(
-                        draw_ctx.session(),
-                        "could not load image \"{}\": {}",
-                        url,
-                        e
-                    );
-                    return Ok(draw_ctx.empty_bbox());
-                }
-            },
-            None => return Ok(draw_ctx.empty_bbox()),
-        };
+        if let Some(ref url) = self.href {
+            self.draw_from_url(
+                url,
+                node,
+                acquired_nodes,
+                cascaded,
+                viewport,
+                draw_ctx,
+                clipping,
+            )
+        } else {
+            Ok(draw_ctx.empty_bbox())
+        }
+    }
+}
 
+impl Image {
+    fn draw_from_url(
+        &self,
+        url: &str,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        match acquired_nodes.lookup_resource(url) {
+            Ok(Resource::Image(surface)) => self.draw_from_surface(
+                &surface,
+                node,
+                acquired_nodes,
+                cascaded,
+                viewport,
+                draw_ctx,
+                clipping,
+            ),
+
+            Ok(_) => unimplemented!(),
+
+            Err(e) => {
+                rsvg_log!(
+                    draw_ctx.session(),
+                    "could not load image \"{}\": {}",
+                    url,
+                    e
+                );
+                return Ok(draw_ctx.empty_bbox());
+            }
+        }
+    }
+
+    fn draw_from_surface(
+        &self,
+        surface: &SharedImageSurface,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, InternalRenderingError> {
         let values = cascaded.get();
 
         let params = NormalizeParams::new(values, viewport);
@@ -94,7 +141,7 @@ impl ElementTrait for Image {
         let overflow = values.overflow();
 
         let image = Box::new(layout::Image {
-            surface,
+            surface: surface.clone(),
             is_visible,
             rect,
             aspect: self.aspect,
