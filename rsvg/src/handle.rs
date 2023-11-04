@@ -5,11 +5,10 @@
 use std::sync::Arc;
 
 use crate::accept_language::UserLanguage;
-use crate::api::RenderingError;
 use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
-use crate::document::{AcquiredNodes, Document, NodeId};
+use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, Viewport};
 use crate::error::{InternalRenderingError, LoadingError};
@@ -84,7 +83,7 @@ impl LoadOptions {
 /// [`from_stream`]: #method.from_stream
 pub struct Handle {
     session: Session,
-    document: Document,
+    pub(crate) document: Document,
 }
 
 impl Handle {
@@ -99,20 +98,6 @@ impl Handle {
             session: session.clone(),
             document: Document::load_from_stream(session, load_options, stream, cancellable)?,
         })
-    }
-
-    /// Queries whether a document has a certain element `#foo`.
-    ///
-    /// The `id` must be an URL fragment identifier, i.e. something
-    /// like `#element_id`.
-    pub fn has_sub(&self, node_id: &NodeId) -> Result<bool, RenderingError> {
-        match self.lookup_node(node_id) {
-            Ok(_) => Ok(true),
-
-            Err(InternalRenderingError::IdNotFound) => Ok(false),
-
-            Err(e) => Err(e.into()),
-        }
     }
 
     /// Normalizes the svg's width/height properties with a 0-sized viewport
@@ -134,14 +119,6 @@ impl Handle {
         let params = NormalizeParams::new(values, &view_params);
 
         (width.to_user(&params), height.to_user(&params))
-    }
-
-    fn get_node_or_root(&self, node_id: &Option<NodeId>) -> Result<Node, InternalRenderingError> {
-        if let Some(ref node_id) = *node_id {
-            Ok(self.lookup_node(node_id)?)
-        } else {
-            Ok(self.document.root())
-        }
     }
 
     fn geometry_for_layer(
@@ -177,14 +154,13 @@ impl Handle {
 
     pub fn get_geometry_for_layer(
         &self,
-        node_id: &Option<NodeId>,
+        node: Node,
         viewport: &cairo::Rectangle,
         user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
         let viewport = Rect::from(*viewport);
-        let node = self.get_node_or_root(node_id)?;
 
         let (ink_rect, logical_rect) =
             self.geometry_for_layer(node, viewport, user_language, dpi, is_testing)?;
@@ -195,26 +171,6 @@ impl Handle {
         ))
     }
 
-    fn lookup_node(&self, node_id: &NodeId) -> Result<Node, InternalRenderingError> {
-        // The public APIs to get geometries of individual elements, or to render
-        // them, should only allow referencing elements within the main handle's
-        // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
-        // Otherwise, a calling program could request "another-file#foo" and cause
-        // another-file to be loaded, even if it is not part of the set of
-        // resources that the main SVG actually references.  In the future we may
-        // relax this requirement to allow lookups within that set, but not to
-        // other random files.
-        match node_id {
-            NodeId::Internal(id) => self
-                .document
-                .lookup_internal_node(&id)
-                .ok_or(InternalRenderingError::IdNotFound),
-            NodeId::External(_, _) => {
-                unreachable!("caller should already have validated internal node IDs only")
-            }
-        }
-    }
-
     pub fn render_document(
         &self,
         cr: &cairo::Context,
@@ -223,13 +179,14 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), InternalRenderingError> {
-        self.render_layer(cr, &None, viewport, user_language, dpi, is_testing)
+        let root = self.document.root();
+        self.render_layer(cr, root, viewport, user_language, dpi, is_testing)
     }
 
     pub fn render_layer(
         &self,
         cr: &cairo::Context,
-        node_id: &Option<NodeId>,
+        node: Node,
         viewport: &cairo::Rectangle,
         user_language: &UserLanguage,
         dpi: Dpi,
@@ -237,7 +194,6 @@ impl Handle {
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
 
-        let node = self.get_node_or_root(node_id)?;
         let root = self.document.root();
 
         let viewport = Rect::from(*viewport);
@@ -286,13 +242,11 @@ impl Handle {
     /// Returns (ink_rect, logical_rect)
     pub fn get_geometry_for_element(
         &self,
-        node_id: &Option<NodeId>,
+        node: Node,
         user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
-        let node = self.get_node_or_root(node_id)?;
-
         let bbox = self.get_bbox_for_element(&node, user_language, dpi, is_testing)?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
@@ -310,15 +264,13 @@ impl Handle {
     pub fn render_element(
         &self,
         cr: &cairo::Context,
-        node_id: &Option<NodeId>,
+        node: Node,
         element_viewport: &cairo::Rectangle,
         user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
-
-        let node = self.get_node_or_root(node_id)?;
 
         let bbox = self.get_bbox_for_element(&node, user_language, dpi, is_testing)?;
 

@@ -13,6 +13,7 @@ pub use crate::{
     error::{DefsLookupErrorKind, ImplementationLimit, InternalRenderingError, LoadingError},
     handle::{Handle, LoadOptions},
     length::{LengthUnit, RsvgLength as Length},
+    node::Node,
     rsvg_log,
     session::Session,
     url_resolver::UrlResolver,
@@ -316,7 +317,14 @@ impl SvgHandle {
     /// incorrectly-formatted `id` argument.
     pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
         let node_id = self.get_node_id(id)?;
-        Ok(self.handle.has_sub(&node_id)?)
+
+        match self.lookup_node(&node_id) {
+            Ok(_) => Ok(true),
+
+            Err(InternalRenderingError::IdNotFound) => Ok(false),
+
+            Err(e) => Err(e.into()),
+        }
     }
 
     /// Sets a CSS stylesheet to use for an SVG document.
@@ -364,6 +372,35 @@ impl SvgHandle {
                 Err(RenderingError::InvalidId(
                     "cannot lookup references to elements in external files".to_string(),
                 ))
+            }
+        }
+    }
+
+    fn get_node_or_root(&self, node_id: &Option<NodeId>) -> Result<Node, InternalRenderingError> {
+        if let Some(ref node_id) = *node_id {
+            Ok(self.lookup_node(node_id)?)
+        } else {
+            Ok(self.handle.document.root())
+        }
+    }
+
+    fn lookup_node(&self, node_id: &NodeId) -> Result<Node, InternalRenderingError> {
+        // The public APIs to get geometries of individual elements, or to render
+        // them, should only allow referencing elements within the main handle's
+        // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
+        // Otherwise, a calling program could request "another-file#foo" and cause
+        // another-file to be loaded, even if it is not part of the set of
+        // resources that the main SVG actually references.  In the future we may
+        // relax this requirement to allow lookups within that set, but not to
+        // other random files.
+        match node_id {
+            NodeId::Internal(id) => self
+                .handle
+                .document
+                .lookup_internal_node(&id)
+                .ok_or(InternalRenderingError::IdNotFound),
+            NodeId::External(_, _) => {
+                unreachable!("caller should already have validated internal node IDs only")
             }
         }
     }
@@ -606,12 +643,13 @@ impl<'a> CairoRenderer<'a> {
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
 
         Ok(self
             .handle
             .handle
             .get_geometry_for_layer(
-                &node_id,
+                node,
                 viewport,
                 &self.user_language,
                 self.dpi,
@@ -646,10 +684,11 @@ impl<'a> CairoRenderer<'a> {
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
         let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
 
         Ok(self.handle.handle.render_layer(
             cr,
-            &node_id,
+            node,
             viewport,
             &self.user_language,
             self.dpi,
@@ -692,11 +731,12 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
         let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
 
         Ok(self
             .handle
             .handle
-            .get_geometry_for_element(&node_id, &self.user_language, self.dpi, self.is_testing)
+            .get_geometry_for_element(node, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))?)
     }
 
@@ -723,10 +763,11 @@ impl<'a> CairoRenderer<'a> {
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
         let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
 
         Ok(self.handle.handle.render_element(
             cr,
-            &node_id,
+            node,
             element_viewport,
             &self.user_language,
             self.dpi,
