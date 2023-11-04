@@ -7,9 +7,15 @@
 use std::fmt;
 
 pub use crate::{
-    accept_language::{AcceptLanguage, Language},
-    error::{ImplementationLimit, LoadingError},
+    accept_language::{AcceptLanguage, Language, LanguageTags, UserLanguage},
+    document::NodeId,
+    dpi::Dpi,
+    error::{DefsLookupErrorKind, ImplementationLimit, InternalRenderingError, LoadingError},
+    handle::{Handle, LoadOptions},
     length::{LengthUnit, RsvgLength as Length},
+    rsvg_log,
+    session::Session,
+    url_resolver::UrlResolver,
 };
 
 use url::Url;
@@ -21,16 +27,6 @@ use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
 
 use locale_config::{LanguageRange, Locale};
-
-use crate::{
-    accept_language::{LanguageTags, UserLanguage},
-    dpi::Dpi,
-    error::InternalRenderingError,
-    handle::{Handle, LoadOptions},
-    rsvg_log,
-    session::Session,
-    url_resolver::UrlResolver,
-};
 
 /// Errors that can happen while rendering or measuring an SVG document.
 #[non_exhaustive]
@@ -309,6 +305,7 @@ pub struct SvgHandle {
     pub(crate) handle: Handle,
 }
 
+// Public API goes here
 impl SvgHandle {
     /// Checks if the SVG has an element with the specified `id`.
     ///
@@ -318,7 +315,8 @@ impl SvgHandle {
     /// The purpose of the `Err()` case in the return value is to indicate an
     /// incorrectly-formatted `id` argument.
     pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
-        Ok(self.handle.has_sub(id)?)
+        let node_id = self.get_node_id(id)?;
+        Ok(self.handle.has_sub(&node_id)?)
     }
 
     /// Sets a CSS stylesheet to use for an SVG document.
@@ -331,6 +329,43 @@ impl SvgHandle {
     /// [origin]: https://drafts.csswg.org/css-cascade-3/#cascading-origins
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
         self.handle.set_stylesheet(css)
+    }
+}
+
+// Private methods go here
+impl SvgHandle {
+    fn get_node_id_or_root(&self, id: Option<&str>) -> Result<Option<NodeId>, RenderingError> {
+        match id {
+            None => Ok(None),
+            Some(s) => Ok(Some(self.get_node_id(s)?)),
+        }
+    }
+
+    fn get_node_id(&self, id: &str) -> Result<NodeId, RenderingError> {
+        let node_id = NodeId::parse(id).map_err(|_| RenderingError::InvalidId(id.to_string()))?;
+
+        // The public APIs to get geometries of individual elements, or to render
+        // them, should only allow referencing elements within the main handle's
+        // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
+        // Otherwise, a calling program could request "another-file#foo" and cause
+        // another-file to be loaded, even if it is not part of the set of
+        // resources that the main SVG actually references.  In the future we may
+        // relax this requirement to allow lookups within that set, but not to
+        // other random files.
+        match node_id {
+            NodeId::Internal(_) => Ok(node_id),
+            NodeId::External(_, _) => {
+                rsvg_log!(
+                    self.session,
+                    "the public API is not allowed to look up external references: {}",
+                    node_id
+                );
+
+                Err(RenderingError::InvalidId(
+                    "cannot lookup references to elements in external files".to_string(),
+                ))
+            }
+        }
     }
 }
 
@@ -570,10 +605,18 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        let node_id = self.handle.get_node_id_or_root(id)?;
+
         Ok(self
             .handle
             .handle
-            .get_geometry_for_layer(id, viewport, &self.user_language, self.dpi, self.is_testing)
+            .get_geometry_for_layer(
+                &node_id,
+                viewport,
+                &self.user_language,
+                self.dpi,
+                self.is_testing,
+            )
             .map(|(i, l)| (i, l))?)
     }
 
@@ -602,9 +645,11 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        let node_id = self.handle.get_node_id_or_root(id)?;
+
         Ok(self.handle.handle.render_layer(
             cr,
-            id,
+            &node_id,
             viewport,
             &self.user_language,
             self.dpi,
@@ -646,10 +691,12 @@ impl<'a> CairoRenderer<'a> {
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        let node_id = self.handle.get_node_id_or_root(id)?;
+
         Ok(self
             .handle
             .handle
-            .get_geometry_for_element(id, &self.user_language, self.dpi, self.is_testing)
+            .get_geometry_for_element(&node_id, &self.user_language, self.dpi, self.is_testing)
             .map(|(i, l)| (i, l))?)
     }
 
@@ -675,9 +722,11 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
+        let node_id = self.handle.get_node_id_or_root(id)?;
+
         Ok(self.handle.handle.render_element(
             cr,
-            id,
+            &node_id,
             element_viewport,
             &self.user_language,
             self.dpi,

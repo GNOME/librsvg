@@ -5,17 +5,17 @@
 use std::sync::Arc;
 
 use crate::accept_language::UserLanguage;
+use crate::api::RenderingError;
 use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::css::{Origin, Stylesheet};
 use crate::document::{AcquiredNodes, Document, NodeId};
 use crate::dpi::Dpi;
 use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, Viewport};
-use crate::error::{DefsLookupErrorKind, InternalRenderingError, LoadingError};
+use crate::error::{InternalRenderingError, LoadingError};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::rect::Rect;
-use crate::rsvg_log;
 use crate::session::Session;
 use crate::structure::IntrinsicDimensions;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
@@ -105,11 +105,11 @@ impl Handle {
     ///
     /// The `id` must be an URL fragment identifier, i.e. something
     /// like `#element_id`.
-    pub fn has_sub(&self, id: &str) -> Result<bool, InternalRenderingError> {
-        match self.lookup_node(id) {
+    pub fn has_sub(&self, node_id: &NodeId) -> Result<bool, RenderingError> {
+        match self.lookup_node(node_id) {
             Ok(_) => Ok(true),
 
-            Err(DefsLookupErrorKind::NotFound) => Ok(false),
+            Err(InternalRenderingError::IdNotFound) => Ok(false),
 
             Err(e) => Err(e.into()),
         }
@@ -136,9 +136,9 @@ impl Handle {
         (width.to_user(&params), height.to_user(&params))
     }
 
-    fn get_node_or_root(&self, id: Option<&str>) -> Result<Node, InternalRenderingError> {
-        if let Some(id) = id {
-            Ok(self.lookup_node(id)?)
+    fn get_node_or_root(&self, node_id: &Option<NodeId>) -> Result<Node, InternalRenderingError> {
+        if let Some(ref node_id) = *node_id {
+            Ok(self.lookup_node(node_id)?)
         } else {
             Ok(self.document.root())
         }
@@ -177,14 +177,14 @@ impl Handle {
 
     pub fn get_geometry_for_layer(
         &self,
-        id: Option<&str>,
+        node_id: &Option<NodeId>,
         viewport: &cairo::Rectangle,
         user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
         let viewport = Rect::from(*viewport);
-        let node = self.get_node_or_root(id)?;
+        let node = self.get_node_or_root(node_id)?;
 
         let (ink_rect, logical_rect) =
             self.geometry_for_layer(node, viewport, user_language, dpi, is_testing)?;
@@ -195,9 +195,7 @@ impl Handle {
         ))
     }
 
-    fn lookup_node(&self, id: &str) -> Result<Node, DefsLookupErrorKind> {
-        let node_id = NodeId::parse(id).map_err(|_| DefsLookupErrorKind::InvalidId)?;
-
+    fn lookup_node(&self, node_id: &NodeId) -> Result<Node, InternalRenderingError> {
         // The public APIs to get geometries of individual elements, or to render
         // them, should only allow referencing elements within the main handle's
         // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
@@ -210,15 +208,9 @@ impl Handle {
             NodeId::Internal(id) => self
                 .document
                 .lookup_internal_node(&id)
-                .ok_or(DefsLookupErrorKind::NotFound),
+                .ok_or(InternalRenderingError::IdNotFound),
             NodeId::External(_, _) => {
-                rsvg_log!(
-                    self.session,
-                    "the public API is not allowed to look up external references: {}",
-                    node_id
-                );
-
-                Err(DefsLookupErrorKind::CannotLookupExternalReferences)
+                unreachable!("caller should already have validated internal node IDs only")
             }
         }
     }
@@ -231,13 +223,13 @@ impl Handle {
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(), InternalRenderingError> {
-        self.render_layer(cr, None, viewport, user_language, dpi, is_testing)
+        self.render_layer(cr, &None, viewport, user_language, dpi, is_testing)
     }
 
     pub fn render_layer(
         &self,
         cr: &cairo::Context,
-        id: Option<&str>,
+        node_id: &Option<NodeId>,
         viewport: &cairo::Rectangle,
         user_language: &UserLanguage,
         dpi: Dpi,
@@ -245,7 +237,7 @@ impl Handle {
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
 
-        let node = self.get_node_or_root(id)?;
+        let node = self.get_node_or_root(node_id)?;
         let root = self.document.root();
 
         let viewport = Rect::from(*viewport);
@@ -294,12 +286,12 @@ impl Handle {
     /// Returns (ink_rect, logical_rect)
     pub fn get_geometry_for_element(
         &self,
-        id: Option<&str>,
+        node_id: &Option<NodeId>,
         user_language: &UserLanguage,
         dpi: Dpi,
         is_testing: bool,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
-        let node = self.get_node_or_root(id)?;
+        let node = self.get_node_or_root(node_id)?;
 
         let bbox = self.get_bbox_for_element(&node, user_language, dpi, is_testing)?;
 
@@ -318,7 +310,7 @@ impl Handle {
     pub fn render_element(
         &self,
         cr: &cairo::Context,
-        id: Option<&str>,
+        node_id: &Option<NodeId>,
         element_viewport: &cairo::Rectangle,
         user_language: &UserLanguage,
         dpi: Dpi,
@@ -326,7 +318,7 @@ impl Handle {
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
 
-        let node = self.get_node_or_root(id)?;
+        let node = self.get_node_or_root(node_id)?;
 
         let bbox = self.get_bbox_for_element(&node, user_language, dpi, is_testing)?;
 
