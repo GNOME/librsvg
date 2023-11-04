@@ -17,10 +17,11 @@ pub use crate::{
 // Don't merge these in the "pub use" above!  They are not part of the public API!
 use crate::{
     accept_language::{LanguageTags, UserLanguage},
-    document::NodeId,
+    css::{Origin, Stylesheet},
+    document::{Document, NodeId},
     dpi::Dpi,
     error::InternalRenderingError,
-    handle::{Handle, LoadOptions},
+    handle::{self, LoadOptions},
     length::NormalizeParams,
     node::{CascadedValues, Node},
     rsvg_log,
@@ -291,7 +292,7 @@ impl Loader {
             .keep_image_data(self.keep_image_data);
 
         Ok(SvgHandle {
-            handle: Handle::from_stream(
+            document: Document::load_from_stream(
                 self.session.clone(),
                 Arc::new(load_options),
                 stream.as_ref(),
@@ -312,7 +313,7 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 /// [`Loader`].
 pub struct SvgHandle {
     session: Session,
-    pub(crate) handle: Handle,
+    pub(crate) document: Document,
 }
 
 // Public API goes here
@@ -345,7 +346,14 @@ impl SvgHandle {
     ///
     /// [origin]: https://drafts.csswg.org/css-cascade-3/#cascading-origins
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
-        self.handle.set_stylesheet(css)
+        let stylesheet = Stylesheet::from_data(
+            css,
+            &UrlResolver::new(None),
+            Origin::User,
+            self.session.clone(),
+        )?;
+        self.document.cascade(&[stylesheet], &self.session);
+        Ok(())
     }
 }
 
@@ -389,7 +397,7 @@ impl SvgHandle {
         if let Some(ref node_id) = *node_id {
             Ok(self.lookup_node(node_id)?)
         } else {
-            Ok(self.handle.document.root())
+            Ok(self.document.root())
         }
     }
 
@@ -404,7 +412,6 @@ impl SvgHandle {
         // other random files.
         match node_id {
             NodeId::Internal(id) => self
-                .handle
                 .document
                 .lookup_internal_node(&id)
                 .ok_or(InternalRenderingError::IdNotFound),
@@ -564,7 +571,7 @@ impl<'a> CairoRenderer<'a> {
     /// [`render_document`]: #method.render_document
     /// [`intrinsic_size_in_pixels`]: #method.intrinsic_size_in_pixels
     pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let d = self.handle.handle.get_intrinsic_dimensions();
+        let d = self.handle.document.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
             width: Into::into(d.width),
@@ -613,7 +620,9 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        Ok(self.handle.handle.render_document(
+        Ok(handle::render_document(
+            &self.handle.session,
+            &self.handle.document,
             cr,
             viewport,
             &self.user_language,
@@ -654,17 +663,15 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(self
-            .handle
-            .handle
-            .get_geometry_for_layer(
-                node,
-                viewport,
-                &self.user_language,
-                self.dpi,
-                self.is_testing,
-            )
-            .map(|(i, l)| (i, l))?)
+        Ok(handle::get_geometry_for_layer(
+            &self.handle.session,
+            &self.handle.document,
+            node,
+            viewport,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )?)
     }
 
     /// Renders a single SVG element in the same place as for a whole SVG document
@@ -695,7 +702,9 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(self.handle.handle.render_layer(
+        Ok(handle::render_layer(
+            &self.handle.session,
+            &self.handle.document,
             cr,
             node,
             viewport,
@@ -742,11 +751,15 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(self
-            .handle
-            .handle
-            .get_geometry_for_element(node, &self.user_language, self.dpi, self.is_testing)
-            .map(|(i, l)| (i, l))?)
+        Ok(handle::get_geometry_for_element(
+            &self.handle.session,
+            &self.handle.document,
+            node,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )
+        .map(|(i, l)| (i, l))?)
     }
 
     /// Renders a single SVG element to a given viewport
@@ -774,7 +787,9 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(self.handle.handle.render_element(
+        Ok(handle::render_element(
+            &self.handle.session,
+            &self.handle.document,
             cr,
             node,
             element_viewport,
@@ -798,13 +813,13 @@ impl<'a> CairoRenderer<'a> {
     #[doc(hidden)]
     #[cfg(feature = "c-api")]
     pub fn width_height_to_user(&self, dpi: Dpi) -> (f64, f64) {
-        let dimensions = self.handle.handle.get_intrinsic_dimensions();
+        let dimensions = self.handle.document.get_intrinsic_dimensions();
 
         let width = dimensions.width;
         let height = dimensions.height;
 
         let view_params = Viewport::new(dpi, 0.0, 0.0);
-        let root = self.handle.handle.document.root();
+        let root = self.handle.document.root();
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
 

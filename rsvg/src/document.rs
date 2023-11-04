@@ -14,14 +14,16 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::borrow_element_as;
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, LoadingError, NodeIdError};
 use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::is_element_of_type;
 use crate::limits;
-use crate::node::{Node, NodeBorrow, NodeData};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeData};
 use crate::session::Session;
+use crate::structure::IntrinsicDimensions;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
 use crate::xml::{xml_load_from_possibly_compressed_stream, Attributes};
@@ -192,6 +194,13 @@ impl Document {
             extra,
             session,
         );
+    }
+
+    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        let root = self.root();
+        let cascaded = CascadedValues::new_from_node(&root);
+        let values = cascaded.get();
+        borrow_element_as!(self.root(), Svg).get_intrinsic_dimensions(values)
     }
 }
 

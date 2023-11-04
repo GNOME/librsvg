@@ -225,7 +225,6 @@ pub mod bench_only {
 #[cfg(feature = "c-api")]
 pub mod c_api_only {
     pub use crate::dpi::Dpi;
-    pub use crate::handle::Handle;
     pub use crate::rsvg_log;
     pub use crate::session::Session;
     pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
