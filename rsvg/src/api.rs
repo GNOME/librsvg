@@ -6,14 +6,22 @@
 
 use std::fmt;
 
+// Here we only re-export stuff in the public API.
 pub use crate::{
-    accept_language::{AcceptLanguage, Language, LanguageTags, UserLanguage},
+    accept_language::{AcceptLanguage, Language},
+    drawing_ctx::Viewport,
+    error::{DefsLookupErrorKind, ImplementationLimit, LoadingError},
+    length::{LengthUnit, RsvgLength as Length},
+};
+
+// Don't merge these in the "pub use" above!  They are not part of the public API!
+use crate::{
+    accept_language::{LanguageTags, UserLanguage},
     document::NodeId,
     dpi::Dpi,
-    drawing_ctx::Viewport,
-    error::{DefsLookupErrorKind, ImplementationLimit, InternalRenderingError, LoadingError},
+    error::InternalRenderingError,
     handle::{Handle, LoadOptions},
-    length::{LengthUnit, NormalizeParams, RsvgLength as Length},
+    length::NormalizeParams,
     node::{CascadedValues, Node},
     rsvg_log,
     session::Session,
