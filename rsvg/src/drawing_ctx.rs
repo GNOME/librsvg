@@ -384,6 +384,10 @@ impl DrawingCtx {
         self.measuring
     }
 
+    pub fn is_testing(&self) -> bool {
+        self.testing
+    }
+
     pub fn get_transform(&self) -> ValidTransform {
         let t = Transform::from(self.cr.matrix());
         ValidTransform::try_from(t)
