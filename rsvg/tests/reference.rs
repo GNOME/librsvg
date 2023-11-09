@@ -779,6 +779,7 @@ mod tests {
     t!(svg1_1_coords_viewattr_01_b_svg,                             "svg1.1/coords-viewattr-01-b.svg");
     t!(svg1_1_coords_viewattr_02_b_svg,                             "svg1.1/coords-viewattr-02-b.svg");
     t!(svg1_1_coords_viewattr_03_b_svg,                             "svg1.1/coords-viewattr-03-b.svg");
+    t!(svg1_1_coords_viewattr_04_f_svg,                             "svg1.1/coords-viewattr-04-f.svg");
     t!(svg1_1_filters_background_01_f_svg,                          "svg1.1/filters-background-01-f.svg");
     t!(svg1_1_filters_blend_01_b_svg,                               "svg1.1/filters-blend-01-b.svg");
     t!(svg1_1_filters_color_01_b_svg,                               "svg1.1/filters-color-01-b.svg");
