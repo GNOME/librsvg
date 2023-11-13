@@ -53,7 +53,7 @@
       <text text-anchor="middle" x="240" font-size="16">Test options of preserveAspectRatio on an image element</text>
       <text x="40" y="30" text-anchor="middle">SVG to fit</text>
       <g transform="translate(20,40)">
-        <image xlink:href="../images/happysmiley.svg" width="40" height="40" preserveAspectRatio="none" />
+        <image xlink:href="resources/happysmiley.svg" width="40" height="40" preserveAspectRatio="none" />
       </g>
       <text x="35.5" y="110" text-anchor="middle">Viewport 1</text>
       <g transform="translate(10,120)">&Viewport1;</g>
