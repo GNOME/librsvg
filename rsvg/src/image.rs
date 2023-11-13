@@ -203,6 +203,8 @@ impl Image {
         let x = values.x().0.to_user(&params);
         let y = values.y().0.to_user(&params);
 
+        dbg!(&dimensions);
+
         let w = match values.width().0 {
             LengthOrAuto::Length(l) => l.to_user(&params),
             LengthOrAuto::Auto => dimensions.width.to_user(&params),
@@ -213,15 +215,28 @@ impl Image {
             LengthOrAuto::Auto => dimensions.height.to_user(&params),
         };
 
+        dbg!((w, h, self.aspect));
+
         let is_visible = values.is_visible();
 
         let rect = Rect::new(x, y, x + w, y + h);
 
         let overflow = values.overflow();
 
+        let dest_rect = match dimensions.vbox {
+            None => Rect::from_size(w, h),
+            Some(vbox) => {
+                self.aspect.compute(&vbox, &Rect::new(x, y, x + w, y + h))
+            }
+        };
+
+        let dest_size = dest_rect.size();
+
+        let surface_dest_rect = Rect::from_size(dest_size.0, dest_size.1);
+
         // We use ceil() to avoid chopping off the last pixel if it is partially covered.
-        let surface_width = checked_i32(w.ceil())?;
-        let surface_height = checked_i32(h.ceil())?;
+        let surface_width = checked_i32(dest_size.0.ceil())?;
+        let surface_height = checked_i32(dest_size.1.ceil())?;
         let surface =
             cairo::ImageSurface::create(cairo::Format::ARgb32, surface_width, surface_height)?;
 
@@ -232,7 +247,7 @@ impl Image {
                 draw_ctx.session(),
                 document,
                 &cr,
-                &cairo::Rectangle::new(0.0, 0.0, w, h),
+                &cairo::Rectangle::from(surface_dest_rect),
                 draw_ctx.user_language(),
                 viewport.dpi,
                 draw_ctx.is_testing(),
