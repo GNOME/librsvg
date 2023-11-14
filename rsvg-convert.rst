@@ -380,7 +380,7 @@ GENERAL OPTIONS
    Specify the output filename. If unspecified, outputs to standard
    output.
 
-``-v, ``--version``
+``-v``, ``--version``
    Display what version of rsvg-convert you are running.
 
 ``--help``
