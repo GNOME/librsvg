@@ -406,7 +406,7 @@ impl DrawingCtx {
 
         // We need a size in whole pixels, so use ceil() to ensure the whole viewport fits
         // into the temporary surface.
-        (width.ceil() as i32, height.ceil() as i32)
+        (width.ceil().abs() as i32, height.ceil().abs() as i32)
     }
 
     pub fn create_surface_for_toplevel_viewport(
