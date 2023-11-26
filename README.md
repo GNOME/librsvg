@@ -206,7 +206,6 @@ ways:
 [contributing]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/contributing.html
 [reporting-bugs]: https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/bugs.html
 [discourse]: https://discourse.gnome.org/c/platform/5
-[d-d-l]: https://mail.gnome.org/mailman/listinfo/desktop-devel-list
 [federico]: https://viruta.org/
 [platform]: https://developer.gnome.org/
 [guadec-presentation-1]: https://viruta.org/docs/fmq-porting-c-to-rust.pdf
