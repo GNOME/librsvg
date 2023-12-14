@@ -14,13 +14,17 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::accept_language::UserLanguage;
 use crate::borrow_element_as;
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::{AcquireError, LoadingError, NodeIdError};
+use crate::dpi::Dpi;
+use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, SvgNesting};
+use crate::error::{AcquireError, InternalRenderingError, LoadingError, NodeIdError};
 use crate::io::{self, BinaryData};
 use crate::is_element_of_type;
 use crate::limits;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeData};
+use crate::rect::Rect;
 use crate::session::Session;
 use crate::structure::IntrinsicDimensions;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -256,6 +260,63 @@ impl Document {
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
         borrow_element_as!(self.root(), Svg).get_intrinsic_dimensions(values)
+    }
+
+    pub fn render_document(
+        &self,
+        session: &Session,
+        cr: &cairo::Context,
+        viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        svg_nesting: SvgNesting,
+        is_testing: bool,
+    ) -> Result<(), InternalRenderingError> {
+        let root = self.root();
+        self.render_layer(
+            session,
+            cr,
+            root,
+            viewport,
+            user_language,
+            dpi,
+            svg_nesting,
+            is_testing,
+        )
+    }
+
+    pub fn render_layer(
+        &self,
+        session: &Session,
+        cr: &cairo::Context,
+        node: Node,
+        viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        svg_nesting: SvgNesting,
+        is_testing: bool,
+    ) -> Result<(), InternalRenderingError> {
+        cr.status()?;
+
+        let root = self.root();
+
+        let viewport = Rect::from(*viewport);
+
+        with_saved_cr(cr, || {
+            draw_tree(
+                session.clone(),
+                DrawingMode::LimitToStack { node, root },
+                cr,
+                viewport,
+                user_language,
+                dpi,
+                svg_nesting,
+                false,
+                is_testing,
+                &mut AcquiredNodes::new(self),
+            )
+            .map(|_bbox| ())
+        })
     }
 }
 

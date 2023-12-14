@@ -621,9 +621,8 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        Ok(handle::render_document(
+        Ok(self.handle.document.render_document(
             &self.handle.session,
-            &self.handle.document,
             cr,
             viewport,
             &self.user_language,
@@ -704,9 +703,8 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(handle::render_layer(
+        Ok(self.handle.document.render_layer(
             &self.handle.session,
-            &self.handle.document,
             cr,
             node,
             viewport,

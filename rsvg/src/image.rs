@@ -8,7 +8,6 @@ use crate::document::{AcquiredNodes, Document, Resource};
 use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
-use crate::handle;
 use crate::href::{is_href, set_href};
 use crate::layout::{self, Layer, LayerKind, StackingContext};
 use crate::length::*;
@@ -237,9 +236,8 @@ impl Image {
         {
             let cr = cairo::Context::new(&surface)?;
 
-            handle::render_document(
+            document.render_document(
                 draw_ctx.session(),
-                document,
                 &cr,
                 &cairo::Rectangle::from(surface_dest_rect),
                 draw_ctx.user_language(),

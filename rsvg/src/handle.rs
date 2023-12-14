@@ -72,64 +72,6 @@ pub fn get_geometry_for_layer(
     ))
 }
 
-pub fn render_document(
-    session: &Session,
-    document: &Document,
-    cr: &cairo::Context,
-    viewport: &cairo::Rectangle,
-    user_language: &UserLanguage,
-    dpi: Dpi,
-    svg_nesting: SvgNesting,
-    is_testing: bool,
-) -> Result<(), InternalRenderingError> {
-    let root = document.root();
-    render_layer(
-        session,
-        document,
-        cr,
-        root,
-        viewport,
-        user_language,
-        dpi,
-        svg_nesting,
-        is_testing,
-    )
-}
-
-pub fn render_layer(
-    session: &Session,
-    document: &Document,
-    cr: &cairo::Context,
-    node: Node,
-    viewport: &cairo::Rectangle,
-    user_language: &UserLanguage,
-    dpi: Dpi,
-    svg_nesting: SvgNesting,
-    is_testing: bool,
-) -> Result<(), InternalRenderingError> {
-    cr.status()?;
-
-    let root = document.root();
-
-    let viewport = Rect::from(*viewport);
-
-    with_saved_cr(cr, || {
-        draw_tree(
-            session.clone(),
-            DrawingMode::LimitToStack { node, root },
-            cr,
-            viewport,
-            user_language,
-            dpi,
-            svg_nesting,
-            false,
-            is_testing,
-            &mut AcquiredNodes::new(document),
-        )
-        .map(|_bbox| ())
-    })
-}
-
 fn get_bbox_for_element(
     session: &Session,
     document: &Document,
