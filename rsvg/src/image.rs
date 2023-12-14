@@ -111,7 +111,7 @@ impl Image {
                     url,
                     e
                 );
-                return Ok(draw_ctx.empty_bbox());
+                Ok(draw_ctx.empty_bbox())
             }
         }
     }

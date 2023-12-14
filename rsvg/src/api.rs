@@ -413,7 +413,7 @@ impl SvgHandle {
         match node_id {
             NodeId::Internal(id) => self
                 .document
-                .lookup_internal_node(&id)
+                .lookup_internal_node(id)
                 .ok_or(InternalRenderingError::IdNotFound),
             NodeId::External(_, _) => {
                 unreachable!("caller should already have validated internal node IDs only")
