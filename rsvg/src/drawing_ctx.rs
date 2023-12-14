@@ -183,6 +183,8 @@ pub struct DrawingCtx {
 
     drawsub_stack: Vec<Node>,
 
+    svg_nesting: SvgNesting,
+
     measuring: bool,
     testing: bool,
 }
@@ -191,6 +193,20 @@ pub enum DrawingMode {
     LimitToStack { node: Node, root: Node },
 
     OnlyNode(Node),
+}
+
+/// Whether an SVG document is being rendered standalone or referenced from an `<image>` element.
+///
+/// Normally, the coordinate system used when rendering a toplevel SVG is determined from the
+/// initial viewport and the `<svg>` element's `viewBox` and `preserveAspectRatio` attributes.
+/// However, when an SVG document is referenced from an `<image>` element, as in `<image href="foo.svg"/>`,
+/// its `preserveAspectRatio` needs to be ignored so that the one from the `<image>` element can
+/// be used instead.  This lets the parent document (the one with the `<image>` element) specify
+/// how it wants the child SVG to be scaled into the viewport.
+#[derive(Copy, Clone)]
+pub enum SvgNesting {
+    Standalone,
+    ReferencedFromImageElement,
 }
 
 /// The toplevel drawing routine.
@@ -203,6 +219,7 @@ pub fn draw_tree(
     viewport_rect: Rect,
     user_language: &UserLanguage,
     dpi: Dpi,
+    svg_nesting: SvgNesting,
     measuring: bool,
     testing: bool,
     acquired_nodes: &mut AcquiredNodes<'_>,
@@ -256,6 +273,7 @@ pub fn draw_tree(
         &initial_viewport,
         user_language.clone(),
         dpi,
+        svg_nesting,
         measuring,
         testing,
         drawsub_stack,
@@ -304,6 +322,7 @@ impl DrawingCtx {
         initial_viewport: &Viewport,
         user_language: UserLanguage,
         dpi: Dpi,
+        svg_nesting: SvgNesting,
         measuring: bool,
         testing: bool,
         drawsub_stack: Vec<Node>,
@@ -316,6 +335,7 @@ impl DrawingCtx {
             cr: cr.clone(),
             user_language,
             drawsub_stack,
+            svg_nesting,
             measuring,
             testing,
         }
@@ -340,6 +360,7 @@ impl DrawingCtx {
             cr,
             user_language: self.user_language.clone(),
             drawsub_stack: self.drawsub_stack.clone(),
+            svg_nesting: self.svg_nesting,
             measuring: self.measuring,
             testing: self.testing,
         }
@@ -380,8 +401,16 @@ impl DrawingCtx {
         }
     }
 
+    pub fn svg_nesting(&self) -> SvgNesting {
+        self.svg_nesting
+    }
+
     pub fn is_measuring(&self) -> bool {
         self.measuring
+    }
+
+    pub fn is_testing(&self) -> bool {
+        self.testing
     }
 
     pub fn get_transform(&self) -> ValidTransform {

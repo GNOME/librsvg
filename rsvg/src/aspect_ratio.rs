@@ -93,6 +93,14 @@ impl Default for AspectRatio {
 }
 
 impl AspectRatio {
+    /// Produces the equivalent of `preserveAspectRatio="none"`.
+    pub fn none() -> AspectRatio {
+        AspectRatio {
+            defer: false,
+            align: None,
+        }
+    }
+
     pub fn is_slice(&self) -> bool {
         matches!(
             self.align,
@@ -227,6 +235,11 @@ mod tests {
     use super::*;
 
     use crate::{assert_approx_eq_cairo, float_eq_cairo::ApproxEqCairo};
+
+    #[test]
+    fn aspect_ratio_none() {
+        assert_eq!(AspectRatio::none(), AspectRatio::parse_str("none").unwrap());
+    }
 
     #[test]
     fn parsing_invalid_strings_yields_error() {

@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{ClipMode, DrawingCtx, Viewport};
+use crate::drawing_ctx::{ClipMode, DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
@@ -240,6 +240,23 @@ impl Svg {
             ClipMode::NoClip
         };
 
+        // From https://www.w3.org/TR/SVG2/embedded.html#ImageElement:
+        //
+        // For `image` elements embedding an SVG image, the `preserveAspectRatio`
+        // attribute on the root element in the referenced SVG image must be ignored,
+        // and instead treated as if it had a value of `none`. (see
+        // `preserveAspectRatio` for details).  This ensures that the
+        // `preserveAspectRatio` attribute on the referencing `image` has its
+        // intended effect, even if it is none.
+        //
+        let preserve_aspect_ratio = match (has_parent, draw_ctx.svg_nesting()) {
+            // we are a toplevel, and referenced from <image> => preserveAspectRatio=none
+            (false, SvgNesting::ReferencedFromImageElement) => AspectRatio::none(),
+
+            // otherwise just use our specified preserveAspectRatio
+            _ => self.preserve_aspect_ratio,
+        };
+
         let svg_viewport = self.get_viewport(&params, values, !has_parent);
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
@@ -272,7 +289,7 @@ impl Svg {
             current_viewport,
             vbox,
             viewport,
-            self.preserve_aspect_ratio,
+            preserve_aspect_ratio,
             clip_mode,
         )
     }

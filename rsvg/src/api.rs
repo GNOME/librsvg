@@ -6,10 +6,27 @@
 
 use std::fmt;
 
+// Here we only re-export stuff in the public API.
 pub use crate::{
     accept_language::{AcceptLanguage, Language},
-    error::{ImplementationLimit, LoadingError},
+    drawing_ctx::Viewport,
+    error::{DefsLookupErrorKind, ImplementationLimit, LoadingError},
     length::{LengthUnit, RsvgLength as Length},
+};
+
+// Don't merge these in the "pub use" above!  They are not part of the public API!
+use crate::{
+    accept_language::{LanguageTags, UserLanguage},
+    css::{Origin, Stylesheet},
+    document::{Document, LoadOptions, NodeId},
+    dpi::Dpi,
+    drawing_ctx::SvgNesting,
+    error::InternalRenderingError,
+    length::NormalizeParams,
+    node::{CascadedValues, Node},
+    rsvg_log,
+    session::Session,
+    url_resolver::UrlResolver,
 };
 
 use url::Url;
@@ -21,16 +38,6 @@ use gio::prelude::*; // Re-exposes glib's prelude as well
 use gio::Cancellable;
 
 use locale_config::{LanguageRange, Locale};
-
-use crate::{
-    accept_language::{LanguageTags, UserLanguage},
-    dpi::Dpi,
-    error::InternalRenderingError,
-    handle::{Handle, LoadOptions},
-    rsvg_log,
-    session::Session,
-    url_resolver::UrlResolver,
-};
 
 /// Errors that can happen while rendering or measuring an SVG document.
 #[non_exhaustive]
@@ -285,7 +292,7 @@ impl Loader {
             .keep_image_data(self.keep_image_data);
 
         Ok(SvgHandle {
-            handle: Handle::from_stream(
+            document: Document::load_from_stream(
                 self.session.clone(),
                 Arc::new(load_options),
                 stream.as_ref(),
@@ -306,9 +313,10 @@ fn url_from_file(file: &gio::File) -> Result<Url, LoadingError> {
 /// [`Loader`].
 pub struct SvgHandle {
     session: Session,
-    pub(crate) handle: Handle,
+    pub(crate) document: Document,
 }
 
+// Public API goes here
 impl SvgHandle {
     /// Checks if the SVG has an element with the specified `id`.
     ///
@@ -318,7 +326,15 @@ impl SvgHandle {
     /// The purpose of the `Err()` case in the return value is to indicate an
     /// incorrectly-formatted `id` argument.
     pub fn has_element_with_id(&self, id: &str) -> Result<bool, RenderingError> {
-        Ok(self.handle.has_sub(id)?)
+        let node_id = self.get_node_id(id)?;
+
+        match self.lookup_node(&node_id) {
+            Ok(_) => Ok(true),
+
+            Err(InternalRenderingError::IdNotFound) => Ok(false),
+
+            Err(e) => Err(e.into()),
+        }
     }
 
     /// Sets a CSS stylesheet to use for an SVG document.
@@ -330,7 +346,79 @@ impl SvgHandle {
     ///
     /// [origin]: https://drafts.csswg.org/css-cascade-3/#cascading-origins
     pub fn set_stylesheet(&mut self, css: &str) -> Result<(), LoadingError> {
-        self.handle.set_stylesheet(css)
+        let stylesheet = Stylesheet::from_data(
+            css,
+            &UrlResolver::new(None),
+            Origin::User,
+            self.session.clone(),
+        )?;
+        self.document.cascade(&[stylesheet], &self.session);
+        Ok(())
+    }
+}
+
+// Private methods go here
+impl SvgHandle {
+    fn get_node_id_or_root(&self, id: Option<&str>) -> Result<Option<NodeId>, RenderingError> {
+        match id {
+            None => Ok(None),
+            Some(s) => Ok(Some(self.get_node_id(s)?)),
+        }
+    }
+
+    fn get_node_id(&self, id: &str) -> Result<NodeId, RenderingError> {
+        let node_id = NodeId::parse(id).map_err(|_| RenderingError::InvalidId(id.to_string()))?;
+
+        // The public APIs to get geometries of individual elements, or to render
+        // them, should only allow referencing elements within the main handle's
+        // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
+        // Otherwise, a calling program could request "another-file#foo" and cause
+        // another-file to be loaded, even if it is not part of the set of
+        // resources that the main SVG actually references.  In the future we may
+        // relax this requirement to allow lookups within that set, but not to
+        // other random files.
+        match node_id {
+            NodeId::Internal(_) => Ok(node_id),
+            NodeId::External(_, _) => {
+                rsvg_log!(
+                    self.session,
+                    "the public API is not allowed to look up external references: {}",
+                    node_id
+                );
+
+                Err(RenderingError::InvalidId(
+                    "cannot lookup references to elements in external files".to_string(),
+                ))
+            }
+        }
+    }
+
+    fn get_node_or_root(&self, node_id: &Option<NodeId>) -> Result<Node, InternalRenderingError> {
+        if let Some(ref node_id) = *node_id {
+            Ok(self.lookup_node(node_id)?)
+        } else {
+            Ok(self.document.root())
+        }
+    }
+
+    fn lookup_node(&self, node_id: &NodeId) -> Result<Node, InternalRenderingError> {
+        // The public APIs to get geometries of individual elements, or to render
+        // them, should only allow referencing elements within the main handle's
+        // SVG file; that is, only plain "#foo" fragment IDs are allowed here.
+        // Otherwise, a calling program could request "another-file#foo" and cause
+        // another-file to be loaded, even if it is not part of the set of
+        // resources that the main SVG actually references.  In the future we may
+        // relax this requirement to allow lookups within that set, but not to
+        // other random files.
+        match node_id {
+            NodeId::Internal(id) => self
+                .document
+                .lookup_internal_node(id)
+                .ok_or(InternalRenderingError::IdNotFound),
+            NodeId::External(_, _) => {
+                unreachable!("caller should already have validated internal node IDs only")
+            }
+        }
     }
 }
 
@@ -483,7 +571,7 @@ impl<'a> CairoRenderer<'a> {
     /// [`render_document`]: #method.render_document
     /// [`intrinsic_size_in_pixels`]: #method.intrinsic_size_in_pixels
     pub fn intrinsic_dimensions(&self) -> IntrinsicDimensions {
-        let d = self.handle.handle.get_intrinsic_dimensions();
+        let d = self.handle.document.get_intrinsic_dimensions();
 
         IntrinsicDimensions {
             width: Into::into(d.width),
@@ -516,7 +604,7 @@ impl<'a> CairoRenderer<'a> {
             return None;
         }
 
-        Some(self.handle.handle.width_height_to_user(self.dpi))
+        Some(self.width_height_to_user(self.dpi))
     }
 
     /// Renders the whole SVG document fitted to a viewport
@@ -532,11 +620,13 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        Ok(self.handle.handle.render_document(
+        Ok(self.handle.document.render_document(
+            &self.handle.session,
             cr,
             viewport,
             &self.user_language,
             self.dpi,
+            SvgNesting::Standalone,
             self.is_testing,
         )?)
     }
@@ -570,11 +660,17 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        Ok(self
-            .handle
-            .handle
-            .get_geometry_for_layer(id, viewport, &self.user_language, self.dpi, self.is_testing)
-            .map(|(i, l)| (i, l))?)
+        let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
+
+        Ok(self.handle.document.get_geometry_for_layer(
+            &self.handle.session,
+            node,
+            viewport,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )?)
     }
 
     /// Renders a single SVG element in the same place as for a whole SVG document
@@ -602,12 +698,17 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        Ok(self.handle.handle.render_layer(
+        let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
+
+        Ok(self.handle.document.render_layer(
+            &self.handle.session,
             cr,
-            id,
+            node,
             viewport,
             &self.user_language,
             self.dpi,
+            SvgNesting::Standalone,
             self.is_testing,
         )?)
     }
@@ -646,10 +747,19 @@ impl<'a> CairoRenderer<'a> {
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
+        let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
+
         Ok(self
             .handle
-            .handle
-            .get_geometry_for_element(id, &self.user_language, self.dpi, self.is_testing)
+            .document
+            .get_geometry_for_element(
+                &self.handle.session,
+                node,
+                &self.user_language,
+                self.dpi,
+                self.is_testing,
+            )
             .map(|(i, l)| (i, l))?)
     }
 
@@ -675,9 +785,13 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         element_viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        Ok(self.handle.handle.render_element(
+        let node_id = self.handle.get_node_id_or_root(id)?;
+        let node = self.handle.get_node_or_root(&node_id)?;
+
+        Ok(self.handle.document.render_element(
+            &self.handle.session,
             cr,
-            id,
+            node,
             element_viewport,
             &self.user_language,
             self.dpi,
@@ -691,10 +805,27 @@ impl<'a> CairoRenderer<'a> {
         self.dpi
     }
 
+    /// Normalizes the svg's width/height properties with a 0-sized viewport
+    ///
+    /// This assumes that if one of the properties is in percentage units, then
+    /// its corresponding value will not be used.  E.g. if width=100%, the caller
+    /// will ignore the resulting width value.
     #[doc(hidden)]
     #[cfg(feature = "c-api")]
-    pub fn handle(&self) -> &Handle {
-        &self.handle.handle
+    pub fn width_height_to_user(&self, dpi: Dpi) -> (f64, f64) {
+        let dimensions = self.handle.document.get_intrinsic_dimensions();
+
+        let width = dimensions.width;
+        let height = dimensions.height;
+
+        let view_params = Viewport::new(dpi, 0.0, 0.0);
+        let root = self.handle.document.root();
+        let cascaded = CascadedValues::new_from_node(&root);
+        let values = cascaded.get();
+
+        let params = NormalizeParams::new(values, &view_params);
+
+        (width.to_user(&params), height.to_user(&params))
     }
 
     #[doc(hidden)]

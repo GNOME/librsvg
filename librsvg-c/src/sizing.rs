@@ -12,7 +12,7 @@
 
 use float_cmp::approx_eq;
 
-use rsvg::c_api_only::{Dpi, Handle};
+use rsvg::c_api_only::Dpi;
 use rsvg::{CairoRenderer, IntrinsicDimensions, RenderingError};
 
 use super::handle::CairoRectangleExt;
@@ -49,7 +49,7 @@ impl<'a> LegacySize for CairoRenderer<'a> {
                 let size_from_intrinsic_dimensions =
                     self.intrinsic_size_in_pixels().or_else(|| {
                         size_in_pixels_from_percentage_width_and_height(
-                            self.handle(),
+                            self,
                             &self.intrinsic_dimensions(),
                             self.dpi(),
                         )
@@ -82,7 +82,7 @@ fn unit_rectangle() -> cairo::Rectangle {
 /// units cannot be resolved against anything in particular.  The idea is to return
 /// some dimensions with the correct aspect ratio.
 fn size_in_pixels_from_percentage_width_and_height(
-    handle: &Handle,
+    renderer: &CairoRenderer,
     dim: &IntrinsicDimensions,
     dpi: Dpi,
 ) -> Option<(f64, f64)> {
@@ -97,7 +97,7 @@ fn size_in_pixels_from_percentage_width_and_height(
     // Unwrap or return None if we don't know the aspect ratio -> Let the caller handle it.
     let vbox = vbox?;
 
-    let (w, h) = handle.width_height_to_user(dpi);
+    let (w, h) = renderer.width_height_to_user(dpi);
 
     // Avoid division by zero below.  If the viewBox is zero-sized, there's
     // not much we can do.

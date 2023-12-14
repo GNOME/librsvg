@@ -779,6 +779,7 @@ mod tests {
     t!(svg1_1_coords_viewattr_01_b_svg,                             "svg1.1/coords-viewattr-01-b.svg");
     t!(svg1_1_coords_viewattr_02_b_svg,                             "svg1.1/coords-viewattr-02-b.svg");
     t!(svg1_1_coords_viewattr_03_b_svg,                             "svg1.1/coords-viewattr-03-b.svg");
+    t!(svg1_1_coords_viewattr_04_f_svg,                             "svg1.1/coords-viewattr-04-f.svg");
     t!(svg1_1_filters_background_01_f_svg,                          "svg1.1/filters-background-01-f.svg");
     t!(svg1_1_filters_blend_01_b_svg,                               "svg1.1/filters-blend-01-b.svg");
     t!(svg1_1_filters_color_01_b_svg,                               "svg1.1/filters-color-01-b.svg");
@@ -902,6 +903,7 @@ mod tests {
     t!(svg1_1_struct_cond_01_t_svg,                                 "svg1.1/struct-cond-01-t.svg");
     t!(svg1_1_struct_cond_03_t_svg,                                 "svg1.1/struct-cond-03-t.svg");
     t!(svg1_1_struct_group_03_t_svg,                                "svg1.1/struct-group-03-t.svg");
+    t!(svg1_1_struct_image_05_b_svg,                                "svg1.1/struct-image-05-b.svg");
     t!(svg1_1_struct_svg_03_f_svg,                                  "svg1.1/struct-svg-03-f.svg");
     t!(svg1_1_struct_symbol_01_b_svg,                               "svg1.1/struct-symbol-01-b.svg");
     t!(svg1_1_struct_use_01_t_svg,                                  "svg1.1/struct-use-01-t.svg");

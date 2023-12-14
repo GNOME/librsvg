@@ -22,19 +22,22 @@ use super::load_svg;
 pub struct Reference(SharedImageSurface);
 
 impl Reference {
-    pub fn from_png<P>(path: P) -> Result<Self, cairo::IoError>
+    pub fn from_png<P>(path: P) -> Self
     where
         P: AsRef<Path>,
     {
-        let file = File::open(path).map_err(cairo::IoError::Io)?;
+        let msg = format!("read reference PNG {}", path.as_ref().to_string_lossy());
+        let file = File::open(path).expect(&msg);
+
         let mut reader = BufReader::new(file);
-        let surface = surface_from_png(&mut reader)?;
+        let surface = surface_from_png(&mut reader).expect("decode reference PNG");
         Self::from_surface(surface)
     }
 
-    pub fn from_surface(surface: cairo::ImageSurface) -> Result<Self, cairo::IoError> {
-        let shared = SharedImageSurface::wrap(surface, SurfaceType::SRgb)?;
-        Ok(Self(shared))
+    pub fn from_surface(surface: cairo::ImageSurface) -> Self {
+        let shared = SharedImageSurface::wrap(surface, SurfaceType::SRgb)
+            .expect("wrap Cairo surface with SharedImageSurface");
+        Self(shared)
     }
 }
 
@@ -45,13 +48,6 @@ pub trait Compare {
 impl Compare for &Reference {
     fn compare(self, surface: &SharedImageSurface) -> Result<BufferDiff, cairo::IoError> {
         compare_surfaces(&self.0, surface).map_err(cairo::IoError::from)
-    }
-}
-
-impl Compare for Result<Reference, cairo::IoError> {
-    fn compare(self, surface: &SharedImageSurface) -> Result<BufferDiff, cairo::IoError> {
-        self.map(|reference| reference.compare(surface))
-            .and_then(std::convert::identity)
     }
 }
 

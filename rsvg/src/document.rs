@@ -2,6 +2,7 @@
 
 use data_url::mime::Mime;
 use gdk_pixbuf::{prelude::PixbufLoaderExt, PixbufLoader};
+use glib::prelude::*;
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
 use std::cell::RefCell;
@@ -13,14 +14,20 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::accept_language::UserLanguage;
+use crate::bbox::BoundingBox;
+use crate::borrow_element_as;
 use crate::css::{self, Origin, Stylesheet};
-use crate::error::{AcquireError, LoadingError, NodeIdError};
-use crate::handle::LoadOptions;
+use crate::dpi::Dpi;
+use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, SvgNesting};
+use crate::error::{AcquireError, InternalRenderingError, LoadingError, NodeIdError};
 use crate::io::{self, BinaryData};
 use crate::is_element_of_type;
 use crate::limits;
-use crate::node::{Node, NodeBorrow, NodeData};
+use crate::node::{CascadedValues, Node, NodeBorrow, NodeData};
+use crate::rect::Rect;
 use crate::session::Session;
+use crate::structure::IntrinsicDimensions;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
 use crate::xml::{xml_load_from_possibly_compressed_stream, Attributes};
@@ -71,6 +78,62 @@ impl fmt::Display for NodeId {
     }
 }
 
+/// Loading options for SVG documents.
+pub struct LoadOptions {
+    /// Load url resolver; all references will be resolved with respect to this.
+    pub url_resolver: UrlResolver,
+
+    /// Whether to turn off size limits in libxml2.
+    pub unlimited_size: bool,
+
+    /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces.
+    pub keep_image_data: bool,
+}
+
+impl LoadOptions {
+    /// Creates a `LoadOptions` with defaults, and sets the `url resolver`.
+    pub fn new(url_resolver: UrlResolver) -> Self {
+        LoadOptions {
+            url_resolver,
+            unlimited_size: false,
+            keep_image_data: false,
+        }
+    }
+
+    /// Sets whether libxml2's limits on memory usage should be turned off.
+    ///
+    /// This should only be done for trusted data.
+    pub fn with_unlimited_size(mut self, unlimited: bool) -> Self {
+        self.unlimited_size = unlimited;
+        self
+    }
+
+    /// Sets whether to keep the original compressed image data from referenced JPEG/PNG images.
+    ///
+    /// This is only useful for rendering to Cairo PDF
+    /// surfaces, which can embed the original, compressed image data instead of uncompressed
+    /// RGB buffers.
+    pub fn keep_image_data(mut self, keep: bool) -> Self {
+        self.keep_image_data = keep;
+        self
+    }
+
+    /// Creates a new `LoadOptions` with a different `url resolver`.
+    ///
+    /// This is used when loading a referenced file that may in turn cause other files
+    /// to be loaded, for example `<image xlink:href="subimage.svg"/>`
+    pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> Self {
+        let mut url_resolver = self.url_resolver.clone();
+        url_resolver.base_url = Some((**base_url).clone());
+
+        LoadOptions {
+            url_resolver,
+            unlimited_size: self.unlimited_size,
+            keep_image_data: self.keep_image_data,
+        }
+    }
+}
+
 /// A loaded SVG file and its derived data.
 pub struct Document {
     /// Tree of nodes; the root is guaranteed to be an `<svg>` element.
@@ -82,14 +145,12 @@ pub struct Document {
     /// Mapping from `id` attributes to nodes.
     ids: HashMap<String, Node>,
 
-    // The following two require interior mutability because we load the extern
-    // resources all over the place.  Eventually we'll be able to do this
-    // once, at loading time, and keep this immutable.
-    /// SVG documents referenced from this document.
-    externs: RefCell<Resources>,
-
-    /// Image resources referenced from this document.
-    images: RefCell<Images>,
+    /// Othewr SVG documents and images referenced from this document.
+    ///
+    /// This requires requires interior mutability because we load resources all over the
+    /// place.  Eventually we'll be able to do this once, at loading time, and keep this
+    /// immutable.
+    resources: RefCell<Resources>,
 
     /// Used to load referenced resources.
     load_options: Arc<LoadOptions>,
@@ -118,8 +179,6 @@ impl Document {
     /// Utility function to load a document from a static string in tests.
     #[cfg(test)]
     pub fn load_from_bytes(input: &'static [u8]) -> Document {
-        use glib::prelude::*;
-
         let bytes = glib::Bytes::from_static(input);
         let stream = gio::MemoryInputStream::from_bytes(&bytes);
 
@@ -138,13 +197,13 @@ impl Document {
     }
 
     /// Looks up a node in this document or one of its resources by its `id` attribute.
-    pub fn lookup_node(&self, node_id: &NodeId) -> Option<Node> {
+    fn lookup_node(&self, node_id: &NodeId) -> Option<Node> {
         match node_id {
             NodeId::Internal(id) => self.lookup_internal_node(id),
             NodeId::External(url, id) => self
-                .externs
+                .resources
                 .borrow_mut()
-                .lookup(&self.session, &self.load_options, url, id)
+                .lookup_node(&self.session, &self.load_options, url, id)
                 .ok(),
         }
     }
@@ -155,14 +214,32 @@ impl Document {
     }
 
     /// Loads an image by URL, or returns a pre-loaded one.
-    pub fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
+    fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
         let aurl = self
             .load_options
             .url_resolver
             .resolve_href(url)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        self.images.borrow_mut().lookup(&self.load_options, &aurl)
+        self.resources
+            .borrow_mut()
+            .lookup_image(&self.session, &self.load_options, &aurl)
+    }
+
+    /// Loads a resource by URL, or returns a pre-loaded one.
+    fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
+        let aurl = self
+            .load_options
+            .url_resolver
+            .resolve_href(url)
+            .map_err(|_| LoadingError::BadUrl)?;
+
+        // FIXME: pass a cancellable to this.  This function is called
+        // at rendering time, so probably the cancellable should come
+        // from cancellability in CairoRenderer - see #429
+        self.resources
+            .borrow_mut()
+            .lookup_resource(&self.session, &self.load_options, &aurl, None)
     }
 
     /// Runs the CSS cascade on the document tree
@@ -178,20 +255,249 @@ impl Document {
             session,
         );
     }
+
+    pub fn get_intrinsic_dimensions(&self) -> IntrinsicDimensions {
+        let root = self.root();
+        let cascaded = CascadedValues::new_from_node(&root);
+        let values = cascaded.get();
+        borrow_element_as!(self.root(), Svg).get_intrinsic_dimensions(values)
+    }
+
+    pub fn render_document(
+        &self,
+        session: &Session,
+        cr: &cairo::Context,
+        viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        svg_nesting: SvgNesting,
+        is_testing: bool,
+    ) -> Result<(), InternalRenderingError> {
+        let root = self.root();
+        self.render_layer(
+            session,
+            cr,
+            root,
+            viewport,
+            user_language,
+            dpi,
+            svg_nesting,
+            is_testing,
+        )
+    }
+
+    pub fn render_layer(
+        &self,
+        session: &Session,
+        cr: &cairo::Context,
+        node: Node,
+        viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        svg_nesting: SvgNesting,
+        is_testing: bool,
+    ) -> Result<(), InternalRenderingError> {
+        cr.status()?;
+
+        let root = self.root();
+
+        let viewport = Rect::from(*viewport);
+
+        with_saved_cr(cr, || {
+            draw_tree(
+                session.clone(),
+                DrawingMode::LimitToStack { node, root },
+                cr,
+                viewport,
+                user_language,
+                dpi,
+                svg_nesting,
+                false,
+                is_testing,
+                &mut AcquiredNodes::new(self),
+            )
+            .map(|_bbox| ())
+        })
+    }
+
+    fn geometry_for_layer(
+        &self,
+        session: &Session,
+        node: Node,
+        viewport: Rect,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(Rect, Rect), InternalRenderingError> {
+        let root = self.root();
+
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target)?;
+
+        let bbox = draw_tree(
+            session.clone(),
+            DrawingMode::LimitToStack { node, root },
+            &cr,
+            viewport,
+            user_language,
+            dpi,
+            SvgNesting::Standalone,
+            true,
+            is_testing,
+            &mut AcquiredNodes::new(self),
+        )?;
+
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
+
+        Ok((ink_rect, logical_rect))
+    }
+
+    pub fn get_geometry_for_layer(
+        &self,
+        session: &Session,
+        node: Node,
+        viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
+        let viewport = Rect::from(*viewport);
+
+        let (ink_rect, logical_rect) =
+            self.geometry_for_layer(session, node, viewport, user_language, dpi, is_testing)?;
+
+        Ok((
+            cairo::Rectangle::from(ink_rect),
+            cairo::Rectangle::from(logical_rect),
+        ))
+    }
+
+    fn get_bbox_for_element(
+        &self,
+        session: &Session,
+        node: &Node,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
+        let cr = cairo::Context::new(&target)?;
+
+        let node = node.clone();
+
+        draw_tree(
+            session.clone(),
+            DrawingMode::OnlyNode(node),
+            &cr,
+            unit_rectangle(),
+            user_language,
+            dpi,
+            SvgNesting::Standalone,
+            true,
+            is_testing,
+            &mut AcquiredNodes::new(self),
+        )
+    }
+
+    /// Returns (ink_rect, logical_rect)
+    pub fn get_geometry_for_element(
+        &self,
+        session: &Session,
+        node: Node,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
+        let bbox = self.get_bbox_for_element(session, &node, user_language, dpi, is_testing)?;
+
+        let ink_rect = bbox.ink_rect.unwrap_or_default();
+        let logical_rect = bbox.rect.unwrap_or_default();
+
+        // Translate so ink_rect is always at offset (0, 0)
+        let ofs = (-ink_rect.x0, -ink_rect.y0);
+
+        Ok((
+            cairo::Rectangle::from(ink_rect.translate(ofs)),
+            cairo::Rectangle::from(logical_rect.translate(ofs)),
+        ))
+    }
+
+    pub fn render_element(
+        &self,
+        session: &Session,
+        cr: &cairo::Context,
+        node: Node,
+        element_viewport: &cairo::Rectangle,
+        user_language: &UserLanguage,
+        dpi: Dpi,
+        is_testing: bool,
+    ) -> Result<(), InternalRenderingError> {
+        cr.status()?;
+
+        let bbox = self.get_bbox_for_element(session, &node, user_language, dpi, is_testing)?;
+
+        if bbox.ink_rect.is_none() || bbox.rect.is_none() {
+            // Nothing to draw
+            return Ok(());
+        }
+
+        let ink_r = bbox.ink_rect.unwrap_or_default();
+
+        if ink_r.is_empty() {
+            return Ok(());
+        }
+
+        // Render, transforming so element is at the new viewport's origin
+
+        with_saved_cr(cr, || {
+            let factor = (element_viewport.width() / ink_r.width())
+                .min(element_viewport.height() / ink_r.height());
+
+            cr.translate(element_viewport.x(), element_viewport.y());
+            cr.scale(factor, factor);
+            cr.translate(-ink_r.x0, -ink_r.y0);
+
+            draw_tree(
+                session.clone(),
+                DrawingMode::OnlyNode(node),
+                cr,
+                unit_rectangle(),
+                user_language,
+                dpi,
+                SvgNesting::Standalone,
+                false,
+                is_testing,
+                &mut AcquiredNodes::new(self),
+            )
+            .map(|_bbox| ())
+        })
+    }
+}
+
+fn unit_rectangle() -> Rect {
+    Rect::from_size(1.0, 1.0)
+}
+
+/// Any kind of resource loaded while processing an SVG document: images, or SVGs themselves.
+#[derive(Clone)]
+pub enum Resource {
+    Document(Rc<Document>),
+    Image(SharedImageSurface),
 }
 
 struct Resources {
-    resources: HashMap<AllowedUrl, Result<Rc<Document>, LoadingError>>,
+    resources: HashMap<AllowedUrl, Result<Resource, LoadingError>>,
 }
 
 impl Resources {
-    pub fn new() -> Resources {
+    fn new() -> Resources {
         Resources {
             resources: Default::default(),
         }
     }
 
-    pub fn lookup(
+    fn lookup_node(
         &mut self,
         session: &Session,
         load_options: &LoadOptions,
@@ -199,7 +505,10 @@ impl Resources {
         id: &str,
     ) -> Result<Node, LoadingError> {
         self.get_extern_document(session, load_options, url)
-            .and_then(|doc| doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl))
+            .and_then(|resource| match resource {
+                Resource::Document(doc) => doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl),
+                _ => unreachable!("get_extern_document() should already have ensured the document"),
+            })
     }
 
     fn get_extern_document(
@@ -207,70 +516,112 @@ impl Resources {
         session: &Session,
         load_options: &LoadOptions,
         href: &str,
-    ) -> Result<Rc<Document>, LoadingError> {
+    ) -> Result<Resource, LoadingError> {
         let aurl = load_options
             .url_resolver
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        match self.resources.entry(aurl) {
-            Entry::Occupied(e) => e.get().clone(),
-            Entry::Vacant(e) => {
-                let aurl = e.key();
-                // FIXME: pass a cancellable to these
-                let doc = io::acquire_stream(aurl, None)
-                    .map_err(LoadingError::from)
-                    .and_then(|stream| {
-                        Document::load_from_stream(
-                            session.clone(),
-                            Arc::new(load_options.copy_with_base_url(aurl)),
-                            &stream,
-                            None,
-                        )
-                    })
-                    .map(Rc::new);
-                let res = e.insert(doc);
-                res.clone()
-            }
-        }
-    }
-}
+        // FIXME: pass a cancellable to this.  This function is called
+        // at rendering time, so probably the cancellable should come
+        // from cancellability in CairoRenderer - see #429
+        let resource = self.lookup_resource(session, load_options, &aurl, None)?;
 
-struct Images {
-    images: HashMap<AllowedUrl, Result<SharedImageSurface, LoadingError>>,
-}
-
-impl Images {
-    fn new() -> Images {
-        Images {
-            images: Default::default(),
+        match resource {
+            Resource::Document(_) => Ok(resource),
+            _ => Err(LoadingError::Other(format!(
+                "{href} is not an SVG document"
+            ))),
         }
     }
 
-    fn lookup(
+    fn lookup_image(
         &mut self,
+        session: &Session,
         load_options: &LoadOptions,
         aurl: &AllowedUrl,
     ) -> Result<SharedImageSurface, LoadingError> {
-        match self.images.entry(aurl.clone()) {
+        // FIXME: pass a cancellable to this.  This function is called
+        // at rendering time, so probably the cancellable should come
+        // from cancellability in CairoRenderer - see #429
+        let resource = self.lookup_resource(session, load_options, aurl, None)?;
+
+        match resource {
+            Resource::Image(image) => Ok(image),
+            _ => Err(LoadingError::Other(format!("{aurl} is not a raster image"))),
+        }
+    }
+
+    fn lookup_resource(
+        &mut self,
+        session: &Session,
+        load_options: &LoadOptions,
+        aurl: &AllowedUrl,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<Resource, LoadingError> {
+        match self.resources.entry(aurl.clone()) {
             Entry::Occupied(e) => e.get().clone(),
+
             Entry::Vacant(e) => {
-                let surface = load_image(load_options, e.key());
-                let res = e.insert(surface);
-                res.clone()
+                let resource_result = load_resource(session, load_options, aurl, cancellable);
+                e.insert(resource_result.clone());
+                resource_result
             }
         }
     }
 }
 
-fn load_image(
+fn load_resource(
+    session: &Session,
     load_options: &LoadOptions,
     aurl: &AllowedUrl,
-) -> Result<SharedImageSurface, LoadingError> {
+    cancellable: Option<&gio::Cancellable>,
+) -> Result<Resource, LoadingError> {
+    let data = io::acquire_data(aurl, cancellable)?;
+
+    let svg_mime_type = Mime::from_str("image/svg+xml").unwrap();
+
+    if data.mime_type == svg_mime_type {
+        load_svg_resource_from_bytes(session, load_options, aurl, data, cancellable)
+    } else {
+        load_image_resource_from_bytes(load_options, aurl, data)
+    }
+}
+
+fn load_svg_resource_from_bytes(
+    session: &Session,
+    load_options: &LoadOptions,
+    aurl: &AllowedUrl,
+    data: BinaryData,
+    cancellable: Option<&gio::Cancellable>,
+) -> Result<Resource, LoadingError> {
+    let BinaryData {
+        data: input_bytes,
+        mime_type: _mime_type,
+    } = data;
+
+    let bytes = glib::Bytes::from_owned(input_bytes);
+    let stream = gio::MemoryInputStream::from_bytes(&bytes);
+
+    let document = Document::load_from_stream(
+        session.clone(),
+        Arc::new(load_options.copy_with_base_url(aurl)),
+        &stream.upcast(),
+        cancellable,
+    )?;
+
+    Ok(Resource::Document(Rc::new(document)))
+}
+
+fn load_image_resource_from_bytes(
+    load_options: &LoadOptions,
+    aurl: &AllowedUrl,
+    data: BinaryData,
+) -> Result<Resource, LoadingError> {
     let BinaryData {
         data: bytes,
         mime_type,
-    } = io::acquire_data(aurl, None)?;
+    } = data;
 
     if bytes.is_empty() {
         return Err(LoadingError::Other(String::from("no image data")));
@@ -300,7 +651,7 @@ fn load_image(
     let surface = SharedImageSurface::from_pixbuf(&pixbuf, content_type.as_deref(), bytes)
         .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
-    Ok(surface)
+    Ok(Resource::Image(surface))
 }
 
 fn content_type_for_gdk_pixbuf(mime_type: &Mime) -> Option<String> {
@@ -408,6 +759,10 @@ impl<'i> AcquiredNodes<'i> {
         self.document.lookup_image(href)
     }
 
+    pub fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
+        self.document.lookup_resource(url)
+    }
+
     /// Acquires a node by its id.
     ///
     /// This is typically used during an "early resolution" stage, when XML `id`s are being
@@ -425,8 +780,7 @@ impl<'i> AcquiredNodes<'i> {
         // Maybe we should have the following stages:
         //   - load main SVG XML
         //
-        //   - load secondary SVG XML and other files like images; all document::Resources and
-        //     document::Images loaded
+        //   - load secondary resources: SVG XML and other files like images
         //
         //   - Now that all files are loaded, resolve URL references
         let node = self
@@ -605,8 +959,7 @@ impl DocumentBuilder {
                         tree: root,
                         session: session.clone(),
                         ids,
-                        externs: RefCell::new(Resources::new()),
-                        images: RefCell::new(Images::new()),
+                        resources: RefCell::new(Resources::new()),
                         load_options,
                         stylesheets,
                     };

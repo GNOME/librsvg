@@ -95,13 +95,6 @@ pub enum DefsLookupErrorKind {
     /// Error when parsing the id to lookup.
     InvalidId,
 
-    /// Used when the public API tries to look up an external URL, which is not allowed.
-    ///
-    /// This catches the case where a public API wants to be misused to access an external
-    /// resource.  For example, `SvgHandle.has_sub("https://evil.com/phone_home#element_id")` will
-    /// fail with this error.
-    CannotLookupExternalReferences,
-
     /// For internal use only.
     ///
     // FIXME: this is returned internally from Handle.lookup_node(), and gets translated
@@ -113,9 +106,6 @@ impl fmt::Display for DefsLookupErrorKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             DefsLookupErrorKind::InvalidId => write!(f, "invalid id"),
-            DefsLookupErrorKind::CannotLookupExternalReferences => {
-                write!(f, "cannot lookup references to elements in external files")
-            }
             DefsLookupErrorKind::NotFound => write!(f, "not found"),
         }
     }
