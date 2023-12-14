@@ -22,7 +22,6 @@ use crate::{
     dpi::Dpi,
     drawing_ctx::SvgNesting,
     error::InternalRenderingError,
-    handle,
     length::NormalizeParams,
     node::{CascadedValues, Node},
     rsvg_log,
@@ -664,9 +663,8 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(handle::get_geometry_for_layer(
+        Ok(self.handle.document.get_geometry_for_layer(
             &self.handle.session,
-            &self.handle.document,
             node,
             viewport,
             &self.user_language,
@@ -752,15 +750,17 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(handle::get_geometry_for_element(
-            &self.handle.session,
-            &self.handle.document,
-            node,
-            &self.user_language,
-            self.dpi,
-            self.is_testing,
-        )
-        .map(|(i, l)| (i, l))?)
+        Ok(self
+            .handle
+            .document
+            .get_geometry_for_element(
+                &self.handle.session,
+                node,
+                &self.user_language,
+                self.dpi,
+                self.is_testing,
+            )
+            .map(|(i, l)| (i, l))?)
     }
 
     /// Renders a single SVG element to a given viewport
@@ -788,9 +788,8 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(handle::render_element(
+        Ok(self.handle.document.render_element(
             &self.handle.session,
-            &self.handle.document,
             cr,
             node,
             element_viewport,
