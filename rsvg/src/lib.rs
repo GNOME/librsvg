@@ -166,7 +166,6 @@ mod filters;
 mod float_eq_cairo;
 mod font_props;
 mod gradient;
-mod handle;
 mod href;
 mod image;
 mod io;

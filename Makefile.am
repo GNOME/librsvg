@@ -81,7 +81,6 @@ LIBRSVG_SRC =						\
 	rsvg/src/float_eq_cairo.rs			\
 	rsvg/src/font_props.rs				\
 	rsvg/src/gradient.rs				\
-	rsvg/src/handle.rs				\
 	rsvg/src/href.rs				\
 	rsvg/src/image.rs				\
 	rsvg/src/io.rs					\
