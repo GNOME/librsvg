@@ -20,6 +20,7 @@ use crate::{
     css::{Origin, Stylesheet},
     document::{Document, NodeId},
     dpi::Dpi,
+    drawing_ctx::SvgNesting,
     error::InternalRenderingError,
     handle::{self, LoadOptions},
     length::NormalizeParams,
@@ -627,6 +628,7 @@ impl<'a> CairoRenderer<'a> {
             viewport,
             &self.user_language,
             self.dpi,
+            SvgNesting::Standalone,
             self.is_testing,
         )?)
     }
@@ -710,6 +712,7 @@ impl<'a> CairoRenderer<'a> {
             viewport,
             &self.user_language,
             self.dpi,
+            SvgNesting::Standalone,
             self.is_testing,
         )?)
     }

@@ -5,7 +5,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, Document, Resource};
-use crate::drawing_ctx::{DrawingCtx, Viewport};
+use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::handle;
@@ -203,8 +203,6 @@ impl Image {
         let x = values.x().0.to_user(&params);
         let y = values.y().0.to_user(&params);
 
-        dbg!(&dimensions);
-
         let w = match values.width().0 {
             LengthOrAuto::Length(l) => l.to_user(&params),
             LengthOrAuto::Auto => dimensions.width.to_user(&params),
@@ -215,8 +213,6 @@ impl Image {
             LengthOrAuto::Auto => dimensions.height.to_user(&params),
         };
 
-        dbg!((w, h, self.aspect));
-
         let is_visible = values.is_visible();
 
         let rect = Rect::new(x, y, x + w, y + h);
@@ -225,9 +221,7 @@ impl Image {
 
         let dest_rect = match dimensions.vbox {
             None => Rect::from_size(w, h),
-            Some(vbox) => {
-                self.aspect.compute(&vbox, &Rect::new(x, y, x + w, y + h))
-            }
+            Some(vbox) => self.aspect.compute(&vbox, &Rect::new(x, y, x + w, y + h)),
         };
 
         let dest_size = dest_rect.size();
@@ -250,6 +244,7 @@ impl Image {
                 &cairo::Rectangle::from(surface_dest_rect),
                 draw_ctx.user_language(),
                 viewport.dpi,
+                SvgNesting::ReferencedFromImageElement,
                 draw_ctx.is_testing(),
             )?;
         }

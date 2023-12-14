@@ -6,7 +6,7 @@ use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::document::{AcquiredNodes, Document};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode};
+use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, SvgNesting};
 use crate::error::InternalRenderingError;
 use crate::node::Node;
 use crate::rect::Rect;
@@ -90,6 +90,7 @@ fn geometry_for_layer(
         viewport,
         user_language,
         dpi,
+        SvgNesting::Standalone,
         true,
         is_testing,
         &mut AcquiredNodes::new(document),
@@ -135,6 +136,7 @@ pub fn render_document(
     viewport: &cairo::Rectangle,
     user_language: &UserLanguage,
     dpi: Dpi,
+    svg_nesting: SvgNesting,
     is_testing: bool,
 ) -> Result<(), InternalRenderingError> {
     let root = document.root();
@@ -146,6 +148,7 @@ pub fn render_document(
         viewport,
         user_language,
         dpi,
+        svg_nesting,
         is_testing,
     )
 }
@@ -158,6 +161,7 @@ pub fn render_layer(
     viewport: &cairo::Rectangle,
     user_language: &UserLanguage,
     dpi: Dpi,
+    svg_nesting: SvgNesting,
     is_testing: bool,
 ) -> Result<(), InternalRenderingError> {
     cr.status()?;
@@ -174,6 +178,7 @@ pub fn render_layer(
             viewport,
             user_language,
             dpi,
+            svg_nesting,
             false,
             is_testing,
             &mut AcquiredNodes::new(document),
@@ -202,6 +207,7 @@ fn get_bbox_for_element(
         unit_rectangle(),
         user_language,
         dpi,
+        SvgNesting::Standalone,
         true,
         is_testing,
         &mut AcquiredNodes::new(document),
@@ -273,6 +279,7 @@ pub fn render_element(
             unit_rectangle(),
             user_language,
             dpi,
+            SvgNesting::Standalone,
             false,
             is_testing,
             &mut AcquiredNodes::new(document),

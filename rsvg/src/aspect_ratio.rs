@@ -238,10 +238,7 @@ mod tests {
 
     #[test]
     fn aspect_ratio_none() {
-        assert_eq!(
-            AspectRatio::none(),
-            AspectRatio::parse_str("none").unwrap()
-        );
+        assert_eq!(AspectRatio::none(), AspectRatio::parse_str("none").unwrap());
     }
 
     #[test]
