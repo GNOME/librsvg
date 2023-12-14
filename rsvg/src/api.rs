@@ -18,11 +18,11 @@ pub use crate::{
 use crate::{
     accept_language::{LanguageTags, UserLanguage},
     css::{Origin, Stylesheet},
-    document::{Document, NodeId},
+    document::{Document, LoadOptions, NodeId},
     dpi::Dpi,
     drawing_ctx::SvgNesting,
     error::InternalRenderingError,
-    handle::{self, LoadOptions},
+    handle,
     length::NormalizeParams,
     node::{CascadedValues, Node},
     rsvg_log,

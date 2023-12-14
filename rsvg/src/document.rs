@@ -17,7 +17,6 @@ use std::sync::Arc;
 use crate::borrow_element_as;
 use crate::css::{self, Origin, Stylesheet};
 use crate::error::{AcquireError, LoadingError, NodeIdError};
-use crate::handle::LoadOptions;
 use crate::io::{self, BinaryData};
 use crate::is_element_of_type;
 use crate::limits;
@@ -70,6 +69,62 @@ impl fmt::Display for NodeId {
         match self {
             NodeId::Internal(id) => write!(f, "#{id}"),
             NodeId::External(url, id) => write!(f, "{url}#{id}"),
+        }
+    }
+}
+
+/// Loading options for SVG documents.
+pub struct LoadOptions {
+    /// Load url resolver; all references will be resolved with respect to this.
+    pub url_resolver: UrlResolver,
+
+    /// Whether to turn off size limits in libxml2.
+    pub unlimited_size: bool,
+
+    /// Whether to keep original (undecoded) image data to embed in Cairo PDF surfaces.
+    pub keep_image_data: bool,
+}
+
+impl LoadOptions {
+    /// Creates a `LoadOptions` with defaults, and sets the `url resolver`.
+    pub fn new(url_resolver: UrlResolver) -> Self {
+        LoadOptions {
+            url_resolver,
+            unlimited_size: false,
+            keep_image_data: false,
+        }
+    }
+
+    /// Sets whether libxml2's limits on memory usage should be turned off.
+    ///
+    /// This should only be done for trusted data.
+    pub fn with_unlimited_size(mut self, unlimited: bool) -> Self {
+        self.unlimited_size = unlimited;
+        self
+    }
+
+    /// Sets whether to keep the original compressed image data from referenced JPEG/PNG images.
+    ///
+    /// This is only useful for rendering to Cairo PDF
+    /// surfaces, which can embed the original, compressed image data instead of uncompressed
+    /// RGB buffers.
+    pub fn keep_image_data(mut self, keep: bool) -> Self {
+        self.keep_image_data = keep;
+        self
+    }
+
+    /// Creates a new `LoadOptions` with a different `url resolver`.
+    ///
+    /// This is used when loading a referenced file that may in turn cause other files
+    /// to be loaded, for example `<image xlink:href="subimage.svg"/>`
+    pub fn copy_with_base_url(&self, base_url: &AllowedUrl) -> Self {
+        let mut url_resolver = self.url_resolver.clone();
+        url_resolver.base_url = Some((**base_url).clone());
+
+        LoadOptions {
+            url_resolver,
+            unlimited_size: self.unlimited_size,
+            keep_image_data: self.keep_image_data,
         }
     }
 }
