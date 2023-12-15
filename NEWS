@@ -1,3 +1,23 @@
+Version 2.57.1
+==============
+
+librsvg crate version 2.57.1
+
+- #1019 - Fix small-caps and bump the version of Pango required to 1.50.0.
+
+- #1026 - Fix panic when using negative scaling transforms on the
+  toplevel (WhyHelloThere).
+
+- #997 - Support "var(--foo, #aabbcc)" just for colors.  This is the
+  minimum required to render color SVG emoji fonts that provide color
+  fallbacks, but it is not yet full support for CSS var().
+
+- Fix the VS2017 build (Chun-wei Fan).
+
+- Update cairo-rs (Guillaume Gomez).
+
+- Update the project metadata files (Andre Klapper).
+
 Version 2.57.0
 ==============
 
