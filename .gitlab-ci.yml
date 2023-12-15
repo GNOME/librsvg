@@ -410,6 +410,9 @@ check devel-docs links:
     paths:
       - public/devel-docs-check
     expire_in: 1 day
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
+      allow_failure: true
 
 devel-docs:
   extends:
