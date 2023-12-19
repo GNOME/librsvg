@@ -629,6 +629,15 @@ fn load_image_resource_from_bytes(
 
     let content_type = content_type_for_image(&mime_type);
 
+    load_image_with_gdk_pixbuf(aurl, bytes, content_type, load_options)
+}
+
+fn load_image_with_gdk_pixbuf(
+    aurl: &AllowedUrl,
+    bytes: Vec<u8>,
+    content_type: Option<String>,
+    load_options: &LoadOptions,
+) -> Result<Resource, LoadingError> {
     let loader = if let Some(ref content_type) = content_type {
         PixbufLoader::with_mime_type(content_type)?
     } else {
