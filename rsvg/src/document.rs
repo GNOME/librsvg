@@ -627,7 +627,7 @@ fn load_image_resource_from_bytes(
         return Err(LoadingError::Other(String::from("no image data")));
     }
 
-    let content_type = content_type_for_gdk_pixbuf(&mime_type);
+    let content_type = content_type_for_image(&mime_type);
 
     let loader = if let Some(ref content_type) = content_type {
         PixbufLoader::with_mime_type(content_type)?
@@ -654,7 +654,7 @@ fn load_image_resource_from_bytes(
     Ok(Resource::Image(surface))
 }
 
-fn content_type_for_gdk_pixbuf(mime_type: &Mime) -> Option<String> {
+fn content_type_for_image(mime_type: &Mime) -> Option<String> {
     // See issue #548 - data: URLs without a MIME-type automatically
     // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
     // Adobe Illustrator generate data: URLs without MIME-type for image
@@ -1002,7 +1002,7 @@ mod tests {
     fn unspecified_mime_type_yields_no_content_type() {
         // Issue #548
         let mime = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
-        assert!(content_type_for_gdk_pixbuf(&mime).is_none());
+        assert!(content_type_for_image(&mime).is_none());
     }
 
     #[test]
@@ -1010,7 +1010,7 @@ mod tests {
         // Issue #699
         let mime = Mime::from_str("image/png;charset=utf-8").unwrap();
         assert_eq!(
-            content_type_for_gdk_pixbuf(&mime),
+            content_type_for_image(&mime),
             Some(String::from("image/png"))
         );
     }
