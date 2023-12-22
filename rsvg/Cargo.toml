@@ -129,7 +129,3 @@ harness = false
 [[bench]]
 name = "srgb"
 harness = false
-
-[[bench]]
-name = "surface_from_pixbuf"
-harness = false

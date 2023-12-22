@@ -1,7 +1,6 @@
 //! Main SVG document structure.
 
 use data_url::mime::Mime;
-use gdk_pixbuf::{prelude::PixbufLoaderExt, PixbufLoader};
 use glib::prelude::*;
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
@@ -631,7 +630,6 @@ fn load_image_resource_from_bytes(
     let content_type = content_type_for_image(&mime_type);
 
     load_image_with_image_rs(aurl, bytes, content_type, load_options)
-    // load_image_with_gdk_pixbuf(aurl, bytes, content_type, load_options)
 }
 
 fn image_format(content_type: &str) -> Result<image::ImageFormat, LoadingError> {
@@ -672,37 +670,6 @@ fn load_image_with_image_rs(
     };
 
     let surface = SharedImageSurface::from_image(&image, content_type.as_deref(), bytes)
-        .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
-
-    Ok(Resource::Image(surface))
-}
-
-fn load_image_with_gdk_pixbuf(
-    aurl: &AllowedUrl,
-    bytes: Vec<u8>,
-    content_type: Option<String>,
-    load_options: &LoadOptions,
-) -> Result<Resource, LoadingError> {
-    let loader = if let Some(ref content_type) = content_type {
-        PixbufLoader::with_mime_type(content_type)?
-    } else {
-        PixbufLoader::new()
-    };
-
-    loader.write(&bytes)?;
-    loader.close()?;
-
-    let pixbuf = loader.pixbuf().ok_or_else(|| {
-        LoadingError::Other(format!("loading image: {}", human_readable_url(aurl)))
-    })?;
-
-    let bytes = if load_options.keep_image_data {
-        Some(bytes)
-    } else {
-        None
-    };
-
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf, content_type.as_deref(), bytes)
         .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
     Ok(Resource::Image(surface))

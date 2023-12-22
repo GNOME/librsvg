@@ -134,7 +134,6 @@ RUST_EXTRA =						\
 	rsvg/benches/pixel_iterators.rs			\
 	rsvg/benches/pixel_ops.rs			\
 	rsvg/benches/srgb.rs				\
-	rsvg/benches/surface_from_pixbuf.rs		\
 	rsvg/example.svg				\
 	rsvg/tests/api.rs				\
 	rsvg/tests/bugs.rs				\
