@@ -636,6 +636,8 @@ fn image_format(content_type: &str) -> Result<image::ImageFormat, LoadingError> 
     match content_type {
         "image/png" => Ok(image::ImageFormat::Png),
         "image/jpeg" => Ok(image::ImageFormat::Jpeg),
+        "image/gif" => Ok(image::ImageFormat::Gif),
+        "image/webp" => Ok(image::ImageFormat::WebP),
         _ => Err(LoadingError::Other(format!(
             "unsupported image format {content_type}"
         ))),
