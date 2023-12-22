@@ -10,6 +10,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt;
 use std::include_str;
+use std::io::Cursor;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -629,7 +630,51 @@ fn load_image_resource_from_bytes(
 
     let content_type = content_type_for_image(&mime_type);
 
-    load_image_with_gdk_pixbuf(aurl, bytes, content_type, load_options)
+    load_image_with_image_rs(aurl, bytes, content_type, load_options)
+    // load_image_with_gdk_pixbuf(aurl, bytes, content_type, load_options)
+}
+
+fn image_format(content_type: &str) -> Result<image::ImageFormat, LoadingError> {
+    match content_type {
+        "image/png" => Ok(image::ImageFormat::Png),
+        "image/jpeg" => Ok(image::ImageFormat::Jpeg),
+        _ => Err(LoadingError::Other(format!(
+            "unsupported image format {content_type}"
+        ))),
+    }
+}
+
+fn load_image_with_image_rs(
+    aurl: &AllowedUrl,
+    bytes: Vec<u8>,
+    content_type: Option<String>,
+    load_options: &LoadOptions,
+) -> Result<Resource, LoadingError> {
+    let cursor = Cursor::new(&bytes);
+
+    let reader = if let Some(ref content_type) = content_type {
+        let format = image_format(&content_type)?;
+        image::io::Reader::with_format(cursor, format)
+    } else {
+        image::io::Reader::new(cursor)
+            .with_guessed_format()
+            .map_err(|_| LoadingError::Other(String::from("unknown image format")))?
+    };
+
+    let image = reader
+        .decode()
+        .map_err(|e| LoadingError::Other(format!("error decoding image: {e}")))?;
+
+    let bytes = if load_options.keep_image_data {
+        Some(bytes)
+    } else {
+        None
+    };
+
+    let surface = SharedImageSurface::from_image(&image, content_type.as_deref(), bytes)
+        .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
+
+    Ok(Resource::Image(surface))
 }
 
 fn load_image_with_gdk_pixbuf(
