@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::slice;
 
+use cast::i32;
 use cssparser::Color;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
@@ -374,6 +375,31 @@ impl ImageSurface<Shared> {
             .for_each(|(src, dest)| *dest = src.to_pixel().unpremultiply().to_pixbuf_rgba());
 
         Some(pixbuf)
+    }
+
+    pub fn from_image(
+        image: &image::DynamicImage,
+        content_type: Option<&str>,
+        mime_data: Option<Vec<u8>>,
+    ) -> Result<SharedImageSurface, cairo::Error> {
+        let rgba_image = image.to_rgba8();
+
+        let width = i32(rgba_image.width()).map_err(|_| cairo::Error::InvalidSize)?;
+        let height = i32(rgba_image.height()).map_err(|_| cairo::Error::InvalidSize)?;
+
+        let mut surf = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
+
+        rgba_image
+            .rows()
+            .zip(surf.rows_mut())
+            .flat_map(|(src_row, dest_row)| src_row.zip(dest_row.iter_mut()))
+            .for_each(|(src, dest)| *dest = src.to_pixel().premultiply().to_cairo_argb());
+
+        if let (Some(content_type), Some(bytes)) = (content_type, mime_data) {
+            surf.surface.set_mime_data(content_type, bytes)?;
+        }
+
+        surf.share()
     }
 
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.
