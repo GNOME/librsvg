@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::slice;
 
+use cast::i32;
 use cssparser::Color;
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
@@ -302,53 +303,6 @@ impl ImageSurface<Shared> {
         }
     }
 
-    pub fn from_pixbuf(
-        pixbuf: &Pixbuf,
-        content_type: Option<&str>,
-        mime_data: Option<Vec<u8>>,
-    ) -> Result<SharedImageSurface, cairo::Error> {
-        assert!(pixbuf.colorspace() == Colorspace::Rgb);
-        assert!(pixbuf.bits_per_sample() == 8);
-
-        let n_channels = pixbuf.n_channels();
-        assert!(n_channels == 3 || n_channels == 4);
-        let has_alpha = n_channels == 4;
-
-        let width = pixbuf.width();
-        let height = pixbuf.height();
-        let stride = pixbuf.rowstride() as usize;
-        assert!(width > 0 && height > 0 && stride > 0);
-
-        let pixbuf_data = unsafe { pixbuf.pixels() };
-
-        let mut surf = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
-
-        // We use chunks(), not chunks_exact(), because gdk-pixbuf tends
-        // to make the last row *not* have the full stride (i.e. it is
-        // only as wide as the pixels in that row).
-        let pixbuf_rows = pixbuf_data.chunks(stride).take(height as usize);
-
-        if has_alpha {
-            pixbuf_rows
-                .map(|row| row.as_rgba())
-                .zip(surf.rows_mut())
-                .flat_map(|(src_row, dest_row)| src_row.iter().zip(dest_row.iter_mut()))
-                .for_each(|(src, dest)| *dest = src.to_pixel().premultiply().to_cairo_argb());
-        } else {
-            pixbuf_rows
-                .map(|row| row.as_rgb())
-                .zip(surf.rows_mut())
-                .flat_map(|(src_row, dest_row)| src_row.iter().zip(dest_row.iter_mut()))
-                .for_each(|(src, dest)| *dest = src.to_pixel().to_cairo_argb());
-        }
-
-        if let (Some(content_type), Some(bytes)) = (content_type, mime_data) {
-            surf.surface.set_mime_data(content_type, bytes)?;
-        }
-
-        surf.share()
-    }
-
     pub fn to_pixbuf(&self) -> Option<Pixbuf> {
         let width = self.width();
         let height = self.height();
@@ -374,6 +328,31 @@ impl ImageSurface<Shared> {
             .for_each(|(src, dest)| *dest = src.to_pixel().unpremultiply().to_pixbuf_rgba());
 
         Some(pixbuf)
+    }
+
+    pub fn from_image(
+        image: &image::DynamicImage,
+        content_type: Option<&str>,
+        mime_data: Option<Vec<u8>>,
+    ) -> Result<SharedImageSurface, cairo::Error> {
+        let rgba_image = image.to_rgba8();
+
+        let width = i32(rgba_image.width()).map_err(|_| cairo::Error::InvalidSize)?;
+        let height = i32(rgba_image.height()).map_err(|_| cairo::Error::InvalidSize)?;
+
+        let mut surf = ExclusiveImageSurface::new(width, height, SurfaceType::SRgb)?;
+
+        rgba_image
+            .rows()
+            .zip(surf.rows_mut())
+            .flat_map(|(src_row, dest_row)| src_row.zip(dest_row.iter_mut()))
+            .for_each(|(src, dest)| *dest = src.to_pixel().premultiply().to_cairo_argb());
+
+        if let (Some(content_type), Some(bytes)) = (content_type, mime_data) {
+            surf.surface.set_mime_data(content_type, bytes)?;
+        }
+
+        surf.share()
     }
 
     /// Returns `true` if the surface contains meaningful data only in the alpha channel.

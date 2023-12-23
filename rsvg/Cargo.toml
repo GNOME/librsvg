@@ -57,6 +57,7 @@ float-cmp = "0.9.0"
 gdk-pixbuf = "0.18"
 gio = "0.18"
 glib = "0.18"
+image = "0.24.7"
 itertools = "0.11.0"
 language-tags = "0.3.1"
 libc = "0.2"
@@ -127,8 +128,4 @@ harness = false
 
 [[bench]]
 name = "srgb"
-harness = false
-
-[[bench]]
-name = "surface_from_pixbuf"
 harness = false

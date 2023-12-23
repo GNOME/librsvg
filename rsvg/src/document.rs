@@ -1,7 +1,6 @@
 //! Main SVG document structure.
 
 use data_url::mime::Mime;
-use gdk_pixbuf::{prelude::PixbufLoaderExt, PixbufLoader};
 use glib::prelude::*;
 use markup5ever::QualName;
 use once_cell::sync::Lazy;
@@ -10,6 +9,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt;
 use std::include_str;
+use std::io::Cursor;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -627,20 +627,43 @@ fn load_image_resource_from_bytes(
         return Err(LoadingError::Other(String::from("no image data")));
     }
 
-    let content_type = content_type_for_gdk_pixbuf(&mime_type);
+    let content_type = content_type_for_image(&mime_type);
 
-    let loader = if let Some(ref content_type) = content_type {
-        PixbufLoader::with_mime_type(content_type)?
+    load_image_with_image_rs(aurl, bytes, content_type, load_options)
+}
+
+fn image_format(content_type: &str) -> Result<image::ImageFormat, LoadingError> {
+    match content_type {
+        "image/png" => Ok(image::ImageFormat::Png),
+        "image/jpeg" => Ok(image::ImageFormat::Jpeg),
+        "image/gif" => Ok(image::ImageFormat::Gif),
+        "image/webp" => Ok(image::ImageFormat::WebP),
+        _ => Err(LoadingError::Other(format!(
+            "unsupported image format {content_type}"
+        ))),
+    }
+}
+
+fn load_image_with_image_rs(
+    aurl: &AllowedUrl,
+    bytes: Vec<u8>,
+    content_type: Option<String>,
+    load_options: &LoadOptions,
+) -> Result<Resource, LoadingError> {
+    let cursor = Cursor::new(&bytes);
+
+    let reader = if let Some(ref content_type) = content_type {
+        let format = image_format(content_type)?;
+        image::io::Reader::with_format(cursor, format)
     } else {
-        PixbufLoader::new()
+        image::io::Reader::new(cursor)
+            .with_guessed_format()
+            .map_err(|_| LoadingError::Other(String::from("unknown image format")))?
     };
 
-    loader.write(&bytes)?;
-    loader.close()?;
-
-    let pixbuf = loader.pixbuf().ok_or_else(|| {
-        LoadingError::Other(format!("loading image: {}", human_readable_url(aurl)))
-    })?;
+    let image = reader
+        .decode()
+        .map_err(|e| LoadingError::Other(format!("error decoding image: {e}")))?;
 
     let bytes = if load_options.keep_image_data {
         Some(bytes)
@@ -648,13 +671,13 @@ fn load_image_resource_from_bytes(
         None
     };
 
-    let surface = SharedImageSurface::from_pixbuf(&pixbuf, content_type.as_deref(), bytes)
+    let surface = SharedImageSurface::from_image(&image, content_type.as_deref(), bytes)
         .map_err(|e| image_loading_error_from_cairo(e, aurl))?;
 
     Ok(Resource::Image(surface))
 }
 
-fn content_type_for_gdk_pixbuf(mime_type: &Mime) -> Option<String> {
+fn content_type_for_image(mime_type: &Mime) -> Option<String> {
     // See issue #548 - data: URLs without a MIME-type automatically
     // fall back to "text/plain;charset=US-ASCII".  Some (old?) versions of
     // Adobe Illustrator generate data: URLs without MIME-type for image
@@ -1002,7 +1025,7 @@ mod tests {
     fn unspecified_mime_type_yields_no_content_type() {
         // Issue #548
         let mime = Mime::from_str("text/plain;charset=US-ASCII").unwrap();
-        assert!(content_type_for_gdk_pixbuf(&mime).is_none());
+        assert!(content_type_for_image(&mime).is_none());
     }
 
     #[test]
@@ -1010,7 +1033,7 @@ mod tests {
         // Issue #699
         let mime = Mime::from_str("image/png;charset=utf-8").unwrap();
         assert_eq!(
-            content_type_for_gdk_pixbuf(&mime),
+            content_type_for_image(&mime),
             Some(String::from("image/png"))
         );
     }

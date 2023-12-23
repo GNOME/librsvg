@@ -124,6 +124,18 @@ impl ToPixel for GdkPixbufRGBA {
     }
 }
 
+impl ToPixel for image::Rgba<u8> {
+    #[inline]
+    fn to_pixel(&self) -> Pixel {
+        Pixel {
+            r: self.0[0],
+            g: self.0[1],
+            b: self.0[2],
+            a: self.0[3],
+        }
+    }
+}
+
 impl ToPixel for GdkPixbufRGB {
     #[inline]
     fn to_pixel(&self) -> Pixel {
