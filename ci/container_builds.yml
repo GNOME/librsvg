@@ -4,8 +4,8 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2023-10-17.0-main"
-  RUST_STABLE: "1.72.0"
+  BASE_TAG: "2024-01-21.0-main"
+  RUST_STABLE: "1.75.0"
   RUST_MINIMUM: "1.70.0"
   RUSTUP_VERSION: "1.26.0"
 
