@@ -1,5 +1,3 @@
-use cairo;
-
 use librsvg_c::sizing::LegacySize;
 use rsvg::{CairoRenderer, Loader, LoadingError, SvgHandle};
 

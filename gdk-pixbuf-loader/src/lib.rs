@@ -291,7 +291,7 @@ mod tests {
         }
     }
 
-    const SVG_DATA: &'static str = r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+    const SVG_DATA: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="no"?>
                                     <svg
                                     width="100px"
                                     height="150px"
