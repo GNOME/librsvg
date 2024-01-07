@@ -55,7 +55,7 @@ impl NodeId {
     pub fn parse(href: &str) -> Result<NodeId, NodeIdError> {
         let (url, id) = match href.rfind('#') {
             None => (Some(href), None),
-            Some(p) if p == 0 => (None, Some(&href[1..])),
+            Some(0) => (None, Some(&href[1..])),
             Some(p) => (Some(&href[..p]), Some(&href[(p + 1)..])),
         };
 
