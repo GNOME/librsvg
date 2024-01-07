@@ -65,12 +65,12 @@ if [ -z "$RUSTUP_VERSION" ]; then
     exit 1
 fi
 
-if [ -z "$STABLE"]; then
+if [ -z "$STABLE" ]; then
     echo "missing --stable argument, please pass the stable version of rustc you want"
     exit 1
 fi
     
-if [ -z "$ARCH"]; then
+if [ -z "$ARCH" ]; then
     echo "missing --arch argument, please pass an architecture triple like x86_64-unknown-linux-gnu"
     exit 1
 fi
