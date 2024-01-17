@@ -86,6 +86,9 @@ pub enum LengthUnit {
 
     /// Picas (12 points)
     Pc,
+
+    /// Advance measure of a narrow character of the current font
+    Ch,
 }
 
 /// A CSS length value.
@@ -287,6 +290,7 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
                     "mm" => LengthUnit::Mm,
                     "pt" => LengthUnit::Pt,
                     "pc" => LengthUnit::Pc,
+                    "ch" => LengthUnit::Ch,
 
                     _ => return Err(parser.new_unexpected_token_error(token)),
                 };
@@ -396,6 +400,9 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
 
             LengthUnit::Ex => self.length * params.font_size / 2.0,
 
+            // when the actual pixel measure of "0" in the font is unknown 1ch=0.5em is acceptable
+            LengthUnit::Ch => self.length * params.font_size / 2.0,
+
             LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 
             LengthUnit::Cm => {
@@ -450,6 +457,10 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
             LengthUnit::Pt => self.length,
 
             LengthUnit::Pc => self.length / PICA_PER_INCH * POINTS_PER_INCH,
+
+            LengthUnit::Ch => {
+                panic!("Cannot convert a Ch length into an absolute length");
+            }
         }
     }
 
@@ -482,6 +493,7 @@ fn font_size_from_values(values: &NormalizeValues, dpi: Dpi) -> f64 {
         // matches the default from the FontSize property.
         LengthUnit::Em => v.length * 12.0,
         LengthUnit::Ex => v.length * 12.0 / 2.0,
+        LengthUnit::Ch => v.length * 12.0 / 2.0,
 
         // FontSize always is a Both, per properties.rs
         LengthUnit::In => v.length * Both::normalize(dpi.x, dpi.y),
@@ -538,6 +550,7 @@ impl fmt::Display for LengthUnit {
             LengthUnit::Mm => "mm",
             LengthUnit::Pt => "pt",
             LengthUnit::Pc => "pc",
+            LengthUnit::Ch => "ch",
         };
 
         write!(f, "{unit}")
@@ -584,6 +597,14 @@ mod tests {
         assert_eq!(
             Length::<Vertical>::parse_str("22.5ex").unwrap(),
             Length::<Vertical>::new(22.5, LengthUnit::Ex)
+        );
+    }
+
+    #[test]
+    fn parses_font_ch() {
+        assert_eq!(
+            Length::<Vertical>::parse_str("22.5ch").unwrap(),
+            Length::<Vertical>::new(22.5, LengthUnit::Ch)
         );
     }
 
@@ -702,7 +723,7 @@ mod tests {
     }
 
     #[test]
-    fn normalize_font_em_ex_works() {
+    fn normalize_font_em_ex_ch_works() {
         let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
         let values = ComputedValues::default();
         let params = NormalizeParams::new(&values, &view_params);
@@ -717,6 +738,11 @@ mod tests {
 
         assert_approx_eq_cairo!(
             Length::<Vertical>::new(1.0, LengthUnit::Ex).to_user(&params),
+            6.0
+        );
+
+        assert_approx_eq_cairo!(
+            Length::<Vertical>::new(1.0, LengthUnit::Ch).to_user(&params),
             6.0
         );
     }
