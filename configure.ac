@@ -169,7 +169,6 @@ PKG_CHECK_MODULES(LIBRSVG,                     \
 	harfbuzz >= $HARFBUZZ_REQUIRED         \
 	libxml-2.0 >= $LIBXML_REQUIRED         \
 	pangocairo >= $PANGO_REQUIRED          \
-	pangoft2 >= $PANGO_REQUIRED	       \
 )
 
 CAIRO_VERSION=`$PKG_CONFIG --modversion cairo`
