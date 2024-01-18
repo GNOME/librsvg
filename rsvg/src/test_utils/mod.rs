@@ -43,7 +43,11 @@ pub fn render_document<F: FnOnce(&cairo::Context)>(
     res.and_then(|_| Ok(SharedImageSurface::wrap(output, SurfaceType::SRgb)?))
 }
 
-#[cfg(all(not(windows), system_deps_have_pangoft2))]
+#[cfg(all(
+    all(not(target_os = "macos"), not(target_os = "windows")),
+    system_deps_have_fontconfig,
+    system_deps_have_pangoft2
+))]
 mod pango_ft2 {
     use super::*;
     use glib::prelude::*;
@@ -95,14 +99,22 @@ mod pango_ft2 {
     }
 }
 
-#[cfg(all(not(windows), system_deps_have_pangoft2))]
+#[cfg(all(
+    all(not(target_os = "macos"), not(target_os = "windows")),
+    system_deps_have_fontconfig,
+    system_deps_have_pangoft2
+))]
 pub fn setup_font_map() {
     unsafe {
         self::pango_ft2::load_test_fonts();
     }
 }
 
-#[cfg(any(windows, not(system_deps_have_pangoft2)))]
+#[cfg(any(
+    any(target_os = "macos", target_os = "windows"),
+    not(system_deps_have_fontconfig),
+    not(system_deps_have_pangoft2)
+))]
 pub fn setup_font_map() {}
 
 pub fn setup_language() {
