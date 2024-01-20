@@ -2094,7 +2094,11 @@ fn compute_stroke_and_fill_extents(
     // rectangle's extents, even when it has no fill nor stroke.
 
     let (x0, y0, x1, y1) = cr.fill_extents()?;
-    let fill_extents = Some(Rect::new(x0, y0, x1, y1));
+    let fill_extents = if x0 != 0.0 || y0 != 0.0 || x1 != 0.0 || y1 != 0.0 {
+        Some(Rect::new(x0, y0, x1, y1))
+    } else {
+        None
+    };
 
     // Bounding box for stroke
     //
