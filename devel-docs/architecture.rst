@@ -124,12 +124,12 @@ The Rust API starts by constructing an `SvgHandle
 from a `Loader
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/api/struct.Loader.html>`_;
 both of those are public types. Internally the ``SvgHandle`` is just a
-wrapper around a `Handle
-<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/handle/struct.Handle.html>`_,
-which is a private type. ``Handle`` represents an SVG document loaded
-in memory; it acts as a wrapper around a `Document
+wrapper around a `Document
 <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/document/struct.Document.html>`_,
-and provides the basic primitive operations like “render the whole
+which is a private type that stores an SVG document loaded in memory.
+``SvgHandle`` and its companion `CairoRenderer
+<https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/api/struct.CairoRenderer.html>`_
+provide the basic primitive operations like “render the whole
 document” or “compute the geometry of an element” that are needed to
 implement the public APIs.
 
@@ -446,11 +446,6 @@ Some interesting parts of the code
   librsvg supports, and ``properties`` actually puts all those
   properties in the ``SpecifiedValues`` and ``ComputedValues``
   structs.
-
-- The `Handle
-  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/handle/struct.Handle.html>`_
-  struct provides the primitives to implement the public APIs, such as
-  loading an SVG file and rendering it.
 
 - The `DrawingCtx
   <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/drawing_ctx/struct.DrawingCtx.html>`_
