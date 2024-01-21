@@ -634,7 +634,7 @@ impl Converter {
                         }
                     };
 
-                    // Supported SVG units are px, in, cm, mm, pt, pc
+                    // Supported SVG units are px, in, cm, mm, pt, pc, ch
                     (
                         Size {
                             w: set_unit(
@@ -1254,7 +1254,7 @@ fn is_absolute_unit(u: LengthUnit) -> bool {
     use LengthUnit::*;
 
     match u {
-        Percent | Em | Ex => false,
+        Percent | Em | Ex | Ch => false,
         Px | In | Cm | Mm | Pt | Pc => true,
     }
 }
