@@ -221,7 +221,7 @@ enum Surface {
     #[cfg(system_deps_have_cairo_ps)]
     Ps(cairo::PsSurface, Size),
     #[cfg(system_deps_have_cairo_svg)]
-    Svg(cairo::SvgSurface, Size),
+    Svg(cairo::SvgSurface),
 }
 
 impl Deref for Surface {
@@ -235,7 +235,7 @@ impl Deref for Surface {
             #[cfg(system_deps_have_cairo_ps)]
             Self::Ps(surface, _) => surface,
             #[cfg(system_deps_have_cairo_svg)]
-            Self::Svg(surface, _) => surface,
+            Self::Svg(surface) => surface,
         }
     }
 }
@@ -321,7 +321,7 @@ impl Surface {
         };
 
         surface.set_document_unit(svg_unit);
-        Ok(Self::Svg(surface, size))
+        Ok(Self::Svg(surface))
     }
 
     #[cfg(not(system_deps_have_cairo_svg))]
