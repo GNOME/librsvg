@@ -750,17 +750,13 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        Ok(self
-            .handle
-            .document
-            .get_geometry_for_element(
-                &self.handle.session,
-                node,
-                &self.user_language,
-                self.dpi,
-                self.is_testing,
-            )
-            .map(|(i, l)| (i, l))?)
+        Ok(self.handle.document.get_geometry_for_element(
+            &self.handle.session,
+            node,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )?)
     }
 
     /// Renders a single SVG element to a given viewport

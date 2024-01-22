@@ -33,6 +33,13 @@ pub struct Attributes {
 /// Iterator from `Attributes.iter`.
 pub struct AttributesIter<'a>(slice::Iter<'a, (QualName, AttributeValue)>);
 
+#[cfg(test)]
+impl Default for Attributes {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Attributes {
     #[cfg(test)]
     pub fn new() -> Attributes {
