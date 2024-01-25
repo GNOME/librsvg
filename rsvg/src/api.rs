@@ -807,7 +807,6 @@ impl<'a> CairoRenderer<'a> {
     /// its corresponding value will not be used.  E.g. if width=100%, the caller
     /// will ignore the resulting width value.
     #[doc(hidden)]
-    #[cfg(feature = "c-api")]
     pub fn width_height_to_user(&self, dpi: Dpi) -> (f64, f64) {
         let dimensions = self.handle.document.get_intrinsic_dimensions();
 
