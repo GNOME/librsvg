@@ -34,3 +34,4 @@ exclude = [
     "afl-fuzz",
     "fuzz",
 ]
+resolver = "2"
