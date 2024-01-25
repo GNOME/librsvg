@@ -1,3 +1,68 @@
+Version 2.57.90
+===============
+
+librsvg crate version 2.58.0-beta.0
+
+- Librsvg no longer uses gdk-pixbuf for loading raster images; all
+  image loading uses Rust code now.  Older versions of librsvg would
+  use the traditional libpng and libjpeg-turbo libraries, and
+  gdk-pixbuf's own GIF decoder.  Starting with this version of
+  librsvg, it only uses Rust crates for image codecs.
+
+  In addition, librsvg will no longer accept any arbitrary image
+  format that gdk-pixbuf happens to support: the only supported
+  formats for the <image> element are PNG, JPEG, GIF, WEBP, and SVG.
+  (The SVG2 specification only mandates PNG and JPEG.)
+
+  The reasons for using Rust image loaders are as follows:
+
+  - Reduce the attack surface from memory-unsafe libraries.  While
+    libpng/libjpeg-turbo are very well tested and extensively fuzzed,
+    other gdk-pixbuf loaders are not as well tested.  Switching to
+    memory-safe code sounds like a better idea for the future.
+
+  - Make using librsvg easier on Windows and MacOS, where installing
+    gdk-pixbuf is somewhat tricky.
+
+  - Give a chance to the Rust image codecs to improve by having more
+    people test them from a widely-used code base like librsvg.  GNOME
+    has already uses the Rust image crates in the Loupe image viewer,
+    and this has led to fixes in the image crates.
+
+  - Support SVG2 semantics for referencing other SVG documents in an
+    <image> element.  For historical reasons, librsvg just used
+    gdk-pixbuf to recurse into itself in that case.  Now it handles
+    SVG sub-images directly.
+
+  The normal SVG loader for gdk-pixbuf that librsvg installs is
+  unchanged; you can still load SVG images with gdk-pixbuf as usual.
+
+  The refactoring to load images directly in Rust is based on
+  Emile Snyder's work from some months ago.
+
+- #902 - Add basic support for "ch" length units in CSS (Mackenzie Morgan).
+
+- #1019 - Fix small-caps and bump the version of Pango required to 1.50.0.
+
+- #1037 - Handle the case where Cairo returns an empty rectangle for a
+  filled object's bounding box (Henrik Nilsson).
+
+- #1026 - Fix panic when using negative scaling transforms on the
+  toplevel (WhyHelloThere).
+
+- #997 - Support "var(--foo, #aabbcc)" just for colors.  This is the
+  minimum required to render color SVG emoji fonts that provide color
+  fallbacks, but it is not yet full support for CSS var().
+
+- Fix Windows and MacOS builds with respectg to Fontconfig (Alessandro Bono).
+
+- Fix the VS2017 build (Chun-wei Fan).
+
+- Update cairo-rs (Guillaume Gomez).
+
+- Update the project metadata files (Andre Klapper).
+
+
 Version 2.57.0
 ==============
 
