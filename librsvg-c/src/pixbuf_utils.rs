@@ -7,12 +7,15 @@ use std::ptr;
 
 use gdk_pixbuf::{Colorspace, Pixbuf};
 use glib::translate::*;
+use rgb::FromSlice;
 
 use super::dpi::Dpi;
 use super::handle::{checked_i32, set_gerror};
 use super::sizing::LegacySize;
 
-use rsvg::c_api_only::{Session, SharedImageSurface, SurfaceType};
+use rsvg::c_api_only::{
+    PixelOps, Session, SharedImageSurface, SurfaceType, ToGdkPixbufRGBA, ToPixel,
+};
 use rsvg::{CairoRenderer, Loader, RenderingError};
 
 pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
@@ -27,9 +30,31 @@ pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
 }
 
 pub fn pixbuf_from_surface(surface: &SharedImageSurface) -> Result<Pixbuf, RenderingError> {
-    surface
-        .to_pixbuf()
-        .ok_or_else(|| RenderingError::OutOfMemory(String::from("creating a Pixbuf")))
+    let width = surface.width();
+    let height = surface.height();
+
+    let pixbuf = Pixbuf::new(Colorspace::Rgb, true, 8, width, height)
+        .ok_or_else(|| RenderingError::OutOfMemory(String::from("creating a Pixbuf")))?;
+
+    assert!(pixbuf.colorspace() == Colorspace::Rgb);
+    assert!(pixbuf.bits_per_sample() == 8);
+    assert!(pixbuf.n_channels() == 4);
+
+    let pixbuf_data = unsafe { pixbuf.pixels() };
+    let stride = pixbuf.rowstride() as usize;
+
+    // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
+    // to make the last row *not* have the full stride (i.e. it is
+    // only as wide as the pixels in that row).
+    pixbuf_data
+        .chunks_mut(stride)
+        .take(height as usize)
+        .map(|row| row.as_rgba_mut())
+        .zip(surface.rows())
+        .flat_map(|(dest_row, src_row)| src_row.iter().zip(dest_row.iter_mut()))
+        .for_each(|(src, dest)| *dest = src.to_pixel().unpremultiply().to_pixbuf_rgba());
+
+    Ok(pixbuf)
 }
 
 enum SizeKind {
