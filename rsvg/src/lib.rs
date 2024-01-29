@@ -227,7 +227,7 @@ pub mod c_api_only {
     pub use crate::rsvg_log;
     pub use crate::session::Session;
     pub use crate::surface_utils::shared_surface::{SharedImageSurface, SurfaceType};
-    pub use crate::surface_utils::{PixelOps, ToGdkPixbufRGBA, ToPixel};
+    pub use crate::surface_utils::{Pixel, PixelOps, ToPixel};
 }
 
 #[doc(hidden)]

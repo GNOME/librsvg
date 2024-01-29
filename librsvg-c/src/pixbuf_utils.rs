@@ -13,10 +13,31 @@ use super::dpi::Dpi;
 use super::handle::{checked_i32, set_gerror};
 use super::sizing::LegacySize;
 
-use rsvg::c_api_only::{
-    PixelOps, Session, SharedImageSurface, SurfaceType, ToGdkPixbufRGBA, ToPixel,
-};
+use rsvg::c_api_only::{Pixel, PixelOps, Session, SharedImageSurface, SurfaceType, ToPixel};
 use rsvg::{CairoRenderer, Loader, RenderingError};
+
+/// GdkPixbuf's endian-independent RGBA8 pixel layout.
+type GdkPixbufRGBA = rgb::RGBA8;
+
+/// Trait to convert pixels in various formats to RGBA, for GdkPixbuf.
+///
+/// GdkPixbuf unconditionally uses RGBA ordering regardless of endianness,
+/// but we need to convert to it from Cairo's endian-dependent 0xaarrggbb.
+trait ToGdkPixbufRGBA {
+    fn to_pixbuf_rgba(&self) -> GdkPixbufRGBA;
+}
+
+impl ToGdkPixbufRGBA for Pixel {
+    #[inline]
+    fn to_pixbuf_rgba(&self) -> GdkPixbufRGBA {
+        GdkPixbufRGBA {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
+}
 
 pub fn empty_pixbuf() -> Result<Pixbuf, RenderingError> {
     // GdkPixbuf does not allow zero-sized pixbufs, but Cairo allows zero-sized
