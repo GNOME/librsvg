@@ -114,10 +114,6 @@ name = "path_parser"
 harness = false
 
 [[bench]]
-name = "pixbuf_from_surface"
-harness = false
-
-[[bench]]
 name = "pixel_iterators"
 harness = false
 
