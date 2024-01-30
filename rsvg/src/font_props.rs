@@ -629,6 +629,19 @@ mod tests {
                 family: FontFamily("serif".to_string()),
             }),
         );
+
+        assert_eq!(
+            Font::parse_str("small-caps condensed 12pt serif").unwrap(),
+            Font::Spec(FontSpec {
+                style: Default::default(),
+                variant: FontVariant::SmallCaps,
+                weight: FontWeight::Normal,
+                stretch: FontStretch::Condensed,
+                size: FontSize::Value(Length::new(12.0, LengthUnit::Pt)),
+                line_height: Default::default(),
+                family: FontFamily("serif".to_string()),
+            }),
+        );
     }
 
     #[test]
