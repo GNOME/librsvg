@@ -28,7 +28,6 @@ use super::{
 /// to Cairo's own values for pattern filtering.
 ///
 /// This enum can be expanded to use more of Cairo's filtering modes.
-#[derive(Copy, Clone)]
 pub enum Interpolation {
     Nearest,
     Smooth,

@@ -629,6 +629,65 @@ mod tests {
                 family: FontFamily("serif".to_string()),
             }),
         );
+
+        assert_eq!(
+            Font::parse_str("small-caps condensed 12pt serif").unwrap(),
+            Font::Spec(FontSpec {
+                style: Default::default(),
+                variant: FontVariant::SmallCaps,
+                weight: FontWeight::Normal,
+                stretch: FontStretch::Condensed,
+                size: FontSize::Value(Length::new(12.0, LengthUnit::Pt)),
+                line_height: Default::default(),
+                family: FontFamily("serif".to_string()),
+            }),
+        );
+    }
+
+    #[test]
+    fn parses_font_shorthand_with_normal_values() {
+        let expected_font = Font::Spec(FontSpec {
+            style: Default::default(),
+            variant: Default::default(),
+            weight: Default::default(),
+            stretch: Default::default(),
+            size: FontSize::Value(Length::new(12.0, LengthUnit::Pt)),
+            line_height: Default::default(),
+            family: FontFamily("serif".to_string()),
+        });
+
+        // One through four instances of "normal" - they all resolve to default values for
+        // each property.
+        assert_eq!(Font::parse_str("normal 12pt serif").unwrap(), expected_font,);
+        assert_eq!(
+            Font::parse_str("normal normal 12pt serif").unwrap(),
+            expected_font,
+        );
+        assert_eq!(
+            Font::parse_str("normal normal normal 12pt serif").unwrap(),
+            expected_font,
+        );
+        assert_eq!(
+            Font::parse_str("normal normal normal normal 12pt serif").unwrap(),
+            expected_font,
+        );
+
+        // But more than four "normal" is an error.
+        assert!(Font::parse_str("normal normal normal normal normal 12pt serif").is_err());
+
+        // Let's throw in an actual keyword in the middle
+        assert_eq!(
+            Font::parse_str("normal bold normal 12pt serif").unwrap(),
+            Font::Spec(FontSpec {
+                style: Default::default(),
+                variant: Default::default(),
+                weight: FontWeight::Bold,
+                stretch: Default::default(),
+                size: FontSize::Value(Length::new(12.0, LengthUnit::Pt)),
+                line_height: Default::default(),
+                family: FontFamily("serif".to_string()),
+            }),
+        );
     }
 
     #[test]
