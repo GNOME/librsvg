@@ -6,9 +6,7 @@ use std::slice;
 
 use cast::i32;
 use cssparser::Color;
-use gdk_pixbuf::{Colorspace, Pixbuf};
 use nalgebra::{storage::Storage, Dim, Matrix};
-use rgb::FromSlice;
 
 use crate::color::color_to_rgba;
 use crate::drawing_ctx::set_source_color_on_cairo;
@@ -19,8 +17,7 @@ use crate::util::clamp;
 
 use super::{
     iterators::{PixelRectangle, Pixels},
-    AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps, ToCairoARGB,
-    ToGdkPixbufRGBA, ToPixel,
+    AsCairoARGB, CairoARGB, EdgeMode, ImageSurfaceDataExt, Pixel, PixelOps, ToCairoARGB, ToPixel,
 };
 
 /// Interpolation when scaling images.
@@ -301,33 +298,6 @@ impl ImageSurface<Shared> {
             // If there are any other references, copy the underlying surface.
             self.copy_surface(IRect::from_size(self.width, self.height))
         }
-    }
-
-    pub fn to_pixbuf(&self) -> Option<Pixbuf> {
-        let width = self.width();
-        let height = self.height();
-
-        let pixbuf = Pixbuf::new(Colorspace::Rgb, true, 8, width, height)?;
-
-        assert!(pixbuf.colorspace() == Colorspace::Rgb);
-        assert!(pixbuf.bits_per_sample() == 8);
-        assert!(pixbuf.n_channels() == 4);
-
-        let pixbuf_data = unsafe { pixbuf.pixels() };
-        let stride = pixbuf.rowstride() as usize;
-
-        // We use chunks_mut(), not chunks_exact_mut(), because gdk-pixbuf tends
-        // to make the last row *not* have the full stride (i.e. it is
-        // only as wide as the pixels in that row).
-        pixbuf_data
-            .chunks_mut(stride)
-            .take(height as usize)
-            .map(|row| row.as_rgba_mut())
-            .zip(self.rows())
-            .flat_map(|(dest_row, src_row)| src_row.iter().zip(dest_row.iter_mut()))
-            .for_each(|(src, dest)| *dest = src.to_pixel().unpremultiply().to_pixbuf_rgba());
-
-        Some(pixbuf)
     }
 
     pub fn from_image(

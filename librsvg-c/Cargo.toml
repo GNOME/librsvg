@@ -19,6 +19,7 @@ glib = "0.18"
 libc = "0.2"
 librsvg = { path = "../rsvg", features = ["c-api"] }
 once_cell = "1.2.0"
+rgb = { version="0.8", features=["argb"] }
 url = "2"
 
 [build-dependencies]

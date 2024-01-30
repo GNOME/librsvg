@@ -130,7 +130,6 @@ RUST_EXTRA =						\
 	rsvg/benches/composite.rs			\
 	rsvg/benches/lighting.rs			\
 	rsvg/benches/path_parser.rs			\
-	rsvg/benches/pixbuf_from_surface.rs		\
 	rsvg/benches/pixel_iterators.rs			\
 	rsvg/benches/pixel_ops.rs			\
 	rsvg/benches/srgb.rs				\
