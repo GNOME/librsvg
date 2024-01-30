@@ -6,7 +6,6 @@ use super::shared_surface::SharedImageSurface;
 use super::{EdgeMode, Pixel};
 
 /// Iterator over pixels of a `SharedImageSurface`.
-#[derive(Debug, Clone, Copy)]
 pub struct Pixels<'a> {
     surface: &'a SharedImageSurface,
     bounds: IRect,
@@ -16,7 +15,6 @@ pub struct Pixels<'a> {
 }
 
 /// Iterator over a (potentially out of bounds) rectangle of pixels of a `SharedImageSurface`.
-#[derive(Debug, Clone, Copy)]
 pub struct PixelRectangle<'a> {
     surface: &'a SharedImageSurface,
     bounds: IRect,
