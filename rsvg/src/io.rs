@@ -1,8 +1,11 @@
 //! Utilities to acquire streams and data from from URLs.
 
 use data_url::{mime::Mime, DataUrl};
-use gio::{prelude::FileExt, Cancellable, File as GFile, InputStream, MemoryInputStream};
-use glib::{self, Bytes as GBytes, Cast};
+use gio::{
+    prelude::{FileExt, FileExtManual},
+    Cancellable, File as GFile, InputStream, MemoryInputStream,
+};
+use glib::{self, object::Cast, Bytes as GBytes};
 use std::fmt;
 use std::str::FromStr;
 
@@ -115,7 +118,7 @@ pub fn acquire_data(
         };
 
         Ok(BinaryData {
-            data: contents,
+            data: contents.to_vec(),
             mime_type,
         })
     }

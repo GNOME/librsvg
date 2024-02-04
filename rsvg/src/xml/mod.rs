@@ -5,7 +5,7 @@ use gio::{
     prelude::BufferedInputStreamExt, BufferedInputStream, Cancellable, ConverterInputStream,
     InputStream, ZlibCompressorFormat, ZlibDecompressor,
 };
-use glib::Cast;
+use glib::object::Cast;
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, Namespace, QualName,
 };
