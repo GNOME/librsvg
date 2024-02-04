@@ -1090,7 +1090,6 @@ dependencies = [
  "glib",
  "libc",
  "librsvg",
- "once_cell",
  "regex",
  "rgb",
  "url",

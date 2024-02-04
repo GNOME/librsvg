@@ -2,15 +2,14 @@
 
 use float_cmp::approx_eq;
 use glib::translate::*;
-use once_cell::sync::Lazy;
 use pango::ffi::PangoMatrix;
 use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
-use std::borrow::Cow;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::f64::consts::*;
 use std::rc::Rc;
+use std::{borrow::Cow, sync::OnceLock};
 
 use crate::accept_language::UserLanguage;
 use crate::aspect_ratio::AspectRatio;
@@ -2192,9 +2191,12 @@ fn setup_cr_for_stroke(cr: &cairo::Context, stroke: &Stroke) {
 
 /// escape quotes and backslashes with backslash
 fn escape_link_target(value: &str) -> Cow<'_, str> {
-    static REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"['\\]").unwrap());
+    let regex = {
+        static REGEX: OnceLock<Regex> = OnceLock::new();
+        REGEX.get_or_init(|| Regex::new(r"['\\]").unwrap())
+    };
 
-    REGEX.replace_all(value, |caps: &Captures<'_>| {
+    regex.replace_all(value, |caps: &Captures<'_>| {
         match caps.get(0).unwrap().as_str() {
             "'" => "\\'".to_owned(),
             "\\" => "\\\\".to_owned(),

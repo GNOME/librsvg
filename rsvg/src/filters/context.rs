@@ -1,4 +1,4 @@
-use once_cell::sync::OnceCell;
+use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 

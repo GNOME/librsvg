@@ -3,8 +3,6 @@
 use data_url::mime::Mime;
 use glib::prelude::*;
 use markup5ever::QualName;
-use once_cell::sync::Lazy;
-use std::cell::RefCell;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fmt;
@@ -13,6 +11,7 @@ use std::io::Cursor;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::{cell::RefCell, sync::OnceLock};
 
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
@@ -31,16 +30,6 @@ use crate::structure::IntrinsicDimensions;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::url_resolver::{AllowedUrl, UrlResolver};
 use crate::xml::{xml_load_from_possibly_compressed_stream, Attributes};
-
-static UA_STYLESHEETS: Lazy<Vec<Stylesheet>> = Lazy::new(|| {
-    vec![Stylesheet::from_data(
-        include_str!("ua.css"),
-        &UrlResolver::new(None),
-        Origin::UserAgent,
-        Session::default(),
-    )
-    .expect("could not parse user agent stylesheet for librsvg, there's a bug!")]
-});
 
 /// Identifier of a node
 #[derive(Debug, PartialEq, Clone)]
@@ -247,9 +236,21 @@ impl Document {
     /// This uses the default UserAgent stylesheet, the document's internal stylesheets,
     /// plus an extra set of stylesheets supplied by the caller.
     pub fn cascade(&mut self, extra: &[Stylesheet], session: &Session) {
+        let stylesheets = {
+            static UA_STYLESHEETS: OnceLock<Vec<Stylesheet>> = OnceLock::new();
+            UA_STYLESHEETS.get_or_init(|| {
+                vec![Stylesheet::from_data(
+                    include_str!("ua.css"),
+                    &UrlResolver::new(None),
+                    Origin::UserAgent,
+                    Session::default(),
+                )
+                .expect("could not parse user agent stylesheet for librsvg, there's a bug!")]
+            })
+        };
         css::cascade(
             &mut self.tree,
-            &UA_STYLESHEETS,
+            stylesheets,
             &self.stylesheets,
             extra,
             session,
