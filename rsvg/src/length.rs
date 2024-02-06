@@ -87,7 +87,7 @@ pub enum LengthUnit {
     /// Picas (12 points)
     Pc,
 
-    /// Advance measure of a narrow character of the current font
+    /// Advance measure of a '0' character (depends on the text orientation)
     Ch,
 }
 

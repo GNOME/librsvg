@@ -798,9 +798,14 @@ gboolean rsvg_handle_has_sub (RsvgHandle *handle, const char *id);
  * @RSVG_UNIT_MM: millimeters
  * @RSVG_UNIT_PT: points, or 1/72 inch
  * @RSVG_UNIT_PC: picas, or 1/6 inch (12 points)
+ * @RSVG_UNIT_CH: advance measure of a '0' character (depends on the text orientation)
  *
  * Units for the `RsvgLength` struct.  These have the same meaning as [CSS length
  * units](https://www.w3.org/TR/CSS21/syndata.html#length-units).
+ *
+ * If you test for the values of this enum, please note that librsvg may add other units in the future
+ * as its support for CSS improves.  Please make your code handle unknown units gracefully (e.g. with
+ * a `default` case in a `switch()` statement).
  */
 typedef enum {
     RSVG_UNIT_PERCENT,
@@ -811,7 +816,8 @@ typedef enum {
     RSVG_UNIT_CM,
     RSVG_UNIT_MM,
     RSVG_UNIT_PT,
-    RSVG_UNIT_PC
+    RSVG_UNIT_PC,
+    RSVG_UNIT_CH,
 } RsvgUnit;
 
 /**
