@@ -21,8 +21,8 @@
 //! ```toml
 //! [dependencies]
 //! librsvg = "2.58.0-beta.0"
-//! cairo-rs = "0.18.2"
-//! gio = "0.18"   # only if you need streams
+//! cairo-rs = "0.19"
+//! gio = "0.19"   # only if you need streams
 //! ```
 //!
 //! # Example

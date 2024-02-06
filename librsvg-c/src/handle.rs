@@ -35,8 +35,8 @@ use url::Url;
 use glib::subclass::prelude::*;
 use glib::translate::*;
 use glib::types::instance_of;
+use glib::Bytes;
 use glib::{ffi::gpointer, gobject_ffi};
-use glib::{Bytes, Cast, StaticType, ToValue};
 
 use rsvg::c_api_only::{rsvg_log, Session, SharedImageSurface, SurfaceType};
 use rsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader, LoadingError, SvgHandle};
@@ -277,7 +277,7 @@ impl From<RsvgRectangle> for cairo::Rectangle {
 mod imp {
     use super::*;
     use glib::{ParamSpec, ParamSpecDouble, ParamSpecFlags, ParamSpecInt, ParamSpecString};
-    use once_cell::sync::Lazy;
+    use std::sync::OnceLock;
 
     /// Contains all the interior mutability for a RsvgHandle to be called
     /// from the C API.
@@ -309,7 +309,8 @@ mod imp {
 
     impl ObjectImpl for CHandle {
         fn properties() -> &'static [ParamSpec] {
-            static PROPERTIES: Lazy<Vec<ParamSpec>> = Lazy::new(|| {
+            static PROPERTIES: OnceLock<Vec<ParamSpec>> = OnceLock::new();
+            PROPERTIES.get_or_init(|| {
                 vec![
                     ParamSpecFlags::builder::<HandleFlags>("flags")
                         .construct_only()
@@ -334,8 +335,7 @@ mod imp {
                         .read_only()
                         .build(),
                 ]
-            });
-            PROPERTIES.as_ref()
+            })
         }
 
         fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
