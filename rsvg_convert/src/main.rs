@@ -26,6 +26,7 @@ use rsvg::{AcceptLanguage, CairoRenderer, Language, LengthUnit, Loader, Renderin
 
 use std::ffi::OsString;
 use std::io;
+use std::io::IsTerminal;
 use std::ops::Deref;
 use std::path::PathBuf;
 
@@ -415,14 +416,21 @@ mod metadata {
 struct Stdin;
 
 impl Stdin {
+    fn is_terminal(&self) -> bool {
+        io::stdin().is_terminal()
+    }
+
     #[cfg(unix)]
-    pub fn stream() -> InputStream {
-        let stream = unsafe { UnixInputStream::with_fd(0) };
+    pub fn as_gio_input_stream(&self) -> InputStream {
+        use std::os::fd::AsRawFd;
+
+        let raw_fd = io::stdin().as_raw_fd();
+        let stream = unsafe { UnixInputStream::with_fd(raw_fd) };
         stream.upcast::<InputStream>()
     }
 
     #[cfg(windows)]
-    pub fn stream() -> InputStream {
+    pub fn as_gio_input_stream(&self) -> InputStream {
         let stream = unsafe { Win32InputStream::with_handle(io::stdin()) };
         stream.upcast::<InputStream>()
     }
@@ -542,9 +550,19 @@ impl Converter {
             }
         }
 
+        let stdin = Stdin;
+
         for (page_idx, input) in self.input.iter().enumerate() {
             let (stream, basefile) = match input {
-                Input::Stdin => (Stdin::stream(), None),
+                Input::Stdin => {
+                    if stdin.is_terminal() {
+                        eprintln!("rsvg-convert is reading from standard input.");
+                        eprintln!("Type Control-C to exit if this is not what you expected.");
+                    }
+
+                    (stdin.as_gio_input_stream(), None)
+                }
+
                 Input::Named(p) => {
                     let file = p.get_gfile();
                     let stream = file
