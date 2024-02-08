@@ -63,7 +63,6 @@ locale_config = "0.3.0" # not "*" as per the documentation, since crates.io does
 markup5ever = "0.11.0"
 nalgebra = "0.32.1"
 num-traits = "0.2"
-once_cell = "1.2.0"
 pango = { version = "0.19", features = ["v1_46"] }
 pangocairo = "0.19"
 rayon = "1"
