@@ -1,3 +1,25 @@
+Version 2.57.91
+===============
+
+- #943 - Rsvg-convert now prints a helpful message if you run it
+  without arguments, to indicate that it is reading from standard
+  input.
+
+- #902 - Take text orientation into account for 'ch' units
+  (Mackenzie Morgan).
+
+- For Rust programs, the rsvg crate no longer depends on gdk-pixbuf.
+  Hopefully this means that your Rust programs will have to link to
+  one fewer library.
+
+- The C enumeration RsvgUnit now has a RSVG_UNIT_CH variant for "ch"
+  units.  However, this is only used for reporting the size of SVG
+  documents, which should very seldom come in "ch" units.
+
+- #1055 - Fix unsoundness in the use of the selectors crate.
+
+- Update gtk-rs crates (Bilal Elmoussaoui).
+
 Version 2.57.90
 ===============
 
