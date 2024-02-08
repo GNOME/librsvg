@@ -1,9 +1,9 @@
 //! SVG Elements.
 
 use markup5ever::{expanded_name, local_name, namespace_url, ns, QualName};
-use once_cell::sync::Lazy;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::sync::OnceLock;
 
 use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
@@ -177,6 +177,104 @@ pub enum ElementData {
     FeTurbulence(Box<FeTurbulence>),
 }
 
+#[rustfmt::skip]
+fn get_element_creators() -> &'static HashMap<&'static str, (ElementDataCreateFn, ElementCreateFlags)> {
+    use ElementCreateFlags::*;
+
+    ELEMENT_CREATORS.get_or_init(|| {
+        // Lines in comments are elements that we don't support.
+        let creators_table: Vec<(&str, ElementDataCreateFn, ElementCreateFlags)> = vec![
+            // name, supports_class, create_fn
+            ("a",                   create_link,                  Default),
+            /* ("altGlyph",         ), */
+            /* ("altGlyphDef",      ), */
+            /* ("altGlyphItem",     ), */
+            /* ("animate",          ), */
+            /* ("animateColor",     ), */
+            /* ("animateMotion",    ), */
+            /* ("animateTransform", ), */
+            ("circle",              create_circle,                Default),
+            ("clipPath",            create_clip_path,             Default),
+            /* ("color-profile",    ), */
+            /* ("cursor",           ), */
+            ("defs",                create_defs,                  Default),
+            /* ("desc",             ), */
+            ("ellipse",             create_ellipse,               Default),
+            ("feBlend",             create_fe_blend,              Default),
+            ("feColorMatrix",       create_fe_color_matrix,       Default),
+            ("feComponentTransfer", create_fe_component_transfer, Default),
+            ("feComposite",         create_fe_composite,          Default),
+            ("feConvolveMatrix",    create_fe_convolve_matrix,    Default),
+            ("feDiffuseLighting",   create_fe_diffuse_lighting,   Default),
+            ("feDisplacementMap",   create_fe_displacement_map,   Default),
+            ("feDistantLight",      create_fe_distant_light,      IgnoreClass),
+            ("feDropShadow",        create_fe_drop_shadow,        Default),
+            ("feFuncA",             create_fe_func_a,             IgnoreClass),
+            ("feFuncB",             create_fe_func_b,             IgnoreClass),
+            ("feFuncG",             create_fe_func_g,             IgnoreClass),
+            ("feFuncR",             create_fe_func_r,             IgnoreClass),
+            ("feFlood",             create_fe_flood,              Default),
+            ("feGaussianBlur",      create_fe_gaussian_blur,      Default),
+            ("feImage",             create_fe_image,              Default),
+            ("feMerge",             create_fe_merge,              Default),
+            ("feMergeNode",         create_fe_merge_node,         IgnoreClass),
+            ("feMorphology",        create_fe_morphology,         Default),
+            ("feOffset",            create_fe_offset,             Default),
+            ("fePointLight",        create_fe_point_light,        IgnoreClass),
+            ("feSpecularLighting",  create_fe_specular_lighting,  Default),
+            ("feSpotLight",         create_fe_spot_light,         IgnoreClass),
+            ("feTile",              create_fe_tile,               Default),
+            ("feTurbulence",        create_fe_turbulence,         Default),
+            ("filter",              create_filter,                Default),
+            /* ("font",             ), */
+            /* ("font-face",        ), */
+            /* ("font-face-format", ), */
+            /* ("font-face-name",   ), */
+            /* ("font-face-src",    ), */
+            /* ("font-face-uri",    ), */
+            /* ("foreignObject",    ), */
+            ("g",                   create_group,                 Default),
+            /* ("glyph",            ), */
+            /* ("glyphRef",         ), */
+            /* ("hkern",            ), */
+            ("image",               create_image,                 Default),
+            ("line",                create_line,                  Default),
+            ("linearGradient",      create_linear_gradient,       Default),
+            ("marker",              create_marker,                Default),
+            ("mask",                create_mask,                  Default),
+            /* ("metadata",         ), */
+            /* ("missing-glyph",    ), */
+            /* ("mpath",            ), */
+            /* ("multiImage",       ), */
+            ("path",                create_path,                  Default),
+            ("pattern",             create_pattern,               Default),
+            ("polygon",             create_polygon,               Default),
+            ("polyline",            create_polyline,              Default),
+            ("radialGradient",      create_radial_gradient,       Default),
+            ("rect",                create_rect,                  Default),
+            /* ("script",           ), */
+            /* ("set",              ), */
+            ("stop",                create_stop,                  Default),
+            ("style",               create_style,                 IgnoreClass),
+            /* ("subImage",         ), */
+            /* ("subImageRef",      ), */
+            ("svg",                 create_svg,                   Default),
+            ("switch",              create_switch,                Default),
+            ("symbol",              create_symbol,                Default),
+            ("text",                create_text,                  Default),
+            /* ("textPath",         ), */
+            /* ("title",            ), */
+            ("tref",                create_tref,                  Default),
+            ("tspan",               create_tspan,                 Default),
+            ("use",                 create_use,                   Default),
+            /* ("view",             ), */
+            /* ("vkern",            ), */
+        ];
+
+        creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
+    })
+}
+
 impl Element {
     /// Takes an XML element name and consumes a list of attribute/value pairs to create an [`Element`].
     ///
@@ -184,7 +282,7 @@ impl Element {
     /// element.
     pub fn new(session: &Session, name: &QualName, mut attributes: Attributes) -> Element {
         let (create_fn, flags): (ElementDataCreateFn, ElementCreateFlags) = if name.ns == ns!(svg) {
-            match ELEMENT_CREATORS.get(name.local.as_ref()) {
+            match get_element_creators().get(name.local.as_ref()) {
                 // hack in the SVG namespace for supported element names
                 Some(&(create_fn, flags)) => (create_fn, flags),
 
@@ -555,98 +653,6 @@ enum ElementCreateFlags {
     IgnoreClass,
 }
 
-// Lines in comments are elements that we don't support.
-#[rustfmt::skip]
-static ELEMENT_CREATORS: Lazy<HashMap<&'static str, (ElementDataCreateFn, ElementCreateFlags)>> = Lazy::new(|| {
-    use ElementCreateFlags::*;
-
-    let creators_table: Vec<(&str, ElementDataCreateFn, ElementCreateFlags)> = vec![
-        // name, supports_class, create_fn
-        ("a",                   create_link,                  Default),
-        /* ("altGlyph",         ), */
-        /* ("altGlyphDef",      ), */
-        /* ("altGlyphItem",     ), */
-        /* ("animate",          ), */
-        /* ("animateColor",     ), */
-        /* ("animateMotion",    ), */
-        /* ("animateTransform", ), */
-        ("circle",              create_circle,                Default),
-        ("clipPath",            create_clip_path,             Default),
-        /* ("color-profile",    ), */
-        /* ("cursor",           ), */
-        ("defs",                create_defs,                  Default),
-        /* ("desc",             ), */
-        ("ellipse",             create_ellipse,               Default),
-        ("feBlend",             create_fe_blend,              Default),
-        ("feColorMatrix",       create_fe_color_matrix,       Default),
-        ("feComponentTransfer", create_fe_component_transfer, Default),
-        ("feComposite",         create_fe_composite,          Default),
-        ("feConvolveMatrix",    create_fe_convolve_matrix,    Default),
-        ("feDiffuseLighting",   create_fe_diffuse_lighting,   Default),
-        ("feDisplacementMap",   create_fe_displacement_map,   Default),
-        ("feDistantLight",      create_fe_distant_light,      IgnoreClass),
-        ("feDropShadow",        create_fe_drop_shadow,        Default),
-        ("feFuncA",             create_fe_func_a,             IgnoreClass),
-        ("feFuncB",             create_fe_func_b,             IgnoreClass),
-        ("feFuncG",             create_fe_func_g,             IgnoreClass),
-        ("feFuncR",             create_fe_func_r,             IgnoreClass),
-        ("feFlood",             create_fe_flood,              Default),
-        ("feGaussianBlur",      create_fe_gaussian_blur,      Default),
-        ("feImage",             create_fe_image,              Default),
-        ("feMerge",             create_fe_merge,              Default),
-        ("feMergeNode",         create_fe_merge_node,         IgnoreClass),
-        ("feMorphology",        create_fe_morphology,         Default),
-        ("feOffset",            create_fe_offset,             Default),
-        ("fePointLight",        create_fe_point_light,        IgnoreClass),
-        ("feSpecularLighting",  create_fe_specular_lighting,  Default),
-        ("feSpotLight",         create_fe_spot_light,         IgnoreClass),
-        ("feTile",              create_fe_tile,               Default),
-        ("feTurbulence",        create_fe_turbulence,         Default),
-        ("filter",              create_filter,                Default),
-        /* ("font",             ), */
-        /* ("font-face",        ), */
-        /* ("font-face-format", ), */
-        /* ("font-face-name",   ), */
-        /* ("font-face-src",    ), */
-        /* ("font-face-uri",    ), */
-        /* ("foreignObject",    ), */
-        ("g",                   create_group,                 Default),
-        /* ("glyph",            ), */
-        /* ("glyphRef",         ), */
-        /* ("hkern",            ), */
-        ("image",               create_image,                 Default),
-        ("line",                create_line,                  Default),
-        ("linearGradient",      create_linear_gradient,       Default),
-        ("marker",              create_marker,                Default),
-        ("mask",                create_mask,                  Default),
-        /* ("metadata",         ), */
-        /* ("missing-glyph",    ), */
-        /* ("mpath",            ), */
-        /* ("multiImage",       ), */
-        ("path",                create_path,                  Default),
-        ("pattern",             create_pattern,               Default),
-        ("polygon",             create_polygon,               Default),
-        ("polyline",            create_polyline,              Default),
-        ("radialGradient",      create_radial_gradient,       Default),
-        ("rect",                create_rect,                  Default),
-        /* ("script",           ), */
-        /* ("set",              ), */
-        ("stop",                create_stop,                  Default),
-        ("style",               create_style,                 IgnoreClass),
-        /* ("subImage",         ), */
-        /* ("subImageRef",      ), */
-        ("svg",                 create_svg,                   Default),
-        ("switch",              create_switch,                Default),
-        ("symbol",              create_symbol,                Default),
-        ("text",                create_text,                  Default),
-        /* ("textPath",         ), */
-        /* ("title",            ), */
-        ("tref",                create_tref,                  Default),
-        ("tspan",               create_tspan,                 Default),
-        ("use",                 create_use,                   Default),
-        /* ("view",             ), */
-        /* ("vkern",            ), */
-    ];
-
-    creators_table.into_iter().map(|(n, c, f)| (n, (c, f))).collect()
-});
+static ELEMENT_CREATORS: OnceLock<
+    HashMap<&'static str, (ElementDataCreateFn, ElementCreateFlags)>,
+> = OnceLock::new();
