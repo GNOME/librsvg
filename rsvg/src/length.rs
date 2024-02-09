@@ -319,9 +319,10 @@ pub struct NormalizeValues {
 
 impl NormalizeValues {
     pub fn new(values: &ComputedValues) -> NormalizeValues {
-        let is_vertical_text = matches!((values.writing_mode(), values.text_orientation()),
-            (WritingMode::VerticalLr, TextOrientation::Upright) |
-            (WritingMode::VerticalRl, TextOrientation::Upright)
+        let is_vertical_text = matches!(
+            (values.writing_mode(), values.text_orientation()),
+            (WritingMode::VerticalLr, TextOrientation::Upright)
+                | (WritingMode::VerticalRl, TextOrientation::Upright)
         );
 
         NormalizeValues {
