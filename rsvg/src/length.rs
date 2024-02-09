@@ -51,12 +51,13 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::Viewport;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
-use crate::properties::{ComputedValues, FontSize};
+use crate::properties::{ComputedValues, FontSize, TextOrientation, WritingMode};
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
 /// Units for length values.
 // This needs to be kept in sync with `rsvg.h:RsvgUnit`.
+#[non_exhaustive]
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
@@ -313,12 +314,20 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
 /// to keep a [`ComputedValues`] around.
 pub struct NormalizeValues {
     font_size: FontSize,
+    is_vertical_text: bool,
 }
 
 impl NormalizeValues {
     pub fn new(values: &ComputedValues) -> NormalizeValues {
+        let is_vertical_text = matches!(
+            (values.writing_mode(), values.text_orientation()),
+            (WritingMode::VerticalLr, TextOrientation::Upright)
+                | (WritingMode::VerticalRl, TextOrientation::Upright)
+        );
+
         NormalizeValues {
             font_size: values.font_size(),
+            is_vertical_text,
         }
     }
 }
@@ -328,6 +337,7 @@ pub struct NormalizeParams {
     vbox: ViewBox,
     font_size: f64,
     dpi: Dpi,
+    is_vertical_text: bool,
 }
 
 impl NormalizeParams {
@@ -343,6 +353,7 @@ impl NormalizeParams {
             vbox: viewport.vbox,
             font_size: font_size_from_values(v, viewport.dpi),
             dpi: viewport.dpi,
+            is_vertical_text: v.is_vertical_text,
         }
     }
 
@@ -352,6 +363,7 @@ impl NormalizeParams {
             vbox: ViewBox::from(Rect::default()),
             font_size: 1.0,
             dpi,
+            is_vertical_text: false,
         }
     }
 }
@@ -400,8 +412,15 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
 
             LengthUnit::Ex => self.length * params.font_size / 2.0,
 
-            // when the actual pixel measure of "0" in the font is unknown 1ch=0.5em is acceptable
-            LengthUnit::Ch => self.length * params.font_size / 2.0,
+            // how far "0" advances the text, so it varies depending on orientation
+            // we're using the 0.5em or 1.0em (based on orientation) fallback from the spec
+            LengthUnit::Ch => {
+                if params.is_vertical_text {
+                    self.length * params.font_size
+                } else {
+                    self.length * params.font_size / 2.0
+                }
+            }
 
             LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 
@@ -561,6 +580,7 @@ impl fmt::Display for LengthUnit {
 mod tests {
     use super::*;
 
+    use crate::properties::{ParsedProperty, SpecifiedValue, SpecifiedValues};
     use crate::{assert_approx_eq_cairo, float_eq_cairo::ApproxEqCairo};
 
     #[test]
@@ -724,9 +744,9 @@ mod tests {
 
     #[test]
     fn normalize_font_em_ex_ch_works() {
+        let mut values = ComputedValues::default();
         let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
-        let values = ComputedValues::default();
-        let params = NormalizeParams::new(&values, &view_params);
+        let mut params = NormalizeParams::new(&values, &view_params);
 
         // These correspond to the default size for the font-size
         // property and the way we compute Em/Ex from that.
@@ -744,6 +764,21 @@ mod tests {
         assert_approx_eq_cairo!(
             Length::<Vertical>::new(1.0, LengthUnit::Ch).to_user(&params),
             6.0
+        );
+
+        // check for vertical upright text
+        let mut specified = SpecifiedValues::default();
+        specified.set_parsed_property(&ParsedProperty::TextOrientation(SpecifiedValue::Specified(
+            TextOrientation::Upright,
+        )));
+        specified.set_parsed_property(&ParsedProperty::WritingMode(SpecifiedValue::Specified(
+            WritingMode::VerticalLr,
+        )));
+        specified.to_computed_values(&mut values);
+        params = NormalizeParams::new(&values, &view_params);
+        assert_approx_eq_cairo!(
+            Length::<Vertical>::new(1.0, LengthUnit::Ch).to_user(&params),
+            12.0
         );
     }
 
