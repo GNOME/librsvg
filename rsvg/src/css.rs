@@ -93,6 +93,7 @@ use std::fmt;
 use std::str;
 use std::str::FromStr;
 
+use crate::element::Element;
 use crate::error::*;
 use crate::io::{self, BinaryData};
 use crate::node::{Node, NodeBorrow, NodeCascade};
@@ -571,7 +572,17 @@ impl selectors::Element for RsvgElement {
 
     /// Converts self into an opaque representation.
     fn opaque(&self) -> OpaqueElement {
-        OpaqueElement::new(&self.0.borrow())
+        // The `selectors` crate uses this value just for pointer comparisons, to answer
+        // the question, "is this element the same as that one?".  So, we'll give it a
+        // reference to our actual node's data, i.e. skip over whatever wrappers there
+        // are in rctree.
+        //
+        // We use an explicit type here to make it clear what the type is; otherwise you
+        // may be fooled by the fact that borrow_element() returns a Ref<Element>, not a
+        // plain reference: &Ref<T> is transient and would get dropped at the end of this
+        // function, but we want something long-lived.
+        let element: &Element = &self.0.borrow_element();
+        OpaqueElement::new::<Element>(element)
     }
 
     fn parent_element(&self) -> Option<Self> {
