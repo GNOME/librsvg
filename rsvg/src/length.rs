@@ -51,12 +51,13 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::Viewport;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
-use crate::properties::{ComputedValues, FontSize};
+use crate::properties::{ComputedValues, FontSize, WritingMode, TextOrientation};
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
 /// Units for length values.
 // This needs to be kept in sync with `rsvg.h:RsvgUnit`.
+#[non_exhaustive]
 #[repr(C)]
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum LengthUnit {
@@ -313,12 +314,20 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
 /// to keep a [`ComputedValues`] around.
 pub struct NormalizeValues {
     font_size: FontSize,
+    is_vertical_text: bool,
 }
 
 impl NormalizeValues {
     pub fn new(values: &ComputedValues) -> NormalizeValues {
+        let is_vertical_text = match(values.writing_mode(), values.text_orientation()) {
+            (WritingMode::VerticalLr, TextOrientation::Upright) => true,
+            (WritingMode::VerticalRl, TextOrientation::Upright) => true,
+            _=> false,
+        };
+
         NormalizeValues {
             font_size: values.font_size(),
+            is_vertical_text,
         }
     }
 }
@@ -328,6 +337,7 @@ pub struct NormalizeParams {
     vbox: ViewBox,
     font_size: f64,
     dpi: Dpi,
+    is_vertical_text: bool,
 }
 
 impl NormalizeParams {
@@ -343,6 +353,7 @@ impl NormalizeParams {
             vbox: viewport.vbox,
             font_size: font_size_from_values(v, viewport.dpi),
             dpi: viewport.dpi,
+            is_vertical_text: v.is_vertical_text,
         }
     }
 
@@ -352,6 +363,7 @@ impl NormalizeParams {
             vbox: ViewBox::from(Rect::default()),
             font_size: 1.0,
             dpi,
+            is_vertical_text: false,
         }
     }
 }
@@ -400,8 +412,14 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
 
             LengthUnit::Ex => self.length * params.font_size / 2.0,
 
-            // when the actual pixel measure of "0" in the font is unknown 1ch=0.5em is acceptable
-            LengthUnit::Ch => self.length * params.font_size / 2.0,
+            // how far "0" advances the text, so it varies depending on orientation
+            // we're using the 0.5em or 1.0em (based on orientation) fallback from the spec
+            LengthUnit::Ch => {
+                if params.is_vertical_text {
+                    self.length * params.font_size
+                } else {
+                    self.length * params.font_size / 2.0
+                }},
 
             LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 

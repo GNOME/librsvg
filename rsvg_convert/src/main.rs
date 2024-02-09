@@ -1274,6 +1274,7 @@ fn is_absolute_unit(u: LengthUnit) -> bool {
     match u {
         Percent | Em | Ex | Ch => false,
         Px | In | Cm | Mm | Pt | Pc => true,
+        _ => false,
     }
 }
 
