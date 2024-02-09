@@ -51,7 +51,7 @@ use crate::dpi::Dpi;
 use crate::drawing_ctx::Viewport;
 use crate::error::*;
 use crate::parsers::{finite_f32, Parse};
-use crate::properties::{ComputedValues, FontSize, WritingMode, TextOrientation};
+use crate::properties::{ComputedValues, FontSize, TextOrientation, WritingMode};
 use crate::rect::Rect;
 use crate::viewbox::ViewBox;
 
@@ -319,10 +319,10 @@ pub struct NormalizeValues {
 
 impl NormalizeValues {
     pub fn new(values: &ComputedValues) -> NormalizeValues {
-        let is_vertical_text = match(values.writing_mode(), values.text_orientation()) {
+        let is_vertical_text = match (values.writing_mode(), values.text_orientation()) {
             (WritingMode::VerticalLr, TextOrientation::Upright) => true,
             (WritingMode::VerticalRl, TextOrientation::Upright) => true,
-            _=> false,
+            _ => false,
         };
 
         NormalizeValues {
@@ -419,7 +419,8 @@ impl<N: Normalize, V: Validate> CssLength<N, V> {
                     self.length * params.font_size
                 } else {
                     self.length * params.font_size / 2.0
-                }},
+                }
+            }
 
             LengthUnit::In => self.length * <N as Normalize>::normalize(params.dpi.x, params.dpi.y),
 
@@ -579,6 +580,7 @@ impl fmt::Display for LengthUnit {
 mod tests {
     use super::*;
 
+    use crate::properties::{ParsedProperty, SpecifiedValue, SpecifiedValues};
     use crate::{assert_approx_eq_cairo, float_eq_cairo::ApproxEqCairo};
 
     #[test]
@@ -742,9 +744,9 @@ mod tests {
 
     #[test]
     fn normalize_font_em_ex_ch_works() {
+        let mut values = ComputedValues::default();
         let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
-        let values = ComputedValues::default();
-        let params = NormalizeParams::new(&values, &view_params);
+        let mut params = NormalizeParams::new(&values, &view_params);
 
         // These correspond to the default size for the font-size
         // property and the way we compute Em/Ex from that.
@@ -762,6 +764,21 @@ mod tests {
         assert_approx_eq_cairo!(
             Length::<Vertical>::new(1.0, LengthUnit::Ch).to_user(&params),
             6.0
+        );
+
+        // check for vertical upright text
+        let mut specified = SpecifiedValues::default();
+        specified.set_parsed_property(&ParsedProperty::TextOrientation(SpecifiedValue::Specified(
+            TextOrientation::Upright,
+        )));
+        specified.set_parsed_property(&ParsedProperty::WritingMode(SpecifiedValue::Specified(
+            WritingMode::VerticalLr,
+        )));
+        specified.to_computed_values(&mut values);
+        params = NormalizeParams::new(&values, &view_params);
+        assert_approx_eq_cairo!(
+            Length::<Vertical>::new(1.0, LengthUnit::Ch).to_user(&params),
+            12.0
         );
     }
 
