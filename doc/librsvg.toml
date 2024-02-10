@@ -1,5 +1,5 @@
 [library]
-version = "2.57.90"
+version = "2.57.91"
 description = "Librsvg - load and render SVG documents"
 authors = "Librsvg developers"
 license = "LGPL-2.1-or-later"
