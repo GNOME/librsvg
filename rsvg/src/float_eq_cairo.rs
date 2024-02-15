@@ -29,6 +29,7 @@ fn cairo_fixed_from_double(d: f64) -> i32 {
 /// the integral part, and 8 bits for the fractional part.  That is,
 /// the smallest fraction they can represent is 1/256.
 pub trait FixedEqCairo {
+    #[allow(dead_code)] // https://github.com/rust-lang/rust/issues/120770
     fn fixed_eq_cairo(&self, other: &Self) -> bool;
 }
 
