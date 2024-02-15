@@ -134,6 +134,32 @@ autotools build - opensuse@x86_64.stable:
     - source ./ci/setup-dependencies-env.sh
     - !reference [".autotools build", "script"]
 
+meson build - opensuse@x86_64.stable: 
+  stage: build
+  extends:
+    - '.container.opensuse@x86_64.stable'
+    - .fdo.distribution-image@opensuse
+    # make check runs extra tests that require extra crates, hence cache is pushed
+    - .cache_push
+  needs:
+    - job: opensuse-container@x86_64.stable
+      artifacts: false
+    - job: check
+      artifacts: false
+  variables:
+    PREFIX: "/usr/local/librsvg"
+  script:
+    - source ./ci/setup-dependencies-env.sh
+    - meson setup _build --prefix=$PREFIX -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
+    - meson compile -C _build
+    - meson test -C _build
+  artifacts:
+    when: 'always'
+    paths:
+      - _build/doc/
+      - _build/meson-logs/*.*
+    expire_in: 1 day
+
 cargo test - opensuse@x86_64:
   extends:
     - '.container.opensuse@x86_64.stable'
