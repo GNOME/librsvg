@@ -90,40 +90,14 @@ pub enum HandleFlags {
     KEEP_IMAGE_DATA = 1 << 1,
 }
 
+impl Default for HandleFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 /// Type alias used to pass flags in the C API functions.
 pub type RsvgHandleFlags = u32;
-
-/// Internal representation of the loading flags, without bitflags.
-#[derive(Default, Copy, Clone)]
-struct LoadFlags {
-    unlimited_size: bool,
-    keep_image_data: bool,
-}
-
-impl From<HandleFlags> for LoadFlags {
-    fn from(flags: HandleFlags) -> LoadFlags {
-        LoadFlags {
-            unlimited_size: flags.contains(HandleFlags::UNLIMITED),
-            keep_image_data: flags.contains(HandleFlags::KEEP_IMAGE_DATA),
-        }
-    }
-}
-
-impl From<LoadFlags> for HandleFlags {
-    fn from(lflags: LoadFlags) -> HandleFlags {
-        let mut hflags = HandleFlags::empty();
-
-        if lflags.unlimited_size {
-            hflags.insert(HandleFlags::UNLIMITED);
-        }
-
-        if lflags.keep_image_data {
-            hflags.insert(HandleFlags::KEEP_IMAGE_DATA);
-        }
-
-        hflags
-    }
-}
 
 /// GObject class struct for RsvgHandle.
 ///
@@ -275,15 +249,35 @@ impl From<RsvgRectangle> for cairo::Rectangle {
 }
 
 mod imp {
+    use std::marker::PhantomData;
+
     use super::*;
-    use glib::{ParamSpec, ParamSpecDouble, ParamSpecFlags, ParamSpecInt, ParamSpecString};
-    use std::sync::OnceLock;
 
     /// Contains all the interior mutability for a RsvgHandle to be called
     /// from the C API.
-    #[derive(Default)]
+    #[derive(Default, glib::Properties)]
+    #[properties(wrapper_type = super::CHandle)]
     pub struct CHandle {
+        #[property(name = "dpi-x", construct, type = f64, set = Self::set_dpi_x, get = Self::get_dpi_x)]
+        #[property(name = "dpi-y", construct, type = f64, set = Self::set_dpi_y, get = Self::get_dpi_y)]
+        #[property(name = "flags",  construct_only, get, set, type = HandleFlags, member = handle_flags)]
         pub(super) inner: RefCell<CHandleInner>,
+        #[property(name = "base-uri", construct, set = Self::set_base_url, get = Self::get_base_url)]
+        base_uri: PhantomData<Option<String>>,
+        #[property(name = "width", get = |imp: &Self| imp.obj().get_dimensions_or_empty().width)]
+        width: PhantomData<i32>,
+        #[property(name = "height", get = |imp: &Self| imp.obj().get_dimensions_or_empty().height)]
+        height: PhantomData<i32>,
+        #[property(name = "em", get = |imp: &Self| imp.obj().get_dimensions_or_empty().em)]
+        em: PhantomData<f64>,
+        #[property(name = "ex", get = |imp: &Self| imp.obj().get_dimensions_or_empty().ex)]
+        ex: PhantomData<f64>,
+        #[property(name = "title", deprecated, get = |_| None)]
+        title: PhantomData<Option<String>>,
+        #[property(name = "desc", deprecated, get = |_| None)]
+        desc: PhantomData<Option<String>>,
+        #[property(name = "metadata", deprecated, get = |_| None)]
+        metadata: PhantomData<Option<String>>,
         pub(super) load_state: RefCell<LoadState>,
         pub(super) session: Session,
     }
@@ -291,7 +285,7 @@ mod imp {
     #[derive(Default)]
     pub(super) struct CHandleInner {
         pub(super) dpi: Dpi,
-        pub(super) load_flags: LoadFlags,
+        pub(super) handle_flags: HandleFlags,
         pub(super) base_url: BaseUrl,
         pub(super) size_callback: SizeCallback,
         pub(super) is_testing: bool,
@@ -307,89 +301,69 @@ mod imp {
         type Class = RsvgHandleClass;
     }
 
-    impl ObjectImpl for CHandle {
-        fn properties() -> &'static [ParamSpec] {
-            static PROPERTIES: OnceLock<Vec<ParamSpec>> = OnceLock::new();
-            PROPERTIES.get_or_init(|| {
-                vec![
-                    ParamSpecFlags::builder::<HandleFlags>("flags")
-                        .construct_only()
-                        .build(),
-                    ParamSpecDouble::builder("dpi-x").construct().build(),
-                    ParamSpecDouble::builder("dpi-y").construct().build(),
-                    ParamSpecString::builder("base-uri").construct().build(),
-                    ParamSpecInt::builder("width").read_only().build(),
-                    ParamSpecInt::builder("height").read_only().build(),
-                    ParamSpecDouble::builder("em").read_only().build(),
-                    ParamSpecDouble::builder("ex").read_only().build(),
-                    ParamSpecString::builder("title")
-                        .deprecated()
-                        .read_only()
-                        .build(),
-                    ParamSpecString::builder("desc")
-                        .deprecated()
-                        .read_only()
-                        .build(),
-                    ParamSpecString::builder("metadata")
-                        .deprecated()
-                        .read_only()
-                        .build(),
-                ]
-            })
+    #[glib::derived_properties]
+    impl ObjectImpl for CHandle {}
+
+    impl CHandle {
+        fn get_base_url(&self) -> Option<String> {
+            let inner = self.inner.borrow();
+            inner.base_url.get().map(|url| url.as_str().to_string())
         }
 
-        fn set_property(&self, id: usize, value: &glib::Value, pspec: &ParamSpec) {
-            let obj = self.obj();
-            match pspec.name() {
-                "flags" => {
-                    let v: HandleFlags = value.get().expect("flags value has incorrect type");
-                    obj.set_flags(v);
+        fn set_dpi_x(&self, dpi_x: f64) {
+            let mut inner = self.inner.borrow_mut();
+            let dpi = inner.dpi;
+            inner.dpi = Dpi::new(dpi_x, dpi.y());
+        }
+
+        fn set_dpi_y(&self, dpi_y: f64) {
+            let mut inner = self.inner.borrow_mut();
+            let dpi = inner.dpi;
+            inner.dpi = Dpi::new(dpi.x(), dpi_y);
+        }
+
+        fn get_dpi_x(&self) -> f64 {
+            let inner = self.inner.borrow();
+            inner.dpi.x()
+        }
+
+        fn get_dpi_y(&self) -> f64 {
+            let inner = self.inner.borrow();
+            inner.dpi.y()
+        }
+
+        fn set_base_url(&self, url: Option<&str>) {
+            let Some(url) = url else {
+                return;
+            };
+            let session = &self.session;
+            let state = self.load_state.borrow();
+
+            match *state {
+                LoadState::Start => (),
+                _ => {
+                    rsvg_g_critical(
+                        "Please set the base file or URI before loading any data into RsvgHandle",
+                    );
+                    return;
                 }
-
-                "dpi-x" => {
-                    let dpi_x: f64 = value.get().expect("dpi-x value has incorrect type");
-                    obj.set_dpi_x(dpi_x);
-                }
-
-                "dpi-y" => {
-                    let dpi_y: f64 = value.get().expect("dpi-y value has incorrect type");
-                    obj.set_dpi_y(dpi_y);
-                }
-
-                "base-uri" => {
-                    let v: Option<String> = value.get().expect("base-uri value has incorrect type");
-
-                    // rsvg_handle_set_base_uri() expects non-NULL URI strings,
-                    // but the "base-uri" property can be set to NULL due to a missing
-                    // construct-time property.
-
-                    if let Some(s) = v {
-                        obj.set_base_url(&s);
-                    }
-                }
-
-                _ => unreachable!("invalid property id {}", id),
             }
-        }
 
-        fn property(&self, id: usize, pspec: &ParamSpec) -> glib::Value {
-            let obj = self.obj();
-            match pspec.name() {
-                "flags" => obj.get_flags().to_value(),
-                "dpi-x" => obj.get_dpi_x().to_value(),
-                "dpi-y" => obj.get_dpi_y().to_value(),
-                "base-uri" => obj.get_base_url().to_value(),
-                "width" => obj.get_dimensions_or_empty().width.to_value(),
-                "height" => obj.get_dimensions_or_empty().height.to_value(),
-                "em" => obj.get_dimensions_or_empty().em.to_value(),
-                "ex" => obj.get_dimensions_or_empty().ex.to_value(),
+            match Url::parse(url) {
+                Ok(u) => {
+                    rsvg_log!(session, "setting base_uri to \"{}\"", u.as_str());
+                    let mut inner = self.inner.borrow_mut();
+                    inner.base_url.set(u);
+                }
 
-                // the following three are deprecated
-                "title" => None::<String>.to_value(),
-                "desc" => None::<String>.to_value(),
-                "metadata" => None::<String>.to_value(),
-
-                _ => unreachable!("invalid property id={} for RsvgHandle", id),
+                Err(e) => {
+                    rsvg_log!(
+                        session,
+                        "not setting base_uri to \"{}\" since it is invalid: {}",
+                        url,
+                        e
+                    );
+                }
             }
         }
     }
@@ -526,83 +500,13 @@ impl CairoRectangleExt for cairo::Rectangle {
 }
 
 impl CHandle {
-    fn set_base_url(&self, url: &str) {
-        let imp = self.imp();
-        let session = &imp.session;
-        let state = imp.load_state.borrow();
-
-        match *state {
-            LoadState::Start => (),
-            _ => {
-                rsvg_g_critical(
-                    "Please set the base file or URI before loading any data into RsvgHandle",
-                );
-                return;
-            }
-        }
-
-        match Url::parse(url) {
-            Ok(u) => {
-                rsvg_log!(session, "setting base_uri to \"{}\"", u.as_str());
-                let mut inner = imp.inner.borrow_mut();
-                inner.base_url.set(u);
-            }
-
-            Err(e) => {
-                rsvg_log!(
-                    session,
-                    "not setting base_uri to \"{}\" since it is invalid: {}",
-                    url,
-                    e
-                );
-            }
-        }
-    }
-
     fn set_base_gfile(&self, file: &gio::File) {
-        self.set_base_url(&file.uri());
-    }
-
-    fn get_base_url(&self) -> Option<String> {
-        let inner = self.imp().inner.borrow();
-        inner.base_url.get().map(|url| url.as_str().to_string())
+        self.set_base_uri(&*file.uri());
     }
 
     fn get_base_url_as_ptr(&self) -> *const libc::c_char {
         let inner = self.imp().inner.borrow();
         inner.base_url.get_ptr()
-    }
-
-    fn set_dpi_x(&self, dpi_x: f64) {
-        let mut inner = self.imp().inner.borrow_mut();
-        let dpi = inner.dpi;
-        inner.dpi = Dpi::new(dpi_x, dpi.y());
-    }
-
-    fn set_dpi_y(&self, dpi_y: f64) {
-        let mut inner = self.imp().inner.borrow_mut();
-        let dpi = inner.dpi;
-        inner.dpi = Dpi::new(dpi.x(), dpi_y);
-    }
-
-    fn get_dpi_x(&self) -> f64 {
-        let inner = self.imp().inner.borrow();
-        inner.dpi.x()
-    }
-
-    fn get_dpi_y(&self) -> f64 {
-        let inner = self.imp().inner.borrow();
-        inner.dpi.y()
-    }
-
-    fn set_flags(&self, flags: HandleFlags) {
-        let mut inner = self.imp().inner.borrow_mut();
-        inner.load_flags = LoadFlags::from(flags);
-    }
-
-    fn get_flags(&self) -> HandleFlags {
-        let inner = self.imp().inner.borrow();
-        HandleFlags::from(inner.load_flags)
     }
 
     fn set_size_callback(
@@ -736,8 +640,8 @@ impl CHandle {
         let session = imp.session.clone();
 
         Loader::new_with_session(session)
-            .with_unlimited_size(inner.load_flags.unlimited_size)
-            .keep_image_data(inner.load_flags.keep_image_data)
+            .with_unlimited_size(inner.handle_flags.contains(HandleFlags::UNLIMITED))
+            .keep_image_data(inner.handle_flags.contains(HandleFlags::KEEP_IMAGE_DATA))
     }
 
     fn has_sub(&self, id: &str) -> Result<bool, RenderingError> {
@@ -1034,7 +938,7 @@ pub unsafe extern "C" fn rsvg_handle_set_base_uri(
     assert!(!uri.is_null());
     let uri: String = from_glib_none(uri);
 
-    rhandle.set_base_url(&uri);
+    rhandle.set_base_uri(&*uri);
 }
 
 #[no_mangle]
