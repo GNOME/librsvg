@@ -166,11 +166,12 @@ endif
 # if the library is a Meson generated target.
 # No further flags are needed under MSVC, because LINK will already strip
 # the library by default.
-link_args = cc.get_supported_link_arguments(
-  vflag,
+strip_link_args = cc.get_supported_link_arguments(
   '-Wl,-dead_strip',
   '-Wl,--gc-sections'
 )
+
+link_args = cc.get_supported_link_arguments([vflag]) + strip_link_args
 
 # Some systems, reportedly OpenBSD and macOS, refuse
 # to create libraries without any object files. Compiling
