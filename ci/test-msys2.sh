@@ -32,6 +32,9 @@ pacboy --noconfirm -S --needed \
     rust:p \
     cantarell-fonts:p
 
+# https://github.com/rust-lang/cargo/issues/10885
+export CARGO=$(where cargo)
+export RUSTC=$(where rustc)
 meson setup _build -Dauto_features=disabled
 meson compile -C _build
 export RUST_BACKTRACE=1
