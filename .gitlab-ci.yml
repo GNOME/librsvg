@@ -414,6 +414,7 @@ vs2017-x64:
     when: always
     paths:
       - "${CI_PROJECT_DIR}/msvc-build/meson-logs"
+      - "${CI_PROJECT_DIR}/msvc-build/tests/output"
 
 distcheck:
   stage: acceptance test
