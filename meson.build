@@ -83,6 +83,10 @@ pangoft2_dep   = dependency('pangoft2',
                             fallback: ['pango', 'libpangoft2_dep'])
 gmodule_dep    = dependency('gmodule-2.0', version: glib_required,
                             fallback : ['glib', 'libgmodule_dep'])
+rst2man        = find_program('rst2man', 'rst2man.py',
+                              required: get_option('docs'),
+                              disabler: true,
+                              native: true)
 gidocgen       = find_program('gi-docgen', version: gidocgen_required,
                             required: false,
                             disabler: true,
@@ -227,10 +231,6 @@ subdir('rsvg_convert')
 if build_gdk_pixbuf.allowed()
   subdir('gdk-pixbuf-loader')
 endif
-
-# Autotools doesn't link rst2man to --disable-gtk-doc
-rst2man = find_program('rst2man', required: false, disabler: true, native: true)
-
 if build_docs.allowed()
   subdir('doc')
 endif
