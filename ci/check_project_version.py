@@ -3,7 +3,7 @@
 import sys
 import toml
 
-from utils import get_configure_ac_version
+from utils import get_project_version_str
 
 def get_cargo_toml_version():
     doc = toml.load('Cargo.toml')
@@ -15,7 +15,7 @@ def get_doc_version():
 
 def main():
     versions = [
-        ['configure.ac', get_configure_ac_version()],
+        ['meson.build', get_project_version_str()],
         ['Cargo.toml', get_cargo_toml_version()],
         ['doc/librsvg.toml', get_doc_version()],
     ]

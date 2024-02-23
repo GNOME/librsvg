@@ -221,7 +221,7 @@ pub mod bench_only {
 }
 
 #[doc(hidden)]
-#[cfg(feature = "c-api")]
+#[cfg(feature = "capi")]
 pub mod c_api_only {
     pub use crate::dpi::Dpi;
     pub use crate::rsvg_log;

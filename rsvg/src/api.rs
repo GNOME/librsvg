@@ -145,7 +145,7 @@ impl Loader {
     ///
     /// This is useful when a `Loader` must be created by the C API, which should already
     /// have created a session for logging.
-    #[cfg(feature = "c-api")]
+    #[cfg(feature = "capi")]
     pub fn new_with_session(session: Session) -> Self {
         Self {
             unlimited_size: false,
@@ -796,7 +796,7 @@ impl<'a> CairoRenderer<'a> {
     }
 
     #[doc(hidden)]
-    #[cfg(feature = "c-api")]
+    #[cfg(feature = "capi")]
     pub fn dpi(&self) -> Dpi {
         self.dpi
     }
@@ -824,7 +824,7 @@ impl<'a> CairoRenderer<'a> {
     }
 
     #[doc(hidden)]
-    #[cfg(feature = "c-api")]
+    #[cfg(feature = "capi")]
     pub fn test_mode(self, is_testing: bool) -> Self {
         CairoRenderer { is_testing, ..self }
     }
