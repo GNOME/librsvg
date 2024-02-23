@@ -8,7 +8,7 @@ option('pixbuf-loader',
        type: 'feature',
        value: 'enabled',
        yield: true,
-       description: 'Build the GDK-Pixbuf SVG loader (Rust version) (requires gdk-pixbuf-loader)'
+       description: 'Build the GDK-Pixbuf SVG loader (requires gdk-pixbuf-query-loaders)'
        )
 
 option('docs',
