@@ -152,7 +152,7 @@ meson build - opensuse@x86_64.stable:
     - source ./ci/setup-dependencies-env.sh
     - meson setup _build --prefix=$PREFIX -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
     - meson compile -C _build
-    - meson test -C _build
+    - meson test -C _build --print-errorlogs
   artifacts:
     when: 'always'
     paths:

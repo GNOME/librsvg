@@ -25,4 +25,4 @@ export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Clink-dead-code -Coverflow-checks
 
 meson setup _build -Db_coverage=true -Dauto_features=disabled -Dtests=enabled --buildtype=debugoptimized
 meson compile -C _build
-meson test -C _build --maxfail 0
+meson test -C _build --maxfail 0 --print-errorlogs
