@@ -12,7 +12,8 @@ pacman --noconfirm -Suy
 
 pacman --noconfirm -S --needed \
     base-devel \
-    mingw-w64-$MSYS2_ARCH-autotools \
+    mingw-w64-$MSYS2_ARCH-meson \
+    mingw-w64-$MSYS2_ARCH-cargo-c \
     mingw-w64-$MSYS2_ARCH-gi-docgen \
     mingw-w64-$MSYS2_ARCH-gobject-introspection \
     mingw-w64-$MSYS2_ARCH-gdk-pixbuf2 \
@@ -28,12 +29,8 @@ pacman --noconfirm -S --needed \
     mingw-w64-$MSYS2_ARCH-rust \
     mingw-w64-$MSYS2_ARCH-cantarell-fonts
 
-mkdir -p _build
-cd _build
-
-# Stolen from https://github.com/msys2/MINGW-packages/blob/master/mingw-w64-librsvg/PKGBUILD
-../autogen.sh
-make
+meson setup _build -Dauto_features=disabled
+meson compile -C _build
 export RUST_BACKTRACE=1
-export TESTS_OUTPUT_DIR=tests/output
-# make check
+export TESTS_OUTPUT_DIR=$(pwd)/tests/output
+# meson test -C _build --print-errorlogs

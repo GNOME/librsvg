@@ -396,6 +396,7 @@ msys2-mingw64:
   artifacts:
     when: 'on_failure'
     paths:
+      - _build\meson-logs
       - _build\tests\*.log
       - _build\tests\output
     expire_in: 1 day
