@@ -5,9 +5,10 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2024-01-21.0-main"
+  BASE_TAG: "2024-02-22.2-main"
   RUST_STABLE: "1.75.0"
   RUST_MINIMUM: "1.70.0"
+  RUST_NIGHTLY: "nightly-2024-02-01"
   RUSTUP_VERSION: "1.26.0"
 
 # This bunch of packages are the system's C/C++ compilers, and the indirect dependencies needed
@@ -70,7 +71,7 @@ variables:
       bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
                               --stable ${RUST_STABLE} \
                               --minimum ${RUST_MINIMUM} \
-                              --nightly \
+                              --nightly ${RUST_NIGHTLY} \
                               --arch x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&
@@ -116,7 +117,7 @@ opensuse-container@aarch64:
       bash ci/install-rust.sh --rustup-version ${RUSTUP_VERSION} \
                               --stable ${RUST_STABLE} \
                               --minimum ${RUST_MINIMUM} \
-                              --nightly \
+                              --nightly ${RUST_NIGHTLY} \
                               --arch x86_64-unknown-linux-gnu &&
       bash ci/install-rust-tools.sh &&
       bash ci/install-grcov.sh &&

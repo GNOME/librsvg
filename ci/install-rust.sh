@@ -6,7 +6,7 @@ source ./ci/env.sh
 
 export CARGO_HOME='/usr/local/cargo'
 
-PARSED=$(getopt --options '' --longoptions 'rustup-version:,stable:,minimum:,nightly,arch:' --name "$0" -- "$@")
+PARSED=$(getopt --options '' --longoptions 'rustup-version:,stable:,minimum:,nightly:,arch:' --name "$0" -- "$@")
 if [ $? -ne 0 ]; then
 	echo 'Terminating...' >&2
 	exit 1
@@ -39,8 +39,8 @@ while true; do
             ;;
 
         '--nightly')
-            NIGHTLY=1
-            shift 1
+            NIGHTLY=$2
+            shift 2
             ;;
 
         '--arch')
@@ -88,5 +88,5 @@ if [ -n "$MINIMUM" ]; then
 fi
 
 if [ -n "$NIGHTLY" ]; then
-    rustup toolchain install nightly
+    rustup toolchain install $NIGHTLY
 fi
