@@ -230,13 +230,13 @@ autotools build - gnomeos.nightly@x86_64:
     - job: check
       artifacts: false
 
-autotools build - gnomeos.45@x86_64:
+autotools build - gnomeos.46@x86_64:
   extends:
-    - ".container.gnomeos.45@x86_64"
+    - ".container.gnomeos.46@x86_64"
     - .fdo.distribution-image@gnomeos
     - ".autotools build"
   needs:
-    - job: gnomeos-container.45@x86_64
+    - job: gnomeos-container.46@x86_64
       artifacts: false
     - job: check
       artifacts: false
@@ -258,13 +258,13 @@ cargo test - gnomeos.nightly.@x86_64:
         - "${RUST_MINIMUM}"
         - "${RUST_NIGHTLY}"
 
-cargo test - gnomeos.45@x86_64:
+cargo test - gnomeos.46@x86_64:
   extends:
-    - ".container.gnomeos.45@x86_64"
+    - ".container.gnomeos.46@x86_64"
     - .fdo.distribution-image@gnomeos
     - .cargo-test
   needs:
-    - job: gnomeos-container.45@x86_64
+    - job: gnomeos-container.46@x86_64
       artifacts: false
     - job: check
       artifacts: false
