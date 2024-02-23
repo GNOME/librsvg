@@ -41,10 +41,13 @@ if __name__ == "__main__":
         for i in native_static_libs.stderr.strip().splitlines():
             match = re.match(r".+native-static-libs: (.+)", i)
             if match:
+                libs = match.group(1).split()
+                libs = [lib.removesuffix(".lib") for lib in libs] # msvc
+                libs = [lib.removeprefix("-l") for lib in libs] # msys2
                 print(
                     " ".join(
                         set(
-                            [lib.removesuffix(".lib") for lib in match.group(1).split()]
+                            libs
                         )
                     )
                 )

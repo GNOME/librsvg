@@ -216,13 +216,24 @@ endif
 # up exactly that file from the source tree.
 includeinc = include_directories('include')
 
+# Ideally, cc.get_argument_syntax() == 'msvc' should
+# cover this, but 'clang' can mean GCC or MSVC-style
+# depending on the env and/or flags on Windows
+is_msvc_style = cc.get_define('_MSC_VER') != ''
+
 # Set the suffixes up
 if system == 'windows'
-  lib_prefix = ''
   ext_dynamic = 'dll'
-  ext_import = 'dll.lib'
-  ext_static = 'lib'
   ext_exe = '.exe'
+  if is_msvc_style
+    lib_prefix = ''
+    ext_import = 'dll.lib'
+    ext_static = 'lib'
+  else
+    lib_prefix = 'lib'
+    ext_import = 'dll.a'
+    ext_static = 'a'
+  endif
 elif system == 'darwin'
   lib_prefix = 'lib'
   ext_dynamic = 'dylib'
@@ -242,11 +253,6 @@ cargo_wrapper_args = [
   '--prefix', get_option('prefix'),
   '--libdir', get_option('libdir'),
 ]
-
-# Ideally, cc.get_argument_syntax() == 'msvc' should
-# cover this, but 'clang' can mean GCC or MSVC-style
-# depending on the env and/or flags on Windows
-is_msvc_style = cc.get_define('_MSC_VER') != ''
 
 if not get_option('debug') or \
    (is_msvc_style and get_option('buildtype') == 'debugoptimized')

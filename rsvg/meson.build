@@ -125,7 +125,7 @@ endif
 
 makedef_tool_args = []
 
-if cc.get_define('_MSC_VER') != ''
+if is_msvc_style
   dumpbin = find_program('dumpbin', native: true)
   makedef_tool_args += ['--dumpbin', dumpbin]
 else
@@ -150,7 +150,8 @@ librsvg_ver = custom_target(
   capture: true,
 )
 
-version_script = meson.current_build_dir() / '@0@.def'.format(librsvg_pc)
+version_script = meson.current_build_dir() / '@0@.ver'.format(librsvg_pc)
+
 if host_machine.system() in ['darwin', 'ios']
   vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
 else
@@ -207,7 +208,7 @@ librsvg_lib = shared_library(
   link_depends: librsvg_ver,
   dependencies: library_dependencies,
   include_directories: [includeinc],
-  vs_module_defs: librsvg_ver, # librsvg_def
+  vs_module_defs: librsvg_def,
   install: true,
   version: meson.project_version() # it's not exact as m4
 )
