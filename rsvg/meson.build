@@ -168,9 +168,13 @@ endif
 # if the library is a Meson generated target.
 # No further flags are needed under MSVC, because LINK will already strip
 # the library by default.
+#
+# Also check for -Bsymbolic-functions linker flag used to avoid
+# intra-library PLT jumps, if available.
 strip_link_args = cc.get_supported_link_arguments(
   '-Wl,-dead_strip',
-  '-Wl,--gc-sections'
+  '-Wl,--gc-sections',
+  '-Wl,-Bsymbolic-functions',
 )
 
 link_args = cc.get_supported_link_arguments([vflag]) + strip_link_args
