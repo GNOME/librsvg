@@ -348,9 +348,6 @@ if build_tests.allowed()
     'src/test_utils/reference_utils.rs',
   )
 
-  # HACK: Meson tests don't take OptionString nor ExternalProgram
-  c_w_a = []
-
   test(
     'Rust tests',
     cargo_wrapper,
