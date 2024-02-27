@@ -499,8 +499,10 @@ cargo-doc:
       artifacts: false
   variables:
     PREFIX: "/usr/local/librsvg"
+    RUSTFLAGS: "--cfg docsrs"
   script:
     - source ./ci/setup-dependencies-env.sh
+    - rustup default ${RUST_NIGHTLY}
     - bash -x ./ci/gen-rust-docs.sh
   artifacts:
     paths:
