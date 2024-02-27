@@ -349,7 +349,7 @@ if build_tests.allowed()
   )
 
   test(
-    'Rust tests',
+    'Rust tests (rsvg)',
     cargo_wrapper,
     timeout: -1, # no timeout
     args: [
@@ -357,6 +357,21 @@ if build_tests.allowed()
       '--current-build-dir', meson.current_build_dir(),
       '--command=test',
       '--current-source-dir', meson.current_source_dir(),
+      '--packages', 'librsvg',
+    ],
+    depends: librsvg_lib
+  )
+
+  test(
+    'Rust tests (librsvg)',
+    cargo_wrapper,
+    timeout: -1, # no timeout
+    args: [
+      cargo_wrapper_args,
+      '--current-build-dir', meson.current_build_dir(),
+      '--command=test',
+      '--current-source-dir', meson.current_source_dir(),
+      '--packages', 'librsvg-c',
     ],
     env: extra_env,
     depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts

@@ -51,3 +51,19 @@ meson.add_install_script(
   find_program('meson_install.py', native: true),
   pixbufloader_svg_install_args
 )
+
+if build_tests.allowed()
+  test(
+    'Rust tests (pixbufloader-svg)',
+    cargo_wrapper,
+    timeout: -1, # no timeout
+    args: [
+      cargo_wrapper_args,
+      '--current-build-dir', meson.current_build_dir(),
+      '--command=test',
+      '--current-source-dir', meson.current_source_dir(),
+      '--packages', 'pixbufloader-svg',
+    ],
+    depends: librsvg_lib
+  )
+endif

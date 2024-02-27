@@ -113,8 +113,16 @@ elif args.command == "test":
         "test",
         "--locked",
         "--no-fail-fast",
-        "--color=always",
     ]
+    if 'librsvg' in args.packages:
+        cargo_cmd.extend([
+            "--features",
+            # These are required for librsvg itself
+            # If doing an unqualified cargo build, they'll be called up
+            # by rsvg-convert
+            # https://github.com/rust-lang/cargo/issues/2911
+            "capi,test-utils",
+        ])
 else:
     cargo_cmd = [Path(args.cargo).as_posix(), "build", "--locked"]
     if args.bin:
