@@ -620,11 +620,35 @@ gboolean rsvg_handle_close (RsvgHandle *handle, GError **error);
  * "natural size" of the document in pixels, so you should call [method@Rsvg.Handle.set_dpi]
  * beforehand.
  *
- * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error.
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error
  * during rendering.
+ * Deprecated: 2.58.  Use [method@Rsvg.Handle.get_pixbuf_and_error].
+ **/
+RSVG_DEPRECATED_FOR(rsvg_handle_get_pixbuf_and_error)
+GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
+
+/**
+ * rsvg_handle_get_pixbuf_and_error:
+ * @handle: An [class@Rsvg.Handle]
+ * @error: return location for a `GError`
+ *
+ * Returns the pixbuf loaded by @handle.  The pixbuf returned will be reffed, so
+ * the caller of this function must assume that ref.
+ *
+ * API ordering: This function must be called on a fully-loaded @handle.  See
+ * the section "[API ordering](class.Handle.html#api-ordering)" for details.
+ *
+ * This function depends on the [class@Rsvg.Handle]'s dots-per-inch value (DPI) to compute the
+ * "natural size" of the document in pixels, so you should call [method@Rsvg.Handle.set_dpi]
+ * beforehand.
+ *
+ * Returns: (transfer full) (nullable): A pixbuf, or %NULL on error
+ * during rendering.
+ *
+ * Since: 2.58
  **/
 RSVG_API
-GdkPixbuf *rsvg_handle_get_pixbuf (RsvgHandle *handle);
+GdkPixbuf *rsvg_handle_get_pixbuf_and_error (RsvgHandle *handle, GError **error);
 
 /**
  * rsvg_handle_get_pixbuf_sub:

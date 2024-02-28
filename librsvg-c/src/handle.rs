@@ -1217,15 +1217,41 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
         is_rsvg_handle(handle),
     }
 
+    let mut error = ptr::null_mut();
+    let pixbuf = rsvg_handle_get_pixbuf_and_error(handle, &mut error);
+
+    if !error.is_null() {
+        let rhandle = get_rust_handle(handle);
+        let session = &rhandle.imp().session;
+        let msg = format!("could not render: {:?}", *error);
+        rsvg_log!(session, "{}", msg);
+        rsvg_g_warning(&msg);
+        return ptr::null_mut();
+    }
+
+    pixbuf
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_get_pixbuf_and_error(
+    handle: *const RsvgHandle,
+    error: *mut *mut glib::ffi::GError,
+) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
+    rsvg_return_val_if_fail! {
+        rsvg_handle_get_pixbuf_and_error => ptr::null_mut();
+
+        is_rsvg_handle(handle),
+        error.is_null() || (*error).is_null(),
+    }
+
     let rhandle = get_rust_handle(handle);
 
+    // into_gerror but returning the Ok value
     match rhandle.get_pixbuf_sub(None) {
         Ok(pixbuf) => pixbuf.to_glib_full(),
         Err(e) => {
             let session = &rhandle.imp().session;
-            let msg = format!("could not render: {}", e);
-            rsvg_log!(session, "{}", msg);
-            rsvg_g_warning(&msg);
+            set_gerror(session, error, 0, &format!("{e}"));
             ptr::null_mut()
         }
     }
