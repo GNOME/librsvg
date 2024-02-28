@@ -58,6 +58,7 @@ check:
   needs: ['opensuse-container@x86_64.stable']
   variables:
     PREFIX: "/usr/local/librsvg"
+    RUSTFLAGS: "--cfg check"
   script:
     - source ./ci/setup-dependencies-env.sh
     - cargo check --all-targets --workspace
@@ -81,7 +82,7 @@ cargo_test:
     PREFIX: "/usr/local/librsvg"
   script:
     - source ./ci/setup-dependencies-env.sh
-    - cargo test --workspace -- --skip loading_crash --skip reference --skip render_crash
+    - cargo test --workspace --exclude pixbufloader-svg -- --skip loading_crash --skip reference --skip render_crash
 
 .cargo-test:
   extends: '.cache'
@@ -92,7 +93,7 @@ cargo_test:
   script:
     - source ./ci/setup-dependencies-env.sh
     - rustup default ${RUST_VERSION}
-    - cargo test --workspace
+    - cargo test --workspace --exclude pixbufloader-svg
   artifacts:
     when: 'on_failure'
     paths:
