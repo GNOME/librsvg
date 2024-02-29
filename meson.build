@@ -110,6 +110,28 @@ vapigen_dep    = dependency('vapigen',
                             version: vapigen_required,
                             required: get_option('vala'))
 
+# Extra env to pass to cargo
+extra_env = {}
+
+# If FreeType and/or libxml2 is/are found by CMake instead of
+# pkg-config, we must tell Cargo the libraries explicitly and
+# disable pkg-config for these deps
+if freetype2_dep.type_name() == 'cmake' or libxml_dep.type_name() == 'cmake'
+  fs = import('fs')
+endif
+if freetype2_dep.type_name() == 'cmake'
+  ft2_lib = freetype2_dep.get_variable('FREETYPE_LIBRARIES')
+  extra_env += {'SYSTEM_DEPS_FREETYPE2_NO_PKG_CONFIG': '1',
+                'SYSTEM_DEPS_FREETYPE2_SEARCH_NATIVE': fs.parent(ft2_lib),
+                'SYSTEM_DEPS_FREETYPE2_LIB': fs.stem(ft2_lib)}
+endif
+if libxml_dep.type_name() == 'cmake'
+  libxml_lib = libxml_dep.get_variable('LIBXML2_LIBRARIES')
+  extra_env += {'SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG': '1',
+                'SYSTEM_DEPS_LIBXML2_SEARCH_NATIVE': fs.parent(libxml_lib),
+                'SYSTEM_DEPS_LIBXML2_LIB': fs.stem(libxml_lib)}
+endif
+
 build_gir = get_option('introspection').require(not meson.is_cross_build() and gi_dep.found())
 build_vala = get_option('vala').require(not meson.is_cross_build() and vapigen_dep.found())
 
@@ -165,9 +187,6 @@ endif
 library_dependencies += [m_dep, foundation_dep]
 
 cargo_toml = meson.project_source_root() / 'Cargo.toml'
-
-# Extra env to pass to cargo
-extra_env = {}
 
 if get_option('default_library') == 'static'
   extra_env += {
