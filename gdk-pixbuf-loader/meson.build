@@ -46,12 +46,19 @@ pixbuf_thumbnailer = configure_file(
 
 gdk_pixbuf_query_loaders = find_program(pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders', default_value: 'gdk-pixbuf-query-loaders'))
 
-if not meson.is_cross_build()
-  meson.add_install_script(
-    find_program('meson_install.py', native: true),
-    '--gdk-pixbuf-moduledir',
-    pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir'),
-    pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders'),
-    pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_cache_file')
-  )
+pixbufloader_svg_install_args = [
+  '--gdk-pixbuf-moduledir',
+  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir'),
+  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders'),
+  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_cache_file')
+]
+
+# Tell people to run gdk-pixbuf-query-loaders manually for cross builds
+if meson.is_cross_build()
+  pixbufloader_svg_install_args += '--show-cross-message'
 endif
+
+meson.add_install_script(
+  find_program('meson_install.py', native: true),
+  pixbufloader_svg_install_args
+)
