@@ -165,6 +165,7 @@ library_dependencies_sole = [
 ]
 
 library_dependencies = library_dependencies_sole
+private_dependencies = []
 
 target = get_option('triplet')
 
@@ -187,12 +188,13 @@ if host_system == 'windows'
 
   foreach i: native_libs.stdout().split()
     if i != 'msvcrt'
-      library_dependencies += cc.find_library(i, required: get_option('default_library') != 'shared')
+      private_dependencies += cc.find_library(i, required: get_option('default_library') != 'shared')
     endif
   endforeach
 endif
 
-library_dependencies += [m_dep, foundation_dep]
+private_dependencies += [m_dep, foundation_dep]
+library_dependencies += private_dependencies
 
 cargo_toml = meson.project_source_root() / 'Cargo.toml'
 

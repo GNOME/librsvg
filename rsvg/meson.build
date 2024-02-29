@@ -87,7 +87,6 @@ rust_artifacts = custom_target(
   build_by_default: true,
   output: '@0@rsvg_@1@.@2@'.format(lib_prefix, librsvg_api_major, ext_static),
   console: true,
-  install: false,
   depend_files: library_sources + librsvg_c_sources,
   env: extra_env,
   command: [
@@ -97,8 +96,10 @@ rust_artifacts = custom_target(
     '--current-build-dir', '@OUTDIR@',
     '--current-source-dir', meson.current_source_dir(),
     '--packages', 'librsvg-c',
-    '--extensions', ext_static,
-  ]
+    '--extension', ext_static,
+  ],
+  install: get_option('default_library') == 'static',
+  install_dir: get_option('libdir'),
 )
 
 librsvg_c_lib = rust_artifacts[0]
@@ -200,18 +201,22 @@ else
   )
 endif
 
-librsvg_lib = shared_library(
-  rsvg_ver,
-  rsvg_dummy,
-  link_whole: librsvg_c_lib,
-  link_args: link_args,
-  link_depends: librsvg_ver,
-  dependencies: library_dependencies,
-  include_directories: [includeinc],
-  vs_module_defs: librsvg_def,
-  install: true,
-  version: meson.project_version() # it's not exact as m4
-)
+if get_option('default_library') == 'shared'
+  librsvg_lib = shared_library(
+    rsvg_ver,
+    rsvg_dummy,
+    link_whole: librsvg_c_lib,
+    link_args: link_args,
+    link_depends: librsvg_ver,
+    dependencies: library_dependencies,
+    include_directories: [includeinc],
+    vs_module_defs: librsvg_def,
+    install: true,
+    version: meson.project_version() # it's not exact as m4
+  )
+else
+  librsvg_lib = librsvg_c_lib
+endif
 
 # This is the main dependency to use for tests; it means "link to the library we just built"
 librsvg_dep = declare_dependency(
@@ -229,6 +234,8 @@ librsvg_c_pc = pkg.generate(
   description : 'library that renders svg files',
   libraries : librsvg_lib,
   subdirs: librsvg_pc,
+  requires: library_dependencies_sole,
+  libraries_private: private_dependencies,
 )
 
 if build_gir.allowed()
@@ -287,8 +294,20 @@ if build_gir.allowed()
     ]
   endif
 
+  if get_option('default_library') == 'shared'
+    librsvg_gir = librsvg_lib
+  else
+    librsvg_gir = shared_library(
+      'rsvg-gir',
+      rsvg_dummy,
+      link_whole: librsvg_c_lib,
+      dependencies: library_dependencies,
+      include_directories: [includeinc],
+    )
+  endif
+
   rsvg_gir = gnome.generate_gir(
-    librsvg_lib,
+    librsvg_gir,
     namespace: 'Rsvg',
     nsversion: '2.0',
     symbol_prefix: [ 'rsvg', 'librsvg' ],
@@ -339,6 +358,6 @@ if build_tests.allowed()
       '--current-source-dir', meson.current_source_dir(),
     ],
     env: extra_env,
-    depends: librsvg_lib
+    depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts
   )
 endif

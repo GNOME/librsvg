@@ -69,18 +69,15 @@ parser.add_argument("--libdir", required=True, help="Value of get_option('libdir
 g = parser.add_argument_group("Outputs")
 group = parser.add_mutually_exclusive_group(required=False)
 group.add_argument(
-    "--extensions",
-    nargs="*",
-    default=[],
-    help="filename extensions for libraries (so, a, dll, lib, dylib)",
+    "--extension", help="filename extension for the static library (a, lib)",
 )
 group.add_argument("--bin", help="Name of binary to build")
 
 args = parser.parse_args()
 
 if args.command == 'test':
-    if args.extensions or args.bin:
-        raise ValueError('Cargo test does not take --extensions or --bin')
+    if args.extension or args.bin:
+        raise ValueError('Cargo test does not take --extension or --bin')
 
 cargo_target_dir = Path(args.project_build_root) / "target"
 
@@ -145,10 +142,9 @@ subprocess.run(cargo_cmd, env=env, check=True)
 
 if args.command in ["cbuild", "build"]:
     # Copy so/dll/etc files to build dir
-    if args.extensions:
-        for ext in args.extensions:
-            for f in cargo_target_dir.glob(f"**/{buildtype}/*.{ext}"):
-                shutil.copy(f, args.current_build_dir)
+    if args.extension:
+        for f in cargo_target_dir.glob(f"**/{buildtype}/*.{args.extension}"):
+            shutil.copy(f, args.current_build_dir)
     # Copy binary and, if applicable, the corresponding .pdb file, to build dir
     else:
         binary = Path(cargo_target_output_dir / buildtype / args.bin)
