@@ -158,6 +158,8 @@ meson build - opensuse@x86_64.stable:
     paths:
       - _build/doc/
       - _build/meson-logs/*.*
+    reports:
+      junit: _build/meson-logs/testlog.junit.xml
     expire_in: 1 day
 
 cargo test - opensuse@x86_64:
