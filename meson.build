@@ -81,7 +81,7 @@ glib_dep       = dependency('glib-2.0',
 harfbuzz_dep   = dependency('harfbuzz',
                             version: harfbuzz_required,
                             fallback: ['harfbuzz', 'libharfbuzz_dep'])
-libxml_dep     = dependency('libxml-2.0',
+libxml_dep     = dependency(['libxml-2.0', 'LibXml2'],
                             version: libxml_required)
 pango_dep      = dependency('pango',
                             version: pango_required,
