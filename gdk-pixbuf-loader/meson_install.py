@@ -31,7 +31,6 @@ if __name__ == '__main__':
                 'GDK_PIXBUF_MODULEDIR': args.gdk_pixbuf_moduledir
             },
             stdout=f,
-            capture_output=True,
             check=True
         )
 
