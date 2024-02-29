@@ -31,7 +31,8 @@ python = py.find_installation()
 
 # Required versions for dependencies - Please update compiling.rst with version numbers if these change
 cairo_required         = '>= 1.17.0'
-freetype2_required     = '>= 20.0.14' # corresponds to Freetype2 2.8
+ft2_cmake_required     = '>= 2.8.0'   # Actual FreeType version required
+freetype2_required     = '>= 20.0.14' # Corresponds to ft2_cmake_required
 gdk_pixbuf_required    = '>= 2.20'
 gio_required           = '>= 2.24.0'
 glib_required          = '>= 2.50.0'
@@ -55,7 +56,18 @@ cairo_png_dep  = dependency('cairo-png',
                             fallback: ['cairo']) # FIXME: cairo has no _dep for this one
 freetype2_dep  = dependency('freetype2',
                             version: freetype2_required,
-                            fallback: ['freetype2', 'freetype_dep'])
+                            method: 'pkg-config',
+                            required: false)
+
+# Try again using CMake, as Windows builds of FreeType might not
+# come with pkg-config files; sadly, pkg-config and CMake use
+# different version schemes for FreeType
+if not freetype2_dep.found()
+  freetype2_dep  = dependency('FreeType',
+                              version: ft2_cmake_required,
+                              method: 'cmake',
+                              fallback: ['freetype2', 'freetype_dep'])
+endif
 pixbuf_dep     = dependency('gdk-pixbuf-2.0',
                             version: gdk_pixbuf_required,
                             fallback: ['gdk-pixbuf', 'gdkpixbuf_dep'],
