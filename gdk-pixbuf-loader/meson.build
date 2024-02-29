@@ -22,7 +22,7 @@ pixbufloader_svg_ver = configure_file(
 )
 
 version_script = meson.current_build_dir() / 'gdk-pixbuf-loader.ver'
-if host_machine.system() in ['darwin', 'ios']
+if host_system in ['darwin', 'ios']
   vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
 else
   vflag = '-Wl,--version-script,@0@'.format(version_script)

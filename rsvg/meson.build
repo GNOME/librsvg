@@ -109,9 +109,9 @@ makedef_args = [
   '^rsvg_.',
 ]
 
-if system in ['darwin', 'ios']
+if host_system in ['darwin', 'ios']
   makedef_args += ['--os', 'darwin']
-elif system in ['windows', 'cygwin']
+elif host_system in ['windows', 'cygwin']
   makedef_args += ['--os', 'win']
 else
   makedef_args += ['--os', 'linux']
@@ -152,7 +152,7 @@ librsvg_ver = custom_target(
 
 version_script = meson.current_build_dir() / '@0@.ver'.format(librsvg_pc)
 
-if host_machine.system() in ['darwin', 'ios']
+if host_system in ['darwin', 'ios']
   vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
 else
   vflag = '-Wl,--version-script,@0@'.format(version_script)
@@ -233,9 +233,9 @@ librsvg_c_pc = pkg.generate(
 
 if build_gir.allowed()
   env = environment()
-  if system in ['darwin', 'ios']
+  if host_system in ['darwin', 'ios']
     var = 'DYLD_LIBRARY_PATH'
-  elif system in ['windows', 'cygwin']
+  elif host_system in ['windows', 'cygwin']
     var = 'PATH'
   else
     var = 'LD_LIBRARY_PATH'
@@ -251,7 +251,7 @@ if build_gir.allowed()
     check: true,
   )
   env.set(var, current_library_path.stdout().strip())
-  if system == 'windows'
+  if host_system == 'windows'
     env.prepend('PATH', meson.current_build_dir() / 'rsvg')
     foreach i: library_dependencies_sole
       x = i.get_variable(pkgconfig: 'bindir', default_value: '')
