@@ -242,7 +242,13 @@ cargo_wrapper_args = [
   '--libdir', get_option('libdir'),
 ]
 
-if not get_option('debug')
+# Ideally, cc.get_argument_syntax() == 'msvc' should
+# cover this, but 'clang' can mean GCC or MSVC-style
+# depending on the env and/or flags on Windows
+is_msvc_style = cc.get_define('_MSC_VER') != ''
+
+if not get_option('debug') or \
+   (is_msvc_style and get_option('buildtype') == 'debugoptimized')
   cargo_wrapper_args += ['--release']
 endif
 

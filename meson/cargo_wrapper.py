@@ -149,9 +149,12 @@ if args.command in ["cbuild", "build"]:
         for ext in args.extensions:
             for f in cargo_target_dir.glob(f"**/{buildtype}/*.{ext}"):
                 shutil.copy(f, args.current_build_dir)
-    # Copy binary to build dir
+    # Copy binary and, if applicable, the corresponding .pdb file, to build dir
     else:
         binary = Path(cargo_target_output_dir / buildtype / args.bin)
         if sys.platform == "win32":
+            pdb_copy = Path(cargo_target_output_dir / buildtype / args.bin.replace('rsvg-convert', 'rsvg_convert')).with_suffix(".pdb")
+            if os.path.exists(pdb_copy):
+                shutil.copy(pdb_copy, args.current_build_dir)
             binary = binary.with_suffix(".exe")
         shutil.copy(binary, args.current_build_dir)
