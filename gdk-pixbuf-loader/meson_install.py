@@ -21,7 +21,7 @@ if __name__ == '__main__':
     # Install the files relative to the destdir if it's set
     destdir = os.environ.get("DESTDIR")
     if destdir is not None:
-        destdir = Path(destdir)
+        destdir: Path = Path(destdir)
         # Make sure it's a valid Path object
         assert destdir is not None
         cache_file = destdir / cache_file.relative_to(cache_file.anchor)
