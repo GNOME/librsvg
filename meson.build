@@ -31,7 +31,8 @@ python = py.find_installation()
 
 # Required versions for dependencies - Please update compiling.rst with version numbers if these change
 cairo_required         = '>= 1.17.0'
-freetype2_required     = '>= 20.0.14' # corresponds to Freetype2 2.8
+ft2_cmake_required     = '>= 2.8.0'   # Actual FreeType version required
+freetype2_required     = '>= 20.0.14' # Corresponds to ft2_cmake_required
 gdk_pixbuf_required    = '>= 2.20'
 gio_required           = '>= 2.24.0'
 glib_required          = '>= 2.50.0'
@@ -55,7 +56,18 @@ cairo_png_dep  = dependency('cairo-png',
                             fallback: ['cairo']) # FIXME: cairo has no _dep for this one
 freetype2_dep  = dependency('freetype2',
                             version: freetype2_required,
-                            fallback: ['freetype2', 'freetype_dep'])
+                            method: 'pkg-config',
+                            required: false)
+
+# Try again using CMake, as Windows builds of FreeType might not
+# come with pkg-config files; sadly, pkg-config and CMake use
+# different version schemes for FreeType
+if not freetype2_dep.found()
+  freetype2_dep  = dependency('FreeType',
+                              version: ft2_cmake_required,
+                              method: 'cmake',
+                              fallback: ['freetype2', 'freetype_dep'])
+endif
 pixbuf_dep     = dependency('gdk-pixbuf-2.0',
                             version: gdk_pixbuf_required,
                             fallback: ['gdk-pixbuf', 'gdkpixbuf_dep'],
@@ -69,7 +81,7 @@ glib_dep       = dependency('glib-2.0',
 harfbuzz_dep   = dependency('harfbuzz',
                             version: harfbuzz_required,
                             fallback: ['harfbuzz', 'libharfbuzz_dep'])
-libxml_dep     = dependency('libxml-2.0',
+libxml_dep     = dependency(['libxml-2.0', 'LibXml2'],
                             version: libxml_required)
 pango_dep      = dependency('pango',
                             version: pango_required,
@@ -97,6 +109,28 @@ gi_dep         = dependency('gobject-introspection-1.0',
 vapigen_dep    = dependency('vapigen',
                             version: vapigen_required,
                             required: get_option('vala'))
+
+# Extra env to pass to cargo
+extra_env = {}
+
+# If FreeType and/or libxml2 is/are found by CMake instead of
+# pkg-config, we must tell Cargo the libraries explicitly and
+# disable pkg-config for these deps
+if freetype2_dep.type_name() == 'cmake' or libxml_dep.type_name() == 'cmake'
+  fs = import('fs')
+endif
+if freetype2_dep.type_name() == 'cmake'
+  ft2_lib = freetype2_dep.get_variable('FREETYPE_LIBRARIES')
+  extra_env += {'SYSTEM_DEPS_FREETYPE2_NO_PKG_CONFIG': '1',
+                'SYSTEM_DEPS_FREETYPE2_SEARCH_NATIVE': fs.parent(ft2_lib),
+                'SYSTEM_DEPS_FREETYPE2_LIB': fs.stem(ft2_lib)}
+endif
+if libxml_dep.type_name() == 'cmake'
+  libxml_lib = libxml_dep.get_variable('LIBXML2_LIBRARIES')
+  extra_env += {'SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG': '1',
+                'SYSTEM_DEPS_LIBXML2_SEARCH_NATIVE': fs.parent(libxml_lib),
+                'SYSTEM_DEPS_LIBXML2_LIB': fs.stem(libxml_lib)}
+endif
 
 build_gir = get_option('introspection').require(not meson.is_cross_build() and gi_dep.found())
 build_vala = get_option('vala').require(not meson.is_cross_build() and vapigen_dep.found())
@@ -154,9 +188,6 @@ library_dependencies += [m_dep, foundation_dep]
 
 cargo_toml = meson.project_source_root() / 'Cargo.toml'
 
-# Extra env to pass to cargo
-extra_env = {}
-
 if get_option('default_library') == 'static'
   extra_env += {
     # Tell the pkg-config crate to think of all libraries as static
@@ -211,7 +242,13 @@ cargo_wrapper_args = [
   '--libdir', get_option('libdir'),
 ]
 
-if not get_option('debug')
+# Ideally, cc.get_argument_syntax() == 'msvc' should
+# cover this, but 'clang' can mean GCC or MSVC-style
+# depending on the env and/or flags on Windows
+is_msvc_style = cc.get_define('_MSC_VER') != ''
+
+if not get_option('debug') or \
+   (is_msvc_style and get_option('buildtype') == 'debugoptimized')
   cargo_wrapper_args += ['--release']
 endif
 

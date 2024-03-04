@@ -9,10 +9,16 @@ rsvg_convert_files = files(
   'tests/rsvg_convert.rs',
 )
 
+rsvg_convert_output = ['rsvg-convert@0@'.format(ext_exe)]
+
+if get_option('debug') and is_msvc_style
+  rsvg_convert_output += ['rsvg_convert.pdb']
+endif
+
 rsvg_convert = custom_target(
   'rsvg-convert',
   build_by_default: true,
-  output: 'rsvg-convert@0@'.format(ext_exe),
+  output: rsvg_convert_output,
   console: true,
   install: true,
   install_dir: get_option('prefix') / get_option('bindir'),

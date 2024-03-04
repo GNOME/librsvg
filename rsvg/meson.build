@@ -335,6 +335,7 @@ if build_tests.allowed()
       '--command=test',
       '--current-source-dir', meson.current_source_dir(),
     ],
+    env: extra_env,
     depends: librsvg_lib
   )
 endif
