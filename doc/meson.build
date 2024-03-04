@@ -26,7 +26,8 @@ if build_gir.allowed()
         input: files('librsvg.toml') + rsvg_gir[0],
         output: 'Rsvg-2.0',
         install: true,
-        install_dir: get_option('datadir') / 'doc' / 'Rsvg-2.0'
+        # custom_target will make an Rsvg-2.0 directory for us
+        install_dir: get_option('datadir') / 'doc'
     )
 endif
 
