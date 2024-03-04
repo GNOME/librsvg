@@ -21,5 +21,5 @@ header = configure_file(
 
 install_headers(
     includes + header,
-    subdir: 'librsvg',
+    subdir: '@0@/librsvg'.format(librsvg_pc),
 )
