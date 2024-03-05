@@ -9,8 +9,6 @@ header_version = meson.project_version().split('.')
 header = configure_file(
     input: 'rsvg-version.h.in',
     output: 'rsvg-version.h',
-    install: true,
-    install_dir: get_option('includedir') / 'librsvg',
     configuration: {
         'LIBRSVG_MAJOR_VERSION': header_version[0],
         'LIBRSVG_MINOR_VERSION': header_version[1],
@@ -21,5 +19,5 @@ header = configure_file(
 
 install_headers(
     includes + header,
-    subdir: 'librsvg',
+    subdir: '@0@/librsvg'.format(librsvg_pc),
 )

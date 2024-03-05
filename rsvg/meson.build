@@ -200,7 +200,7 @@ else
 endif
 
 librsvg_lib = shared_library(
-  'rsvg',
+  rsvg_ver,
   rsvg_dummy,
   link_whole: librsvg_c_lib,
   link_args: link_args,
@@ -224,8 +224,10 @@ pkg = import('pkgconfig')
 
 librsvg_c_pc = pkg.generate(
   name : 'librsvg',
+  filebase: librsvg_pc,
   description : 'library that renders svg files',
   libraries : librsvg_lib,
+  subdirs: librsvg_pc,
 )
 
 if build_gir.allowed()
