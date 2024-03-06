@@ -239,7 +239,9 @@ impl ImageSurface<Shared> {
         // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
         // is implementation-defined.  So, we can't assume NonNull below.  This is
         // why we disallow zero-sized surfaces here.
-        assert!(width > 0 && height > 0);
+        if !(width > 0 && height > 0) {
+            return Err(cairo::Error::InvalidSize);
+        }
 
         surface.flush();
 
@@ -1305,7 +1307,9 @@ impl ImageSurface<Exclusive> {
         // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
         // is implementation-defined.  So, we can't assume NonNull below.  This is
         // why we disallow zero-sized surfaces here.
-        assert!(width > 0 && height > 0);
+        if !(width > 0 && height > 0) {
+            return Err(cairo::Error::InvalidSize);
+        }
 
         let data_ptr = NonNull::new(unsafe {
             cairo::ffi::cairo_image_surface_get_data(surface.to_raw_none())
