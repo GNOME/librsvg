@@ -1,0 +1,11 @@
+<svg>
+  <g>
+    <defs>
+      <filter id="F1">
+        <feOffset dy="999999999999999999990"/>
+      </filter>
+    </defs>
+
+    <circle cy="20" r="20" filter="url(#F1)"/>
+  </g>
+</svg>
