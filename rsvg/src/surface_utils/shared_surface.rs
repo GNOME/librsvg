@@ -239,7 +239,9 @@ impl ImageSurface<Shared> {
         // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
         // is implementation-defined.  So, we can't assume NonNull below.  This is
         // why we disallow zero-sized surfaces here.
-        assert!(width > 0 && height > 0);
+        if !(width > 0 && height > 0) {
+            return Err(cairo::Error::InvalidSize);
+        }
 
         surface.flush();
 
@@ -983,7 +985,7 @@ impl ImageSurface<Shared> {
     #[inline]
     pub fn offset(
         &self,
-        bounds: IRect,
+        bounds: Rect,
         dx: f64,
         dy: f64,
     ) -> Result<SharedImageSurface, cairo::Error> {
@@ -992,10 +994,7 @@ impl ImageSurface<Shared> {
 
         // output_bounds contains all pixels within bounds,
         // for which (x - ox) and (y - oy) also lie within bounds.
-        if let Some(output_bounds) = bounds
-            .translate((dx as i32, dy as i32))
-            .intersection(&bounds)
-        {
+        if let Some(output_bounds) = bounds.translate((dx, dy)).intersection(&bounds) {
             let cr = cairo::Context::new(&output_surface)?;
             let r = cairo::Rectangle::from(output_bounds);
             cr.rectangle(r.x(), r.y(), r.width(), r.height());
@@ -1305,7 +1304,9 @@ impl ImageSurface<Exclusive> {
         // Cairo allows zero-sized surfaces, but it does malloc(0), whose result
         // is implementation-defined.  So, we can't assume NonNull below.  This is
         // why we disallow zero-sized surfaces here.
-        assert!(width > 0 && height > 0);
+        if !(width > 0 && height > 0) {
+            return Err(cairo::Error::InvalidSize);
+        }
 
         let data_ptr = NonNull::new(unsafe {
             cairo::ffi::cairo_image_surface_get_data(surface.to_raw_none())
