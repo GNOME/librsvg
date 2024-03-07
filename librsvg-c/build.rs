@@ -2,7 +2,7 @@ use regex::Regex;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::{BufReader, Write};
+use std::io::BufReader;
 use std::path::Path;
 
 fn main() {
