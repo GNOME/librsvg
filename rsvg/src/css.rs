@@ -74,13 +74,13 @@
 //! matches by specificity and apply the result to each element.
 
 use cssparser::{
-    self, match_ignore_ascii_case, parse_important, AtRuleParser, BasicParseErrorKind, CowRcStr,
+    match_ignore_ascii_case, parse_important, AtRuleParser, BasicParseErrorKind, CowRcStr,
     DeclarationParser, Parser, ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser,
     RuleBodyParser, SourceLocation, StyleSheetParser, ToCss,
 };
 use data_url::mime::Mime;
 use language_tags::LanguageTag;
-use markup5ever::{self, namespace_url, ns, Namespace, QualName};
+use markup5ever::{namespace_url, ns, Namespace, QualName};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::matching::{
     ElementSelectorFlags, IgnoreNthChildForInvalidation, MatchingContext, MatchingMode,

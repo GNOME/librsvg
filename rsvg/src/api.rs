@@ -570,11 +570,13 @@ impl<'a> CairoRenderer<'a> {
         id: Option<&str>,
         viewport: &cairo::Rectangle,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        Ok(self
-            .handle
-            .handle
-            .get_geometry_for_layer(id, viewport, &self.user_language, self.dpi, self.is_testing)
-            .map(|(i, l)| (i, l))?)
+        Ok(self.handle.handle.get_geometry_for_layer(
+            id,
+            viewport,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )?)
     }
 
     /// Renders a single SVG element in the same place as for a whole SVG document
@@ -646,11 +648,12 @@ impl<'a> CairoRenderer<'a> {
         &self,
         id: Option<&str>,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), RenderingError> {
-        Ok(self
-            .handle
-            .handle
-            .get_geometry_for_element(id, &self.user_language, self.dpi, self.is_testing)
-            .map(|(i, l)| (i, l))?)
+        Ok(self.handle.handle.get_geometry_for_element(
+            id,
+            &self.user_language,
+            self.dpi,
+            self.is_testing,
+        )?)
     }
 
     /// Renders a single SVG element to a given viewport

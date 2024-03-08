@@ -34,7 +34,6 @@
 //! should provide the other required trait implementations separately.
 //!
 //! * An implementation of the [`Parse`] trait for the underlying type.
-use std::convert::TryInto;
 use std::str::FromStr;
 
 use cssparser::{Parser, Token};

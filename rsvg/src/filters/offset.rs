@@ -72,18 +72,20 @@ impl Offset {
             &self.in1,
             ColorInterpolationFilters::Auto,
         )?;
-        let bounds: IRect = bounds_builder
-            .add_input(&input_1)
-            .compute(ctx)
-            .clipped
-            .into();
+        let bounds = bounds_builder.add_input(&input_1).compute(ctx).clipped;
+
         rsvg_log!(draw_ctx.session(), "(feOffset bounds={:?}", bounds);
 
         let (dx, dy) = ctx.paffine().transform_distance(self.dx, self.dy);
 
         let surface = input_1.surface().offset(bounds, dx, dy)?;
 
-        Ok(FilterOutput { surface, bounds })
+        let ibounds: IRect = bounds.into();
+
+        Ok(FilterOutput {
+            surface,
+            bounds: ibounds,
+        })
     }
 }
 

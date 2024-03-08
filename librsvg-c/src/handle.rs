@@ -35,8 +35,8 @@ use url::Url;
 use glib::subclass::prelude::*;
 use glib::translate::*;
 use glib::types::instance_of;
+use glib::Bytes;
 use glib::{ffi::gpointer, gobject_ffi};
-use glib::{Bytes, Cast, StaticType, ToValue};
 
 use rsvg::c_api_only::{rsvg_log, Session, SharedImageSurface, SurfaceType};
 use rsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader, LoadingError, SvgHandle};

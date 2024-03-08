@@ -10,11 +10,7 @@ use gio::{UnixInputStream, UnixOutputStream};
 #[cfg(windows)]
 mod windows_imports {
     pub use gio::{Win32InputStream, WriteOutputStream};
-    pub use glib::ffi::gboolean;
     pub use glib::translate::*;
-    pub use libc::c_void;
-    pub use std::io;
-    pub use std::os::windows::io::AsRawHandle;
 }
 #[cfg(windows)]
 use self::windows_imports::*;
@@ -225,7 +221,7 @@ enum Surface {
     #[cfg(system_deps_have_cairo_ps)]
     Ps(cairo::PsSurface, Size),
     #[cfg(system_deps_have_cairo_svg)]
-    Svg(cairo::SvgSurface, Size),
+    Svg(cairo::SvgSurface),
 }
 
 impl Deref for Surface {
@@ -239,7 +235,7 @@ impl Deref for Surface {
             #[cfg(system_deps_have_cairo_ps)]
             Self::Ps(surface, _) => surface,
             #[cfg(system_deps_have_cairo_svg)]
-            Self::Svg(surface, _) => surface,
+            Self::Svg(surface) => surface,
         }
     }
 }
@@ -325,7 +321,7 @@ impl Surface {
         };
 
         surface.set_document_unit(svg_unit);
-        Ok(Self::Svg(surface, size))
+        Ok(Self::Svg(surface))
     }
 
     #[cfg(not(system_deps_have_cairo_svg))]
@@ -1215,33 +1211,6 @@ fn parse_zoom_factor(v: &str) -> Result<ZoomFactor, String> {
         Ok(res) if res > 0.0 => Ok(ZoomFactor(res)),
         Ok(_) => Err(String::from("Invalid zoom factor")),
         Err(e) => Err(format!("{e}")),
-    }
-}
-
-trait NotFound {
-    type Ok;
-    type Error;
-
-    fn or_none(self) -> Result<Option<Self::Ok>, Self::Error>;
-}
-
-impl<T> NotFound for Result<T, clap::Error> {
-    type Ok = T;
-    type Error = clap::Error;
-
-    /// Maps the Result to an Option, translating the ArgumentNotFound error to
-    /// Ok(None), while mapping other kinds of errors to Err(e).
-    ///
-    /// This allows to get proper error reporting for invalid values on optional
-    /// arguments.
-    fn or_none(self) -> Result<Option<T>, clap::Error> {
-        self.map_or_else(
-            |e| match e.kind() {
-                clap::error::ErrorKind::UnknownArgument => Ok(None),
-                _ => Err(e),
-            },
-            |v| Ok(Some(v)),
-        )
     }
 }
 
