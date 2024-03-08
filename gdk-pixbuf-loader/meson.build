@@ -30,7 +30,7 @@ endif
 
 pixbufloader_link_args = cc.get_supported_link_arguments([vflag]) + strip_link_args
 
-pixbufloader_svg = shared_library(
+pixbufloader_svg = shared_module(
   'pixbufloader-svg',
   files(
     'io-svg.c'
