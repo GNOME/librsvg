@@ -15,7 +15,7 @@
 //! This is available in methods that take an argument of type [`ComputedValues`].
 
 use cssparser::{
-    self, BasicParseErrorKind, ParseErrorKind, Parser, ParserInput, RuleBodyParser, ToCss,
+    BasicParseErrorKind, ParseErrorKind, Parser, ParserInput, RuleBodyParser, ToCss,
 };
 use markup5ever::{
     expanded_name, local_name, namespace_url, ns, ExpandedName, LocalName, QualName,

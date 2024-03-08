@@ -8,7 +8,6 @@ use pango::prelude::FontMapExt;
 use regex::{Captures, Regex};
 use std::borrow::Cow;
 use std::cell::RefCell;
-use std::convert::TryFrom;
 use std::f64::consts::*;
 use std::rc::Rc;
 

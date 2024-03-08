@@ -13,7 +13,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::str;
-use std::string::ToString;
 use std::sync::Arc;
 use xml5ever::buffer_queue::BufferQueue;
 use xml5ever::tendril::format_tendril;

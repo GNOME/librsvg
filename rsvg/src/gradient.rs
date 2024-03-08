@@ -707,7 +707,7 @@ mod tests {
     use markup5ever::{namespace_url, ns, QualName};
 
     use crate::borrow_element_as;
-    use crate::node::{Node, NodeData};
+    use crate::node::NodeData;
 
     #[test]
     fn parses_spread_method() {

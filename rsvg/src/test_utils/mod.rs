@@ -2,7 +2,6 @@ pub mod compare_surfaces;
 pub mod reference_utils;
 
 use cairo;
-use gio;
 use glib;
 use std::env;
 use std::sync::Once;
@@ -48,7 +47,6 @@ mod pango_ft2 {
     use super::*;
     use glib::prelude::*;
     use glib::translate::*;
-    use libc;
     use pangocairo::FontMap;
     use std::ffi::CString;
 

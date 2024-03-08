@@ -3,7 +3,6 @@
 use markup5ever::{expanded_name, local_name, namespace_url, ns};
 use pango::IsAttribute;
 use std::cell::RefCell;
-use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::bbox::BoundingBox;

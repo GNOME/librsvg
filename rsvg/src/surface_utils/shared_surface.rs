@@ -1458,7 +1458,6 @@ impl From<Operator> for cairo::Operator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::surface_utils::iterators::Pixels;
 
     #[test]
     fn test_extract_alpha() {

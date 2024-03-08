@@ -2,7 +2,7 @@
 
 use data_url::{mime::Mime, DataUrl};
 use gio::{prelude::FileExt, Cancellable, File as GFile, InputStream, MemoryInputStream};
-use glib::{self, Bytes as GBytes, Cast};
+use glib::{Bytes as GBytes, Cast};
 use std::fmt;
 use std::str::FromStr;
 
