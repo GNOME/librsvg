@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use float_cmp::approx_eq;
-use lopdf::{self, Dictionary, Object};
+use lopdf::{Dictionary, Object};
 use predicates::prelude::*;
 use predicates::reflection::{Case, Child, PredicateReflection, Product};
 use std::cmp;
