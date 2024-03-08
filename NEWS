@@ -1,5 +1,16 @@
+Version 2.57.92
+===============
+
+librsvg crate version 2.58.0-beta.2
+
+- #1059 - Don't panic when rendering feOffset with a too-large offset.
+
+- #1060 - Don't panic when a decoded image has dimensions of zero.
+
 Version 2.57.91
 ===============
+
+librsvg crate version 2.58.0-beta.1
 
 - #943 - Rsvg-convert now prints a helpful message if you run it
   without arguments, to indicate that it is reading from standard
