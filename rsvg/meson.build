@@ -295,7 +295,7 @@ if build_gir.allowed()
     includes: gir_includes,
     env: env,
     export_packages: librsvg_pc,
-    header: ['include/librsvg/rsvg.h'],
+    header: ['librsvg/rsvg.h'],
     install: true,
     sources: includes,
     extra_args: gir_args,
