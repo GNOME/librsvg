@@ -1,0 +1,6 @@
+<svg>
+  <filter id="a">
+    <feTurbulence numOctaves="33333333333"/>
+  </filter>
+  <path d="m10 10 H1 V1" filter="url(#a)"/>
+</svg>
