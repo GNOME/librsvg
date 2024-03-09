@@ -10,6 +10,7 @@ use crate::parse_identifiers;
 use crate::parsers::{NumberOptionalNumber, Parse, ParseValue};
 use crate::properties::ColorInterpolationFilters;
 use crate::rect::IRect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::surface_utils::{
     shared_surface::{ExclusiveImageSurface, SurfaceType},
@@ -23,6 +24,11 @@ use super::context::{FilterContext, FilterOutput};
 use super::{
     FilterEffect, FilterError, FilterResolveError, Primitive, PrimitiveParams, ResolvedPrimitive,
 };
+
+/// Limit the `numOctaves` parameter to avoid unbounded CPU consumption.
+///
+/// https://drafts.fxtf.org/filter-effects/#element-attrdef-feturbulence-numoctaves
+const MAX_OCTAVES: i32 = 9;
 
 /// Enumeration of the tile stitching modes.
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
@@ -84,6 +90,14 @@ impl ElementTrait for FeTurbulence {
                 }
                 expanded_name!("", "numOctaves") => {
                     set_attribute(&mut self.params.num_octaves, attr.parse(value), session);
+                    if self.params.num_octaves > MAX_OCTAVES {
+                        let n = self.params.num_octaves;
+                        rsvg_log!(
+                            session,
+                            "ignoring numOctaves={n}, setting it to {MAX_OCTAVES}"
+                        );
+                        self.params.num_octaves = MAX_OCTAVES;
+                    }
                 }
                 // Yes, seed needs to be parsed as a number and then truncated.
                 expanded_name!("", "seed") => {
