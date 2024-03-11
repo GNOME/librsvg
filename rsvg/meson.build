@@ -87,7 +87,6 @@ rust_artifacts = custom_target(
   build_by_default: true,
   output: '@0@rsvg_@1@.@2@'.format(lib_prefix, librsvg_api_major, ext_static),
   console: true,
-  install: false,
   depend_files: library_sources + librsvg_c_sources,
   env: extra_env,
   command: [
@@ -97,8 +96,10 @@ rust_artifacts = custom_target(
     '--current-build-dir', '@OUTDIR@',
     '--current-source-dir', meson.current_source_dir(),
     '--packages', 'librsvg-c',
-    '--extensions', ext_static,
-  ]
+    '--extension', ext_static,
+  ],
+  install: get_option('default_library') == 'static',
+  install_dir: get_option('libdir'),
 )
 
 librsvg_c_lib = rust_artifacts[0]
@@ -109,9 +110,9 @@ makedef_args = [
   '^rsvg_.',
 ]
 
-if system in ['darwin', 'ios']
+if host_system in ['darwin', 'ios']
   makedef_args += ['--os', 'darwin']
-elif system in ['windows', 'cygwin']
+elif host_system in ['windows', 'cygwin']
   makedef_args += ['--os', 'win']
 else
   makedef_args += ['--os', 'linux']
@@ -125,7 +126,7 @@ endif
 
 makedef_tool_args = []
 
-if cc.get_define('_MSC_VER') != ''
+if is_msvc_style
   dumpbin = find_program('dumpbin', native: true)
   makedef_tool_args += ['--dumpbin', dumpbin]
 else
@@ -150,8 +151,9 @@ librsvg_ver = custom_target(
   capture: true,
 )
 
-version_script = meson.current_build_dir() / '@0@.def'.format(librsvg_pc)
-if host_machine.system() in ['darwin', 'ios']
+version_script = meson.current_build_dir() / '@0@.ver'.format(librsvg_pc)
+
+if host_system in ['darwin', 'ios']
   vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
 else
   vflag = '-Wl,--version-script,@0@'.format(version_script)
@@ -166,9 +168,13 @@ endif
 # if the library is a Meson generated target.
 # No further flags are needed under MSVC, because LINK will already strip
 # the library by default.
+#
+# Also check for -Bsymbolic-functions linker flag used to avoid
+# intra-library PLT jumps, if available.
 strip_link_args = cc.get_supported_link_arguments(
   '-Wl,-dead_strip',
-  '-Wl,--gc-sections'
+  '-Wl,--gc-sections',
+  '-Wl,-Bsymbolic-functions',
 )
 
 link_args = cc.get_supported_link_arguments([vflag]) + strip_link_args
@@ -199,18 +205,22 @@ else
   )
 endif
 
-librsvg_lib = shared_library(
-  rsvg_ver,
-  rsvg_dummy,
-  link_whole: librsvg_c_lib,
-  link_args: link_args,
-  link_depends: librsvg_ver,
-  dependencies: library_dependencies,
-  include_directories: [includeinc],
-  vs_module_defs: librsvg_ver, # librsvg_def
-  install: true,
-  version: meson.project_version() # it's not exact as m4
-)
+if get_option('default_library') == 'shared'
+  librsvg_lib = shared_library(
+    rsvg_ver,
+    rsvg_dummy,
+    link_whole: librsvg_c_lib,
+    link_args: link_args,
+    link_depends: librsvg_ver,
+    dependencies: library_dependencies,
+    include_directories: [includeinc],
+    vs_module_defs: librsvg_def,
+    install: true,
+    version: meson.project_version() # it's not exact as m4
+  )
+else
+  librsvg_lib = librsvg_c_lib
+endif
 
 # This is the main dependency to use for tests; it means "link to the library we just built"
 librsvg_dep = declare_dependency(
@@ -228,13 +238,15 @@ librsvg_c_pc = pkg.generate(
   description : 'library that renders svg files',
   libraries : librsvg_lib,
   subdirs: librsvg_pc,
+  requires: library_dependencies_sole,
+  libraries_private: private_dependencies,
 )
 
 if build_gir.allowed()
   env = environment()
-  if system in ['darwin', 'ios']
+  if host_system in ['darwin', 'ios']
     var = 'DYLD_LIBRARY_PATH'
-  elif system in ['windows', 'cygwin']
+  elif host_system in ['windows', 'cygwin']
     var = 'PATH'
   else
     var = 'LD_LIBRARY_PATH'
@@ -250,7 +262,7 @@ if build_gir.allowed()
     check: true,
   )
   env.set(var, current_library_path.stdout().strip())
-  if system == 'windows'
+  if host_system == 'windows'
     env.prepend('PATH', meson.current_build_dir() / 'rsvg')
     foreach i: library_dependencies_sole
       x = i.get_variable(pkgconfig: 'bindir', default_value: '')
@@ -286,8 +298,20 @@ if build_gir.allowed()
     ]
   endif
 
+  if get_option('default_library') == 'shared'
+    librsvg_gir = librsvg_lib
+  else
+    librsvg_gir = shared_library(
+      'rsvg-gir',
+      rsvg_dummy,
+      link_whole: librsvg_c_lib,
+      dependencies: library_dependencies,
+      include_directories: [includeinc],
+    )
+  endif
+
   rsvg_gir = gnome.generate_gir(
-    librsvg_lib,
+    librsvg_gir,
     namespace: 'Rsvg',
     nsversion: '2.0',
     symbol_prefix: [ 'rsvg', 'librsvg' ],
@@ -324,9 +348,6 @@ if build_tests.allowed()
     'src/test_utils/reference_utils.rs',
   )
 
-  # HACK: Meson tests don't take OptionString nor ExternalProgram
-  c_w_a = []
-
   test(
     'Rust tests',
     cargo_wrapper,
@@ -338,6 +359,6 @@ if build_tests.allowed()
       '--current-source-dir', meson.current_source_dir(),
     ],
     env: extra_env,
-    depends: librsvg_lib
+    depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts
   )
 endif

@@ -12,8 +12,17 @@ pixbufloader_svg_def = configure_file(
   capture: true,
 )
 
-version_script = meson.current_build_dir() / 'gdk-pixbuf-loader.def'
-if host_machine.system() in ['darwin', 'ios']
+pixbufloader_svg_ver = configure_file(
+  command: [makedef_args, '--list', '@INPUT@'],
+  input: files(
+    'gdk-pixbuf-loader.symbols'
+  ),
+  output: 'gdk-pixbuf-loader.ver',
+  capture: true,
+)
+
+version_script = meson.current_build_dir() / 'gdk-pixbuf-loader.ver'
+if host_system in ['darwin', 'ios']
   vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
 else
   vflag = '-Wl,--version-script,@0@'.format(version_script)
@@ -21,13 +30,14 @@ endif
 
 pixbufloader_link_args = cc.get_supported_link_arguments([vflag]) + strip_link_args
 
-pixbufloader_svg = shared_library(
+pixbufloader_svg = shared_module(
   'pixbufloader-svg',
   files(
     'io-svg.c'
   ),
   c_args: ['-DGDK_PIXBUF_ENABLE_BACKEND'],
   link_args: pixbufloader_link_args,
+  link_depends: pixbufloader_svg_ver,
   dependencies: librsvg_dep,
   vs_module_defs: pixbufloader_svg_def,
   install: true,

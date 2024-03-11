@@ -15,7 +15,7 @@ librsvg_api_minor = api_split[1]
 librsvg_pc = 'librsvg-@0@'.format(librsvg_api_version)
 rsvg_ver = 'rsvg-@0@'.format(librsvg_api_major)
 
-system = build_machine.system()
+host_system = host_machine.system()
 cc = meson.get_compiler('c')
 
 # MSRV - Minimum Supported Rust Version
@@ -92,7 +92,7 @@ pangocairo_dep = dependency('pangocairo',
                             fallback: ['pango', 'libpangocairo_dep'])
 pangoft2_dep   = dependency('pangoft2',
                             version: pango_required,
-                            required: system not in ['windows', 'darwin', 'ios'],
+                            required: host_system not in ['windows', 'darwin', 'ios'],
                             fallback: ['pango', 'libpangoft2_dep'])
 gmodule_dep    = dependency('gmodule-2.0', version: glib_required,
                             fallback : ['glib', 'libgmodule_dep'])
@@ -112,7 +112,7 @@ vapigen_dep    = dependency('vapigen',
                             required: get_option('vala'))
 
 # Extra env to pass to cargo
-extra_env = {}
+extra_env = environment()
 
 # If FreeType and/or libxml2 is/are found by CMake instead of
 # pkg-config, we must tell Cargo the libraries explicitly and
@@ -122,15 +122,15 @@ if freetype2_dep.type_name() == 'cmake' or libxml_dep.type_name() == 'cmake'
 endif
 if freetype2_dep.type_name() == 'cmake'
   ft2_lib = freetype2_dep.get_variable('FREETYPE_LIBRARIES')
-  extra_env += {'SYSTEM_DEPS_FREETYPE2_NO_PKG_CONFIG': '1',
-                'SYSTEM_DEPS_FREETYPE2_SEARCH_NATIVE': fs.parent(ft2_lib),
-                'SYSTEM_DEPS_FREETYPE2_LIB': fs.stem(ft2_lib)}
+  extra_env.set('SYSTEM_DEPS_FREETYPE2_NO_PKG_CONFIG', '1')
+  extra_env.set('SYSTEM_DEPS_FREETYPE2_SEARCH_NATIVE', fs.parent(ft2_lib))
+  extra_env.set('SYSTEM_DEPS_FREETYPE2_LIB', fs.stem(ft2_lib))
 endif
 if libxml_dep.type_name() == 'cmake'
   libxml_lib = libxml_dep.get_variable('LIBXML2_LIBRARIES')
-  extra_env += {'SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG': '1',
-                'SYSTEM_DEPS_LIBXML2_SEARCH_NATIVE': fs.parent(libxml_lib),
-                'SYSTEM_DEPS_LIBXML2_LIB': fs.stem(libxml_lib)}
+  extra_env.set('SYSTEM_DEPS_LIBXML2_NO_PKG_CONFIG', '1')
+  extra_env.set('SYSTEM_DEPS_LIBXML2_SEARCH_NATIVE', fs.parent(libxml_lib))
+  extra_env.set('SYSTEM_DEPS_LIBXML2_LIB', fs.stem(libxml_lib))
 endif
 
 build_gir = get_option('introspection').require(not meson.is_cross_build() and gi_dep.found())
@@ -145,7 +145,7 @@ build_tests = get_option('tests').require(pixbuf_dep.found(), error_message: 'Te
 gnome = import('gnome')
 
 foundation_dep = dependency('appleframeworks', modules: 'Foundation',
-                            required: system in ['darwin', 'ios'])
+                            required: host_system in ['darwin', 'ios'])
 m_dep = cc.find_library('m', required: false)
 
 # ignore the system dependencies for GIR
@@ -165,65 +165,80 @@ library_dependencies_sole = [
 ]
 
 library_dependencies = library_dependencies_sole
+private_dependencies = []
 
-if system == 'windows'
+target = get_option('triplet')
+
+if host_system == 'windows'
   rustc_native_libs_harness = find_program('meson/query-rustc-native-libs.py', native: true, required: get_option('default_library') != 'shared')
 
+  rustc_native_libs_args = [
+    rustc_native_libs_harness,
+    rustc,
+  ]
+  if target != ''
+    rustc_native_libs_args += ['--target', target]
+  endif
+
   native_libs = run_command(
-    [
-      rustc_native_libs_harness,
-      rustc,
-    ],
+    rustc_native_libs_args,
     capture: true,
     check: true
   )
 
   foreach i: native_libs.stdout().split()
     if i != 'msvcrt'
-      library_dependencies += cc.find_library(i, required: get_option('default_library') != 'shared')
+      private_dependencies += cc.find_library(i, required: get_option('default_library') != 'shared')
     endif
   endforeach
 endif
 
-library_dependencies += [m_dep, foundation_dep]
+private_dependencies += [m_dep, foundation_dep]
+library_dependencies += private_dependencies
 
 cargo_toml = meson.project_source_root() / 'Cargo.toml'
 
 if get_option('default_library') == 'static'
-  extra_env += {
-    # Tell the pkg-config crate to think of all libraries as static
-    'PKG_CONFIG_ALL_STATIC': '1',
-    # Tell the system-deps crate to process linker flag for static deps
-    'SYSTEM_DEPS_LINK': 'static',
-    # Allow cross-compilation
-    'PKG_CONFIG_ALLOW_CROSS': '1'
-  }
+  # Tell the pkg-config crate to think of all libraries as static
+  extra_env.set('PKG_CONFIG_ALL_STATIC', '1')
+  # Tell the system-deps crate to process linker flag for static deps
+  extra_env.set('SYSTEM_DEPS_LINK', 'static')
+  # Allow cross-compilation
+  extra_env.set('PKG_CONFIG_ALLOW_CROSS', 'static')
 endif
 
 pkg_config = find_program('pkgconfig', 'pkg-config', 'pkgconf', required: true)
-extra_env += {'PKG_CONFIG': pkg_config.full_path()}
+extra_env.set('PKG_CONFIG', pkg_config.full_path())
 
 pkg_config_path = get_option('pkg_config_path')
 if pkg_config_path.length() > 0
-  pathsep = ':'
-  if system == 'windows'
-    pathsep = ';'
-  endif
-  extra_env += {'PKG_CONFIG_PATH': pathsep.join(pkg_config_path)}
+  pathsep = build_machine.system() == 'windows' ? ';' : ':'
+  extra_env.set('PKG_CONFIG_PATH', pathsep.join(pkg_config_path))
 endif
 
 # used in librsvg/meson.build.  This is so that '#include <librsvg/rsvg.h>` will pick
 # up exactly that file from the source tree.
 includeinc = include_directories('include')
 
+# Ideally, cc.get_argument_syntax() == 'msvc' should
+# cover this, but 'clang' can mean GCC or MSVC-style
+# depending on the env and/or flags on Windows
+is_msvc_style = cc.get_define('_MSC_VER') != ''
+
 # Set the suffixes up
-if system == 'windows'
-  lib_prefix = ''
+if host_system == 'windows'
   ext_dynamic = 'dll'
-  ext_import = 'dll.lib'
-  ext_static = 'lib'
   ext_exe = '.exe'
-elif system == 'darwin'
+  if is_msvc_style
+    lib_prefix = ''
+    ext_import = 'dll.lib'
+    ext_static = 'lib'
+  else
+    lib_prefix = 'lib'
+    ext_import = 'dll.a'
+    ext_static = 'a'
+  endif
+elif host_system == 'darwin'
   lib_prefix = 'lib'
   ext_dynamic = 'dylib'
   ext_static = 'a'
@@ -243,17 +258,10 @@ cargo_wrapper_args = [
   '--libdir', get_option('libdir'),
 ]
 
-# Ideally, cc.get_argument_syntax() == 'msvc' should
-# cover this, but 'clang' can mean GCC or MSVC-style
-# depending on the env and/or flags on Windows
-is_msvc_style = cc.get_define('_MSC_VER') != ''
-
 if not get_option('debug') or \
    (is_msvc_style and get_option('buildtype') == 'debugoptimized')
   cargo_wrapper_args += ['--release']
 endif
-
-target = get_option('triplet')
 
 if target != ''
   cargo_wrapper_args += ['--target', target]
