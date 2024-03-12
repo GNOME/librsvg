@@ -46,6 +46,7 @@ mod tests {
     t!(bug785276_short_file_svg,                     "bug785276-short-file.svg");
     t!(bug800_font_inherit_svg,                      "bug800-font-inherit.svg");
     t!(bug800_marker_svg,                            "bug800-marker.svg");
+    t!(bug1064_private_lang_tag_in_lang_selector,    "bug1064-private-lang-tag-in-lang-selector.svg");
     t!(feconvolvematrix_empty_kernel_svg,            "feConvolveMatrix-empty-kernel.svg");
     t!(marker_cycles_svg,                            "marker-cycles.svg");
     t!(mask_cycles_svg,                              "mask-cycles.svg");
