@@ -236,7 +236,7 @@ librsvg_c_pc = pkg.generate(
   name : 'librsvg',
   filebase: librsvg_pc,
   description : 'library that renders svg files',
-  libraries : librsvg_lib,
+  libraries : [librsvg_lib] + other_library_dependencies,
   subdirs: librsvg_pc,
   requires: library_dependencies_sole,
   libraries_private: private_dependencies,

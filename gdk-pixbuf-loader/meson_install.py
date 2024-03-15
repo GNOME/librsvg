@@ -32,9 +32,9 @@ if __name__ == '__main__':
     else:
         with cache_file.open('w', encoding='utf-8') as f:
             subprocess.run(
-                [args.gdk_pixbuf_queryloaders],
+                [Path(args.gdk_pixbuf_queryloaders).as_posix()],
                 env={
-                    'GDK_PIXBUF_MODULEDIR': args.gdk_pixbuf_moduledir
+                    'GDK_PIXBUF_MODULEDIR': Path(args.gdk_pixbuf_moduledir).as_posix()
                 },
                 stdout=f,
                 check=True
