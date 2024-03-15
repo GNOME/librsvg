@@ -5,11 +5,28 @@ from pathlib import Path
 import os
 import re
 import subprocess
+import sys
 import tempfile
 
 parser = ArgumentParser()
 
 parser.add_argument("RUSTC", type=Path, help="Path to rustc")
+
+def removeprefix_fallback(s, pfx):
+    if sys.version_info > (3, 9):
+        return s.removeprefix(pfx)
+    elif s.startswith(pfx):
+        return s[len(pfx):]
+    else:
+        return s
+
+def removesuffix_fallback(s, sfx):
+    if sys.version_info > (3, 9):
+        return s.removesuffix(sfx)
+    elif s.endswith(sfx):
+        return s[:-len(sfx)]
+    else:
+        return s
 
 parser.add_argument("--target", help="Target triplet")
 
@@ -33,8 +50,8 @@ if __name__ == "__main__":
         match = re.match(r".+native-static-libs: (.+)", i)
         if match:
             libs = match.group(1).split()
-            libs = [lib.removesuffix(".lib") for lib in libs] # msvc
-            libs = [lib.removeprefix("-l") for lib in libs] # msys2
+            libs = [removesuffix_fallback(lib, ".lib") for lib in libs] # msvc
+            libs = [removeprefix_fallback(lib, "-l") for lib in libs] # msys2
             print(
                 " ".join(
                     set(
