@@ -15,12 +15,14 @@ parser.add_argument("--target", help="Target triplet")
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    dummy_out = tempfile.NamedTemporaryFile()
 
     rustc_cmd = [args.RUSTC, "--print=native-static-libs", "--crate-type", "staticlib"]
     if args.target:
         rustc_cmd.extend(['--target', args.target])
 
     rustc_cmd.append(os.devnull)
+    rustc_cmd.extend(['-o', dummy_out.name])
 
     native_static_libs = subprocess.run(
         rustc_cmd,
