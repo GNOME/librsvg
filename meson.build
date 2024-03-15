@@ -148,17 +148,21 @@ foundation_dep = dependency('appleframeworks', modules: 'Foundation',
                             required: host_system in ['darwin', 'ios'])
 m_dep = cc.find_library('m', required: false)
 
+# Use this in place of libxml2/freetype2 for 'Requires:' in the
+# pkg-config file in case either or both were found with CMake
+empty_pc_dep = dependency('', required: false)
+
 # ignore the system dependencies for GIR
 library_dependencies_sole = [
   cairo_dep,
   cairogobj_dep,
   cairo_png_dep,
-  freetype2_dep,
+  freetype2_dep.type_name() != 'cmake' ? freetype2_dep : empty_pc_dep,
   pixbuf_dep,
   gio_dep,
   glib_dep,
   harfbuzz_dep,
-  libxml_dep,
+  libxml_dep.type_name() != 'cmake' ? libxml_dep : empty_pc_dep,
   pangocairo_dep,
   pangoft2_dep,
   gmodule_dep,
@@ -166,6 +170,13 @@ library_dependencies_sole = [
 
 library_dependencies = library_dependencies_sole
 private_dependencies = []
+other_library_dependencies = []
+
+foreach d: [libxml_dep, freetype2_dep]
+  if d.type_name() == 'cmake'
+    other_library_dependencies += d
+  endif
+endforeach
 
 target = get_option('triplet')
 
@@ -194,6 +205,7 @@ if host_system == 'windows'
 endif
 
 private_dependencies += [m_dep, foundation_dep]
+library_dependencies += other_library_dependencies
 library_dependencies += private_dependencies
 
 cargo_toml = meson.project_source_root() / 'Cargo.toml'
