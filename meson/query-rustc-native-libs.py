@@ -34,7 +34,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     dummy_out = tempfile.NamedTemporaryFile()
 
-    rustc_cmd = [args.RUSTC, "--print=native-static-libs", "--crate-type", "staticlib"]
+    rustc_cmd = [
+        Path(args.RUSTC).as_posix(),
+        "--print=native-static-libs",
+        "--crate-type", "staticlib"
+    ]
     if args.target:
         rustc_cmd.extend(['--target', args.target])
 

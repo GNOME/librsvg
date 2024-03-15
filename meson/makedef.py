@@ -100,6 +100,9 @@ if __name__ == '__main__':
     else:
         regex.extend(args.regex)
 
+    # Ensure things are compatible on Windows with Python 3.7.x
+    libname_path_posix = pathlib.Path(libname).as_posix()
+
     if args.list:
         dump = libname.open('r', encoding='utf-8').readlines()
         # Strip whitespaces
@@ -111,11 +114,11 @@ if __name__ == '__main__':
         # Add -j to ensure only symbol names are output (otherwise in macOS
         # a race condition can occur in the redirection)
         s = subprocess.run([args.nm, '--defined-only',
-                            '-g', '-j', libname], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, check=False)
+                            '-g', '-j', libname_path_posix], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, check=False)
         if s.returncode != 0:
             # -j was added only in Binutils 2.37
             s = subprocess.run([args.nm, '--defined-only',
-                                '-g', libname], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True, check=True)
+                                '-g', libname_path_posix], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True, check=True)
         dump = s.stdout.splitlines()
         # Exclude lines with ':' (object name)
         dump = [x for x in dump if ":" not in x]
@@ -124,7 +127,7 @@ if __name__ == '__main__':
         # Subst the prefix out
         dump = [re.sub(f'^{prefix}', '', x) for x in dump]
     else:
-        dump = subprocess.run([args.dumpbin, '-linkermember:1', libname],
+        dump = subprocess.run([pathlib.Path(args.dumpbin).as_posix(), '-linkermember:1', libname_path_posix],
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True).stdout.splitlines()
         # Find the index of the first line with
         # "public symbols", keep the rest

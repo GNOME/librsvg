@@ -97,7 +97,7 @@ env["PKG_CONFIG_PATH"] = os.pathsep.join(pkg_config_path)
 
 cargo_prefixes = [
     "--prefix",
-    args.prefix,
+    Path(args.prefix).as_posix(),
     "--libdir",
     (Path(args.prefix) / args.libdir).as_posix(),
 ]
