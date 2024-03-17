@@ -1,3 +1,44 @@
+Version 2.58.0
+==============
+
+librsvg crate version 2.58.0
+
+The most significant change in this release is that librsvg no longer
+uses gdk-pixbuf for loading raster images (for eample, when there is
+an element <image href="foo.jpg"/>.  All image loading uses Rust
+codecs now.  Please see the release notes for 2.57.90 below for more
+details.
+
+Librsvg's gdk-pixbuf loader for SVG documents is unchanged; you can
+still load SVG files from gdk-pixbuf with it as usual.
+
+New features since 2.57.0 (for fine-grained bug fixes, please see the
+release notes for development releases):
+
+- #902 - Add basic support for "ch" length units in CSS (Mackenzie Morgan).
+
+- #997 - Support "var(--foo, #aabbcc)" just for colors.  This is the
+  minimum required to render color SVG emoji fonts that provide color
+  fallbacks, but it is not yet full support for CSS var().
+
+Fixes since the last development release:
+
+- #1062 - Limit numOctaves in feTurbulence to avoid unbounded CPU consumption.
+
+- #1064 - Don't panic when a :lang selector has an argument that is
+  not a language-range (Lukáš Tyrychtr).
+
+Special thanks for this release cycle:
+
+- Thanks to correctmost for doing several rounds of fuzzing, and then
+  found some interesting bugs!
+
+- Thanks to Jordan Petridis for adding CI jobs for testing on
+  gnome-os's regular builds.
+
+- As usual, thanks to Chun-wei Fan for keeping the Windows builds
+  going, and Bilal Elmoussaoui for updating gtk-rs crates.
+
 Version 2.57.92
 ===============
 
