@@ -1,3 +1,13 @@
+Version 2.57.3
+==============
+
+librsvg crate version 2.57.3
+
+- #1062 - Limit numOctaves in feTurbulence to avoid unbounded CPU consumption.
+
+- #1064 - Don't panic when a :lang selector has an argument that is
+  not a language-range (Lukáš Tyrychtr).
+
 Version 2.57.2
 ==============
 
