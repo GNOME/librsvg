@@ -189,14 +189,19 @@ languages:
 
 - **libxml2** - loading XML data.
 - **cairo** - 2D rendering engine.
-- **gdk-pixbuf** - decoding raster images like JPEG/PNG.
 - **freetype2** - font renderer.
 - **harfbuzz** - text shaping engine.
 - **pango** - high-level text rendering.
 - **fontconfig** - system fonts and rules for using them.
 
 And of course, their recursive dependencies as well, such as
-**glib/gio**, **libjpeg**, **libpng**.
+**glib/gio**.
+
+Librsvg uses the `image-rs <https://github.com/image-rs/image>`_ crate
+for decoding raster images like JPEG/PNG.  You may want to look at its
+dependencies for specific codecs like the ``png`` or ``zune-jpeg``
+crates.
+
 
 Security considerations for libxml2
 -----------------------------------
@@ -242,12 +247,6 @@ make sure that you use librsvg with Cairo 1.17.0 or newer.
 
 The first version of librsvg to require at least Cairo 1.17.0 is
 librsvg 2.56.90 (development), or librsvg 2.57.0 (stable).
-
-Security considerations for gdk-pixbuf
---------------------------------------
-
-Gdk-pixbuf depends on **libpng**, **libjpeg**, and other libraries for
-different image formats.
 
 Security considerations for librsvg
 -----------------------------------

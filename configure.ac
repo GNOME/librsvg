@@ -2,8 +2,8 @@ AC_PREREQ([2.69])
 
 # Package version, the "human readable" version
 m4_define([rsvg_major_version],[2])
-m4_define([rsvg_minor_version],[57])
-m4_define([rsvg_micro_version],[92]) # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
+m4_define([rsvg_minor_version],[58])
+m4_define([rsvg_micro_version],[0]) # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
 m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_version])
 
 # Library version information.  To make a release:
@@ -20,9 +20,9 @@ m4_define([rsvg_version],[rsvg_major_version.rsvg_minor_version.rsvg_micro_versi
 #     rsvg_lt_current += 1
 #     rsvg_lt_revision = 0
 #     rsvg_lt_age = 0
-m4_define([rsvg_lt_current],[51])
+m4_define([rsvg_lt_current],[52])
 m4_define([rsvg_lt_revision],[0])
-m4_define([rsvg_lt_age],[49])
+m4_define([rsvg_lt_age],[50])
 m4_define([rsvg_lt_version_info],rsvg_lt_current:rsvg_lt_revision:rsvg_lt_age)
 
 AC_INIT([RSVG],[rsvg_version],[https://gitlab.gnome.org/GNOME/librsvg/issues],[librsvg])
