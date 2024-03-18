@@ -192,7 +192,7 @@ if host_system == 'windows'
   endif
 
   native_libs = run_command(
-    rustc_native_libs_args,
+    rustc_native_libs_args + ['--query=native-static-libs'],
     capture: true,
     check: true
   )
