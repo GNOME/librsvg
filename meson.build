@@ -20,10 +20,11 @@ cc = meson.get_compiler('c')
 
 # MSRV - Minimum Supported Rust Version
 # If you change this, please update compiling.rst
-cargo = find_program('cargo', version:'>= 1.70.0', native: true)
+msrv = '1.70.0'
+cargo = find_program('cargo', version:'>= @0@'.format(msrv), native: true)
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)
 cargo_c = find_program('cargo-cbuild', version:'>= 0.9.19', native: true)
-rustc = find_program('rustc', version:'>= 1.70.0', native: true)
+rustc = find_program('rustc', version:'>= @0@'.format(msrv), native: true)
 makedef = find_program('meson/makedef.py', native: true)
 
 py = import('python')
