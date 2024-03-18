@@ -181,10 +181,10 @@ endforeach
 target = get_option('triplet')
 
 if host_system == 'windows'
-  rustc_native_libs_harness = find_program('meson/query-rustc-native-libs.py', native: true, required: get_option('default_library') != 'shared')
+  query_rustc_harness = find_program('meson/query-rustc.py', native: true, required: get_option('default_library') != 'shared')
 
   rustc_native_libs_args = [
-    rustc_native_libs_harness,
+    query_rustc_harness,
     rustc,
   ]
   if target != ''
