@@ -182,6 +182,29 @@ endforeach
 target = get_option('triplet')
 target_arg = []
 
+toolchain_arg = []
+toolchain_ver = get_option('rustc-version')
+
+# Check toolchain_ver if supplied, if in the form of a version
+# We assume to continue if a stable, nightly or beta or custom toolchain is specified
+if toolchain_ver != ''
+  if host_system == 'windows'
+    warning('\'rustc-version\' option currently only supported for Windows')
+  endif
+  check_version_script = find_program('meson/check-is-version-string.py', native: true)
+  is_version_string_check = run_command(
+    [check_version_script, '--string', toolchain_ver],
+    capture: true,
+    check: true
+  )
+  check = is_version_string_check.stdout().split()[0] == 'check'
+  if check
+    if not toolchain_ver.version_compare('>=@0@'.format(msrv))
+      error('Specified Rust toolchain version @0@ is less than @1@'.format(toolchain_ver, msrv))
+    endif
+  endif
+endif
+
 # Ideally, cc.get_argument_syntax() == 'msvc' should
 # cover this, but 'clang' can mean GCC or MSVC-style
 # depending on the env and/or flags on Windows
@@ -209,9 +232,26 @@ if host_system == 'windows'
   endif
   rustc_target = '@0@-pc-windows-@1@'.format(rustc_toolchain_cpu, rustc_toolchain_cc)
 
+  if toolchain_ver != ''
+    toolchain_arg += ['--toolchain-version', toolchain_ver]
+    if target_arg == []
+      target_arg += ['--target', rustc_target]
+    endif
+
+    # If doing a cross build, with '-Drustc-version=...' we must find the native toolchain on the build
+    # machine with its arch triplet that is to be used for building against the target, as Cargo will
+    # require this in its command line
+    if meson.is_cross_build()
+      build_cpu_family = build_machine.cpu_family()
+      rustc_build_toolchain_cpu = build_cpu_family == 'x86' ? 'i686' : build_cpu_family
+      rustc_build_triplet = '@0@-pc-windows-@1@'.format(rustc_build_toolchain_cpu, rustc_toolchain_cc)
+      toolchain_arg += toolchain_arg + ['--build-triplet', rustc_build_triplet]
+    endif
+  endif
+
   if target_arg == []
     default_host = run_command(
-      rustc_query_args + ['--query=default-host-toolchain'],
+      rustc_query_args + ['--query=default-host-toolchain'] + toolchain_arg,
       capture: true,
       check: true
     )
@@ -222,7 +262,8 @@ if host_system == 'windows'
 
     # If the default Rust target triplet does not match the triplet that we want to build for
     # pass in a --target argument to RustC/Cargo that best matches what we are building for,
-    # if we didn't use -Dtriplet=... in the Meson setup line
+    # if we didn't use -Dtriplet=... in the Meson setup line.  Do the same if a toolchain version
+    # is requested
     if default_rustc_toolchain != rustc_target
       target_arg += ['--target', rustc_target]
     endif
@@ -231,6 +272,9 @@ if host_system == 'windows'
   rustc_query_native_static_libs_args = rustc_query_args
   if target_arg != []
     rustc_query_native_static_libs_args += target_arg
+  endif
+  if toolchain_arg != []
+    rustc_query_native_static_libs_args += toolchain_arg
   endif
   rustc_query_native_static_libs_args += ['--query=native-static-libs']
 
@@ -349,6 +393,9 @@ endif
 
 if target_arg != []
   cargo_wrapper_args += target_arg
+endif
+if toolchain_arg != []
+  cargo_wrapper_args += toolchain_arg
 endif
 
 subdir('include')

@@ -15,7 +15,10 @@ parser.add_argument("--query", action="store",
                     choices=['native-static-libs', 'default-host-toolchain'],
                     help="Item to query from RustC ['native-static-libs', 'default-host-toolchain']",
                     required=True)
+parser.add_argument("--toolchain-version", action="store",
+                    help="Rust Toolchain Version (if needed)")
 parser.add_argument("--target", help="Target triplet")
+parser.add_argument("--build-triplet", help="Build machine triplet (for cross builds using specific toolchain version)")
 
 def removeprefix_fallback(s, pfx):
     if sys.version_info > (3, 9):
@@ -64,14 +67,20 @@ if __name__ == "__main__":
     dummy_out = tempfile.NamedTemporaryFile()
     query = args.query
     query_arg = None
+    rustc_cmd = [Path(args.RUSTC).as_posix()]
 
+    if args.toolchain_version is not None:
+        if args.target is None and args.build_triplet is None:
+            raise ValueError('--target or --build-triplet argument required if --toolchain-version is used')
+        if args.build_triplet is not None:
+            rustc_cmd.extend(['+%s-%s' % (args.toolchain_version, args.build_triplet)])
+        else:
+            rustc_cmd.extend(['+%s-%s' % (args.toolchain_version, args.target)])
+        
     if query == 'native-static-libs':
         query_arg = ['--print=%s' % query]
     else:
         query_arg = ['--version', '--verbose']
-    rustc_cmd = [
-        Path(args.RUSTC).as_posix(),
-    ]
     rustc_cmd.extend(query_arg)
     if args.target:
         rustc_cmd.extend(['--target', args.target])

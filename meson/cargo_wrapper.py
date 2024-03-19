@@ -46,7 +46,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--toolchain-version", help="Rust Toolchain Version if needed"
+)
+
+parser.add_argument(
     "--target", help="Target triplet"
+)
+
+parser.add_argument(
+    "--build-triplet", help="Build toolchain triplet (for cross builds using specific toolchain version)"
 )
 
 parser.add_argument(
@@ -74,6 +82,9 @@ group.add_argument(
 group.add_argument("--bin", help="Name of binary to build")
 
 args = parser.parse_args()
+
+if args.toolchain_version is not None and args.target is None and args.build_triplet is None:
+    raise ValueError('--target and/or --build-triplet argument required if --toolchain-version is specified')
 
 if args.command == 'test':
     if args.extension or args.bin:
@@ -103,6 +114,12 @@ cargo_prefixes = [
 ]
 
 cargo_cmd = [Path(args.cargo).as_posix()]
+
+if args.toolchain_version is not None:
+    if args.build_triplet is not None:
+        cargo_cmd.extend(["+%s-%s" % (args.toolchain_version, args.build_triplet)])
+    else:
+        cargo_cmd.extend(["+%s-%s" % (args.toolchain_version, args.target)])
 
 if args.command == "cbuild":
     cargo_cmd.extend(["cbuild", "--locked"])
