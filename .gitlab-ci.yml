@@ -439,7 +439,7 @@ vs2017-x64:
   artifacts:
     when: always
     paths:
-      - "${CI_PROJECT_DIR}/_build/meson-logs"
+      - "${CI_PROJECT_DIR}/msvc-build/meson-logs"
 
 distcheck:
   stage: acceptance test
