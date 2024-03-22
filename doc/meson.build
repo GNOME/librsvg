@@ -10,6 +10,8 @@ docs_src = files(
 )
 
 if build_gir.allowed()
+    girepository_folder = gi_dep.get_variable(pkgconfig: 'girdir')
+
     build_stamp = custom_target(
         'doc_build_stamp',
         command: [
@@ -19,6 +21,8 @@ if build_gir.allowed()
             '@INPUT0@',
             '--content-dir',
             meson.current_source_dir(),
+            '--add-include-path',
+            girepository_folder,
             '--output-dir',
             '@OUTDIR@',
             '@INPUT1@'
