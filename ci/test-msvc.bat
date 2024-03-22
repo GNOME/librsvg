@@ -16,7 +16,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliar
 @set RUST_HOST=x86_64-pc-windows-msvc
 
 :: Packaged dep versions
-@set LIBXML2_VER=2.10.4
+@set LIBXML2_VER=2.12.6
 @set FREETYPE2_VER=2.13.0
 @set PKG_CONFIG_VER=0.29.2
 
@@ -34,21 +34,25 @@ cd ..
 rmdir /s/q _build_gdk_pixbuf
 copy /b %INST%\lib\z.lib %INST%\lib\zlib.lib
 
-:: Download rustup-init, pkg-config and FreeType and libxml2
+:: Download rustup-init, pkg-config, FreeType and libxml2
 :: (sadly there is no CUrl, but wget, so MSYS2 is needed temporarily)
 :: %MSYS2_BINDIR% must be in PATH to find gzip/xz.
 set PATH=%PATH%;%MSYS2_BINDIR%
 if not exist %HOMEPATH%\.cargo\bin\rustup.exe %MSYS2_BINDIR%\wget https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe
 %MSYS2_BINDIR%\wget https://pkgconfig.freedesktop.org/releases/pkg-config-%PKG_CONFIG_VER%.tar.gz
 %MSYS2_BINDIR%\wget https://downloads.sourceforge.net/freetype/freetype-%FREETYPE2_VER%.tar.xz
-%MSYS2_BINDIR%\wget https://download.gnome.org/sources/libxml2/2.10/libxml2-%LIBXML2_VER%.tar.xz
+%MSYS2_BINDIR%\wget https://download.gnome.org/sources/libxml2/2.12/libxml2-%LIBXML2_VER%.tar.xz
+:: Ensure it sets the filename correctly
+%MSYS2_BINDIR%\wget --content-disposition https://wrapdb.mesonbuild.com/v2/libxml2_%LIBXML2_VER%-1/get_patch
 
 %MSYS2_BINDIR%\tar -xf pkg-config-%PKG_CONFIG_VER%.tar.gz
 %MSYS2_BINDIR%\tar -Jxf freetype-%FREETYPE2_VER%.tar.xz
 %MSYS2_BINDIR%\tar -Jxf libxml2-%LIBXML2_VER%.tar.xz
+:: Sorry for this hack! Please remove when the runner gets unzip through Pacman
+python -c "import zipfile; zipfile.ZipFile('libxml2_%LIBXML2_VER%-1_patch.zip', 'r').extractall()"
 :: Having the gnutools/msys64 in the %PATH% during the MSVC builds
 :: can cause trouble...
-del /f/q pkg-config-%PKG_CONFIG_VER%.tar.gz freetype-%FREETYPE2_VER%.tar.xz libxml2-%LIBXML2_VER%.tar.xz
+del /f/q pkg-config-%PKG_CONFIG_VER%.tar.gz freetype-%FREETYPE2_VER%.tar.xz libxml2-%LIBXML2_VER%.tar.xz libxml2_%LIBXML2_VER%-1_patch.zip 
 
 :: build and install pkg-config
 cd pkg-config-%PKG_CONFIG_VER%
@@ -69,13 +73,13 @@ ninja install || goto :error
 cd ..
 rmdir /s/q _build_ft
 
-::build and install libxml2 (use the fast NMake builds)
-cd libxml2-%LIBXML2_VER%\win32
-cscript configure.js zlib=yes iconv=no prefix=%INST%
-nmake || goto :error
-nmake install
-nmake clean
-cd ..\..
+:: build and install libxml2 (use the Meson wrap overlaid before)
+md _build_libxml
+cd _build_libxml
+meson setup ../libxml2-%LIBXML2_VER% --buildtype=release --prefix=%INST_PSX% -Diconv=disabled --pkg-config-path=%INST%\lib\pkgconfig --cmake-prefix-path=%INST%
+ninja install || goto :error
+cd ..
+rmdir /s/q _build_libxml
 
 :: build and install Pango (with HarfBuzz and Cairo)
 md _build_pango
