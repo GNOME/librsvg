@@ -120,5 +120,6 @@ ninja || goto :error
 ninja test
 ninja install || goto :error
 
+goto :EOF
 :error
 exit /b 1
