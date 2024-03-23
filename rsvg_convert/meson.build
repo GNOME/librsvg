@@ -48,6 +48,7 @@ if build_tests.allowed()
       '--current-source-dir', meson.current_source_dir(),
       '--packages', 'rsvg_convert',
     ],
+    env: extra_env,
     depends: rsvg_convert
   )
 endif

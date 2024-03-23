@@ -64,6 +64,7 @@ if build_tests.allowed()
       '--current-source-dir', meson.current_source_dir(),
       '--packages', 'pixbufloader-svg',
     ],
+    env: extra_env,
     depends: librsvg_lib
   )
 endif

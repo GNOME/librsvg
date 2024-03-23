@@ -228,6 +228,36 @@ if pkg_config_path.length() > 0
   extra_env.set('PKG_CONFIG_PATH', pathsep.join(pkg_config_path))
 endif
 
+# Set up the environment that will be fed to the build
+if host_system in ['darwin', 'ios']
+  var = 'DYLD_LIBRARY_PATH'
+elif host_system in ['windows', 'cygwin']
+  var = 'PATH'
+else
+  var = 'LD_LIBRARY_PATH'
+endif
+
+current_library_path = run_command(
+  [
+    python,
+    '-c',
+    'import os; print(os.environ["@0@"]) if "@0@" in os.environ else ""'.format(var)
+  ],
+  capture: true,
+  check: true,
+)
+
+extra_env.set(var, current_library_path.stdout().strip())
+if host_system == 'windows'
+  extra_env.prepend('PATH', meson.project_build_root() / 'rsvg')
+  foreach i: library_dependencies_sole
+    x = i.get_variable(pkgconfig: 'bindir', default_value: '')
+    if x != ''
+      extra_env.prepend('PATH', x)
+    endif
+  endforeach
+endif
+
 # used in librsvg/meson.build.  This is so that '#include <librsvg/rsvg.h>` will pick
 # up exactly that file from the source tree.
 includeinc = include_directories('include')
