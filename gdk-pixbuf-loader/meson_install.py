@@ -30,12 +30,12 @@ if __name__ == '__main__':
         print('*** Note: Please run gdk-pixbuf-queryloaders manually ' +
               'against the newly-built gdkpixbuf-svg loader', file=sys.stderr)
     else:
+        env = os.environ.copy()
+        env['GDK_PIXBUF_MODULEDIR'] = Path(args.gdk_pixbuf_moduledir).as_posix()
         with cache_file.open('w', encoding='utf-8') as f:
             subprocess.run(
                 [Path(args.gdk_pixbuf_queryloaders).as_posix()],
-                env={
-                    'GDK_PIXBUF_MODULEDIR': Path(args.gdk_pixbuf_moduledir).as_posix()
-                },
+                env=env,
                 stdout=f,
                 check=True
             )
