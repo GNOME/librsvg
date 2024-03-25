@@ -179,25 +179,59 @@ foreach d: [libxml_dep, freetype2_dep]
 endforeach
 
 target = get_option('triplet')
+target_arg = []
 
 # Ideally, cc.get_argument_syntax() == 'msvc' should
 # cover this, but 'clang' can mean GCC or MSVC-style
 # depending on the env and/or flags on Windows
 is_msvc_style = cc.get_argument_syntax() == 'msvc' or cc.get_define('_MSC_VER') != ''
 
+if target != ''
+  target_arg += ['--target', target]
+endif
+
 if host_system == 'windows'
   query_rustc_harness = find_program('meson/query-rustc.py', native: true, required: get_option('default_library') != 'shared')
 
-  rustc_native_libs_args = [
+  rustc_query_args = [
     query_rustc_harness,
     rustc,
   ]
-  if target != ''
-    rustc_native_libs_args += ['--target', target]
+
+  # First deduce the target that is to be used for the build, based on Meson build settings
+  host_cpu_family = host_machine.cpu_family()
+  rustc_toolchain_cpu = host_cpu_family == 'x86' ? 'i686' : host_cpu_family
+  if is_msvc_style
+    rustc_toolchain_cc = 'msvc'
+  else
+    rustc_toolchain_cc = cc.get_id() == 'clang' ? 'gnullvm' : 'gnu'
+  endif
+  rustc_target = '@0@-pc-windows-@1@'.format(rustc_toolchain_cpu, rustc_toolchain_cc)
+
+  if target == ''
+    default_host = run_command(
+      rustc_query_args + ['--query=default-host-toolchain'],
+      capture: true,
+      check: true
+    )
+    default_rustc_toolchain = default_host.stdout().split()[0]
+
+    # If the default Rust target triplet does not match the triplet that we want to build for
+    # pass in a --target argument to RustC/Cargo that best matches what we are building for,
+    # if we didn't use -Dtriplet=... in the Meson setup line
+    if default_rustc_toolchain != rustc_target
+      target_arg += ['--target', rustc_target]
+    endif
   endif
 
+  rustc_query_native_static_libs_args = rustc_query_args
+  if target_arg != []
+    rustc_query_native_static_libs_args += target_arg
+  endif
+  rustc_query_native_static_libs_args += ['--query=native-static-libs']
+
   native_libs = run_command(
-    rustc_native_libs_args + ['--query=native-static-libs'],
+    rustc_query_native_static_libs_args,
     capture: true,
     check: true
   )
@@ -305,8 +339,8 @@ if not get_option('debug') or \
   cargo_wrapper_args += ['--release']
 endif
 
-if target != ''
-  cargo_wrapper_args += ['--target', target]
+if target_arg != []
+  cargo_wrapper_args += target_arg
 endif
 
 subdir('include')

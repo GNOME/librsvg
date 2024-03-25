@@ -12,7 +12,7 @@ parser = ArgumentParser()
 
 parser.add_argument("RUSTC", type=Path, help="Path to rustc")
 parser.add_argument("--query", action="store",
-                    choices=['native-static-libs'],
+                    choices=['native-static-libs', 'default-host-toolchain'],
                     help="Item to query from RustC ['native-static-libs']",
                     required=True)
 
@@ -47,6 +47,13 @@ def retrieve_native_static_libs_from_output(output):
                 )
             )
 
+# Get the default target host
+def retrieve_default_host_toolchain(output):
+    for i in output.strip().splitlines():
+        match = re.match(r"host: (.+)", i)
+        if match:
+            print(match.group(1))
+
 parser.add_argument("--target", help="Target triplet")
 
 if __name__ == "__main__":
@@ -57,6 +64,8 @@ if __name__ == "__main__":
 
     if query == 'native-static-libs':
         query_arg = ['--print=%s' % query]
+    else:
+        query_arg = ['--version', '--verbose']
     rustc_cmd = [
         Path(args.RUSTC).as_posix(),
     ]
@@ -77,3 +86,5 @@ if __name__ == "__main__":
     )
     if query == 'native-static-libs':
         retrieve_native_static_libs_from_output(query_results.stderr)
+    elif query == 'default-host-toolchain':
+        retrieve_default_host_toolchain(query_results.stdout)
