@@ -102,18 +102,15 @@ cargo_prefixes = [
     (Path(args.prefix) / args.libdir).as_posix(),
 ]
 
+cargo_cmd = [Path(args.cargo).as_posix()]
+
 if args.command == "cbuild":
-    cargo_cmd = [Path(args.cargo).as_posix(), "cbuild", "--locked"]
+    cargo_cmd.extend(["cbuild", "--locked"])
     library_type = "staticlib" if args.extension in ("a", "lib") else "cdylib"
     cargo_cmd.extend(cargo_prefixes)
     cargo_cmd.extend(["--library-type", library_type])
 elif args.command == "test":
-    cargo_cmd = [
-        Path(args.cargo).as_posix(),
-        "test",
-        "--locked",
-        "--no-fail-fast",
-    ]
+    cargo_cmd.extend(["test", "--locked", "--no-fail-fast", "--color=always"])
     if 'librsvg' in args.packages:
         cargo_cmd.extend([
             "--features",
@@ -124,7 +121,7 @@ elif args.command == "test":
             "capi,test-utils",
         ])
 else:
-    cargo_cmd = [Path(args.cargo).as_posix(), "build", "--locked"]
+    cargo_cmd.extend(["build", "--locked"])
     if args.bin:
         cargo_cmd.extend(["--bin", args.bin])
 
