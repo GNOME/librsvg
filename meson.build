@@ -208,12 +208,15 @@ if host_system == 'windows'
   endif
   rustc_target = '@0@-pc-windows-@1@'.format(rustc_toolchain_cpu, rustc_toolchain_cc)
 
-  if target == ''
+  if target_arg == []
     default_host = run_command(
       rustc_query_args + ['--query=default-host-toolchain'],
       capture: true,
       check: true
     )
+    if default_host.stderr() != ''
+      error('error occurred when querying default toolchain: @0@'.format(default_host.stderr().split()[0]))
+    endif
     default_rustc_toolchain = default_host.stdout().split()[0]
 
     # If the default Rust target triplet does not match the triplet that we want to build for
@@ -235,6 +238,10 @@ if host_system == 'windows'
     capture: true,
     check: true
   )
+
+  if native_libs.stderr() != ''
+    error(native_libs.stderr())
+  endif
 
   foreach i: native_libs.stdout().split()
     if i != 'msvcrt'

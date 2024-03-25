@@ -13,8 +13,9 @@ parser = ArgumentParser()
 parser.add_argument("RUSTC", type=Path, help="Path to rustc")
 parser.add_argument("--query", action="store",
                     choices=['native-static-libs', 'default-host-toolchain'],
-                    help="Item to query from RustC ['native-static-libs']",
+                    help="Item to query from RustC ['native-static-libs', 'default-host-toolchain']",
                     required=True)
+parser.add_argument("--target", help="Target triplet")
 
 def removeprefix_fallback(s, pfx):
     if sys.version_info > (3, 9):
@@ -33,6 +34,10 @@ def removesuffix_fallback(s, sfx):
         return s
 
 def retrieve_native_static_libs_from_output(output):
+    if re.match(r'^error[:|\[]', output):
+        print(output, file=sys.stderr)
+        sys.exit()
+
     for i in output.strip().splitlines():
         match = re.match(r".+native-static-libs: (.+)", i)
         if match:
@@ -53,8 +58,6 @@ def retrieve_default_host_toolchain(output):
         match = re.match(r"host: (.+)", i)
         if match:
             print(match.group(1))
-
-parser.add_argument("--target", help="Target triplet")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -87,4 +90,7 @@ if __name__ == "__main__":
     if query == 'native-static-libs':
         retrieve_native_static_libs_from_output(query_results.stderr)
     elif query == 'default-host-toolchain':
-        retrieve_default_host_toolchain(query_results.stdout)
+        if query_results.stderr == '':
+            retrieve_default_host_toolchain(query_results.stdout)
+        else:
+            print(query_results.stderr, file=sys.stderr)
