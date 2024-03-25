@@ -180,6 +180,11 @@ endforeach
 
 target = get_option('triplet')
 
+# Ideally, cc.get_argument_syntax() == 'msvc' should
+# cover this, but 'clang' can mean GCC or MSVC-style
+# depending on the env and/or flags on Windows
+is_msvc_style = cc.get_argument_syntax() == 'msvc' or cc.get_define('_MSC_VER') != ''
+
 if host_system == 'windows'
   query_rustc_harness = find_program('meson/query-rustc.py', native: true, required: get_option('default_library') != 'shared')
 
@@ -261,11 +266,6 @@ endif
 # used in librsvg/meson.build.  This is so that '#include <librsvg/rsvg.h>` will pick
 # up exactly that file from the source tree.
 includeinc = include_directories('include')
-
-# Ideally, cc.get_argument_syntax() == 'msvc' should
-# cover this, but 'clang' can mean GCC or MSVC-style
-# depending on the env and/or flags on Windows
-is_msvc_style = cc.get_define('_MSC_VER') != ''
 
 # Set the suffixes up
 if host_system == 'windows'
