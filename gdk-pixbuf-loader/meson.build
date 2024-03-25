@@ -3,45 +3,24 @@ pixbufloader_sources = files(
 	'src/lib.rs',
 )
 
-pixbufloader_svg_def = configure_file(
-  command: [makedef_args, '--list', '@INPUT@'],
-  input: files(
-    'gdk-pixbuf-loader.symbols'
-  ),
-  output: 'gdk-pixbuf-loader.def',
-  capture: true,
-)
-
-pixbufloader_svg_ver = configure_file(
-  command: [makedef_args, '--list', '@INPUT@'],
-  input: files(
-    'gdk-pixbuf-loader.symbols'
-  ),
-  output: 'gdk-pixbuf-loader.ver',
-  capture: true,
-)
-
-version_script = meson.current_build_dir() / 'gdk-pixbuf-loader.ver'
-if host_system in ['darwin', 'ios']
-  vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
-else
-  vflag = '-Wl,--version-script,@0@'.format(version_script)
-endif
-
-pixbufloader_link_args = cc.get_supported_link_arguments([vflag]) + strip_link_args
-
-pixbufloader_svg = shared_module(
+pixbufloader = custom_target(
   'pixbufloader-svg',
-  files(
-    'io-svg.c'
-  ),
-  c_args: ['-DGDK_PIXBUF_ENABLE_BACKEND'],
-  link_args: pixbufloader_link_args,
-  link_depends: pixbufloader_svg_ver,
-  dependencies: librsvg_dep,
-  vs_module_defs: pixbufloader_svg_def,
+  build_by_default: true,
+  output: ['@0@pixbufloader_svg.@1@'.format(lib_prefix, ext_dynamic)],
+  console: true,
   install: true,
   install_dir: pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir'),
+  depend_files: pixbufloader_sources,
+  env: extra_env,
+  command: [
+    cargo_wrapper,
+    cargo_wrapper_args,
+    '--command=build',
+    '--current-build-dir', '@OUTDIR@',
+    '--current-source-dir', meson.current_source_dir(),
+    '--packages', 'pixbufloader-svg',
+    '--extension', ext_dynamic
+  ]
 )
 
 pixbuf_thumbnailer = configure_file(
@@ -72,3 +51,20 @@ meson.add_install_script(
   find_program('meson_install.py', native: true),
   pixbufloader_svg_install_args
 )
+
+if build_tests.allowed()
+  test(
+    'Rust tests (pixbufloader-svg)',
+    cargo_wrapper,
+    timeout: -1, # no timeout
+    args: [
+      cargo_wrapper_args,
+      '--current-build-dir', meson.current_build_dir(),
+      '--command=test',
+      '--current-source-dir', meson.current_source_dir(),
+      '--packages', 'pixbufloader-svg',
+    ],
+    env: extra_env,
+    depends: librsvg_lib
+  )
+endif

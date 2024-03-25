@@ -243,35 +243,6 @@ librsvg_c_pc = pkg.generate(
 )
 
 if build_gir.allowed()
-  env = environment()
-  if host_system in ['darwin', 'ios']
-    var = 'DYLD_LIBRARY_PATH'
-  elif host_system in ['windows', 'cygwin']
-    var = 'PATH'
-  else
-    var = 'LD_LIBRARY_PATH'
-  endif
-
-  current_library_path = run_command(
-    [
-      python,
-      '-c',
-      'import os; print(os.environ["@0@"]) if "@0@" in os.environ else ""'.format(var)
-    ],
-    capture: true,
-    check: true,
-  )
-  env.set(var, current_library_path.stdout().strip())
-  if host_system == 'windows'
-    env.prepend('PATH', meson.current_build_dir() / 'rsvg')
-    foreach i: library_dependencies_sole
-      x = i.get_variable(pkgconfig: 'bindir', default_value: '')
-      if x != ''
-        env.prepend('PATH', x)
-      endif
-    endforeach
-  endif
-
   gir_args = [
     '-DRSVG_COMPILATION'
   ]
@@ -317,7 +288,7 @@ if build_gir.allowed()
     symbol_prefix: [ 'rsvg', 'librsvg' ],
     dependencies: library_dependencies,
     includes: gir_includes,
-    env: env,
+    env: extra_env,
     export_packages: librsvg_pc,
     header: ['librsvg/rsvg.h'],
     install: true,
@@ -349,7 +320,7 @@ if build_tests.allowed()
   )
 
   test(
-    'Rust tests',
+    'Rust tests (rsvg)',
     cargo_wrapper,
     timeout: -1, # no timeout
     args: [
@@ -357,6 +328,22 @@ if build_tests.allowed()
       '--current-build-dir', meson.current_build_dir(),
       '--command=test',
       '--current-source-dir', meson.current_source_dir(),
+      '--packages', 'librsvg',
+    ],
+    env: extra_env,
+    depends: librsvg_lib
+  )
+
+  test(
+    'Rust tests (librsvg)',
+    cargo_wrapper,
+    timeout: -1, # no timeout
+    args: [
+      cargo_wrapper_args,
+      '--current-build-dir', meson.current_build_dir(),
+      '--command=test',
+      '--current-source-dir', meson.current_source_dir(),
+      '--packages', 'librsvg-c',
     ],
     env: extra_env,
     depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts

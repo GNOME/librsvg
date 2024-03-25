@@ -69,7 +69,7 @@ parser.add_argument("--libdir", required=True, help="Value of get_option('libdir
 g = parser.add_argument_group("Outputs")
 group = parser.add_mutually_exclusive_group(required=False)
 group.add_argument(
-    "--extension", help="filename extension for the static library (a, lib)",
+    "--extension", help="filename extension for the library (so, a, dll, lib, dylib)",
 )
 group.add_argument("--bin", help="Name of binary to build")
 
@@ -104,16 +104,25 @@ cargo_prefixes = [
 
 if args.command == "cbuild":
     cargo_cmd = [Path(args.cargo).as_posix(), "cbuild", "--locked"]
+    library_type = "staticlib" if args.extension in ("a", "lib") else "cdylib"
     cargo_cmd.extend(cargo_prefixes)
-    cargo_cmd.extend(["--library-type", "staticlib"])
+    cargo_cmd.extend(["--library-type", library_type])
 elif args.command == "test":
     cargo_cmd = [
         Path(args.cargo).as_posix(),
         "test",
         "--locked",
         "--no-fail-fast",
-        "--color=always",
     ]
+    if 'librsvg' in args.packages:
+        cargo_cmd.extend([
+            "--features",
+            # These are required for librsvg itself
+            # If doing an unqualified cargo build, they'll be called up
+            # by rsvg-convert
+            # https://github.com/rust-lang/cargo/issues/2911
+            "capi,test-utils",
+        ])
 else:
     cargo_cmd = [Path(args.cargo).as_posix(), "build", "--locked"]
     if args.bin:

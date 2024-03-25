@@ -24,10 +24,6 @@ url = "2"
 [build-dependencies]
 regex = "1.7.1"
 
-# Remove this section once the win32 NMAKE toolchain is gone
-[lib]
-crate-type = [ "staticlib", "rlib" ]
-
 [features]
 capi = [ "librsvg/capi" ]
 

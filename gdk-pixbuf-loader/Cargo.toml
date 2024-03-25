@@ -11,11 +11,15 @@ rust-version.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-cairo-rs = "0.19"
-cstr = "0.2"
 gdk-pixbuf = "0.19"
 gio = "0.19"
 glib = "0.19"
-libc = "0.2"
-librsvg = { path = "../rsvg" }
-librsvg-c = { path = "../librsvg-c" }
+
+[build-dependencies]
+system-deps = "6.0.0"
+
+[package.metadata.system-deps]
+librsvg = { name = "librsvg-2.0-uninstalled", version = "2.57", fallback-names = ["librsvg-2.0"] }
+
+[package.metadata.capi.header]
+enabled = false

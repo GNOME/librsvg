@@ -35,3 +35,20 @@ rsvg_convert = custom_target(
     '--bin', 'rsvg-convert'
   ]
 )
+
+if build_tests.allowed()
+  test(
+    'Rust tests (rsvg_convert)',
+    cargo_wrapper,
+    timeout: -1, # no timeout
+    args: [
+      cargo_wrapper_args,
+      '--current-build-dir', meson.current_build_dir(),
+      '--command=test',
+      '--current-source-dir', meson.current_source_dir(),
+      '--packages', 'rsvg_convert',
+    ],
+    env: extra_env,
+    depends: rsvg_convert
+  )
+endif

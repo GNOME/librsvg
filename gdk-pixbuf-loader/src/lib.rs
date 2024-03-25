@@ -1,25 +1,52 @@
 use std::ptr::null_mut;
 
 use gdk_pixbuf::ffi::{
-    GdkPixbuf, GdkPixbufFormat, GdkPixbufModule, GdkPixbufModulePattern,
-    GdkPixbufModulePreparedFunc, GdkPixbufModuleSizeFunc, GdkPixbufModuleUpdatedFunc,
-    GDK_PIXBUF_FORMAT_SCALABLE, GDK_PIXBUF_FORMAT_THREADSAFE,
+    GdkPixbufFormat, GdkPixbufModule, GdkPixbufModulePattern, GdkPixbufModulePreparedFunc,
+    GdkPixbufModuleSizeFunc, GdkPixbufModuleUpdatedFunc, GDK_PIXBUF_FORMAT_SCALABLE,
+    GDK_PIXBUF_FORMAT_THREADSAFE,
 };
 
-use libc::{c_char, c_int, c_uint};
+use std::ffi::{c_char, c_int, c_uint};
 
-use glib::ffi::{gboolean, gpointer, GError};
+use glib::ffi::{gboolean, gpointer, GDestroyNotify, GError};
+use glib::prelude::*;
 use glib::translate::*;
 use glib::Bytes;
 
-use gio::prelude::MemoryInputStreamExt;
+use gio::ffi::{GCancellable, GFile, GInputStream};
+use gio::prelude::*;
 use gio::MemoryInputStream;
-use glib::gobject_ffi::GObject;
 
-use librsvg_c::sizing::LegacySize;
-use rsvg::Loader;
+use glib::gstr;
 
-use cstr::cstr;
+type RSvgHandle = glib::gobject_ffi::GObject;
+
+type RsvgSizeFunc = Option<
+    unsafe extern "C" fn(inout_width: *mut c_int, inout_height: *mut c_int, user_data: gpointer),
+>;
+
+#[link(name = "rsvg-2")]
+extern "C" {
+    fn rsvg_handle_new_from_stream_sync(
+        input_stream: *mut GInputStream,
+        base_file: *mut GFile,
+        flags: u32,
+        cancellable: *mut GCancellable,
+        error: *mut *mut GError,
+    ) -> *mut RSvgHandle;
+
+    fn rsvg_handle_get_pixbuf_and_error(
+        handle: *mut RSvgHandle,
+        error: *mut *mut GError,
+    ) -> *mut gdk_pixbuf::ffi::GdkPixbuf;
+
+    fn rsvg_handle_set_size_callback(
+        handle: *mut RSvgHandle,
+        size_func: RsvgSizeFunc,
+        user_data: gpointer,
+        destroy_notify: GDestroyNotify,
+    );
+}
 
 struct SvgContext {
     size_func: GdkPixbufModuleSizeFunc,
@@ -29,7 +56,6 @@ struct SvgContext {
     stream: MemoryInputStream,
 }
 
-#[no_mangle]
 unsafe extern "C" fn begin_load(
     size_func: GdkPixbufModuleSizeFunc,
     prep_func: GdkPixbufModulePreparedFunc,
@@ -53,7 +79,6 @@ unsafe extern "C" fn begin_load(
     Box::into_raw(ctx) as gpointer
 }
 
-#[no_mangle]
 unsafe extern "C" fn load_increment(
     user_data: gpointer,
     buffer: *const u8,
@@ -71,71 +96,55 @@ unsafe extern "C" fn load_increment(
     true.into_glib()
 }
 
-#[no_mangle]
 unsafe extern "C" fn stop_load(user_data: gpointer, error: *mut *mut GError) -> gboolean {
     let ctx = Box::from_raw(user_data as *mut SvgContext);
     if !error.is_null() {
         *error = null_mut();
     }
 
-    fn _inner_stop_load(ctx: &SvgContext) -> Result<gdk_pixbuf::Pixbuf, String> {
-        let handle = Loader::new()
-            .read_stream::<_, gio::File, gio::Cancellable>(&ctx.stream, None, None)
-            .map_err(|e| e.to_string())?;
+    let mut local_error = null_mut::<GError>();
 
-        let renderer = rsvg::CairoRenderer::new(&handle);
-        let (w, h) = renderer.legacy_document_size().map_err(|e| e.to_string())?;
-        let mut w = w.ceil() as c_int;
-        let mut h = h.ceil() as c_int;
-
-        if let Some(size_func) = ctx.size_func {
-            let mut tmp_w: c_int = w;
-            let mut tmp_h: c_int = h;
-            unsafe {
-                size_func(
-                    &mut tmp_w as *mut c_int,
-                    &mut tmp_h as *mut c_int,
-                    ctx.user_data,
-                )
-            };
-            if tmp_w != 0 && tmp_h != 0 {
-                w = tmp_w;
-                h = tmp_h;
-            }
-        }
-
-        let pb = librsvg_c::pixbuf_utils::render_to_pixbuf_at_size(
-            &renderer, w as f64, h as f64, w as f64, h as f64,
-        )
-        .map_err(|e| e.to_string())?;
-
-        Ok(pb)
-    }
-
-    let pixbuf = match _inner_stop_load(&ctx) {
-        Ok(r) => r,
-        Err(e) => {
+    let handle = {
+        let raw_handle = rsvg_handle_new_from_stream_sync(
+            ctx.stream.upcast_ref::<gio::InputStream>().to_glib_none().0,
+            null_mut(), // base_file
+            0,
+            null_mut(), // cancellable
+            &mut local_error,
+        );
+        if !local_error.is_null() {
             if !error.is_null() {
-                let gerr = glib::Error::new(gdk_pixbuf::PixbufError::Failed, &e);
-                *error = gerr.into_glib_ptr();
+                *error = local_error;
             }
             return false.into_glib();
         }
+
+        glib::Object::from_glib_full(raw_handle)
+    };
+
+    rsvg_handle_set_size_callback(handle.as_ptr(), ctx.size_func, ctx.user_data, None);
+
+    let pixbuf = {
+        let p = rsvg_handle_get_pixbuf_and_error(handle.as_ptr(), &mut local_error);
+        if !local_error.is_null() {
+            if !error.is_null() {
+                *error = local_error;
+            }
+            return false.into_glib();
+        }
+
+        gdk_pixbuf::Pixbuf::from_glib_full(p)
     };
 
     let w = pixbuf.width();
     let h = pixbuf.height();
-    let pixbuf: *mut GdkPixbuf = pixbuf.to_glib_full();
 
     if let Some(prep_func) = ctx.prep_func {
-        prep_func(pixbuf, null_mut(), ctx.user_data);
+        prep_func(pixbuf.to_glib_none().0, null_mut(), ctx.user_data);
     }
     if let Some(update_func) = ctx.update_func {
-        update_func(pixbuf, 0, 0, w, h, ctx.user_data);
+        update_func(pixbuf.to_glib_none().0, 0, 0, w, h, ctx.user_data);
     }
-
-    // The module loader increases a ref so we drop the pixbuf here
-    glib::gobject_ffi::g_object_unref(pixbuf as *mut GObject);
 
     true.into_glib()
 }
@@ -149,48 +158,48 @@ extern "C" fn fill_vtable(module: &mut GdkPixbufModule) {
 
 const SIGNATURE: [GdkPixbufModulePattern; 3] = [
     GdkPixbufModulePattern {
-        prefix: cstr!(" <svg").as_ptr() as *mut c_char,
-        mask: cstr!("*    ").as_ptr() as *mut c_char,
+        prefix: gstr!(" <svg").as_ptr() as *mut c_char,
+        mask: gstr!("*    ").as_ptr() as *mut c_char,
         relevance: 100,
     },
     GdkPixbufModulePattern {
-        prefix: cstr!(" <!DOCTYPE svg").as_ptr() as *mut c_char,
-        mask: cstr!("*             ").as_ptr() as *mut c_char,
+        prefix: gstr!(" <!DOCTYPE svg").as_ptr() as *mut c_char,
+        mask: gstr!("*             ").as_ptr() as *mut c_char,
         relevance: 100,
     },
     GdkPixbufModulePattern {
-        prefix: std::ptr::null_mut(),
-        mask: std::ptr::null_mut(),
+        prefix: null_mut(),
+        mask: null_mut(),
         relevance: 0,
     },
 ];
 
 const MIME_TYPES: [*const c_char; 7] = [
-    cstr!("image/svg+xml").as_ptr(),
-    cstr!("image/svg").as_ptr(),
-    cstr!("image/svg-xml").as_ptr(),
-    cstr!("image/vnd.adobe.svg+xml").as_ptr(),
-    cstr!("text/xml-svg").as_ptr(),
-    cstr!("image/svg+xml-compressed").as_ptr(),
+    gstr!("image/svg+xml").as_ptr(),
+    gstr!("image/svg").as_ptr(),
+    gstr!("image/svg-xml").as_ptr(),
+    gstr!("image/vnd.adobe.svg+xml").as_ptr(),
+    gstr!("text/xml-svg").as_ptr(),
+    gstr!("image/svg+xml-compressed").as_ptr(),
     std::ptr::null(),
 ];
 
 const EXTENSIONS: [*const c_char; 4] = [
-    cstr!("svg").as_ptr(),
-    cstr!("svgz").as_ptr(),
-    cstr!("svg.gz").as_ptr(),
+    gstr!("svg").as_ptr(),
+    gstr!("svgz").as_ptr(),
+    gstr!("svg.gz").as_ptr(),
     std::ptr::null(),
 ];
 
 #[no_mangle]
 extern "C" fn fill_info(info: &mut GdkPixbufFormat) {
-    info.name = cstr!("svg").as_ptr() as *mut c_char;
+    info.name = gstr!("svg").as_ptr() as *mut c_char;
     info.signature = SIGNATURE.as_ptr() as *mut GdkPixbufModulePattern;
-    info.description = cstr!("Scalable Vector Graphics").as_ptr() as *mut c_char; //TODO: Gettext this
+    info.description = gstr!("Scalable Vector Graphics").as_ptr() as *mut c_char; //TODO: Gettext this
     info.mime_types = MIME_TYPES.as_ptr() as *mut *mut c_char;
     info.extensions = EXTENSIONS.as_ptr() as *mut *mut c_char;
     info.flags = GDK_PIXBUF_FORMAT_SCALABLE | GDK_PIXBUF_FORMAT_THREADSAFE;
-    info.license = cstr!("LGPL").as_ptr() as *mut c_char;
+    info.license = gstr!("LGPL").as_ptr() as *mut c_char;
 }
 
 #[cfg(test)]
@@ -201,7 +210,7 @@ mod tests {
     use glib::translate::IntoGlib;
 
     use crate::{EXTENSIONS, MIME_TYPES};
-    use libc::c_char;
+    use std::ffi::c_char;
     use std::ptr::null_mut;
 
     fn pb_format_new() -> GdkPixbufFormat {
@@ -243,9 +252,7 @@ mod tests {
             .filter(|e| !e.is_null())
             .map(|e| {
                 if !e.is_null() {
-                    // We use strlen in all of them to ensure some safety
-                    // We could use CStr instead but it'd be a bit more cumbersome
-                    assert!(unsafe { libc::strlen(*e as *const c_char) } > 0)
+                    assert!(!unsafe { std::ffi::CStr::from_ptr(*e) }.is_empty())
                 }
             })
             .count(); // Count all non_null items
@@ -278,10 +285,9 @@ mod tests {
                     assert!(!(*ptr).prefix.is_null());
                     if (*ptr).mask != null_mut() {
                         // Mask can be null
-                        assert_eq!(
-                            libc::strlen((*ptr).prefix as *mut c_char),
-                            libc::strlen((*ptr).mask as *mut c_char)
-                        );
+                        let prefix = std::ffi::CStr::from_ptr((*ptr).prefix).to_bytes();
+                        let mask = std::ffi::CStr::from_ptr((*ptr).mask).to_bytes();
+                        assert_eq!(prefix.len(), mask.len());
                     }
                     // Relevance must be 0 to 100
                     assert!((*ptr).relevance >= 0);
@@ -315,7 +321,7 @@ mod tests {
         unsafe extern "C" fn prep_cb(
             pb: *mut gdk_pixbuf::ffi::GdkPixbuf,
             pba: *mut gdk_pixbuf::ffi::GdkPixbufAnimation,
-            user_data: *mut libc::c_void,
+            user_data: *mut std::ffi::c_void,
         ) {
             assert_eq!(user_data, null_mut());
             assert_eq!(pba, null_mut());
