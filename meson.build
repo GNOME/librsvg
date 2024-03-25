@@ -185,6 +185,7 @@ target_arg = []
 toolchain_arg = []
 toolchain_ver = get_option('rustc-version')
 
+check_version = false
 # Check toolchain_ver if supplied, if in the form of a version
 # We assume to continue if a stable, nightly or beta or custom toolchain is specified
 if toolchain_ver != ''
@@ -197,8 +198,8 @@ if toolchain_ver != ''
     capture: true,
     check: true
   )
-  check = is_version_string_check.stdout().split()[0] == 'check'
-  if check
+  check_version = is_version_string_check.stdout().split()[0] == 'check'
+  if check_version
     if not toolchain_ver.version_compare('>=@0@'.format(msrv))
       error('Specified Rust toolchain version @0@ is less than @1@'.format(toolchain_ver, msrv))
     endif
@@ -233,7 +234,7 @@ if host_system == 'windows'
   rustc_target = '@0@-pc-windows-@1@'.format(rustc_toolchain_cpu, rustc_toolchain_cc)
 
   if toolchain_ver != ''
-    toolchain_arg += ['--toolchain-version', toolchain_ver]
+    build_triplet_arg = []
     if target_arg == []
       target_arg += ['--target', rustc_target]
     endif
@@ -245,8 +246,32 @@ if host_system == 'windows'
       build_cpu_family = build_machine.cpu_family()
       rustc_build_toolchain_cpu = build_cpu_family == 'x86' ? 'i686' : build_cpu_family
       rustc_build_triplet = '@0@-pc-windows-@1@'.format(rustc_build_toolchain_cpu, rustc_toolchain_cc)
-      toolchain_arg += toolchain_arg + ['--build-triplet', rustc_build_triplet]
+      build_triplet_arg += ['--build-triplet', rustc_build_triplet]
     endif
+
+    # If a version number is used, also check against the actual release that is depicted
+    # by the currently installed 'stable' toolchain, and use the stable toolchain if the requested
+    # version matches the installed 'stable' toolchain
+    if check_version
+      stable_toolchain_arg = ['--toolchain-version', 'stable']
+
+      stable_actual_version = run_command(
+        rustc_query_args + ['--query=stable-actual-version'] + stable_toolchain_arg + target_arg + build_triplet_arg,
+        capture: true,
+        check: true
+      )
+      if stable_actual_version.stderr() != ''
+        error('error occurred when querying stable toolchain: @0@'.format(default_host.stderr().split()[0]))
+      endif
+      stable_version = stable_actual_version.stdout().split()[0]
+      if stable_version == toolchain_ver
+        toolchain_arg += stable_toolchain_arg
+      endif
+    endif
+    if toolchain_arg == []
+      toolchain_arg += ['--toolchain-version', toolchain_ver]
+    endif
+    toolchain_arg += toolchain_arg + build_triplet_arg
   endif
 
   if target_arg == []
