@@ -5,7 +5,7 @@ import re
 import sys
 
 PLACES_TO_CHECK = [
-    ['meson.build',                      r"'rustc', version:'>= (.*)'"],
+    ['meson.build',                      r"msrv = '(.*)'"],
     ['Cargo.toml',                       r'rust-version\s*=\s*"(.*)"'],
     ['ci/container_builds.yml',          r'RUST_MINIMUM:\s*"(.*)"'],
     ['devel-docs/devel_environment.rst', r'rust (.*) or later'],

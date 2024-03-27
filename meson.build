@@ -20,10 +20,11 @@ cc = meson.get_compiler('c')
 
 # MSRV - Minimum Supported Rust Version
 # If you change this, please update compiling.rst
-cargo = find_program('cargo', version:'>= 1.70.0', native: true)
+msrv = '1.70.0'
+cargo = find_program('cargo', version:'>= @0@'.format(msrv), native: true)
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)
 cargo_c = find_program('cargo-cbuild', version:'>= 0.9.19', native: true)
-rustc = find_program('rustc', version:'>= 1.70.0', native: true)
+rustc = find_program('rustc', version:'>= @0@'.format(msrv), native: true)
 makedef = find_program('meson/makedef.py', native: true)
 
 py = import('python')
@@ -179,23 +180,138 @@ foreach d: [libxml_dep, freetype2_dep]
 endforeach
 
 target = get_option('triplet')
+target_arg = []
 
-if host_system == 'windows'
-  rustc_native_libs_harness = find_program('meson/query-rustc-native-libs.py', native: true, required: get_option('default_library') != 'shared')
+toolchain_arg = []
+toolchain_ver = get_option('rustc-version')
 
-  rustc_native_libs_args = [
-    rustc_native_libs_harness,
-    rustc,
-  ]
-  if target != ''
-    rustc_native_libs_args += ['--target', target]
+check_version = false
+# Check toolchain_ver if supplied, if in the form of a version
+# We assume to continue if a stable, nightly or beta or custom toolchain is specified
+if toolchain_ver != ''
+  if host_system == 'windows'
+    warning('\'rustc-version\' option currently only supported for Windows')
   endif
-
-  native_libs = run_command(
-    rustc_native_libs_args,
+  check_version_script = find_program('meson/check-is-version-string.py', native: true)
+  is_version_string_check = run_command(
+    [check_version_script, '--string', toolchain_ver],
     capture: true,
     check: true
   )
+  check_version = is_version_string_check.stdout().split()[0] == 'check'
+  if check_version
+    if not toolchain_ver.version_compare('>=@0@'.format(msrv))
+      error('Specified Rust toolchain version @0@ is less than @1@'.format(toolchain_ver, msrv))
+    endif
+  endif
+endif
+
+# Ideally, cc.get_argument_syntax() == 'msvc' should
+# cover this, but 'clang' can mean GCC or MSVC-style
+# depending on the env and/or flags on Windows
+is_msvc_style = cc.get_argument_syntax() == 'msvc' or cc.get_define('_MSC_VER') != ''
+
+if target != ''
+  target_arg += ['--target', target]
+endif
+
+if host_system == 'windows'
+  query_rustc_harness = find_program('meson/query-rustc.py', native: true, required: get_option('default_library') != 'shared')
+
+  rustc_query_args = [
+    query_rustc_harness,
+    rustc,
+  ]
+
+  # First deduce the target that is to be used for the build, based on Meson build settings
+  host_cpu_family = host_machine.cpu_family()
+  rustc_toolchain_cpu = host_cpu_family == 'x86' ? 'i686' : host_cpu_family
+  if is_msvc_style
+    rustc_toolchain_cc = 'msvc'
+  else
+    rustc_toolchain_cc = cc.get_id() == 'clang' ? 'gnullvm' : 'gnu'
+  endif
+  rustc_target = '@0@-pc-windows-@1@'.format(rustc_toolchain_cpu, rustc_toolchain_cc)
+
+  if toolchain_ver != ''
+    build_triplet_arg = []
+    if target_arg == []
+      target_arg += ['--target', rustc_target]
+    endif
+
+    # If doing a cross build, with '-Drustc-version=...' we must find the native toolchain on the build
+    # machine with its arch triplet that is to be used for building against the target, as Cargo will
+    # require this in its command line
+    if meson.is_cross_build()
+      build_cpu_family = build_machine.cpu_family()
+      rustc_build_toolchain_cpu = build_cpu_family == 'x86' ? 'i686' : build_cpu_family
+      rustc_build_triplet = '@0@-pc-windows-@1@'.format(rustc_build_toolchain_cpu, rustc_toolchain_cc)
+      build_triplet_arg += ['--build-triplet', rustc_build_triplet]
+    endif
+
+    # If a version number is used, also check against the actual release that is depicted
+    # by the currently installed 'stable' toolchain, and use the stable toolchain if the requested
+    # version matches the installed 'stable' toolchain
+    if check_version
+      stable_toolchain_arg = ['--toolchain-version', 'stable']
+
+      stable_actual_version = run_command(
+        rustc_query_args + ['--query=stable-actual-version'] + stable_toolchain_arg + target_arg + build_triplet_arg,
+        capture: true,
+        check: true
+      )
+      if stable_actual_version.stderr() != ''
+        error('error occurred when querying stable toolchain: @0@'.format(default_host.stderr().split()[0]))
+      endif
+      stable_version = stable_actual_version.stdout().split()[0]
+      if stable_version == toolchain_ver
+        toolchain_arg += stable_toolchain_arg
+      endif
+    endif
+    if toolchain_arg == []
+      toolchain_arg += ['--toolchain-version', toolchain_ver]
+    endif
+    toolchain_arg += toolchain_arg + build_triplet_arg
+  endif
+
+  if target_arg == []
+    default_host = run_command(
+      rustc_query_args + ['--query=default-host-toolchain'] + toolchain_arg,
+      capture: true,
+      check: true
+    )
+    if default_host.stderr() != ''
+      error('error occurred when querying default toolchain: @0@'.format(default_host.stderr().split()[0]))
+    endif
+    default_rustc_toolchain = default_host.stdout().split()[0]
+
+    # If the default Rust target triplet does not match the triplet that we want to build for
+    # pass in a --target argument to RustC/Cargo that best matches what we are building for,
+    # if we didn't use -Dtriplet=... in the Meson setup line.  Do the same if a toolchain version
+    # is requested
+    if default_rustc_toolchain != rustc_target
+      target_arg += ['--target', rustc_target]
+    endif
+  endif
+
+  rustc_query_native_static_libs_args = rustc_query_args
+  if target_arg != []
+    rustc_query_native_static_libs_args += target_arg
+  endif
+  if toolchain_arg != []
+    rustc_query_native_static_libs_args += toolchain_arg
+  endif
+  rustc_query_native_static_libs_args += ['--query=native-static-libs']
+
+  native_libs = run_command(
+    rustc_query_native_static_libs_args,
+    capture: true,
+    check: true
+  )
+
+  if native_libs.stderr() != ''
+    error(native_libs.stderr())
+  endif
 
   foreach i: native_libs.stdout().split()
     if i != 'msvcrt'
@@ -262,11 +378,6 @@ endif
 # up exactly that file from the source tree.
 includeinc = include_directories('include')
 
-# Ideally, cc.get_argument_syntax() == 'msvc' should
-# cover this, but 'clang' can mean GCC or MSVC-style
-# depending on the env and/or flags on Windows
-is_msvc_style = cc.get_define('_MSC_VER') != ''
-
 # Set the suffixes up
 if host_system == 'windows'
   ext_dynamic = 'dll'
@@ -305,8 +416,11 @@ if not get_option('debug') or \
   cargo_wrapper_args += ['--release']
 endif
 
-if target != ''
-  cargo_wrapper_args += ['--target', target]
+if target_arg != []
+  cargo_wrapper_args += target_arg
+endif
+if toolchain_arg != []
+  cargo_wrapper_args += toolchain_arg
 endif
 
 subdir('include')
