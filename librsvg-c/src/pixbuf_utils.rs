@@ -2,6 +2,8 @@
 //!
 //! This is the implementation of the `rsvg_pixbuf_*` family of functions.
 
+#![cfg(feature = "pixbuf")]
+
 use std::path::PathBuf;
 use std::ptr;
 

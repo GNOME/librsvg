@@ -1,6 +1,6 @@
 pixbufloader_sources = files(
   'Cargo.toml',
-	'src/lib.rs',
+  'src/lib.rs',
 )
 
 pixbufloader = custom_target(

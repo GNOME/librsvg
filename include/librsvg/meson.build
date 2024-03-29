@@ -1,12 +1,21 @@
 includes = files(
     'rsvg.h',
     'rsvg-cairo.h',
-    'rsvg-features.h'
+    'rsvg-pixbuf.h'
+)
+
+features_data = configuration_data()
+features_data.set10('LIBRSVG_HAVE_PIXBUF', pixbuf_dep.found())
+
+features_header = configure_file(
+    input: 'rsvg-features.h.in',
+    output: 'rsvg-features.h',
+    configuration: features_data
 )
 
 header_version = meson.project_version().split('.')
 
-header = configure_file(
+version_header = configure_file(
     input: 'rsvg-version.h.in',
     output: 'rsvg-version.h',
     configuration: {
@@ -17,7 +26,7 @@ header = configure_file(
     }
 )
 
-includes += [header]
+includes += [features_header, version_header]
 install_headers(
     includes,
     subdir: '@0@/librsvg'.format(librsvg_pc),

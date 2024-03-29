@@ -64,16 +64,21 @@ if __name__ == '__main__':
     arg_parser.add_argument('--os', type=str, choices=('win', 'linux', 'darwin'),
                             default='linux', required=True,
                             help='Target operating system for the exports file (win = MSVC module definition file, linux = version script, darwin = exported symbols list)')
-    arg_parser.add_argument('libname', metavar='FILE', type=pathlib.Path,
-                            help='Source file to parse')
+    arg_parser.add_argument('libnames', metavar='FILE', type=pathlib.Path,
+                            nargs='+',
+                            help='Source file(s) to parse')
 
     args = arg_parser.parse_args()
 
-    libname = args.libname
+    libnames = args.libnames
 
-    if not libname.exists():
-        raise FileNotFoundError(
-            errno.ENOENT, os.strerror(errno.ENOENT), libname)
+    for libname in libnames:
+        if not libname.exists():
+            raise FileNotFoundError(
+                errno.ENOENT, os.strerror(errno.ENOENT), libname)
+
+    if not args.list and len(libnames) > 1:
+        raise ValueError("Expect 1 filename as argument.")
 
     prefix = args.prefix or ''
     started = 0
@@ -101,14 +106,17 @@ if __name__ == '__main__':
         regex.extend(args.regex)
 
     # Ensure things are compatible on Windows with Python 3.7.x
-    libname_path_posix = pathlib.Path(libname).as_posix()
+    libname_path_posix = pathlib.Path(libnames[0]).as_posix()
 
     if args.list:
-        dump = libname.open('r', encoding='utf-8').readlines()
-        # Strip whitespaces
-        dump = [x.strip() for x in dump]
-        # Exclude blank lines
-        dump = [x for x in dump if len(x) > 0]
+        dump = []
+        for libname in libnames:
+            syms = libname.open('r', encoding='utf-8').readlines()
+            # Strip whitespaces
+            syms = [x.strip() for x in syms]
+            # Exclude blank lines
+            syms = [x for x in syms if len(x) > 0]
+            dump.extend(syms)
     elif args.nm is not None:
         # Use eval, since NM="nm -g"
         # Add -j to ensure only symbol names are output (otherwise in macOS

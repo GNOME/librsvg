@@ -114,13 +114,16 @@ minimum version is listed here; you may use a newer version instead.
 
 * Cairo 1.17.0 with PNG support
 * Freetype2 2.8.0
-* Gdk-pixbuf 2.20.0
 * GIO 2.24.0
+* Libxml2 2.9.0
+* Pango 1.46.0
+
+**Optional dependencies:**
+
+* GDK-Pixbuf 2.20.0
 * GObject-Introspection 0.10.8
 * gi-docgen
 * python3-docutils
-* Libxml2 2.9.0
-* Pango 1.46.0
 
 The following sections describe how to install these dependencies on
 several systems.
