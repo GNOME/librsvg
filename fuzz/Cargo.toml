@@ -22,7 +22,7 @@ librsvg = { path = "../rsvg" }
 debug = 1
 
 [[bin]]
-name = "fuzz_target_1"
-path = "fuzz_targets/fuzz_target_1.rs"
+name = "render_document"
+path = "fuzz_targets/render_document.rs"
 test = false
 doc = false
