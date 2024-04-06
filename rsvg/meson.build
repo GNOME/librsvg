@@ -214,8 +214,13 @@ else
   )
 endif
 
-if get_option('default_library') == 'shared'
-  librsvg_lib = shared_library(
+librsvg_lib = librsvg_c_lib
+
+# Wait on this dependency before trying to build using Rust
+librsvg_rust_dep = rust_artifacts
+
+if get_option('default_library') in ['shared', 'both']
+  librsvg_shared_lib = shared_library(
     rsvg_ver,
     rsvg_dummy,
     link_whole: librsvg_c_lib,
@@ -227,8 +232,30 @@ if get_option('default_library') == 'shared'
     install: true,
     version: meson.project_version() # it's not exact as m4
   )
-else
-  librsvg_lib = librsvg_c_lib
+  if get_option('default_library') == 'shared'
+    librsvg_lib = librsvg_shared_lib
+  endif
+  librsvg_rust_dep = librsvg_shared_lib
+endif
+if get_option('default_library') in ['static', 'both']
+  # Rust cannot yet use import libraries for MSVC which do not end in .lib.
+  # The static library must be manually generated so that it matches Meson's
+  # naming convention.
+  # See https://github.com/rust-lang/rust/issues/122455
+  librsvg_lib = custom_target(
+    'rsvg-2-static',
+    input: librsvg_c_lib,
+    output: '@0@rsvg-@1@.@2@'.format(lib_prefix, librsvg_api_major, 'a'),
+    command: [
+      python,
+      '-c',
+      'import os; import sys; import shutil; shutil.copy(sys.argv[1], sys.argv[2])',
+      '@INPUT0@',
+      '@OUTPUT0@'
+    ]
+  )
+
+  librsvg_rust_dep = librsvg_lib
 endif
 
 # This is the main dependency to use for tests; it means "link to the library we just built"
@@ -340,7 +367,7 @@ if build_tests.allowed()
       '--packages', 'librsvg',
     ] + avif_feature_args,
     env: extra_env,
-    depends: librsvg_lib
+    depends: librsvg_rust_dep
   )
 
   test(
@@ -356,6 +383,6 @@ if build_tests.allowed()
     ] + avif_feature_args
       + pixbuf_feature_args,
     env: extra_env,
-    depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts
+    depends: librsvg_rust_dep
   )
 endif

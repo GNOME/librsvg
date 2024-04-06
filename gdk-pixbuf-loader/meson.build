@@ -10,6 +10,7 @@ pixbufloader = custom_target(
   console: true,
   install: true,
   install_dir: pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir'),
+  depends: librsvg_rust_dep,
   depend_files: pixbufloader_sources,
   env: extra_env,
   command: [
@@ -65,6 +66,6 @@ if build_tests.allowed()
       '--packages', 'pixbufloader-svg',
     ],
     env: extra_env,
-    depends: librsvg_lib
+    depends: pixbufloader
   )
 endif

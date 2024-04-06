@@ -22,7 +22,7 @@ rsvg_convert = custom_target(
   console: true,
   install: true,
   install_dir: get_option('prefix') / get_option('bindir'),
-  depends: rust_artifacts,
+  depends: librsvg_rust_dep,
   depend_files: rsvg_convert_files,
   env: extra_env,
   command: [
