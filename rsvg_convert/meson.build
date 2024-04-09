@@ -33,7 +33,7 @@ rsvg_convert = custom_target(
     '--current-source-dir', meson.current_source_dir(),
     '--packages', 'rsvg_convert',
     '--bin', 'rsvg-convert'
-  ]
+  ] + avif_feature_args,
 )
 
 if build_tests.allowed()
@@ -47,7 +47,7 @@ if build_tests.allowed()
       '--command=test',
       '--current-source-dir', meson.current_source_dir(),
       '--packages', 'rsvg_convert',
-    ],
+    ] + avif_feature_args,
     env: extra_env,
     depends: rsvg_convert
   )

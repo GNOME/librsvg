@@ -62,6 +62,10 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--avif", action="store_true", help="Enable AVIF support"
+)
+
+parser.add_argument(
     "--packages",
     nargs="*",
     default=[],
@@ -106,6 +110,11 @@ pkg_config_path.insert(
 )
 env["PKG_CONFIG_PATH"] = os.pathsep.join(pkg_config_path)
 
+features = []
+
+if args.avif:
+    features.append('avif')
+
 cargo_prefixes = [
     "--prefix",
     Path(args.prefix).as_posix(),
@@ -129,14 +138,11 @@ if args.command == "cbuild":
 elif args.command == "test":
     cargo_cmd.extend(["test", "--locked", "--no-fail-fast", "--color=always"])
     if 'librsvg' in args.packages:
-        cargo_cmd.extend([
-            "--features",
-            # These are required for librsvg itself
-            # If doing an unqualified cargo build, they'll be called up
-            # by rsvg-convert
-            # https://github.com/rust-lang/cargo/issues/2911
-            "capi,test-utils",
-        ])
+        # These are required for librsvg itself
+        # If doing an unqualified cargo build, they'll be called up
+        # by rsvg-convert
+        # https://github.com/rust-lang/cargo/issues/2911
+        features.extend(["capi", "test-utils"])
 else:
     cargo_cmd.extend(["build", "--locked"])
     if args.bin:
@@ -153,6 +159,9 @@ else:
 
 if args.target:
     cargo_cmd.extend(['--target', args.target])
+
+if features:
+    cargo_cmd.extend(["--features", ",".join(features)])
 
 for p in args.packages:
     cargo_cmd.extend(["-p", p])

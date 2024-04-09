@@ -25,6 +25,7 @@ url = "2"
 regex = "1.7.1"
 
 [features]
+avif = [ "librsvg/avif" ]
 capi = [ "librsvg/capi" ]
 
 [package.metadata.capi]
