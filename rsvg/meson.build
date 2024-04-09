@@ -97,7 +97,7 @@ rust_artifacts = custom_target(
     '--current-source-dir', meson.current_source_dir(),
     '--packages', 'librsvg-c',
     '--extension', ext_static,
-  ],
+  ] + avif_feature_args,
   install: get_option('default_library') == 'static',
   install_dir: get_option('libdir'),
 )
@@ -329,7 +329,7 @@ if build_tests.allowed()
       '--command=test',
       '--current-source-dir', meson.current_source_dir(),
       '--packages', 'librsvg',
-    ],
+    ] + avif_feature_args,
     env: extra_env,
     depends: librsvg_lib
   )
@@ -344,7 +344,7 @@ if build_tests.allowed()
       '--command=test',
       '--current-source-dir', meson.current_source_dir(),
       '--packages', 'librsvg-c',
-    ],
+    ] + avif_feature_args,
     env: extra_env,
     depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts
   )

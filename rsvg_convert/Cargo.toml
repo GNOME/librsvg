@@ -45,6 +45,9 @@ librsvg = { path = "../rsvg", features = ["test-utils"] }
 [build-dependencies]
 system-deps = "6.0.0"
 
+[features]
+avif = [ "librsvg/avif" ]
+
 [[bin]]
 name = "rsvg-convert"
 path = "src/main.rs"

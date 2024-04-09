@@ -33,6 +33,7 @@ python = py.find_installation()
 
 # Required versions for dependencies - Please update compiling.rst with version numbers if these change
 cairo_required         = '>= 1.17.0'
+dav1d_required         = '>= 1.3.0'
 ft2_cmake_required     = '>= 2.8.0'   # Actual FreeType version required
 freetype2_required     = '>= 20.0.14' # Corresponds to ft2_cmake_required
 gdk_pixbuf_required    = '>= 2.20'
@@ -56,6 +57,10 @@ cairogobj_dep  = dependency('cairo-gobject',
 cairo_png_dep  = dependency('cairo-png',
                             version: cairo_required,
                             fallback: ['cairo']) # FIXME: cairo has no _dep for this one
+dav1d_dep      = dependency('dav1d',
+                            version: dav1d_required,
+                            method: 'pkg-config',
+                            required: get_option('avif'))
 freetype2_dep  = dependency('freetype2',
                             version: freetype2_required,
                             method: 'pkg-config',
@@ -158,6 +163,7 @@ library_dependencies_sole = [
   cairo_dep,
   cairogobj_dep,
   cairo_png_dep,
+  dav1d_dep,
   freetype2_dep.type_name() != 'cmake' ? freetype2_dep : empty_pc_dep,
   pixbuf_dep,
   gio_dep,
@@ -421,6 +427,12 @@ if target_arg != []
 endif
 if toolchain_arg != []
   cargo_wrapper_args += toolchain_arg
+endif
+
+if dav1d_dep.found()
+  avif_feature_args = ['--avif']
+else
+  avif_feature_args = []
 endif
 
 subdir('include')

@@ -34,6 +34,11 @@ option('triplet',
        value: '',
        description : 'Rust target triplet (if needed)')
 
+option('avif',
+       type: 'feature',
+       value: 'auto',
+       description : 'Support embedded AVIF via libdav1d')
+
 option('rustc-version',
        type: 'string',
        value: '',
