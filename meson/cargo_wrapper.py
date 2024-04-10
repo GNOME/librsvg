@@ -173,9 +173,6 @@ if features:
 for p in args.packages:
     cargo_cmd.extend(["-p", p])
 
-if features:
-    cargo_cmd.extend(["--features", ",".join(features)])
-
 if args.command == "test":
     cargo_cmd.extend(["--", "--include-ignored"])
 
