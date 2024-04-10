@@ -54,17 +54,19 @@ What can you hack on?
 Working on the source
 ~~~~~~~~~~~~~~~~~~~~~
 
-Librsvg uses an autotools setup, which is described in detail `in this
-blog
-post <https://viruta.org/librsvgs-build-infrastructure-autotools-and-rust.html>`__.
+Most of the time you can just work on the Rust source code and use
+``cargo test --workspace``, unless you are working on something like
+the C API for librsvg; in that case you will need to do a full build,
+or just wait for the Continuous Integration machinery (CI) do the full
+build for you.
 
-If you need to **add a new source file**, you need to do it in the
-toplevel ``Makefile.am``. *Note that this is for both
-C and Rust sources*, since ``make(1)`` needs to know when a Rust file
-changed so it can call ``cargo`` as appropriate.
+For a full build, librsvg uses the `Meson <https://mesonbuild.com>`_
+build system.  If you need to **add a new source file**, you need to
+do it in ``rsvg/meson.build``.  This is so that Meson can know when a
+Rust file changed so it can call ``cargo`` as appropriate.
 
 It is perfectly fine to ask the maintainer if you have questions about
-the Autotools setup; it’s a tricky bit of machinery, and we are glad
+the Meson setup; it’s a tricky bit of machinery, and we are glad
 to help.
 
 Continuous Integration
