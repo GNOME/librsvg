@@ -433,7 +433,7 @@ distcheck:
   script:
     - source ./ci/setup-dependencies-env.sh
     - meson setup _build --prefix=$PREFIX -Dvala=enabled --buildtype=release
-    - meson dist -C _build --no-tests
+    - meson dist -C _build
   artifacts:
     when: 'on_success'
     paths:
