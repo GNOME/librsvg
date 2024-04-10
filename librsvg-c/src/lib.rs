@@ -17,7 +17,6 @@ pub use handle::{
     rsvg_handle_get_geometry_for_layer,
     rsvg_handle_get_intrinsic_dimensions,
     rsvg_handle_get_intrinsic_size_in_pixels,
-    rsvg_handle_get_pixbuf_sub,
     rsvg_handle_get_position_sub,
     rsvg_handle_has_sub,
     rsvg_handle_internal_set_testing,
@@ -38,9 +37,13 @@ pub use handle::{
     rsvg_handle_write,
 };
 
+#[cfg(feature = "pixbuf")]
+pub use handle::rsvg_handle_get_pixbuf_sub;
+
 pub use dpi::{rsvg_set_default_dpi, rsvg_set_default_dpi_x_y};
 
 #[rustfmt::skip]
+#[cfg(feature = "pixbuf")]
 pub use pixbuf_utils::{
     rsvg_pixbuf_from_file,
     rsvg_pixbuf_from_file_at_max_size,
@@ -54,5 +57,7 @@ mod messages;
 
 mod dpi;
 pub mod handle;
+
+#[cfg(feature = "pixbuf")]
 pub mod pixbuf_utils;
 pub mod sizing;

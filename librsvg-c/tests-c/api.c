@@ -192,6 +192,7 @@ load_test_document (const char *basename) {
 #define EXAMPLE_TWO_W 100
 #define EXAMPLE_TWO_H 200
 
+#ifdef HAVE_PIXBUF
 static GdkPixbuf *
 pixbuf_from_file (const char *filename, GError **error)
 {
@@ -298,6 +299,7 @@ pixbuf_overflow (void)
     g_error_free (error);
     g_free (filename);
 }
+#endif /* defined(HAVE_PIXBUF) */
 
 static void
 noops (void)
@@ -553,6 +555,7 @@ handle_has_sub (void)
     g_object_unref (handle);
 }
 
+#ifdef HAVE_PIXBUF
 static void
 test_get_pixbuf (gboolean sub)
 {
@@ -635,6 +638,7 @@ handle_get_pixbuf_produces_g_warning (void)
     g_test_trap_subprocess (NULL, 0, 0);
     g_test_trap_assert_stderr ("*WARNING*could not render*");
 }
+#endif /* defined(HAVE_PIXBUF) */
 
 static void
 dimensions_and_position (void)
@@ -755,6 +759,7 @@ zero_size_func (gint *width, gint *height, gpointer user_data)
     *height = 0;
 }
 
+#ifdef HAVE_PIXBUF
 static void
 render_with_zero_size_callback (void)
 {
@@ -823,6 +828,7 @@ get_pixbuf_with_size_callback (void)
     g_free (data);
     g_object_unref (handle);
 }
+#endif /* defined(HAVE_PIXBUF) */
 
 static void
 detects_cairo_context_in_error (void)
@@ -1717,18 +1723,26 @@ static LoadingTestData loading_tests[] = {
     { "/loading/compressed-two-bytes-at-a-time", "loading/gnome-cool.svgz", 2 } /* to test reading the entire gzip header */
 };
 
-/* Tests for the deprecated GdkPixbuf-based API */
+#ifdef HAVE_PIXBUF
 static void
 add_pixbuf_tests (void)
 {
     int i;
 
+    /* Tests for rsvg_handle_get_pixbuf() and rsvg_handle_get_pixbuf_sub() */
+    g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
+    g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
+    g_test_add_func ("/api/handle_get_pixbuf_produces_g_warning", handle_get_pixbuf_produces_g_warning);
+    g_test_add_func ("/api/get_pixbuf_with_size_callback", get_pixbuf_with_size_callback);
+
+    /* Tests for the deprecated GdkPixbuf-based API */
     for (i = 0; i < G_N_ELEMENTS (pixbuf_tests); i++) {
         g_test_add_data_func (pixbuf_tests[i].test_name, &pixbuf_tests[i], test_pixbuf);
     }
 
     g_test_add_func ("/api/pixbuf_overflow", pixbuf_overflow);
 }
+#endif /* defined(HAVE_PIXBUF) */
 
 /* Tests for the C API of librsvg*/
 static void
@@ -1749,14 +1763,10 @@ add_api_tests (void)
     g_test_add_func ("/api/handle_new_from_stream_sync", handle_new_from_stream_sync);
     g_test_add_func ("/api/handle_read_stream_sync", handle_read_stream_sync);
     g_test_add_func ("/api/handle_has_sub", handle_has_sub);
-    g_test_add_func ("/api/handle_get_pixbuf", handle_get_pixbuf);
-    g_test_add_func ("/api/handle_get_pixbuf_sub", handle_get_pixbuf_sub);
-    g_test_add_func ("/api/handle_get_pixbuf_produces_g_warning", handle_get_pixbuf_produces_g_warning);
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
     g_test_add_func ("/api/set_size_callback", set_size_callback);
     g_test_add_func ("/api/reset_size_callback", reset_size_callback);
     g_test_add_func ("/api/render_with_zero_size_callback", render_with_zero_size_callback);
-    g_test_add_func ("/api/get_pixbuf_with_size_callback", get_pixbuf_with_size_callback);
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
@@ -1817,7 +1827,9 @@ main (int argc, char **argv)
 
     test_utils_print_dependency_versions ();
 
+#ifdef HAVE_PIXBUF
     add_pixbuf_tests ();
+#endif
     add_api_tests ();
     add_geometry_tests ();
     add_loading_tests ();

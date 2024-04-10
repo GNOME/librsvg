@@ -97,7 +97,8 @@ rust_artifacts = custom_target(
     '--current-source-dir', meson.current_source_dir(),
     '--packages', 'librsvg-c',
     '--extension', ext_static,
-  ] + avif_feature_args,
+  ] + avif_feature_args
+    + pixbuf_feature_args,
   install: get_option('default_library') == 'static',
   install_dir: get_option('libdir'),
 )
@@ -134,11 +135,19 @@ else
   makedef_tool_args += ['--nm', nm]
 endif
 
+sym_files = files(
+  '../win32/librsvg.symbols'
+)
+
+if pixbuf_dep.found()
+  sym_files += files(
+    '../win32/librsvg-pixbuf.symbols'
+  )
+endif
+
 librsvg_def = configure_file(
   command: [makedef_args, '--list', '@INPUT@'],
-  input: files(
-    '../win32/librsvg.symbols'
-  ),
+  input: sym_files,
   output: '@0@.def'.format(librsvg_pc),
   capture: true,
 )
@@ -224,7 +233,7 @@ endif
 
 # This is the main dependency to use for tests; it means "link to the library we just built"
 librsvg_dep = declare_dependency(
-  sources: includes + header,
+  sources: includes,
   include_directories: [includeinc],
   dependencies: library_dependencies,
   link_with: librsvg_lib,
@@ -259,7 +268,7 @@ if build_gir.allowed()
     'cairo',
   ]
 
-  if build_gdk_pixbuf.allowed()
+  if build_pixbuf_loader.allowed()
     gir_includes += [
       'GdkPixbuf-2.0',
     ]
@@ -344,7 +353,8 @@ if build_tests.allowed()
       '--command=test',
       '--current-source-dir', meson.current_source_dir(),
       '--packages', 'librsvg-c',
-    ] + avif_feature_args,
+    ] + avif_feature_args
+      + pixbuf_feature_args,
     env: extra_env,
     depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts
   )

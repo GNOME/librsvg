@@ -6,7 +6,10 @@
 
 #include <cairo.h>
 #include <gio/gio.h>
+
+#ifdef HAVE_PIXBUF
 #include <gdk-pixbuf/gdk-pixbuf.h>
+#endif
 
 G_BEGIN_DECLS
 
@@ -20,7 +23,9 @@ void test_utils_compare_surfaces (cairo_surface_t           *surface_a,
                                   cairo_surface_t           *surface_diff,
                                   TestUtilsBufferDiffResult *result);
 
+#ifdef HAVE_PIXBUF
 cairo_surface_t *test_utils_cairo_surface_from_pixbuf (const GdkPixbuf *pixbuf);
+#endif
 
 typedef gboolean (* AddTestFunc) (GFile *file);
 

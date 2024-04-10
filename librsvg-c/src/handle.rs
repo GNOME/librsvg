@@ -27,7 +27,9 @@ use std::slice;
 use std::str;
 use std::{f64, i32};
 
+#[cfg(feature = "pixbuf")]
 use gdk_pixbuf::Pixbuf;
+
 use gio::prelude::*;
 use glib::error::ErrorDomain;
 use url::Url;
@@ -38,12 +40,18 @@ use glib::types::instance_of;
 use glib::Bytes;
 use glib::{ffi::gpointer, gobject_ffi};
 
-use rsvg::c_api_only::{rsvg_log, Session, SharedImageSurface, SurfaceType};
+use rsvg::c_api_only::{rsvg_log, Session};
 use rsvg::{CairoRenderer, IntrinsicDimensions, Length, Loader, LoadingError, SvgHandle};
 
 use super::dpi::Dpi;
 use super::messages::{rsvg_g_critical, rsvg_g_warning};
-use super::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface};
+
+#[cfg(feature = "pixbuf")]
+use {
+    super::pixbuf_utils::{empty_pixbuf, pixbuf_from_surface},
+    rsvg::c_api_only::{SharedImageSurface, SurfaceType},
+};
+
 use super::sizing::LegacySize;
 
 // The C API exports global variables that contain the library's version number;
@@ -774,6 +782,7 @@ impl CHandle {
         self.render_layer(cr, id, &viewport)
     }
 
+    #[cfg(feature = "pixbuf")]
     fn get_pixbuf_sub(&self, id: Option<&str>) -> Result<Pixbuf, RenderingError> {
         let dimensions = self.get_dimensions_sub(None)?;
 
@@ -1208,6 +1217,7 @@ pub unsafe extern "C" fn rsvg_handle_render_cairo_sub(
 }
 
 #[no_mangle]
+#[cfg(feature = "pixbuf")]
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
     handle: *const RsvgHandle,
 ) -> *mut gdk_pixbuf::ffi::GdkPixbuf {
@@ -1233,6 +1243,7 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf(
 }
 
 #[no_mangle]
+#[cfg(feature = "pixbuf")]
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf_and_error(
     handle: *const RsvgHandle,
     error: *mut *mut glib::ffi::GError,
@@ -1258,6 +1269,7 @@ pub unsafe extern "C" fn rsvg_handle_get_pixbuf_and_error(
 }
 
 #[no_mangle]
+#[cfg(feature = "pixbuf")]
 pub unsafe extern "C" fn rsvg_handle_get_pixbuf_sub(
     handle: *const RsvgHandle,
     id: *const libc::c_char,

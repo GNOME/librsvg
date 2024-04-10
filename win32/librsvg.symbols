@@ -12,9 +12,6 @@ rsvg_handle_get_dimensions_sub
 rsvg_handle_get_intrinsic_dimensions
 rsvg_handle_get_intrinsic_size_in_pixels
 rsvg_handle_get_metadata
-rsvg_handle_get_pixbuf
-rsvg_handle_get_pixbuf_and_error
-rsvg_handle_get_pixbuf_sub
 rsvg_handle_get_position_sub
 rsvg_handle_get_title
 rsvg_handle_get_type
@@ -35,11 +32,6 @@ rsvg_handle_set_size_callback
 rsvg_handle_set_stylesheet
 rsvg_handle_write
 rsvg_init
-rsvg_pixbuf_from_file
-rsvg_pixbuf_from_file_at_zoom
-rsvg_pixbuf_from_file_at_size
-rsvg_pixbuf_from_file_at_max_size
-rsvg_pixbuf_from_file_at_zoom_with_max
 rsvg_set_default_dpi
 rsvg_set_default_dpi_x_y
 rsvg_term

@@ -1,7 +1,7 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 /* vim: set sw=4 sts=4 expandtab: */
 /* 
-   rsvg-cairo.h: SAX-based renderer for SVG files using cairo
+   rsvg-cairo.h: SAX-based renderer for SVG files using Cairo
  
    Copyright (C) 2005 Red Hat, Inc.
   

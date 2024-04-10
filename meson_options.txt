@@ -4,9 +4,16 @@ option('introspection',
        yield: true,
        description: 'Build introspection data (requires gobject-introspection)')
 
+option('pixbuf',
+       type: 'feature',
+       value: 'auto',
+       yield: true,
+       description: 'Build with GDK-Pixbuf'
+       )
+
 option('pixbuf-loader',
        type: 'feature',
-       value: 'enabled',
+       value: 'auto',
        yield: true,
        description: 'Build the GDK-Pixbuf SVG loader (requires gdk-pixbuf-query-loaders)'
        )

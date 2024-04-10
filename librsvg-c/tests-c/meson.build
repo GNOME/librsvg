@@ -16,14 +16,20 @@ api_test_sources = files(
 )
 
 if build_tests.allowed()
+  test_c_args = [
+    '-DTEST_DATA_DIR=@0@'.format(meson.current_source_dir()),
+    '-DTEST_SRC_DIR=@0@'.format(meson.current_build_dir()),
+    '-DTOP_SRC_DIR=@0@'.format(meson.project_source_root()),
+  ]
+
+  if pixbuf_dep.found()
+    test_c_args += ['-DHAVE_PIXBUF']
+  endif
+
   api_test = executable(
     'api',
     api_test_sources,
-    c_args: [
-      '-DTEST_DATA_DIR=@0@'.format(meson.current_source_dir()),
-      '-DTEST_SRC_DIR=@0@'.format(meson.current_build_dir()),
-      '-DTOP_SRC_DIR=@0@'.format(meson.project_source_root()),
-    ],
+    c_args: test_c_args,
     dependencies: librsvg_dep,
     gnu_symbol_visibility: 'hidden',
     install: false,

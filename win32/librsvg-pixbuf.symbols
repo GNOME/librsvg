@@ -1,0 +1,9 @@
+/* symbols from rsvg-pixbuf.h */
+rsvg_handle_get_pixbuf
+rsvg_handle_get_pixbuf_and_error
+rsvg_handle_get_pixbuf_sub
+rsvg_pixbuf_from_file
+rsvg_pixbuf_from_file_at_zoom
+rsvg_pixbuf_from_file_at_size
+rsvg_pixbuf_from_file_at_max_size
+rsvg_pixbuf_from_file_at_zoom_with_max

@@ -7,7 +7,7 @@ produce these (see :doc:`product` for details):
 
 -  ``rsvg-convert`` binary and its ``man`` page.
 -  librsvg shared library with the GObject-based API.
--  Gdk-pixbuf loader for SVG files.
+-  GDK-Pixbuf loader for SVG files.
 -  HTML documentation for the GObject-based API, with ``gi-docgen``.
 -  GObject-introspection information for language bindings.
 -  Vala language bindings.

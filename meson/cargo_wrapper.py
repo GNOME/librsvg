@@ -66,6 +66,10 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--pixbuf", action="store_true", help="Enable GDK-Pixbuf support"
+)
+
+parser.add_argument(
     "--packages",
     nargs="*",
     default=[],
@@ -114,6 +118,9 @@ features = []
 
 if args.avif:
     features.append('avif')
+
+if args.pixbuf:
+    features.append('pixbuf')
 
 cargo_prefixes = [
     "--prefix",
@@ -165,6 +172,9 @@ if features:
 
 for p in args.packages:
     cargo_cmd.extend(["-p", p])
+
+if features:
+    cargo_cmd.extend(["--features", ",".join(features)])
 
 if args.command == "test":
     cargo_cmd.extend(["--", "--include-ignored"])

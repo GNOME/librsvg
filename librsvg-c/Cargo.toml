@@ -13,7 +13,7 @@ rust-version.workspace = true
 cairo-rs = { version = "0.19", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 float-cmp = "0.9.0"
-gdk-pixbuf = "0.19"
+gdk-pixbuf = { version = "0.19", optional = true }
 gio = "0.19"
 glib = "0.19"
 libc = "0.2"
@@ -27,6 +27,7 @@ regex = "1.7.1"
 [features]
 avif = [ "librsvg/avif" ]
 capi = [ "librsvg/capi" ]
+pixbuf = [ "dep:gdk-pixbuf" ]
 
 [package.metadata.capi]
 min_version = "0.9.19"
