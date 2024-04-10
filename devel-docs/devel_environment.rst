@@ -122,6 +122,10 @@ minimum version is listed here; you may use a newer version instead.
 * Libxml2 2.9.0
 * Pango 1.46.0
 
+**Optional dependencies:**
+
+* dav1d 1.3.0 (to support the AVIF image format)
+
 The following sections describe how to install these dependencies on
 several systems.
 
