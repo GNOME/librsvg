@@ -46,14 +46,9 @@ Rust API
 ^^^^^^^^
 
 Apart from the C-compatible library, the Rust code for the library
-defines a ``librsvg`` crate that can be used by Rust programs.  As of
-2022/Aug, that API is still a bit experimental and subject to change,
-and it is not published yet on ``crates.io``.  In the future, when
-librsvg gets published to crates.io (`see what is missing to do
-that`_), it will follow Rust's usual semantic versioning scheme for
-API compatibility and stability throughout versions.
-
-.. _see what is missing to do that: https://gitlab.gnome.org/GNOME/librsvg/-/issues/635
+defines a ``librsvg`` crate that can be used by Rust programs.  Since
+version 2.57.0, librsvg is available as a regular crate in
+``crates.io``.
 
 
 ``rsvg-convert`` artifacts
