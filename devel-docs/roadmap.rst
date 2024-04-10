@@ -7,10 +7,6 @@ maintainers of librsvg.  Check this often!
 Short term
 ----------
 
-- `Switch from autotools to the Meson build system
-  <https://gitlab.gnome.org/GNOME/librsvg/-/merge_requests/657>`_.  This may make it
-  easier to integrate the Rust-based gdk-pixbuf-loader from the last point.
-
 - Fix `issue #778 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/778>`_ about incorrect
   offsetting for layers with opacity.  Solving this should make it easier to fix the root
   cause of `issue #1 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_, where librsvg
@@ -21,6 +17,10 @@ Short term
 
 - Support CSS custom properties ``var()``, at least the minimal
   feature set required for OpenType fonts.  See :doc:`custom_properties`.
+
+- `Make fuzzing good and easy - issue #1018
+  <https://gitlab.gnome.org/GNOME/librsvg/-/issues/1018>`_.  See the
+  discussion in that issue for details of the pending work.
 
 Medium term
 -----------
