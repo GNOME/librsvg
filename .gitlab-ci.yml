@@ -521,7 +521,7 @@ pages:
     - job: devel-docs
     - job: cargo-doc
   script:
-    - echo ""
+    - cp ci/pages-index.html public/index.html
   artifacts:
     paths:
       - public
