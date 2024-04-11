@@ -1,3 +1,5 @@
+# See devel-docs/compiling.rst for details on these options.
+
 option('introspection',
        type: 'feature',
        value: 'auto',
@@ -34,7 +36,7 @@ option('tests',
        type: 'feature',
        value: 'auto',
        yield: true,
-       description: 'Enable the librsvg-c tests')
+       description: 'Enable the test suite (requires gdk-pixbuf)')
 
 option('triplet',
        type: 'string',

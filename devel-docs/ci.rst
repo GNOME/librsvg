@@ -40,8 +40,7 @@ they do:
 
 - Check whether making a release at this point would actually work:
   this builds a release tarball and tries to compile it and run the
-  test suite again.  This stage is intended to check that the
-  autotools setup is up-to-date with respect to the git repository.
+  test suite again.
 
 - Finally, generate documentation: reference docs for the C and Rust
   APIs, and the rendered version of this development guide.  Publish
@@ -155,11 +154,9 @@ be used for various things:
 Release tests
 -------------
 
-There is a job that runs ``make distcheck``, a part of Autotools that
-simulates building a full release tarball.  This needs frequent
-babysitting if one adds or removes source files or test documents.
-Running ``make distcheck`` in the CI helps us guarantee that librsvg
-is always in a release-worthy state.
+There is a job that runs ``meson dist``, a part of Meson that
+simulates building a full release tarball.  Running this in the CI
+helps us guarantee that librsvg is always in a release-worthy state.
 
 
 Generate documentation
