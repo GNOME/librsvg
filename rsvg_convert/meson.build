@@ -12,7 +12,7 @@ rsvg_convert_files = files(
 rsvg_convert_output = ['rsvg-convert@0@'.format(ext_exe)]
 
 if get_option('debug') and is_msvc_style
-  rsvg_convert_output += ['rsvg_convert.pdb']
+  rsvg_convert_output += ['rsvg-convert.pdb']
 endif
 
 rsvg_convert = custom_target(
