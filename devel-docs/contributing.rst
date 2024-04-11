@@ -54,11 +54,33 @@ What can you hack on?
 Working on the source
 ~~~~~~~~~~~~~~~~~~~~~
 
+Make sure you have read the chapter on :doc:`devel_environment`.
+
+A typical development cycle goes like this:
+
+- Make some changes to the code; hopefully adding a test first.
+- Build and run the tests.  Use ``cargo test --workspace``.
+- Repeat until you and the tests are happy.
+
 Most of the time you can just work on the Rust source code and use
-``cargo test --workspace``, unless you are working on something like
-the C API for librsvg; in that case you will need to do a full build,
-or just wait for the Continuous Integration machinery (CI) do the full
-build for you.
+``cargo test --workspace``.  This will run the Rust-based tests, which
+are usually enough to test bug fixes in the SVG rendering code.
+
+However, sometimes you'll want to do a full build and run the full
+test suite, which includes the tests for the C API.
+
+To do a full build, you can use something like this:
+
+.. code-block:: sh
+
+   mkdir -p _build
+   meson setup _build -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
+   meson compile -C_ build
+   meson test -C _build
+
+Alternatively, you can make a merge request and wait for the
+Continuous Integration machinery (CI) do the full build for you.  The
+CI will run all the tests on multiple platforms.
 
 For a full build, librsvg uses the `Meson <https://mesonbuild.com>`_
 build system.  If you need to **add a new source file**, you need to
@@ -113,15 +135,21 @@ Test suite
 ~~~~~~~~~~
 
 All new features need to have corresponding tests.  Please see the
-file ``tests/README.md`` to see how to add new tests to the test suite.  In short:
+file ``rsvg/tests/README.md`` to see how to add new tests to the test suite.  In short:
 
-- Add unit tests in the ``src/*.rs`` files for internal things like
+- Add unit tests in the ``rsvg/src/*.rs`` files for internal things like
   parsers or algorithms.
 
-- Add rendering tests in ``tests/src/*.rs`` for SVG or CSS features.
-  See ``tests/README.md`` for details on how to do this.
+- Add rendering tests in ``rsvg/tests/src/*.rs`` for SVG or CSS features.
+  See ``rsvg/tests/README.md`` for details on how to do this.
 
-In either case, you can run ``cargo test`` if you set up your
+- Tests for the C API go in ``librsvg-c/test-c/*.c``.  Note that to
+  run these tests you must run a full meson build, not just ``cargo
+  test --workspace``.
+
+- Tests for ``rsvg-convert`` go in ``rsvg_convert/tests/*.rs``.
+
+In most cases, you can run ``cargo test --workspace`` if you set up your
 development environment as instructed in the :doc:`devel_environment`
 chapter.  Alternatively, push your changes to a branch, and watch the
 results of its CI pipeline.
@@ -170,16 +198,15 @@ explain it.
 Testing performance-related changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can use the
-`rsvg-bench <https://gitlab.gnome.org/federico/rsvg-bench>`__ tool to
-benchmark librsvg.  For example, you can ask rsvg-bench
-to render one or more SVGs hundreds of times in a row, so you can take
-accurate timings or run a sampling profiler and get enough samples.
+The ``rsvg-bench`` directory in the source tree has a tool to
+benchmark librsvg.  For example, you can ask rsvg-bench to render one
+or more SVGs hundreds of times in a row, so you can take accurate
+timings or run a sampling profiler and get enough samples.
 
 Included benchmarks
 ~~~~~~~~~~~~~~~~~~~
 
-The ``benches/`` directory has a couple of benchmarks for functions
+The ``rsvg/benches/`` directory has a couple of benchmarks for functions
 related to SVG filter effects.  You can run them with ``cargo bench``.
 
 These benchmarks use the
