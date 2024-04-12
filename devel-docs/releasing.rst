@@ -9,7 +9,7 @@ off items while making a release.
 
 **Versions:**
 
-- ☐ Increase the package version number in ``configure.ac`` (it may
+- ☐ Increase the package version number in ``meson.build`` (it may
   already be increased but not released; double-check it).
 - ☐ Copy version number to ``Cargo.toml``.
 - ☐ Copy version number to ``doc/librsvg.toml``.
@@ -17,7 +17,7 @@ off items while making a release.
 - ☐ Copy the crate version number to the example in `rsvg/src/lib.rs`.
 - ☐ ``cargo update`` - needed because you tweaked ``Cargo.toml``, and
   also to get new dependencies.
-- ☐ Tweak the library version number in ``configure.ac`` if the API
+- ☐ Tweak the library version number in ``meson.build`` if the API
   changed; follow the steps there.
 
 **Release notes:**
@@ -78,10 +78,10 @@ Gitlab release
 Version numbers and release schedule
 ------------------------------------
 
-``configure.ac`` and ``Cargo.toml`` must have the same **package
+``meson.build`` and ``Cargo.toml`` must have the same **package
 version** number - this is the number that users of the library see.
 
-``configure.ac`` is where the **library version** is defined; this is
+``meson.build`` is where the **library version** is defined; this is
 what gets encoded in the SONAME of ``librsvg.so``.
 
 Librsvg follows `GNOME's release versioning as of 2022/September
@@ -150,17 +150,16 @@ version of the Rust toolchain, to get new language features and such,
 this is really inconvenient for distributors of librsvg which do not
 update Rust all the time. So, we make a compromise.
 
-The ``configure.ac`` script defines ``MININUM_RUST_MAJOR`` and
-``MINIMUM_RUST_MINOR`` variables with librsvg’s minimum supported Rust
-version (MSRV). These ensure that distros will get an early failure
-during a build, at the ``configure`` step, if they have a version of
-Rust that is too old — instead of getting an obscure error message from
-``rustc`` in the middle of the build when it finds an unsupported
-language construct.
+The ``meson.build`` script defines ``msrv`` with librsvg’s minimum
+supported Rust version (MSRV).  This ensures that distros will get an
+early failure during a build, at the ``meson setup`` step, if they have
+a version of Rust that is too old — instead of getting an obscure
+error message from ``rustc`` in the middle of the build when it finds
+an unsupported language construct.
 
 Please update all of these values when increasing the MSRV:
 
-- ``MININUM_RUST_VER`` in ``configure.ac``.
+- ``msrv`` in ``meson.build``.
 
 - ``rust-version`` in ``Cargo.toml``.
 
