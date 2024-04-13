@@ -1,6 +1,6 @@
 project('librsvg',
         'c',
-        version: '2.57.91',
+        version: '2.58.90', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
         meson_version: '>= 1.2.0',
         default_options: [
           'pkgconfig.relocatable=true',
@@ -19,7 +19,10 @@ host_system = host_machine.system()
 cc = meson.get_compiler('c')
 
 # MSRV - Minimum Supported Rust Version
-# If you change this, please update compiling.rst
+# If you change this, please update these:
+#   - the "rust-version" value in Cargo.toml
+#   - the "_manual_setup" section of devel-docs/devel_environment.rst
+#   - the "RUST_MINIMUM" variable in ci/container_builds.yml
 msrv = '1.70.0'
 cargo = find_program('cargo', version:'>= @0@'.format(msrv), native: true)
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)

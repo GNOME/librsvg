@@ -1,3 +1,99 @@
+Version 2.58.90
+===============
+
+librsvg crate version 2.59.0-beta.0
+
+Thanks to Amyspark and Centricular, librsvg has been ported to the
+Meson build system.  Librsvg no longer uses autotools!  This is the
+first experimental/alpha release so that distributions can get their
+packaging scripts changed and report errors before the 2.59.0 release.
+
+In theory, librsvg should build like a normal meson-based project.
+See devel-docs/compiling.rst for details and documentation about the
+compile-time options available in meson_options.txt.
+
+Meson should let full builds of librsvg work reliably on Windows and
+MacOS, and to be integrated as a subproject in other meson-based
+projects.
+
+Requirements:
+
+- rustc 1.70.0 or later
+- cargo-cbuild 0.9.19 or later
+
+Changes in this release:
+
+- Librsvg now uses Meson instead of Autotools (Amyspark, Chun-wei Fan,
+  Kleis Auke Wolthuizen).
+
+- There is a -Davif meson option to include support for AVIF in the
+  image-rs crate, which librsvg uses to load raster images.  See
+  devel-docs/compiling.rst for details.  (Jan Alexander Steffens)
+
+- Start revamping the fuzzing infrastructure (correctmost).
+
+Things that I would love people to test:
+
+- Do distros need to patch anything in the meson files?  This should
+  not be required; please file a bug if you find there is something missing.
+
+- Does the "cargo vendor" and source replacement machinery work?
+
+Special thanks to Amyspark, Chun-wei Fan, Jordan Petridis, Kleis Auke
+Wolthuizen, and Lovell Fuller for doing the hard work of mesonifying
+librsvg, and for their suggestions about build-time options.
+
+
+Version 2.58.0
+==============
+
+librsvg crate version 2.58.0
+
+The most significant change in this release is that librsvg no longer
+uses gdk-pixbuf for loading raster images (for eample, when there is
+an element <image href="foo.jpg"/>.  All image loading uses Rust
+codecs now.  Please see the release notes for 2.57.90 below for more
+details.
+
+Librsvg's gdk-pixbuf loader for SVG documents is unchanged; you can
+still load SVG files from gdk-pixbuf with it as usual.
+
+New features since 2.57.0 (for fine-grained bug fixes, please see the
+release notes for development releases):
+
+- #902 - Add basic support for "ch" length units in CSS (Mackenzie Morgan).
+
+- #997 - Support "var(--foo, #aabbcc)" just for colors.  This is the
+  minimum required to render color SVG emoji fonts that provide color
+  fallbacks, but it is not yet full support for CSS var().
+
+Fixes since the last development release:
+
+- #1062 - Limit numOctaves in feTurbulence to avoid unbounded CPU consumption.
+
+- #1064 - Don't panic when a :lang selector has an argument that is
+  not a language-range (Lukáš Tyrychtr).
+
+Special thanks for this release cycle:
+
+- Thanks to correctmost for doing several rounds of fuzzing, and then
+  found some interesting bugs!
+
+- Thanks to Jordan Petridis for adding CI jobs for testing on
+  gnome-os's regular builds.
+
+- As usual, thanks to Chun-wei Fan for keeping the Windows builds
+  going, and Bilal Elmoussaoui for updating gtk-rs crates.
+
+Version 2.57.92
+===============
+
+librsvg crate version 2.58.0-beta.2
+
+- #1059 - Don't panic when rendering feOffset with a too-large offset.
+
+- #1060 - Don't panic when a decoded image has dimensions of zero.
+
 Version 2.57.91
 ===============
 

@@ -108,6 +108,7 @@ minimum version is listed here; you may use a newer version instead.
 * a C compiler and `make` tool; we recommend GNU `make`.
 * rust 1.70.0 or later
 * cargo
+* cargo-cbuild
 * meson
 * vala (optional)
 
@@ -143,7 +144,7 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
 
 .. code-block:: sh
 
-   apt-get install -y gcc make rustc cargo \
+   apt-get install -y gcc make rustc cargo cargo-c \
    meson gi-docgen python3-docutils git \
    libgdk-pixbuf2.0-dev libgirepository1.0-dev \
    libxml2-dev libcairo2-dev libpango1.0-dev
@@ -161,7 +162,7 @@ Fedora based systems
 
 .. code-block:: sh
 
-   dnf install -y gcc rust rust-std-static cargo make \
+   dnf install -y gcc rust rust-std-static cargo cargo-c make \
    meson gi-docgen python3-docutils git redhat-rpm-config \
    gdk-pixbuf2-devel gobject-introspection-devel \
    libxml2-devel cairo-devel cairo-gobject-devel pango-devel
@@ -171,7 +172,7 @@ openSUSE based systems
 
 .. code-block:: sh
 
-   zypper install -y gcc rust rust-std cargo make \
+   zypper install -y gcc rust rust-std cargo cargo-c make \
    meson python3-gi-docgen python38-docutils git \
    gdk-pixbuf-devel gobject-introspection-devel \
    libxml2-devel cairo-devel pango-devel
