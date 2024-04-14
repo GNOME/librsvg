@@ -451,7 +451,7 @@ endif
 subdir('include')
 subdir('librsvg-c')
 subdir('rsvg')
-if build_tests.allowed()
+if build_tests
   subdir('librsvg-c/tests-c')
 endif
 subdir('rsvg_convert')

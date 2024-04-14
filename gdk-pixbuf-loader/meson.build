@@ -53,7 +53,7 @@ meson.add_install_script(
   pixbufloader_svg_install_args
 )
 
-if build_tests.allowed()
+if build_tests
   test(
     'Rust tests (pixbufloader-svg)',
     cargo_wrapper,

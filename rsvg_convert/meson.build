@@ -36,7 +36,7 @@ rsvg_convert = custom_target(
   ] + avif_feature_args,
 )
 
-if build_tests.allowed()
+if build_tests
   test(
     'Rust tests (rsvg_convert)',
     cargo_wrapper,
