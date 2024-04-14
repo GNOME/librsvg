@@ -36,7 +36,7 @@ option('tests',
        type: 'feature',
        value: 'auto',
        yield: true,
-       description: 'Enable the test suite (requires gdk-pixbuf)')
+       description: 'Build the test suite')
 
 option('triplet',
        type: 'string',
