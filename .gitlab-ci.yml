@@ -438,6 +438,7 @@ distcheck:
     when: 'on_success'
     paths:
       - _build/meson-dist/librsvg-*.tar.xz
+      - _build/meson-dist/librsvg-*.tar.xz.sha256sum
     expire_in: 1 week
 
 reference:
