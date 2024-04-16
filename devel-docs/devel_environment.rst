@@ -105,7 +105,7 @@ minimum version is listed here; you may use a newer version instead.
 
 **Compilers and build tools:**
 
-* a C compiler and `make` tool; we recommend GNU `make`.
+* a C compiler
 * rust 1.70.0 or later
 * cargo
 * cargo-cbuild
@@ -126,9 +126,6 @@ minimum version is listed here; you may use a newer version instead.
 * GObject-Introspection 0.10.8
 * gi-docgen
 * python3-docutils
-
-**Optional dependencies:**
-
 * dav1d 1.3.0 (to support the AVIF image format)
 
 The following sections describe how to install these dependencies on
@@ -144,7 +141,7 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
 
 .. code-block:: sh
 
-   apt-get install -y gcc make rustc cargo cargo-c \
+   apt-get install -y gcc rustc cargo cargo-c ninja-build \
    meson gi-docgen python3-docutils git \
    libgdk-pixbuf2.0-dev libgirepository1.0-dev \
    libxml2-dev libcairo2-dev libpango1.0-dev
@@ -162,7 +159,7 @@ Fedora based systems
 
 .. code-block:: sh
 
-   dnf install -y gcc rust rust-std-static cargo cargo-c make \
+   dnf install -y gcc rust rust-std-static cargo cargo-c ninja-build \
    meson gi-docgen python3-docutils git redhat-rpm-config \
    gdk-pixbuf2-devel gobject-introspection-devel \
    libxml2-devel cairo-devel cairo-gobject-devel pango-devel
@@ -172,7 +169,7 @@ openSUSE based systems
 
 .. code-block:: sh
 
-   zypper install -y gcc rust rust-std cargo cargo-c make \
+   zypper install -y gcc rust rust-std cargo cargo-c ninja \
    meson python3-gi-docgen python38-docutils git \
    gdk-pixbuf-devel gobject-introspection-devel \
    libxml2-devel cairo-devel pango-devel
@@ -217,7 +214,7 @@ This version is *much* faster than the debug version.
 
    mkdir -p _build
    meson setup _build -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
-   meson compile -C_ build
+   meson compile -C _build
    meson test -C _build
 
 You should only have to do that if you need to run the full test

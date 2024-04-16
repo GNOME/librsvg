@@ -58,6 +58,10 @@ These are librsvg's options:
   information for language bindings.  Values are
   ``enabled``/``disabled``/``auto``.
 
+* ``pixbuf`` - Specifies whether to build with support for `gdk-pixbuf
+  <https://docs.gtk.org/gdk-pixbuf/>`_ in the library APIs.
+  Values are ``enabled``/``disabled``/``auto``.
+
 * ``pixbuf-loader`` - Specifies whether to build a `gdk-pixbuf
   <https://docs.gtk.org/gdk-pixbuf/>`_ module to let applications which use
   gdk-pixbuf load and render SVG files as if they were raster images.
@@ -73,14 +77,12 @@ These are librsvg's options:
   binding should be built.  Requires the Vala compiler to be
   installed.  Values are ``enabled``/``disabled``/``auto``.
 
-* ``tests`` - Specifies whether the full test suite is enabled from
-  meson; requires gdk-pixbuf.  Values are
-  ``enabled``/``disabled``/``auto``.
+* ``tests`` - Specifies whether the test suite should be built.
+  Values are ``enabled``/``disabled``/``auto``.
 
-* ``triplet`` - Only supported on Windows; specifies the `Rust target
-  triplet
-  <https://doc.rust-lang.org/nightly/rustc/platform-support.html>`_.
-  The value is a string.
+* ``triplet`` - Specifies the `Rust target triplet
+  <https://doc.rust-lang.org/stable/rustc/platform-support.html>`_; 
+  only needed for cross-compilation.  Value is a string.
 
 * ``avif`` - Specifies whether the image-rs crate, which librsvg uses
   to load raster images, should be built with support for the AVIF
