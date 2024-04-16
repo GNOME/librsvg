@@ -354,6 +354,12 @@ if pkg_config_path.length() > 0
   extra_env.set('PKG_CONFIG_PATH', pkg_config_path)
 endif
 
+# Make sure dependencies provided by the superproject are propagated
+# (or ours, if there are wraps within this tree)
+if meson.is_subproject()
+  extra_env.prepend('PKG_CONFIG_PATH', meson.global_build_root() / 'meson-uninstalled')
+endif
+
 # Set up the environment that will be fed to the build
 if host_system in ['darwin', 'ios']
   var = 'DYLD_LIBRARY_PATH'
