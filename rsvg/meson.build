@@ -275,15 +275,34 @@ librsvg_dep = declare_dependency(
 
 pkg = import('pkgconfig')
 
-librsvg_c_pc = pkg.generate(
-  name : 'librsvg',
-  filebase: librsvg_pc,
-  description : 'library that renders svg files',
-  libraries : [librsvg_lib] + other_library_dependencies,
-  subdirs: librsvg_pc,
-  requires: library_dependencies_sole,
-  libraries_private: private_dependencies,
+# If any of the dependencies is e.g. wrap, ignore as we can't include
+# them without knowing how they exposed the pkg-config module
+# (if CMake, there's simply no way at all)
+has_pkgconfig_dependencies = true
+
+foreach i : library_dependencies_sole
+  if i.found() and i.type_name() != 'pkgconfig'
+    warning('One or more dependencies are not provided by pkg-config, skipping generation of the pkg-config module.')
+    has_pkgconfig_dependencies = false
+    break
+  endif
+endforeach
+
+build_pixbuf_loader = build_pixbuf_loader.require(has_pkgconfig_dependencies,
+  error_message: 'The gdk-pixbuf loader target requires the pkg-config module'
 )
+
+if has_pkgconfig_dependencies
+  librsvg_c_pc = pkg.generate(
+    name : 'librsvg',
+    filebase: librsvg_pc,
+    description : 'library that renders svg files',
+    libraries : [librsvg_lib] + other_library_dependencies,
+    subdirs: librsvg_pc,
+    requires: library_dependencies_sole,
+    libraries_private: private_dependencies,
+  )
+endif
 
 if build_gir.allowed()
   gir_args = [
@@ -304,7 +323,7 @@ if build_gir.allowed()
 
   if build_pixbuf_loader.allowed()
     gir_includes += [
-      'GdkPixbuf-2.0',
+      # 'GdkPixbuf-2.0',
     ]
 
     vala_includes += [
