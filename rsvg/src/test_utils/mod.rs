@@ -5,6 +5,7 @@ use cairo;
 use gio;
 use glib;
 use std::env;
+use std::path::PathBuf;
 use std::sync::Once;
 
 use crate::{
@@ -67,13 +68,33 @@ mod pango_ft2 {
     }
 
     pub unsafe fn load_test_fonts() {
+        let tests_resources_path: PathBuf = [
+            env::var("CARGO_MANIFEST_DIR")
+                .expect("Manifest directory unknown")
+                .as_str(),
+            "tests",
+            "resources",
+        ]
+        .iter()
+        .collect();
+
         let config = fontconfig_sys::FcConfigCreate();
         if fontconfig_sys::FcConfigSetCurrent(config) == 0 {
             panic!("Could not set a fontconfig configuration");
         }
 
-        let font_dir = CString::new("tests/resources").unwrap();
-        if fontconfig_sys::FcConfigAppFontAddDir(config, font_dir.as_ptr().cast()) == 0 {
+        let fonts_dot_conf_path = tests_resources_path.clone().join("fonts.conf");
+        let fonts_dot_conf_cstring = CString::new(fonts_dot_conf_path.to_str().unwrap()).unwrap();
+        if fontconfig_sys::FcConfigParseAndLoad(config, fonts_dot_conf_cstring.as_ptr().cast(), 1)
+            == 0
+        {
+            panic!("Could not parse fontconfig configuration from tests/resources/fonts.conf");
+        }
+
+        let tests_resources_cstring = CString::new(tests_resources_path.to_str().unwrap()).unwrap();
+        if fontconfig_sys::FcConfigAppFontAddDir(config, tests_resources_cstring.as_ptr().cast())
+            == 0
+        {
             panic!("Could not load fonts from directory tests/resources");
         }
 
