@@ -67,26 +67,14 @@ mod pango_ft2 {
     }
 
     pub unsafe fn load_test_fonts() {
-        let font_paths = [
-            "tests/resources/Ahem.ttf",
-            "tests/resources/NotoSansHebrew-Regular.ttf",
-            "tests/resources/Roboto-Regular.ttf",
-            "tests/resources/Roboto-Italic.ttf",
-            "tests/resources/Roboto-Bold.ttf",
-            "tests/resources/Roboto-BoldItalic.ttf",
-        ];
-
         let config = fontconfig_sys::FcConfigCreate();
         if fontconfig_sys::FcConfigSetCurrent(config) == 0 {
             panic!("Could not set a fontconfig configuration");
         }
 
-        for path in &font_paths {
-            let path_cstring = CString::new(*path).unwrap();
-
-            if fontconfig_sys::FcConfigAppFontAddFile(config, path_cstring.as_ptr().cast()) == 0 {
-                panic!("Could not load font file {} for tests; aborting", path,);
-            }
+        let font_dir = CString::new("tests/resources").unwrap();
+        if fontconfig_sys::FcConfigAppFontAddDir(config, font_dir.as_ptr().cast()) == 0 {
+            panic!("Could not load fonts from directory tests/resources");
         }
 
         let font_map = FontMap::for_font_type(cairo::FontType::FontTypeFt).unwrap();
