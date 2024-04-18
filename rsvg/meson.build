@@ -131,7 +131,14 @@ if is_msvc_style
   dumpbin = find_program('dumpbin', native: true)
   makedef_tool_args += ['--dumpbin', dumpbin]
 else
-  nm = find_program('nm', native: true)
+  nm = find_program('llvm-nm', native: true, required: false)
+  if not nm.found()
+    if host_system in ['darwin', 'ios']
+      warning('llvm-nm not found, you may experience problems when creating the shared librsvg.')
+      warning('Please install the llvm-tools component through rustup, or point Meson to an existing LLVM installation.')
+    endif
+    nm = find_program('nm', native: true)
+  endif
   makedef_tool_args += ['--nm', nm]
 endif
 
@@ -214,8 +221,13 @@ else
   )
 endif
 
-if get_option('default_library') == 'shared'
-  librsvg_lib = shared_library(
+librsvg_lib = librsvg_c_lib
+
+# Wait on this dependency before trying to build using Rust
+librsvg_rust_dep = rust_artifacts
+
+if get_option('default_library') in ['shared', 'both']
+  librsvg_shared_lib = shared_library(
     rsvg_ver,
     rsvg_dummy,
     link_whole: librsvg_c_lib,
@@ -227,8 +239,30 @@ if get_option('default_library') == 'shared'
     install: true,
     version: meson.project_version() # it's not exact as m4
   )
-else
-  librsvg_lib = librsvg_c_lib
+  if get_option('default_library') == 'shared'
+    librsvg_lib = librsvg_shared_lib
+  endif
+  librsvg_rust_dep = librsvg_shared_lib
+endif
+if get_option('default_library') in ['static', 'both']
+  # Rust cannot yet use import libraries for MSVC which do not end in .lib.
+  # The static library must be manually generated so that it matches Meson's
+  # naming convention.
+  # See https://github.com/rust-lang/rust/issues/122455
+  librsvg_lib = custom_target(
+    'rsvg-2-static',
+    input: librsvg_c_lib,
+    output: '@0@rsvg-@1@.@2@'.format(lib_prefix, librsvg_api_major, 'a'),
+    command: [
+      python,
+      '-c',
+      'import os; import sys; import shutil; shutil.copy(sys.argv[1], sys.argv[2])',
+      '@INPUT0@',
+      '@OUTPUT0@'
+    ]
+  )
+
+  librsvg_rust_dep = librsvg_lib
 endif
 
 # This is the main dependency to use for tests; it means "link to the library we just built"
@@ -241,15 +275,34 @@ librsvg_dep = declare_dependency(
 
 pkg = import('pkgconfig')
 
-librsvg_c_pc = pkg.generate(
-  name : 'librsvg',
-  filebase: librsvg_pc,
-  description : 'library that renders svg files',
-  libraries : [librsvg_lib] + other_library_dependencies,
-  subdirs: librsvg_pc,
-  requires: library_dependencies_sole,
-  libraries_private: private_dependencies,
+# If any of the dependencies is e.g. wrap, ignore as we can't include
+# them without knowing how they exposed the pkg-config module
+# (if CMake, there's simply no way at all)
+has_pkgconfig_dependencies = true
+
+foreach i : library_dependencies_sole
+  if i.found() and i.type_name() != 'pkgconfig'
+    warning('One or more dependencies are not provided by pkg-config, skipping generation of the pkg-config module.')
+    has_pkgconfig_dependencies = false
+    break
+  endif
+endforeach
+
+build_pixbuf_loader = build_pixbuf_loader.require(has_pkgconfig_dependencies,
+  error_message: 'The gdk-pixbuf loader target requires the pkg-config module'
 )
+
+if has_pkgconfig_dependencies
+  librsvg_c_pc = pkg.generate(
+    name : 'librsvg',
+    filebase: librsvg_pc,
+    description : 'library that renders svg files',
+    libraries : [librsvg_lib] + other_library_dependencies,
+    subdirs: librsvg_pc,
+    requires: library_dependencies_sole,
+    libraries_private: private_dependencies,
+  )
+endif
 
 if build_gir.allowed()
   gir_args = [
@@ -270,7 +323,7 @@ if build_gir.allowed()
 
   if build_pixbuf_loader.allowed()
     gir_includes += [
-      'GdkPixbuf-2.0',
+      # 'GdkPixbuf-2.0',
     ]
 
     vala_includes += [
@@ -340,7 +393,7 @@ if build_tests.allowed()
       '--packages', 'librsvg',
     ] + avif_feature_args,
     env: extra_env,
-    depends: librsvg_lib
+    depends: librsvg_rust_dep
   )
 
   test(
@@ -356,6 +409,6 @@ if build_tests.allowed()
     ] + avif_feature_args
       + pixbuf_feature_args,
     env: extra_env,
-    depends: get_option('default_library') == 'shared' ? librsvg_lib : rust_artifacts
+    depends: librsvg_rust_dep
   )
 endif

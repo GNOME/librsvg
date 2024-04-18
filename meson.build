@@ -351,8 +351,13 @@ extra_env.set('PKG_CONFIG', pkg_config.full_path())
 
 pkg_config_path = get_option('pkg_config_path')
 if pkg_config_path.length() > 0
-  pathsep = build_machine.system() == 'windows' ? ';' : ':'
-  extra_env.set('PKG_CONFIG_PATH', pathsep.join(pkg_config_path))
+  extra_env.set('PKG_CONFIG_PATH', pkg_config_path)
+endif
+
+# Make sure dependencies provided by the superproject are propagated
+# (or ours, if there are wraps within this tree)
+if meson.is_subproject()
+  extra_env.prepend('PKG_CONFIG_PATH', meson.global_build_root() / 'meson-uninstalled')
 endif
 
 # Set up the environment that will be fed to the build
@@ -375,8 +380,8 @@ current_library_path = run_command(
 )
 
 extra_env.set(var, current_library_path.stdout().strip())
+extra_env.prepend(var, meson.project_build_root() / 'rsvg')
 if host_system == 'windows'
-  extra_env.prepend('PATH', meson.project_build_root() / 'rsvg')
   foreach i: library_dependencies_sole
     x = i.get_variable(pkgconfig: 'bindir', default_value: '')
     if x != ''
@@ -391,17 +396,10 @@ includeinc = include_directories('include')
 
 # Set the suffixes up
 if host_system == 'windows'
+  lib_prefix = is_msvc_style ? '' : 'lib'
   ext_dynamic = 'dll'
+  ext_static = is_msvc_style ? 'lib' : 'a'
   ext_exe = '.exe'
-  if is_msvc_style
-    lib_prefix = ''
-    ext_import = 'dll.lib'
-    ext_static = 'lib'
-  else
-    lib_prefix = 'lib'
-    ext_import = 'dll.a'
-    ext_static = 'a'
-  endif
 elif host_system == 'darwin'
   lib_prefix = 'lib'
   ext_dynamic = 'dylib'

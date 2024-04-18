@@ -12,7 +12,7 @@ rsvg_convert_files = files(
 rsvg_convert_output = ['rsvg-convert@0@'.format(ext_exe)]
 
 if get_option('debug') and is_msvc_style
-  rsvg_convert_output += ['rsvg_convert.pdb']
+  rsvg_convert_output += ['rsvg-convert.pdb']
 endif
 
 rsvg_convert = custom_target(
@@ -22,7 +22,7 @@ rsvg_convert = custom_target(
   console: true,
   install: true,
   install_dir: get_option('prefix') / get_option('bindir'),
-  depends: rust_artifacts,
+  depends: librsvg_rust_dep,
   depend_files: rsvg_convert_files,
   env: extra_env,
   command: [
