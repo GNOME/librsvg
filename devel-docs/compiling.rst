@@ -78,7 +78,7 @@ These are librsvg's options:
   installed.  Values are ``enabled``/``disabled``/``auto``.
 
 * ``tests`` - Specifies whether the test suite should be built.
-  Values are ``enabled``/``disabled``/``auto``.
+  Value is a boolean that defaults to ``true``.
 
 * ``triplet`` - Specifies the `Rust target triplet
   <https://doc.rust-lang.org/stable/rustc/platform-support.html>`_; 

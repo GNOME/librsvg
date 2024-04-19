@@ -360,7 +360,7 @@ if build_gir.allowed()
   )
 endif
 
-if build_tests.allowed()
+if build_tests
   library_test_sources = files(
     'tests/api.rs',
     'tests/bugs.rs',
