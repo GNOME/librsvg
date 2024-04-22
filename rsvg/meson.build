@@ -99,8 +99,6 @@ rust_artifacts = custom_target(
     '--extension', ext_static,
   ] + avif_feature_args
     + pixbuf_feature_args,
-  install: get_option('default_library') == 'static',
-  install_dir: get_option('libdir'),
 )
 
 librsvg_c_lib = rust_artifacts[0]
@@ -259,7 +257,9 @@ if get_option('default_library') in ['static', 'both']
       'import os; import sys; import shutil; shutil.copy(sys.argv[1], sys.argv[2])',
       '@INPUT0@',
       '@OUTPUT0@'
-    ]
+    ],
+    install: true,
+    install_dir: get_option('libdir'),
   )
 
   librsvg_rust_dep = librsvg_lib
