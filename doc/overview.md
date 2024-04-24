@@ -102,6 +102,10 @@ main (void)
   cairo_surface_t *surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT);
   cairo_t *cr = cairo_create (surface);
 
+  /* Set the dots-per-inch */
+
+  rsvg_handle_set_dpi (handle, 96.0);
+
   /* Render the handle scaled proportionally into that whole surface */
 
   RsvgRectangle viewport = {
