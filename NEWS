@@ -1,3 +1,49 @@
+Version 2.58.91
+===============
+
+librsvg crate version 2.59.0-beta.1
+
+This is another early alpha release with more fixes to the Meson-based
+build system, to give time to distros to adjust their packaging scripts.
+
+One detail that I forgot to document in the last version: with the new
+Meson build system, the filename of the gdk-pixbuf loader module is
+libpixbufloader_svg.so, with an underscore, which is different from
+libpixbufloader-svg.so from the Autotools, which uses a hyphen.  This
+filename is never actually used by people, and
+gdk-pixbuf-query-loaders will automatically detect it at installation
+time.  Packaging scripts may need to be changed to use this filename.
+
+- Librsvg now requires cairo version 1.18.0 or later.
+
+- #1061 - Librsvg now explicitly builds only its supported raster
+  formats for image-rs: JPEG, PNG, GIF, WEBP, and optional
+  compile-time support for AVIF (Kleis Auke Wolthuizen).  Other raster
+  image formats are not supported, to minimize the attack surface.
+  Please file a bug if you need more formats.
+
+- #1073 - Don't generate gdk-pixbuf loaders cache if DESTDIR is set
+  (Jordan Petridis).
+
+- Documentation updates for meson (Kleis Auke Wolthuizen, Federico Mena).
+
+- #1080 - Document the fact that the default DPI in the C API for
+  RsvgHandle is 90 DPI, unlike rsvg-convert and the Rust API, which use
+  96 DPI.
+
+- #1078 - Document the security considerations for the image-rs crate
+  and the raster image formats that librsvg supports.
+
+- Fix and fine-tune compilation on Windows (MSVC and msys2), MacOS,
+  and Android (Amyspark, Chun-wei Fan).
+
+- Fix installation when only compiling the static library (Kleis Auke
+  Wolthuizen).
+
+- #1063 - Update Pango for CI and fix a test file.  The test suite now
+  includes the DejaVu Sans font, which supports extra glyphs/languages
+  for the test suite.
+
 Version 2.58.90
 ===============
 
