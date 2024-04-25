@@ -204,6 +204,10 @@ GType rsvg_error_get_type (void);
  * [method@Rsvg.Handle.set_dpi_x_y] on an [class@Rsvg.Handle] to set the DPI before rendering
  * it.
  *
+ * For historical reasons, the default DPI is 90.  Current CSS assumes a default DPI of 96, so
+ * you may want to set the DPI of a [class@Rsvg.Handle] immediately after creating it with
+ * [method@Rsvg.Handle.set_dpi].
+ *
  * # Rendering
  *
  * The preferred way to render a whole SVG document is to use
@@ -252,12 +256,18 @@ GType rsvg_error_get_type (void);
  * RsvgHandle:dpi-x:
  *
  * Horizontal resolution in dots per inch.
+ *
+ * The default is 90.  Note that current CSS assumes a default of 96,
+ * so you may want to set it to `96.0` before rendering the handle.
  */
 
 /**
  * RsvgHandle:dpi-y:
  *
  * Horizontal resolution in dots per inch.
+ *
+ * The default is 90.  Note that current CSS assumes a default of 96,
+ * so you may want to set it to `96.0` before rendering the handle.
  */
 
 /**
@@ -867,6 +877,10 @@ void rsvg_handle_get_intrinsic_dimensions (RsvgHandle *handle,
  * value set previously with [method@Rsvg.Handle.set_dpi].  For font-based units, this function
  * uses the computed value of the `font-size` property for the toplevel
  * `<svg>` element.  In those cases, this function returns `TRUE`.
+ *
+ * For historical reasons, the default DPI is 90.  Current CSS assumes a default DPI of 96, so
+ * you may want to set the DPI of a [class@Rsvg.Handle] immediately after creating it with
+ * [method@Rsvg.Handle.set_dpi].
  *
  * This function is not able to extract the size in pixels directly from the intrinsic
  * dimensions of the SVG document if the `width` or

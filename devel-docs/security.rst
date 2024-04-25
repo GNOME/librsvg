@@ -197,10 +197,26 @@ languages:
 And of course, their recursive dependencies as well, such as
 **glib/gio**.
 
+
+Security considerations for the image-rs crate
+----------------------------------------------
+
 Librsvg uses the `image-rs <https://github.com/image-rs/image>`_ crate
-for decoding raster images like JPEG/PNG.  You may want to look at its
-dependencies for specific codecs like the ``png`` or ``zune-jpeg``
-crates.
+for decoding raster images.  You may want to look at its dependencies
+for specific codecs like the ``png`` or ``zune-jpeg`` crates.
+
+Librsvg explicitly compiles ``image-rs`` with support for only the following formats:
+
+* JPEG
+* PNG
+* GIF
+* WEBP
+
+The following formats are optional, and selected at compilation time:
+
+* AVIF
+
+See the "Compile-time options" section in :doc:`compiling` for details.
 
 
 Security considerations for libxml2

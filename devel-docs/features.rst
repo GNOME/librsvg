@@ -33,6 +33,14 @@ the needs which people express in librsvg’s bug tracker. Do you want a
 feature? `File an
 issue <https://gitlab.gnome.org/GNOME/librsvg/-/issues>`__!
 
+Supported raster image formats
+------------------------------
+
+The ``image`` and ``feImage`` elements allow including an external
+file as raster data.  Librsvg supports loading JPEG, PNG, GIF, and
+WEBP.  Librsvg can optionally be compiled with support for AVIF, too;
+see the "Compile-time options" section in :doc:`compiling` for details.
+
 Attributes supported by all elements
 ------------------------------------
 
