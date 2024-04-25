@@ -243,8 +243,12 @@ if host_system == 'windows'
   rustc_toolchain_cpu = host_cpu_family == 'x86' ? 'i686' : host_cpu_family
   if is_msvc_style
     rustc_toolchain_cc = 'msvc'
+  elif cc.get_id() == 'clang'
+    # https://github.com/msys2/MINGW-packages/issues/13388
+    is_msys2 = cc.get_define('__MINGW32__') == '1' and host_machine.cpu_family() != 'aarch64' and host_machine.system() in ['windows', 'cygwin']
+    rustc_toolchain_cc = is_msys2 ? 'gnu' : 'gnullvm'
   else
-    rustc_toolchain_cc = cc.get_id() == 'clang' ? 'gnullvm' : 'gnu'
+    rustc_toolchain_cc = 'gnu'
   endif
   rustc_target = '@0@-pc-windows-@1@'.format(rustc_toolchain_cpu, rustc_toolchain_cc)
 
