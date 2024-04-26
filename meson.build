@@ -1,6 +1,6 @@
 project('librsvg',
         'c',
-        version: '2.58.90', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
+        version: '2.58.91', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
         meson_version: '>= 1.2.0',
         default_options: [
           'pkgconfig.relocatable=true',
@@ -34,8 +34,8 @@ py = import('python')
 
 python = py.find_installation()
 
-# Required versions for dependencies - Please update compiling.rst with version numbers if these change
-cairo_required         = '>= 1.17.0'
+# Required versions for dependencies - Please update devel_environment.rst with version numbers if these change
+cairo_required         = '>= 1.18.0'
 dav1d_required         = '>= 1.3.0'
 ft2_cmake_required     = '>= 2.8.0'   # Actual FreeType version required
 freetype2_required     = '>= 20.0.14' # Corresponds to ft2_cmake_required

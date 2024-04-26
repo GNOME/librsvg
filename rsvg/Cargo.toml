@@ -1,7 +1,7 @@
 [package]
 name = "librsvg"
 documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html"
-version = "2.59.0-beta.0"
+version = "2.59.0-beta.1"
 authors.workspace = true
 description.workspace = true
 license.workspace = true
@@ -16,12 +16,12 @@ rustc-args = ["--cfg", "docsrs"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.system-deps]
-cairo = "1.17"
-cairo-gobject = "1.17"
-cairo-png = "1.17"
-cairo-pdf = { version = "1.17", optional = true }
-cairo-ps = { version = "1.17", optional = true }
-cairo-svg = { version = "1.17", optional = true }
+cairo = "1.18"
+cairo-gobject = "1.18"
+cairo-png = "1.18"
+cairo-pdf = { version = "1.18", optional = true }
+cairo-ps = { version = "1.18", optional = true }
+cairo-svg = { version = "1.18", optional = true }
 freetype2 = "20.0.14"
 gio = { name = "gio-2.0", version = "2.24" }
 glib = { name = "glib-2.0", version = "2.50" }
