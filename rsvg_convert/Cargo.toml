@@ -13,9 +13,9 @@ rust-version.workspace = true
 autobins = false
 
 [package.metadata.system-deps]
-cairo-pdf = { version = "1.17", optional = true }
-cairo-ps = { version = "1.17", optional = true }
-cairo-svg = { version = "1.17", optional = true }
+cairo-pdf = { version = "1.18", optional = true }
+cairo-ps = { version = "1.18", optional = true }
+cairo-svg = { version = "1.18", optional = true }
 
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
