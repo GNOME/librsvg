@@ -334,13 +334,17 @@ if build_gir.allowed()
   if get_option('default_library') == 'shared'
     librsvg_gir = librsvg_lib
   else
-    librsvg_gir = shared_library(
-      'rsvg-gir',
-      rsvg_dummy,
-      link_whole: librsvg_c_lib,
-      dependencies: library_dependencies,
-      include_directories: [includeinc],
-    )
+    if is_msvc_style
+      librsvg_gir = librsvg_shared_lib
+    else
+      librsvg_gir = shared_library(
+        'rsvg-gir',
+        rsvg_dummy,
+        link_whole: librsvg_c_lib,
+        dependencies: library_dependencies,
+        include_directories: [includeinc],
+      )
+    endif
   endif
 
   rsvg_gir = gnome.generate_gir(
