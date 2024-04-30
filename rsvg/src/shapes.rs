@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, Viewport};
+use crate::drawing_ctx::{compute_path_extents, DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
@@ -118,7 +118,7 @@ fn draw_basic_shape(
         context_fill: fill_paint.clone(),
     };
 
-    let extents = draw_ctx.compute_path_extents(&shape_def.path)?;
+    let extents = compute_path_extents(&shape_def.path)?;
 
     let normalize_values = NormalizeValues::new(values);
 
