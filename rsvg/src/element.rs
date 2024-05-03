@@ -83,7 +83,7 @@ pub trait ElementTrait {
         _acquired_nodes: &mut AcquiredNodes<'_>,
         _cascaded: &CascadedValues<'_>,
         _viewport: &Viewport,
-        draw_ctx: &mut DrawingCtx,
+        _draw_ctx: &mut DrawingCtx,
         _clipping: bool,
     ) -> Result<Option<Layer>, InternalRenderingError> {
         Ok(None)

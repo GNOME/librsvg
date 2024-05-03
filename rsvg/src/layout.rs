@@ -83,7 +83,6 @@ pub struct Group {
 // FIXME: look at Image here, it has a lot of what we need
 pub struct LayoutViewport {
     // transform goes in the group's layer's StackingContext
-
     /// Position and size of the element, per its x/y/width/height properties.
     /// For markers, this is markerWidth/markerHeight.
     pub geometry: Rect,
