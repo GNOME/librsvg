@@ -775,8 +775,10 @@ impl ElementTrait for Text {
 
         let elt = node.borrow_element();
 
+        let session = draw_ctx.session().clone();
+
         let stacking_ctx = StackingContext::new(
-            draw_ctx.session(),
+            &session,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -792,7 +794,7 @@ impl ElementTrait for Text {
                 transform,
                 font_options: draw_ctx.get_font_options(),
                 viewport: viewport.clone(),
-                session: draw_ctx.session().clone(),
+                session: session.clone(),
             };
 
             let mut x = self.x.to_user(&params);
