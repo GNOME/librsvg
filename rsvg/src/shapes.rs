@@ -51,9 +51,7 @@ fn draw_basic_shape(
     cascaded: &CascadedValues<'_>,
     viewport: &Viewport,
     session: &Session,
-    draw_ctx: &mut DrawingCtx,
-    clipping: bool,
-) -> Result<BoundingBox, InternalRenderingError> {
+) -> Result<Layer, InternalRenderingError> {
     let values = cascaded.get();
     let params = NormalizeParams::new(values, viewport);
     let shape_def = basic_shape.make_shape(&params, values);
@@ -150,16 +148,34 @@ fn draw_basic_shape(
         values,
     );
 
-    let layer = Layer {
+    Ok(Layer {
         kind: LayerKind::Shape(shape),
         stacking_ctx,
-    };
-
-    draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
+    })
 }
 
 macro_rules! impl_draw {
     () => {
+        fn layout(
+            &self,
+            node: &Node,
+            acquired_nodes: &mut AcquiredNodes<'_>,
+            cascaded: &CascadedValues<'_>,
+            viewport: &Viewport,
+            draw_ctx: &mut DrawingCtx,
+            _clipping: bool,
+        ) -> Result<Option<Layer>, InternalRenderingError> {
+            draw_basic_shape(
+                self,
+                node,
+                acquired_nodes,
+                cascaded,
+                viewport,
+                &draw_ctx.session().clone(),
+            )
+            .map(Some)
+        }
+
         fn draw(
             &self,
             node: &Node,
@@ -169,16 +185,10 @@ macro_rules! impl_draw {
             draw_ctx: &mut DrawingCtx,
             clipping: bool,
         ) -> Result<BoundingBox, InternalRenderingError> {
-            draw_basic_shape(
-                self,
-                node,
-                acquired_nodes,
-                cascaded,
-                viewport,
-                &draw_ctx.session().clone(),
-                draw_ctx,
-                clipping,
-            )
+            self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+                .and_then(|layer| {
+                    draw_ctx.draw_layer(layer.as_ref().unwrap(), acquired_nodes, clipping, viewport)
+                })
         }
     };
 }
