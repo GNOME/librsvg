@@ -50,6 +50,7 @@ fn draw_basic_shape(
     acquired_nodes: &mut AcquiredNodes<'_>,
     cascaded: &CascadedValues<'_>,
     viewport: &Viewport,
+    session: &Session,
     draw_ctx: &mut DrawingCtx,
     clipping: bool,
 ) -> Result<BoundingBox, InternalRenderingError> {
@@ -61,8 +62,6 @@ fn draw_basic_shape(
     let paint_order = values.paint_order();
 
     let stroke = Stroke::new(values, &params);
-
-    let session = draw_ctx.session();
 
     let stroke_paint = values.stroke().0.resolve(
         acquired_nodes,
@@ -143,7 +142,7 @@ fn draw_basic_shape(
 
     let elt = node.borrow_element();
     let stacking_ctx = StackingContext::new(
-        draw_ctx.session(),
+        session,
         acquired_nodes,
         &elt,
         values.transform(),
@@ -176,6 +175,7 @@ macro_rules! impl_draw {
                 acquired_nodes,
                 cascaded,
                 viewport,
+                &draw_ctx.session().clone(),
                 draw_ctx,
                 clipping,
             )
