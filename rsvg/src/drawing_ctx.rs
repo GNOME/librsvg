@@ -12,7 +12,6 @@ use std::rc::Rc;
 use std::{borrow::Cow, sync::OnceLock};
 
 use crate::accept_language::UserLanguage;
-use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
 use crate::color::color_to_rgba;
 use crate::coord_units::CoordUnits;
@@ -24,7 +23,8 @@ use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
-    Filter, Group, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
+    Filter, Group, Image, Layer, LayerKind, LayoutViewport, Shape, StackingContext, Stroke, Text,
+    TextSpan,
 };
 use crate::length::*;
 use crate::marker;
@@ -33,7 +33,7 @@ use crate::paint_server::{PaintSource, UserSpacePaintSource};
 use crate::path_builder::*;
 use crate::pattern::UserSpacePattern;
 use crate::properties::{
-    ClipRule, ComputedValues, FillRule, ImageRendering, MaskType, MixBlendMode, Opacity, Overflow,
+    ClipRule, ComputedValues, FillRule, ImageRendering, MaskType, MixBlendMode, Opacity,
     PaintTarget, ShapeRendering, StrokeLinecap, StrokeLinejoin, TextRendering,
 };
 use crate::rect::{rect_to_transform, IRect, Rect};
@@ -462,17 +462,21 @@ impl DrawingCtx {
     pub fn push_new_viewport(
         &self,
         current_viewport: &Viewport,
-        vbox: Option<ViewBox>,
-        viewport_rect: Rect,
-        preserve_aspect_ratio: AspectRatio,
-        overflow: Overflow,
+        layout_viewport: &LayoutViewport,
     ) -> Option<Viewport> {
+        let LayoutViewport {
+            geometry,
+            vbox,
+            preserve_aspect_ratio,
+            overflow,
+        } = *layout_viewport;
+
         if !overflow.overflow_allowed() || (vbox.is_some() && preserve_aspect_ratio.is_slice()) {
-            clip_to_rectangle(&self.cr, &viewport_rect);
+            clip_to_rectangle(&self.cr, &geometry);
         }
 
         preserve_aspect_ratio
-            .viewport_to_viewbox_transform(vbox, &viewport_rect)
+            .viewport_to_viewbox_transform(vbox, &geometry)
             .unwrap_or_else(|_e| {
                 match vbox {
                     None => unreachable!(
@@ -1400,13 +1404,14 @@ impl DrawingCtx {
                 clipping,
                 &mut |_an, dc| {
                     with_saved_cr(&dc.cr.clone(), || {
-                        if let Some(_params) = dc.push_new_viewport(
-                            viewport,
-                            Some(vbox),
-                            image.rect,
-                            image.aspect,
-                            image.overflow,
-                        ) {
+                        let layout_viewport = LayoutViewport {
+                            vbox: Some(vbox),
+                            geometry: image.rect,
+                            preserve_aspect_ratio: image.aspect,
+                            overflow: image.overflow,
+                        };
+
+                        if let Some(_params) = dc.push_new_viewport(viewport, &layout_viewport) {
                             dc.paint_surface(
                                 &image.surface,
                                 image_width,
@@ -1750,7 +1755,7 @@ impl DrawingCtx {
             None
         };
 
-        let res = if let Some((viewbox, preserve_aspect_ratio)) = defines_a_viewport {
+        let res = if let Some((vbox, preserve_aspect_ratio)) = defines_a_viewport {
             // <symbol> and <svg> define a viewport, as described in the specification:
             // https://www.w3.org/TR/SVG2/struct.html#UseElement
             // https://gitlab.gnome.org/GNOME/librsvg/-/issues/875#note_1482705
@@ -1774,13 +1779,14 @@ impl DrawingCtx {
                 viewport, // FIXME: should this be the child_viewport from below?
                 clipping,
                 &mut |an, dc| {
-                    if let Some(child_viewport) = dc.push_new_viewport(
-                        viewport,
-                        viewbox,
-                        use_rect,
+                    let layout_viewport = LayoutViewport {
+                        vbox,
+                        geometry: use_rect,
                         preserve_aspect_ratio,
-                        child_values.overflow(),
-                    ) {
+                        overflow: child_values.overflow(),
+                    };
+
+                    if let Some(child_viewport) = dc.push_new_viewport(viewport, &layout_viewport) {
                         child.draw_children(
                             an,
                             &CascadedValues::new_from_values(

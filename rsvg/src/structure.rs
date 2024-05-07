@@ -11,7 +11,7 @@ use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
-use crate::layout::StackingContext;
+use crate::layout::{LayoutViewport, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -278,13 +278,14 @@ impl Svg {
             )
         };
 
-        draw_ctx.push_new_viewport(
-            current_viewport,
-            vbox,
+        let layout_viewport = LayoutViewport {
             geometry,
+            vbox,
             preserve_aspect_ratio,
-            values.overflow(),
-        )
+            overflow: values.overflow(),
+        };
+
+        draw_ctx.push_new_viewport(current_viewport, &layout_viewport)
     }
 }
 

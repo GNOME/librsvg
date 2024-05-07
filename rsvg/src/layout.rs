@@ -91,7 +91,7 @@ pub struct LayoutViewport {
     pub vbox: Option<ViewBox>,
 
     /// preserveAspectRatio attribute
-    pub aspect: AspectRatio,
+    pub preserve_aspect_ratio: AspectRatio,
 
     /// overflow property
     pub overflow: Overflow,
