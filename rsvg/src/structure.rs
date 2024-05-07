@@ -233,13 +233,6 @@ impl Svg {
 
         let has_parent = node.parent().is_some();
 
-        // FIXME: do we need to look at preserveAspectRatio.slice, like in DrawingCtx::draw_image()?
-        let clip_mode = if !values.is_overflow() {
-            ClipMode::ClipToViewport
-        } else {
-            ClipMode::NoClip
-        };
-
         // From https://www.w3.org/TR/SVG2/embedded.html#ImageElement:
         //
         // For `image` elements embedding an SVG image, the `preserveAspectRatio`
@@ -290,7 +283,7 @@ impl Svg {
             vbox,
             viewport,
             preserve_aspect_ratio,
-            clip_mode,
+            values.overflow(),
         )
     }
 }

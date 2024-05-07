@@ -471,9 +471,9 @@ impl DrawingCtx {
         vbox: Option<ViewBox>,
         viewport_rect: Rect,
         preserve_aspect_ratio: AspectRatio,
-        clip_mode: ClipMode,
+        overflow: Overflow,
     ) -> Option<Viewport> {
-        if let ClipMode::ClipToViewport = clip_mode {
+        if !overflow.overflow_allowed() || (vbox.is_some() && preserve_aspect_ratio.is_slice()) {
             clip_to_rectangle(&self.cr, &viewport_rect);
         }
 
@@ -1394,15 +1394,6 @@ impl DrawingCtx {
         let image_height = f64::from(image_height);
         let vbox = ViewBox::from(Rect::from_size(image_width, image_height));
 
-        let clip_mode = if !(image.overflow == Overflow::Auto
-            || image.overflow == Overflow::Visible)
-            && image.aspect.is_slice()
-        {
-            ClipMode::ClipToViewport
-        } else {
-            ClipMode::NoClip
-        };
-
         // The bounding box for <image> is decided by the values of the image's x, y, w, h
         // and not by the final computed image bounds.
         let bounds = self.empty_bbox().with_rect(image.rect);
@@ -1420,7 +1411,7 @@ impl DrawingCtx {
                             Some(vbox),
                             image.rect,
                             image.aspect,
-                            clip_mode,
+                            image.overflow,
                         ) {
                             dc.paint_surface(
                                 &image.surface,
@@ -1774,13 +1765,6 @@ impl DrawingCtx {
 
             let child_values = elt.get_computed_values();
 
-            // FIXME: do we need to look at preserveAspectRatio.slice, like in draw_image()?
-            let clip_mode = if !child_values.is_overflow() {
-                ClipMode::ClipToViewport
-            } else {
-                ClipMode::NoClip
-            };
-
             let stacking_ctx = StackingContext::new(
                 self.session(),
                 acquired_nodes,
@@ -1801,7 +1785,7 @@ impl DrawingCtx {
                         viewbox,
                         use_rect,
                         preserve_aspect_ratio,
-                        clip_mode,
+                        child_values.overflow(),
                     ) {
                         child.draw_children(
                             an,

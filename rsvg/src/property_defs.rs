@@ -745,6 +745,12 @@ make_property!(
     "auto" => Auto,
 );
 
+impl Overflow {
+    pub fn overflow_allowed(&self) -> bool {
+        matches!(*self, Overflow::Auto | Overflow::Visible)
+    }
+}
+
 /// One of the three operations for the `paint-order` property; see [`PaintOrder`].
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
