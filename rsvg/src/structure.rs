@@ -7,7 +7,7 @@ use crate::bbox::BoundingBox;
 use crate::coord_units;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{ClipMode, DrawingCtx, SvgNesting, Viewport};
+use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};

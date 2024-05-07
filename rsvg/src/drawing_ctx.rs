@@ -54,12 +54,6 @@ pub struct FontOptions {
     options: cairo::FontOptions,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum ClipMode {
-    ClipToViewport,
-    NoClip,
-}
-
 /// Set path on the cairo context, or clear it.
 /// This helper object keeps track whether the path has been set already,
 /// so that it isn't recalculated every so often.
