@@ -731,11 +731,12 @@ impl DrawingCtx {
                     cr.set_matrix(ValidTransform::try_from(affines.for_temporary_surface)?.into());
 
                     let (source_surface, mut res, bbox) = {
-                        let mut temporary_draw_ctx = self.nested(cr);
+                        let mut temporary_draw_ctx = self.nested(cr.clone());
 
                         // Draw!
 
-                        let res = draw_fn(acquired_nodes, &mut temporary_draw_ctx);
+                        let res =
+                            with_saved_cr(&cr, || draw_fn(acquired_nodes, &mut temporary_draw_ctx));
 
                         let bbox = if let Ok(ref bbox) = res {
                             *bbox
@@ -1403,25 +1404,23 @@ impl DrawingCtx {
                 viewport, // FIXME: should this be the push_new_viewport below?
                 clipping,
                 &mut |_an, dc| {
-                    with_saved_cr(&dc.cr.clone(), || {
-                        let layout_viewport = LayoutViewport {
-                            vbox: Some(vbox),
-                            geometry: image.rect,
-                            preserve_aspect_ratio: image.aspect,
-                            overflow: image.overflow,
-                        };
+                    let layout_viewport = LayoutViewport {
+                        vbox: Some(vbox),
+                        geometry: image.rect,
+                        preserve_aspect_ratio: image.aspect,
+                        overflow: image.overflow,
+                    };
 
-                        if let Some(_params) = dc.push_new_viewport(viewport, &layout_viewport) {
-                            dc.paint_surface(
-                                &image.surface,
-                                image_width,
-                                image_height,
-                                image.image_rendering,
-                            )?;
-                        }
+                    if let Some(_params) = dc.push_new_viewport(viewport, &layout_viewport) {
+                        dc.paint_surface(
+                            &image.surface,
+                            image_width,
+                            image_height,
+                            image.image_rendering,
+                        )?;
+                    }
 
-                        Ok(bounds)
-                    })
+                    Ok(bounds)
                 },
             )
         } else {
