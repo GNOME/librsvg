@@ -254,7 +254,7 @@ impl Svg {
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
-        let (viewport, vbox) = if is_measuring_toplevel_svg {
+        let (geometry, vbox) = if is_measuring_toplevel_svg {
             // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
             // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
             // it wants to extend.
@@ -281,7 +281,7 @@ impl Svg {
         draw_ctx.push_new_viewport(
             current_viewport,
             vbox,
-            viewport,
+            geometry,
             preserve_aspect_ratio,
             values.overflow(),
         )
