@@ -162,7 +162,7 @@ fn extract_filter_from_filter_node(
     filter_node: &Node,
     acquired_nodes: &mut AcquiredNodes<'_>,
     session: &Session,
-    filter_view_params: &ViewportGen,
+    filter_viewport: &ViewportGen,
 ) -> Result<FilterSpec, FilterResolveError> {
     assert!(is_element_of_type!(filter_node, Filter));
 
@@ -175,11 +175,11 @@ fn extract_filter_from_filter_node(
 
         filter.to_user_space(&NormalizeParams::new(
             filter_values,
-            filter_view_params.get(filter.get_filter_units()),
+            filter_viewport.get(filter.get_filter_units()),
         ))
     };
 
-    let primitive_view_params = filter_view_params.get(user_space_filter.primitive_units);
+    let primitive_viewport = filter_viewport.get(user_space_filter.primitive_units);
 
     let primitive_nodes = filter_node
         .children()
@@ -196,7 +196,7 @@ fn extract_filter_from_filter_node(
         let primitive_name = format!("{primitive_node}");
 
         let primitive_values = elt.get_computed_values();
-        let params = NormalizeParams::new(primitive_values, primitive_view_params);
+        let params = NormalizeParams::new(primitive_values, primitive_viewport);
 
         let primitives = match effect.resolve(acquired_nodes, &primitive_node) {
             Ok(primitives) => primitives,
@@ -233,7 +233,7 @@ fn filter_spec_from_filter_node(
     node_id: &NodeId,
     node_being_filtered_name: &str,
 ) -> Result<FilterSpec, FilterResolveError> {
-    let filter_view_params = ViewportGen::new(viewport);
+    let filter_viewport = ViewportGen::new(viewport);
 
     acquired_nodes
         .acquire(node_id)
@@ -251,12 +251,9 @@ fn filter_spec_from_filter_node(
             let node = acquired.get();
 
             match *node.borrow_element_data() {
-                ElementData::Filter(_) => extract_filter_from_filter_node(
-                    node,
-                    acquired_nodes,
-                    session,
-                    &filter_view_params,
-                ),
+                ElementData::Filter(_) => {
+                    extract_filter_from_filter_node(node, acquired_nodes, session, &filter_viewport)
+                }
 
                 _ => {
                     rsvg_log!(

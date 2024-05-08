@@ -660,8 +660,8 @@ impl ResolvedGradient {
     ) -> Option<UserSpaceGradient> {
         let units = self.units.0;
         let transform = rect_to_transform(object_bbox, units).ok()?;
-        let view_params = viewport.with_units(units);
-        let params = NormalizeParams::from_values(values, &view_params);
+        let viewport = viewport.with_units(units);
+        let params = NormalizeParams::from_values(values, &viewport);
 
         let gradient_transform = self.transform.to_transform();
         let transform = transform.pre_transform(&gradient_transform).invert()?;
