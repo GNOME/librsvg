@@ -646,7 +646,9 @@ impl DrawingCtx {
                 &mask_viewport,
                 None,
                 false,
-                &mut |an, dc| mask_node.draw_children(an, &cascaded, &mask_viewport, dc, false),
+                &mut |an, dc, new_viewport| {
+                    mask_node.draw_children(an, &cascaded, new_viewport, dc, false)
+                },
             );
 
             rsvg_log!(self.session, ")");
@@ -676,6 +678,7 @@ impl DrawingCtx {
         draw_fn: &mut dyn FnMut(
             &mut AcquiredNodes<'_>,
             &mut DrawingCtx,
+            &Viewport,
         ) -> Result<BoundingBox, InternalRenderingError>,
     ) -> Result<BoundingBox, InternalRenderingError> {
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
@@ -693,13 +696,14 @@ impl DrawingCtx {
                 //
                 // Note that push_new_viewport() changes the cr's transform.  However it will be restored
                 // at the end of this function with set_matrix.
-                if self.push_new_viewport(viewport, &layout_viewport).is_none() {
-                    self.cr.set_matrix(orig_transform.into());
-                    return Ok(self.empty_bbox());
+                if let Some(new_viewport) = self.push_new_viewport(viewport, &layout_viewport) {
+                    draw_fn(acquired_nodes, self, &new_viewport)
+                } else {
+                    Ok(self.empty_bbox())
                 }
+            } else {
+                draw_fn(acquired_nodes, self, viewport)
             }
-
-            draw_fn(acquired_nodes, self)
         } else {
             with_saved_cr(&self.cr.clone(), || {
                 if let Some(ref link_target) = stacking_ctx.link_target {
@@ -759,15 +763,16 @@ impl DrawingCtx {
                                 // transform.  However, we are in fact not using that transform anywhere!
                                 //
                                 // In case push_new_viewport() returns None, we just don't draw anything.
-                                if temporary_draw_ctx
-                                    .push_new_viewport(viewport, &layout_viewport)
-                                    .is_none()
+                                if let Some(new_viewport) =
+                                    temporary_draw_ctx.push_new_viewport(viewport, &layout_viewport)
                                 {
-                                    return Ok(self.empty_bbox());
+                                    draw_fn(acquired_nodes, &mut temporary_draw_ctx, &new_viewport)
+                                } else {
+                                    Ok(self.empty_bbox())
                                 }
+                            } else {
+                                draw_fn(acquired_nodes, &mut temporary_draw_ctx, viewport)
                             }
-
-                            draw_fn(acquired_nodes, &mut temporary_draw_ctx)
                         });
 
                         let bbox = if let Ok(ref bbox) = res {
@@ -899,13 +904,17 @@ impl DrawingCtx {
                         //
                         // Note that push_new_viewport() changes the cr's transform.  However it will be restored
                         // at the end of this function with set_matrix.
-                        if self.push_new_viewport(viewport, &layout_viewport).is_none() {
+                        if let Some(new_viewport) =
+                            self.push_new_viewport(viewport, &layout_viewport)
+                        {
+                            draw_fn(acquired_nodes, self, &new_viewport)
+                        } else {
                             self.cr.set_matrix(orig_transform.into());
-                            return Ok(self.empty_bbox());
+                            Ok(self.empty_bbox())
                         }
+                    } else {
+                        draw_fn(acquired_nodes, self, viewport)
                     }
-
-                    draw_fn(acquired_nodes, self)
                 };
 
                 if stacking_ctx.link_target.is_some() {
@@ -1154,11 +1163,11 @@ impl DrawingCtx {
                         &pattern_viewport,
                         None,
                         false,
-                        &mut |an, dc| {
+                        &mut |an, dc, new_viewport| {
                             pattern_node.draw_children(
                                 an,
                                 &pattern_cascaded,
-                                &pattern_viewport,
+                                new_viewport,
                                 dc,
                                 false,
                             )
@@ -1321,7 +1330,7 @@ impl DrawingCtx {
             viewport,
             None,
             clipping,
-            &mut |an, dc| {
+            &mut |an, dc, new_viewport| {
                 let cr = dc.cr.clone();
 
                 let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
@@ -1381,7 +1390,11 @@ impl DrawingCtx {
                             PaintTarget::Markers => {
                                 path_helper.unset();
                                 marker::render_markers_for_shape(
-                                    shape, viewport, dc, an, clipping,
+                                    shape,
+                                    new_viewport,
+                                    dc,
+                                    an,
+                                    clipping,
                                 )?;
                             }
                         }
@@ -1457,10 +1470,10 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 stacking_ctx,
                 acquired_nodes,
-                viewport, // FIXME: should this be the push_new_viewport below?
+                viewport,
                 Some(layout_viewport),
                 clipping,
-                &mut |_an, dc| {
+                &mut |_an, dc, _new_viewport| {
                     dc.paint_surface(
                         &image.surface,
                         image_width,
@@ -1598,7 +1611,7 @@ impl DrawingCtx {
             viewport,
             None,
             clipping,
-            &mut |an, dc| {
+            &mut |an, dc, _new_viewport| {
                 let mut bbox = dc.empty_bbox();
 
                 for span in &text.spans {
@@ -1831,10 +1844,10 @@ impl DrawingCtx {
             self.with_discrete_layer(
                 &stacking_ctx,
                 acquired_nodes,
-                viewport, // FIXME: should this be the child_viewport from below?
+                viewport,
                 Some(layout_viewport),
                 clipping,
-                &mut |an, dc| {
+                &mut |an, dc, new_viewport| {
                     child.draw_children(
                         an,
                         &CascadedValues::new_from_values(
@@ -1843,7 +1856,7 @@ impl DrawingCtx {
                             Some(fill_paint.clone()),
                             Some(stroke_paint.clone()),
                         ),
-                        viewport, // note: this was child_viewport as returned from push_new_viewport()
+                        new_viewport,
                         dc,
                         clipping,
                     )
@@ -1867,7 +1880,7 @@ impl DrawingCtx {
                 viewport,
                 None,
                 clipping,
-                &mut |an, dc| {
+                &mut |an, dc, new_viewport| {
                     child.draw(
                         an,
                         &CascadedValues::new_from_values(
@@ -1876,7 +1889,7 @@ impl DrawingCtx {
                             Some(fill_paint.clone()),
                             Some(stroke_paint.clone()),
                         ),
-                        viewport,
+                        new_viewport,
                         dc,
                         clipping,
                     )

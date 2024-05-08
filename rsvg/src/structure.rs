@@ -52,7 +52,9 @@ impl ElementTrait for Group {
             viewport,
             None,
             clipping,
-            &mut |an, dc| node.draw_children(an, cascaded, viewport, dc, clipping),
+            &mut |an, dc, new_viewport| {
+                node.draw_children(an, cascaded, new_viewport, dc, clipping)
+            },
         )
     }
 }
@@ -98,7 +100,7 @@ impl ElementTrait for Switch {
             viewport,
             None,
             clipping,
-            &mut |an, dc| {
+            &mut |an, dc, new_viewport| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
                     elt.get_cond(dc.user_language())
@@ -106,7 +108,7 @@ impl ElementTrait for Switch {
                     child.draw(
                         an,
                         &CascadedValues::clone_with_node(cascaded, &child),
-                        viewport,
+                        new_viewport,
                         dc,
                         clipping,
                     )
@@ -330,15 +332,11 @@ impl ElementTrait for Svg {
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
-            viewport, // FIXME: should this be the svg_viewport from below?
+            viewport,
             Some(layout_viewport),
             clipping,
-            &mut |an, dc| {
-                node.draw_children(
-                    an, cascaded,
-                    viewport, // note: this was svg_viewport from the call to push_new_viewport()
-                    dc, clipping,
-                )
+            &mut |an, dc, new_viewport| {
+                node.draw_children(an, cascaded, new_viewport, dc, clipping)
             },
         )
     }
@@ -641,7 +639,9 @@ impl ElementTrait for Link {
             viewport,
             None,
             clipping,
-            &mut |an, dc| node.draw_children(an, &cascaded, viewport, dc, clipping),
+            &mut |an, dc, new_viewport| {
+                node.draw_children(an, &cascaded, new_viewport, dc, clipping)
+            },
         )
     }
 }
