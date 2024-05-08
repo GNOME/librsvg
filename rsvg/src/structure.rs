@@ -50,6 +50,7 @@ impl ElementTrait for Group {
             &stacking_ctx,
             acquired_nodes,
             viewport,
+            None,
             clipping,
             &mut |an, dc| node.draw_children(an, cascaded, viewport, dc, clipping),
         )
@@ -95,6 +96,7 @@ impl ElementTrait for Switch {
             &stacking_ctx,
             acquired_nodes,
             viewport,
+            None,
             clipping,
             &mut |an, dc| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
@@ -226,7 +228,7 @@ impl Svg {
         cascaded: &CascadedValues<'_>,
         current_viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Option<Viewport> {
+    ) -> LayoutViewport {
         let values = cascaded.get();
 
         let params = NormalizeParams::new(values, current_viewport);
@@ -278,14 +280,12 @@ impl Svg {
             )
         };
 
-        let layout_viewport = LayoutViewport {
+        LayoutViewport {
             geometry,
             vbox,
             preserve_aspect_ratio,
             overflow: values.overflow(),
-        };
-
-        draw_ctx.push_new_viewport(current_viewport, &layout_viewport)
+        }
     }
 }
 
@@ -325,17 +325,20 @@ impl ElementTrait for Svg {
             values,
         );
 
+        let layout_viewport = self.make_svg_viewport(node, cascaded, viewport, draw_ctx);
+
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
             viewport, // FIXME: should this be the svg_viewport from below?
+            Some(layout_viewport),
             clipping,
             &mut |an, dc| {
-                if let Some(svg_viewport) = self.make_svg_viewport(node, cascaded, viewport, dc) {
-                    node.draw_children(an, cascaded, &svg_viewport, dc, clipping)
-                } else {
-                    Ok(dc.empty_bbox())
-                }
+                node.draw_children(
+                    an, cascaded,
+                    viewport, // note: this was svg_viewport from the call to push_new_viewport()
+                    dc, clipping,
+                )
             },
         )
     }
@@ -636,6 +639,7 @@ impl ElementTrait for Link {
             &stacking_ctx,
             acquired_nodes,
             viewport,
+            None,
             clipping,
             &mut |an, dc| node.draw_children(an, &cascaded, viewport, dc, clipping),
         )
