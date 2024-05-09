@@ -361,8 +361,8 @@ impl ResolvedPattern {
     ) -> Option<UserSpacePattern> {
         let node_with_children = self.node_with_children()?;
 
-        let view_params = viewport.with_units(self.units.0);
-        let params = NormalizeParams::from_values(values, &view_params);
+        let viewport = viewport.with_units(self.units.0);
+        let params = NormalizeParams::from_values(values, &viewport);
 
         let rect = self.get_rect(&params);
 

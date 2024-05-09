@@ -813,12 +813,12 @@ impl<'a> CairoRenderer<'a> {
         let width = dimensions.width;
         let height = dimensions.height;
 
-        let view_params = Viewport::new(dpi, 0.0, 0.0);
+        let viewport = Viewport::new(dpi, 0.0, 0.0);
         let root = self.handle.document.root();
         let cascaded = CascadedValues::new_from_node(&root);
         let values = cascaded.get();
 
-        let params = NormalizeParams::new(values, &view_params);
+        let params = NormalizeParams::new(values, &viewport);
 
         (width.to_user(&params), height.to_user(&params))
     }

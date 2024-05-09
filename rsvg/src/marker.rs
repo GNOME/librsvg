@@ -210,8 +210,11 @@ impl Marker {
             &stacking_ctx,
             acquired_nodes,
             &content_viewport,
+            None,
             clipping,
-            &mut |an, dc| node.draw_children(an, &cascaded, &content_viewport, dc, clipping),
+            &mut |an, dc, new_viewport| {
+                node.draw_children(an, &cascaded, new_viewport, dc, clipping)
+            }, // content_viewport
         )
     }
 }

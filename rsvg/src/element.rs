@@ -34,6 +34,7 @@ use crate::filters::{
 };
 use crate::gradient::{LinearGradient, RadialGradient, Stop};
 use crate::image::Image;
+use crate::layout::Layer;
 use crate::marker::Marker;
 use crate::node::*;
 use crate::pattern::Pattern;
@@ -70,6 +71,22 @@ pub trait ElementTrait {
     ) -> Result<BoundingBox, InternalRenderingError> {
         // by default elements don't draw themselves
         Ok(draw_ctx.empty_bbox())
+    }
+
+    /// Create a layout object for the current element.
+    ///
+    /// This resolves property values, coordinates, lengths, etc. and produces a layout
+    /// item for rendering.
+    fn layout(
+        &self,
+        _node: &Node,
+        _acquired_nodes: &mut AcquiredNodes<'_>,
+        _cascaded: &CascadedValues<'_>,
+        _viewport: &Viewport,
+        _draw_ctx: &mut DrawingCtx,
+        _clipping: bool,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
+        Ok(None)
     }
 }
 
@@ -484,6 +501,25 @@ impl Element {
             Ok(draw_ctx.empty_bbox())
         }
     }
+
+    /// The main layout function for elements.
+    pub fn layout(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
+        let values = cascaded.get();
+        if values.is_displayed() {
+            self.element_data
+                .layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 impl ElementData {
@@ -557,6 +593,78 @@ impl ElementData {
         };
 
         data.draw(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+    }
+
+    /// Dispatcher for the layout method of concrete element implementations.
+    #[rustfmt::skip]
+    fn layout(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
+        use ElementData::*;
+
+        let data: &dyn ElementTrait = match self {
+            Circle(d) =>               &**d,
+            ClipPath(d) =>             &**d,
+            Ellipse(d) =>              &**d,
+            Filter(d) =>               &**d,
+            Group(d) =>                &**d,
+            Image(d) =>                &**d,
+            Line(d) =>                 &**d,
+            LinearGradient(d) =>       &**d,
+            Link(d) =>                 &**d,
+            Marker(d) =>               &**d,
+            Mask(d) =>                 &**d,
+            NonRendering(d) =>         &**d,
+            Path(d) =>                 &**d,
+            Pattern(d) =>              &**d,
+            Polygon(d) =>              &**d,
+            Polyline(d) =>             &**d,
+            RadialGradient(d) =>       &**d,
+            Rect(d) =>                 &**d,
+            Stop(d) =>                 &**d,
+            Style(d) =>                &**d,
+            Svg(d) =>                  &**d,
+            Switch(d) =>               &**d,
+            Symbol(d) =>               &**d,
+            Text(d) =>                 &**d,
+            TRef(d) =>                 &**d,
+            TSpan(d) =>                &**d,
+            Use(d) =>                  &**d,
+
+            FeBlend(d) =>              &**d,
+            FeColorMatrix(d) =>        &**d,
+            FeComponentTransfer(d) =>  &**d,
+            FeComposite(d) =>          &**d,
+            FeConvolveMatrix(d) =>     &**d,
+            FeDiffuseLighting(d) =>    &**d,
+            FeDisplacementMap(d) =>    &**d,
+            FeDistantLight(d) =>       &**d,
+            FeDropShadow(d) =>         &**d,
+            FeFlood(d) =>              &**d,
+            FeFuncA(d) =>              &**d,
+            FeFuncB(d) =>              &**d,
+            FeFuncG(d) =>              &**d,
+            FeFuncR(d) =>              &**d,
+            FeGaussianBlur(d) =>       &**d,
+            FeImage(d) =>              &**d,
+            FeMerge(d) =>              &**d,
+            FeMergeNode(d) =>          &**d,
+            FeMorphology(d) =>         &**d,
+            FeOffset(d) =>             &**d,
+            FePointLight(d) =>         &**d,
+            FeSpecularLighting(d) =>   &**d,
+            FeSpotLight(d) =>          &**d,
+            FeTile(d) =>               &**d,
+            FeTurbulence(d) =>         &**d,
+        };
+
+        data.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
     }
 }
 

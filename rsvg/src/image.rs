@@ -47,6 +47,22 @@ impl ElementTrait for Image {
         }
     }
 
+    fn layout(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        _clipping: bool,
+    ) -> Result<Option<Layer>, InternalRenderingError> {
+        if let Some(ref url) = self.href {
+            self.layout_from_url(url, node, acquired_nodes, cascaded, viewport, draw_ctx)
+        } else {
+            Ok(None)
+        }
+    }
+
     fn draw(
         &self,
         node: &Node,
@@ -56,16 +72,10 @@ impl ElementTrait for Image {
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        if let Some(ref url) = self.href {
-            self.draw_from_url(
-                url,
-                node,
-                acquired_nodes,
-                cascaded,
-                viewport,
-                draw_ctx,
-                clipping,
-            )
+        let layer = self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)?;
+
+        if let Some(layer) = layer {
+            draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
         } else {
             Ok(draw_ctx.empty_bbox())
         }
@@ -73,7 +83,7 @@ impl ElementTrait for Image {
 }
 
 impl Image {
-    fn draw_from_url(
+    fn layout_from_url(
         &self,
         url: &str,
         node: &Node,
@@ -81,27 +91,24 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> Result<Option<Layer>, InternalRenderingError> {
         match acquired_nodes.lookup_resource(url) {
-            Ok(Resource::Image(surface)) => self.draw_from_surface(
+            Ok(Resource::Image(surface)) => self.layout_from_surface(
                 &surface,
                 node,
                 acquired_nodes,
                 cascaded,
                 viewport,
                 draw_ctx,
-                clipping,
             ),
 
-            Ok(Resource::Document(document)) => self.draw_from_svg(
+            Ok(Resource::Document(document)) => self.layout_from_svg(
                 &document,
                 node,
                 acquired_nodes,
                 cascaded,
                 viewport,
                 draw_ctx,
-                clipping,
             ),
 
             Err(e) => {
@@ -111,13 +118,13 @@ impl Image {
                     url,
                     e
                 );
-                Ok(draw_ctx.empty_bbox())
+                Ok(None)
             }
         }
     }
 
     /// Draw an `<image>` from a raster image.
-    fn draw_from_surface(
+    fn layout_from_surface(
         &self,
         surface: &SharedImageSurface,
         node: &Node,
@@ -125,8 +132,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> Result<Option<Layer>, InternalRenderingError> {
         let values = cascaded.get();
 
         let params = NormalizeParams::new(values, viewport);
@@ -173,7 +179,7 @@ impl Image {
             stacking_ctx,
         };
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
+        Ok(Some(layer))
     }
 
     /// Draw an `<image>` from an SVG image.
@@ -183,7 +189,7 @@ impl Image {
     /// or JPEG.
     ///
     /// [spec]: https://www.w3.org/TR/SVG2/embedded.html#ImageElement
-    fn draw_from_svg(
+    fn layout_from_svg(
         &self,
         document: &Document,
         node: &Node,
@@ -191,8 +197,7 @@ impl Image {
         cascaded: &CascadedValues<'_>,
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-        clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> Result<Option<Layer>, InternalRenderingError> {
         let dimensions = document.get_intrinsic_dimensions();
 
         let values = cascaded.get();
@@ -273,7 +278,7 @@ impl Image {
             stacking_ctx,
         };
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
+        Ok(Some(layer))
     }
 }
 

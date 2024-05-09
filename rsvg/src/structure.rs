@@ -7,11 +7,11 @@ use crate::bbox::BoundingBox;
 use crate::coord_units;
 use crate::coord_units::CoordUnits;
 use crate::document::{AcquiredNodes, NodeId};
-use crate::drawing_ctx::{ClipMode, DrawingCtx, SvgNesting, Viewport};
+use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementData, ElementTrait};
 use crate::error::*;
 use crate::href::{is_href, set_href};
-use crate::layout::StackingContext;
+use crate::layout::{LayoutViewport, StackingContext};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::parsers::{Parse, ParseValue};
@@ -50,8 +50,11 @@ impl ElementTrait for Group {
             &stacking_ctx,
             acquired_nodes,
             viewport,
+            None,
             clipping,
-            &mut |an, dc| node.draw_children(an, cascaded, viewport, dc, clipping),
+            &mut |an, dc, new_viewport| {
+                node.draw_children(an, cascaded, new_viewport, dc, clipping)
+            },
         )
     }
 }
@@ -95,8 +98,9 @@ impl ElementTrait for Switch {
             &stacking_ctx,
             acquired_nodes,
             viewport,
+            None,
             clipping,
-            &mut |an, dc| {
+            &mut |an, dc, new_viewport| {
                 if let Some(child) = node.children().filter(|c| c.is_element()).find(|c| {
                     let elt = c.borrow_element();
                     elt.get_cond(dc.user_language())
@@ -104,7 +108,7 @@ impl ElementTrait for Switch {
                     child.draw(
                         an,
                         &CascadedValues::clone_with_node(cascaded, &child),
-                        viewport,
+                        new_viewport,
                         dc,
                         clipping,
                     )
@@ -226,19 +230,12 @@ impl Svg {
         cascaded: &CascadedValues<'_>,
         current_viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
-    ) -> Option<Viewport> {
+    ) -> LayoutViewport {
         let values = cascaded.get();
 
         let params = NormalizeParams::new(values, current_viewport);
 
         let has_parent = node.parent().is_some();
-
-        // FIXME: do we need to look at preserveAspectRatio.slice, like in DrawingCtx::draw_image()?
-        let clip_mode = if !values.is_overflow() && has_parent {
-            ClipMode::ClipToViewport
-        } else {
-            ClipMode::NoClip
-        };
 
         // From https://www.w3.org/TR/SVG2/embedded.html#ImageElement:
         //
@@ -261,7 +258,7 @@ impl Svg {
 
         let is_measuring_toplevel_svg = !has_parent && draw_ctx.is_measuring();
 
-        let (viewport, vbox) = if is_measuring_toplevel_svg {
+        let (geometry, vbox) = if is_measuring_toplevel_svg {
             // We are obtaining the toplevel SVG's geometry.  This means, don't care about the
             // DrawingCtx's viewport, just use the SVG's intrinsic dimensions and see how far
             // it wants to extend.
@@ -285,13 +282,12 @@ impl Svg {
             )
         };
 
-        draw_ctx.push_new_viewport(
-            current_viewport,
+        LayoutViewport {
+            geometry,
             vbox,
-            viewport,
             preserve_aspect_ratio,
-            clip_mode,
-        )
+            overflow: values.overflow(),
+        }
     }
 }
 
@@ -331,17 +327,16 @@ impl ElementTrait for Svg {
             values,
         );
 
+        let layout_viewport = self.make_svg_viewport(node, cascaded, viewport, draw_ctx);
+
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
             acquired_nodes,
-            viewport, // FIXME: should this be the svg_viewport from below?
+            viewport,
+            Some(layout_viewport),
             clipping,
-            &mut |an, dc| {
-                if let Some(svg_viewport) = self.make_svg_viewport(node, cascaded, viewport, dc) {
-                    node.draw_children(an, cascaded, &svg_viewport, dc, clipping)
-                } else {
-                    Ok(dc.empty_bbox())
-                }
+            &mut |an, dc, new_viewport| {
+                node.draw_children(an, cascaded, new_viewport, dc, clipping)
             },
         )
     }
@@ -642,8 +637,11 @@ impl ElementTrait for Link {
             &stacking_ctx,
             acquired_nodes,
             viewport,
+            None,
             clipping,
-            &mut |an, dc| node.draw_children(an, &cascaded, viewport, dc, clipping),
+            &mut |an, dc, new_viewport| {
+                node.draw_children(an, &cascaded, new_viewport, dc, clipping)
+            },
         )
     }
 }

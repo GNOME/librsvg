@@ -761,7 +761,7 @@ impl ElementTrait for Text {
         }
     }
 
-    fn draw(
+    fn layout(
         &self,
         node: &Node,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -769,14 +769,16 @@ impl ElementTrait for Text {
         viewport: &Viewport,
         draw_ctx: &mut DrawingCtx,
         clipping: bool,
-    ) -> Result<BoundingBox, InternalRenderingError> {
+    ) -> Result<Option<Layer>, InternalRenderingError> {
         let values = cascaded.get();
         let params = NormalizeParams::new(values, viewport);
 
         let elt = node.borrow_element();
 
+        let session = draw_ctx.session().clone();
+
         let stacking_ctx = StackingContext::new(
-            draw_ctx.session(),
+            &session,
             acquired_nodes,
             &elt,
             values.transform(),
@@ -792,7 +794,7 @@ impl ElementTrait for Text {
                 transform,
                 font_options: draw_ctx.get_font_options(),
                 viewport: viewport.clone(),
-                session: draw_ctx.session().clone(),
+                session: session.clone(),
             };
 
             let mut x = self.x.to_user(&params);
@@ -872,12 +874,25 @@ impl ElementTrait for Text {
             layout::Text { spans: text_spans }
         };
 
-        let layer = Layer {
+        Ok(Some(Layer {
             kind: LayerKind::Text(Box::new(layout_text)),
             stacking_ctx,
-        };
+        }))
+    }
 
-        draw_ctx.draw_layer(&layer, acquired_nodes, clipping, viewport)
+    fn draw(
+        &self,
+        node: &Node,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        cascaded: &CascadedValues<'_>,
+        viewport: &Viewport,
+        draw_ctx: &mut DrawingCtx,
+        clipping: bool,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        self.layout(node, acquired_nodes, cascaded, viewport, draw_ctx, clipping)
+            .and_then(|layer| {
+                draw_ctx.draw_layer(layer.as_ref().unwrap(), acquired_nodes, clipping, viewport)
+            })
     }
 }
 

@@ -308,7 +308,7 @@ impl<N: Normalize, V: Validate> Parse for CssLength<N, V> {
     }
 }
 
-/// Parameters for length normalization extractedfrom [`ComputedValues`].
+/// Parameters for length normalization extracted from [`ComputedValues`].
 ///
 /// This is a precursor to [`NormalizeParams::from_values`], for cases where it is inconvenient
 /// to keep a [`ComputedValues`] around.
@@ -683,9 +683,9 @@ mod tests {
 
     #[test]
     fn normalize_default_works() {
-        let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 100.0);
+        let viewport = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 100.0);
         let values = ComputedValues::default();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(&values, &viewport);
 
         assert_approx_eq_cairo!(
             Length::<Both>::new(10.0, LengthUnit::Px).to_user(&params),
@@ -695,9 +695,9 @@ mod tests {
 
     #[test]
     fn normalize_absolute_units_works() {
-        let view_params = Viewport::new(Dpi::new(40.0, 50.0), 100.0, 100.0);
+        let viewport = Viewport::new(Dpi::new(40.0, 50.0), 100.0, 100.0);
         let values = ComputedValues::default();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(&values, &viewport);
 
         assert_approx_eq_cairo!(
             Length::<Horizontal>::new(10.0, LengthUnit::In).to_user(&params),
@@ -728,9 +728,9 @@ mod tests {
 
     #[test]
     fn normalize_percent_works() {
-        let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
+        let viewport = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
         let values = ComputedValues::default();
-        let params = NormalizeParams::new(&values, &view_params);
+        let params = NormalizeParams::new(&values, &viewport);
 
         assert_approx_eq_cairo!(
             Length::<Horizontal>::new(0.05, LengthUnit::Percent).to_user(&params),
@@ -745,8 +745,8 @@ mod tests {
     #[test]
     fn normalize_font_em_ex_ch_works() {
         let mut values = ComputedValues::default();
-        let view_params = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
-        let mut params = NormalizeParams::new(&values, &view_params);
+        let viewport = Viewport::new(Dpi::new(40.0, 40.0), 100.0, 200.0);
+        let mut params = NormalizeParams::new(&values, &viewport);
 
         // These correspond to the default size for the font-size
         // property and the way we compute Em/Ex from that.
@@ -775,7 +775,7 @@ mod tests {
             WritingMode::VerticalLr,
         )));
         specified.to_computed_values(&mut values);
-        params = NormalizeParams::new(&values, &view_params);
+        params = NormalizeParams::new(&values, &viewport);
         assert_approx_eq_cairo!(
             Length::<Vertical>::new(1.0, LengthUnit::Ch).to_user(&params),
             12.0

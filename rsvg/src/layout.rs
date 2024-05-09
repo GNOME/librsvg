@@ -30,6 +30,7 @@ use crate::session::Session;
 use crate::surface_utils::shared_surface::SharedImageSurface;
 use crate::transform::Transform;
 use crate::unit_interval::UnitInterval;
+use crate::viewbox::ViewBox;
 use crate::{borrow_element_as, is_element_of_type};
 
 /// SVG Stacking context, an inner node in the layout tree.
@@ -70,6 +71,30 @@ pub enum LayerKind {
     Shape(Box<Shape>),
     Text(Box<Text>),
     Image(Box<Image>),
+    Group(Box<Group>),
+}
+
+pub struct Group {
+    pub children: Vec<Layer>,
+    pub is_visible: bool, // FIXME: move to Layer?  All of them have this...
+    pub establish_viewport: Option<LayoutViewport>,
+}
+
+/// Used for elements that need to establish a new viewport, like `<svg>`.
+pub struct LayoutViewport {
+    // transform goes in the group's layer's StackingContext
+    /// Position and size of the element, per its x/y/width/height properties.
+    /// For markers, this is markerWidth/markerHeight.
+    pub geometry: Rect,
+
+    /// viewBox attribute
+    pub vbox: Option<ViewBox>,
+
+    /// preserveAspectRatio attribute
+    pub preserve_aspect_ratio: AspectRatio,
+
+    /// overflow property
+    pub overflow: Overflow,
 }
 
 /// Stroke parameters in user-space coordinates.
