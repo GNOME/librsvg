@@ -80,7 +80,7 @@ pub struct Group {
     pub establish_viewport: Option<LayoutViewport>,
 }
 
-// FIXME: look at Image here, it has a lot of what we need
+/// Used for elements that need to establish a new viewport, like `<svg>`.
 pub struct LayoutViewport {
     // transform goes in the group's layer's StackingContext
     /// Position and size of the element, per its x/y/width/height properties.
