@@ -12,8 +12,8 @@ produce these artifacts (see :doc:`product` for details):
 -  GObject-introspection information for language bindings.
 -  Vala language bindings.
 
-Some of the artifacts above are optional; please see the section on
-`compile-time options <#compile-time-options>`_ below for details.
+Some of the artifacts above are optional; please see the section
+:ref:`compile_time_options` below for details.
 
 It is perfectly fine to `ask the maintainer
 <https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md#maintainers>`_
@@ -21,12 +21,9 @@ if you have questions about the meson setup; it’s a tricky bit of
 machinery, and we are glad to help.
 
 The rest of this document explains librsvg’s peculiarities apart from
-the usual way of compiling meson projects:
+the usual way of compiling meson projects.
 
-- `Build-time dependencies <#build-time-dependencies>`_
-- `Basic compilation instructions <#basic-compilation-instructions>`_
-- `Compile-time options <#compile-time-options>`_
-- `Building with no network access <#building-with-no-network-access>`_
+.. _build_time_dependencies:
 
 Build-time dependencies
 -----------------------
@@ -64,7 +61,8 @@ minimum version is listed here; you may use a newer version instead.
 
 See :doc:`devel_environment` for details on how to install these dependencies.
 
-  
+.. _basic_compilation_instructions:
+
 Basic compilation instructions
 ------------------------------
 
@@ -79,6 +77,8 @@ If you are compiling a tarball:
 
 The options that start with ``-D`` are listed in the
 ``meson_options.txt`` file and are described in the next section.
+
+.. _compile_time_options:
 
 Compile-time options
 --------------------
@@ -130,6 +130,7 @@ These are librsvg's options:
   supported on Windows.  Value is a string.
 
 
+.. _building_with_no_network_access:
 
 Building with no network access
 -------------------------------
