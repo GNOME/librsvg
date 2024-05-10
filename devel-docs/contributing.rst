@@ -4,10 +4,6 @@ How to contribute
 Thank you for looking in this document! There are different ways of
 contributing to librsvg, and we appreciate all of them.
 
--  `Source repository <#source-repository>`__
--  `Feature requests <#feature-requests>`__
--  `Hacking on librsvg <#hacking-on-librsvg>`__
-
 All librsvg contributors are expected to follow `GNOME's Code of
 Conduct <https://conduct.gnome.org>`_.
 

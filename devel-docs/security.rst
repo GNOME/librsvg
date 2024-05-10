@@ -214,9 +214,9 @@ Librsvg explicitly compiles ``image-rs`` with support for only the following for
 
 The following formats are optional, and selected at compilation time:
 
-* AVIF
+* AVIF (compile-time option ``avif``)
 
-See the "Compile-time options" section in :doc:`compiling` for details.
+See the :ref:`compile_time_options` section in :doc:`compiling` for details.
 
 
 Security considerations for libxml2

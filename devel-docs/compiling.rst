@@ -12,9 +12,8 @@ produce these artifacts (see :doc:`product` for details):
 -  GObject-introspection information for language bindings.
 -  Vala language bindings.
 
-Librsvg's meson setup has some peculiarities so that it can call
-``cargo`` via a wrapper script, and so that it can produce correct
-artifacts on Windows and MacOS.
+Some of the artifacts above are optional; please see the section
+:ref:`compile_time_options` below for details.
 
 It is perfectly fine to `ask the maintainer
 <https://gitlab.gnome.org/GNOME/librsvg/-/blob/main/README.md#maintainers>`_
@@ -22,11 +21,47 @@ if you have questions about the meson setup; it’s a tricky bit of
 machinery, and we are glad to help.
 
 The rest of this document explains librsvg’s peculiarities apart from
-the usual way of compiling meson projects:
+the usual way of compiling meson projects.
 
-- `Basic compilation instructions <#basic-compilation-instructions>`_
-- `Compile-time options <#compile-time-options>`_
-- `Building with no network access <#building-with-no-network-access>`_
+.. _build_time_dependencies:
+
+Build-time dependencies
+-----------------------
+
+..
+  Please keep this in sync with devel_environment.rst in the _manual_setup section
+
+To compile librsvg, you need the following packages installed.  The
+minimum version is listed here; you may use a newer version instead.
+
+**Compilers and build tools:**
+
+* a C compiler
+* `rust <https://www.rust-lang.org/>`_ 1.70.0 or later
+* `cargo <https://www.rust-lang.org/>`_
+* ``cargo-cbuild`` from `cargo-c <https://github.com/lu-zero/cargo-c>`_
+* `meson <https://mesonbuild.com/>`_
+* `vala <https://vala.dev/>`_ (optional)
+
+**Mandatory dependencies:**
+
+* `Cairo <https://gitlab.freedesktop.org/cairo/cairo>`_ 1.18.0 with PNG support
+* `Freetype2 <https://gitlab.freedesktop.org/freetype/freetype>`_ 2.8.0
+* `GIO <https://gitlab.gnome.org/GNOME/glib/>`_ 2.24.0
+* `Libxml2 <https://gitlab.gnome.org/GNOME/libxml2>`_ 2.9.0
+* `Pango <https://gitlab.gnome.org/GNOME/pango/>`_ 1.46.0
+
+**Optional dependencies:**
+
+* `GDK-Pixbuf <https://gitlab.gnome.org/GNOME/gdk-pixbuf/>`_ 2.20.0
+* `GObject-Introspection <https://gitlab.gnome.org/GNOME/gobject-introspection>`_ 0.10.8
+* `gi-docgen <https://gitlab.gnome.org/GNOME/gi-docgen>`_
+* `python3-docutils <https://pypi.org/project/docutils/>`_
+* `dav1d <https://code.videolan.org/videolan/dav1d>`_ 1.3.0 (to support the AVIF image format)
+
+See :doc:`devel_environment` for details on how to install these dependencies.
+
+.. _basic_compilation_instructions:
 
 Basic compilation instructions
 ------------------------------
@@ -43,6 +78,7 @@ If you are compiling a tarball:
 The options that start with ``-D`` are listed in the
 ``meson_options.txt`` file and are described in the next section.
 
+.. _compile_time_options:
 
 Compile-time options
 --------------------
@@ -94,6 +130,7 @@ These are librsvg's options:
   supported on Windows.  Value is a string.
 
 
+.. _building_with_no_network_access:
 
 Building with no network access
 -------------------------------

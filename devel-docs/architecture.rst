@@ -10,8 +10,8 @@ The library’s internals are documented as Rust documentation comments;
 you can look at the rendered version at
 https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html
 
-You may also want to see the section below on `interesting parts of the
-code <#some-interesting-parts-of-the-code>`__.
+You may also want to see the section below on
+:ref:`some_interesting_parts_of_the_code`.
 
 A bit of history
 ----------------
@@ -433,6 +433,8 @@ trait.  You can use it like this:
    }
 
    assert!(1.0_f64.approx_eq_cairo(&1.001953125_f64)); // 1 + 1/512 - cairo rounds to 1
+
+.. _some_interesting_parts_of_the_code:
 
 Some interesting parts of the code
 ----------------------------------

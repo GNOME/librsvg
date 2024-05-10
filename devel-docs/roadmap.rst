@@ -28,5 +28,3 @@ Medium term
 - `Issue #459 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/459>`_ - Support CSS ``var()`` for custom colors and other SVG properties.
 
 - `Issue #843 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/843>`_ - Support CSS ``calc()``.
-
-- `Issue #635 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/635>`_ - Publish to crates.io.  

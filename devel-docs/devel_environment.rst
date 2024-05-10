@@ -100,36 +100,42 @@ You can now skip to :ref:`build`.
 Setting up dependencies manually
 --------------------------------
 
+..
+  Please keep this in sync with compiling.rst in the "Build-time dependencies" section
+
 To compile librsvg, you need the following packages installed.  The
 minimum version is listed here; you may use a newer version instead.
 
 **Compilers and build tools:**
 
 * a C compiler
-* rust 1.70.0 or later
-* cargo
-* cargo-cbuild
-* meson
-* vala (optional)
+* `rust <https://www.rust-lang.org/>`_ 1.70.0 or later
+* `cargo <https://www.rust-lang.org/>`_
+* ``cargo-cbuild`` from `cargo-c <https://github.com/lu-zero/cargo-c>`_
+* `meson <https://mesonbuild.com/>`_
+* `vala <https://vala.dev/>`_ (optional)
 
 **Mandatory dependencies:**
 
-* Cairo 1.18.0 with PNG support
-* Freetype2 2.8.0
-* GIO 2.24.0
-* Libxml2 2.9.0
-* Pango 1.46.0
+* `Cairo <https://gitlab.freedesktop.org/cairo/cairo>`_ 1.18.0 with PNG support
+* `Freetype2 <https://gitlab.freedesktop.org/freetype/freetype>`_ 2.8.0
+* `GIO <https://gitlab.gnome.org/GNOME/glib/>`_ 2.24.0
+* `Libxml2 <https://gitlab.gnome.org/GNOME/libxml2>`_ 2.9.0
+* `Pango <https://gitlab.gnome.org/GNOME/pango/>`_ 1.46.0
 
 **Optional dependencies:**
 
-* GDK-Pixbuf 2.20.0
-* GObject-Introspection 0.10.8
-* gi-docgen
-* python3-docutils
-* dav1d 1.3.0 (to support the AVIF image format)
+* `GDK-Pixbuf <https://gitlab.gnome.org/GNOME/gdk-pixbuf/>`_ 2.20.0
+* `GObject-Introspection <https://gitlab.gnome.org/GNOME/gobject-introspection>`_ 0.10.8
+* `gi-docgen <https://gitlab.gnome.org/GNOME/gi-docgen>`_
+* `python3-docutils <https://pypi.org/project/docutils/>`_
+* `dav1d <https://code.videolan.org/videolan/dav1d>`_ 1.3.0 (to support the AVIF image format)
 
 The following sections describe how to install these dependencies on
-several systems.
+several systems.  For fully manual builds, you can try using the
+script in `ci/build-dependencies.sh`.  Librsvg's continuous
+integration (CI) infrastructure uses that script to install the
+dependencies before building.
 
 Debian based systems
 ~~~~~~~~~~~~~~~~~~~~
