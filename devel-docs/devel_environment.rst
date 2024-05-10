@@ -111,7 +111,7 @@ minimum version is listed here; you may use a newer version instead.
 * a C compiler
 * `rust <https://www.rust-lang.org/>`_ 1.70.0 or later
 * `cargo <https://www.rust-lang.org/>`_
-* `cargo-cbuild <https://github.com/lu-zero/cargo-c>`_
+* ``cargo-cbuild`` from `cargo-c <https://github.com/lu-zero/cargo-c>`_
 * `meson <https://mesonbuild.com/>`_
 * `vala <https://vala.dev/>`_ (optional)
 
