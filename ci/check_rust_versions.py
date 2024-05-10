@@ -8,7 +8,7 @@ PLACES_TO_CHECK = [
     ['meson.build',                      r"msrv = '(.*)'"],
     ['Cargo.toml',                       r'rust-version\s*=\s*"(.*)"'],
     ['ci/container_builds.yml',          r'RUST_MINIMUM:\s*"(.*)"'],
-    ['devel-docs/devel_environment.rst', r'rust (.*) or later'],
+    ['devel-docs/devel_environment.rst', r'`rust .*`_ (.*) or later'],
 ]
 
 def main():
