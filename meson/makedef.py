@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 started = 1
                 line = re.sub(r'^\s+global: *', '', line)
             else:
-                if re.match('^\s+local:', line):
+                if re.match(r'^\s+local:', line):
                     started = 0
 
             if started == 0:
@@ -148,9 +148,9 @@ if __name__ == '__main__':
                 end = i
         dump = dump[start:end]
         # Substitute prefix out
-        dump = [re.sub(f'\s+{prefix}', ' ', x) for x in dump]
+        dump = [re.sub(fr'\s+{prefix}', ' ', x) for x in dump]
         # Substitute big chonky spaces out
-        dump = [re.sub(f'\s+', ' ', x) for x in dump]
+        dump = [re.sub(r'\s+', ' ', x) for x in dump]
         # Exclude blank lines
         dump = [x for x in dump if len(x) > 0]
         # Take only the *second* field (split by spaces)
