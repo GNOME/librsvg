@@ -24,10 +24,10 @@ cc = meson.get_compiler('c')
 #   - the "_manual_setup" section of devel-docs/devel_environment.rst
 #   - the "RUST_MINIMUM" variable in ci/container_builds.yml
 msrv = '1.70.0'
-cargo = find_program('cargo', version:'>= @0@'.format(msrv), native: true)
+cargo = find_program('cargo', version:'>= @0@'.format(msrv))
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)
-cargo_c = find_program('cargo-cbuild', version:'>= 0.9.19', native: true)
-rustc = find_program('rustc', version:'>= @0@'.format(msrv), native: true)
+cargo_c = find_program('cargo-cbuild', version:'>= 0.9.19')
+rustc = find_program('rustc', version:'>= @0@'.format(msrv))
 makedef = find_program('meson/makedef.py', native: true)
 
 py = import('python')
@@ -109,12 +109,10 @@ gmodule_dep    = dependency('gmodule-2.0', version: glib_required,
                             fallback : ['glib', 'libgmodule_dep'])
 rst2man        = find_program('rst2man', 'rst2man.py',
                               required: get_option('docs'),
-                              disabler: true,
-                              native: true)
+                              disabler: true)
 gidocgen       = find_program('gi-docgen', version: gidocgen_required,
                             required: false,
-                            disabler: true,
-                            native: true)
+                            disabler: true)
 gi_dep         = dependency('gobject-introspection-1.0',
                             version: introspection_required,
                             required: get_option('introspection'))

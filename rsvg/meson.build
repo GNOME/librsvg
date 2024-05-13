@@ -126,16 +126,16 @@ endif
 makedef_tool_args = []
 
 if is_msvc_style
-  dumpbin = find_program('dumpbin', native: true)
+  dumpbin = find_program('dumpbin')
   makedef_tool_args += ['--dumpbin', dumpbin]
 else
-  nm = find_program('llvm-nm', native: true, required: false)
+  nm = find_program('llvm-nm', required: false)
   if not nm.found()
     if host_system in ['darwin', 'ios']
       warning('llvm-nm not found, you may experience problems when creating the shared librsvg.')
       warning('Please install the llvm-tools component through rustup, or point Meson to an existing LLVM installation.')
     endif
-    nm = find_program('nm', native: true)
+    nm = find_program('nm')
   endif
   makedef_tool_args += ['--nm', nm]
 endif
