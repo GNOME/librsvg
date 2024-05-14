@@ -20,6 +20,7 @@ macro_rules! rsvg_log {
 /// context as it was passed in by the caller.  For example, librsvg may decide to
 /// operate differently depending on the context's target surface type, or its current
 /// transformation matrix.  This struct captures that sort of information.
+#[allow(dead_code)] // this is never constructed yet; allow building on newer rustc which warns about this
 #[derive(Copy, Clone, Debug, PartialEq)]
 struct CairoContextState {
     surface_type: cairo::SurfaceType,

@@ -295,7 +295,9 @@ dist_doc_DATA =				\
 	code-of-conduct.md
 
 test_resources =						\
-	$(wildcard $(srcdir)/rsvg/tests/resources/*.ttf)
+	$(wildcard $(srcdir)/rsvg/tests/resources/*.ttf)	\
+	$(srcdir)/rsvg/tests/resources/fonts.conf		\
+	$(srcdir)/rsvg/tests/resources/README.md
 
 test_fixtures =									\
 	$(wildcard $(srcdir)/rsvg/tests/fixtures/api/*.svg)			\
