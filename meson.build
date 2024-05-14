@@ -408,7 +408,7 @@ if host_system == 'windows'
   ext_dynamic = 'dll'
   ext_static = is_msvc_style ? 'lib' : 'a'
   ext_exe = '.exe'
-elif host_system == 'darwin'
+elif host_system in ['darwin', 'ios']
   lib_prefix = 'lib'
   ext_dynamic = 'dylib'
   ext_static = 'a'
