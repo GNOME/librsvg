@@ -273,6 +273,8 @@ librsvg_dep = declare_dependency(
   link_with: librsvg_lib,
 )
 
+meson.override_dependency('librsvg-2.0', librsvg_dep)
+
 pkg = import('pkgconfig')
 
 # If any of the dependencies is e.g. wrap, ignore as we can't include
