@@ -752,6 +752,7 @@ reset_size_callback (void)
     g_assert_true (data_2.destroyed);
 }
 
+#ifdef HAVE_PIXBUF
 static void
 zero_size_func (gint *width, gint *height, gpointer user_data)
 {
@@ -759,7 +760,6 @@ zero_size_func (gint *width, gint *height, gpointer user_data)
     *height = 0;
 }
 
-#ifdef HAVE_PIXBUF
 static void
 render_with_zero_size_callback (void)
 {
@@ -1766,7 +1766,9 @@ add_api_tests (void)
     g_test_add_func ("/api/dimensions_and_position", dimensions_and_position);
     g_test_add_func ("/api/set_size_callback", set_size_callback);
     g_test_add_func ("/api/reset_size_callback", reset_size_callback);
+#ifdef HAVE_PIXBUF
     g_test_add_func ("/api/render_with_zero_size_callback", render_with_zero_size_callback);
+#endif
     g_test_add_func ("/api/detects_cairo_context_in_error", detects_cairo_context_in_error);
     g_test_add_func ("/api/can_draw_to_non_image_surface", can_draw_to_non_image_surface);
     g_test_add_func ("/api/render_cairo_sub", render_cairo_sub);
