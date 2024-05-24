@@ -1,3 +1,12 @@
+Version 2.58.1
+==============
+
+This release contains no user-visible changes.  It just fixes the test
+suite to have a better infrastructure for fonts, and in particular
+fixes a right-to-left test case that started failing with Pango 1.52.1.
+
+- #1063 - Fix failing test with Pango 1.52.1.
+
 Version 2.58.0
 ==============
 
