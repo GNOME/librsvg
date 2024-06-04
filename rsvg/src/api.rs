@@ -427,6 +427,7 @@ pub struct CairoRenderer<'a> {
     pub(crate) handle: &'a SvgHandle,
     pub(crate) dpi: Dpi,
     user_language: UserLanguage,
+    cancellable: Option<gio::Cancellable>,
     is_testing: bool,
 }
 
@@ -521,6 +522,7 @@ impl<'a> CairoRenderer<'a> {
             handle,
             dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
             user_language: UserLanguage::new(&Language::FromEnvironment, session),
+            cancellable: None,
             is_testing: false,
         }
     }
@@ -555,6 +557,30 @@ impl<'a> CairoRenderer<'a> {
 
         CairoRenderer {
             user_language,
+            ..self
+        }
+    }
+
+    /// Sets a cancellable to be able to interrupt rendering.
+    ///
+    /// The rendering functions like [`render_document`] will normally render the whole
+    /// SVG document tree.  However, they can be interrupted if you set a `cancellable`
+    /// object with this method.  To interrupt rendering, you can call
+    /// [`gio::CancellableExt::cancel()`] from a different thread than where the rendering
+    /// is happening.
+    ///
+    /// Since rendering happens as a side-effect on the Cairo context (`cr`) that is
+    /// passed to the rendering functions, it may be that the `cr`'s target surface is in
+    /// an undefined state if the rendering is cancelled.  The surface may have not yet
+    /// been painted on, or it may contain a partially-rendered document.  For this
+    /// reason, if your application does not want to leave the target surface in an
+    /// inconsistent state, you may prefer to use a temporary surface for rendering, which
+    /// can be discarded if your code cancels the rendering.
+    ///
+    /// [`render_document`]: #method.render_document
+    pub fn with_cancellable<C: IsA<Cancellable>>(self, cancellable: &C) -> Self {
+        CairoRenderer {
+            cancellable: Some(cancellable.clone().into()),
             ..self
         }
     }
