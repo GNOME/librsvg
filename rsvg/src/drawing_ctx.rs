@@ -162,25 +162,28 @@ impl Viewport {
     }
 }
 
+/// Values that stay constant during rendering with a DrawingCtx.
+#[derive(Clone)]
+pub struct RenderingConfiguration {
+    pub dpi: Dpi,
+    pub cancellable: Option<gio::Cancellable>,
+    pub user_language: UserLanguage,
+    pub svg_nesting: SvgNesting,
+    pub measuring: bool,
+    pub testing: bool,
+}
+
 pub struct DrawingCtx {
     session: Session,
 
     initial_viewport: Viewport,
 
-    dpi: Dpi,
-
     cr_stack: Rc<RefCell<Vec<cairo::Context>>>,
     cr: cairo::Context,
 
-    cancellable: Option<gio::Cancellable>,
-    user_language: UserLanguage,
-
     drawsub_stack: Vec<Node>,
 
-    svg_nesting: SvgNesting,
-
-    measuring: bool,
-    testing: bool,
+    config: RenderingConfiguration,
 }
 
 pub enum DrawingMode {
@@ -262,18 +265,16 @@ pub fn draw_tree(
         transform,
     };
 
-    let mut draw_ctx = DrawingCtx::new(
-        session,
-        cr,
-        &initial_viewport,
-        cancellable,
-        user_language.clone(),
+    let config = RenderingConfiguration {
         dpi,
+        cancellable,
+        user_language: user_language.clone(),
         svg_nesting,
         measuring,
         testing,
-        drawsub_stack,
-    );
+    };
+
+    let mut draw_ctx = DrawingCtx::new(session, cr, &initial_viewport, config, drawsub_stack);
 
     let content_bbox = draw_ctx.draw_node_from_stack(
         &node,
@@ -316,26 +317,16 @@ impl DrawingCtx {
         session: Session,
         cr: &cairo::Context,
         initial_viewport: &Viewport,
-        cancellable: Option<gio::Cancellable>,
-        user_language: UserLanguage,
-        dpi: Dpi,
-        svg_nesting: SvgNesting,
-        measuring: bool,
-        testing: bool,
+        config: RenderingConfiguration,
         drawsub_stack: Vec<Node>,
     ) -> DrawingCtx {
         DrawingCtx {
             session,
             initial_viewport: initial_viewport.clone(),
-            dpi,
             cr_stack: Rc::new(RefCell::new(Vec::new())),
             cr: cr.clone(),
-            cancellable,
-            user_language,
             drawsub_stack,
-            svg_nesting,
-            measuring,
-            testing,
+            config,
         }
     }
 
@@ -353,15 +344,10 @@ impl DrawingCtx {
         DrawingCtx {
             session: self.session.clone(),
             initial_viewport: self.initial_viewport.clone(),
-            dpi: self.dpi,
             cr_stack,
             cr,
-            cancellable: self.cancellable.clone(),
-            user_language: self.user_language.clone(),
             drawsub_stack: self.drawsub_stack.clone(),
-            svg_nesting: self.svg_nesting,
-            measuring: self.measuring,
-            testing: self.testing,
+            config: self.config.clone(),
         }
     }
 
@@ -370,7 +356,7 @@ impl DrawingCtx {
     }
 
     pub fn user_language(&self) -> &UserLanguage {
-        &self.user_language
+        &self.config.user_language
     }
 
     pub fn toplevel_viewport(&self) -> Rect {
@@ -401,15 +387,15 @@ impl DrawingCtx {
     }
 
     pub fn svg_nesting(&self) -> SvgNesting {
-        self.svg_nesting
+        self.config.svg_nesting
     }
 
     pub fn is_measuring(&self) -> bool {
-        self.measuring
+        self.config.measuring
     }
 
     pub fn is_testing(&self) -> bool {
-        self.testing
+        self.config.testing
     }
 
     pub fn get_transform(&self) -> ValidTransform {
@@ -505,7 +491,7 @@ impl DrawingCtx {
                 self.cr.transform(t.into());
 
                 Viewport {
-                    dpi: self.dpi,
+                    dpi: self.config.dpi,
                     vbox: vbox.unwrap_or(current_viewport.vbox),
                     transform: current_viewport.transform.post_transform(&t),
                 }
@@ -1138,7 +1124,7 @@ impl DrawingCtx {
             let mut pattern_draw_ctx = self.nested(cr_pattern);
 
             let pattern_viewport = Viewport {
-                dpi: self.dpi,
+                dpi: self.config.dpi,
                 vbox: ViewBox::from(Rect::from_size(pattern.width, pattern.height)),
                 transform: *transform,
             };
@@ -1690,7 +1676,7 @@ impl DrawingCtx {
 
             self.cr = cr;
             let viewport = Viewport {
-                dpi: self.dpi,
+                dpi: self.config.dpi,
                 transform: affine,
                 vbox: ViewBox::from(Rect::from_size(f64::from(width), f64::from(height))),
             };
@@ -1915,7 +1901,7 @@ impl DrawingCtx {
     /// You can use the font options later with create_pango_context().
     pub fn get_font_options(&self) -> FontOptions {
         let mut options = cairo::FontOptions::new().unwrap();
-        if self.testing {
+        if self.config.testing {
             options.set_antialias(cairo::Antialias::Gray);
         }
 
