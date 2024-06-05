@@ -633,6 +633,16 @@ impl<'a> CairoRenderer<'a> {
         Some(self.width_height_to_user(self.dpi))
     }
 
+    fn rendering_options(&self) -> RenderingOptions {
+        RenderingOptions {
+            dpi: self.dpi,
+            cancellable: self.cancellable.clone(),
+            user_language: self.user_language.clone(),
+            svg_nesting: SvgNesting::Standalone,
+            testing: self.is_testing,
+        }
+    }
+
     /// Renders the whole SVG document fitted to a viewport
     ///
     /// The `viewport` gives the position and size at which the whole SVG
@@ -646,18 +656,12 @@ impl<'a> CairoRenderer<'a> {
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
     ) -> Result<(), RenderingError> {
-        let options = RenderingOptions {
-            dpi: self.dpi,
-            cancellable: self.cancellable.clone(),
-            user_language: self.user_language.clone(),
-            svg_nesting: SvgNesting::Standalone,
-            testing: self.is_testing,
-        };
-
-        Ok(self
-            .handle
-            .document
-            .render_document(&self.handle.session, cr, viewport, &options)?)
+        Ok(self.handle.document.render_document(
+            &self.handle.session,
+            cr,
+            viewport,
+            &self.rendering_options(),
+        )?)
     }
 
     /// Computes the (ink_rect, logical_rect) of an SVG element, as if
@@ -692,19 +696,11 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        let options = RenderingOptions {
-            dpi: self.dpi,
-            cancellable: self.cancellable.clone(),
-            user_language: self.user_language.clone(),
-            svg_nesting: SvgNesting::Standalone,
-            testing: self.is_testing,
-        };
-
         Ok(self.handle.document.get_geometry_for_layer(
             &self.handle.session,
             node,
             viewport,
-            &options,
+            &self.rendering_options(),
         )?)
     }
 
@@ -736,18 +732,13 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        let options = RenderingOptions {
-            dpi: self.dpi,
-            cancellable: self.cancellable.clone(),
-            user_language: self.user_language.clone(),
-            svg_nesting: SvgNesting::Standalone,
-            testing: self.is_testing,
-        };
-
-        Ok(self
-            .handle
-            .document
-            .render_layer(&self.handle.session, cr, node, viewport, &options)?)
+        Ok(self.handle.document.render_layer(
+            &self.handle.session,
+            cr,
+            node,
+            viewport,
+            &self.rendering_options(),
+        )?)
     }
 
     /// Computes the (ink_rect, logical_rect) of a single SVG element
@@ -787,18 +778,11 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        let options = RenderingOptions {
-            dpi: self.dpi,
-            cancellable: self.cancellable.clone(),
-            user_language: self.user_language.clone(),
-            svg_nesting: SvgNesting::Standalone,
-            testing: self.is_testing,
-        };
-
-        Ok(self
-            .handle
-            .document
-            .get_geometry_for_element(&self.handle.session, node, &options)?)
+        Ok(self.handle.document.get_geometry_for_element(
+            &self.handle.session,
+            node,
+            &self.rendering_options(),
+        )?)
     }
 
     /// Renders a single SVG element to a given viewport
@@ -826,20 +810,12 @@ impl<'a> CairoRenderer<'a> {
         let node_id = self.handle.get_node_id_or_root(id)?;
         let node = self.handle.get_node_or_root(&node_id)?;
 
-        let options = RenderingOptions {
-            dpi: self.dpi,
-            cancellable: self.cancellable.clone(),
-            user_language: self.user_language.clone(),
-            svg_nesting: SvgNesting::Standalone,
-            testing: self.is_testing,
-        };
-
         Ok(self.handle.document.render_element(
             &self.handle.session,
             cr,
             node,
             element_viewport,
-            &options,
+            &self.rendering_options(),
         )?)
     }
 
