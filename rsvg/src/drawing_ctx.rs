@@ -214,12 +214,7 @@ pub fn draw_tree(
     mode: DrawingMode,
     cr: &cairo::Context,
     viewport_rect: Rect,
-    cancellable: Option<gio::Cancellable>,
-    user_language: &UserLanguage,
-    dpi: Dpi,
-    svg_nesting: SvgNesting,
-    measuring: bool,
-    testing: bool,
+    config: RenderingConfiguration,
     acquired_nodes: &mut AcquiredNodes<'_>,
 ) -> Result<BoundingBox, InternalRenderingError> {
     let (drawsub_stack, node) = match mode {
@@ -260,18 +255,9 @@ pub fn draw_tree(
     // Per the spec, so the viewport has (0, 0) as upper-left.
     let viewport_rect = viewport_rect.translate((-viewport_rect.x0, -viewport_rect.y0));
     let initial_viewport = Viewport {
-        dpi,
+        dpi: config.dpi,
         vbox: ViewBox::from(viewport_rect),
         transform,
-    };
-
-    let config = RenderingConfiguration {
-        dpi,
-        cancellable,
-        user_language: user_language.clone(),
-        svg_nesting,
-        measuring,
-        testing,
     };
 
     let mut draw_ctx = DrawingCtx::new(session, cr, &initial_viewport, config, drawsub_stack);

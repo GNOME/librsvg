@@ -18,7 +18,9 @@ use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::css::{self, Origin, Stylesheet};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, SvgNesting};
+use crate::drawing_ctx::{
+    draw_tree, with_saved_cr, DrawingMode, RenderingConfiguration, SvgNesting,
+};
 use crate::error::{AcquireError, InternalRenderingError, LoadingError, NodeIdError};
 use crate::io::{self, BinaryData};
 use crate::is_element_of_type;
@@ -304,18 +306,22 @@ impl Document {
 
         let viewport = Rect::from(*viewport);
 
+        let config = RenderingConfiguration {
+            dpi,
+            cancellable: None,
+            user_language: user_language.clone(),
+            svg_nesting,
+            measuring: false,
+            testing: is_testing,
+        };
+
         with_saved_cr(cr, || {
             draw_tree(
                 session.clone(),
                 DrawingMode::LimitToStack { node, root },
                 cr,
                 viewport,
-                None,
-                user_language,
-                dpi,
-                svg_nesting,
-                false,
-                is_testing,
+                config,
                 &mut AcquiredNodes::new(self),
             )
             .map(|_bbox| ())
@@ -336,17 +342,21 @@ impl Document {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target)?;
 
+        let config = RenderingConfiguration {
+            dpi,
+            cancellable: None,
+            user_language: user_language.clone(),
+            svg_nesting: SvgNesting::Standalone,
+            measuring: true,
+            testing: is_testing,
+        };
+
         let bbox = draw_tree(
             session.clone(),
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
-            None,
-            user_language,
-            dpi,
-            SvgNesting::Standalone,
-            true,
-            is_testing,
+            config,
             &mut AcquiredNodes::new(self),
         )?;
 
@@ -389,17 +399,21 @@ impl Document {
 
         let node = node.clone();
 
+        let config = RenderingConfiguration {
+            dpi,
+            cancellable: None,
+            user_language: user_language.clone(),
+            svg_nesting: SvgNesting::Standalone,
+            measuring: true,
+            testing: is_testing,
+        };
+
         draw_tree(
             session.clone(),
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
-            None,
-            user_language,
-            dpi,
-            SvgNesting::Standalone,
-            true,
-            is_testing,
+            config,
             &mut AcquiredNodes::new(self),
         )
     }
@@ -462,17 +476,21 @@ impl Document {
             cr.scale(factor, factor);
             cr.translate(-ink_r.x0, -ink_r.y0);
 
+            let config = RenderingConfiguration {
+                dpi,
+                cancellable: None,
+                user_language: user_language.clone(),
+                svg_nesting: SvgNesting::Standalone,
+                measuring: false,
+                testing: is_testing,
+            };
+
             draw_tree(
                 session.clone(),
                 DrawingMode::OnlyNode(node),
                 cr,
                 unit_rectangle(),
-                None,
-                user_language,
-                dpi,
-                SvgNesting::Standalone,
-                false,
-                is_testing,
+                config,
                 &mut AcquiredNodes::new(self),
             )
             .map(|_bbox| ())
