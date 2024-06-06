@@ -1,6 +1,7 @@
 //! The main context structure which drives the drawing process.
 
 use float_cmp::approx_eq;
+use gio::prelude::*;
 use glib::translate::*;
 use pango::ffi::PangoMatrix;
 use pango::prelude::FontMapExt;
@@ -657,6 +658,13 @@ impl DrawingCtx {
         Ok(Some(mask))
     }
 
+    fn is_rendering_cancelled(&self) -> bool {
+        match &self.config.cancellable {
+            None => false,
+            Some(cancellable) => cancellable.is_cancelled(),
+        }
+    }
+
     pub fn with_discrete_layer(
         &mut self,
         stacking_ctx: &StackingContext,
@@ -670,6 +678,10 @@ impl DrawingCtx {
             &Viewport,
         ) -> Result<BoundingBox, InternalRenderingError>,
     ) -> Result<BoundingBox, InternalRenderingError> {
+        if self.is_rendering_cancelled() {
+            return Err(InternalRenderingError::Cancelled);
+        }
+
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
         let orig_transform = self.get_transform();
