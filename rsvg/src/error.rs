@@ -143,6 +143,9 @@ pub enum InternalRenderingError {
 
     /// Not enough memory was available for rendering.
     OutOfMemory(String),
+
+    /// The rendering was interrupted via a [`gio::Cancellable`].
+    Cancelled,
 }
 
 impl From<DefsLookupErrorKind> for InternalRenderingError {
@@ -169,6 +172,7 @@ impl fmt::Display for InternalRenderingError {
             InternalRenderingError::IdNotFound => write!(f, "element id not found"),
             InternalRenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
             InternalRenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
+            InternalRenderingError::Cancelled => write!(f, "rendering cancelled"),
         }
     }
 }

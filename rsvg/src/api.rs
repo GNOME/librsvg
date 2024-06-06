@@ -57,6 +57,11 @@ pub enum RenderingError {
 
     /// Not enough memory was available for rendering.
     OutOfMemory(String),
+
+    /// The rendering was interrupted via a [`gio::Cancellable`].
+    ///
+    /// See the documentation for [`CairoRenderer::with_cancellable`].
+    Cancelled,
 }
 
 impl std::error::Error for RenderingError {}
@@ -82,6 +87,7 @@ impl From<InternalRenderingError> for RenderingError {
             InternalRenderingError::IdNotFound => RenderingError::IdNotFound,
             InternalRenderingError::InvalidId(s) => RenderingError::InvalidId(s),
             InternalRenderingError::OutOfMemory(s) => RenderingError::OutOfMemory(s),
+            InternalRenderingError::Cancelled => RenderingError::Cancelled,
         }
     }
 }
@@ -94,6 +100,7 @@ impl fmt::Display for RenderingError {
             RenderingError::IdNotFound => write!(f, "element id not found"),
             RenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
             RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
+            RenderingError::Cancelled => write!(f, "rendering cancelled"),
         }
     }
 }
