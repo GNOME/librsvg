@@ -4,7 +4,7 @@ use markup5ever::{expanded_name, local_name, namespace_url, ns};
 
 use crate::aspect_ratio::AspectRatio;
 use crate::bbox::BoundingBox;
-use crate::document::{AcquiredNodes, Document, RenderingOptions, Resource};
+use crate::document::{AcquiredNodes, Document, Resource};
 use crate::drawing_ctx::{DrawingCtx, SvgNesting, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
@@ -241,13 +241,7 @@ impl Image {
         {
             let cr = cairo::Context::new(&surface)?;
 
-            let options = RenderingOptions {
-                dpi: viewport.dpi,
-                cancellable: None, // FIXME: pass the renderer's cancellable here
-                user_language: draw_ctx.user_language().clone(),
-                svg_nesting: SvgNesting::ReferencedFromImageElement,
-                testing: draw_ctx.is_testing(),
-            };
+            let options = draw_ctx.rendering_options(SvgNesting::ReferencedFromImageElement);
 
             document.render_document(
                 draw_ctx.session(),

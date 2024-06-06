@@ -15,7 +15,7 @@ use crate::accept_language::UserLanguage;
 use crate::bbox::BoundingBox;
 use crate::color::color_to_rgba;
 use crate::coord_units::CoordUnits;
-use crate::document::{AcquiredNodes, NodeId};
+use crate::document::{AcquiredNodes, NodeId, RenderingOptions};
 use crate::dpi::Dpi;
 use crate::element::{Element, ElementData};
 use crate::error::{AcquireError, ImplementationLimit, InternalRenderingError};
@@ -339,6 +339,17 @@ impl DrawingCtx {
 
     pub fn session(&self) -> &Session {
         &self.session
+    }
+
+    /// Returns the `RenderingOptions` being used for rendering.
+    pub fn rendering_options(&self, svg_nesting: SvgNesting) -> RenderingOptions {
+        RenderingOptions {
+            dpi: self.config.dpi,
+            cancellable: self.config.cancellable.clone(),
+            user_language: self.config.user_language.clone(),
+            svg_nesting,
+            testing: self.config.testing,
+        }
     }
 
     pub fn user_language(&self) -> &UserLanguage {
