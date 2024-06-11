@@ -45,6 +45,7 @@ Development guide for librsvg
 
    releasing
    ci
+   oss_fuzz
 
 Welcome to the developer's guide for librsvg.  This is for people who
 want to work on the development of librsvg itself, not for users of
@@ -110,12 +111,15 @@ Information for maintainers
 
 - :doc:`releasing`
 - :doc:`ci`
+- :doc:`oss_fuzz`
 
 Overview of the maintainer's workflow.
 
 Marge-bot.
 
 Documentation on the CI.
+
+Documentation on the OSS-Fuzz integration and its maintenance.
 
 References
 ----------

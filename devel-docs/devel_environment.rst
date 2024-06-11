@@ -101,7 +101,8 @@ Setting up dependencies manually
 --------------------------------
 
 ..
-  Please keep this in sync with compiling.rst in the "Build-time dependencies" section
+  Please keep this in sync with compiling.rst in the "Build-time dependencies" section.
+  Please also check to see if OSS-Fuzz dependencies need to be changed (see oss_fuzz.rst).
 
 To compile librsvg, you need the following packages installed.  The
 minimum version is listed here; you may use a newer version instead.
