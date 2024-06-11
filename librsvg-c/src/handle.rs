@@ -1051,23 +1051,18 @@ pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
 }
 
 trait IntoGError {
-    type GlibResult;
+    fn into_gerror(self, session: &Session, error: *mut *mut glib::ffi::GError) -> glib::ffi::gboolean;
 
-    fn into_gerror(self, session: &Session, error: *mut *mut glib::ffi::GError)
-        -> Self::GlibResult;
-
-    fn into_g_warning(self) -> Self::GlibResult;
+    fn into_g_warning(self) -> glib::ffi::gboolean;
 }
 
 impl<E: fmt::Display> IntoGError for Result<(), E> {
-    type GlibResult = glib::ffi::gboolean;
-
     /// Use this one when the public API actually uses a GError.
     fn into_gerror(
         self,
         session: &Session,
         error: *mut *mut glib::ffi::GError,
-    ) -> Self::GlibResult {
+    ) -> glib::ffi::gboolean {
         match self {
             Ok(()) => true.into_glib(),
 
@@ -1079,7 +1074,7 @@ impl<E: fmt::Display> IntoGError for Result<(), E> {
     }
 
     /// Use this one when the public API doesn't use a GError.
-    fn into_g_warning(self) -> Self::GlibResult {
+    fn into_g_warning(self) -> glib::ffi::gboolean {
         match self {
             Ok(()) => true.into_glib(),
 
