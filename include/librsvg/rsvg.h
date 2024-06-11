@@ -1149,6 +1149,27 @@ gboolean rsvg_handle_set_stylesheet (RsvgHandle   *handle,
                                      gsize         css_len,
                                      GError      **error);
 
+/**
+ * rsvg_handle_set_cancellable_for_rendering:
+ * @handle: A [class@Rsvg.Handle].
+ * @cancellable: A [class@Gio.Cancellable] or `NULL`.
+ *
+ * Sets a cancellable object that can be used to interrupt rendering
+ * while the handle is being rendered in another thread.  For example,
+ * you can set a cancellable from your main thread, spawn a thread to
+ * do the rendering, and interrupt the rendering from the main thread
+ * by calling g_cancellable_cancel().
+ *
+ * If rendering is interrupted, the corresponding call to
+ * rsvg_handle_render_document() (or any of the other rendering
+ * functions) will return an error with domain `G_IO_ERROR`, and code
+ * `G_IO_ERROR_CANCELLED`.
+ */
+RSVG_API
+void rsvg_handle_set_cancellable_for_rendering (RsvgHandle   *handle,
+                                                GCancellable *cancellable);
+
+
 #ifndef __GTK_DOC_IGNORE__
 /**
  * rsvg_handle_internal_set_testing:
