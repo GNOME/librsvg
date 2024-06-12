@@ -273,7 +273,11 @@ pub fn draw_tree(
 
     user_bbox.insert(&content_bbox);
 
-    Ok(user_bbox)
+    if draw_ctx.is_rendering_cancelled() {
+        Err(InternalRenderingError::Cancelled)
+    } else {
+        Ok(user_bbox)
+    }
 }
 
 pub fn with_saved_cr<O, F>(cr: &cairo::Context, f: F) -> Result<O, InternalRenderingError>
