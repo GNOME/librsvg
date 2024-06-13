@@ -37,6 +37,8 @@ mod attributes;
 mod xml2;
 mod xml2_load;
 
+use xml2::xmlEntityPtr;
+
 pub use attributes::Attributes;
 
 #[derive(Clone)]
@@ -71,14 +73,22 @@ struct XIncludeContext {
     need_fallback: bool,
 }
 
-// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
-// that is freed in impl Drop for XmlState
-type XmlEntityPtr = *mut libc::c_void;
-
 extern "C" {
     // The original function takes an xmlNodePtr, but that is compatible
     // with xmlEntityPtr for the purposes of this function.
-    fn xmlFreeNode(node: XmlEntityPtr);
+    fn xmlFreeNode(node: xmlEntityPtr);
+}
+
+/// This is to hold an xmlEntityPtr from libxml2; we just hold an opaque pointer
+/// that is freed in impl Drop.
+struct XmlEntity(xmlEntityPtr);
+
+impl Drop for XmlEntity {
+    fn drop(&mut self) {
+        unsafe {
+            xmlFreeNode(self.0);
+        }
+    }
 }
 
 // Creates an ExpandedName from the XInclude namespace and a local_name
@@ -117,7 +127,7 @@ struct XmlStateInner {
     //
     // (The structs cannot impl Drop because build_document()
     // destructures and consumes them at the same time.)
-    entities: HashMap<String, XmlEntityPtr>,
+    entities: HashMap<String, XmlEntity>,
 }
 
 pub struct XmlState {
@@ -337,20 +347,20 @@ impl XmlState {
             .push(Context::FatalError(e));
     }
 
-    pub fn entity_lookup(&self, entity_name: &str) -> Option<XmlEntityPtr> {
-        self.inner.borrow().entities.get(entity_name).copied()
+    pub fn entity_lookup(&self, entity_name: &str) -> Option<xmlEntityPtr> {
+        self.inner
+            .borrow()
+            .entities
+            .get(entity_name)
+            .map(|entity| entity.0)
     }
 
-    pub fn entity_insert(&self, entity_name: &str, entity: XmlEntityPtr) {
+    pub fn entity_insert(&self, entity_name: &str, entity: xmlEntityPtr) {
         let mut inner = self.inner.borrow_mut();
 
-        let old_value = inner.entities.insert(entity_name.to_string(), entity);
-
-        if let Some(v) = old_value {
-            unsafe {
-                xmlFreeNode(v);
-            }
-        }
+        inner
+            .entities
+            .insert(entity_name.to_string(), XmlEntity(entity));
     }
 
     fn element_creation_start_element(&self, name: &QualName, attrs: Attributes) -> Context {
@@ -643,15 +653,7 @@ impl XmlState {
         // consume self, then consume inner, then consume document_builder by calling .build()
 
         let XmlState { inner, .. } = self;
-        let mut inner = inner.into_inner();
-
-        // Free the hash of XmlEntityPtr.  We cannot do this in Drop because we will
-        // consume inner by destructuring it after the for() loop.
-        for (_key, entity) in inner.entities.drain() {
-            unsafe {
-                xmlFreeNode(entity);
-            }
-        }
+        let inner = inner.into_inner();
 
         let XmlStateInner {
             document_builder, ..
