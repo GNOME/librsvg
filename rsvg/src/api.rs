@@ -18,7 +18,7 @@ pub use crate::{
 use crate::{
     accept_language::{LanguageTags, UserLanguage},
     css::{Origin, Stylesheet},
-    document::{Document, LoadOptions, NodeId},
+    document::{Document, LoadOptions, NodeId, RenderingOptions},
     dpi::Dpi,
     drawing_ctx::SvgNesting,
     error::InternalRenderingError,
@@ -57,6 +57,11 @@ pub enum RenderingError {
 
     /// Not enough memory was available for rendering.
     OutOfMemory(String),
+
+    /// The rendering was interrupted via a [`gio::Cancellable`].
+    ///
+    /// See the documentation for [`CairoRenderer::with_cancellable`].
+    Cancelled,
 }
 
 impl std::error::Error for RenderingError {}
@@ -82,6 +87,7 @@ impl From<InternalRenderingError> for RenderingError {
             InternalRenderingError::IdNotFound => RenderingError::IdNotFound,
             InternalRenderingError::InvalidId(s) => RenderingError::InvalidId(s),
             InternalRenderingError::OutOfMemory(s) => RenderingError::OutOfMemory(s),
+            InternalRenderingError::Cancelled => RenderingError::Cancelled,
         }
     }
 }
@@ -94,6 +100,7 @@ impl fmt::Display for RenderingError {
             RenderingError::IdNotFound => write!(f, "element id not found"),
             RenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
             RenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
+            RenderingError::Cancelled => write!(f, "rendering cancelled"),
         }
     }
 }
@@ -427,6 +434,7 @@ pub struct CairoRenderer<'a> {
     pub(crate) handle: &'a SvgHandle,
     pub(crate) dpi: Dpi,
     user_language: UserLanguage,
+    cancellable: Option<gio::Cancellable>,
     is_testing: bool,
 }
 
@@ -521,6 +529,7 @@ impl<'a> CairoRenderer<'a> {
             handle,
             dpi: Dpi::new(DEFAULT_DPI_X, DEFAULT_DPI_Y),
             user_language: UserLanguage::new(&Language::FromEnvironment, session),
+            cancellable: None,
             is_testing: false,
         }
     }
@@ -555,6 +564,30 @@ impl<'a> CairoRenderer<'a> {
 
         CairoRenderer {
             user_language,
+            ..self
+        }
+    }
+
+    /// Sets a cancellable to be able to interrupt rendering.
+    ///
+    /// The rendering functions like [`render_document`] will normally render the whole
+    /// SVG document tree.  However, they can be interrupted if you set a `cancellable`
+    /// object with this method.  To interrupt rendering, you can call
+    /// [`gio::CancellableExt::cancel()`] from a different thread than where the rendering
+    /// is happening.
+    ///
+    /// Since rendering happens as a side-effect on the Cairo context (`cr`) that is
+    /// passed to the rendering functions, it may be that the `cr`'s target surface is in
+    /// an undefined state if the rendering is cancelled.  The surface may have not yet
+    /// been painted on, or it may contain a partially-rendered document.  For this
+    /// reason, if your application does not want to leave the target surface in an
+    /// inconsistent state, you may prefer to use a temporary surface for rendering, which
+    /// can be discarded if your code cancels the rendering.
+    ///
+    /// [`render_document`]: #method.render_document
+    pub fn with_cancellable<C: IsA<Cancellable>>(self, cancellable: &C) -> Self {
+        CairoRenderer {
+            cancellable: Some(cancellable.clone().into()),
             ..self
         }
     }
@@ -607,6 +640,16 @@ impl<'a> CairoRenderer<'a> {
         Some(self.width_height_to_user(self.dpi))
     }
 
+    fn rendering_options(&self) -> RenderingOptions {
+        RenderingOptions {
+            dpi: self.dpi,
+            cancellable: self.cancellable.clone(),
+            user_language: self.user_language.clone(),
+            svg_nesting: SvgNesting::Standalone,
+            testing: self.is_testing,
+        }
+    }
+
     /// Renders the whole SVG document fitted to a viewport
     ///
     /// The `viewport` gives the position and size at which the whole SVG
@@ -624,10 +667,7 @@ impl<'a> CairoRenderer<'a> {
             &self.handle.session,
             cr,
             viewport,
-            &self.user_language,
-            self.dpi,
-            SvgNesting::Standalone,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -667,9 +707,7 @@ impl<'a> CairoRenderer<'a> {
             &self.handle.session,
             node,
             viewport,
-            &self.user_language,
-            self.dpi,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -706,10 +744,7 @@ impl<'a> CairoRenderer<'a> {
             cr,
             node,
             viewport,
-            &self.user_language,
-            self.dpi,
-            SvgNesting::Standalone,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -753,9 +788,7 @@ impl<'a> CairoRenderer<'a> {
         Ok(self.handle.document.get_geometry_for_element(
             &self.handle.session,
             node,
-            &self.user_language,
-            self.dpi,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -789,9 +822,7 @@ impl<'a> CairoRenderer<'a> {
             cr,
             node,
             element_viewport,
-            &self.user_language,
-            self.dpi,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 

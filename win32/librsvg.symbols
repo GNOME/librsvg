@@ -26,6 +26,7 @@ rsvg_handle_new_with_flags
 rsvg_handle_read_stream_sync
 rsvg_handle_set_base_gfile
 rsvg_handle_set_base_uri
+rsvg_handle_set_cancellable_for_rendering
 rsvg_handle_set_dpi
 rsvg_handle_set_dpi_x_y
 rsvg_handle_set_size_callback

@@ -1170,6 +1170,32 @@ render_layer (void)
 }
 
 static void
+set_cancellable_for_rendering (void)
+{
+    RsvgHandle *handle = load_test_document ("layers.svg");
+
+    cairo_surface_t *output = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 300, 300);
+    cairo_t *cr = cairo_create (output);
+
+    RsvgRectangle viewport = { 100.0, 100.0, 100.0, 100.0 };
+
+    GError *error = NULL;
+
+    /* Same as in the Rust API test, we cancel immediately and then start rendering. */
+    GCancellable *cancellable = g_cancellable_new ();
+    g_cancellable_cancel (cancellable);
+
+    rsvg_handle_set_cancellable_for_rendering (handle, cancellable);
+
+    g_assert_false (rsvg_handle_render_layer (handle, cr, "#bar", &viewport, &error));
+    g_assert_error (error, G_IO_ERROR, G_IO_ERROR_CANCELLED);
+
+    cairo_destroy (cr);
+    cairo_surface_destroy (output);
+    g_object_unref (handle);
+}
+
+static void
 untransformed_element (void)
 {
     RsvgHandle *handle = load_test_document ("geometry-element.svg");
@@ -1780,6 +1806,7 @@ add_api_tests (void)
     g_test_add_func ("/api/render_document", render_document);
     g_test_add_func ("/api/get_geometry_for_layer", get_geometry_for_layer);
     g_test_add_func ("/api/render_layer", render_layer);
+    g_test_add_func ("/api/set_cancellable_for_rendering", set_cancellable_for_rendering);
     g_test_add_func ("/api/untransformed_element", untransformed_element);
     g_test_add_func ("/api/no_write_before_close", no_write_before_close);
     g_test_add_func ("/api/empty_write_close", empty_write_close);

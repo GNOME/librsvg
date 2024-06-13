@@ -241,14 +241,13 @@ impl Image {
         {
             let cr = cairo::Context::new(&surface)?;
 
+            let options = draw_ctx.rendering_options(SvgNesting::ReferencedFromImageElement);
+
             document.render_document(
                 draw_ctx.session(),
                 &cr,
                 &cairo::Rectangle::from(surface_dest_rect),
-                draw_ctx.user_language(),
-                viewport.dpi,
-                SvgNesting::ReferencedFromImageElement,
-                draw_ctx.is_testing(),
+                &options,
             )?;
         }
 

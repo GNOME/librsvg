@@ -1,3 +1,5 @@
+use gio::prelude::*;
+
 use rsvg::tests_only::{SharedImageSurface, SurfaceType};
 use rsvg::{CairoRenderer, RenderingError};
 
@@ -212,4 +214,48 @@ fn text_doesnt_leave_points_in_current_path() {
     renderer.render_document(&cr, &viewport).unwrap();
 
     assert!(!cr.has_current_point().unwrap());
+}
+
+#[test]
+fn cancellation_works() {
+    let svg = load_svg(
+        br##"<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <rect x="0" y="0" width="100%" height="100%" fill="blue"/>
+</svg>
+"##,
+    )
+    .unwrap();
+
+    // To test cancellation, we'll start out by creating a cancellable and a renderer, and
+    // immediately cancelling the operation.  Then we'll start rendering.  In theory this
+    // will cause nothing to be rendered.
+
+    let cancellable = gio::Cancellable::new();
+
+    let renderer = CairoRenderer::new(&svg).with_cancellable(&cancellable);
+    cancellable.cancel();
+
+    let output = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+
+    {
+        let cr = cairo::Context::new(&output).unwrap();
+        let viewport = cairo::Rectangle::new(0.0, 0.0, 100.0, 100.0);
+
+        // Test that cancellation happens...
+        assert!(matches!(
+            renderer.render_document(&cr, &viewport),
+            Err(RenderingError::Cancelled)
+        ));
+    }
+
+    let output_surf = SharedImageSurface::wrap(output, SurfaceType::SRgb).unwrap();
+
+    // ... and test that we got an empty surface, since hopefully cancellation occurred
+    // before actually rendering anything.
+    let reference_surf = cairo::ImageSurface::create(cairo::Format::ARgb32, 100, 100).unwrap();
+
+    Reference::from_surface(reference_surf)
+        .compare(&output_surf)
+        .evaluate(&output_surf, "cancellation_works");
 }

@@ -295,6 +295,7 @@ mod imp {
         pub(super) dpi: Dpi,
         pub(super) handle_flags: HandleFlags,
         pub(super) base_url: BaseUrl,
+        pub(super) cancellable: Option<gio::Cancellable>,
         pub(super) size_callback: SizeCallback,
         pub(super) is_testing: bool,
     }
@@ -732,9 +733,15 @@ impl CHandle {
     fn make_renderer<'a>(&self, handle_ref: &'a Ref<'_, SvgHandle>) -> CairoRenderer<'a> {
         let inner = self.imp().inner.borrow();
 
-        CairoRenderer::new(handle_ref)
+        let renderer = CairoRenderer::new(handle_ref)
             .with_dpi(inner.dpi.x(), inner.dpi.y())
-            .test_mode(inner.is_testing)
+            .test_mode(inner.is_testing);
+
+        if let Some(ref cancellable) = inner.cancellable {
+            renderer.with_cancellable(cancellable)
+        } else {
+            renderer
+        }
     }
 
     fn get_geometry_sub(
@@ -759,6 +766,11 @@ impl CHandle {
                 Err(LoadingError::Other(String::from("API ordering")))
             }
         }
+    }
+
+    fn set_cancellable_for_rendering(&self, cancellable: Option<&gio::Cancellable>) {
+        let mut inner = self.imp().inner.borrow_mut();
+        inner.cancellable = cancellable.map(Clone::clone);
     }
 
     fn render_cairo_sub(
@@ -1051,23 +1063,22 @@ pub unsafe extern "C" fn rsvg_handle_internal_set_testing(
 }
 
 trait IntoGError {
-    type GlibResult;
+    fn into_gerror(
+        self,
+        session: &Session,
+        error: *mut *mut glib::ffi::GError,
+    ) -> glib::ffi::gboolean;
 
-    fn into_gerror(self, session: &Session, error: *mut *mut glib::ffi::GError)
-        -> Self::GlibResult;
-
-    fn into_g_warning(self) -> Self::GlibResult;
+    fn into_g_warning(self) -> glib::ffi::gboolean;
 }
 
-impl<E: fmt::Display> IntoGError for Result<(), E> {
-    type GlibResult = glib::ffi::gboolean;
-
+impl IntoGError for Result<(), LoadingError> {
     /// Use this one when the public API actually uses a GError.
     fn into_gerror(
         self,
         session: &Session,
         error: *mut *mut glib::ffi::GError,
-    ) -> Self::GlibResult {
+    ) -> glib::ffi::gboolean {
         match self {
             Ok(()) => true.into_glib(),
 
@@ -1079,7 +1090,49 @@ impl<E: fmt::Display> IntoGError for Result<(), E> {
     }
 
     /// Use this one when the public API doesn't use a GError.
-    fn into_g_warning(self) -> Self::GlibResult {
+    fn into_g_warning(self) -> glib::ffi::gboolean {
+        match self {
+            Ok(()) => true.into_glib(),
+
+            Err(e) => {
+                rsvg_g_warning(&format!("{e}"));
+                false.into_glib()
+            }
+        }
+    }
+}
+
+impl IntoGError for Result<(), RenderingError> {
+    /// Use this one when the public API actually uses a GError.
+    fn into_gerror(
+        self,
+        session: &Session,
+        error: *mut *mut glib::ffi::GError,
+    ) -> glib::ffi::gboolean {
+        match self {
+            Ok(()) => true.into_glib(),
+
+            Err(RenderingError::RenderingError(rsvg::RenderingError::Cancelled)) => {
+                unsafe {
+                    glib::ffi::g_set_error_literal(
+                        error,
+                        gio::ffi::g_io_error_quark(),
+                        gio::ffi::G_IO_ERROR_CANCELLED,
+                        "rendering cancelled".to_glib_none().0,
+                    );
+                }
+                false.into_glib()
+            }
+
+            Err(e) => {
+                set_gerror(session, error, 0, &format!("{e}"));
+                false.into_glib()
+            }
+        }
+    }
+
+    /// Use this one when the public API doesn't use a GError.
+    fn into_g_warning(self) -> glib::ffi::gboolean {
         match self {
             Ok(()) => true.into_glib(),
 
@@ -1597,6 +1650,24 @@ pub unsafe extern "C" fn rsvg_handle_set_stylesheet(
     };
 
     rhandle.set_stylesheet(css).into_gerror(&session, error)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn rsvg_handle_set_cancellable_for_rendering(
+    handle: *const RsvgHandle,
+    cancellable: *mut gio::ffi::GCancellable,
+) {
+    rsvg_return_if_fail! {
+        rsvg_handle_set_cancellable_for_rendering;
+
+        is_rsvg_handle(handle),
+        cancellable.is_null() || is_cancellable(cancellable),
+    }
+
+    let rhandle = get_rust_handle(handle);
+    let cancellable: Option<gio::Cancellable> = from_glib_none(cancellable);
+
+    rhandle.set_cancellable_for_rendering(cancellable.as_ref());
 }
 
 #[no_mangle]
