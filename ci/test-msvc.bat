@@ -92,6 +92,7 @@ rmdir /s/q _build_pango
 :: Install Rust
 if exist %HOMEPATH%\.cargo\bin\rustup.exe %HOMEPATH%\.cargo\bin\rustup update
 if not exist %HOMEPATH%\.cargo\bin\rustup.exe rustup-init -y --default-toolchain=stable-%RUST_HOST% --default-host=%RUST_HOST%
+if not exist %HOMEPATH%\.cargo\bin\cargo-cbuild.exe %HOMEPATH%\.cargo\bin\cargo install cargo-c || goto :error
 
 :: Enable workaround if latest stable Rust caused issues like #968.
 :: Update RUST_DOWNGRADE_VER below as well as required.
