@@ -86,6 +86,13 @@ struct XmlEntity(xmlEntityPtr);
 impl Drop for XmlEntity {
     fn drop(&mut self) {
         unsafe {
+            // Even though we are freeing an xmlEntityPtr, historically the code has always
+            // used xmlFreeNode() because that function actually does allow freeing entities.
+            //
+            // See https://gitlab.gnome.org/GNOME/libxml2/-/issues/731
+            // for a possible memory leak on older versions of libxml2 when using
+            // xmlFreeNode() instead of xmlFreeEntity() - the latter just became public
+            // in librsvg-2.12.0.
             xmlFreeNode(self.0);
         }
     }
