@@ -186,6 +186,7 @@ pub struct RuleParser {
 }
 
 /// Errors from the CSS parsing process
+#[allow(dead_code)] // looks like we are not actually using this yet?
 #[derive(Debug)]
 pub enum ParseErrorKind<'i> {
     Selector(selectors::parser::SelectorParseErrorKind<'i>),
