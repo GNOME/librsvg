@@ -348,6 +348,14 @@ impl NodeDraw for Node {
                     // displayed."
                     Err(InternalRenderingError::InvalidTransform) => Ok(draw_ctx.empty_bbox()),
 
+                    Err(InternalRenderingError::CircularReference(node)) => {
+                        if node != *self {
+                            return Ok(draw_ctx.empty_bbox());
+                        } else {
+                            return Err(InternalRenderingError::CircularReference(node));
+                        }
+                    }
+
                     Err(e) => Err(e),
                 };
 

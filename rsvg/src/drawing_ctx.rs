@@ -1755,7 +1755,7 @@ impl DrawingCtx {
 
             Err(AcquireError::CircularReference(circular)) => {
                 rsvg_log!(self.session, "circular reference in element {}", circular);
-                return Ok(self.empty_bbox());
+                return Err(InternalRenderingError::CircularReference(circular));
             }
 
             _ => unreachable!(),
@@ -1765,8 +1765,13 @@ impl DrawingCtx {
             Ok(acquired) => acquired,
 
             Err(AcquireError::CircularReference(circular)) => {
-                rsvg_log!(self.session, "circular reference from {} to element {}", node, circular);
-                return Ok(self.empty_bbox());
+                rsvg_log!(
+                    self.session,
+                    "circular reference from {} to element {}",
+                    node,
+                    circular
+                );
+                return Err(InternalRenderingError::CircularReference(circular));
             }
 
             Err(AcquireError::MaxReferencesExceeded) => {

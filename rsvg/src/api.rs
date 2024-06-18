@@ -84,6 +84,9 @@ impl From<InternalRenderingError> for RenderingError {
             InternalRenderingError::InvalidTransform => {
                 RenderingError::Rendering("invalid transform".to_string())
             }
+            InternalRenderingError::CircularReference(c) => {
+                RenderingError::Rendering(format!("circular reference in node {c}"))
+            }
             InternalRenderingError::IdNotFound => RenderingError::IdNotFound,
             InternalRenderingError::InvalidId(s) => RenderingError::InvalidId(s),
             InternalRenderingError::OutOfMemory(s) => RenderingError::OutOfMemory(s),
