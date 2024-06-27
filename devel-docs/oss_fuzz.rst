@@ -54,6 +54,17 @@ Individual fuzz targets can also be run inside of a debugger for further debuggi
   FUZZ_TARGET=$(find ./target/*/release/ -type f -name render_document)
   gdb --args "$FUZZ_TARGET" minimized.svg
 
+If the failure does not reproduce locally, you can try reproducing the issue in an OSS-Fuzz
+container:
+
+.. code:: bash
+
+  git clone https://github.com/google/oss-fuzz.git
+  cd oss-fuzz
+
+  python infra/helper.py build_image librsvg
+  python infra/helper.py build_fuzzers librsvg
+  python infra/helper.py reproduce librsvg render_document minimized.svg
 
 Code coverage
 ^^^^^^^^^^^^^
