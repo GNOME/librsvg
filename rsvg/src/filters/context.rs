@@ -192,7 +192,7 @@ impl FilterContext {
                 .map_err(FilterError::Rendering)
         });
 
-        res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
+        res.clone().map_err(|e| e.clone())
     }
 
     /// Returns a surface filled with the current stroke's paint, for `StrokePaint` inputs in primitives.
@@ -212,7 +212,7 @@ impl FilterContext {
             )?)
         });
 
-        res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
+        res.clone().map_err(|e| e.clone())
     }
 
     /// Returns a surface filled with the current fill's paint, for `FillPaint` inputs in primitives.
@@ -232,7 +232,7 @@ impl FilterContext {
             )?)
         });
 
-        res.as_ref().map(|s| s.clone()).map_err(|e| e.clone())
+        res.clone().map_err(|e| e.clone())
     }
 
     /// Converts this `FilterContext` into the surface corresponding to the output of the filter

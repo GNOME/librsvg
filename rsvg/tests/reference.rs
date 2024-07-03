@@ -35,7 +35,7 @@ fn reference_test(path: &Path) {
     setup_language();
     setup_font_map();
 
-    let path_base_name = path.file_stem().unwrap().to_string_lossy().to_owned();
+    let path_base_name = path.file_stem().unwrap().to_string_lossy().into_owned();
     if path_base_name.starts_with("ignore") {
         return;
     }
@@ -160,10 +160,7 @@ fn checked_i32(x: f64) -> i32 {
 fn has_supported_unit(l: &Length) -> bool {
     use rsvg::LengthUnit::*;
 
-    match l.unit {
-        Percent | Px | In | Cm | Mm | Pt | Pc => true,
-        _ => false,
-    }
+    matches!(l.unit, Percent | Px | In | Cm | Mm | Pt | Pc)
 }
 
 const POINTS_PER_INCH: f64 = 72.0;

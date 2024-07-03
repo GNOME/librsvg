@@ -449,7 +449,6 @@ mod tests {
                     amplitude: 3.0,
                     exponent: 4.0,
                     offset: 5.0,
-                    ..FeFuncCommon::default()
                 }),
 
                 a: FeFuncA::default(),

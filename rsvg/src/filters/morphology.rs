@@ -140,8 +140,8 @@ impl Morphology {
 
                 // Compute the new pixel values.
                 let initial = match self.operator {
-                    Operator::Erode => u8::max_value(),
-                    Operator::Dilate => u8::min_value(),
+                    Operator::Erode => u8::MAX,
+                    Operator::Dilate => u8::MIN,
                 };
 
                 let mut output_pixel = Pixel {
