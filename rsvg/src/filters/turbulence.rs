@@ -364,8 +364,8 @@ impl Turbulence {
 
         let seed = clamp(
             self.seed.trunc(), // per the spec, round towards zero
-            f64::from(i32::min_value()),
-            f64::from(i32::max_value()),
+            f64::from(i32::MIN),
+            f64::from(i32::MAX),
         ) as i32;
 
         // "Negative values are unsupported" -> set to the initial value which is 0.0
