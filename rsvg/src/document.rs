@@ -766,6 +766,7 @@ pub struct AcquiredNodes<'i> {
     document: &'i Document,
     num_elements_acquired: usize,
     node_stack: Rc<RefCell<NodeStack>>,
+    nodes_with_cycles: Vec<Node>,
 }
 
 impl<'i> AcquiredNodes<'i> {
@@ -774,6 +775,7 @@ impl<'i> AcquiredNodes<'i> {
             document,
             num_elements_acquired: 0,
             node_stack: Rc::new(RefCell::new(NodeStack::new())),
+            nodes_with_cycles: Vec::new(),
         }
     }
 
@@ -810,6 +812,10 @@ impl<'i> AcquiredNodes<'i> {
             .lookup_node(node_id)
             .ok_or_else(|| AcquireError::LinkNotFound(node_id.clone()))?;
 
+        if self.nodes_with_cycles.contains(&node) {
+            return Err(AcquireError::CircularReference(node.clone()));
+        }
+
         if node.borrow_element().is_accessed_by_reference() {
             self.acquire_ref(&node)
         } else {
@@ -829,8 +835,11 @@ impl<'i> AcquiredNodes<'i> {
     /// * At the drawing stage, `acquire_ref()` the pattern node that we already had, so that
     /// its child elements that reference other paint servers will be able to detect circular
     /// references to the pattern.
-    pub fn acquire_ref(&self, node: &Node) -> Result<AcquiredNode, AcquireError> {
-        if self.node_stack.borrow().contains(node) {
+    pub fn acquire_ref(&mut self, node: &Node) -> Result<AcquiredNode, AcquireError> {
+        if self.nodes_with_cycles.contains(node) {
+            Err(AcquireError::CircularReference(node.clone()))
+        } else if self.node_stack.borrow().contains(node) {
+            self.nodes_with_cycles.push(node.clone());
             Err(AcquireError::CircularReference(node.clone()))
         } else {
             self.node_stack.borrow_mut().push(node);

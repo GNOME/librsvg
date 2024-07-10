@@ -121,7 +121,7 @@ impl fmt::Display for DefsLookupErrorKind {
 ///   "If a transform function causes the current transformation matrix of an
 ///   object to be non-invertible, the object and its content do not get
 ///   displayed."
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum InternalRenderingError {
     /// An error from the rendering backend.
     Rendering(String),
@@ -134,6 +134,8 @@ pub enum InternalRenderingError {
     /// This should not be a fatal error; we should catch it and just not render
     /// the problematic element.
     InvalidTransform,
+
+    CircularReference(Node),
 
     /// Tried to reference an SVG element that does not exist.
     IdNotFound,
@@ -169,6 +171,9 @@ impl fmt::Display for InternalRenderingError {
             InternalRenderingError::Rendering(ref s) => write!(f, "rendering error: {s}"),
             InternalRenderingError::LimitExceeded(ref l) => write!(f, "{l}"),
             InternalRenderingError::InvalidTransform => write!(f, "invalid transform"),
+            InternalRenderingError::CircularReference(ref c) => {
+                write!(f, "circular reference in element {c}")
+            }
             InternalRenderingError::IdNotFound => write!(f, "element id not found"),
             InternalRenderingError::InvalidId(ref s) => write!(f, "invalid id: {s:?}"),
             InternalRenderingError::OutOfMemory(ref s) => write!(f, "out of memory: {s}"),
