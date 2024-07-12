@@ -3,7 +3,7 @@ use std::fmt;
 use crate::error::InternalRenderingError;
 
 /// An enumeration of errors that can occur during filter primitive rendering.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum FilterError {
     /// The filter was passed invalid input (the `in` attribute).
     InvalidInput,

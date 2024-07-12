@@ -1700,9 +1700,9 @@ impl DrawingCtx {
         let _self_acquired = match acquired_nodes.acquire_ref(node) {
             Ok(n) => n,
 
-            Err(AcquireError::CircularReference(_)) => {
-                rsvg_log!(self.session, "circular reference in element {}", node);
-                return Ok(self.empty_bbox());
+            Err(AcquireError::CircularReference(circular)) => {
+                rsvg_log!(self.session, "circular reference in element {}", circular);
+                return Err(InternalRenderingError::CircularReference(circular));
             }
 
             _ => unreachable!(),
@@ -1711,9 +1711,14 @@ impl DrawingCtx {
         let acquired = match acquired_nodes.acquire(link) {
             Ok(acquired) => acquired,
 
-            Err(AcquireError::CircularReference(node)) => {
-                rsvg_log!(self.session, "circular reference in element {}", node);
-                return Ok(self.empty_bbox());
+            Err(AcquireError::CircularReference(circular)) => {
+                rsvg_log!(
+                    self.session,
+                    "circular reference from {} to element {}",
+                    node,
+                    circular
+                );
+                return Err(InternalRenderingError::CircularReference(circular));
             }
 
             Err(AcquireError::MaxReferencesExceeded) => {
