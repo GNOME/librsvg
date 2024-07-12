@@ -1,3 +1,12 @@
+Version 2.58.2
+==============
+
+Two bug fixes from fuzz testing:
+
+- #1087 - Don't leak XML entities when the XML document fails to parse.
+
+- #1092 - Fix stack overflow in <use> reference cycle.
+
 Version 2.58.1
 ==============
 
