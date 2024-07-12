@@ -234,16 +234,16 @@ mod tests {
     fn fill_info() {
         let info = pb_format_new();
 
-        assert_ne!(info.name, null_mut());
-        assert_ne!(info.signature, null_mut());
-        assert_ne!(info.description, null_mut());
-        assert_ne!(info.mime_types, null_mut());
-        assert_ne!(info.extensions, null_mut());
+        assert!(!info.name.is_null());
+        assert!(!info.signature.is_null());
+        assert!(!info.description.is_null());
+        assert!(!info.mime_types.is_null());
+        assert!(!info.extensions.is_null());
         assert_eq!(
             info.flags,
             GDK_PIXBUF_FORMAT_SCALABLE | GDK_PIXBUF_FORMAT_THREADSAFE
         );
-        assert_ne!(info.license, null_mut());
+        assert!(!info.license.is_null());
     }
 
     fn check_null_terminated_arr_cstrings(arr: &[*const c_char]) {
@@ -283,7 +283,7 @@ mod tests {
                     continue;
                 } else {
                     assert!(!(*ptr).prefix.is_null());
-                    if (*ptr).mask != null_mut() {
+                    if !(*ptr).mask.is_null() {
                         // Mask can be null
                         let prefix = std::ffi::CStr::from_ptr((*ptr).prefix).to_bytes();
                         let mask = std::ffi::CStr::from_ptr((*ptr).mask).to_bytes();
@@ -323,8 +323,8 @@ mod tests {
             pba: *mut gdk_pixbuf::ffi::GdkPixbufAnimation,
             user_data: *mut std::ffi::c_void,
         ) {
-            assert_eq!(user_data, null_mut());
-            assert_eq!(pba, null_mut());
+            assert!(user_data.is_null());
+            assert!(pba.is_null());
 
             let w = gdk_pixbuf::ffi::gdk_pixbuf_get_width(pb);
             let h = gdk_pixbuf::ffi::gdk_pixbuf_get_height(pb);
