@@ -19,13 +19,13 @@
 //! historical idiosyncrasies of the C API into the simple Rust API.
 
 use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::f64;
 use std::ffi::{CStr, CString, OsStr};
 use std::fmt;
 use std::path::PathBuf;
 use std::ptr;
 use std::slice;
 use std::str;
-use std::f64;
 
 #[cfg(feature = "pixbuf")]
 use gdk_pixbuf::Pixbuf;
