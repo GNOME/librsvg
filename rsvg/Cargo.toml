@@ -48,14 +48,14 @@ name = "rsvg"
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
-cairo-rs = { version = "0.19", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cairo-rs = { version = "0.20", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 cssparser = "~0.31"
 data-url = "0.3.0"
 encoding_rs = "0.8.32"
 float-cmp = "0.9.0"
-gio = "0.19"
-glib = "0.19"
+gio = "0.20"
+glib = "0.20"
 image = { version = "0.24.9", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
 itertools = "0.12.0"
 language-tags = "0.3.1"
@@ -64,8 +64,8 @@ locale_config = "0.3.0" # not "*" as per the documentation, since crates.io does
 markup5ever = "0.11.0"
 nalgebra = "0.32.1"
 num-traits = "0.2"
-pango = { version = "0.19", features = ["v1_46"] }
-pangocairo = "0.19"
+pango = { version = "0.20", features = ["v1_46"] }
+pangocairo = "0.20"
 rayon = "1"
 rctree = "0.6.0"
 regex = "1.7.1"
