@@ -13,7 +13,7 @@ off items while making a release.
   already be increased but not released; double-check it).
 - ☐ Copy version number to ``Cargo.toml``.
 - ☐ Copy version number to ``doc/librsvg.toml``.
-- ☐ Compute and write version number to ``rsvg/Cargo.toml``, see :ref:`crate version<crate_version>` below.
+- ☐ Compute crate version number and write it to ``rsvg/Cargo.toml``, see :ref:`crate version<crate_version>` below.
 - ☐ Copy the crate version number to the example in `rsvg/src/lib.rs`.
 - ☐ ``cargo update`` - needed because you tweaked ``Cargo.toml``, and
   also to get new dependencies.
