@@ -72,7 +72,7 @@ pub fn compare_surfaces(
     let mut num_pixels_changed = 0;
     let mut max_diff = 0;
 
-    let black = Pixel::default().alpha(255);
+    let black = Pixel::default().with_alpha(255);
 
     {
         let mut diff_data = surf_diff.data().unwrap();
@@ -92,7 +92,7 @@ pub fn compare_surfaces(
                     let a = pixel_diff.a;
                     pixel_diff.map_rgb(|_| a)
                 } else {
-                    pixel_diff.alpha(255)
+                    pixel_diff.with_alpha(255)
                 }
             } else {
                 black

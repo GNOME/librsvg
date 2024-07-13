@@ -1,3 +1,34 @@
+Version 2.58.92
+===============
+
+librsvg crate version 2.59.0-beta.2
+
+Librsvg is now part of Google's oss-fuzz and is fuzz-tested
+automatically - see
+https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/oss_fuzz.html
+for details.  Many thanks to correctmost for doing this work and for
+keeping track of librsvg's entries in oss-fuzz.
+
+This release has two bug fixes from fuzz testing, and a new API call.
+
+- #1087 - Don't leak XML entities when the XML document fails to parse.
+
+- #1092 - Fix stack overflow in <use> reference cycle.
+
+- #429 - Librsvg now supports cancellable rendering; you can start
+  rendering an RsvgHandle in one thread, and stop it from another
+  thread with a GCancellable.  In the C API, you can use the
+  rsvg_handle_set_cancellable_for_rendering() function; in the Rust
+  API, CairoRenderer now has a with_cancellable() method.
+
+- Many build fixes for Windows, MacOS, iOS, and cross-compilation
+  (Amyspark, Guillaume Desmottes).
+
+- Continued refactoring for a render tree.
+
+- Many fixes to the documentation.
+
+
 Version 2.58.91
 ===============
 
