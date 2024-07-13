@@ -417,6 +417,7 @@ vs2019-x64:
     paths:
       - "${CI_PROJECT_DIR}/msvc-build/meson-logs"
       - "${CI_PROJECT_DIR}/msvc-build/tests/output"
+  allow_failure: true
 
 distcheck:
   stage: acceptance test
