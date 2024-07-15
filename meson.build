@@ -30,6 +30,19 @@ cargo_c = find_program('cargo-cbuild', version:'>= 0.9.19')
 rustc = find_program('rustc', version:'>= @0@'.format(msrv))
 makedef = find_program('meson/makedef.py', native: true)
 
+if host_system in ['darwin', 'ios']
+  # Validate unconditional presence of getentropy and CCRandomGenerateBytes.
+  # https://github.com/rust-lang/rust/pull/116319
+  cc.compiles('''#include <Availability.h>
+#include <TargetConditionals.h>
+#if !((TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101200L) || (TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED >= 100000L))
+# error "https://gitlab.gnome.org/GNOME/librsvg/-/issues/1097"
+#endif''',
+    name: 'Targets at least macOS 10.12 or iOS 10',
+    required: rustc.version().version_compare('>= 1.75.0')
+  )
+endif
+
 py = import('python')
 
 python = py.find_installation()
