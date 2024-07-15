@@ -3,7 +3,7 @@
 set -o errexit -o pipefail -o noclobber -o nounset
 
 GLIB_TAG="2.78.0"
-GOBJECT_INTROSPECTION_TAG="1.78.0"
+GOBJECT_INTROSPECTION_TAG="1.81.0"
 FREETYPE2_TAG="VER-2-13-2"
 FONTCONFIG_TAG="2.14.2"
 CAIRO_TAG="1.18.0"
