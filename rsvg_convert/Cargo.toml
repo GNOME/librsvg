@@ -43,7 +43,7 @@ float-cmp = "0.9.0"
 librsvg = { path = "../rsvg", features = ["test-utils"] }
 
 [build-dependencies]
-system-deps = "6.0.0"
+system-deps = "7.0.0"
 
 [features]
 avif = [ "librsvg/avif" ]
