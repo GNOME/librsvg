@@ -94,7 +94,7 @@ serde_json = "1.0"
 tempfile = "3"
 
 [build-dependencies]
-system-deps = "6.0.0"
+system-deps = "7.0.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(system_deps_have_fontconfig)', 'cfg(system_deps_have_pangoft2)',] }
