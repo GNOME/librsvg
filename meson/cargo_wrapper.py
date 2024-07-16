@@ -187,7 +187,12 @@ if args.command in ["cbuild", "build"]:
     # Copy binary and, if applicable, the corresponding .pdb file, to build dir
     else:
         binary = Path(cargo_target_output_dir / buildtype / args.bin)
-        if sys.platform == "win32":
+        is_windows_target = False
+        if args.target is None and sys.platform == "win32":
+            is_windows_target = True
+        elif args.target is not None and args.target.split('-')[2] == 'windows':
+            is_windows_target = True
+        if is_windows_target:
             exe_name = args.bin.replace('rsvg-convert', 'rsvg_convert')
             pdb_src = Path(cargo_target_output_dir / buildtype / exe_name).with_suffix(".pdb")
             pdb_dest = Path(args.current_build_dir / args.bin).with_suffix('.pdb')
