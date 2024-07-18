@@ -11,15 +11,17 @@ rust-version.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-gdk-pixbuf = "0.19"
-gio = "0.19"
-glib = "0.19"
+gdk-pixbuf.workspace = true
+gio.workspace = true
+glib.workspace = true
 
 [build-dependencies]
-system-deps = "6.0.0"
+system-deps.workspace = true
 
 [package.metadata.system-deps]
-librsvg = { name = "librsvg-2.0-uninstalled", version = "2.57", fallback-names = ["librsvg-2.0"] }
+librsvg = { name = "librsvg-2.0-uninstalled", version = "2.57", fallback-names = [
+    "librsvg-2.0",
+] }
 
 [package.metadata.capi.header]
 enabled = false

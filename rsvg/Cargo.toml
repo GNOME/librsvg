@@ -9,7 +9,7 @@ homepage.workspace = true
 repository.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-exclude = ["tests/fixtures", "tests/resources" ]
+exclude = ["tests/fixtures", "tests/resources"]
 
 [package.metadata.docs.rs]
 rustc-args = ["--cfg", "docsrs"]
@@ -48,53 +48,53 @@ name = "rsvg"
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
-cairo-rs = { version = "0.19", features=["v1_16", "png", "pdf", "ps", "svg"] }
-cast = "0.3.0"
-cssparser = "~0.31"
-data-url = "0.3.0"
-encoding_rs = "0.8.32"
-float-cmp = "0.9.0"
-gio = "0.19"
-glib = "0.19"
-image = { version = "0.24.9", default-features = false, features = ["jpeg", "png", "gif", "webp"] }
-itertools = "0.12.0"
-language-tags = "0.3.1"
-libc = "0.2"
-locale_config = "0.3.0" # not "*" as per the documentation, since crates.io doesn't accept wildcards
-markup5ever = "0.11.0"
-nalgebra = "0.32.1"
-num-traits = "0.2"
-pango = { version = "0.19", features = ["v1_46"] }
-pangocairo = "0.19"
-rayon = "1"
-rctree = "0.6.0"
-regex = "1.7.1"
-rgb = { version="0.8", features=["argb"] }
-selectors = "0.25.0"
-string_cache = "0.8.0"
-tinyvec = { version = "1.2.0", features = ["alloc", "rustc_1_55"] }
-url = "2"
-xml5ever = "0.17.0"
+cairo-rs = { version = "0.19", features = ["v1_16", "png", "pdf", "ps", "svg"] }
+cast.workspace = true
+cssparser.workspace = true
+data-url.workspace = true
+encoding_rs.workspace = true
+float-cmp.workspace = true
+gio.workspace = true
+glib.workspace = true
+image = { workspace = true, features = ["jpeg", "png", "gif", "webp"] }
+itertools.workspace = true
+language-tags.workspace = true
+libc.workspace = true
+locale_config.workspace = true
+markup5ever.workspace = true
+nalgebra.workspace = true
+num-traits.workspace = true
+pango = { workspace = true, features = ["v1_46"] }
+pangocairo.workspace = true
+rayon.workspace = true
+rctree.workspace = true
+regex.workspace = true
+rgb = { workspace = true, features = ["argb"] }
+selectors.workspace = true
+string_cache.workspace = true
+tinyvec = { workspace = true, features = ["alloc", "rustc_1_55"] }
+url.workspace = true
+xml5ever.workspace = true
 
 [target.'cfg(all(not(target_os = "macos"), not(target_os = "windows")))'.dependencies]
-yeslogic-fontconfig-sys = { version = "4.0.1", optional = true }
+yeslogic-fontconfig-sys = { workspace = true, optional = true }
 
 [dev-dependencies]
-anyhow = "1.0"
-chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
-criterion = "0.5"
-lopdf = "0.32"
-matches = "0.1"
-png = "0.17.2"
-predicates = "3.0.3"
-proptest = "1.0.0"
-quick-error = "2.0.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tempfile = "3"
+anyhow.workspace = true
+chrono = { workspace = true, features = ["clock", "std"] }
+criterion.workspace = true
+lopdf.workspace = true
+matches.workspace = true
+png.workspace = true
+predicates.workspace = true
+proptest.workspace = true
+quick-error.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tempfile.workspace = true
 
 [build-dependencies]
-system-deps = "6.0.0"
+system-deps.workspace = true
 
 [[bench]]
 name = "box_blur"

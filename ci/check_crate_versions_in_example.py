@@ -66,7 +66,7 @@ def check_dependency_version(cargo_toml_filename, cargo_toml, other_filename, ot
         )
 
 def check():
-    cargo_toml = toml.load('rsvg/Cargo.toml')
+    cargo_toml = toml.load('Cargo.toml')
     librsvg_version = cargo_toml['package']['version']
 
     example_file = open('rsvg/src/lib.rs')

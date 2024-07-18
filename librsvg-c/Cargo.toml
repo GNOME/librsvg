@@ -10,24 +10,24 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-cairo-rs = { version = "0.19", features=["v1_16", "png", "pdf", "ps", "svg"] }
-cast = "0.3.0"
-float-cmp = "0.9.0"
-gdk-pixbuf = { version = "0.19", optional = true }
-gio = "0.19"
-glib = "0.19"
-libc = "0.2"
-librsvg = { path = "../rsvg", features = ["capi"] }
-rgb = { version="0.8", features=["argb"] }
-url = "2"
+cairo-rs = { workspace = true, features = ["v1_16", "png", "pdf", "ps", "svg"] }
+cast.workspace = true
+float-cmp.workspace = true
+gdk-pixbuf = { workspace = true, optional = true }
+gio.workspace = true
+glib.workspace = true
+libc.workspace = true
+librsvg = { workspace = true, features = ["capi"] }
+rgb = { workspace = true, features = ["argb"] }
+url.workspace = true
 
 [build-dependencies]
-regex = "1.7.1"
+regex.workspace = true
 
 [features]
-avif = [ "librsvg/avif" ]
-capi = [ "librsvg/capi" ]
-pixbuf = [ "dep:gdk-pixbuf" ]
+avif = ["librsvg/avif"]
+capi = ["librsvg/capi"]
+pixbuf = ["dep:gdk-pixbuf"]
 
 [package.metadata.capi]
 min_version = "0.9.19"

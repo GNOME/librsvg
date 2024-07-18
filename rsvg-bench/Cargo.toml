@@ -13,8 +13,8 @@ documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.htm
 [dependencies]
 # Keep these in sync with respect to the cairo-rs version:
 #   src/lib.rs - toplevel example in the docs
-anyhow = "1.0"
-cairo-rs = { version = "0.19", features=["v1_16", "png", "pdf", "ps", "svg"] }
-clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
-librsvg = { path = "../rsvg" }
-thiserror = "1.0"
+anyhow.workspace = true
+cairo-rs = { workspace = true, features = ["v1_16", "png", "pdf", "ps", "svg"] }
+clap = { version = "4.0.17", features = ["cargo", "derive"] }
+librsvg.workspace = true
+thiserror.workspace = true

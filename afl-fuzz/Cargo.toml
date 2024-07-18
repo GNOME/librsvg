@@ -1,17 +1,15 @@
 [package]
 name = "rsvg-afl-fuzz"
 version = "0.0.1"
-authors = [
-	"Bastien Orivel <eijebong@bananium.fr>",
-]
+authors = ["Bastien Orivel <eijebong@bananium.fr>"]
 edition = "2018"
 
 [dependencies]
-afl = "*"
-cairo-rs = { version = "0.19" }
-glib = "0.19"
-gio = "0.19"
-librsvg = { path = "../rsvg" }
+afl.workspace = true
+cairo-rs.workspace = true
+glib.workspace = true
+gio.workspace = true
+librsvg.workspace = true
 
 [profile.release]
 lto = true
