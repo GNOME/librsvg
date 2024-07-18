@@ -18,38 +18,49 @@ cairo-ps = { version = "1.18", optional = true }
 cairo-svg = { version = "1.18", optional = true }
 
 [dependencies]
-# Keep these in sync with respect to the cairo-rs version:
-#   src/lib.rs - toplevel example in the docs
-cairo-rs = { version = "0.20", features=["v1_18", "v1_16", "pdf", "ps", "svg"] }
-cast = "0.3.0"
-chrono = { version = "0.4.23", default-features = false, features = ["clock", "std"] }
-clap = { version = "4.0.17", features = ["cargo", "derive"] } # rsvg-convert
-clap_complete = "4.0.5" # rsvg-convert
-cssparser = "~0.31"
-gio = "0.20"
-glib = "0.20"
-libc = "0.2"
-librsvg = { path = "../rsvg" }
-librsvg-c = { path = "../librsvg-c" }
+cairo-rs = { workspace = true, features = [
+    "v1_18",
+    "v1_16",
+    "pdf",
+    "ps",
+    "svg",
+] }
+cast.workspace = true
+chrono = { workspace = true, default-features = false, features = [
+    "clock",
+    "std",
+] }
+clap = { workspace = true, features = ["cargo", "derive"] } # rsvg-convert
+clap_complete.workspace = true # rsvg-convert
+cssparser.workspace = true
+gio.workspace = true
+glib.workspace = true
+libc.workspace = true
+librsvg.workspace = true
+librsvg-c.workspace = true
 
 [dev-dependencies]
-assert_cmd = "2.0.2"
-predicates = "3.0.3"
-tempfile = "3"
-url = "2"
-lopdf = "0.32"
-png = "0.17.2"
-float-cmp = "0.9.0"
-librsvg = { path = "../rsvg", features = ["test-utils"] }
+assert_cmd.workspace = true
+predicates.workspace = true
+tempfile.workspace = true
+url.workspace = true
+lopdf.workspace = true
+png.workspace = true
+float-cmp.workspace = true
+librsvg = { workspace = true, features = ["test-utils"] }
 
 [build-dependencies]
-system-deps = "7.0.0"
+system-deps.workspace = true
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(system_deps_have_cairo_pdf)', 'cfg(system_deps_have_cairo_ps)', 'cfg(system_deps_have_cairo_svg)'] }
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(system_deps_have_cairo_pdf)',
+    'cfg(system_deps_have_cairo_ps)',
+    'cfg(system_deps_have_cairo_svg)',
+] }
 
 [features]
-avif = [ "librsvg/avif" ]
+avif = ["librsvg/avif"]
 
 [[bin]]
 name = "rsvg-convert"

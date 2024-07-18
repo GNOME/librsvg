@@ -10,7 +10,10 @@ import toml
 # foo = "1.2.3"
 # bar = { version = "4.5.6", features=["something", "else", "here"]
 def get_crate_version(toml_doc, crate_name):
-    crate_decl = toml_doc['dependencies'][crate_name]
+    if 'dependencies' in toml_doc:
+        crate_decl = toml_doc['dependencies'][crate_name]
+    else:
+        crate_decl = toml_doc['workspace']['dependencies'][crate_name]
 
     if isinstance(crate_decl, str):
         version = crate_decl
@@ -87,9 +90,10 @@ def check():
         'gio',
     ]
 
+    cargo_toml = toml.load('Cargo.toml')
     for dependency_name in DEPENDENCIES:
         check_dependency_version(
-            'rsvg/Cargo.toml',
+            'Cargo.toml',
             cargo_toml,
             'rsvg/src/lib.rs',
             example_toml,
