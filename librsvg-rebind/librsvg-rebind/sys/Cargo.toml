@@ -1,0 +1,51 @@
+[package]
+name = "librsvg-rebind-sys"
+authors = ["Sophie Herold <sophie@hemio.de>"]
+version = "0.1.0"
+description = "FFI bindings for librsvg"
+homepage = "https://gitlab.gnome.org/GNOME/librsvg"
+license = "MIT"
+repository = "https://gitlab.gnome.org/GNOME/librsvg"
+documentation = "https://gnome.pages.gitlab.gnome.org/librsvg/doc/librsvg_rebind_sys/"
+categories = ["api-bindings"]
+edition = "2021"
+build = "build.rs"
+keywords = ["svg"]
+links = "rsvg"
+exclude = ["Gir.toml"]
+
+[package.metadata.docs.rs]
+rustc-args = ["--cfg", "docsrs"]
+rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
+all-features = true
+
+[package.metadata.system-deps.librsvg_2_0]
+name = "librsvg-2.0"
+version = "2.50"
+
+[package.metadata.system-deps.librsvg_2_0.v2_58]
+version = "2.58"
+
+[dependencies]
+libc = "0.2"
+gdk-pixbuf-sys = "0.19"
+cairo-sys-rs = "0.19"
+
+[dependencies.glib-sys]
+version = "0.19"
+
+[dependencies.gio-sys]
+version = "0.19"
+
+[dependencies.gobject-sys]
+version = "0.19"
+
+[build-dependencies]
+system-deps = "7"
+
+[dev-dependencies]
+shell-words = "1.0.0"
+tempfile = "3"
+
+[features]
+v2_58 = []

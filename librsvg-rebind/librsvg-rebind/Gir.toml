@@ -1,0 +1,62 @@
+[external_libraries]
+Gio = { min_version = "2.66" }
+
+[options]
+girs_directories = ["../gir-files", "../"]
+library = "Rsvg"
+version = "2.0"
+min_cfg_version = "2.52.0"
+target_path = "."
+work_mode = "normal"
+generate_safety_asserts = true
+deprecate_by_min_version = true
+single_version_file = true
+
+external_libraries = ["GLib", "Gio", "GObject", "GdkPixbuf", "cairo"]
+
+generate = ["Rsvg.Error", "Rsvg.Unit", "Rsvg.HandleFlags"]
+
+manual = [
+    "GLib.Bytes",
+    "GLib.DateTime",
+    "GLib.Error",
+    "GLib.HashTable",
+    "GLib.Quark",
+    "GLib.String",
+    "Gio.AsyncReadyCallback",
+    "Gio.AsyncResult",
+    "Gio.Cancellable",
+    "Gio.File",
+    "Gio.InputStream",
+    "cairo.Context",
+    "cairo.FontOptions",
+    "cairo.RectangleInt",
+    "cairo.Region",
+    "cairo.Surface",
+    "Rsvg.Length",
+    "Rsvg.Rectangle",
+]
+
+[[object]]
+name = "Rsvg.Handle"
+status = "generate"
+manual_traits = ["ToplevelExtManual"]
+    [[object.function]]
+    name = "render_document"
+        [[object.function.parameter]]
+        name = "cr"
+        const = true
+    [[object.function]]
+    name = "render_element"
+        [[object.function.parameter]]
+        name = "cr"
+        const = true
+    [[object.function]]
+    name = "render_layer"
+        [[object.function.parameter]]
+        name = "cr"
+        const = true
+    [[object.function]]
+    name = "get_intrinsic_dimensions"
+    manual = true
+    doc_trait_name = "ToplevelExtManual"

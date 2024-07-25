@@ -1,0 +1,8 @@
+[submodule "librsvg-rebind/gir"]
+	path = librsvg-rebind/gir
+	url = https://github.com/gtk-rs/gir.git
+	update = none
+[submodule "librsvg-rebind/gir-files"]
+	path = librsvg-rebind/gir-files
+	url = https://github.com/gtk-rs/gir-files.git
+	update = none

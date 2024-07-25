@@ -22,6 +22,8 @@ overflow-checks = true
 members = [
     "gdk-pixbuf-loader",
     "librsvg-c",
+    "librsvg-rebind/librsvg-rebind",
+    "librsvg-rebind/librsvg-rebind/sys",
     "rsvg",
     "rsvg_convert",
     "rsvg-bench",
@@ -32,6 +34,7 @@ default-members = [
 ]
 exclude = [
     "afl-fuzz",
+    "librsvg-rebind/gir",
     "fuzz",
 ]
 resolver = "2"
