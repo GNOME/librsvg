@@ -325,7 +325,7 @@ if build_gir.allowed()
 
   if build_pixbuf_loader.allowed()
     gir_includes += [
-      # 'GdkPixbuf-2.0',
+      'GdkPixbuf-2.0',
     ]
 
     vala_includes += [
