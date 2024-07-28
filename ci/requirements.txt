@@ -1,5 +1,7 @@
+distutils
 docutils
 gi-docgen
+packaging
 pytest
 ruff
 semver
