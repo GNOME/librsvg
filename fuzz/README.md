@@ -28,6 +28,12 @@ FUZZ_TARGET=$(find ./target/*/release/ -type f -name render_document)
 gdb --args "$FUZZ_TARGET" fuzzed.svg
 ```
 
+## Suppressing leak reports
+You can suppress spurious leak reports by specifying a suppressions file via the `LSAN_OPTIONS`
+environment variable:
+
+`LSAN_OPTIONS="suppressions=../tools/lsan.supp" cargo fuzz run render_document fuzzed.svg`
+
 ## Related documents
 See `../afl-fuzz/README.md` for a to-do list for people who want to help with fuzzing.
 
