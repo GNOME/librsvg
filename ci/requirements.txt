@@ -1,4 +1,3 @@
-distutils
 docutils
 gi-docgen
 packaging
