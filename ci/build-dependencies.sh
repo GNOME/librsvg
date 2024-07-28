@@ -2,8 +2,8 @@
 
 set -o errexit -o pipefail -o noclobber -o nounset
 
-GLIB_TAG="2.78.0"
-GOBJECT_INTROSPECTION_TAG="1.78.0"
+GLIB_TAG="2.81.0"
+GOBJECT_INTROSPECTION_TAG="1.80.1"
 FREETYPE2_TAG="VER-2-13-2"
 FONTCONFIG_TAG="2.14.2"
 CAIRO_TAG="1.18.0"
@@ -58,7 +58,7 @@ source ci/setup-dependencies-env.sh
 
 git clone --depth 1 --branch $GLIB_TAG https://gitlab.gnome.org/GNOME/glib
 cd glib
-meson setup _build --prefix $PREFIX $MESON_FLAGS
+meson setup _build -Dintrospection=disabled --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
 
@@ -68,6 +68,11 @@ cd gobject-introspection
 meson setup _build --prefix $PREFIX $MESON_FLAGS
 meson compile -C _build
 meson install -C _build
+
+cd ../glib
+meson setup _build2 -Dintrospection=enabled --prefix $PREFIX $MESON_FLAGS
+meson compile -C _build2
+meson install -C _build2
 
 cd ..
 git clone --depth 1 --branch $FREETYPE2_TAG https://gitlab.freedesktop.org/freetype/freetype
