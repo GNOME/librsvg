@@ -44,6 +44,7 @@ variables:
       libbrotli-devel
       libbz2-devel
       libexpat-devel
+      libffi-devel
       libjson-c-devel
       libpng-devel
       libstdc++-devel
@@ -52,6 +53,7 @@ variables:
       make
       meson
       openssl-devel
+      pcre2-devel
       python3-pip
       python311-devel
       shadow
