@@ -766,7 +766,7 @@ gboolean rsvg_handle_has_sub (RsvgHandle *handle, const char *id);
  *
  * advance measure of a '0' character (depends on the text orientation)
  *
- * Since: 2.60
+ * Since: 2.58
  */
 typedef enum {
     RSVG_UNIT_PERCENT,
