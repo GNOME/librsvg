@@ -26,6 +26,9 @@ version = "2.50"
 [package.metadata.system-deps.librsvg_2_0.v2_58]
 version = "2.58"
 
+[package.metadata.system-deps.librsvg_2_0.v2_60]
+version = "2.60"
+
 [dependencies]
 libc = "0.2"
 gdk-pixbuf-sys = "0.19"
@@ -49,3 +52,4 @@ tempfile = "3"
 
 [features]
 v2_58 = []
+v2_60 = ["v2_58"]

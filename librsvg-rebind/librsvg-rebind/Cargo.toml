@@ -35,3 +35,6 @@ version = "0.19"
 rustc-args = ["--cfg", "docsrs"]
 rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 all-features = true
+
+[features]
+v2_60 = ["ffi/v2_60"]

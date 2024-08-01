@@ -144,6 +144,8 @@ pub enum Unit {
     Pt,
     #[doc(alias = "RSVG_UNIT_PC")]
     Pc,
+    #[cfg(feature = "v2_60")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "v2_60")))]
     #[doc(alias = "RSVG_UNIT_CH")]
     Ch,
     #[doc(hidden)]
@@ -166,6 +168,7 @@ impl IntoGlib for Unit {
             Self::Mm => ffi::RSVG_UNIT_MM,
             Self::Pt => ffi::RSVG_UNIT_PT,
             Self::Pc => ffi::RSVG_UNIT_PC,
+            #[cfg(feature = "v2_60")]
             Self::Ch => ffi::RSVG_UNIT_CH,
             Self::__Unknown(value) => value,
         }
@@ -188,6 +191,7 @@ impl FromGlib<ffi::RsvgUnit> for Unit {
             ffi::RSVG_UNIT_MM => Self::Mm,
             ffi::RSVG_UNIT_PT => Self::Pt,
             ffi::RSVG_UNIT_PC => Self::Pc,
+            #[cfg(feature = "v2_60")]
             ffi::RSVG_UNIT_CH => Self::Ch,
             value => Self::__Unknown(value),
         }
