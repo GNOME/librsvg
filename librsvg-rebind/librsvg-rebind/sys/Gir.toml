@@ -13,4 +13,7 @@ ignore = [
     "Rsvg.MAJOR_VERSION",
     "Rsvg.MICRO_VERSION",
     "Rsvg.MINOR_VERSION",
+    "Rsvg.HAVE_CSS",
+    "Rsvg.HAVE_PIXBUF",
+    "Rsvg.HAVE_SVGZ",
 ]
