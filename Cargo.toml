@@ -55,17 +55,17 @@ gio-sys = "0.20"
 glib = "0.20"
 glib-sys = "0.20"
 gobject-sys = "0.20"
-image = { version = "0.24.9", default-features = false }
-itertools = "0.12.0"
+image = { version = "0.25.0", default-features = false }
+itertools = "0.13.0"
 language-tags = "0.3.1"
 libc = "0.2"
 librsvg = { path = "rsvg" }
 librsvg-c = { path = "librsvg-c" }
 locale_config = "0.3.0"                                   # not "*" as per the documentation, since crates.io doesn't accept wildcards
-lopdf = "0.32"
-markup5ever = "0.11.0"
+lopdf = "0.33"
+markup5ever = "0.12.0"
 matches = "0.1"
-nalgebra = "0.32.1"
+nalgebra = "0.33.0"
 num-traits = "0.2"
 once_cell = "1.0"
 pango = "0.20"
@@ -89,4 +89,4 @@ thiserror = "1.0"
 tinyvec = "1.2.0"
 url = "2"
 xml5ever = "0.17.0"
-yeslogic-fontconfig-sys = "4.0.1"
+yeslogic-fontconfig-sys = "6.0.0"
