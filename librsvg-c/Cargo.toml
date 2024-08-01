@@ -10,12 +10,12 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-cairo-rs = { version = "0.19", features=["v1_16", "png", "pdf", "ps", "svg"] }
+cairo-rs = { version = "0.20", features=["v1_16", "png", "pdf", "ps", "svg"] }
 cast = "0.3.0"
 float-cmp = "0.9.0"
-gdk-pixbuf = { version = "0.19", optional = true }
-gio = "0.19"
-glib = "0.19"
+gdk-pixbuf = { version = "0.20", optional = true }
+gio = "0.20"
+glib = "0.20"
 libc = "0.2"
 librsvg = { path = "../rsvg", features = ["capi"] }
 rgb = { version="0.8", features=["argb"] }
