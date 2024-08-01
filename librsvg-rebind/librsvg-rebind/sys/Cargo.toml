@@ -12,7 +12,7 @@ edition = "2021"
 build = "build.rs"
 keywords = ["svg"]
 links = "rsvg"
-exclude = ["Gir.toml"]
+exclude = ["Gir.toml", "tests/"]
 
 [package.metadata.docs.rs]
 rustc-args = ["--cfg", "docsrs"]
