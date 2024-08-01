@@ -653,9 +653,9 @@ fn load_image_with_image_rs(
 
     let reader = if let Some(ref content_type) = content_type {
         let format = image_format(content_type)?;
-        image::io::Reader::with_format(cursor, format)
+        image::ImageReader::with_format(cursor, format)
     } else {
-        image::io::Reader::new(cursor)
+        image::ImageReader::new(cursor)
             .with_guessed_format()
             .map_err(|_| LoadingError::Other(String::from("unknown image format")))?
     };

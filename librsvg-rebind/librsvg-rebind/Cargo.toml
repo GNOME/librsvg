@@ -17,7 +17,6 @@ exclude = ["Gir.toml"]
 [dependencies]
 libc.workspace = true
 bitflags.workspace = true
-once_cell.workspace = true
 cairo-rs.workspace = true
 
 [dev-dependencies]

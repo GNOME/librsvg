@@ -715,7 +715,7 @@ fn parse_xml_stylesheet_processing_instruction(data: &str) -> Result<Vec<(String
         error: false,
     }));
 
-    let mut queue = BufferQueue::new();
+    let mut queue = BufferQueue::default();
     queue.push_back(format_tendril!("<rsvg-hack {} />", data));
 
     let sink = ProcessingInstructionSink(pi_data.clone());
