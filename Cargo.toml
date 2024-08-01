@@ -9,8 +9,8 @@ for similar purposes. Wikimedia uses it for Wikipedia's SVG diagrams.
 license = "LGPL-2.1-or-later"
 homepage = "https://wiki.gnome.org/Projects/LibRsvg"
 repository = "https://gitlab.gnome.org/GNOME/librsvg/"
-categories = [ "graphics", "multimedia::images", "rendering::data-formats" ]
-keywords = [ "svg", "cairo" ]
+categories = ["graphics", "multimedia::images", "rendering::data-formats"]
+keywords = ["svg", "cairo"]
 edition = "2021"
 rust-version = "1.78.0"
 
@@ -28,13 +28,65 @@ members = [
     "rsvg_convert",
     "rsvg-bench",
 ]
-default-members = [
-    "rsvg",
-    "rsvg_convert",
-]
-exclude = [
-    "afl-fuzz",
-    "librsvg-rebind/gir",
-    "fuzz",
-]
+default-members = ["rsvg", "rsvg_convert"]
+exclude = ["afl-fuzz", "librsvg-rebind/gir", "fuzz"]
 resolver = "2"
+
+[workspace.dependencies]
+afl = "*"
+anyhow = "1.0"
+assert_cmd = "2.0.2"
+bitflags = "2.0"
+cairo-rs = "0.20"
+cairo-sys-rs = "0.20"
+cast = "0.3.0"
+chrono = { version = "0.4.23", default-features = false }
+clap = "4.0.17"
+clap_complete = "4.0.5"
+criterion = "0.5"
+cssparser = "~0.31"
+data-url = "0.3.0"
+encoding_rs = "0.8.32"
+float-cmp = "0.9.0"
+gdk-pixbuf = "0.20"
+gdk-pixbuf-sys = "0.20"
+gio = "0.20"
+gio-sys = "0.20"
+glib = "0.20"
+glib-sys = "0.20"
+gobject-sys = "0.20"
+image = { version = "0.24.9", default-features = false }
+itertools = "0.12.0"
+language-tags = "0.3.1"
+libc = "0.2"
+librsvg = { path = "rsvg" }
+librsvg-c = { path = "librsvg-c" }
+locale_config = "0.3.0"                                   # not "*" as per the documentation, since crates.io doesn't accept wildcards
+lopdf = "0.32"
+markup5ever = "0.11.0"
+matches = "0.1"
+nalgebra = "0.32.1"
+num-traits = "0.2"
+once_cell = "1.0"
+pango = "0.20"
+pangocairo = "0.20"
+png = "0.17.2"
+predicates = "3.0.3"
+proptest = "1.0.0"
+quick-error = "2.0.0"
+rayon = "1"
+rctree = "0.6.0"
+regex = "1.7.1"
+rgb = "0.8"
+selectors = "0.25.0"
+serde = "1.0"
+serde_json = "1.0"
+shell-words = "1.1"
+string_cache = "0.8.0"
+system-deps = "7.0.0"
+tempfile = "3"
+thiserror = "1.0"
+tinyvec = "1.2.0"
+url = "2"
+xml5ever = "0.17.0"
+yeslogic-fontconfig-sys = "4.0.1"

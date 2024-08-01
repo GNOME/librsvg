@@ -1149,7 +1149,7 @@ dependencies = [
 name = "librsvg-rebind"
 version = "0.1.0"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.6.0",
  "cairo-rs",
  "gio",
  "glib",

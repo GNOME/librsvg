@@ -27,25 +27,19 @@ version = "2.50"
 version = "2.58"
 
 [dependencies]
-libc = "0.2"
-gdk-pixbuf-sys = "0.20"
-cairo-sys-rs = "0.20"
-
-[dependencies.glib-sys]
-version = "0.20"
-
-[dependencies.gio-sys]
-version = "0.20"
-
-[dependencies.gobject-sys]
-version = "0.20"
+libc.workspace = true
+gdk-pixbuf-sys.workspace = true
+cairo-sys-rs.workspace = true
+glib-sys.workspace = true
+gio-sys.workspace = true
+gobject-sys.workspace = true
 
 [build-dependencies]
 system-deps = "7"
 
 [dev-dependencies]
-shell-words = "1.0.0"
-tempfile = "3"
+shell-words.workspace = true
+tempfile.workspace = true
 
 [features]
 v2_58 = []
