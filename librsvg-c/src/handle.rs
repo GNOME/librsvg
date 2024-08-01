@@ -19,13 +19,13 @@
 //! historical idiosyncrasies of the C API into the simple Rust API.
 
 use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::f64;
 use std::ffi::{CStr, CString, OsStr};
 use std::fmt;
 use std::path::PathBuf;
 use std::ptr;
 use std::slice;
 use std::str;
-use std::{f64, i32};
 
 #[cfg(feature = "pixbuf")]
 use gdk_pixbuf::Pixbuf;
@@ -770,7 +770,7 @@ impl CHandle {
 
     fn set_cancellable_for_rendering(&self, cancellable: Option<&gio::Cancellable>) {
         let mut inner = self.imp().inner.borrow_mut();
-        inner.cancellable = cancellable.map(Clone::clone);
+        inner.cancellable = cancellable.cloned();
     }
 
     fn render_cairo_sub(
@@ -1561,7 +1561,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
         rsvg_handle_new_from_data => ptr::null();
 
         !data.is_null() || data_len == 0,
-        data_len <= std::isize::MAX as usize,
+        data_len <= isize::MAX as usize,
         error.is_null() || (*error).is_null(),
     }
 
@@ -1575,7 +1575,7 @@ pub unsafe extern "C" fn rsvg_handle_new_from_data(
     // - For now, we are using the other C-visible constructor, so we need a raw pointer to the
     //   stream, anyway.
 
-    assert!(data_len <= std::isize::MAX as usize);
+    assert!(data_len <= isize::MAX as usize);
     let data_len = data_len as isize;
 
     let raw_stream = gio::ffi::g_memory_input_stream_new_from_data(data as *mut u8, data_len, None);

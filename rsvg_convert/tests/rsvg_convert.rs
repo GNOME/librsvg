@@ -33,6 +33,7 @@ use url::Url;
 struct RsvgConvert {}
 
 impl RsvgConvert {
+    #[allow(clippy::new_ret_no_self)]
     fn new() -> Command {
         Command::cargo_bin("rsvg-convert").unwrap()
     }

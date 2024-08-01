@@ -5,10 +5,10 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2024-04-26.0-main"
-  RUST_STABLE: "1.76.0"
-  RUST_MINIMUM: "1.70.0"
-  RUST_NIGHTLY: "nightly-2024-02-01"
+  BASE_TAG: "2024-07-31.1-main"
+  RUST_STABLE: "1.79.0"
+  RUST_MINIMUM: "1.78.0"
+  RUST_NIGHTLY: "nightly-2024-07-14"
   RUSTUP_VERSION: "1.26.0"
 
 # This bunch of packages are the system's C/C++ compilers, and the indirect dependencies needed
@@ -38,12 +38,14 @@ variables:
       gettext
       gettext-tools
       git
+      gobject-introspection-devel
       google-roboto-fonts
       gperf
       itstool
       libbrotli-devel
       libbz2-devel
       libexpat-devel
+      libffi-devel
       libjson-c-devel
       libpng-devel
       libstdc++-devel
@@ -52,6 +54,7 @@ variables:
       make
       meson
       openssl-devel
+      pcre2-devel
       python3-pip
       python311-devel
       shadow

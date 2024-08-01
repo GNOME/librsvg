@@ -110,7 +110,7 @@ cd msvc-build
 if exist %INST%\lib\libpcre2-8.a copy /b %INST%\lib\libpcre2-8.a %INST%\lib\pcre2-8.lib
 
 if not "%DOWNGRADE_RUST_VERSION%" == "1" goto :normal_rust_build
-@set RUST_DOWNGRADE_VER=1.77.2
+@set RUST_DOWNGRADE_VER=1.78.0
 %HOMEPATH%\.cargo\bin\rustup install %RUST_DOWNGRADE_VER%-%RUST_HOST%
 meson setup .. --buildtype=release --prefix=%INST_PSX% --pkg-config-path=%INST%\lib\pkgconfig --cmake-prefix-path=%INST% -Dtriplet=%RUST_HOST% -Drustc-version=%RUST_DOWNGRADE_VER% || goto :error
 goto :continue_build
