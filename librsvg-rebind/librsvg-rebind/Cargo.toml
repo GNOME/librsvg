@@ -20,6 +20,9 @@ bitflags = "1.0"
 once_cell = "1.12"
 cairo = { package = "cairo-rs", version = "0.19.4" }
 
+[dev-dependencies]
+cairo = { package = "cairo-rs", version = "0.19.4", features = ['png'] }
+
 [dependencies.ffi]
 package = "librsvg-rebind-sys"
 version = "0.1"
