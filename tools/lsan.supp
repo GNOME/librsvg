@@ -1,0 +1,3 @@
+# See ../devel-docs/memory_leaks.rst for more info
+
+leak:FcPatternObjectInsertElt
