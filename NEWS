@@ -1,3 +1,35 @@
+Version 2.58.93
+===============
+
+librsvg crate version 2.59.0-beta.3
+
+The minimum supported Rust version (MSRV) is 1.78.0.
+
+- #1089 - The source tree now has 'librsvg-rebind', a new Rust crate that
+  binds the C API for use from Rust.  Internally this links to the
+  system's librsvg shared library, in contrast with the 'librsvg'
+  crate, which is statically linked and which has a native Rust API.
+  The 'librsvg-rebind' crate is for cases where the additional code
+  size from static linking is not desired.  We will publish the
+  'librsvg-rebind' crate on crates.io shortly. (Sophie Herold).
+
+  For example, glycin (the sandboxed image loading crate used by
+  Loupe) now uses librsvg-rebind to shrink the code size of its imgae
+  loaders.
+
+- Fix gdk-pixbuf dependency for gobject-introspection (Amyspark).
+
+- #1097 - Build fixes for MacOS and _getentropy (Amyspark).
+
+- #1084 - Build fixes for cross-compilation on WSL2 (Chun-wei Fan).
+
+- Update to Rust 1.78 (Jordan Petridis, Federico Mena Quintero).
+
+- Update gtk-rs (Bilal Elmoussaoui, Sophie Herold).
+
+- #1104 - More downstream tweaks for oss-fuzz (correctmost).
+
+
 Version 2.58.92
 ===============
 
