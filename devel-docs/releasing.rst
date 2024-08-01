@@ -20,6 +20,13 @@ off items while making a release.
 - ☐ Tweak the library version number in ``meson.build`` if the API
   changed; follow the steps there.
 
+**Rust Bindings:**
+
+- ☐ Make sure that librsvg-rebind is in sync with librgvg C bindings by calling ``./librsvg-rebind/regen.sh``
+- ☐ If the bindings have changed from the last version, increase the package version in
+   - ☐ librsvg-rebind/librsvg-rebind/Cargo.toml
+   - ☐ librsvg-rebind/librsvg-rebind/sys/Cargo.toml
+
 **Release notes:**
 
 - ☐ Update ``NEWS``, see below for the preferred format.
@@ -31,7 +38,10 @@ off items while making a release.
 
 **Publish:**
 
-- ☐ ``cargo publish -p librsvg``, see :ref:`crate_release` for details.
+- ☐ Publish to crates.io, see :ref:`crate_release` for details.
+   - ☐ ``cargo publish -p librsvg``
+   - ☐ ``cargo publish -p librsvg-rebind-sys``
+   - ☐ ``cargo publish -p librsvg-rebind``
 - ☐ If this is a development release, create a signed tag for the crate's version - ``git tag -s x.y.z-beta.w``.
 - ☐ Create a signed tag for the merge commit - ``git tag -s x.y.z`` with the version number.
 - ☐ If this is a development release ``git push`` the signed tag for the crate's version to gitlab.gnome.org/GNOME/librsvg
@@ -138,6 +148,8 @@ if you are maintainer you should have one, and also write access to
 the ``librsvg`` crate on crates.io.
 
 To make a release, ``cargo publish -p librsvg``.
+
+To publish the Rust bindings to the C library, ``cargo publish -p librsvg-rebind-sys``, ``cargo publish -p librsvg-rebind``.
 
 After this succeeds, proceed with the rest of the steps in the
 ref:`release_process_checklist`.

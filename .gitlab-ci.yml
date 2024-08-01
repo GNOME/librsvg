@@ -61,7 +61,7 @@ check:
     RUSTFLAGS: "--cfg check"
   script:
     - source ./ci/setup-dependencies-env.sh
-    - cargo check --all-targets --workspace
+    - cargo check --all-targets --workspace --exclude 'librsvg-rebind*'
 
 cargo_test:
   stage: check
@@ -82,7 +82,7 @@ cargo_test:
     PREFIX: "/usr/local/librsvg"
   script:
     - source ./ci/setup-dependencies-env.sh
-    - cargo test --workspace --exclude pixbufloader-svg -- --skip loading_crash --skip reference --skip render_crash
+    - cargo test --workspace --exclude pixbufloader-svg --exclude 'librsvg-rebind*' -- --skip loading_crash --skip reference --skip render_crash
 
 .cargo-test:
   extends: '.cache'
@@ -93,7 +93,7 @@ cargo_test:
   script:
     - source ./ci/setup-dependencies-env.sh
     - rustup default ${RUST_VERSION}
-    - cargo test --workspace --exclude pixbufloader-svg
+    - cargo test --workspace --exclude pixbufloader-svg --exclude 'librsvg-rebind*'
   artifacts:
     when: 'on_failure'
     paths:

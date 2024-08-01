@@ -1,0 +1,19 @@
+[options]
+library = "Rsvg"
+version = "2.0"
+target_path = "."
+min_cfg_version = "2.52.0"
+work_mode = "sys"
+girs_directories = ["../../gir-files", "../../"]
+
+external_libraries = ["GLib", "Gio", "GObject", "GdkPixbuf", "Cairo"]
+
+ignore = [
+    "Rsvg.VERSION",
+    "Rsvg.MAJOR_VERSION",
+    "Rsvg.MICRO_VERSION",
+    "Rsvg.MINOR_VERSION",
+    "Rsvg.HAVE_CSS",
+    "Rsvg.HAVE_PIXBUF",
+    "Rsvg.HAVE_SVGZ",
+]

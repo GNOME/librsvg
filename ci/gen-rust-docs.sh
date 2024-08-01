@@ -10,6 +10,6 @@ cargo doc --workspace --document-private-items --no-deps
 mkdir -p public/internals
 mv target/doc/* public/internals
 
-cargo doc --no-deps --package librsvg
+cargo doc --no-deps --package librsvg --package 'librsvg-rebind*'
 mkdir -p public/doc
 cp -r target/doc/* public/doc
