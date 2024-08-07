@@ -38,7 +38,7 @@ fontconfig = { version = "1.7" }
 pangoft2 = { version = "1.50" }
 
 [features]
-avif = ["image/avif"]
+avif = ["image/avif-native"]
 capi = []
 test-utils = ["yeslogic-fontconfig-sys"]
 
