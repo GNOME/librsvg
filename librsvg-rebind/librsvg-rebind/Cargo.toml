@@ -18,6 +18,8 @@ exclude = ["Gir.toml"]
 libc.workspace = true
 bitflags.workspace = true
 cairo-rs.workspace = true
+glib.workspace = true
+gio.workspace = true
 
 [dev-dependencies]
 cairo-rs = { workspace = true, features = ['png'] }
@@ -26,12 +28,6 @@ cairo-rs = { workspace = true, features = ['png'] }
 package = "librsvg-rebind-sys"
 version = "0.1"
 path = "./sys"
-
-[dependencies.glib]
-version = "0.20"
-
-[dependencies.gio]
-version = "0.20"
 
 [package.metadata.docs.rs]
 rustc-args = ["--cfg", "docsrs"]

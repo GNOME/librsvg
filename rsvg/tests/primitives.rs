@@ -369,3 +369,10 @@ test_svg_reference!(
     "tests/fixtures/reftests/invalid-element-type-for-paint-server.svg",
     "tests/fixtures/reftests/invalid-element-type-for-paint-server-ref.svg"
 );
+
+#[cfg(feature = "avif")]
+test_svg_reference!(
+    can_decode_avif_image_1003,
+    "tests/fixtures/reftests/avif-image-1003.svg",
+    "tests/fixtures/reftests/avif-image-1003-ref.svg"
+);

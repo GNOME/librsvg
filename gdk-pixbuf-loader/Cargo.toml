@@ -25,3 +25,6 @@ librsvg = { name = "librsvg-2.0-uninstalled", version = "2.57", fallback-names =
 
 [package.metadata.capi.header]
 enabled = false
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(check)'] }

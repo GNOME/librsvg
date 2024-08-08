@@ -5,7 +5,7 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2024-07-31.1-main"
+  BASE_TAG: "2024-08-07.0-main"
   RUST_STABLE: "1.79.0"
   RUST_MINIMUM: "1.78.0"
   RUST_NIGHTLY: "nightly-2024-07-14"
@@ -28,6 +28,7 @@ variables:
       clang
       clang-tools
       curl
+      dav1d-devel
       diffutils
       findutils
       flex
