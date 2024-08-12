@@ -130,6 +130,15 @@ if __name__ == '__main__':
             check=False,
         )
         if s.returncode != 0:
+            # If it fails, retry with --defined-only (non macOS)
+            s = subprocess.run(
+                [args.nm, '--defined-only', '-g', '-j', '--no-llvm-bc', libname_path_posix],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                check=False,
+            )
+        if s.returncode != 0:
             # If it fails, retry without skipping LLVM bitcode (macOS flag)
             # Don't use -U, as that was an alias for --unicode= instead of
             # --defined-only before Binutils 2.39
