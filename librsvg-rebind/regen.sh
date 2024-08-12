@@ -14,5 +14,5 @@ fi
 
 meson compile -C ../builddir
 
-./generator.py --no-fmt --gir-files-directories "$BUILDDIR/rsvg" gir-files/ $@
+./gir/generator.py --no-fmt --gir-files-directories "$BUILDDIR/rsvg" gir-files/ $@
 cargo fmt --all
