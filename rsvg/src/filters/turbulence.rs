@@ -371,10 +371,26 @@ impl Turbulence {
         // "Negative values are unsupported" -> set to the initial value which is 0.0
         //
         // https://drafts.fxtf.org/filter-effects/#element-attrdef-feturbulence-basefrequency
+        //
+        // Later in the algorithm, the base_frequency gets multiplied by the coordinates within the
+        // tile.  So, limit the base_frequency to avoid overflow later.  We impose an arbitrary
+        // upper limit for the frequency.  If it crosses that limit, we consider it invalid
+        // and revert back to the initial value.  See bug #1115.
         let base_frequency = {
             let NumberOptionalNumber(base_freq_x, base_freq_y) = self.base_frequency;
-            let x = base_freq_x.max(0.0);
-            let y = base_freq_y.max(0.0);
+
+            let x = if base_freq_x > 32768.0 {
+                0.0
+            } else {
+                base_freq_x.max(0.0)
+            };
+
+            let y = if base_freq_y > 32768.0 {
+                0.0
+            } else {
+                base_freq_y.max(0.0)
+            };
+
             (x, y)
         };
 
