@@ -104,13 +104,24 @@ impl Parse for cssparser::Color {
     }
 }
 
+/// Normalizes `h` (a hue value in degrees) to be in the interval `[0.0, 1.0]`.
+///
+/// Rust-cssparser (the cssparser-color crate) provides
+/// [`hsl_to_rgb()`], but it assumes that the hue is between 0 and 1.
+/// `normalize_hue()` takes a value with respect to a scale of 0 to
+/// 360 degrees and converts it to that different scale.
+fn normalize_hue(h: f32) -> f32 {
+    h.rem_euclid(360.0) / 360.0
+}
+
 pub fn color_to_rgba(color: &Color) -> RGBA {
     match color {
         Color::Rgba(rgba) => *rgba,
 
         Color::Hsl(hsl) => {
+            let hue = normalize_hue(hsl.hue.unwrap_or(0.0));
             let (red, green, blue) = hsl_to_rgb(
-                hsl.hue.unwrap_or(0.0) / 360.0,
+                hue,
                 hsl.saturation.unwrap_or(0.0),
                 hsl.lightness.unwrap_or(0.0),
             );
@@ -119,8 +130,9 @@ pub fn color_to_rgba(color: &Color) -> RGBA {
         }
 
         Color::Hwb(hwb) => {
+            let hue = normalize_hue(hwb.hue.unwrap_or(0.0));
             let (red, green, blue) = hwb_to_rgb(
-                hwb.hue.unwrap_or(0.0) / 360.0,
+                hue,
                 hwb.whiteness.unwrap_or(0.0),
                 hwb.blackness.unwrap_or(0.0),
             );
@@ -166,5 +178,21 @@ mod tests {
         assert!(Color::parse_str("var(--foo, )").is_err());
         assert!(Color::parse_str("var(--foo, this is not a color)").is_err());
         assert!(Color::parse_str("var(--foo, #112233, blah)").is_err());
+    }
+
+    #[test]
+    fn normalizes_hue() {
+        assert_eq!(normalize_hue(0.0), 0.0);
+        assert_eq!(normalize_hue(360.0), 0.0);
+        assert_eq!(normalize_hue(90.0), 0.25);
+        assert_eq!(normalize_hue(-90.0), 0.75);
+        assert_eq!(normalize_hue(450.0), 0.25); // 360 + 90 degrees
+        assert_eq!(normalize_hue(-450.0), 0.75);
+    }
+
+    // Bug #1117
+    #[test]
+    fn large_hue_value() {
+        let _ = color_to_rgba(&Color::parse_str("hsla(70000000000000,4%,10%,.2)").unwrap());
     }
 }
