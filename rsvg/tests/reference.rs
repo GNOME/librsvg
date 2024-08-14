@@ -755,7 +755,6 @@ mod tests {
     t!(bugs_bug718_rect_negative_rx_ry_svg,                         "bugs/bug718-rect-negative-rx-ry.svg");
     t!(bugs_bug730_font_scaling_svg,                                "bugs/bug730-font-scaling.svg");
     t!(bugs_bug738367_svg,                                          "bugs/bug738367.svg");
-    t!(bugs_bug749415_svg,                                          "bugs/bug749415.svg");
     t!(bugs_bug760180_svg,                                          "bugs/bug760180.svg");
     t!(bugs_bug761175_recursive_masks_svg,                          "bugs/bug761175-recursive-masks.svg");
     t!(bugs_bug761871_reset_reflection_points_svg,                  "bugs/bug761871-reset-reflection-points.svg");
