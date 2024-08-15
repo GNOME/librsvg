@@ -5,9 +5,9 @@ include:
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2024-08-07.0-main"
+  BASE_TAG: "2024-08-14.0-main"
   RUST_STABLE: "1.79.0"
-  RUST_MINIMUM: "1.78.0"
+  RUST_MINIMUM: "1.77.2"
   RUST_NIGHTLY: "nightly-2024-07-14"
   RUSTUP_VERSION: "1.26.0"
 
