@@ -3,6 +3,7 @@ gi-docgen
 pytest
 ruff
 semver
+setuptools
 Sphinx
 sphinx_rtd_theme
 toml
