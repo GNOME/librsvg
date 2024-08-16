@@ -165,7 +165,7 @@ librsvg_ver = custom_target(
   capture: true,
 )
 
-version_script = meson.current_build_dir() / '@0@.ver'.format(librsvg_pc)
+version_script = meson.current_build_dir() / '@0@.def'.format(librsvg_pc)
 
 if host_system in ['darwin', 'ios']
   vflag = '-Wl,-exported_symbols_list,@0@'.format(version_script)
