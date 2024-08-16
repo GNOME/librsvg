@@ -131,8 +131,10 @@ if __name__ == '__main__':
         )
         if s.returncode != 0:
             # If it fails, retry without skipping LLVM bitcode (macOS flag)
+            # Don't use -U, as that was an alias for --unicode= instead of
+            # --defined-only before Binutils 2.39
             s = subprocess.run(
-                [args.nm, '-U', '-g', '-j', libname_path_posix],
+                [args.nm, '--defined-only', '-g', '-j', libname_path_posix],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
@@ -141,7 +143,7 @@ if __name__ == '__main__':
         if s.returncode != 0:
             # -j was added only in Binutils 2.37
             s = subprocess.run(
-                [args.nm, '-U', '-g', libname_path_posix],
+                [args.nm, '--defined-only', '-g', libname_path_posix],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 universal_newlines=True,
