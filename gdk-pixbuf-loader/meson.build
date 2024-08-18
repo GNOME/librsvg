@@ -8,7 +8,7 @@ prefix = get_option('prefix')
 pixbufloader = custom_target(
   'pixbufloader-svg',
   build_by_default: true,
-  output: ['@0@pixbufloader_svg.@1@'.format(lib_prefix, ext_dynamic)],
+  output: ['@0@pixbufloader_svg.@1@'.format(cargo_dylib_prefix, ext_dynamic)],
   console: true,
   install: true,
   install_dir: pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir', pkgconfig_define: ['prefix', prefix]),

@@ -433,6 +433,11 @@ else
   ext_exe = ''
 endif
 
+cargo_dylib_prefix = lib_prefix
+if cc.has_define('__MINGW32__')
+  cargo_dylib_prefix = ''
+endif
+
 cargo_wrapper_args = [
   '--cargo', cargo.full_path(),
   '--manifest-path', cargo_toml,
