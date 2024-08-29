@@ -3,13 +3,15 @@ pixbufloader_sources = files(
   'src/lib.rs',
 )
 
+prefix = get_option('prefix')
+
 pixbufloader = custom_target(
   'pixbufloader-svg',
   build_by_default: true,
-  output: ['@0@pixbufloader_svg.@1@'.format(lib_prefix, ext_dynamic)],
+  output: ['@0@pixbufloader_svg.@1@'.format(cargo_dylib_prefix, ext_dynamic)],
   console: true,
   install: true,
-  install_dir: pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir'),
+  install_dir: pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir', pkgconfig_define: ['prefix', prefix]),
   depends: librsvg_rust_dep,
   depend_files: pixbufloader_sources,
   env: extra_env,
@@ -38,9 +40,9 @@ gdk_pixbuf_query_loaders = find_program(pixbuf_dep.get_variable(pkgconfig: 'gdk_
 
 pixbufloader_svg_install_args = [
   '--gdk-pixbuf-moduledir',
-  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir'),
-  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders'),
-  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_cache_file')
+  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_moduledir', pkgconfig_define: ['prefix', prefix]),
+  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_query_loaders', pkgconfig_define: ['prefix', prefix]),
+  pixbuf_dep.get_variable(pkgconfig: 'gdk_pixbuf_cache_file', pkgconfig_define: ['prefix', prefix])
 ]
 
 # Tell people to run gdk-pixbuf-query-loaders manually for cross builds
