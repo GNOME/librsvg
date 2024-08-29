@@ -1,3 +1,33 @@
+Version 2.58.94
+===============
+
+librsvg crate version 2.59.0-beta.3
+
+This version has build fixes, and two fixes from fuzz testing.
+
+- #1107 - The minimum supported Rust version (MSRV) is 1.77.2.  We
+  rolled this back from 1.78.0 since that version has problems with
+  Meson on Windows.
+
+- #1117 - Fix assertion failures with large Hue value in hsl() or
+  hwb() colors.
+
+- #1115 - Limit the baseFrequency for feTurbulence to avoid integer
+ overflow.
+
+- #1120 - Only make exported symbols visible in the library's binary
+  (Amyspark).
+
+- !1003 - Fix the -Davif=enabled feature; it was not being handled
+   correctly at compilation time.
+
+- !1013 - Ensure compatibility with Binutils < 2.39 (Kleis Auke
+  Wolthuizen).
+
+- Build fixes for Windows (Nirbheek Chauhan, Chun-wei Fan,
+  Christoph Reiter).
+
+
 Version 2.58.93
 ===============
 

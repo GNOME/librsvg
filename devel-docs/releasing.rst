@@ -22,7 +22,7 @@ off items while making a release.
 
 **Rust Bindings:**
 
-- ☐ Make sure that librsvg-rebind is in sync with librgvg C bindings by calling ``./librsvg-rebind/regen.sh``
+- ☐ Make sure that librsvg-rebind is in sync with librsvg C bindings by calling ``./librsvg-rebind/regen.sh``
 - ☐ If the bindings have changed from the last version, increase the package version in
    - ☐ librsvg-rebind/librsvg-rebind/Cargo.toml
    - ☐ librsvg-rebind/librsvg-rebind/sys/Cargo.toml
