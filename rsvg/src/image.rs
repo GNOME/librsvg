@@ -281,6 +281,6 @@ impl Image {
     }
 }
 
-fn checked_i32(x: f64) -> Result<i32, cairo::Error> {
+pub fn checked_i32(x: f64) -> Result<i32, cairo::Error> {
     cast::i32(x).map_err(|_| cairo::Error::InvalidSize)
 }

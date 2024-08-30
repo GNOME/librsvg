@@ -6,7 +6,7 @@ use super::context::{FilterContext, FilterInput};
 
 /// A helper type for filter primitive subregion computation.
 pub struct BoundsBuilder {
-    /// Filter primitive properties.
+    /// Filter primitive attributes.
     x: Option<f64>,
     y: Option<f64>,
     width: Option<f64>,
@@ -26,7 +26,14 @@ pub struct BoundsBuilder {
 }
 
 /// A filter primitive's subregion.
+#[derive(Debug)]
 pub struct Bounds {
+    /// Filter primitive attributes.
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub width: Option<f64>,
+    pub height: Option<f64>,
+
     /// Primitive's subregion, clipped to the filter effects region.
     pub clipped: Rect,
 
@@ -116,6 +123,13 @@ impl BoundsBuilder {
 
         let clipped = unclipped.intersection(&effects_region).unwrap_or_default();
 
-        Bounds { clipped, unclipped }
+        Bounds {
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height,
+            clipped,
+            unclipped,
+        }
     }
 }
