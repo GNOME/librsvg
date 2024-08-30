@@ -1,0 +1,9 @@
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <filter id="foo">
+    <feImage xlink:href="embedded.svg"/>
+  </filter>
+
+  <rect width="100%" height="100%" fill="white"/>
+  <rect x="10" y="10" width="5" height="5" fill="#000000"/>
+  <rect x="15" y="15" width="5" height="5" fill="#00ff00"/>
+</svg>

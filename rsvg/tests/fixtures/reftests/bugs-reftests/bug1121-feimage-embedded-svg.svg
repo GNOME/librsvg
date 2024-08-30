@@ -1,0 +1,12 @@
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- We set the filter's bounds to exactly match the filtered
+       object, as the default is to extend a bit past its edges.  This
+       lets the embedded.svg image match the reference results
+       exactly.-->
+  <filter id="foo" filterUnits="objectBoundingBox" x="0" y="0" width="100%" height="100%">
+    <feImage xlink:href="embedded.svg"/>
+  </filter>
+
+  <rect width="100%" height="100%" fill="white"/>
+  <rect x="10" y="10" width="10" height="10" filter="url(#foo)"/>
+</svg>
