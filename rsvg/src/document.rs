@@ -230,19 +230,6 @@ impl Document {
         self.ids.get(id).map(|n| (*n).clone())
     }
 
-    /// Loads an image by URL, or returns a pre-loaded one.
-    fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
-        let aurl = self
-            .load_options
-            .url_resolver
-            .resolve_href(url)
-            .map_err(|_| LoadingError::BadUrl)?;
-
-        self.resources
-            .borrow_mut()
-            .lookup_image(&self.session, &self.load_options, &aurl)
-    }
-
     /// Loads a resource by URL, or returns a pre-loaded one.
     fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
         let aurl = self
@@ -530,23 +517,6 @@ impl Resources {
         }
     }
 
-    fn lookup_image(
-        &mut self,
-        session: &Session,
-        load_options: &LoadOptions,
-        aurl: &AllowedUrl,
-    ) -> Result<SharedImageSurface, LoadingError> {
-        // FIXME: pass a cancellable to this.  This function is called
-        // at rendering time, so probably the cancellable should come
-        // from cancellability in CairoRenderer - see #429
-        let resource = self.lookup_resource(session, load_options, aurl, None)?;
-
-        match resource {
-            Resource::Image(image) => Ok(image),
-            _ => Err(LoadingError::Other(format!("{aurl} is not a raster image"))),
-        }
-    }
-
     fn lookup_resource(
         &mut self,
         session: &Session,
@@ -777,10 +747,6 @@ impl<'i> AcquiredNodes<'i> {
             node_stack: Rc::new(RefCell::new(NodeStack::new())),
             nodes_with_cycles: Vec::new(),
         }
-    }
-
-    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
-        self.document.lookup_image(href)
     }
 
     pub fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {

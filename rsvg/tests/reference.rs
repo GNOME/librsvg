@@ -1194,3 +1194,9 @@ test_svg_reference!(
     "tests/fixtures/reftests/markers-arc-segments.svg",
     "tests/fixtures/reftests/markers-arc-segments-ref.svg"
 );
+
+test_svg_reference!(
+    bug_1121_feimage_embedded_svg,
+    "tests/fixtures/reftests/bugs-reftests/bug1121-feimage-embedded-svg.svg",
+    "tests/fixtures/reftests/bugs-reftests/bug1121-feimage-embedded-svg-ref.svg"
+);
