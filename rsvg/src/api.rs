@@ -18,7 +18,7 @@ pub use crate::{
 use crate::{
     accept_language::{LanguageTags, UserLanguage},
     css::{Origin, Stylesheet},
-    document::{Document, LoadOptions, NodeId},
+    document::{Document, LoadOptions, NodeId, RenderingOptions},
     dpi::Dpi,
     drawing_ctx::SvgNesting,
     error::InternalRenderingError,
@@ -610,6 +610,15 @@ impl<'a> CairoRenderer<'a> {
         Some(self.width_height_to_user(self.dpi))
     }
 
+    fn rendering_options(&self) -> RenderingOptions {
+        RenderingOptions {
+            dpi: self.dpi,
+            user_language: self.user_language.clone(),
+            svg_nesting: SvgNesting::Standalone,
+            testing: self.is_testing,
+        }
+    }
+
     /// Renders the whole SVG document fitted to a viewport
     ///
     /// The `viewport` gives the position and size at which the whole SVG
@@ -627,10 +636,7 @@ impl<'a> CairoRenderer<'a> {
             &self.handle.session,
             cr,
             viewport,
-            &self.user_language,
-            self.dpi,
-            SvgNesting::Standalone,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -670,9 +676,7 @@ impl<'a> CairoRenderer<'a> {
             &self.handle.session,
             node,
             viewport,
-            &self.user_language,
-            self.dpi,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -709,10 +713,7 @@ impl<'a> CairoRenderer<'a> {
             cr,
             node,
             viewport,
-            &self.user_language,
-            self.dpi,
-            SvgNesting::Standalone,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -756,9 +757,7 @@ impl<'a> CairoRenderer<'a> {
         Ok(self.handle.document.get_geometry_for_element(
             &self.handle.session,
             node,
-            &self.user_language,
-            self.dpi,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 
@@ -792,9 +791,7 @@ impl<'a> CairoRenderer<'a> {
             cr,
             node,
             element_viewport,
-            &self.user_language,
-            self.dpi,
-            self.is_testing,
+            &self.rendering_options(),
         )?)
     }
 

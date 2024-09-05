@@ -18,7 +18,9 @@ use crate::bbox::BoundingBox;
 use crate::borrow_element_as;
 use crate::css::{self, Origin, Stylesheet};
 use crate::dpi::Dpi;
-use crate::drawing_ctx::{draw_tree, with_saved_cr, DrawingMode, SvgNesting};
+use crate::drawing_ctx::{
+    draw_tree, with_saved_cr, DrawingMode, RenderingConfiguration, SvgNesting,
+};
 use crate::error::{AcquireError, InternalRenderingError, LoadingError, NodeIdError};
 use crate::io::{self, BinaryData};
 use crate::is_element_of_type;
@@ -123,6 +125,30 @@ impl LoadOptions {
     }
 }
 
+/// Document-level rendering options.
+///
+/// This gets then converted to a [`drawing_ctx::RenderingConfiguration`] when all the
+/// parameters are known.
+pub struct RenderingOptions {
+    pub dpi: Dpi,
+    pub user_language: UserLanguage,
+    pub svg_nesting: SvgNesting,
+    pub testing: bool,
+}
+
+impl RenderingOptions {
+    /// Copies the options to a [`RenderingConfiguration`], and adds the `measuring` flag.
+    fn to_rendering_configuration(&self, measuring: bool) -> RenderingConfiguration {
+        RenderingConfiguration {
+            dpi: self.dpi,
+            user_language: self.user_language.clone(),
+            svg_nesting: self.svg_nesting,
+            testing: self.testing,
+            measuring,
+        }
+    }
+}
+
 /// A loaded SVG file and its derived data.
 pub struct Document {
     /// Tree of nodes; the root is guaranteed to be an `<svg>` element.
@@ -202,19 +228,6 @@ impl Document {
         self.ids.get(id).map(|n| (*n).clone())
     }
 
-    /// Loads an image by URL, or returns a pre-loaded one.
-    fn lookup_image(&self, url: &str) -> Result<SharedImageSurface, LoadingError> {
-        let aurl = self
-            .load_options
-            .url_resolver
-            .resolve_href(url)
-            .map_err(|_| LoadingError::BadUrl)?;
-
-        self.resources
-            .borrow_mut()
-            .lookup_image(&self.session, &self.load_options, &aurl)
-    }
-
     /// Loads a resource by URL, or returns a pre-loaded one.
     fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
         let aurl = self
@@ -269,22 +282,10 @@ impl Document {
         session: &Session,
         cr: &cairo::Context,
         viewport: &cairo::Rectangle,
-        user_language: &UserLanguage,
-        dpi: Dpi,
-        svg_nesting: SvgNesting,
-        is_testing: bool,
+        options: &RenderingOptions,
     ) -> Result<(), InternalRenderingError> {
         let root = self.root();
-        self.render_layer(
-            session,
-            cr,
-            root,
-            viewport,
-            user_language,
-            dpi,
-            svg_nesting,
-            is_testing,
-        )
+        self.render_layer(session, cr, root, viewport, options)
     }
 
     pub fn render_layer(
@@ -293,10 +294,7 @@ impl Document {
         cr: &cairo::Context,
         node: Node,
         viewport: &cairo::Rectangle,
-        user_language: &UserLanguage,
-        dpi: Dpi,
-        svg_nesting: SvgNesting,
-        is_testing: bool,
+        options: &RenderingOptions,
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
 
@@ -304,17 +302,15 @@ impl Document {
 
         let viewport = Rect::from(*viewport);
 
+        let config = options.to_rendering_configuration(false);
+
         with_saved_cr(cr, || {
             draw_tree(
                 session.clone(),
                 DrawingMode::LimitToStack { node, root },
                 cr,
                 viewport,
-                user_language,
-                dpi,
-                svg_nesting,
-                false,
-                is_testing,
+                config,
                 &mut AcquiredNodes::new(self),
             )
             .map(|_bbox| ())
@@ -326,25 +322,21 @@ impl Document {
         session: &Session,
         node: Node,
         viewport: Rect,
-        user_language: &UserLanguage,
-        dpi: Dpi,
-        is_testing: bool,
+        options: &RenderingOptions,
     ) -> Result<(Rect, Rect), InternalRenderingError> {
         let root = self.root();
 
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target)?;
 
+        let config = options.to_rendering_configuration(true);
+
         let bbox = draw_tree(
             session.clone(),
             DrawingMode::LimitToStack { node, root },
             &cr,
             viewport,
-            user_language,
-            dpi,
-            SvgNesting::Standalone,
-            true,
-            is_testing,
+            config,
             &mut AcquiredNodes::new(self),
         )?;
 
@@ -359,14 +351,11 @@ impl Document {
         session: &Session,
         node: Node,
         viewport: &cairo::Rectangle,
-        user_language: &UserLanguage,
-        dpi: Dpi,
-        is_testing: bool,
+        options: &RenderingOptions,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
         let viewport = Rect::from(*viewport);
 
-        let (ink_rect, logical_rect) =
-            self.geometry_for_layer(session, node, viewport, user_language, dpi, is_testing)?;
+        let (ink_rect, logical_rect) = self.geometry_for_layer(session, node, viewport, options)?;
 
         Ok((
             cairo::Rectangle::from(ink_rect),
@@ -378,25 +367,21 @@ impl Document {
         &self,
         session: &Session,
         node: &Node,
-        user_language: &UserLanguage,
-        dpi: Dpi,
-        is_testing: bool,
+        options: &RenderingOptions,
     ) -> Result<BoundingBox, InternalRenderingError> {
         let target = cairo::ImageSurface::create(cairo::Format::Rgb24, 1, 1)?;
         let cr = cairo::Context::new(&target)?;
 
         let node = node.clone();
 
+        let config = options.to_rendering_configuration(true);
+
         draw_tree(
             session.clone(),
             DrawingMode::OnlyNode(node),
             &cr,
             unit_rectangle(),
-            user_language,
-            dpi,
-            SvgNesting::Standalone,
-            true,
-            is_testing,
+            config,
             &mut AcquiredNodes::new(self),
         )
     }
@@ -406,11 +391,9 @@ impl Document {
         &self,
         session: &Session,
         node: Node,
-        user_language: &UserLanguage,
-        dpi: Dpi,
-        is_testing: bool,
+        options: &RenderingOptions,
     ) -> Result<(cairo::Rectangle, cairo::Rectangle), InternalRenderingError> {
-        let bbox = self.get_bbox_for_element(session, &node, user_language, dpi, is_testing)?;
+        let bbox = self.get_bbox_for_element(session, &node, options)?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
         let logical_rect = bbox.rect.unwrap_or_default();
@@ -430,13 +413,11 @@ impl Document {
         cr: &cairo::Context,
         node: Node,
         element_viewport: &cairo::Rectangle,
-        user_language: &UserLanguage,
-        dpi: Dpi,
-        is_testing: bool,
+        options: &RenderingOptions,
     ) -> Result<(), InternalRenderingError> {
         cr.status()?;
 
-        let bbox = self.get_bbox_for_element(session, &node, user_language, dpi, is_testing)?;
+        let bbox = self.get_bbox_for_element(session, &node, options)?;
 
         if bbox.ink_rect.is_none() || bbox.rect.is_none() {
             // Nothing to draw
@@ -459,16 +440,14 @@ impl Document {
             cr.scale(factor, factor);
             cr.translate(-ink_r.x0, -ink_r.y0);
 
+            let config = options.to_rendering_configuration(false);
+
             draw_tree(
                 session.clone(),
                 DrawingMode::OnlyNode(node),
                 cr,
                 unit_rectangle(),
-                user_language,
-                dpi,
-                SvgNesting::Standalone,
-                false,
-                is_testing,
+                config,
                 &mut AcquiredNodes::new(self),
             )
             .map(|_bbox| ())
@@ -533,23 +512,6 @@ impl Resources {
             _ => Err(LoadingError::Other(format!(
                 "{href} is not an SVG document"
             ))),
-        }
-    }
-
-    fn lookup_image(
-        &mut self,
-        session: &Session,
-        load_options: &LoadOptions,
-        aurl: &AllowedUrl,
-    ) -> Result<SharedImageSurface, LoadingError> {
-        // FIXME: pass a cancellable to this.  This function is called
-        // at rendering time, so probably the cancellable should come
-        // from cancellability in CairoRenderer - see #429
-        let resource = self.lookup_resource(session, load_options, aurl, None)?;
-
-        match resource {
-            Resource::Image(image) => Ok(image),
-            _ => Err(LoadingError::Other(format!("{aurl} is not a raster image"))),
         }
     }
 
@@ -779,10 +741,6 @@ impl<'i> AcquiredNodes<'i> {
             node_stack: Rc::new(RefCell::new(NodeStack::new())),
             nodes_with_cycles: Vec::new(),
         }
-    }
-
-    pub fn lookup_image(&self, href: &str) -> Result<SharedImageSurface, LoadingError> {
-        self.document.lookup_image(href)
     }
 
     pub fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
