@@ -56,7 +56,7 @@ macro_rules! rsvg_c_str {
 fn rsvg_g_log(level: glib::ffi::GLogLevelFlags, msg: &str) {
     // stolen from gmessages.c:log_level_to_priority()
     let priority = match level {
-        G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL => rsvg_c_str!("4"),
+        G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL => c"4".as_ptr(),
         _ => unreachable!("please add another log level priority to rsvg_g_log()"),
     };
 
@@ -68,19 +68,19 @@ fn rsvg_g_log(level: glib::ffi::GLogLevelFlags, msg: &str) {
     // trace.  So, we'll omit them.
     let fields = [
         GLogField {
-            key: rsvg_c_str!("PRIORITY"),
+            key: c"PRIORITY".as_ptr(),
             value: priority.cast(),
             length: -1,
         },
         GLogField {
-            key: rsvg_c_str!("MESSAGE"),
+            key: c"MESSAGE".as_ptr(),
             value: c_char_msg.cast(),
             length: msg.len() as _,
         },
         // This is the G_LOG_DOMAIN set from the Makefile
         GLogField {
-            key: rsvg_c_str!("GLIB_DOMAIN"),
-            value: rsvg_c_str!("librsvg").cast(),
+            key: c"GLIB_DOMAIN".as_ptr(),
+            value: c"librsvg".as_ptr().cast(),
             length: -1,
         },
     ];
@@ -127,7 +127,7 @@ macro_rules! rsvg_return_if_fail {
         $(
             if !$condition {
                 glib::ffi::g_return_if_fail_warning(
-                    rsvg_c_str!("librsvg"),
+                    c"librsvg".as_ptr(),
                     rsvg_c_str!(stringify!($func_name)),
                     rsvg_c_str!(stringify!($condition)),
                 );
@@ -147,7 +147,7 @@ macro_rules! rsvg_return_val_if_fail {
         $(
             if !$condition {
                 glib::ffi::g_return_if_fail_warning(
-                    rsvg_c_str!("librsvg"),
+                    c"librsvg".as_ptr(),
                     rsvg_c_str!(stringify!($func_name)),
                     rsvg_c_str!(stringify!($condition)),
                 );
