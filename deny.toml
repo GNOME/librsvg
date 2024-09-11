@@ -1,3 +1,5 @@
+# Configuration for https://github.com/EmbarkStudios/cargo-deny
+
 [graph]
 # When creating the dependency graph used as the source of truth when checks are
 # executed, this field can be used to prune crates from the graph, removing them

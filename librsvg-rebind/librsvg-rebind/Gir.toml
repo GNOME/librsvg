@@ -1,3 +1,5 @@
+# Configuration for https://github.com/gtk-rs/gir
+
 [external_libraries]
 Gio = { min_version = "2.66" }
 
