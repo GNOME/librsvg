@@ -2,13 +2,13 @@
 
 set -o errexit -o pipefail -o noclobber -o nounset
 
-FREETYPE2_TAG="VER-2-13-2"
-FONTCONFIG_TAG="2.14.2"
-CAIRO_TAG="1.18.0"
-HARFBUZZ_TAG="8.4.0"
-PANGO_TAG="1.52.2"
-LIBXML2_TAG="v2.11.5"
-GDK_PIXBUF_TAG="2.42.10"
+FREETYPE2_TAG="VER-2-13-3"
+FONTCONFIG_TAG="2.15.0"
+CAIRO_TAG="1.18.2"
+HARFBUZZ_TAG="9.0.0"
+PANGO_TAG="1.54.0"
+LIBXML2_TAG="v2.13.3"
+GDK_PIXBUF_TAG="2.42.12"
 
 PARSED=$(getopt --options '' --longoptions 'prefix:,meson-flags:' --name "$0" -- "$@")
 if [ $? -ne 0 ]; then
