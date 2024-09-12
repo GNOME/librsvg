@@ -2,6 +2,10 @@
 
 set -o errexit -o pipefail -o noclobber -o nounset
 
+# See the versions here:
+# https://gitlab.gnome.org/GNOME/gnome-build-meta/-/tree/gnome-47/elements/sdk (or later versions)
+# https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/tree/master/elements/components
+
 FREETYPE2_TAG="VER-2-13-3"
 FONTCONFIG_TAG="2.15.0"
 CAIRO_TAG="1.18.2"
