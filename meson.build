@@ -1,6 +1,6 @@
 project('librsvg',
         'c',
-        version: '2.58.94', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
+        version: '2.59.0', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
         meson_version: '>= 1.2.0',
         default_options: [
           'pkgconfig.relocatable=true',
@@ -26,7 +26,7 @@ cc = meson.get_compiler('c')
 msrv = '1.77.2'
 cargo = find_program('cargo', version:'>= @0@'.format(msrv))
 cargo_wrapper = find_program('meson/cargo_wrapper.py', native: true)
-cargo_c = find_program('cargo-cbuild', version:'>= 0.9.19')
+cargo_c = find_program('cargo-cbuild', version:'>= 0.9.19') # https://github.com/lu-zero/cargo-c
 rustc = find_program('rustc', version:'>= @0@'.format(msrv))
 makedef = find_program('meson/makedef.py', native: true)
 

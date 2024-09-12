@@ -1,3 +1,60 @@
+Version 2.59.0
+==============
+
+librsvg crate version 2.59.0
+
+librsvg-rebind crate version 0.1.0
+
+The biggest change in this release is that librsvg now uses the Meson
+build system instead of autotools.  Many, many thanks to Amyspark and
+Centricular for doing and funding this massive work.
+
+With Meson, librsvg now builds a lot more reliably on Windows and
+MacOS.
+
+The Meson options for different compile-time configurations are
+documented in devel-docs/compiling.rst.
+
+Requirements for build tools:
+
+- Meson 1.2.0 or later
+- Rust 1.77.2 or later
+- cargo-c 0.9.19 or later (https://github.com/lu-zero/cargo-c)
+
+Summary of changes (see the release notes for the 2.58.9x releases for
+more details):
+
+- Librsvg now uses Meson instead of Autotools (Amyspark, Chun-wei Fan,
+  Kleis Auke Wolthuizen, Jordan Petridis, Lovell Fuller, Nirbheek
+  Chauhan).
+
+- There is a -Davif meson option to include support for AVIF in the
+  image-rs crate, which librsvg uses to load raster images.  See
+  devel-docs/compiling.rst for details.  (Jan Alexander Steffens)
+
+- #1061 - Librsvg now explicitly builds only its supported raster
+  formats for image-rs: JPEG, PNG, GIF, WEBP, and optional
+  compile-time support for AVIF (Kleis Auke Wolthuizen).  Other raster
+  image formats are not supported, to minimize the attack surface.
+  Please file a bug if you need more formats.
+
+- #429 - Librsvg now supports cancellable rendering; you can start
+  rendering an RsvgHandle in one thread, and stop it from another
+  thread with a GCancellable.  In the C API, you can use the
+  rsvg_handle_set_cancellable_for_rendering() function; in the Rust
+  API, CairoRenderer now has a with_cancellable() method.
+
+- #1089 - For Rust users, there is now a 'librsvg-rebind' crate that
+  binds the C API for use from Rust.  Internally this links to the
+  system's librsvg shared library, in contrast with the 'librsvg'
+  crate, which is statically linked and which has a native Rust API.
+  The 'librsvg-rebind' crate is for cases where the additional code
+  size from static linking is not desired.  This librsvg-rebind crate
+  is available from crates.io. (Sophie Herold).
+
+- A bunch of fixes to bugs found through fuzz testing.
+
+
 Version 2.58.94
 ===============
 
