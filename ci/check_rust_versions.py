@@ -9,6 +9,7 @@ PLACES_TO_CHECK = [
     ['Cargo.toml',                       r'rust-version\s*=\s*"(.*)"'],
     ['ci/container_builds.yml',          r'RUST_MINIMUM:\s*"(.*)"'],
     ['devel-docs/devel_environment.rst', r'`rust .*`_ (.*) or later'],
+    ['devel-docs/compiling.rst',         r'`rust .*`_ (.*) or later'],
 ]
 
 def main():
