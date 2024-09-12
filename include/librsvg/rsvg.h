@@ -1172,6 +1172,8 @@ gboolean rsvg_handle_set_stylesheet (RsvgHandle   *handle,
  * rsvg_handle_render_document() (or any of the other rendering
  * functions) will return an error with domain `G_IO_ERROR`, and code
  * `G_IO_ERROR_CANCELLED`.
+ *
+ * Since: 2.59.0
  */
 RSVG_API
 void rsvg_handle_set_cancellable_for_rendering (RsvgHandle   *handle,
