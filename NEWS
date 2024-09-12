@@ -1,3 +1,10 @@
+Version 2.58.4
+==============
+
+librsvg crate version 2.58.4
+
+- #1121 - Fix regression when using an SVG inside a feImage element.
+
 Version 2.58.3
 ==============
 
