@@ -2089,12 +2089,12 @@ mod tests {
     #[test]
     fn path_or_url_unix() {
         unsafe {
-            match PathOrUrl::new(rsvg_c_str!("/foo/bar")).unwrap() {
+            match PathOrUrl::new(c"/foo/bar".as_ptr()).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("unix filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(rsvg_c_str!("foo/bar")).unwrap() {
+            match PathOrUrl::new(c"foo/bar".as_ptr()).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("unix filename should be a PathOrUrl::Path"),
             }
@@ -2104,22 +2104,22 @@ mod tests {
     #[test]
     fn path_or_url_windows() {
         unsafe {
-            match PathOrUrl::new(rsvg_c_str!("c:/foo/bar")).unwrap() {
+            match PathOrUrl::new(c"c:/foo/bar".as_ptr()).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(rsvg_c_str!("C:/foo/bar")).unwrap() {
+            match PathOrUrl::new(c"C:/foo/bar".as_ptr()).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(rsvg_c_str!("c:\\foo\\bar")).unwrap() {
+            match PathOrUrl::new(c"c:\\foo\\bar".as_ptr()).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
 
-            match PathOrUrl::new(rsvg_c_str!("C:\\foo\\bar")).unwrap() {
+            match PathOrUrl::new(c"C:\\foo\\bar".as_ptr()).unwrap() {
                 PathOrUrl::Path(_) => (),
                 _ => panic!("windows filename should be a PathOrUrl::Path"),
             }
@@ -2129,7 +2129,7 @@ mod tests {
     #[test]
     fn path_or_url_unix_url() {
         unsafe {
-            match PathOrUrl::new(rsvg_c_str!("file:///foo/bar")).unwrap() {
+            match PathOrUrl::new(c"file:///foo/bar".as_ptr()).unwrap() {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// unix filename should be a PathOrUrl::Url"),
             }
@@ -2139,12 +2139,12 @@ mod tests {
     #[test]
     fn path_or_url_windows_url() {
         unsafe {
-            match PathOrUrl::new(rsvg_c_str!("file://c:/foo/bar")).unwrap() {
+            match PathOrUrl::new(c"file://c:/foo/bar".as_ptr()).unwrap() {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// windows filename should be a PathOrUrl::Url"),
             }
 
-            match PathOrUrl::new(rsvg_c_str!("file://C:/foo/bar")).unwrap() {
+            match PathOrUrl::new(c"file://C:/foo/bar".as_ptr()).unwrap() {
                 PathOrUrl::Url(_) => (),
                 _ => panic!("file:// windows filename should be a PathOrUrl::Url"),
             }
@@ -2154,7 +2154,7 @@ mod tests {
     #[test]
     fn path_or_url_empty_str() {
         unsafe {
-            assert!(PathOrUrl::new(rsvg_c_str!("")).is_err());
+            assert!(PathOrUrl::new(c"".as_ptr()).is_err());
         }
 
         assert!(PathOrUrl::from_os_str(OsStr::new("")).is_err());
