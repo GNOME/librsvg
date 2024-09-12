@@ -1,3 +1,5 @@
+# Configuration for https://gitlab.gnome.org/GNOME/gi-docgen
+
 [library]
 version = "2.58.94"
 description = "Librsvg - load and render SVG documents"

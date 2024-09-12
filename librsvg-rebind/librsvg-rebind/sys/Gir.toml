@@ -1,3 +1,5 @@
+# Configuration for https://github.com/gtk-rs/gir
+
 [options]
 library = "Rsvg"
 version = "2.0"
