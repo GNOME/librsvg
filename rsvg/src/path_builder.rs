@@ -4,10 +4,10 @@
 //! module deals with this as follows:
 //!
 //! * The path parser pushes commands into a [`PathBuilder`].  This is a mutable,
-//! temporary storage for path data.
+//!   temporary storage for path data.
 //!
 //! * Then, the [`PathBuilder`] gets turned into a long-term, immutable [`Path`] that has
-//! a more compact representation.
+//!   a more compact representation.
 //!
 //! The code tries to reduce work in the allocator, by using a [`TinyVec`] with space for at
 //! least 32 commands on the stack for `PathBuilder`; most paths in SVGs in the wild have
@@ -15,8 +15,8 @@
 //!
 //! See these blog posts for details and profiles:
 //!
-//! * [Compact representation for path data](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-4.html)
-//! * [Reducing slack space and allocator work](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-3.html)
+//! * [Compact representation for path data](https://viruta.org/reducing-memory-consumption-in-librsvg-4.html)
+//! * [Reducing slack space and allocator work](https://viruta.org/reducing-memory-consumption-in-librsvg-3.html)
 
 use tinyvec::TinyVec;
 

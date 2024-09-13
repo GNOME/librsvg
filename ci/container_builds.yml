@@ -1,15 +1,16 @@
 include:
   - remote: "https://gitlab.freedesktop.org/freedesktop/ci-templates/-/raw/80f87b3058efb75a1faae11826211375fba77e7f/templates/opensuse.yml"
-  - remote: "https://gitlab.freedesktop.org/alatiera/ci-templates/-/raw/bf008eaa01c5f1770e52c1b477caaedb6790df7d/templates/gnomeos.yml"
+  - remote: "https://gitlab.freedesktop.org/alatiera/ci-templates/-/raw/104fbc7115a99a450ba926d2a96208457d77cac0/templates/gnomeos.yml"
 
 variables:
   # When branching change the suffix to avoid conflicts with images
   # from the main branch
-  BASE_TAG: "2024-09-11.0-main"
-  RUST_STABLE: "1.79.0"
+  BASE_TAG: "2024-09-12.0-main"
+  RUST_STABLE: "1.81.0"
   RUST_MINIMUM: "1.77.2"
   RUST_NIGHTLY: "nightly-2024-07-14"
   RUSTUP_VERSION: "1.26.0"
+  GNOMEOS_STABLE: "core-47"
 
 # This bunch of packages are the system's C/C++ compilers, and the indirect dependencies needed
 # to build librsvg's direct dependencies.  E.g. we must build cairo from a git tag, but we don't
@@ -133,11 +134,11 @@ opensuse-container@aarch64:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
     FDO_DISTRIBUTION_VERSION: "core-nightly"
 
-.container.gnomeos.46@x86_64:
+.container.gnomeos.stable@x86_64:
   extends: .container.gnomeos@common
   variables:
     FDO_DISTRIBUTION_TAG: "x86_64-${RUST_STABLE}-${BASE_TAG}"
-    FDO_DISTRIBUTION_VERSION: "core-46"
+    FDO_DISTRIBUTION_VERSION: "$GNOMEOS_STABLE"
 
 gnomeos-container.nightly@x86_64:
   extends:
@@ -145,8 +146,8 @@ gnomeos-container.nightly@x86_64:
     - .container.gnomeos.nightly@x86_64
   stage: "container-build"
 
-gnomeos-container.46@x86_64:
+gnomeos-container.stable@x86_64:
   extends:
     - .fdo.container-build@gnomeos@x86_64
-    - .container.gnomeos.46@x86_64
+    - .container.gnomeos.stable@x86_64
   stage: "container-build"

@@ -796,11 +796,11 @@ impl<'i> AcquiredNodes<'i> {
     /// needs to be re-acquired with this method.  For example:
     ///
     /// * At an "early resolution" stage, `acquire()` a pattern by its id, and keep around its
-    /// [`Node`] reference.
+    ///   [`Node`] reference.
     ///
     /// * At the drawing stage, `acquire_ref()` the pattern node that we already had, so that
-    /// its child elements that reference other paint servers will be able to detect circular
-    /// references to the pattern.
+    ///   its child elements that reference other paint servers will be able to detect circular
+    ///   references to the pattern.
     pub fn acquire_ref(&mut self, node: &Node) -> Result<AcquiredNode, AcquireError> {
         if self.nodes_with_cycles.contains(node) {
             Err(AcquireError::CircularReference(node.clone()))

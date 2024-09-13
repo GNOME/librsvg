@@ -7,7 +7,7 @@
 //! * [`TransformProperty`] for the [`transform` property][prop] in SVG2/CSS3.
 //!
 //! * [`Transform`] also handles the [`transform` attribute][attr] in SVG1.1, which has a different
-//! grammar than the `transform` property from SVG2.
+//!   grammar than the `transform` property from SVG2.
 //!
 //! [prop]: https://www.w3.org/TR/css-transforms-1/#transform-property
 //! [attr]: https://www.w3.org/TR/SVG11/coords.html#TransformAttribute

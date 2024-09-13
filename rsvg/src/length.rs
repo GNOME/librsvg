@@ -29,13 +29,13 @@
 //! This means that:
 //!
 //! * `cx` and `cy` define the center of the circle, they can be positive or negative, and
-//! they will be normalized with respect to the current viewport's width and height,
-//! respectively.  If the SVG document specified `<circle cx="50%" cy="30%">`, the values
-//! would be normalized to be at 50% of the the viewport's width, and 30% of the viewport's
-//! height.
+//!   they will be normalized with respect to the current viewport's width and height,
+//!   respectively.  If the SVG document specified `<circle cx="50%" cy="30%">`, the values
+//!   would be normalized to be at 50% of the the viewport's width, and 30% of the viewport's
+//!   height.
 //!
 //! * `r` is non-negative and needs to be resolved against the [normalized diagonal][diag]
-//! of the current viewport.
+//!   of the current viewport.
 //!
 //! The `N` type parameter of `CssLength<N, I>` is enough to know how to normalize a length
 //! value; the [`CssLength::to_user`] method will handle it automatically.
