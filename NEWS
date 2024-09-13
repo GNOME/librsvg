@@ -2016,7 +2016,7 @@ Version 2.45.7
 
 - This version no longer contains the rsvg-view program, so librsvg no
   longer depends on GTK.  Please see
-  https://people.gnome.org/~federico/blog/removing-rsvg-view.html for
+  https://viruta.org/removing-rsvg-view.html for
   the rationale behind this change.
 
 - The poly element no longer supports "verts" as an alias for the

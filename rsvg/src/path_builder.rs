@@ -15,8 +15,8 @@
 //!
 //! See these blog posts for details and profiles:
 //!
-//! * [Compact representation for path data](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-4.html)
-//! * [Reducing slack space and allocator work](https://people.gnome.org/~federico/blog/reducing-memory-consumption-in-librsvg-3.html)
+//! * [Compact representation for path data](https://viruta.org/reducing-memory-consumption-in-librsvg-4.html)
+//! * [Reducing slack space and allocator work](https://viruta.org/reducing-memory-consumption-in-librsvg-3.html)
 
 use tinyvec::TinyVec;
 
