@@ -1660,7 +1660,7 @@ impl DrawingCtx {
                 );
 
                 cr.set_matrix(ValidTransform::try_from(affines.for_snapshot)?.into());
-                cr.set_source_surface(&draw.target(), 0.0, 0.0)?;
+                cr.set_source_surface(draw.target(), 0.0, 0.0)?;
                 cr.paint()?;
             }
 
