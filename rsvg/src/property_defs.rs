@@ -13,25 +13,25 @@
 //! automatically:
 //!
 //! * A name for the type.  For example, the `fill` property has a [`Fill`] type defined
-//! in this module.
+//!   in this module.
 //!
 //! * An initial value per the CSS or SVG specs, given through an implementation of the
-//! [`Default`] trait.
+//!   [`Default`] trait.
 //!
 //! * Whether the property's computed value inherits to child elements, given through an
-//! implementation of the [`Property`] trait and its
-//! [`inherits_automatically`][Property::inherits_automatically] method.
+//!   implementation of the [`Property`] trait and its
+//!   [`inherits_automatically`][Property::inherits_automatically] method.
 //!
 //! * A way to derive the CSS *computed value* for the property, given through an
-//! implementation of the [`Property`] trait and its [`compute`][Property::compute] method.
+//!   implementation of the [`Property`] trait and its [`compute`][Property::compute] method.
 //!
 //! * The actual underlying type.  For example, the [`make_property`] macro can generate a
-//! field-less enum for properties like the `clip-rule` property, which just has
-//! identifier-based values like `nonzero` and `evenodd`.  For general-purpose types like
-//! [`Length`], the macro can wrap them in a newtype like `struct`
-//! [`StrokeWidth`]`(`[`Length`]`)`.  For custom types, the macro call can be used just to
-//! define the initial/default value and whether the property inherits automatically; you
-//! should provide the other required trait implementations separately.
+//!   field-less enum for properties like the `clip-rule` property, which just has
+//!   identifier-based values like `nonzero` and `evenodd`.  For general-purpose types like
+//!   [`Length`], the macro can wrap them in a newtype like `struct`
+//!   [`StrokeWidth`]`(`[`Length`]`)`.  For custom types, the macro call can be used just to
+//!   define the initial/default value and whether the property inherits automatically; you
+//!   should provide the other required trait implementations separately.
 //!
 //! * An implementation of the [`Parse`] trait for the underlying type.
 use std::convert::TryInto;

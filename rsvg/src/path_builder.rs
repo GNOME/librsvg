@@ -4,10 +4,10 @@
 //! module deals with this as follows:
 //!
 //! * The path parser pushes commands into a [`PathBuilder`].  This is a mutable,
-//! temporary storage for path data.
+//!   temporary storage for path data.
 //!
 //! * Then, the [`PathBuilder`] gets turned into a long-term, immutable [`Path`] that has
-//! a more compact representation.
+//!   a more compact representation.
 //!
 //! The code tries to reduce work in the allocator, by using a [`TinyVec`] with space for at
 //! least 32 commands on the stack for `PathBuilder`; most paths in SVGs in the wild have

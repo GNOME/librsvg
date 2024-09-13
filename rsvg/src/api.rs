@@ -126,12 +126,12 @@ impl Loader {
     /// Creates a `Loader` with the default flags.
     ///
     /// * [`unlimited_size`](#method.with_unlimited_size) defaults to `false`, as malicious
-    /// SVG documents could cause the XML parser to consume very large amounts of memory.
+    ///   SVG documents could cause the XML parser to consume very large amounts of memory.
     ///
     /// * [`keep_image_data`](#method.keep_image_data) defaults to
-    /// `false`.  You may only need this if rendering to Cairo
-    /// surfaces that support including image data in compressed
-    /// formats, like PDF.
+    ///   `false`.  You may only need this if rendering to Cairo
+    ///   surfaces that support including image data in compressed
+    ///   formats, like PDF.
     ///
     /// # Example:
     ///

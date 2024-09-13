@@ -3,16 +3,16 @@
 //! To implement support for a CSS property, do the following:
 //!
 //! * Create a type that will hold the property's values.  Please do this in the file
-//! `property_defs.rs`; you should cut-and-paste from the existing property definitions or
-//! read the documentation of the [`make_property`] macro.  You should read the
-//! documentation for the [`property_defs`][crate::property_defs] module to see all that
-//! is involved in creating a type for a property.
+//!   `property_defs.rs`; you should cut-and-paste from the existing property definitions or
+//!   read the documentation of the [`make_property`] macro.  You should read the
+//!   documentation for the [`property_defs`][crate::property_defs] module to see all that
+//!   is involved in creating a type for a property.
 //!
 //! * Modify the call to the `make_properties` macro in this module to include the new
-//! property's name.
+//!   property's name.
 //!
 //! * Modify the rest of librsvg wherever the computed value of the property needs to be used.
-//! This is available in methods that take an argument of type [`ComputedValues`].
+//!   This is available in methods that take an argument of type [`ComputedValues`].
 
 use cssparser::{
     self, BasicParseErrorKind, ParseErrorKind, Parser, ParserInput, RuleBodyParser, ToCss,

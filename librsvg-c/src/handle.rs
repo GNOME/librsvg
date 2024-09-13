@@ -4,13 +4,13 @@
 //! implemented as follows:
 //!
 //! * [`RsvgHandle`] and [`RsvgHandleClass`] are derivatives of `GObject` and
-//! `GObjectClass`.  These are coded explicitly, instead of using
-//! [`glib::subclass::prelude::InstanceStruct<T>`] and
-//! [`glib::subclass::prelude::ClassStruct<T>`], as the structs need need to be kept
-//! ABI-compatible with the traditional C API/ABI.
+//!   `GObjectClass`.  These are coded explicitly, instead of using
+//!   [`glib::subclass::prelude::InstanceStruct<T>`] and
+//!   [`glib::subclass::prelude::ClassStruct<T>`], as the structs need need to be kept
+//!   ABI-compatible with the traditional C API/ABI.
 //!
 //! * The actual data for a handle (e.g. the `RsvgHandle`'s private data, in GObject
-//! parlance) is in [`CHandle`].
+//!   parlance) is in [`CHandle`].
 //!
 //! * Public C ABI functions are the `#[no_mangle]` functions with an `rsvg_` prefix.
 //!

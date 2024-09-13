@@ -43,10 +43,10 @@
 //! # Helper crates we use
 //!
 //! * `cssparser` crate as a CSS tokenizer, and some utilities to
-//! parse CSS rules and declarations.
+//!   parse CSS rules and declarations.
 //!
 //! * `selectors` crate for the representation of selectors and
-//! selector lists, and for the matching engine.
+//!   selector lists, and for the matching engine.
 //!
 //! Both crates provide very generic implementations of their concepts,
 //! and expect the caller to provide implementations of various traits,
@@ -56,10 +56,10 @@
 //! the following types:
 //!
 //! * A parsed CSS rule.  For `fill: blue;` we have
-//! `ParsedProperty::Fill(...)`.
+//!   `ParsedProperty::Fill(...)`.
 //!
 //! * A parsed selector list; we use `SelectorList` from the
-//! `selectors` crate.
+//!   `selectors` crate.
 //!
 //! In turn, the `selectors` crate needs a way to navigate and examine
 //! one's implementation of an element tree.  We provide `impl
