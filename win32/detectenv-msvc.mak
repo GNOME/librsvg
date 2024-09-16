@@ -88,9 +88,11 @@ LDFLAGS_ARCH = /machine:x86
 LDFLAGS_BASE = $(LDFLAGS_ARCH) /DEBUG
 
 !if "$(CFG)" == "release" || "$(CFG)" == "Release"
-CFLAGS_ADD = /MD /O2 /GL /MP /d2Zi+ $(CFLAGS_BASE)
+CRT_CFLAG = /MD
+CFLAGS_ADD = $(CRT_CFLAG) /O2 /GL /MP /d2Zi+ $(CFLAGS_BASE)
 LDFLAGS = $(LDFLAGS_BASE) /LTCG /opt:ref
 !else
-CFLAGS_ADD = /MDd /Od $(CFLAGS_BASE)
+CRT_CFLAG = /MDd
+CFLAGS_ADD = $(CRT_CFLAG) /Od $(CFLAGS_BASE)
 LDFLAGS = $(LDFLAGS_BASE)
 !endif
