@@ -96,6 +96,7 @@ $(OUTDIR)\Rsvg-$(RSVG_API_VER).gir: $(LIBRSVG_LIB) $(OUTDIR)\librsvg\Rsvg_2_0_gi
 	--include=GdkPixbuf-2.0	\
 	--pkg-export=librsvg-2.0	\
 	--cflags-begin	\
+	$(CRT_CFLAG)	\
 	$(LIBRSVG_INCLUDES:/I=-I) -DRSVG_COMPILATION	\
 	$(EXTRA_BASE_CFLAGS:/=-)	\
 	--cflags-end	\
