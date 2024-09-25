@@ -118,10 +118,9 @@ fn draw_basic_shape(
         context_fill: fill_paint.clone(),
     };
 
-    let extents = draw_ctx.compute_path_extents(&shape_def.path)?;
-
     let normalize_values = NormalizeValues::new(values);
 
+    let extents = draw_ctx.compute_path_extents(&shape_def.path)?;
     let stroke_paint = stroke_paint.to_user_space(&extents, viewport, &normalize_values);
     let fill_paint = fill_paint.to_user_space(&extents, viewport, &normalize_values);
 
