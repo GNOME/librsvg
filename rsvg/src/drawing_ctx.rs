@@ -24,7 +24,7 @@ use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
-    Filter, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
+    self, Filter, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
 };
 use crate::length::*;
 use crate::marker;
@@ -1261,9 +1261,16 @@ impl DrawingCtx {
         clipping: bool,
         viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        if shape.extents.is_none() {
-            return Ok(self.empty_bbox());
-        }
+        let path = match &shape.path {
+            layout::Path::Validated {
+                path,
+                extents: Some(_),
+            } => path,
+            layout::Path::Validated {
+                path: _,
+                extents: None,
+            } => return Ok(self.empty_bbox()),
+        };
 
         self.with_discrete_layer(
             stacking_ctx,
@@ -1274,8 +1281,7 @@ impl DrawingCtx {
                 let cr = dc.cr.clone();
 
                 let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
-                let mut path_helper =
-                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
+                let mut path_helper = PathHelper::new(&cr, transform, &path, shape.stroke.line_cap);
 
                 if clipping {
                     if shape.is_visible {

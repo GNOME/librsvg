@@ -17,7 +17,7 @@ use crate::filter::FilterValueList;
 use crate::length::*;
 use crate::node::*;
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
-use crate::path_builder::Path;
+use crate::path_builder::Path as SvgPath;
 use crate::properties::{
     self, ClipRule, ComputedValues, Direction, FillRule, FontFamily, FontStretch, FontStyle,
     FontVariant, FontWeight, ImageRendering, Isolation, MixBlendMode, Opacity, Overflow,
@@ -84,10 +84,18 @@ pub struct Stroke {
     pub non_scaling: bool,
 }
 
+/// A path that has been validated for being suitable for Cairo.
+///
+pub enum Path {
+    Validated {
+        path: Rc<SvgPath>,
+        extents: Option<Rect>,
+    },
+}
+
 /// Paths and basic shapes resolved to a path.
 pub struct Shape {
-    pub path: Rc<Path>,
-    pub extents: Option<Rect>,
+    pub path: Path,
     pub is_visible: bool,
     pub paint_order: PaintOrder,
     pub stroke: Stroke,
