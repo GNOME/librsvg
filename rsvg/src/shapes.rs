@@ -52,6 +52,12 @@ fn validate_path(
     stroke_paint: &PaintSource,
     fill_paint: &PaintSource,
 ) -> Result<layout::Path, InternalRenderingError> {
+    if path.has_unsuitable_coordinates() {
+        return Ok(layout::Path::Invalid(String::from(
+            "path has coordinates that are unsuitable for Cairo",
+        )));
+    }
+
     let extents = compute_path_extents(&path)?;
     let stroke_paint = stroke_paint.to_user_space(&extents, viewport, &normalize_values);
     let fill_paint = fill_paint.to_user_space(&extents, viewport, &normalize_values);
@@ -144,6 +150,10 @@ fn draw_basic_shape(
         &stroke_paint,
         &fill_paint,
     )?;
+
+    if let layout::Path::Invalid(ref reason) = path {
+        rsvg_log!(session, "will not render {node}: {reason}");
+    }
 
     let shape = Box::new(Shape {
         path,

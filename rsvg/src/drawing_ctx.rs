@@ -1333,6 +1333,7 @@ impl DrawingCtx {
                 extents: None,
                 ..
             } => return Ok(self.empty_bbox()),
+            layout::Path::Invalid(_) => return Ok(self.empty_bbox()),
         };
 
         self.with_discrete_layer(

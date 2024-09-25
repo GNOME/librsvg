@@ -8,6 +8,18 @@ use float_cmp::ApproxEq;
 const CAIRO_FIXED_FRAC_BITS: u64 = 8;
 const CAIRO_MAGIC_NUMBER_FIXED: f64 = (1u64 << (52 - CAIRO_FIXED_FRAC_BITS)) as f64 * 1.5;
 
+const CAIRO_FIXED_MAX: i32 = i32::MAX;
+const CAIRO_FIXED_MIN: i32 = i32::MIN;
+
+/// The double that corresponds to (the number one in fixed-point representation)
+const CAIRO_FIXED_ONE_DOUBLE: f64 = (1 << CAIRO_FIXED_FRAC_BITS) as f64;
+
+/// The largest representable fixed-point number, as a double.  This is a bit over 8 million.
+pub const CAIRO_FIXED_MAX_DOUBLE: f64 = (CAIRO_FIXED_MAX as f64) / CAIRO_FIXED_ONE_DOUBLE;
+
+/// The most negative representable fixed-point number, as a double.  This is a bit less than -8 million.
+pub const CAIRO_FIXED_MIN_DOUBLE: f64 = (CAIRO_FIXED_MIN as f64) / CAIRO_FIXED_ONE_DOUBLE;
+
 fn cairo_magic_double(d: f64) -> f64 {
     d + CAIRO_MAGIC_NUMBER_FIXED
 }

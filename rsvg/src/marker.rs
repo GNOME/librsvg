@@ -684,6 +684,7 @@ pub fn render_markers_for_shape(
             extents: None,
             ..
         } => return Ok(draw_ctx.empty_bbox()),
+        layout::Path::Invalid(_) => return Ok(draw_ctx.empty_bbox()),
     };
 
     if shape.stroke.width.approx_eq_cairo(0.0) {
