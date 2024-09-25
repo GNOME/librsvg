@@ -115,6 +115,8 @@ pub enum Path {
     Validated {
         path: Rc<SvgPath>,
         extents: Option<Rect>,
+        stroke_paint: UserSpacePaintSource,
+        fill_paint: UserSpacePaintSource,
     },
 }
 
@@ -124,8 +126,6 @@ pub struct Shape {
     pub is_visible: bool,
     pub paint_order: PaintOrder,
     pub stroke: Stroke,
-    pub stroke_paint: UserSpacePaintSource,
-    pub fill_paint: UserSpacePaintSource,
     pub fill_rule: FillRule,
     pub clip_rule: ClipRule,
     pub shape_rendering: ShapeRendering,
