@@ -128,6 +128,8 @@ fn draw_basic_shape(
     let path = layout::Path::Validated {
         path: shape_def.path,
         extents,
+        stroke_paint,
+        fill_paint,
     };
 
     let shape = Box::new(Shape {
@@ -135,8 +137,6 @@ fn draw_basic_shape(
         is_visible,
         paint_order,
         stroke,
-        stroke_paint,
-        fill_paint,
         fill_rule,
         clip_rule,
         shape_rendering,

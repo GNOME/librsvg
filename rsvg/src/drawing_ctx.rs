@@ -1261,14 +1261,17 @@ impl DrawingCtx {
         clipping: bool,
         viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        let path = match &shape.path {
+        let (path, stroke_paint, fill_paint) = match &shape.path {
             layout::Path::Validated {
                 path,
                 extents: Some(_),
-            } => path,
+                stroke_paint,
+                fill_paint,
+            } => (path, stroke_paint, fill_paint),
             layout::Path::Validated {
                 path: _,
                 extents: None,
+                ..
             } => return Ok(self.empty_bbox()),
         };
 
@@ -1301,7 +1304,7 @@ impl DrawingCtx {
                 let bbox = compute_stroke_and_fill_box(
                     &cr,
                     &shape.stroke,
-                    &shape.stroke_paint,
+                    stroke_paint,
                     &dc.initial_viewport,
                 )?;
 
@@ -1312,7 +1315,7 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, &shape.fill_paint)?;
+                                dc.fill(&cr, an, fill_paint)?;
                             }
 
                             PaintTarget::Stroke => {
@@ -1327,7 +1330,7 @@ impl DrawingCtx {
                                 } else {
                                     None
                                 };
-                                dc.stroke(&cr, an, &shape.stroke_paint)?;
+                                dc.stroke(&cr, an, stroke_paint)?;
                                 if let Some(matrix) = backup_matrix {
                                     cr.set_matrix(matrix);
                                 }
