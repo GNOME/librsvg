@@ -79,7 +79,7 @@ Bug reports
 ^^^^^^^^^^^
 
 Bug reports for new failures are automatically filed in the OSS-Fuzz bug tracker with a
-`librsvg label <https://bugs.chromium.org/p/oss-fuzz/issues/list?q=label:Proj-librsvg>`_.
+`librsvg label <https://issues.oss-fuzz.com/issues?q=project:librsvg%20status:open>`_.
 Make sure you are logged in to view all existing issues.
 
 Build maintenance
@@ -134,5 +134,5 @@ Quick links
 
 * `OSS-Fuzz dashboard <https://oss-fuzz.com/>`_
 * `OSS-Fuzz configuration files and build scripts for librsvg <https://github.com/google/oss-fuzz/tree/master/projects/librsvg>`_
-* `All bugs found by OSS-Fuzz in librsvg <https://bugs.chromium.org/p/oss-fuzz/issues/list?q=label:Proj-librsvg>`_
+* `All open OSS-Fuzz bugs for librsvg <https://issues.oss-fuzz.com/issues?q=project:librsvg%20status:open>`_
 * `Google's OSS-Fuzz documentation <https://google.github.io/oss-fuzz/>`_
