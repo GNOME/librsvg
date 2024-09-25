@@ -21,9 +21,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliar
 @set PKG_CONFIG_VER=0.29.2
 
 @set CURRDIR=%CD%
-:: See https://github.com/mesonbuild/meson/issues/13428, use Meson 1.4.1 for now
-:: pip3 install --upgrade --user meson~=1.2 || goto :error
-pip3 install --user meson==1.4.1 || goto :error
+pip3 install --upgrade --user meson~=1.2 || goto :error
 git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/gdk-pixbuf.git
 git clone --depth 1 --no-tags https://gitlab.gnome.org/GNOME/pango.git
 
