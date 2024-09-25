@@ -13,7 +13,7 @@ use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
 use crate::is_element_of_type;
-use crate::layout::{Layer, LayerKind, Marker, Shape, StackingContext, Stroke};
+use crate::layout::{self, Layer, LayerKind, Marker, Shape, StackingContext, Stroke};
 use crate::length::*;
 use crate::node::{CascadedValues, Node, NodeBorrow};
 use crate::parsers::{optional_comma, Parse, ParseValue};
@@ -122,9 +122,13 @@ fn draw_basic_shape(
     let stroke_paint = stroke_paint.to_user_space(&extents, viewport, &normalize_values);
     let fill_paint = fill_paint.to_user_space(&extents, viewport, &normalize_values);
 
-    let shape = Box::new(Shape {
+    let path = layout::Path::Validated {
         path: shape_def.path,
         extents,
+    };
+
+    let shape = Box::new(Shape {
+        path,
         is_visible,
         paint_order,
         stroke,
