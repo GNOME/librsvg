@@ -86,13 +86,31 @@ pub struct Stroke {
 
 /// A path that has been validated for being suitable for Cairo.
 ///
+/// As of 2024/Sep/25, Cairo converts path coordinates to fixed point, but it has several problems:
+///
+/// * For coordinates that are outside of the representable range in
+///   fixed point, Cairo just clamps them.  It is not able to return
+///   this condition as an error to the caller.
+///
+/// * Then, it has multiple cases of possible arithmetic overflow
+///   while processing the paths for rendering.  Fixing this is an
+///   ongoing project.
+///
+/// While Cairo gets better in these respects, librsvg will try to do
+/// some mitigations, mainly about catching problematic coordinates
+/// early and not passing them on to Cairo.
 pub enum Path {
+    /// Path that has been checked for being suitable for Cairo.
     Validated {
         path: Rc<SvgPath>,
         extents: Option<Rect>,
         stroke_paint: UserSpacePaintSource,
         fill_paint: UserSpacePaintSource,
     },
+
+    /// Reason why the path was determined to be not suitable for Cairo.  This
+    /// is just used for logging purposes.
+    Invalid(String),
 }
 
 /// Paths and basic shapes resolved to a path.

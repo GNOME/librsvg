@@ -24,7 +24,7 @@ use std::f64;
 use std::f64::consts::*;
 use std::slice;
 
-use crate::float_eq_cairo::ApproxEqCairo;
+use crate::float_eq_cairo::{ApproxEqCairo, CAIRO_FIXED_MAX_DOUBLE, CAIRO_FIXED_MIN_DOUBLE};
 use crate::path_parser::{ParseError, PathParser};
 use crate::util::clamp;
 
@@ -720,6 +720,12 @@ impl Path {
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
     }
+
+    pub fn has_unsuitable_coordinates(&self) -> bool {
+        self.coords
+            .iter()
+            .any(|&v| v > CAIRO_FIXED_MAX_DOUBLE || v < CAIRO_FIXED_MIN_DOUBLE)
+    }
 }
 
 fn take_one(iter: &mut slice::Iter<'_, f64>) -> f64 {
@@ -869,5 +875,25 @@ mod tests {
                 (false, (46.0, 47.0)),
             ]
         );
+    }
+
+    #[test]
+    fn detects_suitable_coordinates() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(900000.0, 33.0);
+        builder.line_to(-900000.0, 3.0);
+
+        let path = builder.into_path();
+        assert!(!path.has_unsuitable_coordinates());
+    }
+
+    #[test]
+    fn detects_unsuitable_coordinates() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(9000000.0, 33.0);
+        builder.line_to(-9000000.0, 3.0);
+
+        let path = builder.into_path();
+        assert!(path.has_unsuitable_coordinates());
     }
 }
