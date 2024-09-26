@@ -739,7 +739,7 @@ impl Path {
     pub fn has_unsuitable_coordinates(&self) -> bool {
         self.coords
             .iter()
-            .any(|&v| v > CAIRO_FIXED_MAX_DOUBLE || v < CAIRO_FIXED_MIN_DOUBLE)
+            .any(|v| !(CAIRO_FIXED_MIN_DOUBLE..=CAIRO_FIXED_MAX_DOUBLE).contains(v))
     }
 }
 
