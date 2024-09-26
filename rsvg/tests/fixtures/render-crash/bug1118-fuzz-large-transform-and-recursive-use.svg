@@ -1,0 +1,54 @@
+<svg xmlns:ns0="http://www.w3.org/2000/svg" version="1.1" width="321.00" height="27.00" viewBox="0 0 6420 540">
+  <defs>
+    <g id="big_ex_small">
+      <svg version="1.1" width="321.00" height="27.00" viewBox="0 0 6420 540">
+        <defs>
+          <mask id="Region0">
+          </mask>
+        </defs>
+        <g mask="url(#Region0)">
+          <g transform="matrix(26424763956865132018 139732602026310974046 -87811294935163652361.8950655489195254672 146258194355706859732 -130280437878494868681 -48916801786116105760.87920990438464317720)">
+
+            <svg version="1.1" width="321.00" height="27.00" viewBox="0 0 6420 540">
+              <g>
+                <g transform="matrix(1.66667 0 0 1.66667 0 0)">
+                  <svg version="1.1" width="321.00" height="27.00" viewBox="0 0 6420 540">
+                    <g transform="matrix(1.66667 0 0 1.66667 0 0)">
+                      <rect x="0" y="0" width="6420" height="540" fill="black" />
+                      <svg version="1.1" width="321.00" height="27.00" viewBox="0 0 6420 540">
+                        <g>
+                          <g transform="matrix(1.66667 0 0 1.66667 0 0)">
+                            <g transform="matrix(1.66667 0 0 1.66667 0 0)">
+                              <svg version="1.1" width="321.00" height="27.00" viewBox="0 0 6420 540">
+                                <g transform="matrix(1.66667 0 0 1.66667 0 0)">
+                                  <svg version="1.1" width="321.00" height="27.00" viewBox="0 0 6420 540">
+                                    <g>
+                                      <use id="use_2" href="#big_ex_small"/>
+                                    </g>
+                                  </svg>
+                                </g>
+                                <use id="use_3" href="#big_ex_small"/>
+                              </svg>
+                            </g>
+                            <use id="use_4" href="#big_ex_small"/>
+                          </g>
+                          <use id="use_5" href="#big_ex_small"/>
+                        </g>
+                      </svg>
+                    </g>
+                    <use id="use_6" href="#big_ex_small"/>
+                  </svg>
+                </g>
+                <use id="use_7" href="#big_ex_small"/>
+              </g>
+            </svg>
+          </g>
+          <use id="use_8" href="#big_ex_small"/>
+        </g>
+      </svg>
+    </g>
+  </defs>
+  <g transform="matrix(1.66667 0 0 1.66667 0 0)">
+    <use id="use_9" href="#big_ex_small"/>
+  </g>
+</svg>
