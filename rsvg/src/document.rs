@@ -27,6 +27,7 @@ use crate::is_element_of_type;
 use crate::limits;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeData};
 use crate::rect::Rect;
+use crate::rsvg_log;
 use crate::session::Session;
 use crate::structure::IntrinsicDimensions;
 use crate::surface_utils::shared_surface::SharedImageSurface;
@@ -908,10 +909,15 @@ impl DocumentBuilder {
         let node = Node::new(NodeData::new_element(&self.session, name, attrs));
 
         if let Some(id) = node.borrow_element().get_id() {
-            // This is so we don't overwrite an existing id
-            self.ids
-                .entry(id.to_string())
-                .or_insert_with(|| node.clone());
+            match self.ids.entry(id.to_string()) {
+                Entry::Occupied(_) => {
+                    rsvg_log!(self.session, "ignoring duplicate id {id} for {node}");
+                }
+
+                Entry::Vacant(e) => {
+                    e.insert(node.clone());
+                }
+            }
         }
 
         if let Some(parent) = parent {
