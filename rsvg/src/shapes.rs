@@ -58,9 +58,9 @@ fn validate_path(
         )));
     }
 
-    let extents = compute_path_extents(&path)?;
-    let stroke_paint = stroke_paint.to_user_space(&extents, viewport, &normalize_values);
-    let fill_paint = fill_paint.to_user_space(&extents, viewport, &normalize_values);
+    let extents = compute_path_extents(path)?;
+    let stroke_paint = stroke_paint.to_user_space(&extents, viewport, normalize_values);
+    let fill_paint = fill_paint.to_user_space(&extents, viewport, normalize_values);
 
     Ok(layout::Path::Validated {
         path: Rc::clone(path),

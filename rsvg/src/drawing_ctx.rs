@@ -1346,7 +1346,7 @@ impl DrawingCtx {
                 let cr = dc.cr.clone();
 
                 let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
-                let mut path_helper = PathHelper::new(&cr, transform, &path, shape.stroke.line_cap);
+                let mut path_helper = PathHelper::new(&cr, transform, path, shape.stroke.line_cap);
 
                 if clipping {
                     if shape.is_visible {

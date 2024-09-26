@@ -699,7 +699,7 @@ pub fn render_markers_for_shape(
     }
 
     emit_markers_for_path(
-        &path,
+        path,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             let marker = match marker_type {
