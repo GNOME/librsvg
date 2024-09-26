@@ -63,6 +63,22 @@ export TESTS_OUTPUT_DIR=/some/directory/for/test/failures
 make check
 ```
 
+Running a single test case
+--------------------------
+
+For example, use this:
+
+```sh
+cargo test -p librsvg --test render_crash -- bug1088_fuzz_cairo_out_of_bounds
+```
+
+* ``-p librsvg`` selects that package in the Cargo workspace.
+
+* ``--test render_crash`` selects that test binary.
+
+* ``-- bug1088_fuzz_cairo_out_of_bounds`` selects the test case.
+
+
 ## Artifacts produced from the tests
 
 **Failures for reference tests:** Tests that render a document and

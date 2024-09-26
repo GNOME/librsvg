@@ -24,7 +24,7 @@ use std::f64;
 use std::f64::consts::*;
 use std::slice;
 
-use crate::float_eq_cairo::ApproxEqCairo;
+use crate::float_eq_cairo::{ApproxEqCairo, CAIRO_FIXED_MAX_DOUBLE, CAIRO_FIXED_MIN_DOUBLE};
 use crate::path_parser::{ParseError, PathParser};
 use crate::util::clamp;
 
@@ -720,6 +720,27 @@ impl Path {
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
     }
+
+    /// Sees if any of the coordinates in the path is not representable in Cairo's fixed-point numbers.
+    ///
+    /// See https://gitlab.gnome.org/GNOME/librsvg/-/issues/1088 and
+    /// for the root cause
+    /// https://gitlab.freedesktop.org/cairo/cairo/-/issues/852.
+    ///
+    /// This function does a poor job, but a hopefully serviceable one, of seeing if a path's coordinates
+    /// are prone to causing trouble when passed to Cairo.  The caller of this function takes note of
+    /// that situation and in the end avoids rendering the path altogether.
+    ///
+    /// Cairo has trouble when given path coordinates that are outside of the range it can represent
+    /// in cairo_fixed_t: 24 bits integer part, and 8 bits fractional part.  Coordinates outside
+    /// of ±8 million get clamped.  These, or valid coordinates that are close to the limits,
+    /// subsequently cause integer overflow while Cairo does arithmetic on the path's points.
+    /// Fixing this in Cairo is a long-term project.
+    pub fn has_unsuitable_coordinates(&self) -> bool {
+        self.coords
+            .iter()
+            .any(|v| !(CAIRO_FIXED_MIN_DOUBLE..=CAIRO_FIXED_MAX_DOUBLE).contains(v))
+    }
 }
 
 fn take_one(iter: &mut slice::Iter<'_, f64>) -> f64 {
@@ -869,5 +890,25 @@ mod tests {
                 (false, (46.0, 47.0)),
             ]
         );
+    }
+
+    #[test]
+    fn detects_suitable_coordinates() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(900000.0, 33.0);
+        builder.line_to(-900000.0, 3.0);
+
+        let path = builder.into_path();
+        assert!(!path.has_unsuitable_coordinates());
+    }
+
+    #[test]
+    fn detects_unsuitable_coordinates() {
+        let mut builder = PathBuilder::default();
+        builder.move_to(9000000.0, 33.0);
+        builder.line_to(-9000000.0, 3.0);
+
+        let path = builder.into_path();
+        assert!(path.has_unsuitable_coordinates());
     }
 }

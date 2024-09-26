@@ -673,6 +673,20 @@ pub fn render_markers_for_shape(
     acquired_nodes: &mut AcquiredNodes<'_>,
     clipping: bool,
 ) -> Result<BoundingBox, InternalRenderingError> {
+    let path = match &shape.path {
+        layout::Path::Validated {
+            path,
+            extents: Some(_),
+            ..
+        } => path,
+        layout::Path::Validated {
+            path: _,
+            extents: None,
+            ..
+        } => return Ok(draw_ctx.empty_bbox()),
+        layout::Path::Invalid(_) => return Ok(draw_ctx.empty_bbox()),
+    };
+
     if shape.stroke.width.approx_eq_cairo(0.0) {
         return Ok(draw_ctx.empty_bbox());
     }
@@ -685,7 +699,7 @@ pub fn render_markers_for_shape(
     }
 
     emit_markers_for_path(
-        &shape.path,
+        path,
         draw_ctx.empty_bbox(),
         &mut |marker_type: MarkerType, x: f64, y: f64, computed_angle: Angle| {
             let marker = match marker_type {
