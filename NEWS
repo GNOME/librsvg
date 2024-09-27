@@ -1,3 +1,24 @@
+Version 2.59.1
+==============
+
+librsvg crate version 2.59.1
+
+librsvg-rebind crate version 0.1.0
+
+Two mitigations for crashes found throuh fuzz testing:
+
+- #1088, #1118 - Cairo is easy to crash by giving it path coordinates
+  that are outside of the range that it can represent internally with
+  its fixed-point arithmetic.  Fuzzers usually produce SVGs with very
+  large numbers for coordinates, which overflow Cairo's arithmetic.
+  This is just a *mitigation*, not a complete fix: librsvg will now
+  check if path coordinates are outside of Cairo's supported range,
+  and it will not render shapes with problematic coordinates.
+  However, fuzzers may still produce coordinates that are in range but
+  that still make Cairo crash.  I am starting to learn Cairo's code to
+  see if this can be fixed gradually.
+
+
 Version 2.59.0
 ==============
 
