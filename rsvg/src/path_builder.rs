@@ -26,6 +26,7 @@ use std::slice;
 
 use crate::float_eq_cairo::{ApproxEqCairo, CAIRO_FIXED_MAX_DOUBLE, CAIRO_FIXED_MIN_DOUBLE};
 use crate::path_parser::{ParseError, PathParser};
+use crate::transform::Transform;
 use crate::util::clamp;
 
 /// Whether an arc's sweep should be >= 180 degrees, or smaller.
@@ -420,6 +421,37 @@ impl PathCommand {
             )),
         }
     }
+
+    /// Sees if any of the coordinates in the path is not representable in Cairo's fixed-point numbers.
+    ///
+    /// See the documentation for [`Path::has_unsuitable_coordinates`].
+    fn has_unsuitable_coordinates(&self, transform: &Transform) -> bool {
+        match *self {
+            PathCommand::MoveTo(x, y) => coordinates_are_unsuitable(x, y, transform),
+            PathCommand::LineTo(x, y) => coordinates_are_unsuitable(x, y, transform),
+            PathCommand::CurveTo(CubicBezierCurve { pt1, pt2, to }) => {
+                coordinates_are_unsuitable(pt1.0, pt1.1, transform)
+                    || coordinates_are_unsuitable(pt2.0, pt2.1, transform)
+                    || coordinates_are_unsuitable(to.0, to.1, transform)
+            }
+
+            PathCommand::Arc(EllipticalArc { r, from, to, .. }) => {
+                coordinates_are_unsuitable(r.0, r.1, transform)
+                    || coordinates_are_unsuitable(from.0, from.1, transform)
+                    || coordinates_are_unsuitable(to.0, to.1, transform)
+            }
+
+            PathCommand::ClosePath => false,
+        }
+    }
+}
+
+fn coordinates_are_unsuitable(x: f64, y: f64, transform: &Transform) -> bool {
+    let fixed_point_range = CAIRO_FIXED_MIN_DOUBLE..=CAIRO_FIXED_MAX_DOUBLE;
+
+    let (x, y) = transform.transform_point(x, y);
+
+    !(fixed_point_range.contains(&x) && fixed_point_range.contains(&y))
 }
 
 /// Constructs a path out of commands.
@@ -736,10 +768,9 @@ impl Path {
     /// of ±8 million get clamped.  These, or valid coordinates that are close to the limits,
     /// subsequently cause integer overflow while Cairo does arithmetic on the path's points.
     /// Fixing this in Cairo is a long-term project.
-    pub fn has_unsuitable_coordinates(&self) -> bool {
-        self.coords
-            .iter()
-            .any(|v| !(CAIRO_FIXED_MIN_DOUBLE..=CAIRO_FIXED_MAX_DOUBLE).contains(v))
+    pub fn has_unsuitable_coordinates(&self, transform: &Transform) -> bool {
+        self.iter()
+            .any(|command| command.has_unsuitable_coordinates(transform))
     }
 }
 
@@ -899,7 +930,7 @@ mod tests {
         builder.line_to(-900000.0, 3.0);
 
         let path = builder.into_path();
-        assert!(!path.has_unsuitable_coordinates());
+        assert!(!path.has_unsuitable_coordinates(&Transform::identity()));
     }
 
     #[test]
@@ -909,6 +940,6 @@ mod tests {
         builder.line_to(-9000000.0, 3.0);
 
         let path = builder.into_path();
-        assert!(path.has_unsuitable_coordinates());
+        assert!(path.has_unsuitable_coordinates(&Transform::identity()));
     }
 }
