@@ -118,7 +118,7 @@ pub struct Viewport {
     pub vbox: ViewBox,
 
     /// The viewport's coordinate system, or "user coordinate system" in SVG terms.
-    transform: Transform,
+    pub transform: Transform,
 }
 
 impl Viewport {
