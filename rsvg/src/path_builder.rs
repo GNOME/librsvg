@@ -420,6 +420,34 @@ impl PathCommand {
             )),
         }
     }
+
+    /// Sees if any of the coordinates in the path is not representable in Cairo's fixed-point numbers.
+    ///
+    /// See the documentation for [`Path::has_unsuitable_coordinates`].
+    fn has_unsuitable_coordinates(&self) -> bool {
+        match *self {
+            PathCommand::MoveTo(x, y) => coordinates_are_unsuitable(x, y),
+            PathCommand::LineTo(x, y) => coordinates_are_unsuitable(x, y),
+            PathCommand::CurveTo(CubicBezierCurve { pt1, pt2, to }) => {
+                coordinates_are_unsuitable(pt1.0, pt1.1)
+                    || coordinates_are_unsuitable(pt2.0, pt2.1)
+                    || coordinates_are_unsuitable(to.0, to.1)
+            }
+
+            PathCommand::Arc(EllipticalArc { r, from, to, .. }) => {
+                coordinates_are_unsuitable(r.0, r.1)
+                    || coordinates_are_unsuitable(from.0, from.1)
+                    || coordinates_are_unsuitable(to.0, to.1)
+            }
+
+            PathCommand::ClosePath => false,
+        }
+    }
+}
+
+fn coordinates_are_unsuitable(x: f64, y: f64) -> bool {
+    let fixed_point_range = CAIRO_FIXED_MIN_DOUBLE..=CAIRO_FIXED_MAX_DOUBLE;
+    !(fixed_point_range.contains(&x) && fixed_point_range.contains(&y))
 }
 
 /// Constructs a path out of commands.
@@ -737,9 +765,8 @@ impl Path {
     /// subsequently cause integer overflow while Cairo does arithmetic on the path's points.
     /// Fixing this in Cairo is a long-term project.
     pub fn has_unsuitable_coordinates(&self) -> bool {
-        self.coords
-            .iter()
-            .any(|v| !(CAIRO_FIXED_MIN_DOUBLE..=CAIRO_FIXED_MAX_DOUBLE).contains(v))
+        self.iter()
+            .any(|command| command.has_unsuitable_coordinates())
     }
 }
 
