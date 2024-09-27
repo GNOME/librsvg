@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 use crate::bbox::BoundingBox;
 use crate::document::AcquiredNodes;
-use crate::drawing_ctx::{DrawingCtx, Viewport};
+use crate::drawing_ctx::{compute_path_extents, DrawingCtx, Viewport};
 use crate::element::{set_attribute, ElementTrait};
 use crate::error::*;
 use crate::iri::Iri;
@@ -22,6 +22,7 @@ use crate::path_builder::{LargeArc, Path as SvgPath, PathBuilder, Sweep};
 use crate::properties::ComputedValues;
 use crate::rsvg_log;
 use crate::session::Session;
+use crate::transform::Transform;
 use crate::xml::Attributes;
 
 #[derive(PartialEq)]
@@ -51,8 +52,9 @@ fn validate_path(
     normalize_values: &NormalizeValues,
     stroke_paint: &PaintSource,
     fill_paint: &PaintSource,
+    transform: &Transform,
 ) -> Result<layout::Path, InternalRenderingError> {
-    if path.has_unsuitable_coordinates() {
+    if path.has_unsuitable_coordinates(transform) {
         return Ok(layout::Path::Invalid(String::from(
             "path has coordinates that are unsuitable for Cairo",
         )));
@@ -152,6 +154,7 @@ fn draw_basic_shape(
         &normalize_values,
         &stroke_paint,
         &fill_paint,
+        &draw_ctx.get_transform(),
     )?;
 
     if let layout::Path::Invalid(ref reason) = path {

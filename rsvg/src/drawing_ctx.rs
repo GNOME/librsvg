@@ -1204,23 +1204,6 @@ impl DrawingCtx {
         Ok(())
     }
 
-    pub fn compute_path_extents(
-        &self,
-        path: &Path,
-    ) -> Result<Option<Rect>, InternalRenderingError> {
-        if path.is_empty() {
-            return Ok(None);
-        }
-
-        let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
-        let cr = cairo::Context::new(&surface)?;
-
-        path.to_cairo(&cr, false)?;
-        let (x0, y0, x1, y1) = cr.path_extents()?;
-
-        Ok(Some(Rect::new(x0, y0, x1, y1)))
-    }
-
     pub fn draw_layer(
         &mut self,
         layer: &Layer,
@@ -1880,6 +1863,20 @@ impl DrawingCtx {
 
         FontOptions { options }
     }
+}
+
+pub fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
+    if path.is_empty() {
+        return Ok(None);
+    }
+
+    let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
+    let cr = cairo::Context::new(&surface)?;
+
+    path.to_cairo(&cr, false)?;
+    let (x0, y0, x1, y1) = cr.path_extents()?;
+
+    Ok(Some(Rect::new(x0, y0, x1, y1)))
 }
 
 impl From<ImageRendering> for Interpolation {
