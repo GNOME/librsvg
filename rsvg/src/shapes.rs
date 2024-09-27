@@ -52,7 +52,7 @@ fn validate_path(
     stroke_paint: &PaintSource,
     fill_paint: &PaintSource,
 ) -> Result<layout::Path, InternalRenderingError> {
-    if path.has_unsuitable_coordinates() {
+    if path.has_unsuitable_coordinates(&viewport.transform) {
         return Ok(layout::Path::Invalid(String::from(
             "path has coordinates that are unsuitable for Cairo",
         )));
