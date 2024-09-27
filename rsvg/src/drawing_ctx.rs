@@ -161,6 +161,14 @@ impl Viewport {
             transform: self.transform,
         }
     }
+
+    pub fn with_composed_transform(&self, transform: Transform) -> Viewport {
+        Viewport {
+            dpi: self.dpi,
+            vbox: self.vbox,
+            transform: self.transform.pre_transform(&transform),
+        }
+    }
 }
 
 /// Values that stay constant during rendering with a DrawingCtx.
@@ -495,7 +503,7 @@ impl DrawingCtx {
                 Viewport {
                     dpi: self.config.dpi,
                     vbox: vbox.unwrap_or(current_viewport.vbox),
-                    transform: current_viewport.transform.post_transform(&t),
+                    transform: current_viewport.transform.pre_transform(&t),
                 }
             })
     }
@@ -689,6 +697,9 @@ impl DrawingCtx {
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
         let orig_transform = self.get_transform();
+
+        // See the comment below about "not using that transform anywhere" (the viewport's).
+        let viewport = viewport.with_composed_transform(stacking_ctx.transform);
         self.cr.transform(stacking_ctx_transform.into());
 
         let res = if clipping {
@@ -701,13 +712,13 @@ impl DrawingCtx {
                 //
                 // Note that push_new_viewport() changes the cr's transform.  However it will be restored
                 // at the end of this function with set_matrix.
-                if let Some(new_viewport) = self.push_new_viewport(viewport, layout_viewport) {
+                if let Some(new_viewport) = self.push_new_viewport(&viewport, layout_viewport) {
                     draw_fn(acquired_nodes, self, &new_viewport)
                 } else {
                     Ok(self.empty_bbox())
                 }
             } else {
-                draw_fn(acquired_nodes, self, viewport)
+                draw_fn(acquired_nodes, self, &viewport)
             }
         } else {
             with_saved_cr(&self.cr.clone(), || {
@@ -727,7 +738,7 @@ impl DrawingCtx {
                 self.clip_to_node(
                     &stacking_ctx.clip_in_user_space,
                     acquired_nodes,
-                    viewport,
+                    &viewport,
                     &self.empty_bbox(),
                 )?;
 
@@ -769,14 +780,14 @@ impl DrawingCtx {
                                 //
                                 // In case push_new_viewport() returns None, we just don't draw anything.
                                 if let Some(new_viewport) =
-                                    temporary_draw_ctx.push_new_viewport(viewport, layout_viewport)
+                                    temporary_draw_ctx.push_new_viewport(&viewport, layout_viewport)
                                 {
                                     draw_fn(acquired_nodes, &mut temporary_draw_ctx, &new_viewport)
                                 } else {
                                     Ok(self.empty_bbox())
                                 }
                             } else {
-                                draw_fn(acquired_nodes, &mut temporary_draw_ctx, viewport)
+                                draw_fn(acquired_nodes, &mut temporary_draw_ctx, &viewport)
                             }
                         });
 
@@ -795,13 +806,13 @@ impl DrawingCtx {
                             let stroke_paint_source =
                                 Rc::new(filter.stroke_paint_source.to_user_space(
                                     &bbox.rect,
-                                    viewport,
+                                    &viewport,
                                     &filter.normalize_values,
                                 ));
                             let fill_paint_source =
                                 Rc::new(filter.fill_paint_source.to_user_space(
                                     &bbox.rect,
-                                    viewport,
+                                    &viewport,
                                     &filter.normalize_values,
                                 ));
 
@@ -816,7 +827,7 @@ impl DrawingCtx {
 
                             let filtered_surface = temporary_draw_ctx
                                 .run_filters(
-                                    viewport,
+                                    &viewport,
                                     surface_to_filter,
                                     filter,
                                     acquired_nodes,
@@ -850,7 +861,7 @@ impl DrawingCtx {
                     self.clip_to_node(
                         &stacking_ctx.clip_in_object_space,
                         acquired_nodes,
-                        viewport,
+                        &viewport,
                         &bbox,
                     )?;
 
@@ -860,7 +871,7 @@ impl DrawingCtx {
                         res = res.and_then(|bbox| {
                             self.generate_cairo_mask(
                                 mask_node,
-                                viewport,
+                                &viewport,
                                 affines.for_temporary_surface,
                                 &bbox,
                                 acquired_nodes,
@@ -908,14 +919,14 @@ impl DrawingCtx {
                     //
                     // Note that push_new_viewport() changes the cr's transform.  However it will be restored
                     // at the end of this function with set_matrix.
-                    if let Some(new_viewport) = self.push_new_viewport(viewport, layout_viewport) {
+                    if let Some(new_viewport) = self.push_new_viewport(&viewport, layout_viewport) {
                         draw_fn(acquired_nodes, self, &new_viewport)
                     } else {
                         self.cr.set_matrix(orig_transform.into());
                         Ok(self.empty_bbox())
                     }
                 } else {
-                    draw_fn(acquired_nodes, self, viewport)
+                    draw_fn(acquired_nodes, self, &viewport)
                 };
 
                 if stacking_ctx.link_target.is_some() {
