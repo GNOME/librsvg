@@ -498,6 +498,7 @@ impl DrawingCtx {
                 None
             })
             .map(|t| {
+                // FMQ: here
                 self.cr.transform(t.into());
 
                 Viewport {
@@ -530,6 +531,7 @@ impl DrawingCtx {
             let transform_for_clip = ValidTransform::try_from(node_transform)?;
 
             let orig_transform = self.get_transform();
+            // FMQ: here
             self.cr.transform(transform_for_clip.into());
 
             for child in node.children().filter(|c| {
@@ -627,6 +629,7 @@ impl DrawingCtx {
                 mask_cr.transform(ValidTransform::try_from(bbtransform)?.into());
             }
 
+            // FMQ: above - and here, the mask_viewport need the new bbtransform composed too
             let mask_viewport = viewport.with_units(mask.get_content_units());
 
             let mut mask_draw_ctx = self.nested(mask_cr);
@@ -1828,6 +1831,7 @@ impl DrawingCtx {
 
         let orig_transform = self.get_transform();
 
+        // FMQ: here
         self.cr
             .transform(ValidTransform::try_from(values.transform())?.into());
 
