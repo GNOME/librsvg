@@ -1,6 +1,6 @@
 project('librsvg',
         'c',
-        version: '2.59.0', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
+        version: '2.59.1', # Keep this in sync with Cargo.toml, doc/librsvg.toml, rsvg/Cargo.toml
         meson_version: '>= 1.2.0',
         default_options: [
           'pkgconfig.relocatable=true',
