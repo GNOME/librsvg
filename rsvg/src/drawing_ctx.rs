@@ -24,7 +24,7 @@ use crate::filters::{self, FilterSpec};
 use crate::float_eq_cairo::ApproxEqCairo;
 use crate::gradient::{GradientVariant, SpreadMethod, UserSpaceGradient};
 use crate::layout::{
-    Filter, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
+    self, Filter, Image, Layer, LayerKind, Shape, StackingContext, Stroke, Text, TextSpan,
 };
 use crate::length::*;
 use crate::marker;
@@ -118,7 +118,7 @@ pub struct Viewport {
     pub vbox: ViewBox,
 
     /// The viewport's coordinate system, or "user coordinate system" in SVG terms.
-    transform: Transform,
+    pub transform: Transform,
 }
 
 impl Viewport {
@@ -1204,23 +1204,6 @@ impl DrawingCtx {
         Ok(())
     }
 
-    pub fn compute_path_extents(
-        &self,
-        path: &Path,
-    ) -> Result<Option<Rect>, InternalRenderingError> {
-        if path.is_empty() {
-            return Ok(None);
-        }
-
-        let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
-        let cr = cairo::Context::new(&surface)?;
-
-        path.to_cairo(&cr, false)?;
-        let (x0, y0, x1, y1) = cr.path_extents()?;
-
-        Ok(Some(Rect::new(x0, y0, x1, y1)))
-    }
-
     pub fn draw_layer(
         &mut self,
         layer: &Layer,
@@ -1261,9 +1244,20 @@ impl DrawingCtx {
         clipping: bool,
         viewport: &Viewport,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        if shape.extents.is_none() {
-            return Ok(self.empty_bbox());
-        }
+        let (path, stroke_paint, fill_paint) = match &shape.path {
+            layout::Path::Validated {
+                path,
+                extents: Some(_),
+                stroke_paint,
+                fill_paint,
+            } => (path, stroke_paint, fill_paint),
+            layout::Path::Validated {
+                path: _,
+                extents: None,
+                ..
+            } => return Ok(self.empty_bbox()),
+            layout::Path::Invalid(_) => return Ok(self.empty_bbox()),
+        };
 
         self.with_discrete_layer(
             stacking_ctx,
@@ -1274,8 +1268,7 @@ impl DrawingCtx {
                 let cr = dc.cr.clone();
 
                 let transform = dc.get_transform_for_stacking_ctx(stacking_ctx, clipping)?;
-                let mut path_helper =
-                    PathHelper::new(&cr, transform, &shape.path, shape.stroke.line_cap);
+                let mut path_helper = PathHelper::new(&cr, transform, path, shape.stroke.line_cap);
 
                 if clipping {
                     if shape.is_visible {
@@ -1295,7 +1288,7 @@ impl DrawingCtx {
                 let bbox = compute_stroke_and_fill_box(
                     &cr,
                     &shape.stroke,
-                    &shape.stroke_paint,
+                    stroke_paint,
                     &dc.initial_viewport,
                 )?;
 
@@ -1306,7 +1299,7 @@ impl DrawingCtx {
                         match target {
                             PaintTarget::Fill => {
                                 path_helper.set()?;
-                                dc.fill(&cr, an, &shape.fill_paint)?;
+                                dc.fill(&cr, an, fill_paint)?;
                             }
 
                             PaintTarget::Stroke => {
@@ -1321,7 +1314,7 @@ impl DrawingCtx {
                                 } else {
                                     None
                                 };
-                                dc.stroke(&cr, an, &shape.stroke_paint)?;
+                                dc.stroke(&cr, an, stroke_paint)?;
                                 if let Some(matrix) = backup_matrix {
                                     cr.set_matrix(matrix);
                                 }
@@ -1870,6 +1863,20 @@ impl DrawingCtx {
 
         FontOptions { options }
     }
+}
+
+pub fn compute_path_extents(path: &Path) -> Result<Option<Rect>, InternalRenderingError> {
+    if path.is_empty() {
+        return Ok(None);
+    }
+
+    let surface = cairo::RecordingSurface::create(cairo::Content::ColorAlpha, None)?;
+    let cr = cairo::Context::new(&surface)?;
+
+    path.to_cairo(&cr, false)?;
+    let (x0, y0, x1, y1) = cr.path_extents()?;
+
+    Ok(Some(Rect::new(x0, y0, x1, y1)))
 }
 
 impl From<ImageRendering> for Interpolation {

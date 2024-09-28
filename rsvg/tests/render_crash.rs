@@ -66,8 +66,10 @@ mod tests {
     t!(bug1059_feoffset_overflow,                       "bug1059-feoffset-overflow.svg");
     t!(bug1060_zero_sized_image_from_data_uri,          "bug1060-zero-sized-image-from-data-uri.svg");
     t!(bug1062_feturbulence_limit_numoctaves,           "bug1062-feTurbulence-limit-numOctaves.svg");
+    t!(bug1088_fuzz_cairo_out_of_bounds,                "bug1088-fuzz-cairo-out-of-bounds.svg");
     t!(bug1092_fuzz_recursive_use_stack_overflow,       "bug1092-fuzz-recursive-use-stack-overflow.svg");
     t!(bug1115_feturbulence_overflow,                   "bug1115-feTurbulence-overflow.svg");
+    t!(bug1118_fuzz_large_transform_and_recursive_use,  "bug1118-fuzz-large-transform-and-recursive-use.svg");
     t!(femerge_color_interpolation_srgb_svg,            "feMerge-color-interpolation-srgb.svg");
     t!(filters_non_invertible_paffine_svg,              "filters-non-invertible-paffine.svg");
     t!(gradient_with_empty_bbox_svg,                    "gradient-with-empty-bbox.svg");
