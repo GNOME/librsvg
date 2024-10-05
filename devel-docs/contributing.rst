@@ -10,7 +10,7 @@ Conduct <https://conduct.gnome.org>`_.
 Source repository
 -----------------
 
-Librsvg’s main source repository is at gitlab.gnome.org. You can view
+Librsvg’s main source repository is at ``gitlab.gnome.org``. You can view
 the web interface here:
 
 https://gitlab.gnome.org/GNOME/librsvg
@@ -26,7 +26,7 @@ Note that we don’t do bug tracking in the GitHub mirror; see the next
 section.
 
 If you need to publish a branch, feel free to do it at any
-publically-accessible Git hosting service, although gitlab.gnome.org
+publicly-accessible Git hosting service, although ``gitlab.gnome.org``
 makes things easier for the maintainers of librsvg.
 
 Hacking on librsvg
@@ -74,7 +74,7 @@ To do a full build, you can use something like this:
 
    mkdir -p _build
    meson setup _build -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
-   meson compile -C_ build
+   meson compile -C _build
    meson test -C _build
 
 Alternatively, you can make a merge request and wait for the
@@ -120,18 +120,18 @@ stage of CI pipelines will fail:
 3. Edit ``.git/hooks/pre-commit`` and put in one of the following
    commands:
 
--  If you want code reformatted automatically, no questions asked:
-   ``cargo fmt``.
-  
-   .. note::
+   -  If you want code reformatted automatically, no questions asked:
+      ``cargo fmt``.
+     
+      .. note::
 
-      If this actually reformats your code while committing, you’ll
-      have to re-stage the new changes and ``git commit --amend``.
-      Be careful if you had unstaged changes that got reformatted!
+         If this actually reformats your code while committing, you’ll
+         have to re-stage the new changes and ``git commit --amend``.
+         Be careful if you had unstaged changes that got reformatted!
 
--  If you want to examine errors if rustfmt doesn’t like your
-   indentation, but don’t want it to make changes on its own:
-   ``cargo fmt --all -- --check``
+   -  If you want to examine errors if rustfmt doesn’t like your
+      indentation, but don’t want it to make changes on its own:
+      ``cargo fmt --all -- --check``
 
 Test suite
 ~~~~~~~~~~

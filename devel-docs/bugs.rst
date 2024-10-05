@@ -19,13 +19,13 @@ Librsvg aims to be a small and relatively simple SVG rendering
 library.  Currently we do not plan to support scripting, animation, or
 interactive features like mouse events on SVG elements.
 
-However, we *do* aim go provide good support for SVG's graphical
+However, we *do* aim to provide good support for SVG's graphical
 features.  You can request new features by filing a bug report as
 noted above.
 
-It is especially helpful if you file bug for a feature request along
-with a sample SVG file that requires it, for example, a file that uses
-an SVG element or CSS property that librsvg does not yet support.
+It is especially helpful if you file a feature request along with a
+sample SVG file that requires the feature. For example, a file that
+uses an SVG element or CSS property that librsvg does not yet support.
 
 
 Obtaining debug logs

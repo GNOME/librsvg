@@ -32,8 +32,8 @@ they do:
   different versions of dependencies.  This stage is intended to catch
   common sources of breakage across environments.
 
-- In parallel with the above, run `cargo clippy` and `cargo fmt`.  The
-  first usually has good suggestions to improve the code; the latter
+- In parallel with the above, run ``cargo clippy`` and ``cargo fmt``.
+  The first usually has good suggestions to improve the code; the latter
   is to guarantee a consistent indentation style.
 
 - In parallel, obtain a test coverage report.  We'll talk about this below.
@@ -124,12 +124,12 @@ There is a job for ``cargo fmt``.  Librsvg uses the default formatting
 for Rust code.  For portions of code that are more legible if
 indented/aligned by hand, please use ``#[rustfmt::skip]``.
 
-One job runs `cargo deny`, which checks if there are dependencies with
+One job runs ``cargo deny``, which checks if there are dependencies with
 vulnerabilities.
 
 Another job runs a script to check that the version numbers mentioned
 in various parts of the source code all match.  For example,
-`Cargo.toml` and `meson.build` must have check for the same Minimum
+``Cargo.toml`` and ``meson.build`` must have checks for the same Minimum
 Supported Rust Version (MSRV).
 
 

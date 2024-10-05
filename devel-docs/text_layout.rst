@@ -470,12 +470,12 @@ Issues that have not been filed yet
 
 From the spec: “It is possible to apply a gradient, pattern, clipping
 path, mask or filter to text.” We need better tests for the
-objectBoundingBox of the whole ``<text>``; I think :issue:`they are
+``objectBoundingBox`` of the whole ``<text>``; I think :issue:`they are
 wrong for vertical text <55>`, and this shows up when filling its spans
 with gradients or patterns.
 
 Clip/mask/filter do not work on individual spans yet.  I am not sure
-if their `objectBoundingBox` refers to the whole ``<text>`` or just
+if their ``objectBoundingBox`` refers to the whole ``<text>`` or just
 the span.
 
 Multiply-nested changes of text direction / bidi overrides; see the

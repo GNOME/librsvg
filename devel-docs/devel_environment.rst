@@ -110,15 +110,15 @@ Setting up dependencies manually
 
 The following sections describe how to install these dependencies on
 several systems.  For fully manual builds, you can try using the
-script in `ci/build-dependencies.sh`.  Librsvg's continuous
+script in ``ci/build-dependencies.sh``.  Librsvg's continuous
 integration (CI) infrastructure uses that script to install the
 dependencies before building.
 
 Debian based systems
 ~~~~~~~~~~~~~~~~~~~~
 
-As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
-`ubuntu 18.04`, as they have packages that are too old.
+As of 2018/Feb/22, librsvg cannot be built in ``debian stable`` and
+``ubuntu 18.04``, as they have packages that are too old.
 
 **Build dependencies on Debian Testing or Ubuntu 18.10:**
 
@@ -129,7 +129,7 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
    libgdk-pixbuf2.0-dev libgirepository1.0-dev \
    libxml2-dev libcairo2-dev libpango1.0-dev
 
-Additionally, as of September 2018 you need to add `gdk-pixbuf`
+Additionally, as of September 2018 you need to add ``gdk-pixbuf``
 utilities to your path, see :issue:`331` for details:
 
 .. code-block:: sh
@@ -185,8 +185,8 @@ binary to casually test rendering an SVG file, for example, one that
 has a feature that you are developing.  You can run
 ``target/debug/rsvg-convert -o output.png my_test_file.svg``.
 
-If you do a release build with `cargo build --release`, which includes
-optimizations, the binary will be in `target/release/rsvg-convert`.
+If you do a release build with ``cargo build --release``, which includes
+optimizations, the binary will be in ``target/release/rsvg-convert``.
 This version is *much* faster than the debug version.
 
 **Doing a full build:** You can use the following:

@@ -43,7 +43,7 @@ If you are compiling a tarball:
 
    mkdir -p _build
    meson setup _build -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
-   meson compile -C_ build
+   meson compile -C _build
    meson install -C _build
 
 The options that start with ``-D`` are listed in the

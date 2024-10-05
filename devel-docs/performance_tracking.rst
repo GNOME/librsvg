@@ -22,7 +22,7 @@ less memory over time?  More or less CPU time?  Can we detect
 regressions with this tool?
 
 Getting the actual measurements is not terribly hard; just running
-`/usr/bin/time rsvg-convert car.svg > /dev/null` already produces a useful
+``/usr/bin/time rsvg-convert car.svg > /dev/null`` already produces a useful
 big-picture view of things:
 
 ::

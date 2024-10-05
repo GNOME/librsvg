@@ -14,7 +14,7 @@ off items while making a release.
 - ☐ Copy version number to ``Cargo.toml``.
 - ☐ Copy version number to ``doc/librsvg.toml``.
 - ☐ Compute crate version number and write it to ``rsvg/Cargo.toml``, see :ref:`crate version<crate_version>` below.
-- ☐ Copy the crate version number to the example in `rsvg/src/lib.rs`.
+- ☐ Copy the crate version number to the example in ``rsvg/src/lib.rs``.
 - ☐ ``cargo update -p librsvg`` - needed because you tweaked ``Cargo.toml``, and
   also to get new dependencies.
 - ☐ Tweak the library version number in ``meson.build`` if the API
@@ -275,7 +275,7 @@ filing an issue on their ``GNOME/releng`` project.
 Rust dependencies
 -----------------
 
-Librsvg's `Cargo.lock` is checked into git because the resolved
+Librsvg's ``Cargo.lock`` is checked into git because the resolved
 versions of crates that it mentions are the ones that were actually
 used to run the test suite automatically in CI, and are "known good".
 In other words: `keep the results of dependency resolution in version

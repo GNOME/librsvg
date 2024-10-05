@@ -147,9 +147,9 @@ Configuration format
 .. code:: toml
 
    [logging]
-   enabled=true
-   process=gnome-shell              # mandatory for global config - don't want to log all processes - warn to g_log if key is not set
-   output=/home/username/rsvg.log   # if missing, log to g_log only - or use a output_to_g_log=true instead?
+   enabled = true
+   process = "gnome-shell"              # mandatory for global config - don't want to log all processes - warn to g_log if key is not set
+   output = "/home/username/rsvg.log"   # if missing, log to g_log only - or use a output_to_g_log=true instead?
 
 API logging
 -----------

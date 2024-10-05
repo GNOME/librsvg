@@ -35,7 +35,7 @@ can be used from C and other languages:
 
 - ``.gir`` and ``.typelib`` files for `GObject Introspection
   <https://gi.readthedocs.io/en/latest/>`_.  These are machine-readable
-  descriptions of the API/ABI in the `.so` library, which are used by
+  descriptions of the API/ABI in the ``.so`` library, which are used by
   language bindings to make librsvg's functionality available to many
   programming languages.
 
@@ -88,9 +88,9 @@ Other artifacts
 
 - `Documentation for the Rust API
   <https://gnome.pages.gitlab.gnome.org/librsvg/doc/rsvg/index.html>`_,
-  published online.  This is not built from the normal `make` process,
+  published online.  This is not built from the normal ``make`` process,
   but independently as part of the :doc:`ci` pipeline.
 
 - The rendered HTML version of this development guide.  This is not
-  built from the normal `make` process, but independently as part of
+  built from the normal ``make`` process, but independently as part of
   the :doc:`ci` pipeline.
