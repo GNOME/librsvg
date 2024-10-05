@@ -28,6 +28,9 @@ author = 'Federico Mena Quintero'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    # Used to link issues, merge requests, CVEs, etc.
+    # https://github.com/sloria/sphinx-issues
+    "sphinx_issues",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -66,3 +69,16 @@ linkcheck_ignore = [
     r'https://gitlab.gnome.org/.*#.*',
     r'https://gitlab.freedesktop.org/.*#.*',
 ]
+
+
+# Options for the `sphinx-issues` extension. See `extensions` above.
+
+issues_default_group_project = "GNOME/librsvg"
+issues_uri = "https://gitlab.gnome.org/{group}/{project}/-/issues/{issue}"
+issues_prefix = "#"
+issues_pr_uri = "https://gitlab.gnome.org/{group}/{project}/-/merge_requests/{pr}"
+issues_pr_prefix = "!"
+issues_commit_uri = "https://gitlab.gnome.org/{group}/{project}/-/commit/{commit}"
+issues_commit_prefix = "@"
+issues_user_uri = "https://gitlab.gnome.org/{user}"
+issues_user_prefix = "@"

@@ -6,4 +6,5 @@ ruff
 semver
 setuptools
 Sphinx
+sphinx-issues
 toml
