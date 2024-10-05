@@ -4,6 +4,7 @@ Development guide for librsvg
 .. toctree::
    :caption: For Distributors and End Users
    :maxdepth: 1
+   :hidden:
 
    supported_versions
    product
@@ -16,6 +17,7 @@ Development guide for librsvg
 .. toctree::
    :caption: Getting Started as a Contributor
    :maxdepth: 1
+   :hidden:
 
    devel_environment
    contributing
@@ -23,7 +25,9 @@ Development guide for librsvg
 .. toctree::
    :caption: Understand the Code
    :maxdepth: 1
+   :hidden:
 
+   Documentation of the library's internals <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html>
    architecture
    adding_a_property
    memory_leaks
@@ -31,6 +35,7 @@ Development guide for librsvg
 .. toctree::
    :caption: Design Documents
    :maxdepth: 1
+   :hidden:
 
    text_layout
    render_tree
@@ -43,6 +48,7 @@ Development guide for librsvg
 .. toctree::
    :caption: Info for Maintainers
    :maxdepth: 1
+   :hidden:
 
    releasing
    ci
@@ -88,10 +94,10 @@ Getting started
 Understand the code
 -------------------
 
-Test suite - move tests/readme here?
+.. Test suite - move tests/readme here?
 
-- `Documentation of the library's internals <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html>`_
-
+- `Documentation of the library's internals
+  <https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html>`_
 - :doc:`architecture`
 - :doc:`adding_a_property`
 - :doc:`memory_leaks`
@@ -109,6 +115,8 @@ a sort of big-picture development history apart from commit messages.
 - :doc:`api_observability`
 - :doc:`performance_tracking`
 - :doc:`viewport`
+- :doc:`custom_properties`
+- :doc:`building_deps_in_ci`
 
 See https://rustc-dev-guide.rust-lang.org/walkthrough.html, section
 Overview, to formalize the RFC process for features vs. drive-by
@@ -121,13 +129,11 @@ Information for maintainers
 - :doc:`ci`
 - :doc:`oss_fuzz`
 
-Overview of the maintainer's workflow.
-
-Marge-bot.
-
-Documentation on the CI.
-
-Documentation on the OSS-Fuzz integration and its maintenance.
+..
+   - Overview of the maintainer's workflow.
+   - Marge-bot.
+   - Documentation on the CI.
+   - Documentation on the OSS-Fuzz integration and its maintenance.
 
 References
 ----------
