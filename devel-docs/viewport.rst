@@ -1,9 +1,8 @@
 Viewport abstraction
 ====================
 
-https://gitlab.gnome.org/GNOME/librsvg/-/issues/298 is about unifying
-several concepts into a Viewport abstraction.  This chapter attempts
-to explain that.
+:issue:`298` is about unifying several concepts into a Viewport abstraction.
+This chapter attempts to explain that.
 
 SVG has the concept of `establishing a new viewport
 <https://svgwg.org/svg2-draft/coords.html#EstablishingANewSVGViewport>`_,

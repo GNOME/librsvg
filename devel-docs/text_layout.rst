@@ -431,22 +431,20 @@ at-rule. Librsvg would also have to obtain the font and feed it to
 FontConfig. I am not sure if FontConfig can deal with WOFF just like
 with normal ``.ttf`` files.
 
-See the issue on the `Future of the pango dependency
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/876>`_ for lots of
-goodies which may come in handy.
+See the issue on the :issue:`Future of the pango dependency <876>`
+for lots of goodies which may come in handy.
 
 Emoji is broken
 ~~~~~~~~~~~~~~~
 
-`#599 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/599>`_ is a
-terrible bug in Pango, which causes it to report incorrect metrics
-when text is scaled non-proportionally (e.g. different scale factors
-for the X/Y dimensions).  Librsvg works around this by converting all
-text to Bézier paths, then scaling the paths, and then stroking/filling them.
+:issue:`599` is a terrible bug in Pango, which causes it to report
+incorrect metrics when text is scaled non-proportionally (e.g. different
+scale factors for the X/Y dimensions).  Librsvg works around this by
+converting all text to Bézier paths, then scaling the paths, and then
+stroking/filling them.
 
-However, `this breaks emoji - #911
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/911>`_, since
-converting its glyphs to paths loses the color information.
+However, this breaks emoji - :issue:`911`, since converting its glyphs
+to paths loses the color information.
 
 Two strategies to fix this; there may be more:
 
@@ -464,8 +462,7 @@ Two strategies to fix this; there may be more:
 Issues
 ------
 
-https://gitlab.gnome.org/GNOME/librsvg/-/issues/795 - Implement SVG2
-white-space behavior.
+:issue:`795` - Implement SVG2 white-space behavior.
 
 
 Issues that have not been filed yet
@@ -473,10 +470,9 @@ Issues that have not been filed yet
 
 From the spec: “It is possible to apply a gradient, pattern, clipping
 path, mask or filter to text.” We need better tests for the
-objectBoundingBox of the whole ``<text>``; I think `they are wrong for
-vertical text <https://gitlab.gnome.org/GNOME/librsvg/-/issues/55>`_,
-and this shows up when filling its spans with gradients or
-patterns.
+objectBoundingBox of the whole ``<text>``; I think :issue:`they are
+wrong for vertical text <55>`, and this shows up when filling its spans
+with gradients or patterns.
 
 Clip/mask/filter do not work on individual spans yet.  I am not sure
 if their `objectBoundingBox` refers to the whole ``<text>`` or just

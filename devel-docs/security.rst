@@ -28,37 +28,32 @@ The following list is only for stable release streams.
 2.56.3
 ~~~~~~
 
-CVE-2023-38633 - `#996
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
-file read when xinclude href has special characters.
+CVE-2023-38633 - :issue:`996` - Arbitrary file read when xinclude href
+has special characters.
 
 2.55.3
 ~~~~~~
 
-CVE-2023-38633 - `#996
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
-file read when xinclude href has special characters.
+CVE-2023-38633 - :issue:`996` - Arbitrary file read when xinclude href
+has special characters.
 
 2.54.7
 ~~~~~~
 
-CVE-2023-38633 - `#996
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
-file read when xinclude href has special characters.
+CVE-2023-38633 - :issue:`996` - Arbitrary file read when xinclude href
+has special characters.
 
 2.52.11
 ~~~~~~~
 
-CVE-2023-38633 - `#996
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
-file read when xinclude href has special characters.
+CVE-2023-38633 - :issue:`996` - Arbitrary file read when xinclude href
+has special characters.
 
 2.50.9
 ~~~~~~
 
-CVE-2023-38633 - `#996
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
-file read when xinclude href has special characters.
+CVE-2023-38633 - :issue:`996` - Arbitrary file read when xinclude href
+has special characters.
 
 2.50.4
 ~~~~~~
@@ -68,9 +63,8 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 2.48.12
 ~~~~~~~
 
-CVE-2023-38633 - `#996
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
-file read when xinclude href has special characters.
+CVE-2023-38633 - :issue:`996` - Arbitrary file read when xinclude href
+has special characters.
 
 2.48.10
 ~~~~~~~
@@ -97,9 +91,8 @@ See notes below on :ref:`libcroco<libcroco>`.
 2.46.7
 ~~~~~~
 
-CVE-2023-38633 - `#996
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/996>`_ - Arbitrary
-file read when xinclude href has special characters.
+CVE-2023-38633 - :issue:`996` - Arbitrary file read when xinclude href
+has special characters.
 
 See notes below on :ref:`libcroco<libcroco>`.
 

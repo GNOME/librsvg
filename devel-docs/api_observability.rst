@@ -118,8 +118,7 @@ the last one that got logged - presumably that one caused the crash.
 Which dynamically-created SVG caused a problem?
 -----------------------------------------------
 
-Consider a bug like
-https://gitlab.gnome.org/GNOME/gnome-shell/-/issues/5415 where an
+Consider a bug like :issue:`GNOME/gnome-shell#5415` where an
 application dynamically generates an SVG and feeds it to librsvg. That
 bug was not a crash; it was about incorrect values returned from an
 librsvg API function. For those cases it may be useful to be able to

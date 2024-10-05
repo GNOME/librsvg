@@ -28,10 +28,9 @@ suboptimal for several reasons:
 - This is especially problematic for filters, since a Cairo surface
   needs to be created *before* rendering, and that surface should have
   a size relative to the bounding box of the element being filtered!
-  `Bug #1 <https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_ is
-  precisely about this: librsvg instead creates a temporary surface as
-  big as the document's toplevel viewport and filters it, but this
-  doesn't work well for filters like Gaussian blur that should
+  :issue:`Bug #1 <1>` is precisely about this: librsvg instead creates
+  a temporary surface as big as the document's toplevel viewport and filters
+  it, but this doesn't work well for filters like Gaussian blur that should
   actually reference pixels outside of the document's area (think of a
   shape that extends past the document's area, which then gets
   blurred).
@@ -245,10 +244,8 @@ yet).
 Elements that establish a viewport (``svg``, ``symbol``, ``image``,
 ``marker``, ``pattern``) need to carry information about this
 viewport, which is a ``viewBox`` plus ``preserveAspectRatio`` and
-``overflow``.  See `#298
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/298>`_ for a somewhat
-obsolete description of the refactoring work needed to unify this
-logic.
+``overflow``.  See :issue:`298` for a somewhat obsolete description
+of the refactoring work needed to unify this logic.
 
 The ``layout::StackingContext`` struct should contain another field,
 probably called ``layer``, with something like this:
@@ -286,8 +283,7 @@ SVG depends on the ``objectBoundingBox`` of an element in many places:
 to resolve a gradient's or pattern's units, to determine the size of
 masks and clips, to determine the size of the filter region.
 
-The current big bug to solve is `#778
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/>`_, which requires
+The current big bug to solve is :issue:`778`, which requires
 knowing the ``objectBoundingBox`` of an element **before** rendering
 it, so that a temporary surface of the appropriate size can be created
 for rendering the element if it has isolated opacity or masks/filters.
@@ -305,8 +301,7 @@ create a temporary surface to be able to render all of its children
 and then filter the surface).
 
 Being able to compute the ``objectBoundingBox`` of an element before
-rendering it would open the door to fixing bug `#1
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/1>`_ (yeah, really):
+rendering it would open the door to fixing bug :issue:`1` (yeah, really):
 currently, the temporary surface used for filtering has the size of
 the toplevel viewport, but this doesn't work well when one tries to
 Gaussian-blur an element that lies partially outside that viewport.

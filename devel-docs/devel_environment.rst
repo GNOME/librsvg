@@ -160,8 +160,7 @@ As of 2018/Feb/22, librsvg cannot be built in `debian stable` and
    libxml2-dev libcairo2-dev libpango1.0-dev
 
 Additionally, as of September 2018 you need to add `gdk-pixbuf`
-utilities to your path, see `#331
-<https://gitlab.gnome.org/GNOME/librsvg/-/issues/331>`_ for details:
+utilities to your path, see :issue:`331` for details:
 
 .. code-block:: sh
 
