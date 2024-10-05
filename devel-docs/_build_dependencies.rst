@@ -23,7 +23,7 @@ minimum version is listed here; you may use a newer version instead.
 
 **Optional dependencies:**
 
-* `GDK-Pixbuf <https://gitlab.gnome.org/GNOME/gdk-pixbuf/>`_ 2.20.0
+* `GDK-Pixbuf <https://gitlab.gnome.org/GNOME/gdk-pixbuf/>`__ 2.20.0
 * `GObject-Introspection <https://gitlab.gnome.org/GNOME/gobject-introspection>`_ 0.10.8
 * `gi-docgen <https://gitlab.gnome.org/GNOME/gi-docgen>`_
 * `python3-docutils <https://pypi.org/project/docutils/>`_
