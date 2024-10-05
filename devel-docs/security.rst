@@ -28,32 +28,32 @@ The following list is only for stable release streams.
 2.56.3
 ~~~~~~
 
-:cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-xinclude href has special characters.
+.. |CVE-2023-38633| replace::
+
+   :cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
+   xinclude href has special characters.
+
+|CVE-2023-38633|
 
 2.55.3
 ~~~~~~
 
-:cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-xinclude href has special characters.
+|CVE-2023-38633|
 
 2.54.7
 ~~~~~~
 
-:cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-xinclude href has special characters.
+|CVE-2023-38633|
 
 2.52.11
 ~~~~~~~
 
-:cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-xinclude href has special characters.
+|CVE-2023-38633|
 
 2.50.9
 ~~~~~~
 
-:cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-xinclude href has special characters.
+|CVE-2023-38633|
 
 2.50.4
 ~~~~~~
@@ -63,8 +63,7 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 2.48.12
 ~~~~~~~
 
-:cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-xinclude href has special characters.
+|CVE-2023-38633|
 
 2.48.10
 ~~~~~~~
@@ -87,15 +86,18 @@ from malicious SVGs.
 Releases older than 2.48.0 are not recommended
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See notes below on :ref:`libcroco<libcroco>`.
+.. |see libcroco notes| replace::
+
+   See notes below on :ref:`libcroco <libcroco>`.
+
+|see libcroco notes|
 
 2.46.7
 ~~~~~~
 
-:cve:`CVE-2023-38633` - :issue:`996` - Arbitrary file read when
-xinclude href has special characters.
+|CVE-2023-38633|
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 2.46.5
 ~~~~~~
@@ -104,7 +106,7 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 
 :cve:`CVE-2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 2.44.17
 ~~~~~~~
@@ -119,7 +121,7 @@ use-after-free in smallvec.
 
 :cve:`CVE-2021-25900` - RUSTSEC-2021-0003 - buffer overflow in smallvec.
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 2.44.16
 ~~~~~~~
@@ -127,7 +129,7 @@ See notes below on :ref:`libcroco<libcroco>`.
 :cve:`CVE-2019-20446` - guard against exponential growth of CPU time
 from malicious SVGs.
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 2.42.8
 ~~~~~~
@@ -135,14 +137,14 @@ See notes below on :ref:`libcroco<libcroco>`.
 :cve:`CVE-2019-20446` - guard against exponential growth of CPU time
 from malicious SVGs.
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 2.42.9
 ~~~~~~
 
 :cve:`CVE-2018-20991` - RUSTSEC-2018-0003 - double-free in smallvec.
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 2.40.21
 ~~~~~~~
@@ -150,14 +152,14 @@ See notes below on :ref:`libcroco<libcroco>`.
 :cve:`CVE-2019-20446` - guard against exponential growth of CPU time
 from malicious SVGs.
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 2.40.18
 ~~~~~~~
 
 :cve:`CVE-2017-11464` - Fix division-by-zero in the Gaussian blur code.
 
-See notes below on :ref:`libcroco<libcroco>`.
+|see libcroco notes|
 
 Earlier releases should be avoided and are not listed here.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
