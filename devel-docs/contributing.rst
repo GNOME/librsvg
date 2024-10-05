@@ -121,10 +121,13 @@ stage of CI pipelines will fail:
    commands:
 
 -  If you want code reformatted automatically, no questions asked:
-   ``cargo fmt`` **Note:** if this actually reformats your code while
-   committing, you’ll have to re-stage the new changes and
-   ``git commit --amend``. Be careful if you had unstaged changes that
-   got reformatted!
+   ``cargo fmt``.
+  
+   .. note::
+
+      If this actually reformats your code while committing, you’ll
+      have to re-stage the new changes and ``git commit --amend``.
+      Be careful if you had unstaged changes that got reformatted!
 
 -  If you want to examine errors if rustfmt doesn’t like your
    indentation, but don’t want it to make changes on its own:

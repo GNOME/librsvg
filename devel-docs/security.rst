@@ -83,14 +83,14 @@ RUSTSEC-2020-0146 - lifetime erasure in generic-array.
 :cve:`CVE-2019-20446` - guard against exponential growth of CPU time
 from malicious SVGs.
 
-Releases older than 2.48.0 are not recommended
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. |see libcroco notes| replace::
 
    See notes below on :ref:`libcroco <libcroco>`.
 
-|see libcroco notes|
+.. caution::
+
+   **Releases older than 2.48.0 are not recommended.**
+   |see libcroco notes|
 
 2.46.7
 ~~~~~~
@@ -161,22 +161,22 @@ from malicious SVGs.
 
 |see libcroco notes|
 
-Earlier releases should be avoided and are not listed here.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. attention::
+
+   **Earlier releases should be avoided and are not listed here.**
 
 .. _libcroco:
 
-Important note on libcroco
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. admonition:: Important note on libcroco
 
-Note that librsvg 2.46.x and earlier use
-`libcroco <https://gitlab.gnome.org/Archive/libcroco/>`__ for parsing
-CSS, but that library is deprecated, unmaintained, and has open CVEs as
-of May 2021.
+   Note that librsvg 2.46.x and earlier use
+   `libcroco <https://gitlab.gnome.org/Archive/libcroco/>`__ for parsing
+   CSS, but that library is deprecated, unmaintained, and has open CVEs as
+   of May 2021.
 
-If your application processes untrusted data, please avoid using librsvg
-2.46.x or earlier. The first release of librsvg that does not use
-libcroco is 2.48.0.
+   If your application processes untrusted data, please avoid using librsvg
+   2.46.x or earlier. The first release of librsvg that does not use
+   libcroco is 2.48.0.
 
 Librsvg’s dependencies
 ----------------------
