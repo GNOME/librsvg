@@ -90,7 +90,7 @@ feedback loop.
 Full test suite and different environments
 ------------------------------------------
 
-- The "full test suite" in principle runs ``autogen.sh && make check``.
+- The "full test suite" in principle runs ``meson test``.
   This runs the "fast" portion of the test suite, but also a few slow
   tests which are designed to test librsvg's built-in limits.  It also
   runs the C API tests, which require a C compiler.
@@ -129,7 +129,7 @@ vulnerabilities.
 
 Another job runs a script to check that the version numbers mentioned
 in various parts of the source code all match.  For example,
-`Cargo.toml` and `configure.ac` must have check for the same Minimum
+`Cargo.toml` and `meson.build` must have check for the same Minimum
 Supported Rust Version (MSRV).
 
 
