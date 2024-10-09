@@ -58,7 +58,7 @@ similar to these:
 .. code-block:: text
 
    You can now run this:
-     podman run --rm -ti --cap-add=SYS_PTRACE -v $(pwd):/srv/project -w /srv/project $image_name
+     podman run --rm -ti --cap-add=SYS_PTRACE -v $(pwd):/srv/project:z -w /srv/project $image_name
 
    Don't forget to run this once inside the container:
      source ci/env.sh
@@ -85,10 +85,13 @@ What's all that magic?  Let's dissect the podman command line:
 
 - ``--cap-add=SYS_PTRACE`` - Make it possible to run ``gdb`` inside the container.
 
-- ``-v $(pwd):/srv/project` - Mount the current directory as
+- ``-v $(pwd):/srv/project:z` - Mount the current directory as
   ``/srv/project`` inside the container.  This lets you build from
   your current source tree without first copying it into the
-  container; it will be available in ``/srv/project``.
+  container; it will be available in ``/srv/project``.  The ``:z`` at
+  the end is so that if your host distro uses selinux, it will label
+  the mounted volume properly (it does nothing if you are not on
+  selinux).
 
 Finally, don't forget to ``source ci/env.sh`` and ``source
 ci/setup-dependencies-env.sh`` once you are inside ``podman run``.

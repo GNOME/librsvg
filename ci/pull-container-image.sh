@@ -28,7 +28,7 @@ podman pull $image_name
 
 echo ""
 echo "You can now run this:"
-echo "  podman run --rm -ti --cap-add=SYS_PTRACE -v \$(pwd):/srv/project -w /srv/project $image_name"
+echo "  podman run --rm -ti --cap-add=SYS_PTRACE -v \$(pwd):/srv/project:z -w /srv/project $image_name"
 echo ""
 echo "Don't forget to run this once inside the container:"
 echo "  source ci/env.sh"
