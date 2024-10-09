@@ -205,19 +205,18 @@ Building and testing
 Make sure you have gone through the steps in :ref:`podman_setup` or
 :ref:`manual_setup`.  Then, do the following.
 
-**Normal development:** You can use ``cargo build --workspace`` and
-``cargo test --workspace`` as for a simple Rust project; this is what
+**Normal development:** You can use ``cargo build`` and
+``cargo test`` as for a simple Rust project; this is what
 you will use most of the time during regular development.  If you are
 using the podman container as per above, you should do this in the
-``/srv/project`` directory most of the time.  The ``--workspace``
-options are because librsvg's repository contains multiple crates in a
-single Cargo workspace.
+``/srv/project`` directory most of the time.
 
-To casually test rendering, for example, for a feature you are
-developing, you can run `target/debug/rsvg-convert -o output.png
-my_test_file.svg`.
+After compiling with those commands, you can use the ``rsvg-convert``
+binary to casually test rendering an SVG file, for example, one that
+has a feature that you are developing.  You can run
+``target/debug/rsvg-convert -o output.png my_test_file.svg``.
 
-If you do a release build with `cargo build --release --workspace`, which includes
+If you do a release build with `cargo build --release`, which includes
 optimizations, the binary will be in `target/release/rsvg-convert`.
 This version is *much* faster than the debug version.
 
