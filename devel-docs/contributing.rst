@@ -41,7 +41,10 @@ https://gnome.pages.gitlab.gnome.org/librsvg/internals/rsvg/index.html
 What can you hack on?
 
 - `Bugs for
-  newcomers <https://gitlab.gnome.org/GNOME/librsvg/-/issues?label_name%5B%5D=4.+Newcomers>`__
+  newcomers <https://gitlab.gnome.org/GNOME/librsvg/-/issues?label_name%5B%5D=4.+Newcomers>`__.
+- `Bugs for intermediate developers, once you are a bit familiar with
+  the code
+  <https://gitlab.gnome.org/GNOME/librsvg/-/issues/?label_name%5B%5D=Intermediate>`__.
 - Pick something from the `development
   roadmap <https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/roadmap.html>`__.
 - Tackle one of the `bigger projects
