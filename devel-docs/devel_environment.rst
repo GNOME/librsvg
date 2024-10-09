@@ -19,7 +19,10 @@ System requirements
 
 - Make sure you have ``git`` installed.
 
-- Your favorite text editor.
+- Your favorite text editor.  We recommend a text editor configured to
+  use the Language Server Protocol plus `rust-analyzer
+  <https://rust-analyzer.github.io/>`_ so you can get autocompletion
+  and documentation of librsvg's internals within your editor.
 
 Downloading the source code
 ---------------------------
