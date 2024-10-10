@@ -215,13 +215,17 @@ impl Document {
     }
 
     /// Looks up a node in this document or one of its resources by its `id` attribute.
-    fn lookup_node(&self, node_id: &NodeId) -> Option<Node> {
+    fn lookup_node(
+        &self,
+        node_id: &NodeId,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Option<Node> {
         match node_id {
             NodeId::Internal(id) => self.lookup_internal_node(id),
             NodeId::External(url, id) => self
                 .resources
                 .borrow_mut()
-                .lookup_node(&self.session, &self.load_options, url, id)
+                .lookup_node(&self.session, &self.load_options, url, id, cancellable)
                 .ok(),
         }
     }
@@ -232,19 +236,23 @@ impl Document {
     }
 
     /// Loads a resource by URL, or returns a pre-loaded one.
-    fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
+    fn lookup_resource(
+        &self,
+        url: &str,
+        cancellable: Option<&gio::Cancellable>,
+    ) -> Result<Resource, LoadingError> {
         let aurl = self
             .load_options
             .url_resolver
             .resolve_href(url)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        // FIXME: pass a cancellable to this.  This function is called
-        // at rendering time, so probably the cancellable should come
-        // from cancellability in CairoRenderer - see #429
-        self.resources
-            .borrow_mut()
-            .lookup_resource(&self.session, &self.load_options, &aurl, None)
+        self.resources.borrow_mut().lookup_resource(
+            &self.session,
+            &self.load_options,
+            &aurl,
+            cancellable,
+        )
     }
 
     /// Runs the CSS cascade on the document tree
@@ -314,7 +322,7 @@ impl Document {
                 cr,
                 viewport,
                 config,
-                &mut AcquiredNodes::new(self),
+                &mut AcquiredNodes::new(self, options.cancellable.clone()),
             )
             .map(|_bbox| ())
         })
@@ -340,7 +348,7 @@ impl Document {
             &cr,
             viewport,
             config,
-            &mut AcquiredNodes::new(self),
+            &mut AcquiredNodes::new(self, options.cancellable.clone()),
         )?;
 
         let ink_rect = bbox.ink_rect.unwrap_or_default();
@@ -385,7 +393,7 @@ impl Document {
             &cr,
             unit_rectangle(),
             config,
-            &mut AcquiredNodes::new(self),
+            &mut AcquiredNodes::new(self, options.cancellable.clone()),
         )
     }
 
@@ -451,7 +459,7 @@ impl Document {
                 cr,
                 unit_rectangle(),
                 config,
-                &mut AcquiredNodes::new(self),
+                &mut AcquiredNodes::new(self, options.cancellable.clone()),
             )
             .map(|_bbox| ())
         })
@@ -486,8 +494,9 @@ impl Resources {
         load_options: &LoadOptions,
         url: &str,
         id: &str,
+        cancellable: Option<&gio::Cancellable>,
     ) -> Result<Node, LoadingError> {
-        self.get_extern_document(session, load_options, url)
+        self.get_extern_document(session, load_options, url, cancellable)
             .and_then(|resource| match resource {
                 Resource::Document(doc) => doc.lookup_internal_node(id).ok_or(LoadingError::BadUrl),
                 _ => unreachable!("get_extern_document() should already have ensured the document"),
@@ -499,16 +508,14 @@ impl Resources {
         session: &Session,
         load_options: &LoadOptions,
         href: &str,
+        cancellable: Option<&gio::Cancellable>,
     ) -> Result<Resource, LoadingError> {
         let aurl = load_options
             .url_resolver
             .resolve_href(href)
             .map_err(|_| LoadingError::BadUrl)?;
 
-        // FIXME: pass a cancellable to this.  This function is called
-        // at rendering time, so probably the cancellable should come
-        // from cancellability in CairoRenderer - see #429
-        let resource = self.lookup_resource(session, load_options, &aurl, None)?;
+        let resource = self.lookup_resource(session, load_options, &aurl, cancellable)?;
 
         match resource {
             Resource::Document(_) => Ok(resource),
@@ -738,20 +745,23 @@ pub struct AcquiredNodes<'i> {
     num_elements_acquired: usize,
     node_stack: Rc<RefCell<NodeStack>>,
     nodes_with_cycles: Vec<Node>,
+    cancellable: Option<gio::Cancellable>,
 }
 
 impl<'i> AcquiredNodes<'i> {
-    pub fn new(document: &Document) -> AcquiredNodes<'_> {
+    pub fn new(document: &Document, cancellable: Option<gio::Cancellable>) -> AcquiredNodes<'_> {
         AcquiredNodes {
             document,
             num_elements_acquired: 0,
             node_stack: Rc::new(RefCell::new(NodeStack::new())),
             nodes_with_cycles: Vec::new(),
+            cancellable,
         }
     }
 
     pub fn lookup_resource(&self, url: &str) -> Result<Resource, LoadingError> {
-        self.document.lookup_resource(url)
+        self.document
+            .lookup_resource(url, self.cancellable.as_ref())
     }
 
     /// Acquires a node by its id.
@@ -776,7 +786,7 @@ impl<'i> AcquiredNodes<'i> {
         //   - Now that all files are loaded, resolve URL references
         let node = self
             .document
-            .lookup_node(node_id)
+            .lookup_node(node_id, self.cancellable.as_ref())
             .ok_or_else(|| AcquireError::LinkNotFound(node_id.clone()))?;
 
         if self.nodes_with_cycles.contains(&node) {
