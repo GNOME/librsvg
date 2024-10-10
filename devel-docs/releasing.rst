@@ -257,15 +257,9 @@ New entries go at the **top** of the file.
 Making a tarball
 ----------------
 
-::
-
-   make distcheck DESTDIR=/tmp/foo
-
-The ``DESTDIR`` is a quirk, required because otherwise the gdk-pixbuf
-loader will try to install itself into the system’s location for pixbuf
-loaders, and it won’t work. The ``DESTDIR`` is what Linux distribution
-packaging scripts use to ``make install`` the compiled artifacts to a
-temporary location before building a system package.
+Don't make a tarball by hand.  Let the CI system do it.  Look for
+``distcheck`` in the checklist above.  That job in the CI pipelines
+has the release tarball which you can download.
 
 Copying the tarball to master.gnome.org
 ---------------------------------------
