@@ -19,6 +19,7 @@ off items while making a release.
   also to get new dependencies.
 - ☐ Tweak the library version number in ``meson.build`` if the API
   changed; follow the steps there.
+- ☐ Adjust the supported versions in ``README.md``.
 - ☐ Adjust the supported versions in ``devel-docs/supported_versions.rst``.
 - ☐ Adjust the supported versions in ``.gitlab/issue_templates/default.md``.
 
