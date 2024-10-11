@@ -22,18 +22,17 @@ Table of contents:
 
 # Supported branches
 
-Generally two branches are supported at any one time:
+Only these versions are supported:
 
-* The latest stable branch.  See the [branches
-  page](https://gitlab.gnome.org/GNOME/librsvg/-/branches) and look for
-  the one called `librsvg-x.yy` where the `x.yy` numbers are highest. You
-  can use this branch safely for production work.
+* 2.58.x
+* 2.59.x
 
-* The `main` branch.  All development happens here.
+Older versions are not supported.  Please try a newer version before
+reporting bugs or missing features.
 
-Stable branches become unsupported when a new one appears.  For
-example, `librsvg-2.55` will become unsupported when `librsvg-2.56`
-appears.
+See the [policy for supported
+versions](https://gnome.pages.gitlab.gnome.org/librsvg/devel-docs/supported_versions.html)
+for more details.
 
 * [Release archive](https://gitlab.gnome.org/GNOME/librsvg/-/releases) in gitlab.gnome.org
 * [Source tarballs for download](https://download.gnome.org/sources/librsvg/) at download.gnome.org

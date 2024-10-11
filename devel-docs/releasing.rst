@@ -15,10 +15,13 @@ off items while making a release.
 - ☐ Copy version number to ``doc/librsvg.toml``.
 - ☐ Compute crate version number and write it to ``rsvg/Cargo.toml``, see :ref:`crate version<crate_version>` below.
 - ☐ Copy the crate version number to the example in `rsvg/src/lib.rs`.
-- ☐ ``cargo update`` - needed because you tweaked ``Cargo.toml``, and
+- ☐ ``cargo update -p librsvg`` - needed because you tweaked ``Cargo.toml``, and
   also to get new dependencies.
 - ☐ Tweak the library version number in ``meson.build`` if the API
   changed; follow the steps there.
+- ☐ Adjust the supported versions in ``README.md``.
+- ☐ Adjust the supported versions in ``devel-docs/supported_versions.rst``.
+- ☐ Adjust the supported versions in ``.gitlab/issue_templates/default.md``.
 
 **Rust Bindings:**
 

@@ -5,6 +5,7 @@ Development guide for librsvg
    :caption: For Distributors and End Users
    :maxdepth: 1
 
+   supported_versions
    product
    features
    roadmap
@@ -62,6 +63,7 @@ use the then-new Scalable Vector Graphics format (SVG) for GNOME's
 icons and other graphical assets on the desktop.  Since then, it has
 evolved into a few different tools.
 
+- :doc:`supported_versions` - Versions where you can expect support and bugfixes.
 - :doc:`product` - What comes out of this repository once it is compiled?
 - :doc:`features` - Supported elements, attributes, and properties.
 - :doc:`roadmap` - Ever-changing list of priorities for the
