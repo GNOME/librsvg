@@ -19,7 +19,10 @@ System requirements
 
 - Make sure you have ``git`` installed.
 
-- Your favorite text editor.
+- Your favorite text editor.  We recommend a text editor configured to
+  use the Language Server Protocol plus `rust-analyzer
+  <https://rust-analyzer.github.io/>`_ so you can get autocompletion
+  and documentation of librsvg's internals within your editor.
 
 Downloading the source code
 ---------------------------
@@ -58,7 +61,7 @@ similar to these:
 .. code-block:: text
 
    You can now run this:
-     podman run --rm -ti --cap-add=SYS_PTRACE -v $(pwd):/srv/project -w /srv/project $image_name
+     podman run --rm -ti --cap-add=SYS_PTRACE -v $(pwd):/srv/project:z -w /srv/project $image_name
 
    Don't forget to run this once inside the container:
      source ci/env.sh
@@ -85,10 +88,13 @@ What's all that magic?  Let's dissect the podman command line:
 
 - ``--cap-add=SYS_PTRACE`` - Make it possible to run ``gdb`` inside the container.
 
-- ``-v $(pwd):/srv/project` - Mount the current directory as
+- ``-v $(pwd):/srv/project:z` - Mount the current directory as
   ``/srv/project`` inside the container.  This lets you build from
   your current source tree without first copying it into the
-  container; it will be available in ``/srv/project``.
+  container; it will be available in ``/srv/project``.  The ``:z`` at
+  the end is so that if your host distro uses selinux, it will label
+  the mounted volume properly (it does nothing if you are not on
+  selinux).
 
 Finally, don't forget to ``source ci/env.sh`` and ``source
 ci/setup-dependencies-env.sh`` once you are inside ``podman run``.
@@ -199,19 +205,18 @@ Building and testing
 Make sure you have gone through the steps in :ref:`podman_setup` or
 :ref:`manual_setup`.  Then, do the following.
 
-**Normal development:** You can use ``cargo build --workspace`` and
-``cargo test --workspace`` as for a simple Rust project; this is what
+**Normal development:** You can use ``cargo build`` and
+``cargo test`` as for a simple Rust project; this is what
 you will use most of the time during regular development.  If you are
 using the podman container as per above, you should do this in the
-``/srv/project`` directory most of the time.  The ``--workspace``
-options are because librsvg's repository contains multiple crates in a
-single Cargo workspace.
+``/srv/project`` directory most of the time.
 
-To casually test rendering, for example, for a feature you are
-developing, you can run `target/debug/rsvg-convert -o output.png
-my_test_file.svg`.
+After compiling with those commands, you can use the ``rsvg-convert``
+binary to casually test rendering an SVG file, for example, one that
+has a feature that you are developing.  You can run
+``target/debug/rsvg-convert -o output.png my_test_file.svg``.
 
-If you do a release build with `cargo build --release --workspace`, which includes
+If you do a release build with `cargo build --release`, which includes
 optimizations, the binary will be in `target/release/rsvg-convert`.
 This version is *much* faster than the debug version.
 

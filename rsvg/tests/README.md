@@ -54,13 +54,15 @@ For regular development, use `cargo test`.  This will run most of the
 test suite, except for the C API tests and the long-running tests
 which exercise the hard-coded limits of the library.
 
-To run the full test suite, you need to go through autotools.  Run the
+To run the full test suite, you need to go through meson.  Run the
 following commands in the toplevel source directory:
 
 ```sh
 export TESTS_OUTPUT_DIR=/some/directory/for/test/failures
-./autogen.sh
-make check
+mkdir -p _build
+meson setup _build -Ddocs=enabled -Dintrospection=enabled -Dvala=enabled
+meson compile -C _build
+meson test -C _build
 ```
 
 Running a single test case
@@ -220,7 +222,7 @@ As of 2020/Oct/22 we have an informal organization of these files:
 
 ### Examining failed reference tests
 
-Let's say you run `make check` and see that one of the tests fails.  The test log may have lines like these:
+Let's say you run `cargo test` and see that one of the tests fails.  The test log may have lines like these:
 
 ```
 ---- reference::svg_1_1_tests_fixtures_reftests_svg1_1_painting_stroke_01_t_svg stdout ----
