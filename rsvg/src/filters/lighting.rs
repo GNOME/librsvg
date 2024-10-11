@@ -1034,7 +1034,7 @@ mod tests {
 </svg>
 "#,
         );
-        let mut acquired_nodes = AcquiredNodes::new(&document);
+        let mut acquired_nodes = AcquiredNodes::new(&document, None::<gio::Cancellable>);
 
         let node = document.lookup_internal_node("diffuse_distant").unwrap();
         let lighting = borrow_element_as!(node, FeDiffuseLighting);

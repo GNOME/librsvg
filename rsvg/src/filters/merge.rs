@@ -192,7 +192,7 @@ mod tests {
 </svg>
 "#,
         );
-        let mut acquired_nodes = AcquiredNodes::new(&document);
+        let mut acquired_nodes = AcquiredNodes::new(&document, None::<gio::Cancellable>);
 
         let node = document.lookup_internal_node("merge").unwrap();
         let merge = borrow_element_as!(node, FeMerge);
