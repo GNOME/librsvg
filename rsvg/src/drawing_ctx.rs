@@ -28,6 +28,7 @@ use crate::layout::{
     Text, TextSpan,
 };
 use crate::length::*;
+use crate::limits;
 use crate::marker;
 use crate::node::{CascadedValues, Node, NodeBorrow, NodeDraw};
 use crate::paint_server::{PaintSource, UserSpacePaintSource};
@@ -700,7 +701,17 @@ impl DrawingCtx {
         Ok(())
     }
 
-    pub fn with_discrete_layer(
+    fn check_layer_nesting_depth(&mut self) -> Result<(), InternalRenderingError> {
+        if self.recursion_depth > limits::MAX_LAYER_NESTING_DEPTH {
+            return Err(InternalRenderingError::LimitExceeded(
+                ImplementationLimit::MaximumLayerNestingDepthExceeded,
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn draw_layer_internal(
         &mut self,
         stacking_ctx: &StackingContext,
         acquired_nodes: &mut AcquiredNodes<'_>,
@@ -713,8 +724,6 @@ impl DrawingCtx {
             &Viewport,
         ) -> Result<BoundingBox, InternalRenderingError>,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        self.check_cancellation()?;
-
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
         let orig_transform = self.get_transform();
@@ -960,6 +969,42 @@ impl DrawingCtx {
 
         self.cr.set_matrix(orig_transform.into());
         res
+    }
+
+    pub fn with_discrete_layer(
+        &mut self,
+        stacking_ctx: &StackingContext,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        viewport: &Viewport,
+        layout_viewport: Option<LayoutViewport>,
+        clipping: bool,
+        draw_fn: &mut dyn FnMut(
+            &mut AcquiredNodes<'_>,
+            &mut DrawingCtx,
+            &Viewport,
+        ) -> Result<BoundingBox, InternalRenderingError>,
+    ) -> Result<BoundingBox, InternalRenderingError> {
+        self.check_cancellation()?;
+
+        self.recursion_depth += 1;
+
+        match self.check_layer_nesting_depth() {
+            Ok(()) => {
+                let res = self.draw_layer_internal(
+                    stacking_ctx,
+                    acquired_nodes,
+                    viewport,
+                    layout_viewport,
+                    clipping,
+                    draw_fn,
+                );
+
+                self.recursion_depth -= 1;
+                res
+            }
+
+            Err(e) => Err(e),
+        }
     }
 
     /// Run the drawing function with the specified opacity
