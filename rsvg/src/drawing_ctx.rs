@@ -972,7 +972,6 @@ impl DrawingCtx {
                     if let Some(new_viewport) = self.push_new_viewport(&viewport, layout_viewport) {
                         draw_fn(acquired_nodes, self, &new_viewport)
                     } else {
-                        self.cr.set_matrix(orig_transform.into());
                         Ok(self.empty_bbox())
                     }
                 } else {
