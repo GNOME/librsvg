@@ -343,12 +343,12 @@ impl DrawingCtx {
     /// would like to use that same state but on a different Cairo surface and context
     /// than the ones being used on `self`.  This function copies the `self` state into a
     /// new `DrawingCtx`, and ties the copied one to the supplied `cr`.
-    fn nested(&self, cr: cairo::Context) -> DrawingCtx {
+    fn nested(&self, cr: cairo::Context) -> Box<DrawingCtx> {
         let cr_stack = self.cr_stack.clone();
 
         cr_stack.borrow_mut().push(self.cr.clone());
 
-        DrawingCtx {
+        Box::new(DrawingCtx {
             session: self.session.clone(),
             initial_viewport: self.initial_viewport.clone(),
             cr_stack,
@@ -356,7 +356,7 @@ impl DrawingCtx {
             drawsub_stack: self.drawsub_stack.clone(),
             config: self.config.clone(),
             recursion_depth: self.recursion_depth,
-        }
+        })
     }
 
     pub fn session(&self) -> &Session {
