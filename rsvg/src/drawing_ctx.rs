@@ -887,6 +887,10 @@ impl DrawingCtx {
                                 &bbox,
                             )?;
 
+                            // FIXME: "res" was declared mutable above so that we could overwrite it
+                            // with the result of filtering, so that if filtering produces an error,
+                            // then the masking below wouldn't take place.  Test for that and fix this;
+                            // we are *not* modifying res in case of error.
                             (filtered_surface, res, bbox)
                         } else {
                             (temporary_draw_ctx.cr.target(), res, bbox)
