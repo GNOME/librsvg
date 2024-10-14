@@ -688,6 +688,18 @@ impl DrawingCtx {
         }
     }
 
+    /// Checks whether the rendering has been cancelled in the middle.
+    ///
+    /// If so, returns an Err.  This is used from [`DrawingCtx::with_discrete_layer`] to
+    /// exit early instead of proceeding with rendering.
+    fn check_cancellation(&self) -> Result<(), InternalRenderingError> {
+        if self.is_rendering_cancelled() {
+            return Err(InternalRenderingError::Cancelled);
+        }
+
+        Ok(())
+    }
+
     pub fn with_discrete_layer(
         &mut self,
         stacking_ctx: &StackingContext,
@@ -701,9 +713,7 @@ impl DrawingCtx {
             &Viewport,
         ) -> Result<BoundingBox, InternalRenderingError>,
     ) -> Result<BoundingBox, InternalRenderingError> {
-        if self.is_rendering_cancelled() {
-            return Err(InternalRenderingError::Cancelled);
-        }
+        self.check_cancellation()?;
 
         let stacking_ctx_transform = ValidTransform::try_from(stacking_ctx.transform)?;
 
