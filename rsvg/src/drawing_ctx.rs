@@ -193,6 +193,12 @@ pub struct DrawingCtx {
     drawsub_stack: Vec<Node>,
 
     config: RenderingConfiguration,
+
+    /// Depth of nested layers while drawing.
+    ///
+    /// We use this to set a hard limit on how many nested layers there can be, to avoid
+    /// malicious SVGs that would cause unbounded stack consumption.
+    recursion_depth: u16,
 }
 
 pub enum DrawingMode {
@@ -326,6 +332,7 @@ impl DrawingCtx {
             cr: cr.clone(),
             drawsub_stack,
             config,
+            recursion_depth: 0,
         }
     }
 
@@ -347,6 +354,7 @@ impl DrawingCtx {
             cr,
             drawsub_stack: self.drawsub_stack.clone(),
             config: self.config.clone(),
+            recursion_depth: self.recursion_depth,
         }
     }
 
