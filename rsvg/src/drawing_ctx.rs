@@ -828,11 +828,11 @@ impl DrawingCtx {
                 let res = if should_isolate {
                     // Compute our assortment of affines
 
-                    let affines = CompositingAffines::new(
+                    let affines = Box::new(CompositingAffines::new(
                         *affine_at_start,
                         self.initial_viewport.transform,
                         self.cr_stack.borrow().len(),
-                    );
+                    ));
 
                     // Create temporary surface and its cr
 
