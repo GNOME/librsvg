@@ -262,7 +262,7 @@ pub fn render(
     acquired_nodes: &mut AcquiredNodes<'_>,
     draw_ctx: &mut DrawingCtx,
     transform: Transform,
-    node_bbox: BoundingBox,
+    node_bbox: &BoundingBox,
 ) -> Result<SharedImageSurface, InternalRenderingError> {
     let session = draw_ctx.session().clone();
 
@@ -272,7 +272,7 @@ pub fn render(
         fill_paint_source,
         &source_surface,
         transform,
-        node_bbox,
+        *node_bbox,
     )
     .and_then(|mut filter_ctx| {
         // the message has an unclosed parenthesis; we'll close it below.

@@ -711,6 +711,57 @@ impl DrawingCtx {
         Ok(())
     }
 
+    fn filter_current_surface(
+        &mut self,
+        acquired_nodes: &mut AcquiredNodes<'_>,
+        filter: &Filter,
+        viewport: &Viewport,
+        element_name: &str,
+        bbox: &BoundingBox,
+    ) -> Result<cairo::Surface, InternalRenderingError> {
+        let surface_to_filter = SharedImageSurface::copy_from_surface(
+            &cairo::ImageSurface::try_from(self.cr.target()).unwrap(),
+        )?;
+
+        let stroke_paint_source = Rc::new(filter.stroke_paint_source.to_user_space(
+            &bbox.rect,
+            viewport,
+            &filter.normalize_values,
+        ));
+        let fill_paint_source = Rc::new(filter.fill_paint_source.to_user_space(
+            &bbox.rect,
+            viewport,
+            &filter.normalize_values,
+        ));
+
+        // Filter functions (like "blend()", not the <filter> element) require
+        // being resolved in userSpaceonUse units, since that is the default
+        // for primitive_units.  So, get the corresponding NormalizeParams
+        // here and pass them down.
+        let user_space_params = NormalizeParams::from_values(
+            &filter.normalize_values,
+            &viewport.with_units(CoordUnits::UserSpaceOnUse),
+        );
+
+        let filtered_surface = self
+            .run_filters(
+                viewport,
+                surface_to_filter,
+                filter,
+                acquired_nodes,
+                element_name,
+                &user_space_params,
+                stroke_paint_source,
+                fill_paint_source,
+                bbox,
+            )?
+            .into_image_surface()?;
+
+        let generic_surface: &cairo::Surface = &filtered_surface; // deref to Surface
+
+        Ok(generic_surface.clone())
+    }
+
     fn draw_layer_internal(
         &mut self,
         stacking_ctx: &StackingContext,
@@ -828,50 +879,15 @@ impl DrawingCtx {
                         };
 
                         if let Some(ref filter) = stacking_ctx.filter {
-                            let surface_to_filter = SharedImageSurface::copy_from_surface(
-                                &cairo::ImageSurface::try_from(temporary_draw_ctx.cr.target())
-                                    .unwrap(),
+                            let filtered_surface = temporary_draw_ctx.filter_current_surface(
+                                acquired_nodes,
+                                filter,
+                                &viewport,
+                                &stacking_ctx.element_name,
+                                &bbox,
                             )?;
 
-                            let stroke_paint_source =
-                                Rc::new(filter.stroke_paint_source.to_user_space(
-                                    &bbox.rect,
-                                    &viewport,
-                                    &filter.normalize_values,
-                                ));
-                            let fill_paint_source =
-                                Rc::new(filter.fill_paint_source.to_user_space(
-                                    &bbox.rect,
-                                    &viewport,
-                                    &filter.normalize_values,
-                                ));
-
-                            // Filter functions (like "blend()", not the <filter> element) require
-                            // being resolved in userSpaceonUse units, since that is the default
-                            // for primitive_units.  So, get the corresponding NormalizeParams
-                            // here and pass them down.
-                            let user_space_params = NormalizeParams::from_values(
-                                &filter.normalize_values,
-                                &viewport.with_units(CoordUnits::UserSpaceOnUse),
-                            );
-
-                            let filtered_surface = temporary_draw_ctx
-                                .run_filters(
-                                    &viewport,
-                                    surface_to_filter,
-                                    filter,
-                                    acquired_nodes,
-                                    &stacking_ctx.element_name,
-                                    &user_space_params,
-                                    stroke_paint_source,
-                                    fill_paint_source,
-                                    bbox,
-                                )?
-                                .into_image_surface()?;
-
-                            let generic_surface: &cairo::Surface = &filtered_surface; // deref to Surface
-
-                            (generic_surface.clone(), res, bbox)
+                            (filtered_surface, res, bbox)
                         } else {
                             (temporary_draw_ctx.cr.target(), res, bbox)
                         }
@@ -1050,7 +1066,7 @@ impl DrawingCtx {
         user_space_params: &NormalizeParams,
         stroke_paint_source: Rc<UserSpacePaintSource>,
         fill_paint_source: Rc<UserSpacePaintSource>,
-        node_bbox: BoundingBox,
+        node_bbox: &BoundingBox,
     ) -> Result<SharedImageSurface, InternalRenderingError> {
         let session = self.session();
 
