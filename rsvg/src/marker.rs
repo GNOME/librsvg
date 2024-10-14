@@ -197,14 +197,14 @@ impl Marker {
         };
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(
+        let stacking_ctx = Box::new(StackingContext::new(
             draw_ctx.session(),
             acquired_nodes,
             &elt,
             transform,
             clip_rect,
             values,
-        );
+        ));
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,

@@ -643,14 +643,14 @@ impl DrawingCtx {
 
             let mut mask_draw_ctx = self.nested(mask_cr);
 
-            let stacking_ctx = StackingContext::new(
+            let stacking_ctx = Box::new(StackingContext::new(
                 self.session(),
                 acquired_nodes,
                 &mask_element,
                 Transform::identity(),
                 None,
                 values,
-            );
+            ));
 
             rsvg_log!(self.session, "(mask {}", mask_element);
 
@@ -1226,14 +1226,14 @@ impl DrawingCtx {
 
                     let elt = pattern_node.borrow_element();
 
-                    let stacking_ctx = StackingContext::new(
+                    let stacking_ctx = Box::new(StackingContext::new(
                         self.session(),
                         acquired_nodes,
                         &elt,
                         Transform::identity(),
                         None,
                         pattern_values,
-                    );
+                    ));
 
                     dc.with_discrete_layer(
                         &stacking_ctx,
@@ -1919,14 +1919,14 @@ impl DrawingCtx {
 
             let child_values = elt.get_computed_values();
 
-            let stacking_ctx = StackingContext::new(
+            let stacking_ctx = Box::new(StackingContext::new(
                 self.session(),
                 acquired_nodes,
                 &use_element,
                 Transform::identity(),
                 None,
                 values,
-            );
+            ));
 
             let layout_viewport = LayoutViewport {
                 vbox,
@@ -1959,14 +1959,14 @@ impl DrawingCtx {
         } else {
             // otherwise the referenced node is not a <symbol>; process it generically
 
-            let stacking_ctx = StackingContext::new(
+            let stacking_ctx = Box::new(StackingContext::new(
                 self.session(),
                 acquired_nodes,
                 &use_element,
                 Transform::new_translate(use_rect.x0, use_rect.y0),
                 None,
                 values,
-            );
+            ));
 
             self.with_discrete_layer(
                 &stacking_ctx,

@@ -37,14 +37,14 @@ impl ElementTrait for Group {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(
+        let stacking_ctx = Box::new(StackingContext::new(
             draw_ctx.session(),
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
-        );
+        ));
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -85,14 +85,14 @@ impl ElementTrait for Switch {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(
+        let stacking_ctx = Box::new(StackingContext::new(
             draw_ctx.session(),
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
-        );
+        ));
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
@@ -318,14 +318,14 @@ impl ElementTrait for Svg {
         let values = cascaded.get();
 
         let elt = node.borrow_element();
-        let stacking_ctx = StackingContext::new(
+        let stacking_ctx = Box::new(StackingContext::new(
             draw_ctx.session(),
             acquired_nodes,
             &elt,
             values.transform(),
             None,
             values,
-        );
+        ));
 
         let layout_viewport = self.make_svg_viewport(node, cascaded, viewport, draw_ctx);
 
@@ -624,14 +624,14 @@ impl ElementTrait for Link {
             self.link.clone()
         };
 
-        let stacking_ctx = StackingContext::new_with_link(
+        let stacking_ctx = Box::new(StackingContext::new_with_link(
             draw_ctx.session(),
             acquired_nodes,
             &elt,
             values.transform(),
             values,
             link_target,
-        );
+        ));
 
         draw_ctx.with_discrete_layer(
             &stacking_ctx,
